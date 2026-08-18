@@ -101,6 +101,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
 	const [isPreparingDelete, setIsPreparingDelete] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [shouldRefreshAfterClose, setShouldRefreshAfterClose] = useState(false);
 	identityRef.current = identity;
 
 	const loadedProfile =
@@ -220,6 +221,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 		setIsDeleteConfirmationOpen(initialDeleteConfirmation);
 		setIsPreparingDelete(false);
 		setIsDeleting(false);
+		setShouldRefreshAfterClose(false);
 		deleteRequestIdRef.current += 1;
 		deleteConfirmationRequestIdRef.current += 1;
 		if (profile === null || subsidiaryId === null) return undefined;
@@ -255,9 +257,11 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 		formik.setFieldTouched('credit_limit', true, false).catch(() => undefined);
 		formik.setFieldValue('credit_limit', value.replace(/\D/g, '')).catch(() => undefined);
 	};
-	const hasPendingBalance = profile !== null && hasOutstandingBalance(profile.outstanding_balance);
+	const hasPendingBalance =
+		profile !== null && hasOutstandingBalance(profile.outstanding_balance);
 	const isCreditActive = formik.values.is_active;
-	const requiresSuspensionBeforeDelete = loadedProfile?.is_active === true && !formik.values.is_active;
+	const requiresSuspensionBeforeDelete =
+		loadedProfile?.is_active === true && !formik.values.is_active;
 	const deleteDisabledTooltip = getDeleteDisabledTooltip(isCreditActive, hasPendingBalance);
 	const isDeleteDisabled =
 		formik.isSubmitting ||
@@ -280,16 +284,18 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 			)
 				return;
 			if (Object.keys(formErrors).length > 0) {
-				formik.setTouched(
-					{
-						is_active: true,
-						payment_term_days: true,
-						credit_limit: true,
-						collection_email: true,
-						notes: true,
-					},
-					false,
-				).catch(() => undefined);
+				formik
+					.setTouched(
+						{
+							is_active: true,
+							payment_term_days: true,
+							credit_limit: true,
+							collection_email: true,
+							notes: true,
+						},
+						false,
+					)
+					.catch(() => undefined);
 				return;
 			}
 			setDeleteError(null);
@@ -305,7 +311,8 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 		}
 	};
 	const handleDelete = async () => {
-		if (profile === null || subsidiaryId === null || loadedProfile === null || isDeleting) return;
+		if (profile === null || subsidiaryId === null || loadedProfile === null || isDeleting)
+			return;
 		const deleteIdentity = identity;
 		const deleteRequestId = deleteRequestIdRef.current + 1;
 		deleteRequestIdRef.current = deleteRequestId;
@@ -334,9 +341,12 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 				)
 					return;
 				setLoadedProfileState({ identity: deleteIdentity, value: updatedProfile });
-				onSaved();
+				setShouldRefreshAfterClose(true);
 			}
-			await deferredPaymentsService.deleteCreditProfile(subsidiaryId, profile.customer_sale_id);
+			await deferredPaymentsService.deleteCreditProfile(
+				subsidiaryId,
+				profile.customer_sale_id,
+			);
 			if (
 				!mountedRef.current ||
 				deleteIdentity !== identityRef.current ||
@@ -370,9 +380,13 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 				setIsDeleting(false);
 		}
 	};
+	const closeModal = () => {
+		onClose();
+		if (shouldRefreshAfterClose) onSaved();
+	};
 	const guardClose = (nextState: React.SetStateAction<boolean>) => {
 		const open = typeof nextState === 'function' ? nextState(profile !== null) : nextState;
-		if (!open && !formik.isSubmitting && !isPreparingDelete && !isDeleting) onClose();
+		if (!open && !formik.isSubmitting && !isPreparingDelete && !isDeleting) closeModal();
 	};
 
 	return (
@@ -412,12 +426,13 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 							</Alert>
 						)}
 						<p>
-							¿Quieres eliminar este perfil de crédito? Dejará de aparecer en la cartera de
-							crédito.
+							¿Quieres eliminar este perfil de crédito? Dejará de aparecer en la
+							cartera de crédito.
 						</p>
 						{requiresSuspensionBeforeDelete && (
 							<p className='text-sm text-zinc-600 dark:text-zinc-400'>
-								Primero se guardará la suspensión del crédito y luego se eliminará el perfil.
+								Primero se guardará la suspensión del crédito y luego se eliminará
+								el perfil.
 							</p>
 						)}
 						<p className='text-sm text-zinc-600 dark:text-zinc-400'>
@@ -426,104 +441,109 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 						</p>
 					</div>
 				)}
-				{!isDeleteConfirmationOpen && loadedProfile !== null && !isLoading && !visibleLoadError && (
-					<form
-						id='credit-profile-edit-form'
-						aria-label='Formulario de condiciones de crédito de cartera'
-						className='space-y-4'
-						onSubmit={formik.handleSubmit}>
-						{saveError && (
-							<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
-								{saveError}
-							</Alert>
-						)}
-						<div className='space-y-2'>
-							<Checkbox
-								id='portfolio-credit-profile-active'
-								variant='switch'
-								checked={formik.values.is_active}
-								label={
-									formik.values.is_active ? 'Crédito vigente' : 'Crédito suspendido'
-								}
-								onChange={(event) =>
-									formik.setFieldValue('is_active', event.target.checked)
-								}
-							/>
-							<p className='text-sm text-zinc-600 dark:text-zinc-400'>
-								Suspender conserva las condiciones y su historial, pero impide emitir nuevos
-								pagos diferidos.
-							</p>
-						</div>
-						<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+				{!isDeleteConfirmationOpen &&
+					loadedProfile !== null &&
+					!isLoading &&
+					!visibleLoadError && (
+						<form
+							id='credit-profile-edit-form'
+							aria-label='Formulario de condiciones de crédito de cartera'
+							className='space-y-4'
+							onSubmit={formik.handleSubmit}>
+							{saveError && (
+								<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
+									{saveError}
+								</Alert>
+							)}
+							<div className='space-y-2'>
+								<Checkbox
+									id='portfolio-credit-profile-active'
+									variant='switch'
+									checked={formik.values.is_active}
+									label={
+										formik.values.is_active
+											? 'Crédito vigente'
+											: 'Crédito suspendido'
+									}
+									onChange={(event) =>
+										formik.setFieldValue('is_active', event.target.checked)
+									}
+								/>
+								<p className='text-sm text-zinc-600 dark:text-zinc-400'>
+									Suspender conserva las condiciones y su historial, pero impide
+									emitir nuevos pagos diferidos.
+								</p>
+							</div>
+							<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+								<div>
+									<Label htmlFor='portfolio-credit-profile-term'>
+										Plazo de pago (días)
+									</Label>
+									<Input
+										id='portfolio-credit-profile-term'
+										name='payment_term_days'
+										type='number'
+										min='1'
+										max='32767'
+										value={formik.values.payment_term_days}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+										isTouched={formik.touched.payment_term_days}
+										isValid={!paymentTermError}
+										invalidFeedback={paymentTermError}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='portfolio-credit-profile-limit'>
+										Cupo de crédito
+									</Label>
+									<Input
+										id='portfolio-credit-profile-limit'
+										name='credit_limit'
+										type='text'
+										inputMode='numeric'
+										value={formatCreditLimitInput(formik.values.credit_limit)}
+										onChange={(event) =>
+											handleCreditLimitChange(event.target.value)
+										}
+										onBlur={formik.handleBlur}
+										isTouched={formik.touched.credit_limit}
+										isValid={!creditLimitError}
+										invalidFeedback={creditLimitError}
+										placeholder='$ 500.000'
+									/>
+								</div>
+							</div>
 							<div>
-								<Label htmlFor='portfolio-credit-profile-term'>
-									Plazo de pago (días)
+								<Label htmlFor='portfolio-credit-profile-collection-email'>
+									Correo de cobranza
 								</Label>
 								<Input
-									id='portfolio-credit-profile-term'
-									name='payment_term_days'
-									type='number'
-									min='1'
-									max='32767'
-									value={formik.values.payment_term_days}
+									id='portfolio-credit-profile-collection-email'
+									name='collection_email'
+									type='email'
+									autoComplete='email'
+									value={formik.values.collection_email}
 									onChange={formik.handleChange}
 									onBlur={formik.handleBlur}
-									isTouched={formik.touched.payment_term_days}
-									isValid={!paymentTermError}
-									invalidFeedback={paymentTermError}
+									isTouched={formik.touched.collection_email}
+									isValid={!collectionEmailError}
+									invalidFeedback={collectionEmailError}
 								/>
 							</div>
 							<div>
-								<Label htmlFor='portfolio-credit-profile-limit'>
-									Cupo de crédito
-								</Label>
-								<Input
-									id='portfolio-credit-profile-limit'
-									name='credit_limit'
-									type='text'
-									inputMode='numeric'
-									value={formatCreditLimitInput(formik.values.credit_limit)}
-									onChange={(event) =>
-										handleCreditLimitChange(event.target.value)
-									}
+								<Label htmlFor='portfolio-credit-profile-notes'>Notas</Label>
+								<Textarea
+									id='portfolio-credit-profile-notes'
+									name='notes'
+									rows={3}
+									value={formik.values.notes}
+									onChange={formik.handleChange}
 									onBlur={formik.handleBlur}
-									isTouched={formik.touched.credit_limit}
-									isValid={!creditLimitError}
-									invalidFeedback={creditLimitError}
-									placeholder='$ 500.000'
 								/>
 							</div>
-						</div>
-						<div>
-							<Label htmlFor='portfolio-credit-profile-collection-email'>
-								Correo de cobranza
-							</Label>
-							<Input
-								id='portfolio-credit-profile-collection-email'
-								name='collection_email'
-								type='email'
-								autoComplete='email'
-								value={formik.values.collection_email}
-								onChange={formik.handleChange}
-								onBlur={formik.handleBlur}
-								isTouched={formik.touched.collection_email}
-								isValid={!collectionEmailError}
-								invalidFeedback={collectionEmailError}
-							/>
-						</div>
-						<div>
-							<Label htmlFor='portfolio-credit-profile-notes'>Notas</Label>
-							<Textarea
-								id='portfolio-credit-profile-notes'
-								name='notes'
-								rows={3}
-								value={formik.values.notes}
-								onChange={formik.handleChange}
-								onBlur={formik.handleBlur}
-							/>
-						</div>
-					</form>
-				)}
+						</form>
+					)}
 			</ModalBody>
 			<ModalFooter>
 				{isDeleteConfirmationOpen ? (
@@ -546,7 +566,9 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 									// eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- permite consultar con teclado el motivo de un botón deshabilitado.
 									tabIndex={isDeleteDisabled ? 0 : undefined}
 									aria-label={
-										isDeleteDisabled ? 'Motivo por el que no se puede eliminar el perfil' : undefined
+										isDeleteDisabled
+											? 'Motivo por el que no se puede eliminar el perfil'
+											: undefined
 									}>
 									<ProtectedButton
 										permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE}
@@ -570,7 +592,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 						<Button
 							variant='outline'
 							type='button'
-							onClick={onClose}
+							onClick={closeModal}
 							isDisable={formik.isSubmitting}>
 							Cancelar
 						</Button>
@@ -585,7 +607,9 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 									// eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- permite consultar con teclado el motivo de un botón deshabilitado.
 									tabIndex={isDeleteDisabled ? 0 : undefined}
 									aria-label={
-										isDeleteDisabled ? 'Motivo por el que no se puede eliminar el perfil' : undefined
+										isDeleteDisabled
+											? 'Motivo por el que no se puede eliminar el perfil'
+											: undefined
 									}>
 									<ProtectedButton
 										permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE}

@@ -393,10 +393,7 @@ const updateCreditProfile = async (
 	return unwrapResource(response.data);
 };
 
-const deleteCreditProfile = async (
-	subsidiaryId: number,
-	customerSaleId: number,
-): Promise<void> => {
+const deleteCreditProfile = async (subsidiaryId: number, customerSaleId: number): Promise<void> => {
 	await ApiService.fetchData({
 		url: creditProfileUrl(subsidiaryId, customerSaleId),
 		method: 'delete',

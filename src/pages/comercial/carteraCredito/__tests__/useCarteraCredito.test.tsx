@@ -307,7 +307,7 @@ describe('useCarteraCredito', () => {
 		getCreditProfilesMock.mockImplementation((_subsidiaryId, params) =>
 			Promise.resolve(
 				params?.page === 2
-					? { data: [], meta: { current_page: 2, per_page: 10, total: 1, last_page: 1 } }
+					? { data: [], meta: { current_page: 2, per_page: 10, total: 0, last_page: 1 } }
 					: validResponse,
 			),
 		);

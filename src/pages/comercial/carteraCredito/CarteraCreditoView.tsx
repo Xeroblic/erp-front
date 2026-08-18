@@ -206,9 +206,7 @@ const CarteraCreditoView: React.FC = () => {
 	const navigate = useNavigate();
 	const currentContext = useMemo<OrganizationalContext | null>(
 		() =>
-			branch.subsidiaryId === null
-				? null
-				: { type: 'subsidiary', id: branch.subsidiaryId },
+			branch.subsidiaryId === null ? null : { type: 'subsidiary', id: branch.subsidiaryId },
 		[branch.subsidiaryId],
 	);
 	const editingSelection = useContextScopedSelection<number>(currentContext);
@@ -217,7 +215,8 @@ const CarteraCreditoView: React.FC = () => {
 		() =>
 			editingSelection.selectedId === null
 				? null
-				: data.rows.find((row) => row.customer_sale_id === editingSelection.selectedId) ?? null,
+				: (data.rows.find((row) => row.customer_sale_id === editingSelection.selectedId) ??
+					null),
 		[data.rows, editingSelection.selectedId],
 	);
 	const [sort, setSort] = useState<CreditSortState>(null);
@@ -564,32 +563,52 @@ const CarteraCreditoView: React.FC = () => {
 																		branch.subsidiaryId
 																	}
 																	scope='access'
-															aria-label={`Editar crédito de ${getCustomerName(row)}`}
-												onClick={() => openCreditProfileEditor(row.customer_sale_id)}>
+																	aria-label={`Editar crédito de ${getCustomerName(row)}`}
+																	onClick={() =>
+																		openCreditProfileEditor(
+																			row.customer_sale_id,
+																		)
+																	}>
 																	<Icon
 																		icon='HeroPencil'
 																		color='white'
 																		className='text-xl'
 																	/>
-											</ProtectedButton>
-										</Tooltip>
-										{!row.is_active && (
-											<Tooltip text='Eliminar perfil de crédito' placement='top-end'>
-												<ProtectedButton
-													variant='solid'
-													size='sm'
-													color='red'
-													className='bg-red-600 p-1 hover:bg-red-700/20'
-													permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE}
-													branchId={branch.branchId}
-													subsidiaryId={branch.subsidiaryId}
-													scope='access'
-													aria-label={`Eliminar crédito de ${getCustomerName(row)}`}
-													onClick={() => openCreditProfileDeletion(row.customer_sale_id)}>
-													<Icon icon='HeroTrash' color='white' className='text-xl' />
-												</ProtectedButton>
-											</Tooltip>
-										)}
+																</ProtectedButton>
+															</Tooltip>
+															{!row.is_active && (
+																<Tooltip
+																	text='Eliminar perfil de crédito'
+																	placement='top-end'>
+																	<ProtectedButton
+																		variant='solid'
+																		size='sm'
+																		color='red'
+																		className='bg-red-600 p-1 hover:bg-red-700/20'
+																		permission={
+																			ERP_PERMISSIONS
+																				.DEFERRED_PAYMENTS
+																				.DELETE
+																		}
+																		branchId={branch.branchId}
+																		subsidiaryId={
+																			branch.subsidiaryId
+																		}
+																		scope='access'
+																		aria-label={`Eliminar crédito de ${getCustomerName(row)}`}
+																		onClick={() =>
+																			openCreditProfileDeletion(
+																				row.customer_sale_id,
+																			)
+																		}>
+																		<Icon
+																			icon='HeroTrash'
+																			color='white'
+																			className='text-xl'
+																		/>
+																	</ProtectedButton>
+																</Tooltip>
+															)}
 														</div>
 													</Td>
 												</Tr>

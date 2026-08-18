@@ -63,9 +63,15 @@ vi.mock('../components/CreditProfileEditModal', () => ({
 vi.mock('@/pages/comercial/pagosDiferidos/utils', () => ({
 	formatDeferredPaymentAmount: (amount: string) => amount,
 }));
-vi.mock('@/components/ui/Alert', () => ({ default: ({ children }: PropsWithChildren) => <div>{children}</div> }));
+vi.mock('@/components/ui/Alert', () => ({
+	default: ({ children }: PropsWithChildren) => <div>{children}</div>,
+}));
 vi.mock('@/components/ui/Button', () => ({
-	default: ({ children, onClick, ariaLabel }: PropsWithChildren & { onClick?: () => void; ariaLabel?: string }) => (
+	default: ({
+		children,
+		onClick,
+		ariaLabel,
+	}: PropsWithChildren & { onClick?: () => void; ariaLabel?: string }) => (
 		<button type='button' aria-label={ariaLabel} onClick={onClick}>
 			{children}
 		</button>
@@ -111,7 +117,9 @@ vi.mock('@/components/ui/Table', () => ({
 	Th: ({ children }: PropsWithChildren) => <th>{children}</th>,
 	Tr: ({ children }: PropsWithChildren) => <tr>{children}</tr>,
 }));
-vi.mock('@/components/ui/Tooltip', () => ({ default: ({ children }: PropsWithChildren) => children }));
+vi.mock('@/components/ui/Tooltip', () => ({
+	default: ({ children }: PropsWithChildren) => children,
+}));
 vi.mock('@/templates/Table/TableFooterTemplateV2', () => ({ default: () => null }));
 
 describe('CarteraCreditoView con cambio de subsidiaria', () => {

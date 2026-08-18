@@ -33,8 +33,7 @@ const useCarteraCredito = () => {
 		[subsidiaryId],
 	);
 	const ownerContext = useMemo<OrganizationalContext | null>(
-		() =>
-			ownerSubsidiaryId === null ? null : { type: 'subsidiary', id: ownerSubsidiaryId },
+		() => (ownerSubsidiaryId === null ? null : { type: 'subsidiary', id: ownerSubsidiaryId }),
 		[ownerSubsidiaryId],
 	);
 	const scopedPortfolio = useContextScopedResource({
@@ -84,7 +83,7 @@ const useCarteraCredito = () => {
 				)
 					return;
 				const lastPage = Math.max(response.meta.last_page, 1);
-				if (response.meta.total > 0 && requestFilters.page > lastPage) {
+				if (requestFilters.page > lastPage) {
 					requestIdRef.current += 1;
 					setFilters((current) =>
 						current.page === lastPage ? current : { ...current, page: lastPage },
