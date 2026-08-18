@@ -4,11 +4,14 @@ import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import PermissionGuard from '@/components/authorization/PermissionGuard';
+import Checkbox from '@/components/form/Checkbox';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import Textarea from '@/components/form/Textarea';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import ProtectedButton from '@/components/ui/ProtectedButton';
+import Tooltip from '@/components/ui/Tooltip';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import type {
 	IDeferredPaymentCreditProfile,
@@ -34,6 +37,7 @@ interface IdentityBoundValue<T> {
 }
 
 const emptyFormValues = {
+	is_active: true,
 	payment_term_days: '30',
 	credit_limit: '',
 	collection_email: '',
@@ -54,6 +58,19 @@ const formatCreditLimitInput = (value: string): string => {
 	if (!/^\d+$/.test(wholePart) || !/^\d*$/.test(decimalPart)) return value;
 	const roundedValue = BigInt(wholePart) + (decimalPart[0] >= '5' ? BigInt(1) : BigInt(0));
 	return `$ ${roundedValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+};
+
+const hasOutstandingBalance = (outstandingBalance: string): boolean => {
+	const amount = Number(outstandingBalance);
+	return Number.isFinite(amount) && amount > 0;
+};
+
+const getDeleteDisabledTooltip = (isCreditActive: boolean, hasPendingBalance: boolean): string => {
+	if (isCreditActive) return 'Suspende el crédito antes de eliminar el perfil.';
+	if (hasPendingBalance) {
+		return 'No puedes eliminar el perfil mientras el cliente tenga saldo pendiente.';
+	}
+	return '';
 };
 
 const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
@@ -151,16 +168,18 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 			if (profile === null || subsidiaryId === null || loadedProfile === null) return;
 			const saveIdentity = identity;
 			const saveRequestId = saveRequestIdRef.current + 1;
+			const isSuspendingCredit = loadedProfile.is_active && !values.is_active;
 			saveRequestIdRef.current = saveRequestId;
 			setSaveError(null);
 			const payload: UpdateDeferredPaymentCreditProfilePayload = {
+				is_active: values.is_active,
 				payment_term_days: Number(values.payment_term_days),
 				credit_limit: values.credit_limit.trim() || null,
 				collection_email: values.collection_email.trim() || null,
 				notes: values.notes.trim() || null,
 			};
 			try {
-				await deferredPaymentsService.updateCreditProfile(
+				const updatedProfile = await deferredPaymentsService.updateCreditProfile(
 					subsidiaryId,
 					profile.customer_sale_id,
 					payload,
@@ -171,8 +190,13 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 					saveRequestId !== saveRequestIdRef.current
 				)
 					return;
-				toast.success('Condiciones de crédito guardadas correctamente');
+				setLoadedProfileState({ identity: saveIdentity, value: updatedProfile });
 				onSaved();
+				if (isSuspendingCredit) {
+					toast.success('Crédito suspendido correctamente');
+					return;
+				}
+				toast.success('Condiciones de crédito guardadas correctamente');
 				onClose();
 			} catch (error: unknown) {
 				if (
@@ -228,6 +252,15 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 		formik.setFieldTouched('credit_limit', true, false).catch(() => undefined);
 		formik.setFieldValue('credit_limit', value.replace(/\D/g, '')).catch(() => undefined);
 	};
+	const hasPendingBalance = profile !== null && hasOutstandingBalance(profile.outstanding_balance);
+	const isCreditActive = loadedProfile?.is_active === true || formik.values.is_active;
+	const deleteDisabledTooltip = getDeleteDisabledTooltip(isCreditActive, hasPendingBalance);
+	const isDeleteDisabled =
+		formik.isSubmitting ||
+		isDeleting ||
+		loadedProfile === null ||
+		isLoading ||
+		deleteDisabledTooltip !== '';
 	const handleDelete = async () => {
 		if (profile === null || subsidiaryId === null || isDeleting) return;
 		const deleteIdentity = identity;
@@ -327,6 +360,23 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 								{saveError}
 							</Alert>
 						)}
+						<div className='space-y-2'>
+							<Checkbox
+								id='portfolio-credit-profile-active'
+								variant='switch'
+								checked={formik.values.is_active}
+								label={
+									formik.values.is_active ? 'Crédito vigente' : 'Crédito suspendido'
+								}
+								onChange={(event) =>
+									formik.setFieldValue('is_active', event.target.checked)
+								}
+							/>
+							<p className='text-sm text-zinc-600 dark:text-zinc-400'>
+								Suspender conserva las condiciones y su historial, pero impide emitir nuevos
+								pagos diferidos.
+							</p>
+						</div>
 						<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
 							<div>
 								<Label htmlFor='portfolio-credit-profile-term'>
@@ -408,19 +458,35 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 							isDisable={isDeleting}>
 							Cancelar
 						</Button>
-						<ProtectedButton
+						<PermissionGuard
 							permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE}
 							branchId={branchId}
 							subsidiaryId={subsidiaryId}
-							scope='access'
-							variant='solid'
-							color='red'
-							type='button'
-							onClick={handleDelete}
-							isLoading={isDeleting}
-							isDisable={isDeleting || loadedProfile === null || isLoading}>
-							Eliminar perfil
-						</ProtectedButton>
+							scope='access'>
+							<Tooltip text={deleteDisabledTooltip}>
+								<span
+									className='inline-flex'
+									// eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- permite consultar con teclado el motivo de un botón deshabilitado.
+									tabIndex={isDeleteDisabled ? 0 : undefined}
+									aria-label={
+										isDeleteDisabled ? 'Motivo por el que no se puede eliminar el perfil' : undefined
+									}>
+									<ProtectedButton
+										permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE}
+										branchId={branchId}
+										subsidiaryId={subsidiaryId}
+										scope='access'
+										variant='solid'
+										color='red'
+										type='button'
+										onClick={handleDelete}
+										isLoading={isDeleting}
+										isDisable={isDeleteDisabled}>
+										Eliminar perfil
+									</ProtectedButton>
+								</span>
+							</Tooltip>
+						</PermissionGuard>
 					</>
 				) : (
 					<>
@@ -431,18 +497,34 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 							isDisable={formik.isSubmitting}>
 							Cancelar
 						</Button>
-						<ProtectedButton
+						<PermissionGuard
 							permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE}
 							branchId={branchId}
 							subsidiaryId={subsidiaryId}
-							scope='access'
-							variant='outline'
-							color='red'
-							type='button'
-							onClick={() => setIsDeleteConfirmationOpen(true)}
-							isDisable={formik.isSubmitting || loadedProfile === null || isLoading}>
-							Eliminar perfil
-						</ProtectedButton>
+							scope='access'>
+							<Tooltip text={deleteDisabledTooltip}>
+								<span
+									className='inline-flex'
+									// eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- permite consultar con teclado el motivo de un botón deshabilitado.
+									tabIndex={isDeleteDisabled ? 0 : undefined}
+									aria-label={
+										isDeleteDisabled ? 'Motivo por el que no se puede eliminar el perfil' : undefined
+									}>
+									<ProtectedButton
+										permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE}
+										branchId={branchId}
+										subsidiaryId={subsidiaryId}
+										scope='access'
+										variant='outline'
+										color='red'
+										type='button'
+										onClick={() => setIsDeleteConfirmationOpen(true)}
+										isDisable={isDeleteDisabled}>
+										Eliminar perfil
+									</ProtectedButton>
+								</span>
+							</Tooltip>
+						</PermissionGuard>
 						<ProtectedButton
 							permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
 							branchId={branchId}

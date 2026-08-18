@@ -18,6 +18,9 @@ import TableCardFooterTemplateV2, {
 } from '@/templates/Table/TableFooterTemplateV2';
 import type { IDeferredPaymentCreditProfileListItem } from '@/interface/deferredPayments.interface';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+import useContextScopedSelection, {
+	type OrganizationalContext,
+} from '@/hooks/useContextScopedSelection';
 import { formatDeferredPaymentAmount } from '@/pages/comercial/pagosDiferidos/utils';
 import CreditProfileEditModal from './components/CreditProfileEditModal';
 import useCarteraCredito from './hooks/useCarteraCredito';
@@ -201,8 +204,21 @@ const CreditPortfolioPagination: React.FC<CreditPortfolioPaginationProps> = ({
 const CarteraCreditoView: React.FC = () => {
 	const { data, state, filters, actions, branch } = useCarteraCredito();
 	const navigate = useNavigate();
-	const [editingProfile, setEditingProfile] =
-		useState<IDeferredPaymentCreditProfileListItem | null>(null);
+	const currentContext = useMemo<OrganizationalContext | null>(
+		() =>
+			branch.subsidiaryId === null
+				? null
+				: { type: 'subsidiary', id: branch.subsidiaryId },
+		[branch.subsidiaryId],
+	);
+	const editingSelection = useContextScopedSelection<number>(currentContext);
+	const editingProfile = useMemo(
+		() =>
+			editingSelection.selectedId === null
+				? null
+				: data.rows.find((row) => row.customer_sale_id === editingSelection.selectedId) ?? null,
+		[data.rows, editingSelection.selectedId],
+	);
 	const [sort, setSort] = useState<CreditSortState>(null);
 	const sortedRows = useMemo(
 		() =>
@@ -533,10 +549,8 @@ const CarteraCreditoView: React.FC = () => {
 																		branch.subsidiaryId
 																	}
 																	scope='access'
-																	aria-label={`Editar crédito de ${getCustomerName(row)}`}
-																	onClick={() =>
-																		setEditingProfile(row)
-																	}>
+															aria-label={`Editar crédito de ${getCustomerName(row)}`}
+															onClick={() => editingSelection.select(row.customer_sale_id)}>
 																	<Icon
 																		icon='HeroPencil'
 																		color='white'
@@ -562,14 +576,16 @@ const CarteraCreditoView: React.FC = () => {
 					</>
 				)}
 			</Container>
-			<CreditProfileEditModal
-				profile={editingProfile}
-				subsidiaryId={branch.subsidiaryId}
-				branchId={branch.branchId}
-				onClose={() => setEditingProfile(null)}
-				onSaved={actions.refresh}
-				onDeleted={actions.refreshAfterDeletion}
-			/>
+			{editingSelection.context !== null && editingProfile !== null && (
+				<CreditProfileEditModal
+					profile={editingProfile}
+					subsidiaryId={editingSelection.context.id}
+					branchId={branch.branchId}
+					onClose={editingSelection.clear}
+					onSaved={actions.refresh}
+					onDeleted={actions.refreshAfterDeletion}
+				/>
+			)}
 		</PageWrapper>
 	);
 };

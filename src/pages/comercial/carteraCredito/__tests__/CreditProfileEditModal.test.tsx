@@ -23,6 +23,14 @@ vi.mock('@/components/ui/Modal', () => ({
 vi.mock('@/components/ui/Alert', () => ({
 	default: ({ children }: { children: React.ReactNode }) => <div role='alert'>{children}</div>,
 }));
+vi.mock('@/components/ui/Tooltip', () => ({
+	default: ({ children, text }: { children: React.ReactNode; text: string }) => (
+		<span data-tooltip={text}>{children}</span>
+	),
+}));
+vi.mock('@/components/authorization/PermissionGuard', () => ({
+	default: ({ children }: { children: React.ReactNode }) => children,
+}));
 vi.mock('@/components/ui/Button', () => ({
 	default: ({
 		children,
@@ -80,6 +88,22 @@ vi.mock('@/components/form/Textarea', () => ({
 vi.mock('@/components/form/Label', () => ({
 	default: ({ children, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) => (
 		<label {...props}>{children}</label>
+	),
+}));
+vi.mock('@/components/form/Checkbox', () => ({
+	default: ({
+		checked,
+		onChange,
+		label,
+	}: {
+		checked: boolean;
+		onChange: React.ChangeEventHandler<HTMLInputElement>;
+		label: string;
+	}) => (
+		<label>
+			<input type='checkbox' checked={checked} onChange={onChange} />
+			{label}
+		</label>
 	),
 }));
 const listProfile: IDeferredPaymentCreditProfileListItem = {
@@ -156,7 +180,7 @@ describe('CreditProfileEditModal', () => {
 				expect.objectContaining({ collection_email: null }),
 			),
 		);
-		expect(updateCreditProfileMock.mock.calls[0][2]).not.toHaveProperty('is_active');
+		expect(updateCreditProfileMock.mock.calls[0][2]).toHaveProperty('is_active', true);
 		expect(onSaved).toHaveBeenCalledTimes(1);
 		expect(onClose).toHaveBeenCalledTimes(1);
 	});
@@ -203,11 +227,97 @@ describe('CreditProfileEditModal', () => {
 		expect(updateCreditProfileMock).not.toHaveBeenCalled();
 	});
 
-	it('reemplaza la suspensión por la eliminación confirmada del perfil', async () => {
-		const onDeleted = vi.fn();
+	it('suspende el crédito con un PUT separado de la eliminación', async () => {
+		updateCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
 		render(
 			<CreditProfileEditModal
 				profile={listProfile}
+				subsidiaryId={4}
+				branchId={1}
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+
+		const activeCredit = await screen.findByLabelText('Crédito vigente');
+		expect(screen.getByText(/Suspender conserva las condiciones/i)).toBeInTheDocument();
+		fireEvent.click(activeCredit);
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
+
+		await waitFor(() =>
+			expect(updateCreditProfileMock).toHaveBeenCalledWith(
+				4,
+				8,
+				expect.objectContaining({ is_active: false }),
+			),
+		);
+		expect(onClose).not.toHaveBeenCalled();
+		expect(onSaved).toHaveBeenCalledOnce();
+
+		const deleteButton = await screen.findByRole('button', { name: 'Eliminar perfil' });
+		expect(deleteButton).toBeEnabled();
+		fireEvent.click(deleteButton);
+		expect(await screen.findByText(/¿Quieres eliminar este perfil de crédito/i)).toBeInTheDocument();
+		expect(deleteCreditProfileMock).not.toHaveBeenCalled();
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+		await waitFor(() => expect(deleteCreditProfileMock).toHaveBeenCalledWith(4, 8));
+	});
+
+	it('deshabilita la eliminación de un perfil activo y explica que debe suspenderse', async () => {
+		render(
+			<CreditProfileEditModal
+				profile={listProfile}
+				subsidiaryId={4}
+				branchId={1}
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+
+		await screen.findByLabelText('Correo de cobranza');
+		const deleteButton = screen.getByRole('button', { name: 'Eliminar perfil' });
+		expect(deleteButton).toBeDisabled();
+		const deleteTooltip = deleteButton.closest('[data-tooltip]');
+		expect(deleteTooltip).toHaveAttribute(
+			'data-tooltip',
+			'Suspende el crédito antes de eliminar el perfil.',
+		);
+		expect(deleteButton.parentElement).toHaveAttribute('tabindex', '0');
+	});
+
+	it('anticipa el saldo pendiente de un perfil suspendido antes de intentar eliminarlo', async () => {
+		const suspendedProfileWithBalance = {
+			...listProfile,
+			is_active: false,
+			outstanding_balance: '1500.00',
+		};
+		getCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
+		render(
+			<CreditProfileEditModal
+				profile={suspendedProfileWithBalance}
+				subsidiaryId={4}
+				branchId={1}
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+
+		await screen.findByLabelText('Correo de cobranza');
+		const deleteButton = screen.getByRole('button', { name: 'Eliminar perfil' });
+		expect(deleteButton).toBeDisabled();
+		expect(deleteButton.closest('[data-tooltip]')).toHaveAttribute(
+			'data-tooltip',
+			'No puedes eliminar el perfil mientras el cliente tenga saldo pendiente.',
+		);
+	});
+
+	it('elimina un perfil suspendido tras confirmarlo', async () => {
+		const onDeleted = vi.fn();
+		const suspendedProfile = { ...listProfile, is_active: false };
+		getCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
+		render(
+			<CreditProfileEditModal
+				profile={suspendedProfile}
 				subsidiaryId={4}
 				branchId={1}
 				onClose={onClose}
@@ -217,7 +327,7 @@ describe('CreditProfileEditModal', () => {
 		);
 
 		await screen.findByLabelText('Correo de cobranza');
-		expect(screen.queryByText('Crédito vigente')).not.toBeInTheDocument();
+		expect(screen.getByLabelText('Crédito suspendido')).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 
 		expect(await screen.findByText(/¿Quieres eliminar este perfil de crédito/i)).toBeInTheDocument();
@@ -229,12 +339,14 @@ describe('CreditProfileEditModal', () => {
 	});
 
 	it('mantiene la confirmación abierta y muestra el motivo del backend ante un 422', async () => {
+		const suspendedProfile = { ...listProfile, is_active: false };
+		getCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
 		deleteCreditProfileMock.mockRejectedValue({
 			response: { status: 422, data: { message: 'El cliente tiene documentos pendientes.' } },
 		});
 		render(
 			<CreditProfileEditModal
-				profile={listProfile}
+				profile={suspendedProfile}
 				subsidiaryId={4}
 				branchId={1}
 				onClose={onClose}
