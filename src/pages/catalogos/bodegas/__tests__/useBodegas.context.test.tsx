@@ -68,4 +68,25 @@ describe('useBodegas con cambio de sucursal', () => {
 		expect(hook.result.current.state.selectedWarehouse).toBeNull();
 		await waitFor(() => expect(hook.result.current.state.loading).toBe(false));
 	});
+
+	it('cierra la creación en el primer render al cambiar de sucursal', async () => {
+		const store = configureStore({ reducer: { warehouse: warehouseReducer } });
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const hook = renderHook(() => useBodegas(), { wrapper: Wrapper });
+
+		await waitFor(() => expect(hook.result.current.state.loading).toBe(false));
+		act(() => hook.result.current.actions.openCreateModal());
+		expect(hook.result.current.state.createModalOpen).toBe(true);
+
+		act(() => {
+			branchContext.branchId = 2;
+			hook.rerender();
+		});
+
+		expect(hook.result.current.state.createModalOpen).toBe(false);
+		await waitFor(() => {
+			expect(store.getState().warehouse.listBranchId).toBe(2);
+			expect(hook.result.current.state.loading).toBe(false);
+		});
+	});
 });
