@@ -29,6 +29,7 @@ interface CreditProfileEditModalProps {
 	onClose: () => void;
 	onSaved: () => void;
 	onDeleted?: () => void | Promise<void>;
+	initialDeleteConfirmation?: boolean;
 }
 
 interface IdentityBoundValue<T> {
@@ -80,6 +81,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	onClose,
 	onSaved,
 	onDeleted = () => undefined,
+	initialDeleteConfirmation = false,
 }) => {
 	const identity = `${subsidiaryId ?? 'none'}:${profile?.customer_sale_id ?? 'none'}`;
 	const identityRef = useRef(identity);
@@ -220,7 +222,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	useEffect(() => {
 		setSaveError(null);
 		setDeleteError(null);
-		setIsDeleteConfirmationOpen(false);
+		setIsDeleteConfirmationOpen(initialDeleteConfirmation);
 		setIsPreparingDelete(false);
 		setIsDeleting(false);
 		deleteRequestIdRef.current += 1;
@@ -233,7 +235,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 			deleteRequestIdRef.current += 1;
 			deleteConfirmationRequestIdRef.current += 1;
 		};
-	}, [loadProfile, profile, subsidiaryId]);
+	}, [initialDeleteConfirmation, loadProfile, profile, subsidiaryId]);
 
 	useEffect(
 		() => () => {

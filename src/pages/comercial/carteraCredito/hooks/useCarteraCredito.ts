@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useContextScopedResource from '@/hooks/useContextScopedResource';
+import type { OrganizationalContext } from '@/hooks/useContextScopedSelection';
 import type {
 	DeferredPaymentCreditProfilesFilters,
 	DeferredPaymentsPaginationMeta,
@@ -22,7 +24,29 @@ const useCarteraCredito = () => {
 	const [meta, setMeta] = useState<DeferredPaymentsPaginationMeta | null>(null);
 	const [loading, setLoading] = useState(subsidiaryId !== null);
 	const [error, setError] = useState<string | null>(null);
+	const [ownerSubsidiaryId, setOwnerSubsidiaryId] = useState<number | null>(subsidiaryId);
 	const requestIdRef = useRef(0);
+	const activeSubsidiaryIdRef = useRef(subsidiaryId);
+	activeSubsidiaryIdRef.current = subsidiaryId;
+	const currentContext = useMemo<OrganizationalContext | null>(
+		() => (subsidiaryId === null ? null : { type: 'subsidiary', id: subsidiaryId }),
+		[subsidiaryId],
+	);
+	const ownerContext = useMemo<OrganizationalContext | null>(
+		() =>
+			ownerSubsidiaryId === null ? null : { type: 'subsidiary', id: ownerSubsidiaryId },
+		[ownerSubsidiaryId],
+	);
+	const scopedPortfolio = useContextScopedResource({
+		currentContext,
+		ownerContext,
+		data: rows,
+		meta,
+		loading,
+		error: error ?? undefined,
+		emptyData: [] as IDeferredPaymentCreditProfileListItem[],
+		emptyMeta: null as DeferredPaymentsPaginationMeta | null,
+	});
 	const searchInput = useMemo(() => ({ value: search, subsidiaryId }), [search, subsidiaryId]);
 	const [debouncedSearch] = useDebounce(searchInput, 300);
 	const effectiveSearch =
@@ -42,6 +66,7 @@ const useCarteraCredito = () => {
 	const load = useCallback(
 		async (signal?: AbortSignal) => {
 			if (subsidiaryId === null) return;
+			const requestSubsidiaryId = subsidiaryId;
 			const requestId = requestIdRef.current + 1;
 			requestIdRef.current = requestId;
 			setLoading(true);
@@ -52,7 +77,12 @@ const useCarteraCredito = () => {
 					requestFilters,
 					signal,
 				);
-				if (signal?.aborted || requestId !== requestIdRef.current) return;
+				if (
+					signal?.aborted ||
+					requestSubsidiaryId !== activeSubsidiaryIdRef.current ||
+					requestId !== requestIdRef.current
+				)
+					return;
 				const lastPage = Math.max(response.meta.last_page, 1);
 				if (response.meta.total > 0 && requestFilters.page > lastPage) {
 					requestIdRef.current += 1;
@@ -61,17 +91,29 @@ const useCarteraCredito = () => {
 					);
 					return;
 				}
+				setOwnerSubsidiaryId(requestSubsidiaryId);
 				setRows(response.data);
 				setMeta(response.meta);
 			} catch (requestError: unknown) {
-				if (signal?.aborted || requestId !== requestIdRef.current) return;
+				if (
+					signal?.aborted ||
+					requestSubsidiaryId !== activeSubsidiaryIdRef.current ||
+					requestId !== requestIdRef.current
+				)
+					return;
+				setOwnerSubsidiaryId(requestSubsidiaryId);
 				setRows([]);
 				setMeta(null);
 				setError(
 					getApiErrorMessage(requestError, 'No se pudo cargar la cartera de crédito.'),
 				);
 			} finally {
-				if (!signal?.aborted && requestId === requestIdRef.current) setLoading(false);
+				if (
+					!signal?.aborted &&
+					requestSubsidiaryId === activeSubsidiaryIdRef.current &&
+					requestId === requestIdRef.current
+				)
+					setLoading(false);
 			}
 		},
 		[requestFilters, subsidiaryId],
@@ -112,17 +154,21 @@ const useCarteraCredito = () => {
 		setStatus('all');
 		setSearch('');
 	}, []);
-	const refreshAfterDeletion = useCallback(() => {
+	const refreshAfterDeletion = useCallback(async (): Promise<void> => {
 		if (filters.page > 1 && rows.length === 1) {
 			setFilters((current) => ({ ...current, page: Math.max(1, current.page - 1) }));
 			return;
 		}
-		return load();
+		await load();
 	}, [filters.page, load, rows.length]);
 
 	return {
-		data: { rows, meta },
-		state: { loading, error, hasDataContext: subsidiaryId !== null },
+		data: { rows: scopedPortfolio.data, meta: scopedPortfolio.meta },
+		state: {
+			loading: scopedPortfolio.loading,
+			error: scopedPortfolio.error ?? null,
+			hasDataContext: subsidiaryId !== null,
+		},
 		filters: {
 			values: filters,
 			search,

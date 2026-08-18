@@ -50,11 +50,13 @@ vi.mock('../components/CreditProfileEditModal', () => ({
 	default: ({
 		profile: selectedProfile,
 		subsidiaryId,
+		initialDeleteConfirmation,
 	}: {
 		profile: IDeferredPaymentCreditProfileListItem;
 		subsidiaryId: number;
+		initialDeleteConfirmation?: boolean;
 	}) => {
-		editModalProps({ profile: selectedProfile, subsidiaryId });
+		editModalProps({ profile: selectedProfile, subsidiaryId, initialDeleteConfirmation });
 		return <div data-testid='credit-profile-edit-modal' data-subsidiary-id={subsidiaryId} />;
 	},
 }));
@@ -148,5 +150,20 @@ describe('CarteraCreditoView con cambio de subsidiaria', () => {
 		view.rerender(<CarteraCreditoView />);
 
 		expect(screen.queryByTestId('credit-profile-edit-modal')).not.toBeInTheDocument();
+	});
+
+	it('abre directamente la confirmación de eliminación para un perfil suspendido', async () => {
+		carteraState = {
+			...carteraState,
+			data: { rows: [{ ...profile(8), is_active: false }], meta: null },
+		};
+		render(<CarteraCreditoView />);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar crédito de Cliente 8' }));
+
+		expect(await screen.findByTestId('credit-profile-edit-modal')).toBeInTheDocument();
+		expect(editModalProps).toHaveBeenLastCalledWith(
+			expect.objectContaining({ initialDeleteConfirmation: true, subsidiaryId: 1 }),
+		);
 	});
 });
