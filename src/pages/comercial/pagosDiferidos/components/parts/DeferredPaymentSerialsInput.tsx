@@ -32,7 +32,7 @@ const DeferredPaymentSerialsInput: React.FC<DeferredPaymentSerialsInputProps> = 
 		const knownSerials = new Set(value.map((serial) => serial.trim()));
 
 		pastedValue
-			.split(/\s+/)
+			.split(/[\s,]+/)
 			.map((serial) => serial.trim())
 			.filter(Boolean)
 			.forEach((serial) => {
@@ -68,6 +68,7 @@ const DeferredPaymentSerialsInput: React.FC<DeferredPaymentSerialsInputProps> = 
 					onPaste={(event) => {
 						if (disabled) return;
 						event.preventDefault();
+						setDraft('');
 						addPastedSerials(event.clipboardData.getData('text'));
 					}}
 					onKeyDown={(event) => {

@@ -221,7 +221,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		await act(async () => {
 			fireEvent.paste(serialInput, {
 				clipboardData: {
-					getData: () => ' SER-001\tSER-002\nSER-001   SER-003 ',
+					getData: () => ' SER-001,SER-002\nSER-001   SER-003 ',
 				},
 			});
 			await Promise.resolve();
@@ -253,7 +253,29 @@ describe('CreateEditDeferredPaymentModal', () => {
 			await Promise.resolve();
 		});
 
-		expect(screen.getByRole('button', { name: 'Quitar serial SER-ÚNICO-001' })).toBeInTheDocument();
+		expect(
+			screen.getByRole('button', { name: 'Quitar serial SER-ÚNICO-001' }),
+		).toBeInTheDocument();
+	});
+	it('reemplaza el borrador al pegar seriales', async () => {
+		renderModal();
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+
+		await act(async () => {
+			fireEvent.change(serialInput, { target: { value: 'VIEJO-1' } });
+			fireEvent.paste(serialInput, {
+				clipboardData: { getData: () => 'SER-A SER-B' },
+			});
+			await Promise.resolve();
+		});
+
+		expect(serialInput).toHaveValue('');
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-A' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-B' })).toBeInTheDocument();
+		fireEvent.keyDown(serialInput, { key: 'Enter' });
+		expect(
+			screen.queryByRole('button', { name: 'Quitar serial VIEJO-1' }),
+		).not.toBeInTheDocument();
 	});
 	it('omite un serial existente después de recortar sus espacios', async () => {
 		const document = {
