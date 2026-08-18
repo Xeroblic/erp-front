@@ -44,7 +44,6 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 			const file = files?.[0] ?? null;
 			syncSingleFileInput(receiptInputRef.current, file);
 			formik.setFieldValue('receipt', file).catch(() => undefined);
-			formik.setFieldError('receipt', undefined);
 			formik.setFieldTouched('receipt', true).catch(() => undefined);
 		},
 	});

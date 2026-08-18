@@ -17,10 +17,7 @@ interface UseAttachmentsFileDropResult {
  * Refleja un único archivo soltado en un selector nativo sin habilitar carga múltiple.
  * `input.files` exige un FileList, por lo que se crea uno temporal con el único archivo.
  */
-export const syncSingleFileInput = (
-	input: HTMLInputElement | null,
-	file: File | null,
-): void => {
+export const syncSingleFileInput = (input: HTMLInputElement | null, file: File | null): void => {
 	if (!input) return;
 	if (file === null) {
 		input.value = '';

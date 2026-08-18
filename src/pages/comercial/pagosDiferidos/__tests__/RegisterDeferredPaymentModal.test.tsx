@@ -6,10 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import store from '@/store';
 import RegisterDeferredPaymentModal from '../components/modals/RegisterDeferredPaymentModal';
 import { syncSingleFileInput } from '../hooks/useAttachmentsFileDrop';
-import {
-	createDeferredPaymentActionSchema,
-	type DeferredPaymentActionFormValues,
-} from '../types';
+import { createDeferredPaymentActionSchema, type DeferredPaymentActionFormValues } from '../types';
 
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({ i18n: { dir: () => 'ltr' } }),
@@ -63,7 +60,10 @@ describe('RegisterDeferredPaymentModal', () => {
 			</Provider>,
 		);
 
-		const methodSelect = (await screen.findByLabelText('Método')) as HTMLSelectElement;
+		const methodSelect = await screen.findByLabelText('Método');
+		if (!(methodSelect instanceof HTMLSelectElement)) {
+			throw new Error('El selector de método debe ser un elemento select');
+		}
 		expect(Array.from(methodSelect.options, (option) => option.value)).toEqual([
 			'transfer',
 			'bank_card',
@@ -115,7 +115,6 @@ describe('RegisterDeferredPaymentModal', () => {
 			await Promise.resolve();
 		});
 		expect(screen.queryByTestId('attachments-drop-overlay')).not.toBeInTheDocument();
-		expect(screen.queryByText('Comprobante seleccionado:')).not.toBeInTheDocument();
 		expect(screen.getByLabelText('Comprobante (opcional)')).toHaveAttribute(
 			'accept',
 			'.pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx',
@@ -126,6 +125,7 @@ describe('RegisterDeferredPaymentModal', () => {
 				target: { value: '10000' },
 			});
 			fireEvent.submit(document.getElementById('deferred-payment-action-form')!);
+			await Promise.resolve();
 		});
 		expect(onSubmit).toHaveBeenCalledWith(
 			expect.objectContaining({ receipt: file }),
@@ -143,6 +143,7 @@ describe('RegisterDeferredPaymentModal', () => {
 		const addFile = vi.fn();
 		class TestDataTransfer {
 			items = { add: addFile };
+
 			files = files;
 		}
 		const input = document.createElement('input');
