@@ -42,6 +42,9 @@ const getLoyaltyColor = (loyalty: number): 'green' | 'yellow' | 'red' => {
 	return 'red';
 };
 
+const getContactEmail = (email: string | null | undefined): string =>
+	email?.trim() || 'Sin correo registrado';
+
 const getSortValue = (customer: ICustomerSaleOverview, key: SortKey): string | number => {
 	switch (key) {
 		case 'name':
@@ -229,7 +232,7 @@ const ClienteVentasTable: React.FC<ClienteVentasTableProps> = ({
 											<div className='flex flex-col text-sm'>
 												<span>{customer.contact.name}</span>
 												<span className='text-xs text-zinc-500'>
-													{customer.contact.email}
+													{getContactEmail(customer.contact.email)}
 												</span>
 												<span className='text-xs text-zinc-500'>
 													{customer.contact.phone}

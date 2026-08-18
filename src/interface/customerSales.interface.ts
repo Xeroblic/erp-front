@@ -17,11 +17,11 @@ export interface ICustomerSale {
 
 	primary_contact?: {
 		name: string;
-		email: string;
+		email?: string | null;
 		phone: string;
 	} | null;
 
-	email: string;
+	email: string | null;
 	phone?: string | null;
 
 	billing_address_1?: string | null;
@@ -76,7 +76,7 @@ export interface ICustomerSaleOverview {
 	rut: string;
 	contact: {
 		name?: string;
-		email?: string;
+		email?: string | null;
 		phone?: string;
 	} | null;
 	loyalty: number;

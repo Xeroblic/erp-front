@@ -61,4 +61,20 @@ describe('campos editables en modo lectura', () => {
 
 		expect(screen.getByText('Seleccionar')).toBeInTheDocument();
 	});
+
+	it('permite especificar el estado vacío para el correo en el detalle', () => {
+		const formik = formikWith({ field: '', select: '' });
+
+		render(
+			<EditableField
+				formik={formik}
+				name='field'
+				label='Email'
+				isEditable={false}
+				emptyValue='Sin correo registrado'
+			/>,
+		);
+
+		expect(screen.getByText('Sin correo registrado')).toBeInTheDocument();
+	});
 });

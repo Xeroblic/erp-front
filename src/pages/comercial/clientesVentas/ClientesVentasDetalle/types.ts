@@ -32,7 +32,7 @@ export const ClientesVentasDetalleSchema = Yup.object({
 		.required('RUT requerido')
 		.test('rut-valid', 'RUT inválido', (value) => validateRut(value || '')),
 	billing_company: Yup.string().required('Nombre o empresa requerido'),
-	email: Yup.string().email('Email inválido').required('Email requerido'),
+	email: Yup.string().trim().email('Email inválido'),
 });
 
 export const CreditProfileSchema = Yup.object({

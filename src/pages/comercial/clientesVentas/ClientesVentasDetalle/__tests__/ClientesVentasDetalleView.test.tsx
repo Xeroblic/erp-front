@@ -1,6 +1,6 @@
 import React from 'react';
 import { Provider } from 'react-redux';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import store from '@/store';
 import type { ICustomerSale } from '@/interface/customerSales.interface';
@@ -45,7 +45,11 @@ vi.mock('../../components/parts/ClientDetailHeader', () => ({ default: () => nul
 vi.mock('../../components/parts/DetailSection', () => ({
 	default: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
 }));
-vi.mock('../../components/parts/EditableField', () => ({ default: () => null }));
+vi.mock('../../components/parts/EditableField', () => ({
+	default: ({ label, emptyValue }: { label: string; emptyValue?: string }) => (
+		<span>{emptyValue ? `${label}: ${emptyValue}` : label}</span>
+	),
+}));
 vi.mock('../../components/parts/EditableSelect', () => ({ default: () => null }));
 
 const customerWithoutIdentity: ICustomerSale = {
@@ -89,5 +93,17 @@ describe('ClientesVentasDetalleView', () => {
 
 		expect(document.title).toBe('Detalle de cliente | ERP');
 		expect(document.title).not.toContain('Error |');
+	});
+
+	it('identifica explícitamente un correo ausente en el detalle', () => {
+		detailState.current = { ...customerWithoutIdentity, email: null };
+
+		render(
+			<Provider store={store}>
+				<ClientesVentasDetalleView />
+			</Provider>,
+		);
+
+		expect(screen.getByText('Email: Sin correo registrado')).toBeInTheDocument();
 	});
 });

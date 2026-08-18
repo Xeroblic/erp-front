@@ -8,7 +8,28 @@ import {
 	updateCustomerThunk,
 } from '@/store/slices/customerSales/customerSalesSlice';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
-import { ClientesVentasDetalleSchema, IClientesVentasDetalleForm } from '../types';
+import { ClientesVentasDetalleSchema, type IClientesVentasDetalleForm } from '../types';
+
+const buildPrimaryContactPayload = (values: IClientesVentasDetalleForm) => {
+	const name = values.contact_name.trim();
+	const email = values.email.trim();
+	const phone = values.phone.trim();
+
+	if (!name || !email || !phone) {
+		return {
+			primary_contact_name: null,
+			primary_contact_email: null,
+			primary_contact_phone: null,
+		};
+	}
+
+	return {
+		primary_contact: { name, email, phone },
+		primary_contact_name: name,
+		primary_contact_email: email,
+		primary_contact_phone: phone,
+	};
+};
 
 export const useClientesVentasDetalle = () => {
 	const { clienteId } = useParams();
@@ -68,21 +89,15 @@ export const useClientesVentasDetalle = () => {
 		onSubmit: async (values, { setSubmitting }) => {
 			if (!detalle) return;
 			try {
+				const primaryContact = buildPrimaryContactPayload(values);
 				const payload = {
 					...values,
 					rut: values.document_number,
 					document_number: values.document_number,
 					contact_name: values.contact_name,
-					email: values.email,
+					email: values.email.trim() || null,
 					phone: values.phone,
-					primary_contact: {
-						name: values.contact_name || '',
-						email: values.email || '',
-						phone: values.phone || '',
-					},
-					primary_contact_name: values.contact_name,
-					primary_contact_email: values.email,
-					primary_contact_phone: values.phone,
+					...primaryContact,
 				};
 
 				await dispatch(
