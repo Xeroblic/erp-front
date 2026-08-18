@@ -96,6 +96,57 @@ const hasValidationErrorOtherThan = (value: unknown, excludedMessage: string): b
 		);
 	return false;
 };
+
+const collectValidationErrorPaths = (value: unknown, prefix = ''): string[] => {
+	if (typeof value === 'string') return prefix ? [prefix] : [];
+	if (Array.isArray(value))
+		return value.flatMap((entry, index) =>
+			collectValidationErrorPaths(entry, prefix ? `${prefix}.${index}` : String(index)),
+		);
+	if (value !== null && typeof value === 'object')
+		return Object.entries(value).flatMap(([key, entry]) =>
+			collectValidationErrorPaths(entry, prefix ? `${prefix}.${key}` : key),
+		);
+	return [];
+};
+
+const getFirstInvalidDeferredPaymentFieldId = (errors: unknown): string | null => {
+	const errorPaths = collectValidationErrorPaths(errors);
+	const hasErrorAt = (fieldName: string): boolean =>
+		errorPaths.some((path) => path === fieldName || path.startsWith(`${fieldName}.`));
+	const documentFieldOrder = [
+		'customer_sale_id',
+		'document_type',
+		'document_number',
+		'issue_date',
+		'due_date',
+		'purchase_order',
+		'assignee_ids',
+		'notes',
+	];
+
+	const firstDocumentField = documentFieldOrder.find(hasErrorAt);
+	if (firstDocumentField) return firstDocumentField;
+
+	const itemIndexes = [
+		...new Set(
+			errorPaths
+				.map((path) => /^items\.(\d+)\./.exec(path)?.[1])
+				.filter((index): index is string => index !== undefined)
+				.map(Number),
+		),
+	].sort((first, second) => first - second);
+	const itemFieldOrder = ['code', 'description', 'quantity', 'unit_price', 'serials'];
+	const firstItemField = itemIndexes
+		.flatMap((itemIndex) =>
+			itemFieldOrder.map((fieldName) => `items.${itemIndex}.${fieldName}`),
+		)
+		.find(hasErrorAt);
+	if (firstItemField) return firstItemField;
+
+	return hasErrorAt('total_amount') ? 'total_amount' : null;
+};
+
 const documentTypeOptions: TSelectOption[] = Object.entries(
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
 ).map(([value, label]) => ({ value, label }));
@@ -756,6 +807,14 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		setCustomerModalSubsidiaryId(subsidiaryId);
 		setIsCreateCustomerOpen(true);
 	};
+	const focusFirstInvalidDeferredPaymentField = (errors: unknown) => {
+		const fieldId = getFirstInvalidDeferredPaymentFieldId(errors);
+		if (!fieldId) return;
+		const field = document.getElementById(fieldId);
+		if (!(field instanceof HTMLElement)) return;
+		field.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+		field.focus({ preventScroll: true });
+	};
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={handleClose} size='2xl' isScrollable isStaticBackdrop>
@@ -785,6 +844,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 									)
 								)
 									toast.error(DEFERRED_PAYMENT_TOTAL_ERROR);
+								focusFirstInvalidDeferredPaymentField(errors);
 								return formik.submitForm();
 							})
 							.catch(() => undefined);
@@ -839,10 +899,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												variant='outline'
 												size='xs'
 												icon='HeroPlus'
+												className='whitespace-nowrap'
 												isDisable={isPaidEdit}
-												aria-label='Crear cliente'
-												onClick={handleOpenCreateCustomer}
-											/>
+												onClick={handleOpenCreateCustomer}>
+												Crear cliente
+											</ProtectedButton>
 										</>
 									}
 									className='md:col-span-2 lg:col-span-1'>
