@@ -86,6 +86,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	const requestIdRef = useRef(0);
 	const saveRequestIdRef = useRef(0);
 	const deleteRequestIdRef = useRef(0);
+	const deleteConfirmationRequestIdRef = useRef(0);
 	const loadControllerRef = useRef<AbortController | null>(null);
 	const mountedRef = useRef(true);
 	const [loadedProfileState, setLoadedProfileState] = useState<
@@ -96,6 +97,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [deleteError, setDeleteError] = useState<string | null>(null);
 	const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
+	const [isPreparingDelete, setIsPreparingDelete] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 	identityRef.current = identity;
 
@@ -219,14 +221,17 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 		setSaveError(null);
 		setDeleteError(null);
 		setIsDeleteConfirmationOpen(false);
+		setIsPreparingDelete(false);
 		setIsDeleting(false);
 		deleteRequestIdRef.current += 1;
+		deleteConfirmationRequestIdRef.current += 1;
 		if (profile === null || subsidiaryId === null) return undefined;
 		loadProfile().catch(() => undefined);
 		return () => {
 			loadControllerRef.current?.abort();
 			saveRequestIdRef.current += 1;
 			deleteRequestIdRef.current += 1;
+			deleteConfirmationRequestIdRef.current += 1;
 		};
 	}, [loadProfile, profile, subsidiaryId]);
 
@@ -237,6 +242,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 			requestIdRef.current += 1;
 			saveRequestIdRef.current += 1;
 			deleteRequestIdRef.current += 1;
+			deleteConfirmationRequestIdRef.current += 1;
 		},
 		[],
 	);
@@ -253,7 +259,8 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 		formik.setFieldValue('credit_limit', value.replace(/\D/g, '')).catch(() => undefined);
 	};
 	const hasPendingBalance = profile !== null && hasOutstandingBalance(profile.outstanding_balance);
-	const isCreditActive = loadedProfile?.is_active === true || formik.values.is_active;
+	const isCreditActive = formik.values.is_active;
+	const requiresSuspensionBeforeDelete = loadedProfile?.is_active === true && !formik.values.is_active;
 	const deleteDisabledTooltip = getDeleteDisabledTooltip(isCreditActive, hasPendingBalance);
 	const isDeleteDisabled =
 		formik.isSubmitting ||
@@ -261,14 +268,77 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 		loadedProfile === null ||
 		isLoading ||
 		deleteDisabledTooltip !== '';
+	const openDeleteConfirmation = async () => {
+		if (isPreparingDelete) return;
+		const confirmationIdentity = identity;
+		const confirmationRequestId = deleteConfirmationRequestIdRef.current + 1;
+		deleteConfirmationRequestIdRef.current = confirmationRequestId;
+		setIsPreparingDelete(true);
+		try {
+			const formErrors = await formik.validateForm();
+			if (
+				!mountedRef.current ||
+				confirmationIdentity !== identityRef.current ||
+				confirmationRequestId !== deleteConfirmationRequestIdRef.current
+			)
+				return;
+			if (Object.keys(formErrors).length > 0) {
+				formik.setTouched(
+					{
+						is_active: true,
+						payment_term_days: true,
+						credit_limit: true,
+						collection_email: true,
+						notes: true,
+					},
+					false,
+				).catch(() => undefined);
+				return;
+			}
+			setDeleteError(null);
+			setIsDeleteConfirmationOpen(true);
+		} finally {
+			if (
+				mountedRef.current &&
+				confirmationIdentity === identityRef.current &&
+				confirmationRequestId === deleteConfirmationRequestIdRef.current
+			) {
+				setIsPreparingDelete(false);
+			}
+		}
+	};
 	const handleDelete = async () => {
-		if (profile === null || subsidiaryId === null || isDeleting) return;
+		if (profile === null || subsidiaryId === null || loadedProfile === null || isDeleting) return;
 		const deleteIdentity = identity;
 		const deleteRequestId = deleteRequestIdRef.current + 1;
 		deleteRequestIdRef.current = deleteRequestId;
 		setDeleteError(null);
 		setIsDeleting(true);
 		try {
+			if (requiresSuspensionBeforeDelete) {
+				const saveRequestId = saveRequestIdRef.current + 1;
+				saveRequestIdRef.current = saveRequestId;
+				const updatedProfile = await deferredPaymentsService.updateCreditProfile(
+					subsidiaryId,
+					profile.customer_sale_id,
+					{
+						is_active: false,
+						payment_term_days: Number(formik.values.payment_term_days),
+						credit_limit: formik.values.credit_limit.trim() || null,
+						collection_email: formik.values.collection_email.trim() || null,
+						notes: formik.values.notes.trim() || null,
+					},
+				);
+				if (
+					!mountedRef.current ||
+					deleteIdentity !== identityRef.current ||
+					deleteRequestId !== deleteRequestIdRef.current ||
+					saveRequestId !== saveRequestIdRef.current
+				)
+					return;
+				setLoadedProfileState({ identity: deleteIdentity, value: updatedProfile });
+				onSaved();
+			}
 			await deferredPaymentsService.deleteCreditProfile(subsidiaryId, profile.customer_sale_id);
 			if (
 				!mountedRef.current ||
@@ -287,7 +357,12 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 			)
 				return;
 			setDeleteError(
-				getApiErrorMessage(error, 'No se pudo eliminar el perfil de crédito.'),
+				getApiErrorMessage(
+					error,
+					requiresSuspensionBeforeDelete
+						? 'No se pudo suspender el crédito antes de eliminar el perfil.'
+						: 'No se pudo eliminar el perfil de crédito.',
+				),
 			);
 		} finally {
 			if (
@@ -300,7 +375,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	};
 	const guardClose = (nextState: React.SetStateAction<boolean>) => {
 		const open = typeof nextState === 'function' ? nextState(profile !== null) : nextState;
-		if (!open && !formik.isSubmitting && !isDeleting) onClose();
+		if (!open && !formik.isSubmitting && !isPreparingDelete && !isDeleting) onClose();
 	};
 
 	return (
@@ -309,7 +384,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 			setIsOpen={guardClose}
 			size='md'
 			isCentered
-			isStaticBackdrop={formik.isSubmitting || isDeleting}>
+			isStaticBackdrop={formik.isSubmitting || isPreparingDelete || isDeleting}>
 			<ModalHeader>
 				{isDeleteConfirmationOpen
 					? 'Eliminar perfil de crédito'
@@ -343,6 +418,11 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 							¿Quieres eliminar este perfil de crédito? Dejará de aparecer en la cartera de
 							crédito.
 						</p>
+						{requiresSuspensionBeforeDelete && (
+							<p className='text-sm text-zinc-600 dark:text-zinc-400'>
+								Primero se guardará la suspensión del crédito y luego se eliminará el perfil.
+							</p>
+						)}
 						<p className='text-sm text-zinc-600 dark:text-zinc-400'>
 							Esta acción no elimina la ficha del cliente de ventas ni sus documentos
 							históricos y no se puede deshacer.
@@ -481,7 +561,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 										type='button'
 										onClick={handleDelete}
 										isLoading={isDeleting}
-										isDisable={isDeleteDisabled}>
+										isDisable={isDeleteDisabled || isPreparingDelete}>
 										Eliminar perfil
 									</ProtectedButton>
 								</span>
@@ -518,8 +598,8 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 										variant='outline'
 										color='red'
 										type='button'
-										onClick={() => setIsDeleteConfirmationOpen(true)}
-										isDisable={isDeleteDisabled}>
+										onClick={openDeleteConfirmation}
+										isDisable={isDeleteDisabled || isPreparingDelete}>
 										Eliminar perfil
 									</ProtectedButton>
 								</span>

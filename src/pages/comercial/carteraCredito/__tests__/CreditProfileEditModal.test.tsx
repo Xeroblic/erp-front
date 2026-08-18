@@ -227,7 +227,7 @@ describe('CreditProfileEditModal', () => {
 		expect(updateCreditProfileMock).not.toHaveBeenCalled();
 	});
 
-	it('suspende el crédito con un PUT separado de la eliminación', async () => {
+	it('guarda la suspensión y elimina el perfil en la misma confirmación', async () => {
 		updateCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
 		render(
 			<CreditProfileEditModal
@@ -242,7 +242,13 @@ describe('CreditProfileEditModal', () => {
 		const activeCredit = await screen.findByLabelText('Crédito vigente');
 		expect(screen.getByText(/Suspender conserva las condiciones/i)).toBeInTheDocument();
 		fireEvent.click(activeCredit);
-		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
+		const deleteButton = screen.getByRole('button', { name: 'Eliminar perfil' });
+		expect(deleteButton).toBeEnabled();
+		fireEvent.click(deleteButton);
+
+		expect(await screen.findByText(/Primero se guardará la suspensión/i)).toBeInTheDocument();
+		expect(updateCreditProfileMock).not.toHaveBeenCalled();
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 
 		await waitFor(() =>
 			expect(updateCreditProfileMock).toHaveBeenCalledWith(
@@ -251,16 +257,34 @@ describe('CreditProfileEditModal', () => {
 				expect.objectContaining({ is_active: false }),
 			),
 		);
-		expect(onClose).not.toHaveBeenCalled();
-		expect(onSaved).toHaveBeenCalledOnce();
-
-		const deleteButton = await screen.findByRole('button', { name: 'Eliminar perfil' });
-		expect(deleteButton).toBeEnabled();
-		fireEvent.click(deleteButton);
-		expect(await screen.findByText(/¿Quieres eliminar este perfil de crédito/i)).toBeInTheDocument();
-		expect(deleteCreditProfileMock).not.toHaveBeenCalled();
-		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 		await waitFor(() => expect(deleteCreditProfileMock).toHaveBeenCalledWith(4, 8));
+		expect(updateCreditProfileMock.mock.invocationCallOrder[0]).toBeLessThan(
+			deleteCreditProfileMock.mock.invocationCallOrder[0],
+		);
+		expect(onSaved).toHaveBeenCalledOnce();
+		expect(onClose).toHaveBeenCalledOnce();
+	});
+
+	it('no elimina si no logra guardar la suspensión', async () => {
+		updateCreditProfileMock.mockRejectedValue(new Error('No se pudo suspender el crédito.'));
+		render(
+			<CreditProfileEditModal
+				profile={listProfile}
+				subsidiaryId={4}
+				branchId={1}
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+
+		fireEvent.click(await screen.findByLabelText('Crédito vigente'));
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+
+		expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo suspender el crédito.');
+		expect(deleteCreditProfileMock).not.toHaveBeenCalled();
+		expect(onClose).not.toHaveBeenCalled();
 	});
 
 	it('deshabilita la eliminación de un perfil activo y explica que debe suspenderse', async () => {
@@ -356,6 +380,7 @@ describe('CreditProfileEditModal', () => {
 
 		await screen.findByLabelText('Correo de cobranza');
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 
 		expect(await screen.findByRole('alert')).toHaveTextContent(
