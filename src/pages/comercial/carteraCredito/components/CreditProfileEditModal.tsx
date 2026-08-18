@@ -172,7 +172,6 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 			if (profile === null || subsidiaryId === null || loadedProfile === null) return;
 			const saveIdentity = identity;
 			const saveRequestId = saveRequestIdRef.current + 1;
-			const isSuspendingCredit = loadedProfile.is_active && !values.is_active;
 			saveRequestIdRef.current = saveRequestId;
 			setSaveError(null);
 			const payload: UpdateDeferredPaymentCreditProfilePayload = {
@@ -196,10 +195,6 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 					return;
 				setLoadedProfileState({ identity: saveIdentity, value: updatedProfile });
 				onSaved();
-				if (isSuspendingCredit) {
-					toast.success('Crédito suspendido correctamente');
-					return;
-				}
 				toast.success('Condiciones de crédito guardadas correctamente');
 				onClose();
 			} catch (error: unknown) {

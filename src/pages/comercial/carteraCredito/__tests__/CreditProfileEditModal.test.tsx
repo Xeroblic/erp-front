@@ -265,6 +265,32 @@ describe('CreditProfileEditModal', () => {
 		expect(onClose).toHaveBeenCalledOnce();
 	});
 
+	it('cierra el modal al guardar una suspensión sin eliminar el perfil', async () => {
+		updateCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
+		render(
+			<CreditProfileEditModal
+				profile={listProfile}
+				subsidiaryId={4}
+				branchId={1}
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+
+		fireEvent.click(await screen.findByLabelText('Crédito vigente'));
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
+
+		await waitFor(() =>
+			expect(updateCreditProfileMock).toHaveBeenCalledWith(
+				4,
+				8,
+				expect.objectContaining({ is_active: false }),
+			),
+		);
+		expect(onClose).toHaveBeenCalledOnce();
+		expect(deleteCreditProfileMock).not.toHaveBeenCalled();
+	});
+
 	it('no elimina si no logra guardar la suspensión', async () => {
 		updateCreditProfileMock.mockRejectedValue(new Error('No se pudo suspender el crédito.'));
 		render(
