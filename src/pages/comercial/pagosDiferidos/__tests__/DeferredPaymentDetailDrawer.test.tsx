@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import store from '@/store';
+import { markDeferredPaymentPaid } from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import DeferredPaymentDetailDrawer from '../components/drawers/DeferredPaymentDetailDrawer';
 import ConfirmDeferredPaymentActionModal from '../components/modals/ConfirmDeferredPaymentActionModal';
@@ -36,6 +37,15 @@ const renderDrawer = (documentId: number, onEdit = vi.fn(), onClose = vi.fn()) =
 			/>
 		</Provider>,
 	);
+
+const dragFile = () => {
+	fireEvent.dragEnter(window, { dataTransfer: { types: ['Files'] } });
+};
+
+const dropFile = (file: File) => {
+	const dataTransfer = { files: [file], types: ['Files'], dropEffect: 'none' };
+	fireEvent.drop(window, { dataTransfer });
+};
 
 describe('DeferredPaymentDetailDrawer', () => {
 	beforeEach(() => {
@@ -192,6 +202,48 @@ describe('DeferredPaymentDetailDrawer', () => {
 			await within(dialog).findByText('Formato de comprobante no permitido'),
 		).toBeInTheDocument();
 		expect(within(dialog).getByRole('button', { name: 'Marcar pagada' })).toBeDisabled();
+	});
+	it('valida el comprobante no permitido al soltarlo al marcar pagada', async () => {
+		renderDrawer(2);
+		fireEvent.click(screen.getByRole('button', { name: 'Marcar pagada', hidden: true }));
+		const dialog = await screen.findByRole('dialog', { name: 'Marcar documento como pagado' });
+
+		dragFile();
+		expect(await screen.findByTestId('attachments-drop-overlay')).toBeInTheDocument();
+		dropFile(new File(['contenido'], 'invalido.txt', { type: 'text/plain' }));
+		await waitFor(() =>
+			expect(screen.queryByTestId('attachments-drop-overlay')).not.toBeInTheDocument(),
+		);
+		expect(
+			await within(dialog).findByText('Formato de comprobante no permitido'),
+		).toBeInTheDocument();
+		expect(within(dialog).getByRole('button', { name: 'Marcar pagada' })).toBeDisabled();
+	});
+	it('bloquea el selector y el drop mientras se marca pagada', async () => {
+		const args = { subsidiaryId: 1, documentId: 2 };
+		const requestId = 'mark-paid-in-progress';
+		renderDrawer(2);
+		fireEvent.click(screen.getByRole('button', { name: 'Marcar pagada', hidden: true }));
+		const dialog = await screen.findByRole('dialog', { name: 'Marcar documento como pagado' });
+
+		act(() => {
+			store.dispatch(markDeferredPaymentPaid.pending(requestId, args));
+		});
+		expect(within(dialog).getByLabelText('Comprobante (opcional)')).toBeDisabled();
+		dragFile();
+		expect(screen.queryByTestId('attachments-drop-overlay')).not.toBeInTheDocument();
+		dropFile(new File(['contenido'], 'invalido.txt', { type: 'text/plain' }));
+		expect(within(dialog).queryByText('Formato de comprobante no permitido')).not.toBeInTheDocument();
+
+		act(() => {
+			store.dispatch(
+				markDeferredPaymentPaid.fulfilled(
+					DEFERRED_PAYMENT_DETAIL_FIXTURES[2].payments[0],
+					requestId,
+					args,
+				),
+			);
+		});
 	});
 	it('permite cerrar la confirmación con comprobante pendiente para continuar desde el detalle', () => {
 		const setIsOpen = vi.fn();
