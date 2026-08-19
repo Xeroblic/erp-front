@@ -1,6 +1,6 @@
 import React, { type PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
@@ -16,6 +16,7 @@ const toastSpies = vi.hoisted(() => ({
 	warn: vi.fn(),
 }));
 const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn() }));
+const scrollIntoViewSpy = vi.hoisted(() => vi.fn());
 
 vi.mock('react-toastify', () => ({ toast: toastSpies }));
 vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
@@ -40,6 +41,11 @@ describe('CreateEditDeferredPaymentModal', () => {
 		toastSpies.success.mockClear();
 		toastSpies.warn.mockClear();
 		apiSpies.fetchData.mockImplementation(() => new Promise(() => undefined));
+		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+			configurable: true,
+			value: scrollIntoViewSpy,
+		});
+		scrollIntoViewSpy.mockReset();
 		const portalRoot = document.createElement('div');
 		portalRoot.id = 'portal-root';
 		document.body.appendChild(portalRoot);
@@ -92,6 +98,8 @@ describe('CreateEditDeferredPaymentModal', () => {
 			screen.getByLabelText('Total del documento — debe coincidir con la factura'),
 		).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
+		const createCustomerButton = screen.getByRole('button', { name: 'Crear cliente' });
+		expect(createCustomerButton).toHaveTextContent('Crear cliente');
 	});
 
 	it('formatea el precio unitario en CLP y descarta caracteres no numéricos', async () => {
@@ -159,6 +167,56 @@ describe('CreateEditDeferredPaymentModal', () => {
 			'pt-7',
 		);
 	});
+	it('mantiene la ayuda de adjuntos mientras se envía el documento', async () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+
+		expect(screen.getByText(/cuando esté disponible/)).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled(),
+		);
+		expect(screen.getByText(/cuando esté disponible/)).toBeInTheDocument();
+		fireEvent.drop(window, {
+			dataTransfer: {
+				files: [new File(['contenido'], 'durante-envio.pdf', { type: 'application/pdf' })],
+				types: ['Files'],
+			},
+		});
+		expect(screen.queryByText('durante-envio.pdf')).not.toBeInTheDocument();
+	});
+	it('enfoca y desplaza el primer campo obligatorio inválido al crear', async () => {
+		renderModal();
+		scrollIntoViewSpy.mockImplementation(() => {
+			expect(screen.getByText('Selecciona un cliente')).toBeInTheDocument();
+		});
+
+		fireEvent.click(screen.getByRole('button', { name: 'Crear documento' }));
+
+		const customerField = screen.getByLabelText('Cliente');
+		await waitFor(() => expect(customerField).toHaveFocus());
+		expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+	});
+	it('enfoca el primer campo inválido de un ítem cuando los datos del documento son válidos', async () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+		const codeField = screen.getByLabelText('Código');
+		fireEvent.change(codeField, { target: { value: '' } });
+
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+		await waitFor(() => expect(codeField).toHaveFocus());
+		expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+	});
+	it('enfoca el campo obligatorio vacío al editar sin alterar el guardado', async () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+		const documentNumber = screen.getByLabelText('Número de documento');
+		fireEvent.change(documentNumber, { target: { value: '' } });
+
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+		await waitFor(() => expect(documentNumber).toHaveFocus());
+		expect(screen.getByText('Ingresa el número de documento')).toBeInTheDocument();
+	});
 	it('muestra el toast y marca el total oficial cuando es cero', async () => {
 		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
 		const totalAmount = screen.getByLabelText(
@@ -170,15 +228,14 @@ describe('CreateEditDeferredPaymentModal', () => {
 			await Promise.resolve();
 		});
 
-		expect(
-			screen.queryByText('El total del documento debe ser mayor a 0'),
-		).toBeInTheDocument();
+		expect(screen.queryByText('El total del documento debe ser mayor a 0')).toBeInTheDocument();
 
 		await vi.waitFor(() => {
 			expect(toastSpies.error).toHaveBeenCalledWith(
 				'El total del documento debe ser mayor a 0',
 			);
 		});
+		await waitFor(() => expect(totalAmount).toHaveFocus());
 		expect(totalAmount).toHaveClass('!border-red-500');
 	});
 	it('advierte sin bloquear cuando los ítems difieren del total oficial', async () => {
