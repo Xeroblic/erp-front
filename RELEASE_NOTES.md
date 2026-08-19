@@ -4,6 +4,21 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 
 ---
 
+## [v2.2.0] - 2026-08-10
+**Enfoque de la versión:** Gestión integral de pagos diferidos y cartera de crédito, con mejoras de seguridad en roles y permisos y correcciones del flujo de activación de usuarios.
+
+### Puntos Destacados:
+- **Pagos diferidos:** dashboard, documentos, abonos, comprobantes, anulaciones, cierre manual y acciones protegidas por permisos.
+- **Crédito y cobranza:** cartera por subsidiaria, perfil de crédito de clientes, control de cupo y bloqueo de operaciones para perfiles suspendidos.
+- **Clientes:** mejoras de alta y edición rápida, validación contextual y correo de cobranza.
+- **Roles y permisos:** etiquetas obtenidas desde `display_name` y protección del rol canónico `super-admin`.
+- **Activación de usuarios:** corrección del crash de hooks, fallback independiente de Redux y mensajes seguros según el estado HTTP.
+- **Calidad:** suite completa con 64 archivos y 384 pruebas aprobadas; el nuevo dominio financiero aporta 19 suites y 143 pruebas focalizadas.
+
+[Ver archivo detallado en Docs/releases/v2.2.0.md](./Docs/releases/v2.2.0.md)
+
+---
+
 ## [v2.1.0] - 2026-07-22
 **Enfoque de la versión:** Nuevas funcionalidades para revisiones técnicas, integraciones WooCommerce, cotizaciones y ventas. Refactor completo del módulo de Bodegas, modularización de tabla de productos y nueva infraestructura de pruebas.
 

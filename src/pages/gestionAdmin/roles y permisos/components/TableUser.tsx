@@ -8,7 +8,7 @@ import Button from '@/components/ui/Button';
 import DataTable from '@/components/ui/DataTable';
 import ApiService from '@/services/ApiService';
 import { toggleUserStatus, type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
-import { formatRoleName } from '@/pages/admin/Permission/utils/formatters';
+import { usePermissionLabels } from '@/hooks/usePermissionLabels';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchUsuariosConRolesPerms } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
@@ -45,6 +45,7 @@ const TableUser: React.FC<Props> = ({
 	const navigate = useNavigate();
 	const currentUser = useAppSelector((s) => s.auth.user);
 	const dispatch = useAppDispatch();
+	const { getRoleLabel } = usePermissionLabels();
 
 	const isAdmin = useMemo(() => {
 		const roles = [
@@ -156,7 +157,7 @@ const TableUser: React.FC<Props> = ({
 							<div className='flex flex-wrap gap-1'>
 								{roles.slice(0, 3).map((role) => (
 									<Badge key={role} color='blue' className='text-xs'>
-										{formatRoleName(role)}
+										{getRoleLabel(role)}
 									</Badge>
 								))}
 								{roles.length > 3 && (
@@ -270,7 +271,9 @@ const TableUser: React.FC<Props> = ({
 						),
 					}),
 			].filter(Boolean) as ColumnDef<UserRow, unknown>[],
-		[navigate, isAdmin],
+		// getRoleLabel entra como dependencia para que las etiquetas se
+		// recalculen cuando termine de cargar el catálogo de roles.
+		[navigate, isAdmin, getRoleLabel],
 	);
 
 	return (

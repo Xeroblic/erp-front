@@ -1,20 +1,20 @@
 # Zentria ERP Frontend
 
-## Release Actual: v1.1.8 (2026-04-16)
+## Release Actual: v2.2.0 (2026-08-10)
 
-Esta versión consolida una refactorización estructural del frontend enfocada en estabilidad operativa, reducción de deuda técnica y simplificación de módulos legacy.
+Esta versión incorpora la gestión integral de pagos diferidos y cartera de crédito, además de reforzar la activación de usuarios y la seguridad de roles y permisos.
 
-### Cambios relevantes de la refactorización
+### Cambios relevantes del release
 
-- Depuración de módulos y vistas legacy que ya no forman parte del flujo activo del ERP.
-- Optimización de estilos y estructura compartida de componentes UI.
-- Simplificación de recursos estáticos y limpieza de activos no utilizados.
-- Ajustes de manejo de versión para una distribución más consistente.
+- Gestión de documentos de pago diferido, abonos, comprobantes, anulaciones y cierres.
+- Cartera y perfiles de crédito por cliente y subsidiaria.
+- Corrección del onboarding mediante enlaces de activación de usuarios.
+- Etiquetas de roles y permisos sincronizadas con el backend y protección de `super-admin`.
 
 ### Referencias de versión
 
 - Notas generales: `RELEASE_NOTES.md`
-- Detalle completo de la versión actual: `Docs/releases/v2.1.0.md`
+- Detalle completo de la versión actual: `Docs/releases/v2.2.0.md`
 
 ---
 
@@ -365,6 +365,4 @@ Zentria ERP Frontend representa un **producto empresarial sólido**, diseñado p
 * Integración con múltiples fuentes de información.
 
 Es una plataforma moderna, escalable y preparada para crecer hacia cualquier vertical: logística, inventario, RRHH, ventas, soporte técnico, marketplace y más.
-
-
 

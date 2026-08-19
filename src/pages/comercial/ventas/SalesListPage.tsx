@@ -7,11 +7,13 @@ import salesReducer, {
 	loadSalesList,
 	clearDetail,
 	selectSalesList,
+	selectSalesListSubsidiaryId,
 	selectSalesMeta,
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
 import type { SalesListFilters } from '@/services/salesService';
-import { formatCLP, translateStatus, pendingSerialToSaleItems } from './utils';
+import { formatCLP } from '@/utils/format.utils';
+import { translateStatus, pendingSerialToSaleItems } from './utils';
 // import ApiService from '@/services/ApiService';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -29,6 +31,7 @@ import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Icon from '@/components/icon/Icon';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import useContextScopedSelection from '@/hooks/useContextScopedSelection';
 // import Tooltip from '@/components/ui/Tooltip';
 import type { ISale } from '@/interface/sales.interface';
 import SaleDetailPage from './detail/components/modals/SaleDetailPage';
@@ -91,16 +94,16 @@ const SalesListPage: React.FC = () => {
 
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const rawList = useAppSelector(selectSalesList);
+	const listSubsidiaryId = useAppSelector(selectSalesListSubsidiaryId);
 	const meta = useAppSelector(selectSalesMeta);
 
-	const list: ISale[] = Array.isArray(rawList) ? rawList : [];
+	const list: ISale[] =
+		listSubsidiaryId === subsidiaryId && Array.isArray(rawList) ? rawList : [];
 	const loading = useAppSelector(selectSalesLoading);
 
 	const [status, setStatus] = useState<string>('');
 	const [wcOrderId, setWcOrderId] = useState<string>('');
 	const [searchTerm, setSearchTerm] = useState<string>('');
-	const [detailModalOpen, setDetailModalOpen] = useState(false);
-	const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
 	const [isFiltering, setIsFiltering] = useState(false);
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
@@ -111,23 +114,47 @@ const SalesListPage: React.FC = () => {
 	const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
 	// Ventas con series pendientes de asignar (para el aviso/acción inline en la tabla).
 	const [pendingMap, setPendingMap] = useState<Map<number, PendingSerialSale>>(new Map());
-	const [assignSale, setAssignSale] = useState<PendingSerialSale | null>(null);
-	const [saleToDelete, setSaleToDelete] = useState<ISale | null>(null);
+	const [assignSale, setAssignSale] = useState<{
+		sale: PendingSerialSale;
+		subsidiaryId: number;
+	} | null>(null);
+	const [saleToDelete, setSaleToDelete] = useState<{
+		sale: ISale;
+		subsidiaryId: number;
+	} | null>(null);
+	const pendingRequestSubsidiaryRef = useRef<number | null>(null);
+	const assignSaleForCurrentSubsidiary =
+		assignSale?.subsidiaryId === subsidiaryId ? assignSale.sale : null;
+	const saleToDeleteForCurrentSubsidiary =
+		saleToDelete?.subsidiaryId === subsidiaryId ? saleToDelete.sale : null;
 
 	const refetchPending = useCallback(async () => {
 		if (!subsidiaryId) {
+			pendingRequestSubsidiaryRef.current = null;
 			setPendingMap(new Map());
 			return;
 		}
+		const requestedSubsidiaryId = Number(subsidiaryId);
+		pendingRequestSubsidiaryRef.current = requestedSubsidiaryId;
 		try {
-			const resp = await fetchPendingSerialAssignment(Number(subsidiaryId), {
+			const resp = await fetchPendingSerialAssignment(requestedSubsidiaryId, {
 				per_page: 200,
 			});
+			if (pendingRequestSubsidiaryRef.current !== requestedSubsidiaryId) return;
 			setPendingMap(new Map(resp.data.map((s) => [s.id, s])));
 		} catch {
+			if (pendingRequestSubsidiaryRef.current !== requestedSubsidiaryId) return;
 			setPendingMap(new Map());
 		}
 	}, [subsidiaryId]);
+
+	useEffect(() => {
+		pendingRequestSubsidiaryRef.current = subsidiaryId;
+		setPendingMap(new Map());
+		setAssignSale(null);
+		setSaleToDelete(null);
+		dispatch(clearDetail());
+	}, [dispatch, subsidiaryId]);
 
 	useEffect(() => {
 		refetchPending();
@@ -136,12 +163,17 @@ const SalesListPage: React.FC = () => {
 
 	// Logic to handle route-based modal opening
 	const { saleId } = useParams<{ saleId?: string }>();
-	useEffect(() => {
-		if (saleId && !isNaN(Number(saleId))) {
-			setSelectedSaleId(Number(saleId));
-			setDetailModalOpen(true);
-		}
-	}, [saleId]);
+	const routeSaleId = saleId && !Number.isNaN(Number(saleId)) ? Number(saleId) : null;
+	const detailSelection = useContextScopedSelection<number>(
+		subsidiaryId === null ? null : { type: 'subsidiary', id: subsidiaryId },
+		{
+			sourceId: routeSaleId ?? undefined,
+			onInvalidate: () => {
+				dispatch(clearDetail());
+				navigate('/comercial/ventas', { replace: true });
+			},
+		},
+	);
 
 	const statusValue = useMemo(
 		() => statusOptions.find((option) => option.value === status) ?? null,
@@ -261,27 +293,24 @@ const SalesListPage: React.FC = () => {
 
 	const handleDetailModalState = useCallback(
 		(nextOpen: boolean | ((prev: boolean) => boolean)) => {
-			setDetailModalOpen((prev) => {
-				const resolved =
-					typeof nextOpen === 'function'
-						? (nextOpen as (value: boolean) => boolean)(prev)
-						: nextOpen;
-				if (!resolved) {
-					setSelectedSaleId(null);
-					dispatch(clearDetail());
-				}
-				return resolved;
-			});
+			const resolved =
+				typeof nextOpen === 'function'
+					? (nextOpen as (value: boolean) => boolean)(detailSelection.isOpen)
+					: nextOpen;
+			if (!resolved) {
+				detailSelection.clear();
+				dispatch(clearDetail());
+			}
 		},
-		[dispatch],
+		[detailSelection, dispatch],
 	);
 
 	const handleViewDetail = useCallback(
 		(saleId: number) => {
-			setSelectedSaleId(saleId);
+			detailSelection.select(saleId);
 			handleDetailModalState(true);
 		},
-		[handleDetailModalState],
+		[detailSelection, handleDetailModalState],
 	);
 
 	// const handleCreateSale = () => {
@@ -300,7 +329,7 @@ const SalesListPage: React.FC = () => {
 		[subsidiaryId],
 	);
 
-	const detailModalVisible = detailModalOpen && selectedSaleId !== null && Boolean(subsidiaryId);
+	const detailModalVisible = detailSelection.isOpen && Boolean(subsidiaryId);
 
 	const columns = useMemo<ColumnDef<ISale>[]>(
 		() => [
@@ -398,9 +427,12 @@ const SalesListPage: React.FC = () => {
 									size='sm'
 									color='amber'
 									className='bg-amber-500/30'
-									onClick={() =>
-										setAssignSale(pendingMap.get(row.original.id) ?? null)
-									}>
+									onClick={() => {
+										const pendingSale = pendingMap.get(row.original.id);
+										if (pendingSale && subsidiaryId) {
+											setAssignSale({ sale: pendingSale, subsidiaryId });
+										}
+									}}>
 									<Icon
 										icon='DuoBarcodeRead'
 										color='white'
@@ -458,7 +490,11 @@ const SalesListPage: React.FC = () => {
 										size='xs'
 										color='red'
 										className='bg-red-200/30'
-										onClick={() => setSaleToDelete(row.original)}
+										onClick={() => {
+										if (subsidiaryId) {
+											setSaleToDelete({ sale: row.original, subsidiaryId });
+										}
+									}}
 										isDisable={!subsidiaryId || isClosedSale}>
 										<Icon
 											icon='HeroTrash'
@@ -812,22 +848,22 @@ const SalesListPage: React.FC = () => {
 				</Container>
 			</PageWrapper>
 
-			{detailModalVisible && selectedSaleId && subsidiaryId && (
+			{detailModalVisible && detailSelection.selectedId && subsidiaryId && (
 				<SaleDetailPage
 					subsidiaryId={subsidiaryId}
-					saleId={selectedSaleId}
+					saleId={detailSelection.selectedId}
 					isOpen={detailModalVisible}
 					onClose={() => handleDetailModalState(false)}
 				/>
 			)}
 
-			{assignSale && subsidiaryId && (
+			{assignSaleForCurrentSubsidiary && subsidiaryId && (
 				<CloseSaleModal
-					open={Boolean(assignSale)}
+					open={Boolean(assignSaleForCurrentSubsidiary)}
 					onClose={() => setAssignSale(null)}
 					subsidiaryId={Number(subsidiaryId)}
-					saleId={assignSale.id}
-					items={pendingSerialToSaleItems(assignSale)}
+					saleId={assignSaleForCurrentSubsidiary.id}
+					items={pendingSerialToSaleItems(assignSaleForCurrentSubsidiary)}
 					onSuccess={() => {
 						setAssignSale(null);
 						refetchPending();
@@ -836,13 +872,13 @@ const SalesListPage: React.FC = () => {
 				/>
 			)}
 
-			{subsidiaryId && (
+			{subsidiaryId && saleToDeleteForCurrentSubsidiary && (
 				<DeleteSaleModal
-					isOpen={saleToDelete !== null}
+					isOpen={true}
 					setIsOpen={(open) => {
 						if (!open) setSaleToDelete(null);
 					}}
-					sale={saleToDelete}
+					sale={saleToDeleteForCurrentSubsidiary}
 					subsidiaryId={Number(subsidiaryId)}
 					onDeleted={() => {
 						setSaleToDelete(null);

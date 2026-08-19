@@ -17,6 +17,7 @@ export * from './customers.interface';
 
 // Interfaces de ventas y pagos
 export * from './sales.interface';
+export * from './deferredPayments.interface';
 
 // Interfaces de cotizaciones
 export * from './quotes.interface';

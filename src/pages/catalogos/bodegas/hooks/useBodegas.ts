@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useContextScopedSelection from '@/hooks/useContextScopedSelection';
 import {
 	fetchWarehouses,
 	createWarehouse,
@@ -26,19 +27,36 @@ import {
 export const useBodegas = () => {
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
+	const latestBranchIdRef = useRef(branchId);
+	latestBranchIdRef.current = branchId;
 
-	const warehouses = useAppSelector((s) => s.warehouse.warehouses);
-	const stats = useAppSelector((s) => s.warehouse.stats);
-	const loading = useAppSelector((s) => s.warehouse.loading);
-	const error = useAppSelector((s) => s.warehouse.error);
-	const deleting = useAppSelector((s) => s.warehouse.deleting);
+	const warehouseState = useAppSelector((s) => s.warehouse);
+	const warehouses =
+		warehouseState.listBranchId === branchId ? warehouseState.warehouses : [];
+	const { stats, loading, error, deleting } = warehouseState;
 
 	// UI state
 	const [globalFilter, setGlobalFilter] = useState('');
-	const [createModalOpen, setCreateModalOpen] = useState(false);
 	const [editModalOpen, setEditModalOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-	const [selectedWarehouse, setSelectedWarehouse] = useState<IWarehouse | null>(null);
+	const branchContext = useMemo(
+		() => (branchId === null ? null : { type: 'branch' as const, id: branchId }),
+		[branchId],
+	);
+	const createSelection = useContextScopedSelection<'create'>(branchContext);
+	const selection = useContextScopedSelection<number>(
+		branchContext,
+		{
+			onInvalidate: () => {
+				setEditModalOpen(false);
+				setDeleteModalOpen(false);
+			},
+		},
+	);
+	const selectedWarehouse = useMemo(
+		() => warehouses.find((warehouse) => warehouse.id === selection.selectedId) ?? null,
+		[selection.selectedId, warehouses],
+	);
 
 	// CRUD handlers
 	const loadWarehouses = useCallback(
@@ -56,11 +74,14 @@ export const useBodegas = () => {
 	const handleCreateWarehouse = useCallback(
 		async (data: ICreateWarehouseRequest) => {
 			if (!branchId) return false;
+			const requestBranchId = branchId;
 			try {
-				await dispatch(createWarehouse({ branchId, data })).unwrap();
+				await dispatch(createWarehouse({ branchId: requestBranchId, data })).unwrap();
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				toast.success('Bodega creada exitosamente');
 				return true;
 			} catch (e: unknown) {
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				toast.error((e as IWarehouseApiError).message || 'Error al crear la bodega');
 				return false;
 			}
@@ -120,7 +141,7 @@ export const useBodegas = () => {
 			setSubmitting(false);
 			if (success) {
 				resetForm();
-				setCreateModalOpen(false);
+				createSelection.clear();
 				loadWarehouses({ page: 1, per_page: 15 });
 			}
 		},
@@ -145,7 +166,7 @@ export const useBodegas = () => {
 			setSubmitting(false);
 			if (success) {
 				setEditModalOpen(false);
-				setSelectedWarehouse(null);
+				selection.clear();
 				loadWarehouses({ page: 1, per_page: 15 });
 			}
 		},
@@ -191,29 +212,40 @@ export const useBodegas = () => {
 			is_active: warehouse.is_active !== undefined ? warehouse.is_active : true,
 			requires_serial_tracking: warehouse.requires_serial_tracking || false,
 		});
-		setSelectedWarehouse(warehouse);
+		selection.select(warehouse.id);
 		setEditModalOpen(true);
-	}, [editForm]);
+	}, [editForm, selection]);
 
 	const handleDelete = useCallback((warehouse: IWarehouse) => {
-		setSelectedWarehouse(warehouse);
+		selection.select(warehouse.id);
 		setDeleteModalOpen(true);
-	}, []);
+	}, [selection]);
 
 	const confirmDelete = useCallback(async () => {
 		if (!selectedWarehouse) return false;
 		const success = await handleDeleteWarehouse(selectedWarehouse.id);
 		if (success) {
-			setSelectedWarehouse(null);
+			selection.clear();
 			loadWarehouses({ page: 1, per_page: 15 });
 		}
 		return success;
-	}, [selectedWarehouse, handleDeleteWarehouse, loadWarehouses]);
+	}, [selectedWarehouse, handleDeleteWarehouse, loadWarehouses, selection]);
 
 	const openCreateModal = useCallback(() => {
 		createForm.resetForm();
-		setCreateModalOpen(true);
-	}, [createForm]);
+		createSelection.select('create');
+	}, [createForm, createSelection]);
+	const setCreateModalOpen = useCallback(
+		(nextIsOpen: boolean) => {
+			if (nextIsOpen) {
+				createForm.resetForm();
+				createSelection.select('create');
+				return;
+			}
+			createSelection.clear();
+		},
+		[createForm, createSelection],
+	);
 
 	const state = useMemo(() => ({
 		warehouses: filteredWarehouses,
@@ -222,12 +254,12 @@ export const useBodegas = () => {
 		deleting,
 		error,
 		globalFilter,
-		createModalOpen,
-		editModalOpen,
-		deleteModalOpen,
+		createModalOpen: createSelection.isOpen,
+		editModalOpen: editModalOpen && selection.isOpen,
+		deleteModalOpen: deleteModalOpen && selection.isOpen,
 		selectedWarehouse,
 		branchId,
-	}), [filteredWarehouses, stats, loading, deleting, error, globalFilter, createModalOpen, editModalOpen, deleteModalOpen, selectedWarehouse, branchId]);
+	}), [filteredWarehouses, stats, loading, deleting, error, globalFilter, createSelection.isOpen, editModalOpen, deleteModalOpen, selectedWarehouse, branchId, selection.isOpen]);
 
 	const forms = useMemo(() => ({
 		create: createForm,
@@ -240,12 +272,11 @@ export const useBodegas = () => {
 		setCreateModalOpen,
 		setEditModalOpen,
 		setDeleteModalOpen,
-		setSelectedWarehouse,
 		handleEdit,
 		handleDelete,
 		confirmDelete,
 		loadWarehouses,
-	}), [setGlobalFilter, openCreateModal, setCreateModalOpen, setEditModalOpen, setDeleteModalOpen, setSelectedWarehouse, handleEdit, handleDelete, confirmDelete, loadWarehouses]);
+	}), [setGlobalFilter, openCreateModal, setCreateModalOpen, setEditModalOpen, setDeleteModalOpen, handleEdit, handleDelete, confirmDelete, loadWarehouses]);
 
 	return { state, forms, actions };
 };

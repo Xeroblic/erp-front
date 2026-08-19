@@ -66,6 +66,9 @@ export interface WarehouseState {
 	detachingProduct: boolean;
 	error: string | null;
 	warehouseDetailError: string | null;
+	listBranchId: number | null;
+	listRequestId: string | null;
+	createRequestId: string | null;
 }
 
 // ==================== Initial State ====================
@@ -96,6 +99,9 @@ const initialState: WarehouseState = {
 	detachingProduct: false,
 	error: null,
 	warehouseDetailError: null,
+	listBranchId: null,
+	listRequestId: null,
+	createRequestId: null,
 };
 
 // ==================== Helper Functions ====================
@@ -354,17 +360,38 @@ const warehouseSlice = createSlice({
 	},
 	extraReducers: (builder) => {
 		builder
-			.addCase(fetchWarehouses.pending, (state) => {
+			.addCase(fetchWarehouses.pending, (state, action) => {
 				state.loading = true;
 				state.error = null;
+				state.listBranchId = action.meta.arg.branchId;
+				state.listRequestId = action.meta.requestId;
+				state.warehouses = [];
+				state.stats = {
+					total: 0,
+					actives: 0,
+					inactives: 0,
+					with_products: 0,
+					empty: 0,
+					near_capacity: 0,
+				};
 			})
 			.addCase(fetchWarehouses.fulfilled, (state, action) => {
+				if (
+					state.listBranchId !== action.meta.arg.branchId ||
+					state.listRequestId !== action.meta.requestId
+				)
+					return;
 				state.loading = false;
 				state.warehouses = action.payload.items;
 				state.meta = action.payload.meta;
 				state.stats = action.payload.stats;
 			})
 			.addCase(fetchWarehouses.rejected, (state, action) => {
+				if (
+					state.listBranchId !== action.meta.arg.branchId ||
+					state.listRequestId !== action.meta.requestId
+				)
+					return;
 				state.loading = false;
 				state.error = defaultError(action, 'No se pudieron cargar las bodegas');
 			})
@@ -380,18 +407,25 @@ const warehouseSlice = createSlice({
 				state.warehouseDetailLoading = false;
 				state.warehouseDetailError = defaultError(action, 'No se pudo obtener el detalle');
 			})
-			.addCase(createWarehouse.pending, (state) => {
+			.addCase(createWarehouse.pending, (state, action) => {
+				state.createRequestId = action.meta.requestId;
 				state.creating = true;
 				state.error = null;
 			})
 			.addCase(createWarehouse.fulfilled, (state, action) => {
+				if (state.createRequestId !== action.meta.requestId) return;
+				state.createRequestId = null;
 				state.creating = false;
+				if (state.listBranchId !== action.meta.arg.branchId) return;
 				state.warehouses.unshift(action.payload);
 				state.stats = computeWarehouseStats(state.warehouses);
 				state.meta.total += 1;
 			})
 			.addCase(createWarehouse.rejected, (state, action) => {
+				if (state.createRequestId !== action.meta.requestId) return;
+				state.createRequestId = null;
 				state.creating = false;
+				if (state.listBranchId !== action.meta.arg.branchId) return;
 				state.error = defaultError(action, 'No se pudo crear la bodega');
 			})
 			.addCase(updateWarehouse.pending, (state) => {

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import FieldWrap from './FieldWrap';
 import Input from './Input';
+import type { IValidationBaseProps } from './Validation';
 import Icon from '@/components/icon/Icon';
 import { toApiDate } from '@/utils/dateNormalize.util';
 
@@ -17,7 +18,7 @@ type Props = {
 	maxYear?: number;
 	minDate?: Date;
 	maxDate?: Date;
-};
+} & Partial<IValidationBaseProps>;
 
 const isoToDisplay = (v?: string | null): string => {
 	if (!v) return '';
@@ -54,6 +55,9 @@ const DateInput: React.FC<Props> = ({
 	maxYear,
 	minDate,
 	maxDate,
+	isValid,
+	isTouched,
+	invalidFeedback,
 }) => {
 	const [display, setDisplay] = useState<string>(isoToDisplay(value));
 	const [open, setOpen] = useState(false);
@@ -154,6 +158,9 @@ const DateInput: React.FC<Props> = ({
 	return (
 		<div className='relative' ref={rootRef}>
 			<FieldWrap
+				isValid={isValid}
+				isTouched={isTouched}
+				invalidFeedback={invalidFeedback}
 				lastSuffix={
 					<Icon
 						icon='HeroCalendarDays'
@@ -170,6 +177,9 @@ const DateInput: React.FC<Props> = ({
 					onBlur={onBlur}
 					disabled={disabled}
 					className={className}
+					isValid={isValid}
+					isTouched={isTouched}
+					invalidFeedback={invalidFeedback}
 				/>
 			</FieldWrap>
 			{open && (
@@ -274,13 +284,13 @@ const DateInput: React.FC<Props> = ({
 											onClick={() => !disabledCell && onPick(d)}
 											className={`rounded py-1 text-sm transition-colors ${
 												inMonth
-													? 'text-zinc-800 dark:text-zinc-100'
-													: 'text-zinc-400 dark:text-zinc-600'
-											}${isSelected ? 'font-medium' : ''}${
+													? 'font-medium text-zinc-900 dark:text-white'
+													: 'text-zinc-400 dark:text-zinc-500'
+											} ${isSelected ? 'font-medium' : ''} ${
 												!isSelected
 													? 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
 													: ''
-											}${
+											} ${
 												disabledCell
 													? 'cursor-not-allowed opacity-40 hover:bg-transparent'
 													: ''

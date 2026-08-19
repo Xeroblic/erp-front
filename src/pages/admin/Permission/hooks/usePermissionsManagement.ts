@@ -21,9 +21,7 @@ export const usePermissionsManagement = () => {
 	// Ajuste: rolesPermisosState puede no tener data/status, así que se accede con fallback
 	const rawUsers = (rolesPermisosState as any).data;
 	const usersLoading = (rolesPermisosState as any).status;
-	const { permissions } = permissionsState as any;
-	const { roles } = permissionsState as any;
-	const permissionsLoading = (permissionsState as any).loading;
+	const { permissions, roles, loading: permissionsLoading } = permissionsState;
 
 	// Los datos ya vienen en el formato correcto del backend PHP
 	const users = useMemo(() => {

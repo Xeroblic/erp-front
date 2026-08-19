@@ -11,12 +11,14 @@ import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 type TIconKind = 'svg' | 'duotone' | 'hero';
 type TIconComponent = React.ComponentType<Record<string, unknown>>;
 type TIconLoader = () => Promise<{ default: TIconComponent }>;
+type TResolvedIcon = { component: TIconComponent; kind: TIconKind };
 
 const svgIconModules = import.meta.glob<{ default: TIconComponent }>('./svg-icons/*.tsx');
 const duoToneModules = import.meta.glob<{ default: TIconComponent }>('./duotone/*.tsx');
 const heroIconModules = import.meta.glob<{ default: TIconComponent }>('./heroicons/*.tsx');
 
-const iconCache = new Map<string, { component: TIconComponent; kind: TIconKind }>();
+const iconCache = new Map<string, TResolvedIcon>();
+const pendingIconCache = new Map<string, Promise<TResolvedIcon | null>>();
 const missingIconCache = new Set<string>();
 
 const resolveIconLoader = (iconName: string): { loader: TIconLoader; kind: TIconKind } | null => {
@@ -40,6 +42,37 @@ const resolveIconLoader = (iconName: string): { loader: TIconLoader; kind: TIcon
 	}
 
 	return null;
+};
+
+const loadIcon = (iconName: string): Promise<TResolvedIcon | null> => {
+	if (missingIconCache.has(iconName)) return Promise.resolve(null);
+	const cachedIcon = iconCache.get(iconName);
+	if (cachedIcon) return Promise.resolve(cachedIcon);
+	const pendingIcon = pendingIconCache.get(iconName);
+	if (pendingIcon) return pendingIcon;
+
+	const iconToLoad = resolveIconLoader(iconName);
+	if (!iconToLoad) {
+		missingIconCache.add(iconName);
+		return Promise.resolve(null);
+	}
+
+	const loadingIcon = iconToLoad
+		.loader()
+		.then((module) => {
+			const resolvedIcon = { component: module.default, kind: iconToLoad.kind };
+			iconCache.set(iconName, resolvedIcon);
+			return resolvedIcon;
+		})
+		.finally(() => pendingIconCache.delete(iconName));
+	pendingIconCache.set(iconName, loadingIcon);
+	return loadingIcon;
+};
+
+export const preloadIcons = (icons: readonly TIcons[]): void => {
+	icons.forEach((icon) => {
+		loadIcon(pascalcase(icon)).catch(() => undefined);
+	});
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -86,10 +119,12 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 		...rest
 	} = props;
 	const IconName = pascalcase(icon);
-	const [resolvedIcon, setResolvedIcon] = useState<{
-		component: TIconComponent;
-		kind: TIconKind;
-	} | null>(null);
+	const [resolvedIcon, setResolvedIcon] = useState<{ name: string; icon: TResolvedIcon } | null>(
+		() => {
+			const cachedIcon = iconCache.get(IconName);
+			return cachedIcon ? { name: IconName, icon: cachedIcon } : null;
+		},
+	);
 	// logica para soportar 2 colores
 	const isColorObject = typeof color === 'object' && color !== null;
 
@@ -117,16 +152,7 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 
 		const cachedIcon = iconCache.get(IconName);
 		if (cachedIcon) {
-			setResolvedIcon(cachedIcon);
-			return;
-		}
-
-		const iconToLoad = resolveIconLoader(IconName);
-		if (!iconToLoad) {
-			// El nombre no tiene archivo asociado: es un "missing" real y
-			// permanente (sí conviene cachearlo para no reintentar en balde).
-			missingIconCache.add(IconName);
-			setResolvedIcon(null);
+			setResolvedIcon({ name: IconName, icon: cachedIcon });
 			return;
 		}
 
@@ -135,18 +161,10 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 		setResolvedIcon(null);
 
 		const load = (attempt: number) => {
-			iconToLoad
-				.loader()
-				.then((module) => {
+			loadIcon(IconName)
+				.then((nextIcon) => {
 					if (!isMounted) return;
-
-					const nextIcon = {
-						component: module.default,
-						kind: iconToLoad.kind,
-					};
-
-					iconCache.set(IconName, nextIcon);
-					setResolvedIcon(nextIcon);
+					setResolvedIcon(nextIcon ? { name: IconName, icon: nextIcon } : null);
 				})
 				.catch(() => {
 					if (!isMounted) return;
@@ -172,17 +190,17 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 		};
 	}, [IconName]);
 
-	if (!resolvedIcon) {
+	if (!resolvedIcon || resolvedIcon.name !== IconName) {
 		return null;
 	}
 
-	const IconComponent = resolvedIcon.component;
-	const iconMeta =
-		resolvedIcon.kind === 'svg'
-			? { componentName: 'Icon-A', name: `SvgIcon--${IconName}` }
-			: resolvedIcon.kind === 'duotone'
-				? { componentName: 'Icon-B', name: `Duotone--${icon}` }
-				: { componentName: 'Icon-C', name: `Hero--${icon}` };
+	const IconComponent = resolvedIcon.icon.component;
+	let iconMeta = { componentName: 'Icon-C', name: `Hero--${icon}` };
+	if (resolvedIcon.icon.kind === 'svg') {
+		iconMeta = { componentName: 'Icon-A', name: `SvgIcon--${IconName}` };
+	} else if (resolvedIcon.icon.kind === 'duotone') {
+		iconMeta = { componentName: 'Icon-B', name: `Duotone--${icon}` };
+	}
 
 	return (
 		<RefWrapper ref={ref}>

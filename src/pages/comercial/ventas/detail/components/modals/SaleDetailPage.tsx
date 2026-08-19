@@ -9,7 +9,8 @@ import salesReducer, {
 	selectSaleItems,
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
-import { formatCLP, translateStatus } from '../../../utils';
+import { formatCLP } from '@/utils/format.utils';
+import { translateStatus } from '../../../utils';
 import SaleItemsTable from '../tables/SaleItemsTable';
 import CloseSaleModal from './CloseSaleModal';
 import CorrectSerialModal from './CorrectSerialModal';

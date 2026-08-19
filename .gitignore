@@ -5,10 +5,9 @@ jspm_packages/
 # Build output
 dist/
 
-# Variables de entorno (NUNCA versionar)
-.env
-.env.*
-!.env.example
+# Variables de entorno locales (no versionar)
+.env.local
+.env.*.local
 
 # IDE
 .idea/
@@ -83,3 +82,7 @@ stats.html
 opencode.json
 .opencode/
 .agents/
+.codex/
+.playwright-mcp/
+.pnpm-store/
+AGENTS.md

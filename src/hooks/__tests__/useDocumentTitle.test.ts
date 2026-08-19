@@ -15,6 +15,18 @@ describe('useDocumentTitle', () => {
 		expect(document.title).toBe('Zentria | Ventas');
 	});
 
+	it('sincroniza el título cuando cambian sus props', () => {
+		const { rerender } = renderHook(
+			({ title, name }: { title: string; name: string }) => useDocumentTitle({ title, name }),
+			{ initialProps: { title: 'Error', name: 'ERP' } },
+		);
+
+		expect(document.title).toBe('Error | ERP');
+		rerender({ title: 'Cliente de prueba', name: 'ERP' });
+
+		expect(document.title).toBe('Cliente de prueba | ERP');
+	});
+
 	it('actualiza document.title al llamar al setter', () => {
 		const { result } = renderHook(() =>
 			useDocumentTitle({ title: 'Zentria', name: 'Inicio' }),

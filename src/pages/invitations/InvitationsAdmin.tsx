@@ -15,7 +15,7 @@ import { CreateInvitationModal } from './components/modals';
 import { useInvitationsManagement } from './hooks/useInvitationsManagement';
 import { Invitation, InvitationStats } from '@/interface/invitacion.interface';
 import EstadisticasInvitations from './components/grids/EstadisticasInvitations';
-import { formatRoleName } from '@/pages/admin/Permission/utils/formatters';
+import { formatRoleName, resolveRoleLabel } from '@/pages/admin/Permission/utils/formatters';
 import {
 	INVITATION_STATUS_LABELS,
 	INVITATION_STATUS_ORDER,
@@ -83,7 +83,7 @@ const InvitationsAdmin: React.FC = () => {
 			return roles
 				.map((role) => ({
 					value: role.name,
-					label: formatRoleName(role.display_name || role.name),
+					label: resolveRoleLabel(role),
 				}))
 				.sort((a, b) => a.label.localeCompare(b.label, 'es'));
 		}
