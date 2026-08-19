@@ -113,6 +113,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		});
 		expect(unitPrice).toHaveValue('$ 50.411,76');
 		expect(screen.getByText('Bruto calculado: $ 59.989,99')).toBeInTheDocument();
+		expect(screen.getByText('$ 59.990')).toBeInTheDocument();
 	});
 
 	it('conserva la coma decimal mientras se escribe un precio unitario y el total', async () => {
@@ -192,7 +193,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(totalAmount).toHaveValue('$ 475.976');
 	});
 
-	it('muestra el desglose referencial desde el total oficial sólo al calcular IVA', async () => {
+	it('muestra siempre la ayuda de desglose cuando el total oficial es positivo', async () => {
 		renderModal();
 		const totalAmount = screen.getByLabelText(
 			'Total del documento — debe coincidir con la factura',
@@ -203,7 +204,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 			await Promise.resolve();
 		});
 
-		expect(screen.getByText('Desglose referencial (IVA 19%)')).toBeInTheDocument();
+		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
 		expect(screen.getByText('Neto: $ 252.059')).toBeInTheDocument();
 		expect(screen.getByText('IVA: $ 47.891')).toBeInTheDocument();
 		expect(screen.getByText('Total: $ 299.950')).toBeInTheDocument();
@@ -212,7 +213,14 @@ describe('CreateEditDeferredPaymentModal', () => {
 			fireEvent.click(screen.getByLabelText('Calcular IVA'));
 			await Promise.resolve();
 		});
-		expect(screen.queryByText('Desglose referencial (IVA 19%)')).not.toBeInTheDocument();
+		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
+	});
+
+	it('muestra el desglose en edición aunque el precio guardado no se reinterprete', () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+
+		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
+		expect(screen.getByText('Total: $ 2.500.000')).toBeInTheDocument();
 	});
 
 	it('descarta el borrador al desmontar y reabrir el formulario', () => {

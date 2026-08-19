@@ -666,11 +666,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		Number.isFinite(documentTotal) &&
 		documentTotal > 0 &&
 		Math.abs(estimatedTotal - documentTotal) >= 1;
-	const canShowVatBreakdown =
-		formik.values.items.length > 0 && formik.values.items.every((item) => item.calculates_vat);
-	const vatBreakdown = canShowVatBreakdown
-		? calculateDeferredPaymentVatBreakdown(documentTotal)
-		: null;
+	const vatBreakdown = calculateDeferredPaymentVatBreakdown(documentTotal);
 	const hasSelectedCustomer = formik.values.customer_sale_id !== null;
 	const hasCreatedCreditProfile = creditProfile !== null && creditProfile.id !== null;
 	const shouldShowCreditProfileEmptyState =
@@ -1513,7 +1509,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											Suma referencial de ítems
 										</p>
 										<p className='text-2xl font-bold'>
-											{formatDeferredPaymentAmount(estimatedTotal)}
+											{formatCLP(estimatedTotal)}
 										</p>
 									</div>
 									<DeferredPaymentField
@@ -1548,7 +1544,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 									{vatBreakdown && (
 										<div className='rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950 md:col-span-2'>
 											<p className='font-medium text-zinc-700 dark:text-zinc-200'>
-												Desglose referencial (IVA 19%)
+												Si el total incluye IVA 19%:
 											</p>
 											<div className='mt-2 grid gap-2 sm:grid-cols-3'>
 												<p>

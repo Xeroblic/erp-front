@@ -6,6 +6,7 @@ import {
 	createDeferredPaymentInitialValues,
 	DeferredPaymentDocumentSchema,
 } from '../types';
+import { formatCLP } from '@/utils/format.utils';
 import { formatDeferredPaymentInputAmount, parseDeferredPaymentAmount } from '../utils';
 
 const validValues = {
@@ -177,8 +178,17 @@ describe('ZF-7 formulario de pago diferido', () => {
 	it('normaliza importes es-CL con separador de miles y hasta dos decimales', () => {
 		expect(parseDeferredPaymentAmount('$ 50.411,76')).toBe('50411.76');
 		expect(parseDeferredPaymentAmount('50.411,768')).toBe('50411.76');
+		expect(parseDeferredPaymentAmount('50411.76')).toBe('50411.76');
+		expect(parseDeferredPaymentAmount('1.234.567')).toBe('1234567');
+		expect(parseDeferredPaymentAmount('1.234')).toBe('1234');
 		expect(formatDeferredPaymentInputAmount('50.')).toBe('$ 50,');
 		expect(formatDeferredPaymentInputAmount('50.4')).toBe('$ 50,4');
 		expect(formatDeferredPaymentInputAmount('50.41')).toBe('$ 50,41');
+	});
+
+	it('preserva los decimales significativos solicitados al formatear moneda', () => {
+		expect(formatCLP(1234.5, 2)).toBe('$ 1.234,50');
+		expect(formatCLP(59989.9, 2)).toBe('$ 59.989,90');
+		expect(formatCLP(1234, 2)).toBe('$ 1.234');
 	});
 });

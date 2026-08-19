@@ -14,7 +14,7 @@ export const formatCLP = (amount: number | string, maximumFractionDigits: number
 			: Number(numericAmount.toFixed(maximumFractionDigits));
 	const [integerPart, decimalPart] = normalizedAmount.toFixed(maximumFractionDigits).split('.');
 	const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-	const formattedDecimalPart = decimalPart?.replace(/0+$/, '');
+	const formattedDecimalPart = decimalPart && /^0+$/.test(decimalPart) ? undefined : decimalPart;
 	return formattedDecimalPart
 		? `$ ${formattedIntegerPart},${formattedDecimalPart}`
 		: `$ ${formattedIntegerPart}`;

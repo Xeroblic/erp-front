@@ -42,6 +42,11 @@ export const formatDeferredPaymentInputAmount = (amount: string | number): strin
 
 export const parseDeferredPaymentAmount = (value: string): string => {
 	const sanitizedValue = value.replace(/[^\d.,]/g, '');
+	const pointDecimalMatch = sanitizedValue.match(/^(\d+)\.(\d{1,2})$/);
+	if (!sanitizedValue.includes(',') && pointDecimalMatch) {
+		const [, integerPart, decimalPart] = pointDecimalMatch;
+		return `${integerPart}.${decimalPart}`;
+	}
 	const [integerValue, ...decimalValues] = sanitizedValue.split(',');
 	const integerPart = integerValue.replace(/\D/g, '');
 	if (decimalValues.length === 0) return integerPart;
