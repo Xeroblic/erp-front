@@ -2,6 +2,9 @@ import * as Yup from 'yup';
 import type { DeferredPaymentDocumentType } from '@/interface/deferredPayments.interface';
 
 export const DEFERRED_PAYMENT_TOTAL_ERROR = 'El total del documento debe ser mayor a 0';
+export const DEFERRED_PAYMENT_VAT_RATE = 0.19;
+
+export type DeferredPaymentTaxTreatment = 'affected' | 'exempt' | null;
 
 export const DEFERRED_PAYMENT_DOCUMENT_TYPES: readonly DeferredPaymentDocumentType[] = [
 	'electronic_invoice',
@@ -19,6 +22,9 @@ export interface DeferredPaymentFormItemValues {
 	description: string;
 	quantity: number;
 	unit_price: number | string;
+	net_amount: number | string;
+	tax_treatment: DeferredPaymentTaxTreatment;
+	tax_rate: number;
 	serials: string[];
 }
 
@@ -67,6 +73,20 @@ export const DeferredPaymentItemSchema = Yup.object({
 		.typeError('El precio unitario debe ser un número')
 		.min(0, 'El precio unitario no puede ser negativo')
 		.required('Ingresa el precio unitario'),
+	net_amount: Yup.number()
+		.transform((value: unknown, originalValue: unknown): number | undefined => {
+			if (originalValue === '') return undefined;
+			if (typeof originalValue === 'string') return Number(originalValue);
+			return typeof value === 'number' ? value : undefined;
+		})
+		.typeError('El valor neto debe ser un número')
+		.min(0, 'El valor neto no puede ser negativo')
+		.optional(),
+	tax_treatment: Yup.mixed<Exclude<DeferredPaymentTaxTreatment, null>>()
+		.nullable()
+		.oneOf(['affected', 'exempt'], 'Selecciona una condición tributaria válida')
+		.optional(),
+	tax_rate: Yup.number().oneOf([DEFERRED_PAYMENT_VAT_RATE]).optional(),
 	serials: Yup.array()
 		.of(Yup.string().trim().required('Los seriales no pueden estar vacíos'))
 		.defined(),
@@ -138,8 +158,24 @@ export const createEmptyDeferredPaymentItem = (): DeferredPaymentFormItemValues 
 	description: '',
 	quantity: 1,
 	unit_price: 0,
+	net_amount: '',
+	tax_treatment: null,
+	tax_rate: DEFERRED_PAYMENT_VAT_RATE,
 	serials: [],
 });
+
+export const calculateDeferredPaymentGrossUnitPrice = (
+	netAmount: number | string,
+	taxTreatment: DeferredPaymentTaxTreatment,
+	taxRate = DEFERRED_PAYMENT_VAT_RATE,
+): number | null => {
+	if (taxTreatment === null || netAmount === '') return null;
+	const normalizedNetAmount = Number(netAmount);
+	if (!Number.isFinite(normalizedNetAmount) || normalizedNetAmount < 0) return null;
+	return taxTreatment === 'affected'
+		? Math.round(normalizedNetAmount * (1 + taxRate))
+		: normalizedNetAmount;
+};
 
 export const createDeferredPaymentInitialValues = (
 	issueDate: string,

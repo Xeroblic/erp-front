@@ -17,6 +17,7 @@ import {
 import {
 	calculateDeferredPaymentEstimatedTotal,
 	createDeferredPaymentInitialValues,
+	DEFERRED_PAYMENT_VAT_RATE,
 	DeferredPaymentDocumentSchema,
 	type DeferredPaymentFormValues,
 } from '../types';
@@ -76,6 +77,9 @@ export const mapDeferredPaymentDocumentToForm = (
 		description: item.description,
 		quantity: item.quantity,
 		unit_price: Number(item.unit_price),
+		net_amount: '',
+		tax_treatment: null,
+		tax_rate: DEFERRED_PAYMENT_VAT_RATE,
 		serials: [...item.serials],
 	})),
 });
@@ -85,8 +89,9 @@ export const mapDeferredPaymentFormToPayload = (
 	currentUserId?: number,
 ): CreateDeferredPaymentPayload | null => {
 	if (values.customer_sale_id === null) return null;
+	const { items, ...documentValues } = values;
 	return {
-		...values,
+		...documentValues,
 		customer_sale_id: values.customer_sale_id,
 		assignee_ids:
 			values.assignee_ids.length === 0 && currentUserId && currentUserId > 0
@@ -96,14 +101,16 @@ export const mapDeferredPaymentFormToPayload = (
 		total_amount: Number(values.total_amount),
 		purchase_order: values.purchase_order?.trim() || null,
 		notes: values.notes?.trim() || null,
-		items: values.items.map((item) => ({
-			product_id: null,
-			code: item.code.trim(),
-			description: item.description.trim(),
-			quantity: item.quantity,
-			unit_price: Number(item.unit_price),
-			serials: item.serials.map((serial) => serial.trim()),
-		})),
+		items: items.map(
+			({ net_amount: _netAmount, tax_treatment: _taxTreatment, tax_rate: _taxRate, ...item }) => ({
+				product_id: null,
+				code: item.code.trim(),
+				description: item.description.trim(),
+				quantity: item.quantity,
+				unit_price: Number(item.unit_price),
+				serials: item.serials.map((serial) => serial.trim()),
+			}),
+		),
 	};
 };
 

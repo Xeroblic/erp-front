@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	calculateDeferredPaymentGrossUnitPrice,
 	calculateDeferredPaymentEstimatedTotal,
 	createDeferredPaymentInitialValues,
 	DeferredPaymentDocumentSchema,
@@ -17,9 +18,12 @@ const validValues = {
 			product_id: null,
 			code: 'SERV-001',
 			description: 'Servicio mensual',
-			quantity: 2,
-			unit_price: 150000,
-			serials: [],
+		quantity: 2,
+		unit_price: 150000,
+		net_amount: '',
+		tax_treatment: null,
+		tax_rate: 0.19,
+		serials: [],
 		},
 	],
 };
@@ -148,5 +152,13 @@ describe('ZF-7 formulario de pago diferido', () => {
 		];
 
 		expect(calculateDeferredPaymentEstimatedTotal(items)).toBe(450000);
+	});
+
+	it('calcula el bruto desde neto según la condición tributaria', () => {
+		expect(calculateDeferredPaymentGrossUnitPrice(100, 'affected')).toBe(119);
+		expect(calculateDeferredPaymentGrossUnitPrice(199990, 'affected')).toBe(237988);
+		expect(calculateDeferredPaymentGrossUnitPrice(100, 'exempt')).toBe(100);
+		expect(calculateDeferredPaymentGrossUnitPrice(100, null)).toBeNull();
+		expect(calculateDeferredPaymentGrossUnitPrice('', 'affected')).toBeNull();
 	});
 });

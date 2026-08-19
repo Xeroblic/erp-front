@@ -115,6 +115,50 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(unitPrice).toHaveValue('');
 	});
 
+	it('convierte el neto según la condición elegida y conserva la edición manual del bruto', async () => {
+		renderModal();
+		const netAmount = screen.getByLabelText('Valor neto (ayuda)');
+		const taxTreatment = screen.getByLabelText('Condición tributaria (ayuda)');
+		const unitPrice = screen.getByLabelText('Precio unitario (bruto, IVA incluido)');
+
+		await act(async () => {
+			fireEvent.change(netAmount, { target: { value: '100' } });
+			await Promise.resolve();
+		});
+		expect(unitPrice).toHaveValue('$ 0');
+
+		await act(async () => {
+			fireEvent.change(taxTreatment, { target: { value: 'affected' } });
+			await Promise.resolve();
+		});
+		expect(unitPrice).toHaveValue('$ 119');
+
+		await act(async () => {
+			fireEvent.change(unitPrice, { target: { value: '120' } });
+			await Promise.resolve();
+		});
+		expect(unitPrice).toHaveValue('$ 120');
+	});
+
+	it('copia el neto al bruto para ítems exentos sin modificar el total oficial', async () => {
+		renderModal();
+		const totalAmount = screen.getByLabelText(
+			'Total del documento — debe coincidir con la factura',
+		);
+		await act(async () => {
+			fireEvent.change(totalAmount, { target: { value: '475976' } });
+			fireEvent.change(screen.getByLabelText('Condición tributaria (ayuda)'), {
+				target: { value: 'exempt' },
+			});
+			fireEvent.change(screen.getByLabelText('Valor neto (ayuda)'), {
+				target: { value: '100' },
+			});
+			await Promise.resolve();
+		});
+		expect(screen.getByLabelText('Precio unitario (bruto, IVA incluido)')).toHaveValue('$ 100');
+		expect(totalAmount).toHaveValue('$ 475.976');
+	});
+
 	it('descarta el borrador al desmontar y reabrir el formulario', () => {
 		const firstCreate = renderModal();
 		fireEvent.change(screen.getByLabelText('Número de documento'), {
