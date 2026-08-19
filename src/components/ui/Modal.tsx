@@ -152,9 +152,31 @@ ModalFooter.displayName = 'ModalFooter';
  * un z-index mayor que el anterior, de modo que su backdrop (blur/oscurecido)
  * quede por encima del modal inferior y lo difumine correctamente.
  */
-let openModalCount = 0;
-const MODAL_BASE_Z = 1050;
+interface ActiveModal {
+	id: string;
+	stackLevel: number;
+}
+
+let activeModals: ActiveModal[] = [];
+let nextStackLevel = 0;
+const MODAL_BASE_Z = 1060;
 const MODAL_STACK_STEP = 20;
+let previousBodyOverflow = '';
+let previousHtmlOverflow = '';
+
+const focusableSelector = [
+	'a[href]',
+	'button:not([disabled])',
+	'input:not([disabled])',
+	'select:not([disabled])',
+	'textarea:not([disabled])',
+	'[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+const getFocusableElements = (container: HTMLElement): HTMLElement[] =>
+	Array.from(container.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+		(element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true',
+	);
 
 /**
  * BackDrop
@@ -298,22 +320,47 @@ const Modal: FC<IModalProps> = (props) => {
 		className,
 		...rest
 	} = props;
-	const refModal = useRef(null);
-	const ref = useRef(null);
+	const refModal = useRef<HTMLDivElement>(null);
+	const ref = useRef<HTMLDivElement>(null);
+	const previousActiveElementRef = useRef<HTMLElement | null>(null);
 
 	const titleId = useId();
+	const modalId = useId();
 
 	// Nivel en la pila de modales: cada modal que se abre encima recibe un
 	// z-index mayor, para que su backdrop difumine al modal de abajo.
 	const [stackLevel, setStackLevel] = useState(1);
 	useEffect(() => {
 		if (!isOpen) return undefined;
-		openModalCount += 1;
-		setStackLevel(openModalCount);
+		previousActiveElementRef.current =
+			document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		if (activeModals.length === 0) {
+			previousBodyOverflow = document.body.style.overflow;
+			previousHtmlOverflow = document.documentElement.style.overflow;
+			document.body.style.overflow = 'hidden';
+			document.documentElement.style.overflow = 'hidden';
+		}
+		const activeModal = { id: modalId, stackLevel: nextStackLevel + 1 };
+		nextStackLevel = activeModal.stackLevel;
+		activeModals = [...activeModals, activeModal];
+		setStackLevel(activeModal.stackLevel);
+		const initialFocusableElement = ref.current
+			? getFocusableElements(ref.current)[0]
+			: null;
+		(initialFocusableElement ?? refModal.current)?.focus();
 		return () => {
-			openModalCount -= 1;
+			const modalIndex = activeModals.findIndex((modal) => modal.id === modalId);
+			const wasTopModal = modalIndex === activeModals.length - 1;
+			activeModals = activeModals.filter((modal) => modal.id !== modalId);
+			if (activeModals.length === 0) {
+				document.body.style.overflow = previousBodyOverflow;
+				document.documentElement.style.overflow = previousHtmlOverflow;
+				nextStackLevel = 0;
+			}
+			if (wasTopModal) previousActiveElementRef.current?.focus();
+			previousActiveElementRef.current = null;
 		};
-	}, [isOpen]);
+	}, [isOpen, modalId]);
 	const backdropZIndex = MODAL_BASE_Z + (stackLevel - 1) * MODAL_STACK_STEP;
 	const modalZIndex = backdropZIndex + 5;
 
@@ -373,6 +420,7 @@ const Modal: FC<IModalProps> = (props) => {
 	const dialogStyle: ModalDialogStyle = {
 		'--theme-modal-width': modalSize as string,
 	};
+	const isTopModal = () => activeModals.at(-1)?.id === modalId;
 
 	// Backdrop close function
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -381,7 +429,12 @@ const Modal: FC<IModalProps> = (props) => {
 	const closeModal = (event: { target: any }) => {
 		// @ts-ignore
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-		if (ref.current && !ref.current.contains(event.target) && !isStaticBackdrop) {
+		if (
+			isTopModal() &&
+			ref.current &&
+			!ref.current.contains(event.target) &&
+			!isStaticBackdrop
+		) {
 			// @ts-ignore
 			if (
 				event.target.closest &&
@@ -400,7 +453,12 @@ const Modal: FC<IModalProps> = (props) => {
 	const modalStatic = (event: { target: any }) => {
 		// @ts-ignore
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-		if (ref.current && !ref.current.contains(event.target) && isStaticBackdrop) {
+		if (
+			isTopModal() &&
+			ref.current &&
+			!ref.current.contains(event.target) &&
+			isStaticBackdrop
+		) {
 			// @ts-ignore
 			if (
 				event.target.closest &&
@@ -425,12 +483,34 @@ const Modal: FC<IModalProps> = (props) => {
 
 	// Keypress close function. Solo el modal superior de la pila responde a
 	// Escape, para no cerrar también los modales que quedan debajo.
-	const escFunction = (event: { key: string }) => {
-		if (event.key === 'Escape' && isOpen && stackLevel === openModalCount) {
+	const handleKeyboardNavigation = (event: KeyboardEvent) => {
+		if (!isOpen || !isTopModal()) return;
+		if (event.key === 'Escape') {
 			setIsOpen(false);
+			return;
+		}
+		if (event.key !== 'Tab' || !ref.current) return;
+		const focusableElements = getFocusableElements(ref.current);
+		if (focusableElements.length === 0) {
+			event.preventDefault();
+			refModal.current?.focus();
+			return;
+		}
+		const firstFocusableElement = focusableElements[0];
+		const lastFocusableElement = focusableElements[focusableElements.length - 1];
+		const { activeElement } = document;
+		if (
+			event.shiftKey &&
+			(activeElement === firstFocusableElement || activeElement === refModal.current)
+		) {
+			event.preventDefault();
+			lastFocusableElement.focus();
+		} else if (!event.shiftKey && activeElement === lastFocusableElement) {
+			event.preventDefault();
+			firstFocusableElement.focus();
 		}
 	};
-	useEventListener('keydown', escFunction);
+	useEventListener('keydown', handleKeyboardNavigation);
 
 	const animationProps = isAnimation
 		? {
@@ -460,6 +540,7 @@ const Modal: FC<IModalProps> = (props) => {
 							role='dialog'
 							tabIndex={-1}
 							aria-labelledby={titleId}
+							aria-modal='true'
 							aria-hidden={!isOpen}
 							{...animationProps}
 							{...rest}>
