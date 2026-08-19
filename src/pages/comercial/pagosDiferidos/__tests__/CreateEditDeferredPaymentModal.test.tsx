@@ -167,6 +167,24 @@ describe('CreateEditDeferredPaymentModal', () => {
 			'pt-7',
 		);
 	});
+	it('mantiene la ayuda de adjuntos mientras se envía el documento', async () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+
+		expect(screen.getByText(/cuando esté disponible/)).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled(),
+		);
+		expect(screen.getByText(/cuando esté disponible/)).toBeInTheDocument();
+		fireEvent.drop(window, {
+			dataTransfer: {
+				files: [new File(['contenido'], 'durante-envio.pdf', { type: 'application/pdf' })],
+				types: ['Files'],
+			},
+		});
+		expect(screen.queryByText('durante-envio.pdf')).not.toBeInTheDocument();
+	});
 	it('enfoca y desplaza el primer campo obligatorio inválido al crear', async () => {
 		renderModal();
 		scrollIntoViewSpy.mockImplementation(() => {

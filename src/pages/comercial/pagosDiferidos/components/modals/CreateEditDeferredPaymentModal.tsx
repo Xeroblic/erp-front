@@ -324,6 +324,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		!isCreateCustomerOpen &&
 		!isEditCustomerOpen &&
 		!isCreditProfileCreatorOpen;
+	const showAttachmentDragAndDropHint =
+		canUploadAttachments &&
+		!isPaidEdit &&
+		currentPendingUploadRecovery === null &&
+		!isCreateCustomerOpen &&
+		!isEditCustomerOpen &&
+		!isCreditProfileCreatorOpen;
 	const { isDraggingFile } = useAttachmentsFileDrop({
 		isActive: isOpen,
 		canDrop: isAttachmentDropEnabled,
@@ -1150,7 +1157,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										isSubmitting ||
 										currentPendingUploadRecovery !== null
 									}
-									canDragAndDrop={isAttachmentDropEnabled}
+									showDragAndDropHint={showAttachmentDragAndDropHint}
 									onAddFiles={attachmentActions.addFiles}
 									onRemovePending={attachmentActions.removePending}
 									onSetPendingSharing={attachmentActions.setPendingSharing}
