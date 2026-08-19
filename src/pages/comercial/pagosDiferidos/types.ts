@@ -21,7 +21,7 @@ export interface DeferredPaymentFormItemValues {
 	quantity: number;
 	unit_price: number | string;
 	entered_unit_price: number | string;
-	includes_vat: boolean;
+	calculates_vat: boolean;
 	serials: string[];
 }
 
@@ -79,7 +79,7 @@ export const DeferredPaymentItemSchema = Yup.object({
 		.typeError('El precio unitario debe ser un número')
 		.min(0, 'El precio unitario no puede ser negativo')
 		.required('Ingresa el precio unitario'),
-	includes_vat: Yup.boolean().defined(),
+	calculates_vat: Yup.boolean().defined(),
 	serials: Yup.array()
 		.of(Yup.string().trim().required('Los seriales no pueden estar vacíos'))
 		.defined(),
@@ -152,18 +152,37 @@ export const createEmptyDeferredPaymentItem = (): DeferredPaymentFormItemValues 
 	quantity: 1,
 	unit_price: 0,
 	entered_unit_price: 0,
-	includes_vat: true,
+	calculates_vat: true,
 	serials: [],
 });
 
 export const calculateDeferredPaymentGrossUnitPrice = (
 	enteredAmount: number | string,
-	includesVat: boolean,
+	calculatesVat: boolean,
 ): number | null => {
 	if (enteredAmount === '') return null;
 	const normalizedAmount = Number(enteredAmount);
 	if (!Number.isFinite(normalizedAmount) || normalizedAmount < 0) return null;
-	return includesVat ? normalizedAmount : Math.round(normalizedAmount * (1 + DEFERRED_PAYMENT_VAT_RATE));
+	if (!calculatesVat) return normalizedAmount;
+	return Math.round(normalizedAmount * (1 + DEFERRED_PAYMENT_VAT_RATE) * 100) / 100;
+};
+
+export interface DeferredPaymentVatBreakdown {
+	net_amount: number;
+	vat_amount: number;
+}
+
+export const calculateDeferredPaymentVatBreakdown = (
+	totalAmount: number | string,
+): DeferredPaymentVatBreakdown | null => {
+	const normalizedTotal = Number(totalAmount);
+	if (!Number.isFinite(normalizedTotal) || normalizedTotal <= 0) return null;
+
+	const netAmount = Math.round(normalizedTotal / (1 + DEFERRED_PAYMENT_VAT_RATE));
+	return {
+		net_amount: netAmount,
+		vat_amount: Math.round((normalizedTotal - netAmount) * 100) / 100,
+	};
 };
 
 export const createDeferredPaymentInitialValues = (

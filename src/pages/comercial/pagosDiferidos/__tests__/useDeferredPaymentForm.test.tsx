@@ -86,7 +86,10 @@ describe('useDeferredPaymentForm', () => {
 		createMutationSpy.mockImplementation(async () => {
 			if (mutationFailure.error) throw mutationFailure.error;
 			if (mutationGate.wait) await mutationGate.wait;
-			return { document: DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0], credit_limit_exceeded: false };
+			return {
+				document: DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0],
+				credit_limit_exceeded: false,
+			};
 		});
 		vi.mocked(deferredPaymentsService.getDocuments).mockResolvedValue({
 			data: [DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]],
@@ -119,7 +122,7 @@ describe('useDeferredPaymentForm', () => {
 					...values.items[0],
 					unit_price: 2500000,
 					entered_unit_price: 2100840,
-					includes_vat: false,
+					calculates_vat: true,
 				},
 			],
 		});
@@ -132,7 +135,7 @@ describe('useDeferredPaymentForm', () => {
 		expect(values.assignee_ids).toEqual(document.assignees.map(({ id }) => id));
 		expect(values.items[0]).toMatchObject({
 			entered_unit_price: Number(document.items[0].unit_price),
-			includes_vat: true,
+			calculates_vat: false,
 		});
 		expect(valuesWithoutPurchaseOrder.purchase_order).toBeNull();
 		expect(payload).toMatchObject({
@@ -143,8 +146,14 @@ describe('useDeferredPaymentForm', () => {
 			total_amount: 475976,
 			items: [expect.objectContaining({ unit_price: 2500000 })],
 		});
-		expect(payload?.items[0]).not.toHaveProperty('entered_unit_price');
-		expect(payload?.items[0]).not.toHaveProperty('includes_vat');
+		expect(payload?.items[0]).toEqual({
+			product_id: null,
+			code: document.items[0].code,
+			description: document.items[0].description,
+			quantity: document.items[0].quantity,
+			unit_price: 2500000,
+			serials: document.items[0].serials,
+		});
 		expect(
 			mapDeferredPaymentFormToPayload({ ...values, assignee_ids: [] }, 37)?.assignee_ids,
 		).toEqual([37]);
@@ -162,9 +171,7 @@ describe('useDeferredPaymentForm', () => {
 
 		expect(hook.result.current.formik.values.due_date).toBe('2026-08-16');
 		expect(hook.result.current.estimatedTotal).toBe(7500);
-		expect(hook.result.current.documentTotal).toBe(
-			475976,
-		);
+		expect(hook.result.current.documentTotal).toBe(475976);
 
 		await act(async () => {
 			await hook.result.current.actions.setDueDateManually('2026-12-31');
@@ -208,7 +215,7 @@ describe('useDeferredPaymentForm', () => {
 						quantity: 1,
 						unit_price: 2500001,
 						entered_unit_price: 2500001,
-						includes_vat: true,
+						calculates_vat: true,
 						serials: [],
 					},
 				],
@@ -267,7 +274,7 @@ describe('useDeferredPaymentForm', () => {
 						quantity: 1,
 						unit_price: 1000,
 						entered_unit_price: 1000,
-						includes_vat: true,
+						calculates_vat: true,
 						serials: [],
 					},
 				],
@@ -300,7 +307,9 @@ describe('useDeferredPaymentForm', () => {
 		configureSuccessfulServices();
 		const message =
 			'Este cliente no tiene un perfil de crédito activo. Debe crear uno antes de emitir documentos de pago diferido a su nombre.';
-		mutationFailure.error = Object.assign(new Error(message), { response: { data: { message } } });
+		mutationFailure.error = Object.assign(new Error(message), {
+			response: { data: { message } },
+		});
 		const onSuccess = vi.fn();
 		const { hook } = createHook(null, onSuccess);
 		await act(async () => {
@@ -318,7 +327,7 @@ describe('useDeferredPaymentForm', () => {
 						quantity: 1,
 						unit_price: 1000,
 						entered_unit_price: 1000,
-						includes_vat: true,
+						calculates_vat: true,
 						serials: [],
 					},
 				],
@@ -340,7 +349,9 @@ describe('useDeferredPaymentForm', () => {
 		configureSuccessfulServices();
 		const message =
 			'Este cliente superó su cupo de crédito disponible. No es posible emitir ni aumentar documentos de pago diferido hasta regularizar su saldo.';
-		mutationFailure.error = Object.assign(new Error(message), { response: { data: { message } } });
+		mutationFailure.error = Object.assign(new Error(message), {
+			response: { data: { message } },
+		});
 		const document = DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0];
 		const onSuccess = vi.fn();
 		const { hook } = createHook(document, onSuccess);
@@ -398,7 +409,7 @@ describe('useDeferredPaymentForm', () => {
 						quantity: 1,
 						unit_price: 1000,
 						entered_unit_price: 1000,
-						includes_vat: true,
+						calculates_vat: true,
 						serials: [],
 					},
 				],
