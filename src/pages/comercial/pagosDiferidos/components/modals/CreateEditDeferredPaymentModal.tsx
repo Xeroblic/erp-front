@@ -1378,68 +1378,79 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															/>
 														)}
 													</DeferredPaymentField>
-													<DeferredPaymentField
-														name={`items.${index}.entered_unit_price`}
-														hiddenErrorMessage={
-															DEFERRED_PAYMENT_TOTAL_ERROR
-														}
-														label={
-															item.calculates_vat
-																? 'Precio unitario neto'
-																: 'Precio unitario (bruto, IVA incluido)'
-														}
-														className='md:col-span-2'>
-														{({ error, isTouched, isValid }) => (
-															<Input
-																id={`items.${index}.entered_unit_price`}
+													<div
+														data-testid={`items.${index}.price-vat-row`}
+														className='md:col-span-4'>
+														<div className='flex items-end gap-3'>
+															<DeferredPaymentField
 																name={`items.${index}.entered_unit_price`}
-																type='text'
-																inputMode='decimal'
-																placeholder='$ 0'
-																value={
-																	item.entered_unit_price === ''
-																		? ''
-																		: formatDeferredPaymentInputAmount(
-																				item.entered_unit_price,
+																hiddenErrorMessage={
+																	DEFERRED_PAYMENT_TOTAL_ERROR
+																}
+																label={
+																	item.calculates_vat
+																		? 'Precio unitario neto'
+																		: 'Precio unitario (bruto, IVA incluido)'
+																}
+																className='min-w-0 flex-1'>
+																{({
+																	error,
+																	isTouched,
+																	isValid,
+																}) => (
+																	<Input
+																		id={`items.${index}.entered_unit_price`}
+																		name={`items.${index}.entered_unit_price`}
+																		type='text'
+																		inputMode='decimal'
+																		placeholder='$ 0'
+																		value={
+																			item.entered_unit_price ===
+																			''
+																				? ''
+																				: formatDeferredPaymentInputAmount(
+																						item.entered_unit_price,
+																					)
+																		}
+																		onChange={(event) =>
+																			handleEnteredUnitPriceChange(
+																				index,
+																				event.target.value,
 																			)
-																}
-																onChange={(event) =>
-																	handleEnteredUnitPriceChange(
-																		index,
-																		event.target.value,
-																	)
-																}
-																onBlur={formik.handleBlur}
-																disabled={isPaidEdit}
-																invalidFeedback={error}
-																isTouched={isTouched}
-																isValid={isValid}
-															/>
-														)}
-													</DeferredPaymentField>
-													{item.calculates_vat &&
-														item.entered_unit_price !== '' && (
-															<p className='-mt-2 text-xs text-zinc-500 md:col-span-2'>
-																Bruto calculado:{' '}
-																{formatDeferredPaymentAmount(
-																	item.unit_price,
+																		}
+																		onBlur={formik.handleBlur}
+																		disabled={isPaidEdit}
+																		invalidFeedback={error}
+																		isTouched={isTouched}
+																		isValid={isValid}
+																	/>
 																)}
-															</p>
-														)}
-													<div className='flex items-center pt-7 md:col-span-2'>
-														<Checkbox
-															id={`items.${index}.calculates_vat`}
-															name={`items.${index}.calculates_vat`}
-															label='Calcular IVA'
-															checked={item.calculates_vat}
-															onChange={(event) =>
-																handleCalculatesVatChange(
-																	index,
-																	event.target.checked,
-																)
-															}
-															disabled={isPaidEdit}
-														/>
+															</DeferredPaymentField>
+															<div className='shrink-0 pb-1'>
+																<Checkbox
+																	id={`items.${index}.calculates_vat`}
+																	name={`items.${index}.calculates_vat`}
+																	label='Calcular IVA'
+																	checked={item.calculates_vat}
+																	onChange={(event) =>
+																		handleCalculatesVatChange(
+																			index,
+																			event.target.checked,
+																		)
+																	}
+																	disabled={isPaidEdit}
+																/>
+															</div>
+														</div>
+														{item.calculates_vat &&
+															item.entered_unit_price !== '' && (
+																<p className='mt-1 text-xs text-zinc-500'>
+																	Bruto calculado:{' '}
+																	{formatDeferredPaymentAmount(
+																		item.unit_price,
+																	)}
+																</p>
+															)}
 													</div>
 													<div className='absolute right-4 top-4'>
 														<Button

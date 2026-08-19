@@ -97,6 +97,10 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(
 			screen.getByLabelText('Total del documento — debe coincidir con la factura'),
 		).toBeInTheDocument();
+		expect(screen.getByTestId('items.0.price-vat-row').firstElementChild).toHaveClass(
+			'flex',
+			'items-end',
+		);
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
 		const createCustomerButton = screen.getByRole('button', { name: 'Crear cliente' });
 		expect(createCustomerButton).toHaveTextContent('Crear cliente');
