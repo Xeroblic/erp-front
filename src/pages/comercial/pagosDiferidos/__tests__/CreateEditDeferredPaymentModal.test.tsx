@@ -105,7 +105,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 	it('formatea el precio unitario en CLP y descarta caracteres no numéricos', async () => {
 		renderModal();
 
-		const unitPrice = screen.getByLabelText('Precio unitario (bruto, IVA incluido)');
+		const unitPrice = screen.getByLabelText('Precio unitario');
 		await act(async () => {
 			fireEvent.change(unitPrice, { target: { value: '2500000' } });
 			await Promise.resolve();
@@ -123,47 +123,46 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(unitPrice).toHaveValue('');
 	});
 
-	it('convierte el neto según la condición elegida y conserva la edición manual del bruto', async () => {
+	it('convierte el valor ingresado sin IVA y permite volver a ingresarlo con IVA', async () => {
 		renderModal();
-		const netAmount = screen.getByLabelText('Valor neto (ayuda)');
-		const taxTreatment = screen.getByLabelText('Condición tributaria (ayuda)');
-		const unitPrice = screen.getByLabelText('Precio unitario (bruto, IVA incluido)');
+		const unitPrice = screen.getByLabelText('Precio unitario');
+		const calculateVat = screen.getByLabelText('Calcular IVA');
 
 		await act(async () => {
-			fireEvent.change(netAmount, { target: { value: '100' } });
+			fireEvent.change(unitPrice, { target: { value: '100' } });
 			await Promise.resolve();
 		});
-		expect(unitPrice).toHaveValue('$ 0');
+		expect(unitPrice).toHaveValue('$ 100');
 
 		await act(async () => {
-			fireEvent.change(taxTreatment, { target: { value: 'affected' } });
+			fireEvent.click(calculateVat);
 			await Promise.resolve();
 		});
-		expect(unitPrice).toHaveValue('$ 119');
+		expect(calculateVat).toBeChecked();
+		expect(screen.getByText('$ 119')).toBeInTheDocument();
 
 		await act(async () => {
 			fireEvent.change(unitPrice, { target: { value: '120' } });
+			fireEvent.click(calculateVat);
 			await Promise.resolve();
 		});
 		expect(unitPrice).toHaveValue('$ 120');
 	});
 
-	it('copia el neto al bruto para ítems exentos sin modificar el total oficial', async () => {
+	it('mantiene el total oficial al ingresar un precio sin IVA', async () => {
 		renderModal();
 		const totalAmount = screen.getByLabelText(
 			'Total del documento — debe coincidir con la factura',
 		);
 		await act(async () => {
 			fireEvent.change(totalAmount, { target: { value: '475976' } });
-			fireEvent.change(screen.getByLabelText('Condición tributaria (ayuda)'), {
-				target: { value: 'exempt' },
-			});
-			fireEvent.change(screen.getByLabelText('Valor neto (ayuda)'), {
+			fireEvent.click(screen.getByLabelText('Calcular IVA'));
+			fireEvent.change(screen.getByLabelText('Precio unitario'), {
 				target: { value: '100' },
 			});
 			await Promise.resolve();
 		});
-		expect(screen.getByLabelText('Precio unitario (bruto, IVA incluido)')).toHaveValue('$ 100');
+		expect(screen.getByText('$ 119')).toBeInTheDocument();
 		expect(totalAmount).toHaveValue('$ 475.976');
 	});
 
@@ -194,7 +193,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByLabelText('Código')).toBeInTheDocument();
 		expect(screen.getByLabelText('Descripción')).toBeInTheDocument();
 		expect(screen.getByLabelText('Cantidad')).toBeInTheDocument();
-		expect(screen.getByLabelText('Precio unitario (bruto, IVA incluido)')).toBeInTheDocument();
+		expect(screen.getByLabelText('Precio unitario')).toBeInTheDocument();
 		const issueDate = screen.getAllByPlaceholderText('dd-mm-aaaa')[0];
 		fireEvent.change(issueDate, { target: { value: '' } });
 
@@ -207,8 +206,9 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByText('Ingresa el código del ítem')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa la descripción del ítem')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Quitar ítem 1' }).parentElement).toHaveClass(
-			'items-start',
-			'pt-7',
+			'absolute',
+			'right-4',
+			'top-4',
 		);
 	});
 	it('mantiene la ayuda de adjuntos mientras se envía el documento', async () => {

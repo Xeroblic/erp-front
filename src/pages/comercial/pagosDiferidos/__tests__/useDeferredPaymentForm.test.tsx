@@ -117,9 +117,9 @@ describe('useDeferredPaymentForm', () => {
 			items: [
 				{
 					...values.items[0],
-					unit_price: '2500000',
-					net_amount: 2100840,
-					tax_treatment: 'affected',
+					unit_price: 2500000,
+					entered_unit_price: 2100840,
+					includes_vat: false,
 				},
 			],
 		});
@@ -131,8 +131,8 @@ describe('useDeferredPaymentForm', () => {
 
 		expect(values.assignee_ids).toEqual(document.assignees.map(({ id }) => id));
 		expect(values.items[0]).toMatchObject({
-			net_amount: '',
-			tax_treatment: null,
+			entered_unit_price: Number(document.items[0].unit_price),
+			includes_vat: true,
 		});
 		expect(valuesWithoutPurchaseOrder.purchase_order).toBeNull();
 		expect(payload).toMatchObject({
@@ -143,9 +143,8 @@ describe('useDeferredPaymentForm', () => {
 			total_amount: 475976,
 			items: [expect.objectContaining({ unit_price: 2500000 })],
 		});
-		expect(payload?.items[0]).not.toHaveProperty('net_amount');
-		expect(payload?.items[0]).not.toHaveProperty('tax_treatment');
-		expect(payload?.items[0]).not.toHaveProperty('tax_rate');
+		expect(payload?.items[0]).not.toHaveProperty('entered_unit_price');
+		expect(payload?.items[0]).not.toHaveProperty('includes_vat');
 		expect(
 			mapDeferredPaymentFormToPayload({ ...values, assignee_ids: [] }, 37)?.assignee_ids,
 		).toEqual([37]);
@@ -208,9 +207,8 @@ describe('useDeferredPaymentForm', () => {
 						description: 'Servicio de prueba',
 						quantity: 1,
 						unit_price: 2500001,
-						net_amount: '',
-						tax_treatment: null,
-						tax_rate: 0.19,
+						entered_unit_price: 2500001,
+						includes_vat: true,
 						serials: [],
 					},
 				],
@@ -268,9 +266,8 @@ describe('useDeferredPaymentForm', () => {
 						description: 'Servicio pendiente',
 						quantity: 1,
 						unit_price: 1000,
-						net_amount: '',
-						tax_treatment: null,
-						tax_rate: 0.19,
+						entered_unit_price: 1000,
+						includes_vat: true,
 						serials: [],
 					},
 				],
@@ -320,9 +317,8 @@ describe('useDeferredPaymentForm', () => {
 						description: 'Servicio sin perfil',
 						quantity: 1,
 						unit_price: 1000,
-						net_amount: '',
-						tax_treatment: null,
-						tax_rate: 0.19,
+						entered_unit_price: 1000,
+						includes_vat: true,
 						serials: [],
 					},
 				],
@@ -401,9 +397,8 @@ describe('useDeferredPaymentForm', () => {
 						description: 'Servicio duplicado',
 						quantity: 1,
 						unit_price: 1000,
-						net_amount: '',
-						tax_treatment: null,
-						tax_rate: 0.19,
+						entered_unit_price: 1000,
+						includes_vat: true,
 						serials: [],
 					},
 				],

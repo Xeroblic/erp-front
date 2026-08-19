@@ -17,7 +17,6 @@ import {
 import {
 	calculateDeferredPaymentEstimatedTotal,
 	createDeferredPaymentInitialValues,
-	DEFERRED_PAYMENT_VAT_RATE,
 	DeferredPaymentDocumentSchema,
 	type DeferredPaymentFormValues,
 } from '../types';
@@ -77,9 +76,8 @@ export const mapDeferredPaymentDocumentToForm = (
 		description: item.description,
 		quantity: item.quantity,
 		unit_price: Number(item.unit_price),
-		net_amount: '',
-		tax_treatment: null,
-		tax_rate: DEFERRED_PAYMENT_VAT_RATE,
+		entered_unit_price: Number(item.unit_price),
+		includes_vat: true,
 		serials: [...item.serials],
 	})),
 });
@@ -102,7 +100,7 @@ export const mapDeferredPaymentFormToPayload = (
 		purchase_order: values.purchase_order?.trim() || null,
 		notes: values.notes?.trim() || null,
 		items: items.map(
-			({ net_amount: _netAmount, tax_treatment: _taxTreatment, tax_rate: _taxRate, ...item }) => ({
+			({ entered_unit_price: _enteredUnitPrice, includes_vat: _includesVat, ...item }) => ({
 				product_id: null,
 				code: item.code.trim(),
 				description: item.description.trim(),
