@@ -844,8 +844,9 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 									)
 								)
 									toast.error(DEFERRED_PAYMENT_TOTAL_ERROR);
-								focusFirstInvalidDeferredPaymentField(errors);
-								return formik.submitForm();
+								return formik
+									.submitForm()
+									.finally(() => focusFirstInvalidDeferredPaymentField(errors));
 							})
 							.catch(() => undefined);
 					}}>

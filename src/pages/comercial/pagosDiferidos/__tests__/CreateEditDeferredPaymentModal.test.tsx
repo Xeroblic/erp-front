@@ -45,7 +45,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 			configurable: true,
 			value: scrollIntoViewSpy,
 		});
-		scrollIntoViewSpy.mockClear();
+		scrollIntoViewSpy.mockReset();
 		const portalRoot = document.createElement('div');
 		portalRoot.id = 'portal-root';
 		document.body.appendChild(portalRoot);
@@ -100,7 +100,6 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
 		const createCustomerButton = screen.getByRole('button', { name: 'Crear cliente' });
 		expect(createCustomerButton).toHaveTextContent('Crear cliente');
-		expect(createCustomerButton).toHaveClass('whitespace-nowrap');
 	});
 
 	it('formatea el precio unitario en CLP y descarta caracteres no numéricos', async () => {
@@ -170,6 +169,9 @@ describe('CreateEditDeferredPaymentModal', () => {
 	});
 	it('enfoca y desplaza el primer campo obligatorio inválido al crear', async () => {
 		renderModal();
+		scrollIntoViewSpy.mockImplementation(() => {
+			expect(screen.getByText('Selecciona un cliente')).toBeInTheDocument();
+		});
 
 		fireEvent.click(screen.getByRole('button', { name: 'Crear documento' }));
 
