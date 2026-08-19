@@ -1380,53 +1380,64 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 													</DeferredPaymentField>
 													<div
 														data-testid={`items.${index}.price-vat-row`}
-														className='md:col-span-4'>
-														<div className='flex items-end gap-3'>
-															<DeferredPaymentField
-																name={`items.${index}.entered_unit_price`}
-																hiddenErrorMessage={
-																	DEFERRED_PAYMENT_TOTAL_ERROR
-																}
-																label={
-																	item.calculates_vat
-																		? 'Precio unitario neto'
-																		: 'Precio unitario (bruto, IVA incluido)'
-																}
-																className='min-w-0 flex-1'>
-																{({
-																	error,
-																	isTouched,
-																	isValid,
-																}) => (
-																	<Input
-																		id={`items.${index}.entered_unit_price`}
-																		name={`items.${index}.entered_unit_price`}
-																		type='text'
-																		inputMode='decimal'
-																		placeholder='$ 0'
-																		value={
-																			item.entered_unit_price ===
-																			''
-																				? ''
-																				: formatDeferredPaymentInputAmount(
-																						item.entered_unit_price,
-																					)
-																		}
-																		onChange={(event) =>
-																			handleEnteredUnitPriceChange(
-																				index,
-																				event.target.value,
-																			)
-																		}
-																		onBlur={formik.handleBlur}
-																		disabled={isPaidEdit}
-																		invalidFeedback={error}
-																		isTouched={isTouched}
-																		isValid={isValid}
-																	/>
-																)}
-															</DeferredPaymentField>
-															<div className='shrink-0 pb-1'>
+														className='md:col-span-2'>
+														<DeferredPaymentField
+															name={`items.${index}.entered_unit_price`}
+															hiddenErrorMessage={
+																DEFERRED_PAYMENT_TOTAL_ERROR
+															}
+															label='Precio unitario'
+															className='min-w-0'>
+															{({ error, isTouched, isValid }) => (
+																<Input
+																	id={`items.${index}.entered_unit_price`}
+																	name={`items.${index}.entered_unit_price`}
+																	type='text'
+																	inputMode='decimal'
+																	placeholder='$ 0'
+																	value={
+																		item.entered_unit_price ===
+																		''
+																			? ''
+																			: formatDeferredPaymentInputAmount(
+																					item.entered_unit_price,
+																				)
+																	}
+																	onChange={(event) =>
+																		handleEnteredUnitPriceChange(
+																			index,
+																			event.target.value,
+																		)
+																	}
+																	onBlur={formik.handleBlur}
+																	disabled={isPaidEdit}
+																	invalidFeedback={error}
+																	isTouched={isTouched}
+																	isValid={isValid}
+																/>
+															)}
+														</DeferredPaymentField>
+														{item.calculates_vat &&
+															item.entered_unit_price !== '' && (
+																<p className='mt-1 text-xs text-zinc-500'>
+																	Bruto calculado:{' '}
+																	{formatDeferredPaymentAmount(
+																		item.unit_price,
+																	)}
+																</p>
+															)}
+													</div>
+													<DeferredPaymentField
+														name={`items.${index}.calculates_vat`}
+														label={
+															<span className='sr-only'>
+																Cálculo de IVA
+															</span>
+														}
+														className='md:col-span-2'>
+														{() => (
+															<div
+																data-testid={`items.${index}.vat-toggle`}>
 																<Checkbox
 																	id={`items.${index}.calculates_vat`}
 																	name={`items.${index}.calculates_vat`}
@@ -1441,17 +1452,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 																	disabled={isPaidEdit}
 																/>
 															</div>
-														</div>
-														{item.calculates_vat &&
-															item.entered_unit_price !== '' && (
-																<p className='mt-1 text-xs text-zinc-500'>
-																	Bruto calculado:{' '}
-																	{formatDeferredPaymentAmount(
-																		item.unit_price,
-																	)}
-																</p>
-															)}
-													</div>
+														)}
+													</DeferredPaymentField>
 													<div className='absolute right-4 top-4'>
 														<Button
 															type='button'
