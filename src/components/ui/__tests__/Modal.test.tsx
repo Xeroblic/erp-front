@@ -9,6 +9,9 @@ vi.mock('react-i18next', () => ({
 vi.mock('../CloseButton', () => ({
 	default: () => <button type='button'>Cerrar</button>,
 }));
+vi.mock('../../icon/Icon', () => ({
+	default: () => <span aria-hidden='true' />,
+}));
 
 interface TestModalProps {
 	isOpen: boolean;
@@ -50,6 +53,7 @@ describe('Modal', () => {
 
 	afterEach(() => {
 		document.getElementById('portal-root')?.remove();
+		vi.restoreAllMocks();
 	});
 
 	it('eleva el backdrop sobre los drawers y preserva el orden de modales apilados', () => {
@@ -140,6 +144,40 @@ describe('Modal', () => {
 
 		fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
 		expect(document.activeElement).toBe(lastButton);
+	});
+
+	it('incluye el indicador de scroll en el recorrido del foco sin alcanzar el fondo', async () => {
+		vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(200);
+		vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100);
+		const setIsOpen = vi.fn();
+		render(
+			<>
+				<button type='button'>Control del fondo</button>
+				<TestModal isOpen setIsOpen={setIsOpen} />
+			</>,
+		);
+
+		const scrollHint = await screen.findByRole('button', {
+			name: 'Hay más contenido, desplázate hacia abajo',
+		});
+		const dialog = screen.getByRole('dialog', { name: 'Modal de prueba' });
+		const firstButton = within(dialog).getAllByRole('button')[0];
+		expect(dialog).toContainElement(scrollHint);
+
+		fireEvent.mouseDown(scrollHint);
+		fireEvent.touchStart(scrollHint);
+		expect(setIsOpen).not.toHaveBeenCalled();
+
+		scrollHint.focus();
+		expect(fireEvent.keyDown(window, { key: 'Tab' })).toBe(false);
+		expect(document.activeElement).toBe(firstButton);
+
+		firstButton.focus();
+		expect(fireEvent.keyDown(window, { key: 'Tab', shiftKey: true })).toBe(false);
+		expect(document.activeElement).toBe(scrollHint);
+		expect(document.activeElement).not.toBe(
+			screen.getByRole('button', { name: 'Control del fondo' }),
+		);
 	});
 
 	it('cierra con Escape y devuelve el foco al disparador', async () => {

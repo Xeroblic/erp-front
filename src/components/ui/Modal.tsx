@@ -489,8 +489,9 @@ const Modal: FC<IModalProps> = (props) => {
 			setIsOpen(false);
 			return;
 		}
-		if (event.key !== 'Tab' || !ref.current) return;
-		const focusableElements = getFocusableElements(ref.current);
+		// La raíz de la capa contiene controles fijos y controles renderizados en el Portal.
+		if (event.key !== 'Tab' || !refModal.current) return;
+		const focusableElements = getFocusableElements(refModal.current);
 		if (focusableElements.length === 0) {
 			event.preventDefault();
 			refModal.current?.focus();
@@ -572,29 +573,29 @@ const Modal: FC<IModalProps> = (props) => {
 											child,
 									)}
 								</Content>
+								<AnimatePresence>
+									{showScrollHint && (
+										<motion.button
+											type='button'
+											key='modal-scroll-hint'
+											onClick={scrollToBottom}
+											initial={{ opacity: 0, y: 8 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: 8 }}
+											transition={{ duration: 0.2 }}
+											style={{ zIndex: modalZIndex + 1 }}
+											className='pointer-events-auto fixed bottom-6 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10'
+											aria-label='Hay más contenido, desplázate hacia abajo'>
+											<Icon
+												icon='DuoAngleDoubleDown'
+												size='text-xl'
+												className='animate-bounce text-primary-500'
+											/>
+										</motion.button>
+									)}
+								</AnimatePresence>
 							</Dialog>
 						</motion.div>
-						<AnimatePresence>
-							{showScrollHint && (
-								<motion.button
-									type='button'
-									key='modal-scroll-hint'
-									onClick={scrollToBottom}
-									initial={{ opacity: 0, y: 8 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: 8 }}
-									transition={{ duration: 0.2 }}
-									style={{ zIndex: modalZIndex + 1 }}
-									className='fixed bottom-6 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10'
-									aria-label='Hay más contenido, desplázate hacia abajo'>
-									<Icon
-										icon='DuoAngleDoubleDown'
-										size='text-xl'
-										className='animate-bounce text-primary-500'
-									/>
-								</motion.button>
-							)}
-						</AnimatePresence>
 						<BackDrop zIndex={backdropZIndex} />
 					</>
 				)}
