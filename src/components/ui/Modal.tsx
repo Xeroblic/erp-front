@@ -148,13 +148,34 @@ export const ModalFooter: FC<IModalFooterProps> = (props) => {
 ModalFooter.displayName = 'ModalFooter';
 
 /**
- * Contador global de modales abiertos. Permite que cada modal apilado reciba
- * un z-index mayor que el anterior, de modo que su backdrop (blur/oscurecido)
+ * Pila global de modales abiertos. Permite que cada modal apilado reciba un
+ * z-index mayor que el anterior, de modo que su backdrop (blur/oscurecido)
  * quede por encima del modal inferior y lo difumine correctamente.
  */
-let openModalCount = 0;
-const MODAL_BASE_Z = 1050;
+interface ActiveModal {
+	id: string;
+	stackLevel: number;
+}
+
+let activeModals: ActiveModal[] = [];
+const MODAL_BASE_Z = 1060;
 const MODAL_STACK_STEP = 20;
+let previousBodyOverflow = '';
+let previousHtmlOverflow = '';
+
+const focusableSelector = [
+	'a[href]',
+	'button:not([disabled])',
+	'input:not([disabled])',
+	'select:not([disabled])',
+	'textarea:not([disabled])',
+	'[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+const getFocusableElements = (container: HTMLElement): HTMLElement[] =>
+	Array.from(container.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+		(element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true',
+	);
 
 /**
  * BackDrop
@@ -298,22 +319,46 @@ const Modal: FC<IModalProps> = (props) => {
 		className,
 		...rest
 	} = props;
-	const refModal = useRef(null);
-	const ref = useRef(null);
+	const refModal = useRef<HTMLDivElement>(null);
+	const ref = useRef<HTMLDivElement>(null);
+	const previousActiveElementRef = useRef<HTMLElement | null>(null);
 
 	const titleId = useId();
+	const modalId = useId();
 
 	// Nivel en la pila de modales: cada modal que se abre encima recibe un
 	// z-index mayor, para que su backdrop difumine al modal de abajo.
 	const [stackLevel, setStackLevel] = useState(1);
 	useEffect(() => {
 		if (!isOpen) return undefined;
-		openModalCount += 1;
-		setStackLevel(openModalCount);
+		previousActiveElementRef.current =
+			document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		if (activeModals.length === 0) {
+			previousBodyOverflow = document.body.style.overflow;
+			previousHtmlOverflow = document.documentElement.style.overflow;
+			document.body.style.overflow = 'hidden';
+			document.documentElement.style.overflow = 'hidden';
+		}
+		// El nivel se deriva de la pila viva: si se calculara con un contador que
+		// sólo crece, reabrir un modal sobre otro subiría el z-index sin cota.
+		const nextStackLevel =
+			activeModals.reduce((maxLevel, modal) => Math.max(maxLevel, modal.stackLevel), 0) + 1;
+		activeModals = [...activeModals, { id: modalId, stackLevel: nextStackLevel }];
+		setStackLevel(nextStackLevel);
+		const initialFocusableElement = ref.current ? getFocusableElements(ref.current)[0] : null;
+		(initialFocusableElement ?? refModal.current)?.focus();
 		return () => {
-			openModalCount -= 1;
+			const modalIndex = activeModals.findIndex((modal) => modal.id === modalId);
+			const wasTopModal = modalIndex === activeModals.length - 1;
+			activeModals = activeModals.filter((modal) => modal.id !== modalId);
+			if (activeModals.length === 0) {
+				document.body.style.overflow = previousBodyOverflow;
+				document.documentElement.style.overflow = previousHtmlOverflow;
+			}
+			if (wasTopModal) previousActiveElementRef.current?.focus();
+			previousActiveElementRef.current = null;
 		};
-	}, [isOpen]);
+	}, [isOpen, modalId]);
 	const backdropZIndex = MODAL_BASE_Z + (stackLevel - 1) * MODAL_STACK_STEP;
 	const modalZIndex = backdropZIndex + 5;
 
@@ -373,51 +418,32 @@ const Modal: FC<IModalProps> = (props) => {
 	const dialogStyle: ModalDialogStyle = {
 		'--theme-modal-width': modalSize as string,
 	};
+	const isTopModal = () => activeModals.at(-1)?.id === modalId;
+
+	// Devuelve el destino del evento sólo cuando cae fuera del diálogo activo,
+	// que es la única situación en la que el puntero está sobre el backdrop.
+	const getBackdropTarget = (event: MouseEvent | TouchEvent): Element | null => {
+		if (!isTopModal() || !ref.current) return null;
+		const target = event.target instanceof Element ? event.target : null;
+		if (target && ref.current.contains(target)) return null;
+		if (target?.closest('[data-component-name="Modal/Dialog"]')) return null;
+		return target ?? ref.current;
+	};
 
 	// Backdrop close function
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	// Backdrop close function
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const closeModal = (event: { target: any }) => {
-		// @ts-ignore
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-		if (ref.current && !ref.current.contains(event.target) && !isStaticBackdrop) {
-			// @ts-ignore
-			if (
-				event.target.closest &&
-				event.target.closest('[data-component-name="Modal/Dialog"]')
-			) {
-				return;
-			}
-			setIsOpen(false);
-		}
+	const closeModal = (event: MouseEvent | TouchEvent) => {
+		if (isStaticBackdrop || !getBackdropTarget(event)) return;
+		setIsOpen(false);
 	};
 	useEventListener('mousedown', closeModal);
 	useEventListener('touchstart', closeModal); // Touchscreen
 
 	// Backdrop static function
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const modalStatic = (event: { target: any }) => {
-		// @ts-ignore
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-		if (ref.current && !ref.current.contains(event.target) && isStaticBackdrop) {
-			// @ts-ignore
-			if (
-				event.target.closest &&
-				event.target.closest('[data-component-name="Modal/Dialog"]')
-			) {
-				return;
-			}
-
-			if (isStaticBackdropAnimation && refModal.current) {
-				// Added condition
-				// @ts-ignore
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-				refModal.current.classList.add('!scale-105');
-				// @ts-ignore
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-return
-				setTimeout(() => refModal.current?.classList.remove('!scale-105'), 300);
-			}
+	const modalStatic = (event: MouseEvent | TouchEvent) => {
+		if (!isStaticBackdrop || !getBackdropTarget(event)) return;
+		if (isStaticBackdropAnimation && refModal.current) {
+			refModal.current.classList.add('!scale-105');
+			setTimeout(() => refModal.current?.classList.remove('!scale-105'), 300);
 		}
 	};
 	useEventListener('mousedown', modalStatic);
@@ -425,12 +451,43 @@ const Modal: FC<IModalProps> = (props) => {
 
 	// Keypress close function. Solo el modal superior de la pila responde a
 	// Escape, para no cerrar también los modales que quedan debajo.
-	const escFunction = (event: { key: string }) => {
-		if (event.key === 'Escape' && isOpen && stackLevel === openModalCount) {
+	const handleKeyboardNavigation = (event: KeyboardEvent) => {
+		if (!isOpen || !isTopModal()) return;
+		if (event.key === 'Escape') {
 			setIsOpen(false);
+			return;
+		}
+		// La raíz de la capa contiene controles fijos y controles renderizados en el Portal.
+		if (event.key !== 'Tab' || !refModal.current) return;
+		const focusableElements = getFocusableElements(refModal.current);
+		if (focusableElements.length === 0) {
+			event.preventDefault();
+			refModal.current?.focus();
+			return;
+		}
+		const firstFocusableElement = focusableElements[0];
+		const lastFocusableElement = focusableElements[focusableElements.length - 1];
+		const { activeElement } = document;
+		// El foco puede quedar fuera de la capa si el control que lo tenía se
+		// desmonta (por ejemplo al quitar un ítem): sin esto, el navegador seguiría
+		// tabulando desde el inicio del documento y alcanzaría el fondo.
+		if (!(activeElement instanceof Node) || !refModal.current.contains(activeElement)) {
+			event.preventDefault();
+			(event.shiftKey ? lastFocusableElement : firstFocusableElement).focus();
+			return;
+		}
+		if (
+			event.shiftKey &&
+			(activeElement === firstFocusableElement || activeElement === refModal.current)
+		) {
+			event.preventDefault();
+			lastFocusableElement.focus();
+		} else if (!event.shiftKey && activeElement === lastFocusableElement) {
+			event.preventDefault();
+			firstFocusableElement.focus();
 		}
 	};
-	useEventListener('keydown', escFunction);
+	useEventListener('keydown', handleKeyboardNavigation);
 
 	const animationProps = isAnimation
 		? {
@@ -460,6 +517,7 @@ const Modal: FC<IModalProps> = (props) => {
 							role='dialog'
 							tabIndex={-1}
 							aria-labelledby={titleId}
+							aria-modal='true'
 							aria-hidden={!isOpen}
 							{...animationProps}
 							{...rest}>
@@ -491,29 +549,29 @@ const Modal: FC<IModalProps> = (props) => {
 											child,
 									)}
 								</Content>
+								<AnimatePresence>
+									{showScrollHint && (
+										<motion.button
+											type='button'
+											key='modal-scroll-hint'
+											onClick={scrollToBottom}
+											initial={{ opacity: 0, y: 8 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: 8 }}
+											transition={{ duration: 0.2 }}
+											style={{ zIndex: modalZIndex + 1 }}
+											className='pointer-events-auto fixed bottom-6 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10'
+											aria-label='Hay más contenido, desplázate hacia abajo'>
+											<Icon
+												icon='DuoAngleDoubleDown'
+												size='text-xl'
+												className='animate-bounce text-primary-500'
+											/>
+										</motion.button>
+									)}
+								</AnimatePresence>
 							</Dialog>
 						</motion.div>
-						<AnimatePresence>
-							{showScrollHint && (
-								<motion.button
-									type='button'
-									key='modal-scroll-hint'
-									onClick={scrollToBottom}
-									initial={{ opacity: 0, y: 8 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: 8 }}
-									transition={{ duration: 0.2 }}
-									style={{ zIndex: modalZIndex + 1 }}
-									className='fixed bottom-6 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10'
-									aria-label='Hay más contenido, desplázate hacia abajo'>
-									<Icon
-										icon='DuoAngleDoubleDown'
-										size='text-xl'
-										className='animate-bounce text-primary-500'
-									/>
-								</motion.button>
-							)}
-						</AnimatePresence>
 						<BackDrop zIndex={backdropZIndex} />
 					</>
 				)}

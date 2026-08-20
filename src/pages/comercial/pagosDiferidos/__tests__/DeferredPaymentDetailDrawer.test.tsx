@@ -141,6 +141,21 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(amountInput).toHaveValue(10000);
 		expect(onClose).not.toHaveBeenCalled();
 	});
+	it('sitúa el backdrop de Registrar abono por encima del drawer', async () => {
+		renderDrawer(2);
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
+		await screen.findByRole('dialog', { name: 'Registrar abono' });
+
+		const drawer = document.querySelector('[data-component-name="OffCanvas"]');
+		const backdrop = document.querySelector<HTMLElement>(
+			'[data-component-name="Modal/BackDrop"]',
+		);
+		const modal = document.querySelector<HTMLElement>('[data-component-name="Modal"]');
+
+		expect(drawer).toHaveClass('z-[1055]');
+		expect(backdrop).toHaveStyle({ zIndex: '1060' });
+		expect(modal).toHaveStyle({ zIndex: '1065' });
+	});
 	it('descarta el borrador al cancelar y abrir otro registro', async () => {
 		renderDrawer(2);
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
