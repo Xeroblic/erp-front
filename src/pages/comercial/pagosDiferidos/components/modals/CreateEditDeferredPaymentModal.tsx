@@ -1384,9 +1384,10 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															}
 															label={
 																item.calculates_vat
-																	? 'Precio unitario neto'
-																	: 'Precio unitario (bruto, IVA incluido)'
+																	? 'Precio neto'
+																	: 'Precio bruto c/ IVA'
 															}
+															labelClassName='whitespace-nowrap'
 															className='min-w-0'>
 															{({ error, isTouched, isValid }) => (
 																<Input
@@ -1429,7 +1430,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 													</div>
 													<DeferredPaymentField
 														name={`items.${index}.calculates_vat`}
-														className='md:col-span-2'>
+														className='md:col-span-2 md:pt-9'>
 														{() => (
 															<div
 																data-testid={`items.${index}.vat-toggle`}>

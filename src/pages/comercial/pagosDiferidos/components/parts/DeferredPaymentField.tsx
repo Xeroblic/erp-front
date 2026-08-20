@@ -12,6 +12,7 @@ interface DeferredPaymentFieldState {
 interface DeferredPaymentFieldProps {
 	name: string;
 	label?: ReactNode;
+	labelClassName?: string;
 	labelAction?: ReactNode;
 	className?: string;
 	hiddenErrorMessage?: string;
@@ -21,6 +22,7 @@ interface DeferredPaymentFieldProps {
 const DeferredPaymentField: React.FC<DeferredPaymentFieldProps> = ({
 	name,
 	label,
+	labelClassName,
 	labelAction,
 	className,
 	hiddenErrorMessage,
@@ -36,7 +38,7 @@ const DeferredPaymentField: React.FC<DeferredPaymentFieldProps> = ({
 			{(label || labelAction) && (
 				<div className='mb-2 flex min-h-[28px] items-center justify-between gap-2'>
 					{label ? (
-						<Label htmlFor={name} className='mb-0 w-auto'>
+						<Label htmlFor={name} className={`mb-0 w-auto ${labelClassName ?? ''}`}>
 							{label}
 						</Label>
 					) : (
