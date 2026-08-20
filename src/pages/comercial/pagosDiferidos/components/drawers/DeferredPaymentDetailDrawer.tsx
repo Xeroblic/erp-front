@@ -646,7 +646,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 									variant='outline'
 									icon='HeroExclamationTriangle'
 									title='El documento tiene abonos registrados'>
-									Los documentos con abonos no se pueden eliminar. Anulá primero
+									Los documentos con abonos no se pueden eliminar. Anula primero
 									los {document.payments.length} abono(s) registrado(s).
 								</Alert>
 							)}

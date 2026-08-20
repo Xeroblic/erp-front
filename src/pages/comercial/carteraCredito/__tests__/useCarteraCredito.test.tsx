@@ -177,4 +177,153 @@ describe('useCarteraCredito', () => {
 
 		expect(frames).not.toContainEqual({ loading: false, rowCount: 0 });
 	});
+
+	it('oculta y descarta una recarga tardía de la subsidiaria anterior', async () => {
+		const profileFor = (customerSaleId: number): DeferredPaymentCreditProfilesListResponse => ({
+			data: [
+				{
+					id: customerSaleId,
+					customer_sale_id: customerSaleId,
+					credit_limit: '1000.00',
+					payment_term_days: 30,
+					notes: null,
+					outstanding_balance: '0.00',
+					available_credit: '1000.00',
+					is_active: true,
+					credit_limit_exceeded: false,
+					customer: null,
+					created_at: null,
+					updated_at: null,
+				},
+			],
+			meta: { current_page: 1, per_page: 10, total: 1, last_page: 1 },
+		});
+		let resolveStaleRequest!: (value: DeferredPaymentCreditProfilesListResponse) => void;
+		const staleRequest = new Promise<DeferredPaymentCreditProfilesListResponse>((resolve) => {
+			resolveStaleRequest = resolve;
+		});
+		let resolveCurrentRequest!: (value: DeferredPaymentCreditProfilesListResponse) => void;
+		const currentRequest = new Promise<DeferredPaymentCreditProfilesListResponse>((resolve) => {
+			resolveCurrentRequest = resolve;
+		});
+		let subsidiaryTenRequests = 0;
+		getCreditProfilesMock.mockImplementation((subsidiaryId) => {
+			if (subsidiaryId === 10) {
+				subsidiaryTenRequests += 1;
+				return subsidiaryTenRequests === 1 ? Promise.resolve(profileFor(10)) : staleRequest;
+			}
+			return currentRequest;
+		});
+		const { result, rerender } = renderHook(() => useCarteraCredito());
+		await waitFor(() => expect(result.current.data.rows[0]?.customer_sale_id).toBe(10));
+
+		act(() => {
+			result.current.actions.refreshAfterDeletion().catch(() => undefined);
+		});
+		await waitFor(() => expect(subsidiaryTenRequests).toBe(2));
+
+		act(() => {
+			branchContext.subsidiaryId = 20;
+			rerender();
+		});
+		expect(result.current.data.rows).toEqual([]);
+
+		await act(async () => {
+			resolveStaleRequest(profileFor(10));
+			await Promise.resolve();
+		});
+		expect(result.current.data.rows).toEqual([]);
+
+		await act(async () => {
+			resolveCurrentRequest(profileFor(20));
+			await Promise.resolve();
+		});
+		await waitFor(() => expect(result.current.data.rows[0]?.customer_sale_id).toBe(20));
+	});
+
+	it('retrocede una página al eliminar la única fila de una página posterior', async () => {
+		const singleRowResponse: DeferredPaymentCreditProfilesListResponse = {
+			data: [
+				{
+					id: 2,
+					customer_sale_id: 2,
+					credit_limit: '1000.00',
+					payment_term_days: 30,
+					notes: null,
+					outstanding_balance: '0.00',
+					available_credit: '1000.00',
+					is_active: true,
+					credit_limit_exceeded: false,
+					customer: null,
+					created_at: null,
+					updated_at: null,
+				},
+			],
+			meta: { current_page: 2, per_page: 10, total: 11, last_page: 2 },
+		};
+		getCreditProfilesMock.mockResolvedValue(singleRowResponse);
+		const { result } = renderHook(() => useCarteraCredito());
+		await waitFor(() => expect(result.current.state.loading).toBe(false));
+
+		act(() => result.current.filters.setPagination(2, 10));
+		await waitFor(() => expect(result.current.filters.values.page).toBe(2));
+		await waitFor(() => expect(result.current.data.rows).toHaveLength(1));
+		getCreditProfilesMock.mockClear();
+
+		await act(async () => {
+			await result.current.actions.refreshAfterDeletion();
+		});
+
+		await waitFor(() =>
+			expect(getCreditProfilesMock).toHaveBeenCalledWith(
+				10,
+				expect.objectContaining({ page: 1, per_page: 10 }),
+				expect.any(AbortSignal),
+			),
+		);
+	});
+
+	it('normaliza una respuesta concurrente que quedó fuera de rango', async () => {
+		const validResponse: DeferredPaymentCreditProfilesListResponse = {
+			...response,
+			data: [
+				{
+					id: 1,
+					customer_sale_id: 1,
+					credit_limit: '1000.00',
+					payment_term_days: 30,
+					notes: null,
+					outstanding_balance: '0.00',
+					available_credit: '1000.00',
+					is_active: true,
+					credit_limit_exceeded: false,
+					customer: null,
+					created_at: null,
+					updated_at: null,
+				},
+			],
+			meta: { current_page: 1, per_page: 10, total: 1, last_page: 1 },
+		};
+		getCreditProfilesMock.mockImplementation((_subsidiaryId, params) =>
+			Promise.resolve(
+				params?.page === 2
+					? { data: [], meta: { current_page: 2, per_page: 10, total: 0, last_page: 1 } }
+					: validResponse,
+			),
+		);
+		const { result } = renderHook(() => useCarteraCredito());
+		await waitFor(() => expect(result.current.state.loading).toBe(false));
+		getCreditProfilesMock.mockClear();
+
+		act(() => result.current.filters.setPagination(2, 10));
+
+		await waitFor(() =>
+			expect(getCreditProfilesMock).toHaveBeenCalledWith(
+				10,
+				expect.objectContaining({ page: 1 }),
+				expect.any(AbortSignal),
+			),
+		);
+		expect(result.current.filters.values.page).toBe(1);
+	});
 });

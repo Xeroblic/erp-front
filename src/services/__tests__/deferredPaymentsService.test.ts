@@ -279,12 +279,14 @@ describe('deferredPaymentsService', () => {
 		};
 		apiSpies.fetchData
 			.mockResolvedValueOnce({ data: { data: profile } } as never)
-			.mockResolvedValueOnce({ data: profile } as never);
+			.mockResolvedValueOnce({ data: profile } as never)
+			.mockResolvedValueOnce({ data: undefined } as never);
 
 		await expect(deferredPaymentsService.getCreditProfile(4, 8)).resolves.toEqual(profile);
 		await expect(
 			deferredPaymentsService.updateCreditProfile(4, 8, { credit_limit: '5000000.00' }),
 		).resolves.toEqual(profile);
+		await expect(deferredPaymentsService.deleteCreditProfile(4, 8)).resolves.toBeUndefined();
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({
@@ -292,7 +294,25 @@ describe('deferredPaymentsService', () => {
 				method: 'put',
 			}),
 		);
+		const deleteConfig = apiSpies.fetchData.mock.calls[2][0] as Record<string, unknown>;
+		expect(deleteConfig).toMatchObject({
+			url: '/subsidiaries/4/customer-sales/8/credit-profile',
+			method: 'delete',
+		});
+		expect(deleteConfig).not.toHaveProperty('data');
+		expect(apiSpies.invalidateCache).toHaveBeenCalledWith(
+			'/subsidiaries/4/customer-sales/8/credit-profile',
+		);
 		expect(apiSpies.invalidateCache).toHaveBeenCalledWith('/subsidiaries/4/credit-profiles');
+	});
+
+	it('no invalida caché cuando no puede eliminar un perfil de crédito', async () => {
+		apiSpies.fetchData.mockRejectedValue({ response: { status: 422 } });
+
+		await expect(deferredPaymentsService.deleteCreditProfile(4, 8)).rejects.toMatchObject({
+			response: { status: 422 },
+		});
+		expect(apiSpies.invalidateCache).not.toHaveBeenCalled();
 	});
 
 	it('consulta la cartera de crédito paginada sin envolver la colección Laravel', async () => {
