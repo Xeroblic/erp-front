@@ -137,7 +137,7 @@ describe('DeferredPaymentDetailDrawer — eliminación del documento', () => {
 		expect(screen.getByText('El documento tiene abonos registrados')).toBeInTheDocument();
 		expect(
 			screen.getByText(
-				`Los documentos con abonos no se pueden eliminar. Anulá primero los ${documentWithPayments.payments.length} abono(s) registrado(s).`,
+				`Los documentos con abonos no se pueden eliminar. Anula primero los ${documentWithPayments.payments.length} abono(s) registrado(s).`,
 			),
 		).toBeInTheDocument();
 		await settleClickGuards();
