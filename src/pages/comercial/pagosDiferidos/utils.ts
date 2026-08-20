@@ -42,10 +42,16 @@ export const formatDeferredPaymentInputAmount = (amount: string | number): strin
 
 export const parseDeferredPaymentAmount = (value: string): string => {
 	const sanitizedValue = value.replace(/[^\d.,]/g, '');
-	const pointDecimalMatch = sanitizedValue.match(/^(\d+)\.(\d{1,2})$/);
-	if (!sanitizedValue.includes(',') && pointDecimalMatch) {
-		const [, integerPart, decimalPart] = pointDecimalMatch;
-		return `${integerPart}.${decimalPart}`;
+	if (!sanitizedValue.includes(',')) {
+		// Un punto al final no puede ser separador de miles: es el decimal recién
+		// tecleado sobre un valor que ya se muestra formateado (`$ 50.411` + `.`).
+		const typedDecimalMatch = sanitizedValue.match(/^([\d.]*\d)\.$/);
+		if (typedDecimalMatch) return `${typedDecimalMatch[1].replace(/\D/g, '')}.`;
+		const pointDecimalMatch = sanitizedValue.match(/^(\d+)\.(\d{1,2})$/);
+		if (pointDecimalMatch) {
+			const [, integerPart, decimalPart] = pointDecimalMatch;
+			return `${integerPart}.${decimalPart}`;
+		}
 	}
 	const [integerValue, ...decimalValues] = sanitizedValue.split(',');
 	const integerPart = integerValue.replace(/\D/g, '');

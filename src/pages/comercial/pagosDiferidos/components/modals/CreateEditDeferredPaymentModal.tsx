@@ -1430,7 +1430,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 													</div>
 													<DeferredPaymentField
 														name={`items.${index}.calculates_vat`}
-														className='md:col-span-2 md:pt-9'>
+														reservesLabelSpace
+														className='md:col-span-2'>
 														{() => (
 															<div
 																data-testid={`items.${index}.vat-toggle`}>

@@ -267,10 +267,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByText('Ingresa el código del ítem')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa la descripción del ítem')).toBeInTheDocument();
 		expect(screen.getByTestId('items.0.price-vat-row')).toHaveClass('md:col-span-2');
-		expect(screen.getByTestId('items.0.vat-toggle').parentElement).toHaveClass(
-			'md:col-span-2',
-			'md:pt-9',
-		);
+		expect(screen.getByTestId('items.0.vat-toggle').parentElement).toHaveClass('md:col-span-2');
 		expect(screen.getByRole('button', { name: 'Quitar ítem 1' }).parentElement).toHaveClass(
 			'absolute',
 			'right-4',
