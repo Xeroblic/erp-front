@@ -120,7 +120,7 @@ describe('PagosDiferidosView recordatorios', () => {
 
 		expect(exportButton).toBeDisabled();
 		expect(
-			screen.getByText(/Restablecé el orden de la tabla para exportar/i),
+			screen.getByText(/Restablece el orden de la tabla para exportar/i),
 		).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole('button', { name: 'Restablecer orden' }));

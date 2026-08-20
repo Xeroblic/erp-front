@@ -314,7 +314,7 @@ const CarteraCreditoView: React.FC = () => {
 						variant='outline'
 						icon='HeroBuildingStorefront'
 						title='No se pudo resolver la subsidiaria'>
-						Seleccioná nuevamente el contexto comercial para consultar la cartera de
+						Selecciona nuevamente el contexto comercial para consultar la cartera de
 						crédito.
 					</Alert>
 				) : (
@@ -336,7 +336,7 @@ const CarteraCreditoView: React.FC = () => {
 								title='La exportación está pausada por el orden local'>
 								<div className='flex flex-wrap items-center justify-between gap-3'>
 									<span>
-										Restablecé el orden de la tabla para exportar el mismo orden
+										Restablece el orden de la tabla para exportar el mismo orden
 										que entrega el servidor.
 									</span>
 									<Button

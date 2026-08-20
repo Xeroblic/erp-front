@@ -75,7 +75,7 @@ const ClientesVentas = () => {
 						variant='outline'
 						icon='HeroBuildingStorefront'
 						title='No se pudo resolver la subsidiaria'>
-						Seleccioná nuevamente el contexto comercial para consultar los clientes.
+						Selecciona nuevamente el contexto comercial para consultar los clientes.
 					</Alert>
 				) : (
 					<>

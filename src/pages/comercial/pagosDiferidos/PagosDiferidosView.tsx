@@ -157,7 +157,7 @@ const PagosDiferidosView: React.FC = () => {
 								title='La exportación está pausada por el orden local'>
 								<div className='flex flex-wrap items-center justify-between gap-3'>
 									<span>
-										Restablecé el orden de la tabla para exportar el mismo orden
+										Restablece el orden de la tabla para exportar el mismo orden
 										que entrega el servidor.
 									</span>
 									<Button

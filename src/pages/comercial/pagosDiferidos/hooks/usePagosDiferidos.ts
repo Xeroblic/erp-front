@@ -70,20 +70,12 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 			values.status,
 		],
 	);
-	const exportFiltersForRequest = useMemo<DeferredPaymentApiListParams>(
-		() => ({
-			page: listFiltersForRequest.page,
-			per_page: listFiltersForRequest.per_page,
-			status: listFiltersForRequest.status,
-			...(listFiltersForRequest.customer_sale_id !== undefined
-				? { customer_sale_id: listFiltersForRequest.customer_sale_id }
-				: {}),
-			due_after: listFiltersForRequest.due_after,
-			due_before: listFiltersForRequest.due_before,
-			search: listFiltersForRequest.search,
-		}),
-		[listFiltersForRequest],
-	);
+	const exportFiltersForRequest = useMemo<DeferredPaymentApiListParams>(() => {
+		// El backend ignora `sort`; el resto de los filtros del listado viaja tal cual para que
+		// el archivo exportado siempre coincida con la tabla, incluso si se agregan filtros nuevos.
+		const { sort, ...apiFilters } = listFiltersForRequest;
+		return apiFilters;
+	}, [listFiltersForRequest]);
 	const summaryFiltersForRequest = useMemo<DeferredPaymentApiSummaryParams>(
 		() => ({
 			status: values.status,
