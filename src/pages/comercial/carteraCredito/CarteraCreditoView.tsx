@@ -18,6 +18,9 @@ import TableCardFooterTemplateV2, {
 } from '@/templates/Table/TableFooterTemplateV2';
 import type { IDeferredPaymentCreditProfileListItem } from '@/interface/deferredPayments.interface';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+import useContextScopedSelection, {
+	type OrganizationalContext,
+} from '@/hooks/useContextScopedSelection';
 import { formatDeferredPaymentAmount } from '@/pages/comercial/pagosDiferidos/utils';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import DeferredPaymentsExportDropdown from '../pagosDiferidos/components/parts/DeferredPaymentsExportDropdown';
@@ -206,8 +209,21 @@ const CreditPortfolioPagination: React.FC<CreditPortfolioPaginationProps> = ({
 const CarteraCreditoView: React.FC = () => {
 	const { data, state, filters, actions, branch } = useCarteraCredito();
 	const navigate = useNavigate();
-	const [editingProfile, setEditingProfile] =
-		useState<IDeferredPaymentCreditProfileListItem | null>(null);
+	const currentContext = useMemo<OrganizationalContext | null>(
+		() =>
+			branch.subsidiaryId === null ? null : { type: 'subsidiary', id: branch.subsidiaryId },
+		[branch.subsidiaryId],
+	);
+	const editingSelection = useContextScopedSelection<number>(currentContext);
+	const [modalMode, setModalMode] = useState<'edit' | 'delete'>('edit');
+	const editingProfile = useMemo(
+		() =>
+			editingSelection.selectedId === null
+				? null
+				: (data.rows.find((row) => row.customer_sale_id === editingSelection.selectedId) ??
+					null),
+		[data.rows, editingSelection.selectedId],
+	);
 	const [sort, setSort] = useState<CreditSortState>(null);
 	const exportDisabled =
 		!state.hasDataContext || filters.isSearchDebouncing || sort !== null;
@@ -253,6 +269,20 @@ const CarteraCreditoView: React.FC = () => {
 				state: customerName ? { customerName } : undefined,
 			}),
 		[navigate],
+	);
+	const openCreditProfileEditor = useCallback(
+		(customerSaleId: number) => {
+			setModalMode('edit');
+			editingSelection.select(customerSaleId);
+		},
+		[editingSelection],
+	);
+	const openCreditProfileDeletion = useCallback(
+		(customerSaleId: number) => {
+			setModalMode('delete');
+			editingSelection.select(customerSaleId);
+		},
+		[editingSelection],
 	);
 
 	return (
@@ -583,7 +613,9 @@ const CarteraCreditoView: React.FC = () => {
 																	scope='access'
 																	aria-label={`Editar crédito de ${getCustomerName(row)}`}
 																	onClick={() =>
-																		setEditingProfile(row)
+																		openCreditProfileEditor(
+																			row.customer_sale_id,
+																		)
 																	}>
 																	<Icon
 																		icon='HeroPencil'
@@ -592,6 +624,39 @@ const CarteraCreditoView: React.FC = () => {
 																	/>
 																</ProtectedButton>
 															</Tooltip>
+															{!row.is_active && (
+																<Tooltip
+																	text='Eliminar perfil de crédito'
+																	placement='top-end'>
+																	<ProtectedButton
+																		variant='solid'
+																		size='sm'
+																		color='red'
+																		className='bg-red-600 p-1 hover:bg-red-700/20'
+																		permission={
+																			ERP_PERMISSIONS
+																				.DEFERRED_PAYMENTS
+																				.DELETE
+																		}
+																		branchId={branch.branchId}
+																		subsidiaryId={
+																			branch.subsidiaryId
+																		}
+																		scope='access'
+																		aria-label={`Eliminar crédito de ${getCustomerName(row)}`}
+																		onClick={() =>
+																			openCreditProfileDeletion(
+																				row.customer_sale_id,
+																			)
+																		}>
+																		<Icon
+																			icon='HeroTrash'
+																			color='white'
+																			className='text-xl'
+																		/>
+																	</ProtectedButton>
+																</Tooltip>
+															)}
 														</div>
 													</Td>
 												</Tr>
@@ -610,13 +675,17 @@ const CarteraCreditoView: React.FC = () => {
 					</>
 				)}
 			</Container>
-			<CreditProfileEditModal
-				profile={editingProfile}
-				subsidiaryId={branch.subsidiaryId}
-				branchId={branch.branchId}
-				onClose={() => setEditingProfile(null)}
-				onSaved={actions.refresh}
-			/>
+			{editingSelection.context !== null && editingProfile !== null && (
+				<CreditProfileEditModal
+					profile={editingProfile}
+					subsidiaryId={editingSelection.context.id}
+					branchId={branch.branchId}
+					onClose={editingSelection.clear}
+					onSaved={actions.refresh}
+					onDeleted={actions.refreshAfterDeletion}
+					initialDeleteConfirmation={modalMode === 'delete'}
+				/>
+			)}
 		</PageWrapper>
 	);
 };

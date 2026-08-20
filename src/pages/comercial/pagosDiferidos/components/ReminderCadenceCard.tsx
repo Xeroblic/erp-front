@@ -24,31 +24,26 @@ const reminderFlows: readonly ReminderFlow[] = [
 	{
 		id: 'internal',
 		title: 'Equipo de cobranza y encargados',
-		description: 'Avisos internos para anticipar y gestionar el cobro.',
+		description:
+			'Avisos internos para preparar y acompañar el cobro antes y después del vencimiento.',
 		icon: 'HeroUsers',
 		accentClass: 'border-blue-200 bg-blue-50/70 dark:border-blue-900/70 dark:bg-blue-950/20',
 		milestones: [
 			{
 				label: '7 días antes',
-				detail: 'Primer recordatorio previo.',
+				detail: 'Aviso previo propio del equipo.',
 				accentClass: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
 				icon: 'HeroClock',
 			},
 			{
-				label: '2 días antes',
-				detail: 'Segundo recordatorio previo.',
+				label: '1 día antes',
+				detail: 'Aviso antes de cada correo al cliente.',
 				accentClass: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
 				icon: 'HeroClock',
 			},
 			{
-				label: '1 día vencido',
-				detail: 'Primer aviso de mora.',
-				accentClass: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-				icon: 'HeroExclamationTriangle',
-			},
-			{
 				label: 'Cada 5 días',
-				detail: 'Se repite mientras exista saldo pendiente.',
+				detail: 'Recordatorio interno entre los correos al cliente.',
 				accentClass: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
 				icon: 'HeroArrowPath',
 			},
@@ -57,7 +52,7 @@ const reminderFlows: readonly ReminderFlow[] = [
 	{
 		id: 'customer',
 		title: 'Cliente deudor',
-		description: 'No recibe avisos anticipados antes del vencimiento.',
+		description: 'El primer correo se envía el día del vencimiento.',
 		icon: 'HeroUser',
 		accentClass:
 			'border-violet-200 bg-violet-50/70 dark:border-violet-900/70 dark:bg-violet-950/20',
@@ -147,8 +142,16 @@ const ReminderCadenceCard: React.FC<ReminderCadenceCardProps> = ({ isOpen, setIs
 				))}
 			</div>
 			<p className='mt-4 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-200'>
-				Los recordatorios se evalúan diariamente a las 08:30, hora de Santiago, y se
-				detienen cuando el documento queda pagado.
+				<strong>Ejemplo actual:</strong> 7 días antes, el equipo recibe un aviso; 1 día
+				antes, recibe otro aviso; el día del vencimiento, se contacta al cliente. Después,
+				el equipo recibe recordatorios a los 4, 9, 14 y 19 días, y el cliente recibe nuevos
+				correos a los 10 y 20 días.
+			</p>
+			<p className='mt-4 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-200'>
+				Los recordatorios se evalúan diariamente a las 08:30, hora de Santiago. Si cambia la
+				frecuencia de los correos al cliente, los avisos internos se ajustan
+				automáticamente. La secuencia continúa mientras exista saldo pendiente y se detiene
+				cuando el documento queda pagado.
 			</p>
 		</ModalBody>
 	</Modal>
