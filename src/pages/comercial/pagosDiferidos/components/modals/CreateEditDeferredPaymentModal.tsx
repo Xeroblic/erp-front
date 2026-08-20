@@ -1382,7 +1382,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															hiddenErrorMessage={
 																DEFERRED_PAYMENT_TOTAL_ERROR
 															}
-															label='Precio unitario'
+															label={
+																item.calculates_vat
+																	? 'Precio unitario neto'
+																	: 'Precio unitario (bruto, IVA incluido)'
+															}
 															className='min-w-0'>
 															{({ error, isTouched, isValid }) => (
 																<Input
@@ -1425,11 +1429,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 													</div>
 													<DeferredPaymentField
 														name={`items.${index}.calculates_vat`}
-														label={
-															<span className='sr-only'>
-																Cálculo de IVA
-															</span>
-														}
 														className='md:col-span-2'>
 														{() => (
 															<div
