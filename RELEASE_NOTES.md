@@ -4,6 +4,18 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 
 ---
 
+## [v2.3.0] - 2026-08-20
+**Enfoque de la versión:** Consolidación operativa de Pagos Diferidos y Cartera de Crédito, con correcciones de aislamiento organizacional, formularios financieros y componentes compartidos.
+
+### Puntos Destacados:
+- **Operación financiera:** captura de precios netos con conversión a bruto e IVA, pegado masivo de seriales, comprobantes arrastrados y mejoras de recordatorios.
+- **Cartera y contexto:** eliminación segura de perfiles suspendidos, aislamiento de respuestas por subsidiaria y exportación a Excel de cartera y pagos diferidos.
+- **Accesibilidad y calidad:** foco en campos inválidos y comportamiento correcto de modales apilados.
+
+[Ver archivo detallado en Docs/releases/v2.3.0.md](./Docs/releases/v2.3.0.md)
+
+---
+
 ## [v2.2.0] - 2026-08-10
 **Enfoque de la versión:** Gestión integral de pagos diferidos y cartera de crédito, con mejoras de seguridad en roles y permisos y correcciones del flujo de activación de usuarios.
 
