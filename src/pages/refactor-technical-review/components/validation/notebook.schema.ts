@@ -19,6 +19,7 @@ import {
 	BATTERY_PERCENTAGE_MIN,
 	BATTERY_PERCENTAGE_MAX,
 } from './constants/notebook.rules';
+import { HARDWARE_ABSENT_VALUE } from '../constants/shared/hardware.sentinels';
 
 const isDellBrand = (brand: unknown): boolean =>
 	typeof brand === 'string' && brand.toLowerCase().includes('dell');
@@ -37,10 +38,7 @@ export const notebookSchema = Yup.object({
 		.required('El modelo es obligatorio')
 		.max(150, 'Máximo 150 caracteres'),
 
-	line: Yup.string()
-		.trim()
-		.max(150, 'Máximo 150 caracteres')
-		.required('La línea es obligatoria'),
+	line: Yup.string().trim().max(150, 'Máximo 150 caracteres').required('La línea es obligatoria'),
 
 	// ─── Condición General ───────────────────────────────────────────────────
 	general_condition: Yup.string()
@@ -53,14 +51,25 @@ export const notebookSchema = Yup.object({
 		.required('El procesador es obligatorio')
 		.max(200, 'Máximo 200 caracteres'),
 
-	ram_size: Yup.string()
+	ram_size: Yup.string().trim().required('La RAM es obligatoria').max(50, 'Máximo 50 caracteres'),
+
+	ram_slots: Yup.string()
 		.trim()
-		.required('La RAM es obligatoria')
-		.max(50, 'Máximo 50 caracteres'),
+		.max(20, 'Máximo 20 caracteres')
+		.when('ram_size', {
+			is: HARDWARE_ABSENT_VALUE,
+			then: (schema) => schema.nullable(),
+			otherwise: (schema) => schema.required('Los slots de RAM son obligatorios'),
+		}),
 
-	ram_slots: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('Los slots de RAM son obligatorios'),
-
-	ram_type: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('El tipo de RAM es obligatorio'),
+	ram_type: Yup.string()
+		.trim()
+		.max(20, 'Máximo 20 caracteres')
+		.when('ram_size', {
+			is: HARDWARE_ABSENT_VALUE,
+			then: (schema) => schema.nullable(),
+			otherwise: (schema) => schema.required('El tipo de RAM es obligatorio'),
+		}),
 
 	storage_size: Yup.string()
 		.trim()
@@ -69,7 +78,11 @@ export const notebookSchema = Yup.object({
 
 	storage_technology: Yup.string()
 		.oneOf([...ALLOWED_STORAGE_TECHNOLOGIES], 'Tecnología de disco no válida')
-		.required('La tecnología de disco es obligatoria'),
+		.when('storage_size', {
+			is: HARDWARE_ABSENT_VALUE,
+			then: (schema) => schema.nullable(),
+			otherwise: (schema) => schema.required('La tecnología de disco es obligatoria'),
+		}),
 
 	// ─── Pantalla ────────────────────────────────────────────────────────────
 	screen_condition: Yup.string()
@@ -141,10 +154,7 @@ export const notebookSchema = Yup.object({
 	has_backlit_keyboard: Yup.boolean().required('Debes indicar si tiene teclado retroiluminado'),
 
 	// ─── Batería ─────────────────────────────────────────────────────────────
-	battery_health: Yup.string()
-		.trim()
-		.max(100, 'Máximo 100 caracteres')
-		.nullable(),
+	battery_health: Yup.string().trim().max(100, 'Máximo 100 caracteres').nullable(),
 
 	battery_status: Yup.string()
 		.oneOf([...ALLOWED_BATTERY_STATUSES], 'Estado de batería no válido')
@@ -169,8 +179,7 @@ export const notebookSchema = Yup.object({
 		// Regla: si battery_status es no_battery, el porcentaje debe ser 0
 		.when('battery_status', {
 			is: 'no_battery',
-			then: (schema) =>
-				schema.max(0, 'Si no hay batería, el porcentaje debe ser 0'),
+			then: (schema) => schema.max(0, 'Si no hay batería, el porcentaje debe ser 0'),
 		}),
 
 	// ─── Segunda Batería (ZB-100) ────────────────────────────────────────────
@@ -182,8 +191,7 @@ export const notebookSchema = Yup.object({
 		.oneOf([...ALLOWED_BATTERY_STATUSES], 'Estado de segunda batería no válido')
 		.nullable()
 		.when(['has_second_battery', 'brand'], {
-			is: (hasSecond: unknown, brand: unknown) =>
-				hasSecond === true && isDellBrand(brand),
+			is: (hasSecond: unknown, brand: unknown) => hasSecond === true && isDellBrand(brand),
 			then: (schema) => schema.required('El estado de la segunda batería es obligatorio'),
 			otherwise: (schema) => schema.nullable(),
 		}),
@@ -195,8 +203,7 @@ export const notebookSchema = Yup.object({
 		.max(BATTERY_PERCENTAGE_MAX, `El porcentaje máximo es ${BATTERY_PERCENTAGE_MAX}`)
 		.nullable()
 		.when(['has_second_battery', 'brand'], {
-			is: (hasSecond: unknown, brand: unknown) =>
-				hasSecond === true && !isDellBrand(brand),
+			is: (hasSecond: unknown, brand: unknown) => hasSecond === true && !isDellBrand(brand),
 			then: (schema) => schema.required('El porcentaje de la segunda batería es obligatorio'),
 			otherwise: (schema) => schema.nullable(),
 		})
@@ -206,10 +213,7 @@ export const notebookSchema = Yup.object({
 			then: (schema) => schema.max(0, 'Si no hay batería, el porcentaje debe ser 0'),
 		}),
 
-	second_battery_condition: Yup.string()
-		.trim()
-		.max(100, 'Máximo 100 caracteres')
-		.nullable(),
+	second_battery_condition: Yup.string().trim().max(100, 'Máximo 100 caracteres').nullable(),
 
 	// ─── Puertos ─────────────────────────────────────────────────────────────
 	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
@@ -261,8 +265,7 @@ export const notebookSchema = Yup.object({
 		// Regla: si incluye cargador, el estado es recomendado
 		.when('includes_charger', {
 			is: true,
-			then: (schema) =>
-				schema.required('Si incluye cargador, indica su estado'),
+			then: (schema) => schema.required('Si incluye cargador, indica su estado'),
 		}),
 
 	// ─── Software ────────────────────────────────────────────────────────────

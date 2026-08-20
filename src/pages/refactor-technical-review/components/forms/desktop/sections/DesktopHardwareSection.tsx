@@ -16,6 +16,11 @@ import {
 import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
 import InputUnitSelector from '../../../ui/InputUnitSelector';
 import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
+import { NoHardwareToggle } from '../../shared/NoHardwareToggle';
+import {
+	isHardwareAbsent,
+	HARDWARE_ABSENT_VALUE,
+} from '../../../constants/shared/hardware.sentinels';
 
 const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	control,
@@ -27,6 +32,11 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 }) => {
 	const ramType = watch('ram_type');
 	const storageTech = watch('storage_technology');
+	const ramSize = watch('ram_size');
+	const storageSize = watch('storage_size');
+
+	const noRam = isHardwareAbsent(ramSize);
+	const noStorage = isHardwareAbsent(storageSize);
 
 	return (
 		<div className='space-y-6'>
@@ -35,11 +45,7 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 				<div className='mb-6'>
 					<NoEnciendeButton
 						onValidate={() => {
-							const ramSize = watch('ram_size');
-							const storageSize = watch('storage_size');
-							const storageTech = watch('storage_technology');
-
-							if (!ramSize || !storageSize || !storageTech) {
+							if (!ramSize || !storageSize) {
 								toast.warning(
 									'Debes completar la Memoria RAM y el Almacenamiento, ya que pueden ser revisados visualmente.',
 								);
@@ -103,116 +109,180 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 			<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 				{/* Memory RAM Card */}
 				<div className='rounded-xl border border-blue-200 bg-blue-50 p-4 transition-colors hover:bg-blue-100/50 dark:border-blue-900/30 dark:bg-blue-900/10'>
-					<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
-						Memoria RAM
-					</label>
-
-					{/* RAM Type Selection Cards */}
-					<label className='mb-2 block text-xs font-semibold text-zinc-500'>Tipo</label>
-					<div className='mb-3 grid grid-cols-3 gap-2'>
-						{RAM_TYPE_OPTIONS.map((opt) => (
-							<SelectionCard
-								key={opt.value}
-								label={opt.label}
-								value={opt.value}
-								isSelected={ramType === opt.value}
-								onClick={() => !readOnly && setValue('ram_type', opt.value)}
-							/>
-						))}
-					</div>
-
-					{/* RAM Size */}
-					<div className='mb-3'>
-						<label className='mb-1 block text-xs font-semibold text-zinc-500'>
-							{getDesktopLabel('ram_size')} <span className='text-red-500'>*</span>
+					<div className='mb-3 flex items-center justify-between'>
+						<label className='text-sm font-bold text-blue-800 dark:text-blue-200'>
+							Memoria RAM
+							{!noRam && <span className='text-red-500'>*</span>}
 						</label>
-						<Controller
-							name='ram_size'
-							control={control}
-							render={({ field }) => (
-								<InputUnitSelector
-									value={field.value || ''}
-									onChange={field.onChange}
-									placeholder={DESKTOP_PLACEHOLDERS.ram_size}
-									disabled={readOnly}
-									isValid={!errors.ram_size}
-								/>
-							)}
-						/>
-						{errors.ram_size && (
-							<p className='mt-1 text-xs text-red-500'>{errors.ram_size.message}</p>
+						{!readOnly && (
+							<NoHardwareToggle
+								isActive={noRam}
+								onToggle={(active) => {
+									if (active) {
+										setValue('ram_size', HARDWARE_ABSENT_VALUE);
+										setValue('ram_slots', HARDWARE_ABSENT_VALUE);
+										setValue('ram_type', '');
+									} else {
+										setValue('ram_size', '');
+										setValue('ram_slots', '');
+										setValue('ram_type', '');
+									}
+								}}
+								label='No tiene / No trae RAM'
+							/>
 						)}
 					</div>
 
-					{/* RAM Slots */}
-					<div>
-						<label className='mb-1 block text-xs font-semibold text-zinc-500'>
-							{getDesktopLabel('ram_slots')}
-						</label>
-						<Controller
-							name='ram_slots'
-							control={control}
-							render={({ field }) => (
-								<Input
-									{...field}
-									value={field.value || ''}
-									placeholder={DESKTOP_PLACEHOLDERS.ram_slots}
-									disabled={readOnly}
+					{noRam ? (
+						<p className='rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300'>
+							Equipo sin memoria RAM
+						</p>
+					) : (
+						<>
+							{/* RAM Type Selection Cards */}
+							<label className='mb-2 block text-xs font-semibold text-zinc-500'>
+								Tipo
+							</label>
+							<div className='mb-3 grid grid-cols-3 gap-2'>
+								{RAM_TYPE_OPTIONS.map((opt) => (
+									<SelectionCard
+										key={opt.value}
+										label={opt.label}
+										value={opt.value}
+										isSelected={ramType === opt.value}
+										onClick={() => !readOnly && setValue('ram_type', opt.value)}
+									/>
+								))}
+							</div>
+
+							{/* RAM Size */}
+							<div className='mb-3'>
+								<label className='mb-1 block text-xs font-semibold text-zinc-500'>
+									{getDesktopLabel('ram_size')}{' '}
+									<span className='text-red-500'>*</span>
+								</label>
+								<Controller
+									name='ram_size'
+									control={control}
+									render={({ field }) => (
+										<InputUnitSelector
+											value={field.value || ''}
+											onChange={field.onChange}
+											placeholder={DESKTOP_PLACEHOLDERS.ram_size}
+											disabled={readOnly}
+											isValid={!errors.ram_size}
+										/>
+									)}
 								/>
-							)}
-						/>
-						<p className='mt-1 text-xs text-zinc-400'>{DESKTOP_HINTS.ram_slots}</p>
-					</div>
+								{errors.ram_size && (
+									<p className='mt-1 text-xs text-red-500'>
+										{errors.ram_size.message}
+									</p>
+								)}
+							</div>
+
+							{/* RAM Slots */}
+							<div>
+								<label className='mb-1 block text-xs font-semibold text-zinc-500'>
+									{getDesktopLabel('ram_slots')}
+								</label>
+								<Controller
+									name='ram_slots'
+									control={control}
+									render={({ field }) => (
+										<Input
+											{...field}
+											value={field.value || ''}
+											placeholder={DESKTOP_PLACEHOLDERS.ram_slots}
+											disabled={readOnly}
+										/>
+									)}
+								/>
+								<p className='mt-1 text-xs text-zinc-400'>
+									{DESKTOP_HINTS.ram_slots}
+								</p>
+							</div>
+						</>
+					)}
 				</div>
 
 				{/* Storage Card */}
 				<div className='rounded-xl border border-purple-200 bg-purple-50 p-4 transition-colors hover:bg-purple-100/50 dark:border-purple-900/30 dark:bg-purple-900/10'>
-					<label className='mb-3 block text-sm font-bold text-purple-800 dark:text-purple-200'>
-						Almacenamiento
-					</label>
-
-					{/* Storage Technology Selection Cards */}
-					<label className='mb-2 block text-xs font-semibold text-zinc-500'>
-						Tecnología
-					</label>
-					<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-3'>
-						{STORAGE_TECHNOLOGY_OPTIONS.map((opt) => (
-							<SelectionCard
-								key={opt.value}
-								label={opt.label}
-								value={opt.value}
-								isSelected={storageTech === opt.value}
-								onClick={() =>
-									!readOnly && setValue('storage_technology', opt.value)
+					<div className='mb-3 flex items-center justify-between'>
+						<label className='text-sm font-bold text-purple-800 dark:text-purple-200'>
+							Almacenamiento
+							{!noStorage && <span className='text-red-500'>*</span>}
+						</label>
+						{!readOnly && (
+							<NoHardwareToggle
+								isActive={noStorage}
+							onToggle={(active) => {
+								if (active) {
+									setValue('storage_size', HARDWARE_ABSENT_VALUE);
+									setValue('storage_technology', undefined);
+								} else {
+									setValue('storage_size', '');
+									setValue('storage_technology', undefined);
 								}
-							/>
-						))}
-					</div>
-					{errors.storage_technology && (
-						<p className='mb-2 text-xs text-red-500'>
-							{errors.storage_technology.message}
-						</p>
-					)}
-
-					{/* Storage Size */}
-					<label className='mb-1 block text-xs font-semibold text-zinc-500'>
-						{getDesktopLabel('storage_size')} <span className='text-red-500'>*</span>
-					</label>
-					<Controller
-						name='storage_size'
-						control={control}
-						render={({ field }) => (
-							<Input
-								{...field}
-								value={field.value || ''}
-								placeholder={DESKTOP_PLACEHOLDERS.storage_size}
-								disabled={readOnly}
-								className={errors.storage_size ? 'border-red-500' : ''}
+							}}
+								label='No tiene disco / No trae disco'
 							/>
 						)}
-					/>
-					{errors.storage_size && (
-						<p className='mt-1 text-xs text-red-500'>{errors.storage_size.message}</p>
+					</div>
+
+					{noStorage ? (
+						<p className='rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300'>
+							Equipo sin disco de almacenamiento
+						</p>
+					) : (
+						<>
+							{/* Storage Technology Selection Cards */}
+							<label className='mb-2 block text-xs font-semibold text-zinc-500'>
+								Tecnología
+							</label>
+							<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-3'>
+								{STORAGE_TECHNOLOGY_OPTIONS.map((opt) => (
+									<SelectionCard
+										key={opt.value}
+										label={opt.label}
+										value={opt.value}
+										isSelected={storageTech === opt.value}
+										onClick={() =>
+											!readOnly && setValue('storage_technology', opt.value)
+										}
+									/>
+								))}
+							</div>
+							{errors.storage_technology && (
+								<p className='mb-2 text-xs text-red-500'>
+									{errors.storage_technology.message}
+								</p>
+							)}
+
+							{/* Storage Size */}
+							<label className='mb-1 block text-xs font-semibold text-zinc-500'>
+								{getDesktopLabel('storage_size')}{' '}
+								<span className='text-red-500'>*</span>
+							</label>
+							<Controller
+								name='storage_size'
+								control={control}
+								render={({ field }) => (
+									<Input
+										{...field}
+										value={field.value || ''}
+										placeholder={DESKTOP_PLACEHOLDERS.storage_size}
+										disabled={readOnly}
+										className={errors.storage_size ? 'border-red-500' : ''}
+									/>
+								)}
+							/>
+							{errors.storage_size && (
+								<p className='mt-1 text-xs text-red-500'>
+									{errors.storage_size.message}
+								</p>
+							)}
+						</>
 					)}
 				</div>
 			</div>
