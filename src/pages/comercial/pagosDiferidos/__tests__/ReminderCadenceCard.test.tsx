@@ -30,9 +30,7 @@ describe('ReminderCadenceCard', () => {
 		expect(screen.getByRole('heading', { name: 'Cliente deudor' })).toBeInTheDocument();
 		expect(screen.getByText('Día del vencimiento')).toBeInTheDocument();
 		expect(screen.getByText('Cada 10 días')).toBeInTheDocument();
-		expect(
-			screen.getByText(/7 días antes, el equipo recibe un aviso/i),
-		).toBeInTheDocument();
+		expect(screen.getByText(/7 días antes, el equipo recibe un aviso/i)).toBeInTheDocument();
 		expect(screen.getByText(/a los 4, 9, 14 y 19 días/i)).toBeInTheDocument();
 		expect(screen.queryByText('lead_days')).not.toBeInTheDocument();
 		expect(screen.queryByText('overdue_every')).not.toBeInTheDocument();
