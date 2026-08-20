@@ -9,12 +9,15 @@ import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+import deferredPaymentsService from '@/services/deferredPaymentsService';
 import DeferredPaymentDetailDrawer from './components/drawers/DeferredPaymentDetailDrawer';
 import DeferredPaymentsFilters from './components/filters/DeferredPaymentsFilters';
 import DeferredPaymentsKpis from './components/kpis/DeferredPaymentsKpis';
 import CreateEditDeferredPaymentModal from './components/modals/CreateEditDeferredPaymentModal';
 import ReminderCadenceCard from './components/ReminderCadenceCard';
 import DeferredPaymentsTable from './components/tables/DeferredPaymentsTable';
+import DeferredPaymentsExportDropdown from './components/parts/DeferredPaymentsExportDropdown';
+import useDeferredPaymentsExport, { withoutPagination } from './hooks/useDeferredPaymentsExport';
 import usePagosDiferidos from './hooks/usePagosDiferidos';
 
 const getCustomerNameFromNavigationState = (state: unknown): string | undefined => {
@@ -32,6 +35,25 @@ const PagosDiferidosView: React.FC = () => {
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [editingDocument, setEditingDocument] = useState<IDeferredPaymentDocument | null>(null);
 	const [isReminderCadenceOpen, setIsReminderCadenceOpen] = useState(false);
+	const exportDisabled =
+		!state.hasDataContext || filters.hasInvalidDateRange || filters.isSearchDebouncing;
+	const downloadDocuments = useCallback(
+		(
+			params: typeof filters.requestFilters | ReturnType<typeof withoutPagination>,
+			signal: AbortSignal,
+		) => {
+			if (branch.subsidiaryId === null) {
+				return Promise.reject(new Error('No se pudo resolver la subsidiaria para exportar.'));
+			}
+			return deferredPaymentsService.exportDocuments(branch.subsidiaryId, params, signal);
+		},
+		[branch.subsidiaryId],
+	);
+	const documentExport = useDeferredPaymentsExport({
+		disabled: exportDisabled,
+		ownerContext: branch.subsidiaryId,
+		download: downloadDocuments,
+	});
 	const setDeferredPaymentsFilter = filters.setFilter;
 	const handlePaginationChange = useCallback(
 		(page: number, perPage: number) => setDeferredPaymentsFilter({ page, per_page: perPage }),
@@ -61,6 +83,16 @@ const PagosDiferidosView: React.FC = () => {
 					<span>Comercial / Pagos diferidos</span>
 				</SubheaderLeft>
 				<SubheaderRight>
+					<DeferredPaymentsExportDropdown
+						branchId={branch.branchId}
+						subsidiaryId={branch.subsidiaryId}
+						disabled={exportDisabled}
+						isExporting={documentExport.isExporting}
+						onExportPage={() => documentExport.exportPage(filters.requestFilters)}
+						onExportAll={() =>
+							documentExport.exportAll(withoutPagination(filters.requestFilters))
+						}
+					/>
 					<Button
 						variant='outline'
 						size='sm'
@@ -94,6 +126,15 @@ const PagosDiferidosView: React.FC = () => {
 					</Alert>
 				) : (
 					<>
+						{documentExport.error && (
+							<Alert
+								color='red'
+								variant='outline'
+								icon='HeroExclamationTriangle'
+								title='No pudimos exportar los pagos diferidos'>
+								{documentExport.error}
+							</Alert>
+						)}
 						{state.errorSummary && (
 							<Alert
 								color='red'

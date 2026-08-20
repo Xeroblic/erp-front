@@ -3,6 +3,7 @@ import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import useContextScopedSelection from '@/hooks/useContextScopedSelection';
 import type {
+	DeferredPaymentApiListParams,
 	DeferredPaymentApiSummaryParams,
 	DeferredPaymentsFilters,
 } from '@/interface/deferredPayments.interface';
@@ -71,6 +72,10 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 			values.status,
 		],
 	);
+	const exportFiltersForRequest = useMemo<DeferredPaymentApiListParams>(() => {
+		const { sort: _sort, ...apiFilters } = listFiltersForRequest;
+		return apiFilters;
+	}, [listFiltersForRequest]);
 	const summaryFiltersForRequest = useMemo<DeferredPaymentApiSummaryParams>(
 		() => ({
 			status: values.status,
@@ -203,6 +208,7 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 		state: { loading, loadingSummary, error, errorSummary, hasDataContext },
 		filters: {
 			values,
+			requestFilters: exportFiltersForRequest,
 			search,
 			setSearch,
 			setFilter,

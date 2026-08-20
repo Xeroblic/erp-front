@@ -19,6 +19,11 @@ import TableCardFooterTemplateV2, {
 import type { IDeferredPaymentCreditProfileListItem } from '@/interface/deferredPayments.interface';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import { formatDeferredPaymentAmount } from '@/pages/comercial/pagosDiferidos/utils';
+import deferredPaymentsService from '@/services/deferredPaymentsService';
+import DeferredPaymentsExportDropdown from '../pagosDiferidos/components/parts/DeferredPaymentsExportDropdown';
+import useDeferredPaymentsExport, {
+	withoutPagination,
+} from '../pagosDiferidos/hooks/useDeferredPaymentsExport';
 import CreditProfileEditModal from './components/CreditProfileEditModal';
 import useCarteraCredito from './hooks/useCarteraCredito';
 import type { CreditProfileStatusFilter } from './types';
@@ -204,6 +209,25 @@ const CarteraCreditoView: React.FC = () => {
 	const [editingProfile, setEditingProfile] =
 		useState<IDeferredPaymentCreditProfileListItem | null>(null);
 	const [sort, setSort] = useState<CreditSortState>(null);
+	const exportDisabled =
+		!state.hasDataContext || filters.isSearchDebouncing || sort !== null;
+	const downloadCreditProfiles = useCallback(
+		(
+			params: typeof filters.requestFilters | ReturnType<typeof withoutPagination>,
+			signal: AbortSignal,
+		) => {
+			if (branch.subsidiaryId === null) {
+				return Promise.reject(new Error('No se pudo resolver la subsidiaria para exportar.'));
+			}
+			return deferredPaymentsService.exportCreditProfiles(branch.subsidiaryId, params, signal);
+		},
+		[branch.subsidiaryId],
+	);
+	const creditProfileExport = useDeferredPaymentsExport({
+		disabled: exportDisabled,
+		ownerContext: branch.subsidiaryId,
+		download: downloadCreditProfiles,
+	});
 	const sortedRows = useMemo(
 		() =>
 			sort === null
@@ -238,6 +262,21 @@ const CarteraCreditoView: React.FC = () => {
 					<Icon icon='HeroCreditCard' />
 					<span>Comercial / Pagos diferidos / Cartera de crédito</span>
 				</SubheaderLeft>
+				<DeferredPaymentsExportDropdown
+					branchId={branch.branchId}
+					subsidiaryId={branch.subsidiaryId}
+					disabled={exportDisabled}
+					disabledTooltip={
+						sort !== null
+							? 'Restablece el orden de la tabla antes de exportar.'
+							: undefined
+					}
+					isExporting={creditProfileExport.isExporting}
+					onExportPage={() => creditProfileExport.exportPage(filters.requestFilters)}
+					onExportAll={() =>
+						creditProfileExport.exportAll(withoutPagination(filters.requestFilters))
+					}
+				/>
 			</Subheader>
 			<Container className='space-y-4'>
 				{!state.hasDataContext ? (
@@ -251,6 +290,15 @@ const CarteraCreditoView: React.FC = () => {
 					</Alert>
 				) : (
 					<>
+						{creditProfileExport.error && (
+							<Alert
+								color='red'
+								variant='outline'
+								icon='HeroExclamationTriangle'
+								title='No pudimos exportar la cartera de crédito'>
+								{creditProfileExport.error}
+							</Alert>
+						)}
 						<Card>
 							<CardHeader>
 								<div className='flex items-center gap-2'>

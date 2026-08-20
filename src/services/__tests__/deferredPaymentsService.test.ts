@@ -314,4 +314,60 @@ describe('deferredPaymentsService', () => {
 			signal: controller.signal,
 		});
 	});
+
+	it('exporta cartera y pagos diferidos como blob con el nombre enviado por el backend', async () => {
+		const controller = new AbortController();
+		const creditBlob = new Blob(['cartera']);
+		const documentsBlob = new Blob(['pagos']);
+		apiSpies.fetchData
+			.mockResolvedValueOnce({
+				data: creditBlob,
+				headers: {
+					'content-disposition':
+						"attachment; filename*=UTF-8''perfiles%20credito.xlsx",
+				},
+			} as never)
+			.mockResolvedValueOnce({
+				data: documentsBlob,
+				headers: { 'content-disposition': 'attachment; filename="pagos.xlsx"' },
+			} as never);
+
+		await expect(
+			deferredPaymentsService.exportCreditProfiles(
+				4,
+				{ page: 2, per_page: 50, active: false, search: 'Andes' },
+				controller.signal,
+			),
+		).resolves.toEqual({ blob: creditBlob, fileName: 'perfiles credito.xlsx' });
+		await expect(
+			deferredPaymentsService.exportDocuments(
+				4,
+				{ page: 3, per_page: 20, status: 'overdue', due_before: '2026-08-31' },
+			),
+		).resolves.toEqual({ blob: documentsBlob, fileName: 'pagos.xlsx' });
+
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(1, {
+			url: '/subsidiaries/4/credit-profiles/export',
+			method: 'get',
+			params: { page: 2, per_page: 50, active: false, search: 'Andes' },
+			responseType: 'blob',
+			signal: controller.signal,
+		});
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(2, {
+			url: '/subsidiaries/4/deferred-payments/export',
+			method: 'get',
+			params: { page: 3, per_page: 20, status: 'overdue', due_before: '2026-08-31' },
+			responseType: 'blob',
+		});
+	});
+
+	it('no inventa un nombre si Content-Disposition no está disponible', async () => {
+		const blob = new Blob(['pagos']);
+		apiSpies.fetchData.mockResolvedValue({ data: blob, headers: {} } as never);
+
+		await expect(deferredPaymentsService.exportDocuments(4, {})).resolves.toEqual({
+			blob,
+			fileName: null,
+		});
+	});
 });
