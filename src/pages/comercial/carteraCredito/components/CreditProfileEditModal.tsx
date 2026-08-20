@@ -262,6 +262,11 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	const isCreditActive = formik.values.is_active;
 	const requiresSuspensionBeforeDelete =
 		loadedProfile?.is_active === true && !formik.values.is_active;
+	const hasPendingConditionChanges =
+		formik.values.payment_term_days !== initialValues.payment_term_days ||
+		formik.values.credit_limit !== initialValues.credit_limit ||
+		formik.values.collection_email !== initialValues.collection_email ||
+		formik.values.notes !== initialValues.notes;
 	const deleteDisabledTooltip = getDeleteDisabledTooltip(isCreditActive, hasPendingBalance);
 	const isDeleteDisabled =
 		formik.isSubmitting ||
@@ -315,6 +320,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 			return;
 		const deleteIdentity = identity;
 		const deleteRequestId = deleteRequestIdRef.current + 1;
+		let suspensionWasSaved = false;
 		deleteRequestIdRef.current = deleteRequestId;
 		setDeleteError(null);
 		setIsDeleting(true);
@@ -340,6 +346,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 					saveRequestId !== saveRequestIdRef.current
 				)
 					return;
+				suspensionWasSaved = true;
 				setLoadedProfileState({ identity: deleteIdentity, value: updatedProfile });
 				setShouldRefreshAfterClose(true);
 			}
@@ -363,14 +370,15 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 				deleteRequestId !== deleteRequestIdRef.current
 			)
 				return;
-			setDeleteError(
-				getApiErrorMessage(
-					error,
-					requiresSuspensionBeforeDelete
-						? 'No se pudo suspender el crédito antes de eliminar el perfil.'
-						: 'No se pudo eliminar el perfil de crédito.',
-				),
-			);
+			let deleteFailureFallback = 'No se pudo eliminar el perfil de crédito.';
+			if (suspensionWasSaved) {
+				deleteFailureFallback =
+					'No se pudo eliminar el perfil de crédito. La suspensión del crédito ya fue guardada.';
+			} else if (requiresSuspensionBeforeDelete) {
+				deleteFailureFallback =
+					'No se pudo suspender el crédito antes de eliminar el perfil.';
+			}
+			setDeleteError(getApiErrorMessage(error, deleteFailureFallback));
 		} finally {
 			if (
 				mountedRef.current &&
@@ -440,6 +448,17 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 							<p className='text-sm text-zinc-600 dark:text-zinc-400'>
 								Primero se guardará la suspensión del crédito y luego se eliminará
 								el perfil.
+							</p>
+						)}
+						{requiresSuspensionBeforeDelete && hasPendingConditionChanges && (
+							<p className='text-sm text-amber-700 dark:text-amber-300'>
+								Los cambios pendientes en las condiciones se descartarán al
+								suspender el crédito para eliminar el perfil.
+							</p>
+						)}
+						{deleteDisabledTooltip && (
+							<p className='text-sm text-zinc-600 dark:text-zinc-400'>
+								{deleteDisabledTooltip}
 							</p>
 						)}
 						<p className='text-sm text-zinc-600 dark:text-zinc-400'>

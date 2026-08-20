@@ -297,6 +297,9 @@ describe('CreditProfileEditModal', () => {
 		fireEvent.click(screen.getByLabelText('Crédito vigente'));
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
+		expect(
+			screen.getByText(/Los cambios pendientes en las condiciones se descartarán/i),
+		).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 
 		await waitFor(() =>
@@ -312,6 +315,31 @@ describe('CreditProfileEditModal', () => {
 			'El perfil no se puede eliminar.',
 		);
 		expect(onClose).not.toHaveBeenCalled();
+	});
+
+	it('informa que la suspensión quedó aplicada si el DELETE falla sin mensaje', async () => {
+		updateCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
+		deleteCreditProfileMock.mockRejectedValue({});
+		render(
+			<CreditProfileEditModal
+				profile={listProfile}
+				subsidiaryId={4}
+				branchId={1}
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+
+		fireEvent.click(await screen.findByLabelText('Crédito vigente'));
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'No se pudo eliminar el perfil de crédito. La suspensión del crédito ya fue guardada.',
+		);
+		expect(updateCreditProfileMock).toHaveBeenCalledOnce();
+		expect(deleteCreditProfileMock).toHaveBeenCalledOnce();
 	});
 
 	it('cierra el modal al guardar una suspensión sin eliminar el perfil', async () => {
@@ -445,6 +473,33 @@ describe('CreditProfileEditModal', () => {
 			'data-tooltip',
 			'No puedes eliminar el perfil mientras el cliente tenga saldo pendiente.',
 		);
+	});
+
+	it('muestra el motivo del saldo pendiente en la confirmación directa', async () => {
+		const suspendedProfileWithBalance = {
+			...listProfile,
+			is_active: false,
+			outstanding_balance: '1500.00',
+		};
+		getCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
+		render(
+			<CreditProfileEditModal
+				profile={suspendedProfileWithBalance}
+				subsidiaryId={4}
+				branchId={1}
+				onClose={onClose}
+				onSaved={onSaved}
+				initialDeleteConfirmation
+			/>,
+		);
+
+		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
+		expect(
+			screen.getByText(
+				'No puedes eliminar el perfil mientras el cliente tenga saldo pendiente.',
+			),
+		).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Eliminar perfil' })).toBeDisabled();
 	});
 
 	it('elimina un perfil suspendido tras confirmarlo', async () => {
