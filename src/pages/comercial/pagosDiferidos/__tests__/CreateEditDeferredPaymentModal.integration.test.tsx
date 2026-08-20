@@ -7,6 +7,7 @@ import customerSalesReducer, {
 	type CustomerSalesState,
 } from '@/store/slices/customerSales/customerSalesSlice';
 import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
+import addDaysToDisplayDate from './deferredPaymentDateTestUtils';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import authReducer, { type AuthState } from '@/store/slices/auth/authSlice';
@@ -69,16 +70,6 @@ const emptyPagination = {
 	last_page_url: null,
 	prev_page_url: null,
 	next_page_url: null,
-};
-
-const addDaysToDateOnly = (date: string, days: number) => {
-	const [first, second, third] = date.split('-').map(Number);
-	const [year, month, day] = date.startsWith('20')
-		? [first, second, third]
-		: [third, second, first];
-	const value = new Date(Date.UTC(year, month - 1, day + days));
-	const [resultYear, resultMonth, resultDay] = value.toISOString().slice(0, 10).split('-');
-	return `${resultDay}-${resultMonth}-${resultYear}`;
 };
 
 const createTestStore = (
@@ -521,7 +512,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
-				addDaysToDateOnly(issueDate, 45),
+				addDaysToDisplayDate(issueDate, 45),
 			);
 		});
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
@@ -723,7 +714,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
-				addDaysToDateOnly(issueDate, 30),
+				addDaysToDisplayDate(issueDate, 30),
 			);
 		});
 		expect(
@@ -743,7 +734,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
-				addDaysToDateOnly(issueDate, 45),
+				addDaysToDisplayDate(issueDate, 45),
 			);
 		});
 		expect(await screen.findByText('45 días')).toBeInTheDocument();
@@ -1029,7 +1020,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
-				addDaysToDateOnly(issueDate, 21),
+				addDaysToDisplayDate(issueDate, 21),
 			);
 		});
 	});
