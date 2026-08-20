@@ -343,8 +343,7 @@ describe('deferredPaymentsService', () => {
 			.mockResolvedValueOnce({
 				data: creditBlob,
 				headers: {
-					'content-disposition':
-						"attachment; filename*=UTF-8''perfiles%20credito.xlsx",
+					'content-disposition': "attachment; filename*=UTF-8''perfiles%20credito.xlsx",
 				},
 			} as never)
 			.mockResolvedValueOnce({
@@ -360,10 +359,12 @@ describe('deferredPaymentsService', () => {
 			),
 		).resolves.toEqual({ blob: creditBlob, fileName: 'perfiles credito.xlsx' });
 		await expect(
-			deferredPaymentsService.exportDocuments(
-				4,
-				{ page: 3, per_page: 20, status: 'overdue', due_before: '2026-08-31' },
-			),
+			deferredPaymentsService.exportDocuments(4, {
+				page: 3,
+				per_page: 20,
+				status: 'overdue',
+				due_before: '2026-08-31',
+			}),
 		).resolves.toEqual({ blob: documentsBlob, fileName: 'pagos.xlsx' });
 
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(1, {

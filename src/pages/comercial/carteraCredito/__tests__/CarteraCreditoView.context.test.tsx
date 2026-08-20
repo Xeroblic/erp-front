@@ -63,6 +63,13 @@ vi.mock('../components/CreditProfileEditModal', () => ({
 vi.mock('@/pages/comercial/pagosDiferidos/utils', () => ({
 	formatDeferredPaymentAmount: (amount: string) => amount,
 }));
+vi.mock('../../pagosDiferidos/components/parts/DeferredPaymentsExportDropdown', () => ({
+	default: ({ disabled }: { disabled: boolean }) => (
+		<button type='button' disabled={disabled}>
+			Exportar
+		</button>
+	),
+}));
 vi.mock('@/components/ui/Alert', () => ({
 	default: ({ children }: PropsWithChildren) => <div>{children}</div>,
 }));
@@ -173,5 +180,36 @@ describe('CarteraCreditoView con cambio de subsidiaria', () => {
 		expect(editModalProps).toHaveBeenLastCalledWith(
 			expect.objectContaining({ initialDeleteConfirmation: true, subsidiaryId: 1 }),
 		);
+	});
+
+	it('bloquea la exportación ordenada y permite restablecer el orden', () => {
+		render(<CarteraCreditoView />);
+
+		const exportButton = screen.getByRole('button', { name: 'Exportar' });
+		expect(exportButton).toBeEnabled();
+		fireEvent.click(screen.getByRole('button', { name: 'Ordenar por Cliente' }));
+
+		expect(exportButton).toBeDisabled();
+		expect(
+			screen.getByText(/Restablecé el orden de la tabla para exportar/i),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: 'Restablecer orden' }));
+		expect(exportButton).toBeEnabled();
+	});
+
+	it('restablece el orden local al cambiar de subsidiaria', () => {
+		const view = render(<CarteraCreditoView />);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Ordenar por Cliente' }));
+		expect(screen.getByRole('button', { name: 'Exportar' })).toBeDisabled();
+
+		carteraState = {
+			...carteraState,
+			branch: { branchId: 2, subsidiaryId: 2 },
+		};
+		view.rerender(<CarteraCreditoView />);
+
+		expect(screen.getByRole('button', { name: 'Exportar' })).toBeEnabled();
 	});
 });

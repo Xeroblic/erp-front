@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import type { PaginationState } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 // eslint-disable-next-line import/extensions
@@ -26,6 +26,8 @@ interface DeferredPaymentsTableProps {
 	loading: boolean;
 	hasError: boolean;
 	hasFilters: boolean;
+	sort: DeferredPaymentsSortState;
+	onSort: (key: DeferredPaymentsSortKey) => void;
 	onPaginationChange: (page: number, perPage: number) => void;
 	onRowClick: (id: number) => void;
 }
@@ -36,7 +38,7 @@ interface DeferredPaymentsPaginationProps {
 	onChange: (page: number, perPage: number) => void;
 }
 
-type SortKey =
+export type DeferredPaymentsSortKey =
 	| 'document_number'
 	| 'company'
 	| 'purchase_order'
@@ -45,12 +47,15 @@ type SortKey =
 	| 'due_date'
 	| 'status'
 	| 'days_until_due';
-type SortState = TableSortState<SortKey>;
+export type DeferredPaymentsSortState = TableSortState<DeferredPaymentsSortKey>;
 
 const getCustomerDisplayName = (row: IDeferredPaymentListItem): string =>
 	row.customer.billing_company || row.customer.contact_name || 'Cliente sin nombre';
 
-const getSortValue = (row: IDeferredPaymentListItem, key: SortKey): string | number | null => {
+const getSortValue = (
+	row: IDeferredPaymentListItem,
+	key: DeferredPaymentsSortKey,
+): string | number | null => {
 	switch (key) {
 		case 'document_number':
 			return row.document_number;
@@ -76,7 +81,7 @@ const getSortValue = (row: IDeferredPaymentListItem, key: SortKey): string | num
 const compareRows = (
 	left: IDeferredPaymentListItem,
 	right: IDeferredPaymentListItem,
-	sort: NonNullable<SortState>,
+	sort: NonNullable<DeferredPaymentsSortState>,
 ): number => {
 	const leftValue = getSortValue(left, sort.key);
 	const rightValue = getSortValue(right, sort.key);
@@ -128,21 +133,16 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 	loading,
 	hasError,
 	hasFilters,
+	sort,
+	onSort,
 	onPaginationChange,
 	onRowClick,
 }) => {
-	const [sort, setSort] = useState<SortState>(null);
 	const sortedRows = useMemo(
 		() =>
 			sort === null ? rows : [...rows].sort((left, right) => compareRows(left, right, sort)),
 		[rows, sort],
 	);
-	const handleSort = (key: SortKey) => {
-		setSort((current) => ({
-			key,
-			direction: current?.key === key && current.direction === 'asc' ? 'desc' : 'asc',
-		}));
-	};
 
 	return (
 		<Card>
@@ -162,52 +162,52 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 								label='N° documento'
 								sortKey='document_number'
 								sort={sort}
-								onSort={handleSort}
+								onSort={onSort}
 							/>
 							<SortableTableHeader
 								label='Empresa'
 								sortKey='company'
 								sort={sort}
-								onSort={handleSort}
+								onSort={onSort}
 							/>
 							<SortableTableHeader
 								label='OC'
 								sortKey='purchase_order'
 								sort={sort}
-								onSort={handleSort}
+								onSort={onSort}
 							/>
 							<SortableTableHeader
 								label='Monto'
 								sortKey='total_amount'
 								sort={sort}
-								onSort={handleSort}
+								onSort={onSort}
 								align='right'
 							/>
 							<SortableTableHeader
 								label='Saldo'
 								sortKey='outstanding_amount'
 								sort={sort}
-								onSort={handleSort}
+								onSort={onSort}
 								align='right'
 							/>
 							<SortableTableHeader
 								label='Vencimiento'
 								sortKey='due_date'
 								sort={sort}
-								onSort={handleSort}
+								onSort={onSort}
 							/>
 							<SortableTableHeader
 								label='Estado del pago'
 								sortKey='status'
 								sort={sort}
-								onSort={handleSort}
+								onSort={onSort}
 								align='center'
 							/>
 							<SortableTableHeader
 								label='Situación de vencimiento'
 								sortKey='days_until_due'
 								sort={sort}
-								onSort={handleSort}
+								onSort={onSort}
 								align='center'
 							/>
 						</Tr>

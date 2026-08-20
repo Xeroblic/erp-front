@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PaginationState } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
@@ -16,7 +16,10 @@ import Tooltip from '@/components/ui/Tooltip';
 import TableCardFooterTemplateV2, {
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
-import type { IDeferredPaymentCreditProfileListItem } from '@/interface/deferredPayments.interface';
+import type {
+	DeferredPaymentCreditProfilesApiParams,
+	IDeferredPaymentCreditProfileListItem,
+} from '@/interface/deferredPayments.interface';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import useContextScopedSelection, {
 	type OrganizationalContext,
@@ -24,9 +27,7 @@ import useContextScopedSelection, {
 import { formatDeferredPaymentAmount } from '@/pages/comercial/pagosDiferidos/utils';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import DeferredPaymentsExportDropdown from '../pagosDiferidos/components/parts/DeferredPaymentsExportDropdown';
-import useDeferredPaymentsExport, {
-	withoutPagination,
-} from '../pagosDiferidos/hooks/useDeferredPaymentsExport';
+import useDeferredPaymentsExport from '../pagosDiferidos/hooks/useDeferredPaymentsExport';
 import CreditProfileEditModal from './components/CreditProfileEditModal';
 import useCarteraCredito from './hooks/useCarteraCredito';
 import type { CreditProfileStatusFilter } from './types';
@@ -225,17 +226,22 @@ const CarteraCreditoView: React.FC = () => {
 		[data.rows, editingSelection.selectedId],
 	);
 	const [sort, setSort] = useState<CreditSortState>(null);
-	const exportDisabled =
-		!state.hasDataContext || filters.isSearchDebouncing || sort !== null;
+	useEffect(() => {
+		setSort(null);
+	}, [branch.subsidiaryId]);
+	const exportDisabled = !state.hasDataContext || filters.isSearchDebouncing || sort !== null;
 	const downloadCreditProfiles = useCallback(
-		(
-			params: typeof filters.requestFilters | ReturnType<typeof withoutPagination>,
-			signal: AbortSignal,
-		) => {
+		(params: DeferredPaymentCreditProfilesApiParams, signal: AbortSignal) => {
 			if (branch.subsidiaryId === null) {
-				return Promise.reject(new Error('No se pudo resolver la subsidiaria para exportar.'));
+				return Promise.reject(
+					new Error('No se pudo resolver la subsidiaria para exportar.'),
+				);
 			}
-			return deferredPaymentsService.exportCreditProfiles(branch.subsidiaryId, params, signal);
+			return deferredPaymentsService.exportCreditProfiles(
+				branch.subsidiaryId,
+				params,
+				signal,
+			);
 		},
 		[branch.subsidiaryId],
 	);
@@ -296,16 +302,9 @@ const CarteraCreditoView: React.FC = () => {
 					branchId={branch.branchId}
 					subsidiaryId={branch.subsidiaryId}
 					disabled={exportDisabled}
-					disabledTooltip={
-						sort !== null
-							? 'Restablece el orden de la tabla antes de exportar.'
-							: undefined
-					}
 					isExporting={creditProfileExport.isExporting}
 					onExportPage={() => creditProfileExport.exportPage(filters.requestFilters)}
-					onExportAll={() =>
-						creditProfileExport.exportAll(withoutPagination(filters.requestFilters))
-					}
+					onExportAll={() => creditProfileExport.exportAll(filters.requestFilters)}
 				/>
 			</Subheader>
 			<Container className='space-y-4'>
@@ -327,6 +326,26 @@ const CarteraCreditoView: React.FC = () => {
 								icon='HeroExclamationTriangle'
 								title='No pudimos exportar la cartera de crédito'>
 								{creditProfileExport.error}
+							</Alert>
+						)}
+						{sort !== null && (
+							<Alert
+								color='amber'
+								variant='outline'
+								icon='HeroArrowsUpDown'
+								title='La exportación está pausada por el orden local'>
+								<div className='flex flex-wrap items-center justify-between gap-3'>
+									<span>
+										Restablecé el orden de la tabla para exportar el mismo orden
+										que entrega el servidor.
+									</span>
+									<Button
+										size='sm'
+										variant='outline'
+										onClick={() => setSort(null)}>
+										Restablecer orden
+									</Button>
+								</div>
 							</Alert>
 						)}
 						<Card>

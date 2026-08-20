@@ -5,6 +5,27 @@ import { DEFERRED_PAYMENT_LIST_FIXTURES } from './deferredPaymentsTestData';
 import DeferredPaymentsTable from '../components/tables/DeferredPaymentsTable';
 
 describe('DeferredPaymentsTable', () => {
+	it('delegates local sorting to the view owner', () => {
+		const onSort = vi.fn();
+		render(
+			<DeferredPaymentsTable
+				rows={[DEFERRED_PAYMENT_LIST_FIXTURES[0]]}
+				meta={null}
+				loading={false}
+				hasError={false}
+				hasFilters={false}
+				sort={null}
+				onSort={onSort}
+				onPaginationChange={vi.fn()}
+				onRowClick={vi.fn()}
+			/>,
+		);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Ordenar por N° documento' }));
+
+		expect(onSort).toHaveBeenCalledWith('document_number');
+	});
+
 	it('no afirma que no hay documentos cuando la consulta falló', () => {
 		render(
 			<DeferredPaymentsTable
@@ -13,6 +34,8 @@ describe('DeferredPaymentsTable', () => {
 				loading={false}
 				hasError
 				hasFilters={false}
+				sort={null}
+				onSort={vi.fn()}
 				onPaginationChange={vi.fn()}
 				onRowClick={vi.fn()}
 			/>,
@@ -37,6 +60,8 @@ describe('DeferredPaymentsTable', () => {
 				loading={false}
 				hasError={false}
 				hasFilters={false}
+				sort={null}
+				onSort={vi.fn()}
 				onPaginationChange={vi.fn()}
 				onRowClick={onRowClick}
 			/>,
@@ -64,6 +89,8 @@ describe('DeferredPaymentsTable', () => {
 				loading={false}
 				hasError={false}
 				hasFilters={false}
+				sort={null}
+				onSort={vi.fn()}
 				onPaginationChange={vi.fn()}
 				onRowClick={vi.fn()}
 			/>,
@@ -88,6 +115,8 @@ describe('DeferredPaymentsTable', () => {
 				loading={false}
 				hasError={false}
 				hasFilters={false}
+				sort={null}
+				onSort={vi.fn()}
 				onPaginationChange={vi.fn()}
 				onRowClick={vi.fn()}
 			/>,
@@ -114,6 +143,8 @@ describe('DeferredPaymentsTable', () => {
 				loading={false}
 				hasError={false}
 				hasFilters={false}
+				sort={null}
+				onSort={vi.fn()}
 				onPaginationChange={vi.fn()}
 				onRowClick={vi.fn()}
 			/>,

@@ -80,15 +80,24 @@ const useDeferredPaymentsExport = <T extends PaginationParams>({
 	const ownerContextRef = useRef(ownerContext);
 	const requestIdRef = useRef(0);
 	ownerContextRef.current = ownerContext;
-	useEffect(
-		() => () => {
+	useEffect(() => {
+		requestIdRef.current += 1;
+		controllerRef.current?.abort();
+		controllerRef.current = null;
+		isExportingRef.current = false;
+		setExportState({
+			ownerContext,
+			requestId: requestIdRef.current,
+			isExporting: false,
+			error: null,
+		});
+		return () => {
 			requestIdRef.current += 1;
 			controllerRef.current?.abort();
 			controllerRef.current = null;
 			isExportingRef.current = false;
-		},
-		[ownerContext],
-	);
+		};
+	}, [ownerContext]);
 	const runExport = useCallback(
 		async (params: T | Omit<T, 'page' | 'per_page'>) => {
 			if (disabled || ownerContext === null || isExportingRef.current) return;
@@ -122,12 +131,13 @@ const useDeferredPaymentsExport = <T extends PaginationParams>({
 		},
 		[disabled, download, ownerContext],
 	);
+	const exportAll = useCallback((params: T) => runExport(withoutPagination(params)), [runExport]);
 	const isCurrentContext = exportState.ownerContext === ownerContext;
 	return {
 		isExporting: isCurrentContext && exportState.isExporting,
 		error: isCurrentContext ? exportState.error : null,
 		exportPage: runExport,
-		exportAll: runExport,
+		exportAll,
 	};
 };
 

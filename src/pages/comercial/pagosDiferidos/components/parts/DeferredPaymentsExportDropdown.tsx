@@ -9,7 +9,6 @@ interface DeferredPaymentsExportDropdownProps {
 	branchId: number | null;
 	subsidiaryId: number | null;
 	disabled: boolean;
-	disabledTooltip?: string;
 	isExporting: boolean;
 	onExportPage: () => void;
 	onExportAll: () => void;
@@ -19,7 +18,6 @@ const DeferredPaymentsExportDropdown: React.FC<DeferredPaymentsExportDropdownPro
 	branchId,
 	subsidiaryId,
 	disabled,
-	disabledTooltip,
 	isExporting,
 	onExportPage,
 	onExportAll,
@@ -37,7 +35,6 @@ const DeferredPaymentsExportDropdown: React.FC<DeferredPaymentsExportDropdownPro
 					size='sm'
 					icon='HeroArrowDownTray'
 					isLoading={isExporting}
-					disabledTooltip={disabledTooltip}
 					isDisable={isDisabled}>
 					Exportar
 				</ProtectedButton>

@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
+import type {
+	DeferredPaymentApiListParams,
+	IDeferredPaymentDocument,
+} from '@/interface/deferredPayments.interface';
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
@@ -15,9 +18,12 @@ import DeferredPaymentsFilters from './components/filters/DeferredPaymentsFilter
 import DeferredPaymentsKpis from './components/kpis/DeferredPaymentsKpis';
 import CreateEditDeferredPaymentModal from './components/modals/CreateEditDeferredPaymentModal';
 import ReminderCadenceCard from './components/ReminderCadenceCard';
-import DeferredPaymentsTable from './components/tables/DeferredPaymentsTable';
 import DeferredPaymentsExportDropdown from './components/parts/DeferredPaymentsExportDropdown';
-import useDeferredPaymentsExport, { withoutPagination } from './hooks/useDeferredPaymentsExport';
+import DeferredPaymentsTable, {
+	type DeferredPaymentsSortKey,
+	type DeferredPaymentsSortState,
+} from './components/tables/DeferredPaymentsTable';
+import useDeferredPaymentsExport from './hooks/useDeferredPaymentsExport';
 import usePagosDiferidos from './hooks/usePagosDiferidos';
 
 const getCustomerNameFromNavigationState = (state: unknown): string | undefined => {
@@ -35,15 +41,18 @@ const PagosDiferidosView: React.FC = () => {
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [editingDocument, setEditingDocument] = useState<IDeferredPaymentDocument | null>(null);
 	const [isReminderCadenceOpen, setIsReminderCadenceOpen] = useState(false);
+	const [sort, setSort] = useState<DeferredPaymentsSortState>(null);
 	const exportDisabled =
-		!state.hasDataContext || filters.hasInvalidDateRange || filters.isSearchDebouncing;
+		!state.hasDataContext ||
+		filters.hasInvalidDateRange ||
+		filters.isSearchDebouncing ||
+		sort !== null;
 	const downloadDocuments = useCallback(
-		(
-			params: typeof filters.requestFilters | ReturnType<typeof withoutPagination>,
-			signal: AbortSignal,
-		) => {
+		(params: DeferredPaymentApiListParams, signal: AbortSignal) => {
 			if (branch.subsidiaryId === null) {
-				return Promise.reject(new Error('No se pudo resolver la subsidiaria para exportar.'));
+				return Promise.reject(
+					new Error('No se pudo resolver la subsidiaria para exportar.'),
+				);
 			}
 			return deferredPaymentsService.exportDocuments(branch.subsidiaryId, params, signal);
 		},
@@ -59,9 +68,16 @@ const PagosDiferidosView: React.FC = () => {
 		(page: number, perPage: number) => setDeferredPaymentsFilter({ page, per_page: perPage }),
 		[setDeferredPaymentsFilter],
 	);
+	const handleSort = useCallback((key: DeferredPaymentsSortKey) => {
+		setSort((current) => ({
+			key,
+			direction: current?.key === key && current.direction === 'asc' ? 'desc' : 'asc',
+		}));
+	}, []);
 	useEffect(() => {
 		setIsCreateOpen(false);
 		setEditingDocument(null);
+		setSort(null);
 	}, [branch.subsidiaryId]);
 	const closeForm = useCallback(() => {
 		setIsCreateOpen(false);
@@ -89,9 +105,7 @@ const PagosDiferidosView: React.FC = () => {
 						disabled={exportDisabled}
 						isExporting={documentExport.isExporting}
 						onExportPage={() => documentExport.exportPage(filters.requestFilters)}
-						onExportAll={() =>
-							documentExport.exportAll(withoutPagination(filters.requestFilters))
-						}
+						onExportAll={() => documentExport.exportAll(filters.requestFilters)}
 					/>
 					<Button
 						variant='outline'
@@ -133,6 +147,26 @@ const PagosDiferidosView: React.FC = () => {
 								icon='HeroExclamationTriangle'
 								title='No pudimos exportar los pagos diferidos'>
 								{documentExport.error}
+							</Alert>
+						)}
+						{sort !== null && (
+							<Alert
+								color='amber'
+								variant='outline'
+								icon='HeroArrowsUpDown'
+								title='La exportación está pausada por el orden local'>
+								<div className='flex flex-wrap items-center justify-between gap-3'>
+									<span>
+										Restablecé el orden de la tabla para exportar el mismo orden
+										que entrega el servidor.
+									</span>
+									<Button
+										size='sm'
+										variant='outline'
+										onClick={() => setSort(null)}>
+										Restablecer orden
+									</Button>
+								</div>
 							</Alert>
 						)}
 						{state.errorSummary && (
@@ -192,6 +226,8 @@ const PagosDiferidosView: React.FC = () => {
 								loading={state.loading}
 								hasError={Boolean(state.error)}
 								hasFilters={filters.hasFilters}
+								sort={sort}
+								onSort={handleSort}
 								onPaginationChange={handlePaginationChange}
 								onRowClick={selection.openDetail}
 							/>

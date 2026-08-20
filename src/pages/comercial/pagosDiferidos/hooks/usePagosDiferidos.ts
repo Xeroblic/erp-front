@@ -38,9 +38,7 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 	const effectiveSubsidiaryId = subsidiaryId;
 	const hasDataContext = effectiveSubsidiaryId !== null;
 	const selection = useContextScopedSelection<number>(
-		effectiveSubsidiaryId === null
-			? null
-			: { type: 'subsidiary', id: effectiveSubsidiaryId },
+		effectiveSubsidiaryId === null ? null : { type: 'subsidiary', id: effectiveSubsidiaryId },
 	);
 	const hasInvalidDateRange = Boolean(
 		values.due_after && values.due_before && values.due_after > values.due_before,
@@ -72,10 +70,20 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 			values.status,
 		],
 	);
-	const exportFiltersForRequest = useMemo<DeferredPaymentApiListParams>(() => {
-		const { sort: _sort, ...apiFilters } = listFiltersForRequest;
-		return apiFilters;
-	}, [listFiltersForRequest]);
+	const exportFiltersForRequest = useMemo<DeferredPaymentApiListParams>(
+		() => ({
+			page: listFiltersForRequest.page,
+			per_page: listFiltersForRequest.per_page,
+			status: listFiltersForRequest.status,
+			...(listFiltersForRequest.customer_sale_id !== undefined
+				? { customer_sale_id: listFiltersForRequest.customer_sale_id }
+				: {}),
+			due_after: listFiltersForRequest.due_after,
+			due_before: listFiltersForRequest.due_before,
+			search: listFiltersForRequest.search,
+		}),
+		[listFiltersForRequest],
+	);
 	const summaryFiltersForRequest = useMemo<DeferredPaymentApiSummaryParams>(
 		() => ({
 			status: values.status,
