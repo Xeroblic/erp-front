@@ -2,6 +2,7 @@ import * as Yup from 'yup';
 import type { DeferredPaymentDocumentType } from '@/interface/deferredPayments.interface';
 
 export const DEFERRED_PAYMENT_TOTAL_ERROR = 'El total del documento debe ser mayor a 0';
+export const DEFERRED_PAYMENT_VAT_RATE = 0.19;
 
 export const DEFERRED_PAYMENT_DOCUMENT_TYPES: readonly DeferredPaymentDocumentType[] = [
 	'electronic_invoice',
@@ -19,6 +20,8 @@ export interface DeferredPaymentFormItemValues {
 	description: string;
 	quantity: number;
 	unit_price: number | string;
+	entered_unit_price: number | string;
+	calculates_vat: boolean;
 	serials: string[];
 }
 
@@ -67,6 +70,16 @@ export const DeferredPaymentItemSchema = Yup.object({
 		.typeError('El precio unitario debe ser un número')
 		.min(0, 'El precio unitario no puede ser negativo')
 		.required('Ingresa el precio unitario'),
+	entered_unit_price: Yup.number()
+		.transform((value: unknown, originalValue: unknown): number | undefined => {
+			if (originalValue === '') return undefined;
+			if (typeof originalValue === 'string') return Number(originalValue);
+			return typeof value === 'number' ? value : undefined;
+		})
+		.typeError('El precio unitario debe ser un número')
+		.min(0, 'El precio unitario no puede ser negativo')
+		.required('Ingresa el precio unitario'),
+	calculates_vat: Yup.boolean().defined(),
 	serials: Yup.array()
 		.of(Yup.string().trim().required('Los seriales no pueden estar vacíos'))
 		.defined(),
@@ -138,8 +151,39 @@ export const createEmptyDeferredPaymentItem = (): DeferredPaymentFormItemValues 
 	description: '',
 	quantity: 1,
 	unit_price: 0,
+	entered_unit_price: 0,
+	calculates_vat: true,
 	serials: [],
 });
+
+export const calculateDeferredPaymentGrossUnitPrice = (
+	enteredAmount: number | string,
+	calculatesVat: boolean,
+): number | null => {
+	if (enteredAmount === '') return null;
+	const normalizedAmount = Number(enteredAmount);
+	if (!Number.isFinite(normalizedAmount) || normalizedAmount < 0) return null;
+	if (!calculatesVat) return normalizedAmount;
+	return Math.round(normalizedAmount * (1 + DEFERRED_PAYMENT_VAT_RATE) * 100) / 100;
+};
+
+export interface DeferredPaymentVatBreakdown {
+	net_amount: number;
+	vat_amount: number;
+}
+
+export const calculateDeferredPaymentVatBreakdown = (
+	totalAmount: number | string,
+): DeferredPaymentVatBreakdown | null => {
+	const normalizedTotal = Number(totalAmount);
+	if (!Number.isFinite(normalizedTotal) || normalizedTotal <= 0) return null;
+
+	const netAmount = Math.round(normalizedTotal / (1 + DEFERRED_PAYMENT_VAT_RATE));
+	return {
+		net_amount: netAmount,
+		vat_amount: Math.round((normalizedTotal - netAmount) * 100) / 100,
+	};
+};
 
 export const createDeferredPaymentInitialValues = (
 	issueDate: string,

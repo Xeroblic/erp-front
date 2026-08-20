@@ -3,8 +3,11 @@ import { configureStore } from '@reduxjs/toolkit';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import customerSalesReducer from '@/store/slices/customerSales/customerSalesSlice';
+import customerSalesReducer, {
+	type CustomerSalesState,
+} from '@/store/slices/customerSales/customerSalesSlice';
 import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
+import addDaysToDisplayDate from './deferredPaymentDateTestUtils';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import authReducer, { type AuthState } from '@/store/slices/auth/authSlice';
@@ -12,8 +15,31 @@ import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDefer
 
 const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn(), invalidateCache: vi.fn() }));
 const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 as number | null }));
+const customerSalesSpies = vi.hoisted(() => ({
+	overviewThunk: vi.fn(),
+	overviewThunkImplementation: null as null | ((...args: unknown[]) => unknown),
+}));
+const customerModalSpies = vi.hoisted(() => ({ createOpenStates: [] as boolean[] }));
 
 vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
+vi.mock('@/pages/comercial/clientesVentas/components/modals/CreateCustomerSaleModal', () => ({
+	default: ({ isOpen, isEdit = false }: { isOpen: boolean; isEdit?: boolean }) => {
+		if (!isEdit) customerModalSpies.createOpenStates.push(isOpen);
+		return isOpen ? <div role='dialog' aria-label='Crear Cliente' /> : null;
+	},
+}));
+vi.mock('@/store/slices/customerSales/customerSalesSlice', async () => {
+	const actual = await vi.importActual<
+		typeof import('@/store/slices/customerSales/customerSalesSlice')
+	>('@/store/slices/customerSales/customerSalesSlice');
+	customerSalesSpies.overviewThunkImplementation = actual.fetchCustomersOverviewThunk as unknown as (
+		...args: unknown[]
+	) => unknown;
+	customerSalesSpies.overviewThunk.mockImplementation((...args: unknown[]) =>
+		customerSalesSpies.overviewThunkImplementation?.(...args),
+	);
+	return { ...actual, fetchCustomersOverviewThunk: customerSalesSpies.overviewThunk };
+});
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({ i18n: { dir: () => 'ltr' } }),
 }));
@@ -46,17 +72,10 @@ const emptyPagination = {
 	next_page_url: null,
 };
 
-const addDaysToDateOnly = (date: string, days: number) => {
-	const [first, second, third] = date.split('-').map(Number);
-	const [year, month, day] = date.startsWith('20')
-		? [first, second, third]
-		: [third, second, first];
-	const value = new Date(Date.UTC(year, month - 1, day + days));
-	const [resultYear, resultMonth, resultDay] = value.toISOString().slice(0, 10).split('-');
-	return `${resultDay}-${resultMonth}-${resultYear}`;
-};
-
-const createTestStore = (authUser?: NonNullable<AuthState['user']>) =>
+const createTestStore = (
+	authUser?: NonNullable<AuthState['user']>,
+	customerSalesState?: Partial<CustomerSalesState>,
+) =>
 	configureStore({
 		reducer: {
 			auth: authReducer,
@@ -73,6 +92,10 @@ const createTestStore = (authUser?: NonNullable<AuthState['user']>) =>
 				...deferredPaymentsReducer(undefined, { type: 'test/init' }),
 				listSubsidiaryId: 1,
 			},
+			customerSales: {
+				...customerSalesReducer(undefined, { type: 'test/init' }),
+				...customerSalesState,
+			},
 		},
 	});
 
@@ -84,6 +107,11 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		document.body.appendChild(portalRoot);
 		apiSpies.fetchData.mockReset();
 		apiSpies.invalidateCache.mockReset();
+		customerSalesSpies.overviewThunk.mockClear();
+		customerModalSpies.createOpenStates.length = 0;
+		customerSalesSpies.overviewThunk.mockImplementation((...args: unknown[]) =>
+			customerSalesSpies.overviewThunkImplementation?.(...args),
+		);
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
 				data: url.includes('/overview')
@@ -220,6 +248,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		fireEvent.click(await screen.findByText('Carla Cobranza · carla@empresa.cl'));
 
 		expect(screen.getByText('Carla Cobranza · carla@empresa.cl')).toBeInTheDocument();
+		await waitFor(() => expect(store.getState().customerSales.overviewLoading).toBe(false));
 	});
 
 	it('carga el perfil existente al editar y conserva el vencimiento del documento', async () => {
@@ -483,7 +512,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
-				addDaysToDateOnly(issueDate, 45),
+				addDaysToDisplayDate(issueDate, 45),
 			);
 		});
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
@@ -631,11 +660,19 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 		expect(onClose).toHaveBeenCalledTimes(1);
-		rerender(<CreateEditDeferredPaymentModal isOpen={false} onClose={onClose} />);
-		rerender(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />);
+		act(() => {
+			rerender(<CreateEditDeferredPaymentModal isOpen={false} onClose={onClose} />);
+		});
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: 'Nuevo documento' })).not.toBeInTheDocument(),
+		);
+		act(() => {
+			rerender(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />);
+		});
 
-		expect(screen.getByText('Busca por razón social o RUT')).toBeInTheDocument();
+		expect(await screen.findByText('Busca por razón social o RUT')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
+		await waitFor(() => expect(store.getState().customerSales.overviewLoading).toBe(false));
 	});
 
 	it('permite crear sin perfil y recarga el perfil creado durante el alta', async () => {
@@ -677,7 +714,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
-				addDaysToDateOnly(issueDate, 30),
+				addDaysToDisplayDate(issueDate, 30),
 			);
 		});
 		expect(
@@ -697,7 +734,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
-				addDaysToDateOnly(issueDate, 45),
+				addDaysToDisplayDate(issueDate, 45),
 			);
 		});
 		expect(await screen.findByText('45 días')).toBeInTheDocument();
@@ -983,9 +1020,112 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
-				addDaysToDateOnly(issueDate, 21),
+				addDaysToDisplayDate(issueDate, 21),
 			);
 		});
+	});
+
+	it('oculta clientes y cierra el alta rápida al cambiar de subsidiaria', async () => {
+		const customer = {
+			id: 991,
+			name: 'Cliente exclusivo A',
+			rut: '76.991.000-1',
+			contact: { name: 'Contacto A' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url === '/subsidiaries/1/customer-sales/overview'
+					? { ...emptyPagination, data: [customer], total: 1 }
+					: emptyPagination,
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
+			wrapper: Wrapper,
+		});
+
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'exclusivo' } });
+		expect(await screen.findByText('Cliente exclusivo A · Contacto A · 76.991.000-1')).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Crear cliente' }));
+		expect(screen.getByRole('dialog', { name: 'Crear Cliente' })).toBeInTheDocument();
+
+		branchContext.subsidiaryId = 2;
+		rerender(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />);
+
+		expect(screen.queryByText('Cliente exclusivo A · Contacto A · 76.991.000-1')).not.toBeInTheDocument();
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: 'Crear Cliente' })).not.toBeInTheDocument(),
+		);
+	});
+
+	it('cierra el alta rápida en el mismo render del cambio de subsidiaria', async () => {
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
+			wrapper: Wrapper,
+		});
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: 'Crear cliente' }));
+			await Promise.resolve();
+		});
+		expect(customerModalSpies.createOpenStates.at(-1)).toBe(true);
+
+		const callsBeforeContextChange = customerModalSpies.createOpenStates.length;
+		branchContext.subsidiaryId = 2;
+		await act(async () => {
+			rerender(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />);
+			await Promise.resolve();
+		});
+
+		expect(customerModalSpies.createOpenStates[callsBeforeContextChange]).toBe(false);
+	});
+
+	it('nunca expone el overview de otra subsidiaria aunque el thunk no limpie el store', async () => {
+		const customer = {
+			id: 992,
+			name: 'Cliente retenido de A',
+			rut: '76.992.000-1',
+			contact: { name: 'Contacto A' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		const originalOverviewThunk = customerSalesSpies.overviewThunkImplementation;
+		customerSalesSpies.overviewThunkImplementation = () => {
+			const request = () => request;
+			request.abort = () => undefined;
+			return request;
+		};
+		branchContext.subsidiaryId = 2;
+		try {
+			const store = createTestStore(undefined, {
+				overview: [customer],
+				overviewSubsidiaryId: 1,
+			});
+			const Wrapper = ({ children }: PropsWithChildren) => (
+				<Provider store={store}>{children}</Provider>
+			);
+			render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
+				wrapper: Wrapper,
+			});
+
+			fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'retenido' } });
+			await waitFor(() =>
+				expect(customerSalesSpies.overviewThunk).toHaveBeenCalledWith(
+					expect.objectContaining({ subsidiary: 2, params: { q: 'retenido' } }),
+				),
+			);
+			expect(
+				screen.queryByText('Cliente retenido de A · Contacto A · 76.992.000-1'),
+			).not.toBeInTheDocument();
+		} finally {
+			customerSalesSpies.overviewThunkImplementation = originalOverviewThunk;
+		}
 	});
 
 	it('cierra el editor secundario cuando el padre se cierra externamente', async () => {

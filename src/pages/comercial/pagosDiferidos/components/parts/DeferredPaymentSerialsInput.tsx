@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
@@ -25,6 +26,34 @@ const DeferredPaymentSerialsInput: React.FC<DeferredPaymentSerialsInputProps> = 
 		setDraft('');
 	};
 
+	const addPastedSerials = (pastedValue: string) => {
+		const addedSerials: string[] = [];
+		const duplicateSerials: string[] = [];
+		const knownSerials = new Set(value.map((serial) => serial.trim()));
+
+		pastedValue
+			.split(/[\s,]+/)
+			.map((serial) => serial.trim())
+			.filter(Boolean)
+			.forEach((serial) => {
+				if (knownSerials.has(serial)) {
+					duplicateSerials.push(serial);
+					return;
+				}
+				knownSerials.add(serial);
+				addedSerials.push(serial);
+			});
+
+		if (addedSerials.length > 0) onChange([...value, ...addedSerials]);
+		if (duplicateSerials.length > 0) {
+			toast.warn(
+				duplicateSerials.length === 1
+					? 'Se omitió 1 serial duplicado.'
+					: `Se omitieron ${duplicateSerials.length} seriales duplicados.`,
+			);
+		}
+	};
+
 	return (
 		<div>
 			<Label htmlFor={id}>Seriales (opcional)</Label>
@@ -36,6 +65,12 @@ const DeferredPaymentSerialsInput: React.FC<DeferredPaymentSerialsInputProps> = 
 					placeholder='Escribe un serial y presiona Enter'
 					disabled={disabled}
 					onChange={(event) => setDraft(event.target.value)}
+					onPaste={(event) => {
+						if (disabled) return;
+						event.preventDefault();
+						setDraft('');
+						addPastedSerials(event.clipboardData.getData('text'));
+					}}
 					onKeyDown={(event) => {
 						if (event.key !== 'Enter' && event.key !== ',') return;
 						event.preventDefault();

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PaginationState } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
@@ -16,9 +16,18 @@ import Tooltip from '@/components/ui/Tooltip';
 import TableCardFooterTemplateV2, {
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
-import type { IDeferredPaymentCreditProfileListItem } from '@/interface/deferredPayments.interface';
+import type {
+	DeferredPaymentCreditProfilesApiParams,
+	IDeferredPaymentCreditProfileListItem,
+} from '@/interface/deferredPayments.interface';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+import useContextScopedSelection, {
+	type OrganizationalContext,
+} from '@/hooks/useContextScopedSelection';
 import { formatDeferredPaymentAmount } from '@/pages/comercial/pagosDiferidos/utils';
+import deferredPaymentsService from '@/services/deferredPaymentsService';
+import DeferredPaymentsExportDropdown from '../pagosDiferidos/components/parts/DeferredPaymentsExportDropdown';
+import useDeferredPaymentsExport from '../pagosDiferidos/hooks/useDeferredPaymentsExport';
 import CreditProfileEditModal from './components/CreditProfileEditModal';
 import useCarteraCredito from './hooks/useCarteraCredito';
 import type { CreditProfileStatusFilter } from './types';
@@ -201,9 +210,46 @@ const CreditPortfolioPagination: React.FC<CreditPortfolioPaginationProps> = ({
 const CarteraCreditoView: React.FC = () => {
 	const { data, state, filters, actions, branch } = useCarteraCredito();
 	const navigate = useNavigate();
-	const [editingProfile, setEditingProfile] =
-		useState<IDeferredPaymentCreditProfileListItem | null>(null);
+	const currentContext = useMemo<OrganizationalContext | null>(
+		() =>
+			branch.subsidiaryId === null ? null : { type: 'subsidiary', id: branch.subsidiaryId },
+		[branch.subsidiaryId],
+	);
+	const editingSelection = useContextScopedSelection<number>(currentContext);
+	const [modalMode, setModalMode] = useState<'edit' | 'delete'>('edit');
+	const editingProfile = useMemo(
+		() =>
+			editingSelection.selectedId === null
+				? null
+				: (data.rows.find((row) => row.customer_sale_id === editingSelection.selectedId) ??
+					null),
+		[data.rows, editingSelection.selectedId],
+	);
 	const [sort, setSort] = useState<CreditSortState>(null);
+	useEffect(() => {
+		setSort(null);
+	}, [branch.subsidiaryId]);
+	const exportDisabled = !state.hasDataContext || filters.isSearchDebouncing || sort !== null;
+	const downloadCreditProfiles = useCallback(
+		(params: DeferredPaymentCreditProfilesApiParams, signal: AbortSignal) => {
+			if (branch.subsidiaryId === null) {
+				return Promise.reject(
+					new Error('No se pudo resolver la subsidiaria para exportar.'),
+				);
+			}
+			return deferredPaymentsService.exportCreditProfiles(
+				branch.subsidiaryId,
+				params,
+				signal,
+			);
+		},
+		[branch.subsidiaryId],
+	);
+	const creditProfileExport = useDeferredPaymentsExport({
+		disabled: exportDisabled,
+		ownerContext: branch.subsidiaryId,
+		download: downloadCreditProfiles,
+	});
 	const sortedRows = useMemo(
 		() =>
 			sort === null
@@ -230,6 +276,20 @@ const CarteraCreditoView: React.FC = () => {
 			}),
 		[navigate],
 	);
+	const openCreditProfileEditor = useCallback(
+		(customerSaleId: number) => {
+			setModalMode('edit');
+			editingSelection.select(customerSaleId);
+		},
+		[editingSelection],
+	);
+	const openCreditProfileDeletion = useCallback(
+		(customerSaleId: number) => {
+			setModalMode('delete');
+			editingSelection.select(customerSaleId);
+		},
+		[editingSelection],
+	);
 
 	return (
 		<PageWrapper isProtectedRoute title='Cartera de crédito'>
@@ -238,6 +298,14 @@ const CarteraCreditoView: React.FC = () => {
 					<Icon icon='HeroCreditCard' />
 					<span>Comercial / Pagos diferidos / Cartera de crédito</span>
 				</SubheaderLeft>
+				<DeferredPaymentsExportDropdown
+					branchId={branch.branchId}
+					subsidiaryId={branch.subsidiaryId}
+					disabled={exportDisabled}
+					isExporting={creditProfileExport.isExporting}
+					onExportPage={() => creditProfileExport.exportPage(filters.requestFilters)}
+					onExportAll={() => creditProfileExport.exportAll(filters.requestFilters)}
+				/>
 			</Subheader>
 			<Container className='space-y-4'>
 				{!state.hasDataContext ? (
@@ -246,11 +314,40 @@ const CarteraCreditoView: React.FC = () => {
 						variant='outline'
 						icon='HeroBuildingStorefront'
 						title='No se pudo resolver la subsidiaria'>
-						Seleccioná nuevamente el contexto comercial para consultar la cartera de
+						Selecciona nuevamente el contexto comercial para consultar la cartera de
 						crédito.
 					</Alert>
 				) : (
 					<>
+						{creditProfileExport.error && (
+							<Alert
+								color='red'
+								variant='outline'
+								icon='HeroExclamationTriangle'
+								title='No pudimos exportar la cartera de crédito'>
+								{creditProfileExport.error}
+							</Alert>
+						)}
+						{sort !== null && (
+							<Alert
+								color='amber'
+								variant='outline'
+								icon='HeroArrowsUpDown'
+								title='La exportación está pausada por el orden local'>
+								<div className='flex flex-wrap items-center justify-between gap-3'>
+									<span>
+										Restablece el orden de la tabla para exportar el mismo orden
+										que entrega el servidor.
+									</span>
+									<Button
+										size='sm'
+										variant='outline'
+										onClick={() => setSort(null)}>
+										Restablecer orden
+									</Button>
+								</div>
+							</Alert>
+						)}
 						<Card>
 							<CardHeader>
 								<div className='flex items-center gap-2'>
@@ -535,7 +632,9 @@ const CarteraCreditoView: React.FC = () => {
 																	scope='access'
 																	aria-label={`Editar crédito de ${getCustomerName(row)}`}
 																	onClick={() =>
-																		setEditingProfile(row)
+																		openCreditProfileEditor(
+																			row.customer_sale_id,
+																		)
 																	}>
 																	<Icon
 																		icon='HeroPencil'
@@ -544,6 +643,39 @@ const CarteraCreditoView: React.FC = () => {
 																	/>
 																</ProtectedButton>
 															</Tooltip>
+															{!row.is_active && (
+																<Tooltip
+																	text='Eliminar perfil de crédito'
+																	placement='top-end'>
+																	<ProtectedButton
+																		variant='solid'
+																		size='sm'
+																		color='red'
+																		className='bg-red-600 p-1 hover:bg-red-700/20'
+																		permission={
+																			ERP_PERMISSIONS
+																				.DEFERRED_PAYMENTS
+																				.DELETE
+																		}
+																		branchId={branch.branchId}
+																		subsidiaryId={
+																			branch.subsidiaryId
+																		}
+																		scope='access'
+																		aria-label={`Eliminar crédito de ${getCustomerName(row)}`}
+																		onClick={() =>
+																			openCreditProfileDeletion(
+																				row.customer_sale_id,
+																			)
+																		}>
+																		<Icon
+																			icon='HeroTrash'
+																			color='white'
+																			className='text-xl'
+																		/>
+																	</ProtectedButton>
+																</Tooltip>
+															)}
 														</div>
 													</Td>
 												</Tr>
@@ -562,13 +694,17 @@ const CarteraCreditoView: React.FC = () => {
 					</>
 				)}
 			</Container>
-			<CreditProfileEditModal
-				profile={editingProfile}
-				subsidiaryId={branch.subsidiaryId}
-				branchId={branch.branchId}
-				onClose={() => setEditingProfile(null)}
-				onSaved={actions.refresh}
-			/>
+			{editingSelection.context !== null && editingProfile !== null && (
+				<CreditProfileEditModal
+					profile={editingProfile}
+					subsidiaryId={editingSelection.context.id}
+					branchId={branch.branchId}
+					onClose={editingSelection.clear}
+					onSaved={actions.refresh}
+					onDeleted={actions.refreshAfterDeletion}
+					initialDeleteConfirmation={modalMode === 'delete'}
+				/>
+			)}
 		</PageWrapper>
 	);
 };

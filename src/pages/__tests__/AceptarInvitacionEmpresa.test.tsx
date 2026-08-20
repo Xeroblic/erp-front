@@ -17,7 +17,9 @@ const TOKEN = 'a26c5662-31f3-478e-aae2-42848fcce5d0';
 const renderActivationPage = () =>
 	render(
 		<Provider store={store}>
-			<MemoryRouter initialEntries={[`/usuarios/activar/${TOKEN}`]}>
+			<MemoryRouter
+				initialEntries={[`/usuarios/activar/${TOKEN}`]}
+				future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
 				<Routes>
 					<Route path='/usuarios/activar/:token' element={<AceptarInvitacionEmpresa />} />
 				</Routes>

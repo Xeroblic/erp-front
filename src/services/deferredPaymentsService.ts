@@ -29,6 +29,11 @@ export interface DeferredPaymentAttachmentDownload {
 	fileName: string | null;
 }
 
+export interface DeferredPaymentExportDownload {
+	blob: Blob;
+	fileName: string | null;
+}
+
 const asRecord = (value: unknown): Record<string, unknown> | null =>
 	value !== null && typeof value === 'object' && !Array.isArray(value)
 		? (value as Record<string, unknown>)
@@ -68,6 +73,17 @@ const creditProfileUrl = (subsidiaryId: number, customerSaleId: number): string 
 
 const creditProfilesUrl = (subsidiaryId: number): string =>
 	`/subsidiaries/${subsidiaryId}/credit-profiles`;
+
+const getDownloadFileName = (disposition: unknown): string | null => {
+	if (typeof disposition !== 'string') return null;
+	const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+	const quotedName = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+	try {
+		return encodedName ? decodeURIComponent(encodedName) : (quotedName ?? null);
+	} catch {
+		return encodedName ?? quotedName ?? null;
+	}
+};
 
 const invalidateCreditProfiles = (subsidiaryId: number): void => {
 	ApiService.invalidateCache(creditProfilesUrl(subsidiaryId));
@@ -327,22 +343,10 @@ const downloadDeferredPaymentAttachment = async (
 		responseType: 'blob',
 		...requestConfig(signal),
 	});
-	const disposition = response.headers?.['content-disposition'];
-	const encodedName =
-		typeof disposition === 'string'
-			? disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
-			: undefined;
-	const quotedName =
-		typeof disposition === 'string'
-			? disposition.match(/filename="?([^";]+)"?/i)?.[1]
-			: undefined;
-	let fileName: string | null = null;
-	try {
-		fileName = encodedName ? decodeURIComponent(encodedName) : (quotedName ?? null);
-	} catch {
-		fileName = encodedName ?? quotedName ?? null;
-	}
-	return { blob: response.data, fileName };
+	return {
+		blob: response.data,
+		fileName: getDownloadFileName(response.headers?.['content-disposition']),
+	};
 };
 const getCreditProfile = async (
 	subsidiaryId: number,
@@ -393,6 +397,51 @@ const updateCreditProfile = async (
 	return unwrapResource(response.data);
 };
 
+const exportCreditProfiles = async (
+	subsidiaryId: number,
+	params: DeferredPaymentCreditProfilesApiParams = {},
+	signal?: AbortSignal,
+): Promise<DeferredPaymentExportDownload> => {
+	const response = await ApiService.fetchData<Blob>({
+		url: `${creditProfilesUrl(subsidiaryId)}/export`,
+		method: 'get',
+		params,
+		responseType: 'blob',
+		...requestConfig(signal),
+	});
+	return {
+		blob: response.data,
+		fileName: getDownloadFileName(response.headers?.['content-disposition']),
+	};
+};
+
+const exportDocuments = async (
+	subsidiaryId: number,
+	params: DeferredPaymentApiListParams = {},
+	signal?: AbortSignal,
+): Promise<DeferredPaymentExportDownload> => {
+	const response = await ApiService.fetchData<Blob>({
+		url: `${documentsUrl(subsidiaryId)}/export`,
+		method: 'get',
+		params,
+		responseType: 'blob',
+		...requestConfig(signal),
+	});
+	return {
+		blob: response.data,
+		fileName: getDownloadFileName(response.headers?.['content-disposition']),
+	};
+};
+
+const deleteCreditProfile = async (subsidiaryId: number, customerSaleId: number): Promise<void> => {
+	await ApiService.fetchData({
+		url: creditProfileUrl(subsidiaryId, customerSaleId),
+		method: 'delete',
+	});
+	ApiService.invalidateCache(creditProfileUrl(subsidiaryId, customerSaleId));
+	invalidateCreditProfiles(subsidiaryId);
+};
+
 const deferredPaymentsService = {
 	getDocuments,
 	getSummary,
@@ -411,6 +460,9 @@ const deferredPaymentsService = {
 	getCreditProfile,
 	getCreditProfiles,
 	updateCreditProfile,
+	exportCreditProfiles,
+	exportDocuments,
+	deleteCreditProfile,
 };
 
 export default deferredPaymentsService;

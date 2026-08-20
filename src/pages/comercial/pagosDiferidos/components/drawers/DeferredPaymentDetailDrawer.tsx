@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { OrganizationalContext } from '@/hooks/useContextScopedSelection';
 import type {
 	IDeferredPaymentAbono,
@@ -25,11 +25,13 @@ import {
 } from '../detail/DeferredPaymentActivitySections';
 import DeferredPaymentActionsFooter from '../detail/DeferredPaymentActionsFooter';
 import DeferredPaymentItemsSection from '../detail/DeferredPaymentItemsSection';
+import AttachmentsDropOverlay from '../parts/AttachmentsDropOverlay';
 import RegisterDeferredPaymentModal from '../modals/RegisterDeferredPaymentModal';
 import ConfirmDeferredPaymentActionModal from '../modals/ConfirmDeferredPaymentActionModal';
 import useDeferredPaymentDetail from '../../hooks/useDeferredPaymentDetail';
 import { useDeferredPaymentActions } from '../../hooks/useDeferredPaymentActions';
-import { DEFERRED_PAYMENT_RECEIPT_ACCEPT } from '../../types';
+import useAttachmentsFileDrop, { syncSingleFileInput } from '../../hooks/useAttachmentsFileDrop';
+import { calculateDeferredPaymentVatBreakdown, DEFERRED_PAYMENT_RECEIPT_ACCEPT } from '../../types';
 import {
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
 	formatDeferredPaymentAmount,
@@ -86,6 +88,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	const [closeAfterDiscardingReceipt, setCloseAfterDiscardingReceipt] = useState(false);
 	const [paymentToVoid, setPaymentToVoid] = useState<IDeferredPaymentAbono | null>(null);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+	const markPaidReceiptInputRef = useRef<HTMLInputElement>(null);
 	useEffect(() => {
 		setIsRegisterOpen(false);
 		setIsMarkPaidOpen(false);
@@ -97,6 +100,15 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	const paymentActions = useDeferredPaymentActions(document, branch.subsidiaryId, () =>
 		setIsRegisterOpen(false),
 	);
+	const { isDraggingFile: isDraggingMarkPaidReceipt } = useAttachmentsFileDrop({
+		isActive: isMarkPaidOpen,
+		canDrop: !paymentActions.state.markingPaid && !paymentActions.state.uploadingReceipt,
+		onFiles: (files) => {
+			const file = files?.[0] ?? null;
+			syncSingleFileInput(markPaidReceiptInputRef.current, file);
+			paymentActions.actions.setMarkPaidReceipt(file).catch(() => undefined);
+		},
+	});
 	const openDiscardMarkPaidReceiptConfirmation = useCallback((closeDrawer = false) => {
 		setCloseAfterDiscardingReceipt(closeDrawer);
 		setIsDiscardMarkPaidReceiptOpen(true);
@@ -135,6 +147,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	}, [closeAfterDiscardingReceipt, onClose, paymentActions.actions]);
 	const total = Number(document?.total_amount ?? 0);
 	const paid = Number(document?.paid_amount ?? 0);
+	const vatBreakdown = calculateDeferredPaymentVatBreakdown(total);
 	const progress = total > 0 ? Math.min(100, Math.max(0, (paid / total) * 100)) : 0;
 	const progressLabel = `${Math.round(progress)}%`;
 	const customerDisplayName = document
@@ -145,6 +158,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 
 	return (
 		<>
+			<AttachmentsDropOverlay isVisible={isDraggingMarkPaidReceipt} />
 			<OffCanvas
 				isOpen={documentId !== null}
 				setIsOpen={handleDrawerOpenChange}
@@ -167,7 +181,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 							variant='outline'
 							icon='HeroBuildingStorefront'
 							title='No se pudo resolver la subsidiaria'>
-							Seleccioná nuevamente el contexto comercial para consultar este
+							Selecciona nuevamente el contexto comercial para consultar este
 							documento.
 						</Alert>
 					)}
@@ -272,6 +286,32 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 								/>
 								<AmountCard label='Avance del pago' value={progressLabel} />
 							</div>
+							{vatBreakdown && (
+								<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
+									<CardBody className='p-5 text-sm'>
+										<p className='font-medium text-zinc-700 dark:text-zinc-200'>
+											Si el total incluye IVA 19%:
+										</p>
+										<div className='mt-2 grid gap-2 sm:grid-cols-3'>
+											<p className='text-zinc-600 dark:text-zinc-300'>
+												Neto:{' '}
+												{formatDeferredPaymentAmount(
+													vatBreakdown.net_amount,
+												)}
+											</p>
+											<p className='text-zinc-600 dark:text-zinc-300'>
+												IVA:{' '}
+												{formatDeferredPaymentAmount(
+													vatBreakdown.vat_amount,
+												)}
+											</p>
+											<p className='font-semibold'>
+												Total: {formatDeferredPaymentAmount(total)}
+											</p>
+										</div>
+									</CardBody>
+								</Card>
+							)}
 							<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
 								<CardBody className='space-y-4 p-5'>
 									<div>
@@ -500,10 +540,15 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 							<div>
 								<Label htmlFor='mark_paid_receipt'>Comprobante (opcional)</Label>
 								<Input
+									ref={markPaidReceiptInputRef}
 									id='mark_paid_receipt'
 									name='mark_paid_receipt'
 									type='file'
 									accept={DEFERRED_PAYMENT_RECEIPT_ACCEPT}
+									disabled={
+										paymentActions.state.markingPaid ||
+										paymentActions.state.uploadingReceipt
+									}
 									isValid={!paymentActions.state.markPaidReceiptError}
 									isTouched={paymentActions.state.markPaidReceiptTouched}
 									invalidFeedback={
@@ -601,7 +646,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 									variant='outline'
 									icon='HeroExclamationTriangle'
 									title='El documento tiene abonos registrados'>
-									Los documentos con abonos no se pueden eliminar. Anulá primero
+									Los documentos con abonos no se pueden eliminar. Anula primero
 									los {document.payments.length} abono(s) registrado(s).
 								</Alert>
 							)}

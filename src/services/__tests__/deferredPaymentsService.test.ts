@@ -279,12 +279,14 @@ describe('deferredPaymentsService', () => {
 		};
 		apiSpies.fetchData
 			.mockResolvedValueOnce({ data: { data: profile } } as never)
-			.mockResolvedValueOnce({ data: profile } as never);
+			.mockResolvedValueOnce({ data: profile } as never)
+			.mockResolvedValueOnce({ data: undefined } as never);
 
 		await expect(deferredPaymentsService.getCreditProfile(4, 8)).resolves.toEqual(profile);
 		await expect(
 			deferredPaymentsService.updateCreditProfile(4, 8, { credit_limit: '5000000.00' }),
 		).resolves.toEqual(profile);
+		await expect(deferredPaymentsService.deleteCreditProfile(4, 8)).resolves.toBeUndefined();
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({
@@ -292,7 +294,25 @@ describe('deferredPaymentsService', () => {
 				method: 'put',
 			}),
 		);
+		const deleteConfig = apiSpies.fetchData.mock.calls[2][0] as Record<string, unknown>;
+		expect(deleteConfig).toMatchObject({
+			url: '/subsidiaries/4/customer-sales/8/credit-profile',
+			method: 'delete',
+		});
+		expect(deleteConfig).not.toHaveProperty('data');
+		expect(apiSpies.invalidateCache).toHaveBeenCalledWith(
+			'/subsidiaries/4/customer-sales/8/credit-profile',
+		);
 		expect(apiSpies.invalidateCache).toHaveBeenCalledWith('/subsidiaries/4/credit-profiles');
+	});
+
+	it('no invalida caché cuando no puede eliminar un perfil de crédito', async () => {
+		apiSpies.fetchData.mockRejectedValue({ response: { status: 422 } });
+
+		await expect(deferredPaymentsService.deleteCreditProfile(4, 8)).rejects.toMatchObject({
+			response: { status: 422 },
+		});
+		expect(apiSpies.invalidateCache).not.toHaveBeenCalled();
 	});
 
 	it('consulta la cartera de crédito paginada sin envolver la colección Laravel', async () => {
@@ -312,6 +332,63 @@ describe('deferredPaymentsService', () => {
 			params: { page: 2, per_page: 50, active: false, search: '76123456' },
 			cacheTTLms: 15_000,
 			signal: controller.signal,
+		});
+	});
+
+	it('exporta cartera y pagos diferidos como blob con el nombre enviado por el backend', async () => {
+		const controller = new AbortController();
+		const creditBlob = new Blob(['cartera']);
+		const documentsBlob = new Blob(['pagos']);
+		apiSpies.fetchData
+			.mockResolvedValueOnce({
+				data: creditBlob,
+				headers: {
+					'content-disposition': "attachment; filename*=UTF-8''perfiles%20credito.xlsx",
+				},
+			} as never)
+			.mockResolvedValueOnce({
+				data: documentsBlob,
+				headers: { 'content-disposition': 'attachment; filename="pagos.xlsx"' },
+			} as never);
+
+		await expect(
+			deferredPaymentsService.exportCreditProfiles(
+				4,
+				{ page: 2, per_page: 50, active: false, search: 'Andes' },
+				controller.signal,
+			),
+		).resolves.toEqual({ blob: creditBlob, fileName: 'perfiles credito.xlsx' });
+		await expect(
+			deferredPaymentsService.exportDocuments(4, {
+				page: 3,
+				per_page: 20,
+				status: 'overdue',
+				due_before: '2026-08-31',
+			}),
+		).resolves.toEqual({ blob: documentsBlob, fileName: 'pagos.xlsx' });
+
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(1, {
+			url: '/subsidiaries/4/credit-profiles/export',
+			method: 'get',
+			params: { page: 2, per_page: 50, active: false, search: 'Andes' },
+			responseType: 'blob',
+			signal: controller.signal,
+		});
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(2, {
+			url: '/subsidiaries/4/deferred-payments/export',
+			method: 'get',
+			params: { page: 3, per_page: 20, status: 'overdue', due_before: '2026-08-31' },
+			responseType: 'blob',
+		});
+	});
+
+	it('no inventa un nombre si Content-Disposition no está disponible', async () => {
+		const blob = new Blob(['pagos']);
+		apiSpies.fetchData.mockResolvedValue({ data: blob, headers: {} } as never);
+
+		await expect(deferredPaymentsService.exportDocuments(4, {})).resolves.toEqual({
+			blob,
+			fileName: null,
 		});
 	});
 });

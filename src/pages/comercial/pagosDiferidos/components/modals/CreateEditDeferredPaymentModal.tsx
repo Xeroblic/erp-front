@@ -22,6 +22,7 @@ import Modal, {
 	ModalHeader,
 } from '@/components/ui/Modal';
 import DateInput from '@/components/form/DateInput';
+import Checkbox from '@/components/form/Checkbox';
 import Input from '@/components/form/Input';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
@@ -44,8 +45,18 @@ import CreateCustomerSaleModal from '@/pages/comercial/clientesVentas/components
 import type { ICustomerSale, ICustomerSaleOverview } from '@/interface/customerSales.interface';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
 import { useDeferredPaymentAttachments } from '../../hooks/useDeferredPaymentAttachments';
-import { createEmptyDeferredPaymentItem, DEFERRED_PAYMENT_TOTAL_ERROR } from '../../types';
-import { DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS } from '../../utils';
+import {
+	calculateDeferredPaymentGrossUnitPrice,
+	calculateDeferredPaymentVatBreakdown,
+	createEmptyDeferredPaymentItem,
+	DEFERRED_PAYMENT_TOTAL_ERROR,
+} from '../../types';
+import {
+	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
+	formatDeferredPaymentAmount,
+	formatDeferredPaymentInputAmount,
+	parseDeferredPaymentAmount,
+} from '../../utils';
 
 interface CreateEditDeferredPaymentModalProps {
 	isOpen: boolean;
@@ -96,6 +107,57 @@ const hasValidationErrorOtherThan = (value: unknown, excludedMessage: string): b
 		);
 	return false;
 };
+
+const collectValidationErrorPaths = (value: unknown, prefix = ''): string[] => {
+	if (typeof value === 'string') return prefix ? [prefix] : [];
+	if (Array.isArray(value))
+		return value.flatMap((entry, index) =>
+			collectValidationErrorPaths(entry, prefix ? `${prefix}.${index}` : String(index)),
+		);
+	if (value !== null && typeof value === 'object')
+		return Object.entries(value).flatMap(([key, entry]) =>
+			collectValidationErrorPaths(entry, prefix ? `${prefix}.${key}` : key),
+		);
+	return [];
+};
+
+const getFirstInvalidDeferredPaymentFieldId = (errors: unknown): string | null => {
+	const errorPaths = collectValidationErrorPaths(errors);
+	const hasErrorAt = (fieldName: string): boolean =>
+		errorPaths.some((path) => path === fieldName || path.startsWith(`${fieldName}.`));
+	const documentFieldOrder = [
+		'customer_sale_id',
+		'document_type',
+		'document_number',
+		'issue_date',
+		'due_date',
+		'purchase_order',
+		'assignee_ids',
+		'notes',
+	];
+
+	const firstDocumentField = documentFieldOrder.find(hasErrorAt);
+	if (firstDocumentField) return firstDocumentField;
+
+	const itemIndexes = [
+		...new Set(
+			errorPaths
+				.map((path) => /^items\.(\d+)\./.exec(path)?.[1])
+				.filter((index): index is string => index !== undefined)
+				.map(Number),
+		),
+	].sort((first, second) => first - second);
+	const itemFieldOrder = ['code', 'description', 'quantity', 'entered_unit_price', 'serials'];
+	const firstItemField = itemIndexes
+		.flatMap((itemIndex) =>
+			itemFieldOrder.map((fieldName) => `items.${itemIndex}.${fieldName}`),
+		)
+		.find(hasErrorAt);
+	if (firstItemField) return firstItemField;
+
+	return hasErrorAt('total_amount') ? 'total_amount' : null;
+};
+
 const documentTypeOptions: TSelectOption[] = Object.entries(
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
 ).map(([value, label]) => ({ value, label }));
@@ -111,8 +173,6 @@ const asMultiOptions = (value: unknown): TSelectOption[] => {
 	const candidates: unknown[] = value;
 	return candidates.filter(isSelectOption);
 };
-
-const toCLPAmount = (value: string): string => value.replace(/\D/g, '');
 
 const formatCustomerLabel = (...values: Array<string | null | undefined>): string => {
 	const labelParts: string[] = [];
@@ -152,12 +212,24 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	onSaved,
 }) => {
 	const dispatch = useAppDispatch();
-	const customers = useAppSelector((state) => state.customerSales.overview);
-	const customersLoading = useAppSelector((state) => state.customerSales.overviewLoading);
+	const storedCustomers = useAppSelector((state) => state.customerSales.overview);
+	const storedCustomersLoading = useAppSelector((state) => state.customerSales.overviewLoading);
+	const customersSubsidiaryId = useAppSelector(
+		(state) => state.customerSales.overviewSubsidiaryId,
+	);
 	const users = useAppSelector((state) => state.usersAdmin.users);
 	const usersLoading = useAppSelector((state) => state.usersAdmin.loading.users);
 	const currentUser = useAppSelector((state) => state.auth?.user);
 	const { branchId, subsidiaryId } = useCurrentBranch();
+	const isCustomersContextCurrent =
+		subsidiaryId !== null &&
+		customersSubsidiaryId !== null &&
+		Number(customersSubsidiaryId) === subsidiaryId;
+	const customers = useMemo(
+		() => (isCustomersContextCurrent ? storedCustomers : []),
+		[isCustomersContextCurrent, storedCustomers],
+	);
+	const customersLoading = isCustomersContextCurrent ? storedCustomersLoading : false;
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const [customerSearch, setCustomerSearch] = useState('');
 	const [debouncedCustomerSearch] = useDebounce(customerSearch, 300);
@@ -173,6 +245,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const [isCreditProfileCreatorSaving, setIsCreditProfileCreatorSaving] = useState(false);
 	const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
 	const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
+	const [customerModalSubsidiaryId, setCustomerModalSubsidiaryId] = useState<number | null>(null);
 	const [editingCustomer, setEditingCustomer] = useState<ICustomerSale | null>(null);
 	const [isLoadingCustomerDetail, setIsLoadingCustomerDetail] = useState(false);
 	const [pendingUploadRecovery, setPendingUploadRecovery] =
@@ -187,6 +260,12 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const recoveryRequestIdRef = useRef(0);
 	const savedDocumentIdRef = useRef<number | null>(null);
 	latestSubsidiaryIdRef.current = subsidiaryId;
+	customerModalSubsidiaryIdRef.current = customerModalSubsidiaryId;
+	const isCustomerModalContextCurrent =
+		customerModalSubsidiaryId !== null && customerModalSubsidiaryId === subsidiaryId;
+	const isCurrentCreateCustomerOpen = isCreateCustomerOpen && isCustomerModalContextCurrent;
+	const isCurrentEditCustomerOpen =
+		isEditCustomerOpen && editingCustomer !== null && isCustomerModalContextCurrent;
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
 	const attachmentActions = useDeferredPaymentAttachments({
 		isOpen,
@@ -250,6 +329,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		!isPaidEdit &&
 		!isSubmitting &&
 		!isAttachmentOperationActive &&
+		currentPendingUploadRecovery === null &&
+		!isCreateCustomerOpen &&
+		!isEditCustomerOpen &&
+		!isCreditProfileCreatorOpen;
+	const showAttachmentDragAndDropHint =
+		canUploadAttachments &&
+		!isPaidEdit &&
 		currentPendingUploadRecovery === null &&
 		!isCreateCustomerOpen &&
 		!isEditCustomerOpen &&
@@ -379,7 +465,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		customerDetailAbortRef.current?.();
 		customerDetailAbortRef.current = null;
 		customerDetailRequestIdRef.current += 1;
-		customerModalSubsidiaryIdRef.current = null;
+		setCustomerModalSubsidiaryId(null);
 		setIsLoadingCustomerDetail(false);
 		setEditingCustomer(null);
 		setIsEditCustomerOpen(false);
@@ -492,14 +578,36 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
 		[customerData],
 	);
-	const handleUnitPriceChange = (index: number, value: string) => {
-		const field = `items.${index}.unit_price`;
-		formik.setFieldTouched(field, true, false).catch(() => undefined);
-		formik.setFieldValue(field, toCLPAmount(value)).catch(() => undefined);
+	const handleEnteredUnitPriceChange = (index: number, value: string) => {
+		const enteredUnitPriceField = `items.${index}.entered_unit_price`;
+		const unitPriceField = `items.${index}.unit_price`;
+		const normalizedValue = parseDeferredPaymentAmount(value);
+		const item = formik.values.items[index];
+		formik.setFieldTouched(enteredUnitPriceField, true, false).catch(() => undefined);
+		formik.setFieldValue(enteredUnitPriceField, normalizedValue).catch(() => undefined);
+		const grossUnitPrice = calculateDeferredPaymentGrossUnitPrice(
+			normalizedValue,
+			item.calculates_vat,
+		);
+		formik.setFieldValue(unitPriceField, grossUnitPrice ?? '').catch(() => undefined);
+	};
+	const handleCalculatesVatChange = (index: number, calculatesVat: boolean) => {
+		const item = formik.values.items[index];
+		formik.setFieldValue(`items.${index}.calculates_vat`, calculatesVat).catch(() => undefined);
+		const grossUnitPrice = calculateDeferredPaymentGrossUnitPrice(
+			item.entered_unit_price,
+			calculatesVat,
+		);
+		if (grossUnitPrice !== null)
+			formik
+				.setFieldValue(`items.${index}.unit_price`, grossUnitPrice)
+				.catch(() => undefined);
 	};
 	const handleDocumentTotalChange = (value: string) => {
 		formik.setFieldTouched('total_amount', true, false).catch(() => undefined);
-		formik.setFieldValue('total_amount', toCLPAmount(value)).catch(() => undefined);
+		formik
+			.setFieldValue('total_amount', parseDeferredPaymentAmount(value))
+			.catch(() => undefined);
 	};
 	const assigneeOptions = useMemo<TSelectOption[]>(() => {
 		const currentUserName = [currentUser?.first_name, currentUser?.last_name]
@@ -555,7 +663,10 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			? formik.errors.total_amount
 			: undefined;
 	const itemTotalDiffersFromDocumentTotal =
-		Number.isFinite(documentTotal) && documentTotal > 0 && estimatedTotal !== documentTotal;
+		Number.isFinite(documentTotal) &&
+		documentTotal > 0 &&
+		Math.abs(estimatedTotal - documentTotal) >= 1;
+	const vatBreakdown = calculateDeferredPaymentVatBreakdown(documentTotal);
 	const hasSelectedCustomer = formik.values.customer_sale_id !== null;
 	const hasCreatedCreditProfile = creditProfile !== null && creditProfile.id !== null;
 	const shouldShowCreditProfileEmptyState =
@@ -648,7 +759,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	 * y consultaría su perfil de crédito con el contexto equivocado.
 	 */
 	const isCustomerModalStillCurrent = () =>
-		latestIsOpenRef.current && customerModalSubsidiaryIdRef.current === subsidiaryId;
+		latestIsOpenRef.current &&
+		customerModalSubsidiaryIdRef.current === latestSubsidiaryIdRef.current;
 	const handleCustomerCreated = (customer: ICustomerSale) => {
 		if (!isCustomerModalStillCurrent()) {
 			resetCustomerModals();
@@ -685,7 +797,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		const requestId = customerDetailRequestIdRef.current + 1;
 		customerDetailRequestIdRef.current = requestId;
 		const requestSubsidiaryId = subsidiaryId;
-		customerModalSubsidiaryIdRef.current = requestSubsidiaryId;
+		setCustomerModalSubsidiaryId(requestSubsidiaryId);
 		const requestCustomerSaleId = customerSaleId;
 		setEditingCustomer(null);
 		setIsEditCustomerOpen(false);
@@ -728,6 +840,22 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				}
 			});
 	};
+	const handleOpenCreateCustomer = () => {
+		if (subsidiaryId === null) {
+			toast.error('No se pudo determinar la subsidiaria activa');
+			return;
+		}
+		setCustomerModalSubsidiaryId(subsidiaryId);
+		setIsCreateCustomerOpen(true);
+	};
+	const focusFirstInvalidDeferredPaymentField = (errors: unknown) => {
+		const fieldId = getFirstInvalidDeferredPaymentFieldId(errors);
+		if (!fieldId) return;
+		const field = document.getElementById(fieldId);
+		if (!(field instanceof HTMLElement)) return;
+		field.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+		field.focus({ preventScroll: true });
+	};
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={handleClose} size='2xl' isScrollable isStaticBackdrop>
@@ -757,7 +885,9 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 									)
 								)
 									toast.error(DEFERRED_PAYMENT_TOTAL_ERROR);
-								return formik.submitForm();
+								return formik
+									.submitForm()
+									.finally(() => focusFirstInvalidDeferredPaymentField(errors));
 							})
 							.catch(() => undefined);
 					}}>
@@ -811,14 +941,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												variant='outline'
 												size='xs'
 												icon='HeroPlus'
+												className='whitespace-nowrap'
 												isDisable={isPaidEdit}
-												aria-label='Crear cliente'
-												onClick={() => {
-													customerModalSubsidiaryIdRef.current =
-														subsidiaryId;
-													setIsCreateCustomerOpen(true);
-												}}
-											/>
+												onClick={handleOpenCreateCustomer}>
+												Crear cliente
+											</ProtectedButton>
 										</>
 									}
 									className='md:col-span-2 lg:col-span-1'>
@@ -1064,7 +1191,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										isSubmitting ||
 										currentPendingUploadRecovery !== null
 									}
-									canDragAndDrop={isAttachmentDropEnabled}
+									showDragAndDropHint={showAttachmentDragAndDropHint}
 									onAddFiles={attachmentActions.addFiles}
 									onRemovePending={attachmentActions.removePending}
 									onSetPendingSharing={attachmentActions.setPendingSharing}
@@ -1188,7 +1315,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											{formik.values.items.map((item, index) => (
 												<div
 													key={item.client_key}
-													className='grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900 md:grid-cols-12'>
+													className='relative grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 pr-14 dark:border-zinc-700 dark:bg-zinc-900 md:grid-cols-12'>
 													<DeferredPaymentField
 														name={`items.${index}.code`}
 														label='Código'
@@ -1247,40 +1374,84 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															/>
 														)}
 													</DeferredPaymentField>
+													<div
+														data-testid={`items.${index}.price-vat-row`}
+														className='md:col-span-2'>
+														<DeferredPaymentField
+															name={`items.${index}.entered_unit_price`}
+															hiddenErrorMessage={
+																DEFERRED_PAYMENT_TOTAL_ERROR
+															}
+															label={
+																item.calculates_vat
+																	? 'Precio neto'
+																	: 'Precio bruto c/ IVA'
+															}
+															labelClassName='whitespace-nowrap'
+															className='min-w-0'>
+															{({ error, isTouched, isValid }) => (
+																<Input
+																	id={`items.${index}.entered_unit_price`}
+																	name={`items.${index}.entered_unit_price`}
+																	type='text'
+																	inputMode='decimal'
+																	placeholder='$ 0'
+																	value={
+																		item.entered_unit_price ===
+																		''
+																			? ''
+																			: formatDeferredPaymentInputAmount(
+																					item.entered_unit_price,
+																				)
+																	}
+																	onChange={(event) =>
+																		handleEnteredUnitPriceChange(
+																			index,
+																			event.target.value,
+																		)
+																	}
+																	onBlur={formik.handleBlur}
+																	disabled={isPaidEdit}
+																	invalidFeedback={error}
+																	isTouched={isTouched}
+																	isValid={isValid}
+																/>
+															)}
+														</DeferredPaymentField>
+														{item.calculates_vat &&
+															item.entered_unit_price !== '' && (
+																<p className='mt-1 text-xs text-zinc-500'>
+																	Bruto calculado:{' '}
+																	{formatDeferredPaymentAmount(
+																		item.unit_price,
+																	)}
+																</p>
+															)}
+													</div>
 													<DeferredPaymentField
-														name={`items.${index}.unit_price`}
-														hiddenErrorMessage={
-															DEFERRED_PAYMENT_TOTAL_ERROR
-														}
-														label='Precio unitario (bruto, IVA incluido)'
-														className='md:col-span-3'>
-														{({ error, isTouched, isValid }) => (
-															<Input
-																id={`items.${index}.unit_price`}
-																name={`items.${index}.unit_price`}
-																type='text'
-																inputMode='numeric'
-																placeholder='$ 0'
-																value={
-																	item.unit_price === ''
-																		? ''
-																		: formatCLP(item.unit_price)
-																}
-																onChange={(event) =>
-																	handleUnitPriceChange(
-																		index,
-																		event.target.value,
-																	)
-																}
-																onBlur={formik.handleBlur}
-																disabled={isPaidEdit}
-																invalidFeedback={error}
-																isTouched={isTouched}
-																isValid={isValid}
-															/>
+														name={`items.${index}.calculates_vat`}
+														reservesLabelSpace
+														className='md:col-span-2'>
+														{() => (
+															<div
+																data-testid={`items.${index}.vat-toggle`}>
+																<Checkbox
+																	id={`items.${index}.calculates_vat`}
+																	name={`items.${index}.calculates_vat`}
+																	label='Calcular IVA'
+																	checked={item.calculates_vat}
+																	onChange={(event) =>
+																		handleCalculatesVatChange(
+																			index,
+																			event.target.checked,
+																		)
+																	}
+																	disabled={isPaidEdit}
+																/>
+															</div>
 														)}
 													</DeferredPaymentField>
-													<div className='flex items-start pt-7 md:col-span-1'>
+													<div className='absolute right-4 top-4'>
 														<Button
 															type='button'
 															variant='outline'
@@ -1351,12 +1522,14 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												id='total_amount'
 												name='total_amount'
 												type='text'
-												inputMode='numeric'
+												inputMode='decimal'
 												placeholder='$ 0'
 												value={
 													formik.values.total_amount === ''
 														? ''
-														: formatCLP(formik.values.total_amount)
+														: formatDeferredPaymentInputAmount(
+																formik.values.total_amount,
+															)
 												}
 												onChange={(event) =>
 													handleDocumentTotalChange(event.target.value)
@@ -1369,6 +1542,31 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											/>
 										)}
 									</DeferredPaymentField>
+									{vatBreakdown && (
+										<div className='rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950 md:col-span-2'>
+											<p className='font-medium text-zinc-700 dark:text-zinc-200'>
+												Si el total incluye IVA 19%:
+											</p>
+											<div className='mt-2 grid gap-2 sm:grid-cols-3'>
+												<p>
+													Neto:{' '}
+													{formatDeferredPaymentAmount(
+														vatBreakdown.net_amount,
+													)}
+												</p>
+												<p>
+													IVA:{' '}
+													{formatDeferredPaymentAmount(
+														vatBreakdown.vat_amount,
+													)}
+												</p>
+												<p>
+													Total:{' '}
+													{formatDeferredPaymentAmount(documentTotal)}
+												</p>
+											</div>
+										</div>
+									)}
 								</div>
 								{itemTotalDiffersFromDocumentTotal && (
 									<Alert
@@ -1442,16 +1640,20 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			 * la reduciría a los 5 clientes más recientes y vaciaría el select.
 			 */}
 			<CreateCustomerSaleModal
-				isOpen={isCreateCustomerOpen}
-				setIsOpen={setIsCreateCustomerOpen}
-				subsidiaryId={subsidiaryId}
+				isOpen={isCurrentCreateCustomerOpen}
+				setIsOpen={(nextIsOpen) => {
+					if (!nextIsOpen) resetCustomerModals();
+				}}
+				subsidiaryId={customerModalSubsidiaryId}
 				refreshStoreOnSuccess={false}
 				onSuccess={handleCustomerCreated}
 			/>
 			<CreateCustomerSaleModal
-				isOpen={isEditCustomerOpen && editingCustomer !== null}
-				setIsOpen={setIsEditCustomerOpen}
-				subsidiaryId={subsidiaryId}
+				isOpen={isCurrentEditCustomerOpen}
+				setIsOpen={(nextIsOpen) => {
+					if (!nextIsOpen) resetCustomerModals();
+				}}
+				subsidiaryId={customerModalSubsidiaryId}
 				isEdit
 				initialData={editingCustomer}
 				refreshStoreOnSuccess={false}

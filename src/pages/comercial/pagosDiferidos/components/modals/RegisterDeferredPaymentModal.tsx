@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { FormikProvider, type FormikProps } from 'formik';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
@@ -16,6 +16,8 @@ import Modal, {
 import type { DeferredPaymentActionFormValues } from '../../types';
 import { DEFERRED_PAYMENT_RECEIPT_ACCEPT } from '../../types';
 import DeferredPaymentField from '../parts/DeferredPaymentField';
+import AttachmentsDropOverlay from '../parts/AttachmentsDropOverlay';
+import useAttachmentsFileDrop, { syncSingleFileInput } from '../../hooks/useAttachmentsFileDrop';
 
 interface RegisterDeferredPaymentModalProps {
 	isOpen: boolean;
@@ -31,13 +33,25 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 	busy,
 	error,
 }) => {
+	const receiptInputRef = useRef<HTMLInputElement>(null);
 	const guardClose: React.Dispatch<React.SetStateAction<boolean>> = (next) => {
 		if (!busy) setIsOpen(next);
 	};
+	const { isDraggingFile } = useAttachmentsFileDrop({
+		isActive: isOpen,
+		canDrop: !busy,
+		onFiles: (files) => {
+			const file = files?.[0] ?? null;
+			syncSingleFileInput(receiptInputRef.current, file);
+			formik.setFieldValue('receipt', file).catch(() => undefined);
+			formik.setFieldTouched('receipt', true).catch(() => undefined);
+		},
+	});
 	const { resetForm } = formik;
 	useEffect(() => () => resetForm(), [resetForm]);
 	return (
 		<Modal isOpen={isOpen} setIsOpen={guardClose} isCentered size='sm' isStaticBackdrop={busy}>
+			<AttachmentsDropOverlay isVisible={isDraggingFile} />
 			<ModalHeader>Registrar abono</ModalHeader>
 			<ModalBody>
 				<FormikProvider value={formik}>
@@ -154,6 +168,7 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 							<DeferredPaymentField name='receipt'>
 								{({ error: fieldError, isTouched, isValid }) => (
 									<Input
+										ref={receiptInputRef}
 										id='receipt'
 										name='receipt'
 										type='file'

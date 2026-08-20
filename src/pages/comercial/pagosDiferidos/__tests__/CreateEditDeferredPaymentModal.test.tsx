@@ -1,6 +1,6 @@
 import React, { type PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
@@ -15,8 +15,11 @@ const toastSpies = vi.hoisted(() => ({
 	success: vi.fn(),
 	warn: vi.fn(),
 }));
+const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn() }));
+const scrollIntoViewSpy = vi.hoisted(() => vi.fn());
 
 vi.mock('react-toastify', () => ({ toast: toastSpies }));
+vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
 
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({ i18n: { dir: () => 'ltr' } }),
@@ -37,6 +40,12 @@ describe('CreateEditDeferredPaymentModal', () => {
 		toastSpies.error.mockClear();
 		toastSpies.success.mockClear();
 		toastSpies.warn.mockClear();
+		apiSpies.fetchData.mockImplementation(() => new Promise(() => undefined));
+		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+			configurable: true,
+			value: scrollIntoViewSpy,
+		});
+		scrollIntoViewSpy.mockReset();
 		const portalRoot = document.createElement('div');
 		portalRoot.id = 'portal-root';
 		document.body.appendChild(portalRoot);
@@ -88,19 +97,134 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(
 			screen.getByLabelText('Total del documento — debe coincidir con la factura'),
 		).toBeInTheDocument();
+		expect(screen.getByTestId('items.0.price-vat-row')).toHaveClass('md:col-span-2');
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
+		const createCustomerButton = screen.getByRole('button', { name: 'Crear cliente' });
+		expect(createCustomerButton).toHaveTextContent('Crear cliente');
 	});
 
-	it('formatea el precio unitario en CLP y descarta caracteres no numéricos', () => {
+	it('acepta precio unitario con decimales en formato es-CL', async () => {
 		renderModal();
 
-		const unitPrice = screen.getByLabelText('Precio unitario (bruto, IVA incluido)');
-		fireEvent.change(unitPrice, { target: { value: '2500000' } });
-		expect(unitPrice).toHaveValue('$ 2.500.000');
-		fireEvent.change(unitPrice, { target: { value: '$ 2.500.000abc' } });
-		expect(unitPrice).toHaveValue('$ 2.500.000');
-		fireEvent.change(unitPrice, { target: { value: '' } });
-		expect(unitPrice).toHaveValue('');
+		const unitPrice = screen.getByLabelText('Precio neto');
+		await act(async () => {
+			fireEvent.change(unitPrice, { target: { value: '50.411,76' } });
+			await Promise.resolve();
+		});
+		expect(unitPrice).toHaveValue('$ 50.411,76');
+		expect(screen.getByText('Bruto calculado: $ 59.989,99')).toBeInTheDocument();
+		expect(screen.getByText('$ 59.990')).toBeInTheDocument();
+	});
+
+	it('conserva la coma decimal mientras se escribe un precio unitario y el total', async () => {
+		renderModal();
+		const unitPrice = screen.getByLabelText('Precio neto');
+		const totalAmount = screen.getByLabelText(
+			'Total del documento — debe coincidir con la factura',
+		);
+
+		await act(async () => {
+			fireEvent.change(unitPrice, { target: { value: '50' } });
+			fireEvent.change(unitPrice, { target: { value: '50,' } });
+			await Promise.resolve();
+		});
+		expect(unitPrice).toHaveValue('$ 50,');
+		await act(async () => {
+			fireEvent.change(unitPrice, { target: { value: '50,4' } });
+			fireEvent.change(unitPrice, { target: { value: '50,41' } });
+			await Promise.resolve();
+		});
+		expect(unitPrice).toHaveValue('$ 50,41');
+
+		await act(async () => {
+			fireEvent.change(totalAmount, { target: { value: '50' } });
+			fireEvent.change(totalAmount, { target: { value: '50,' } });
+			await Promise.resolve();
+		});
+		expect(totalAmount).toHaveValue('$ 50,');
+		await act(async () => {
+			fireEvent.change(totalAmount, { target: { value: '50,4' } });
+			fireEvent.change(totalAmount, { target: { value: '50,41' } });
+			await Promise.resolve();
+		});
+		expect(totalAmount).toHaveValue('$ 50,41');
+	});
+
+	it('convierte el valor neto con IVA y permite ingresar un bruto sin convertirlo', async () => {
+		renderModal();
+		const unitPrice = screen.getByLabelText('Precio neto');
+		const calculateVat = screen.getByLabelText('Calcular IVA');
+
+		await act(async () => {
+			fireEvent.change(unitPrice, { target: { value: '100' } });
+			await Promise.resolve();
+		});
+		expect(screen.getByText('Bruto calculado: $ 119')).toBeInTheDocument();
+
+		await act(async () => {
+			fireEvent.click(calculateVat);
+			await Promise.resolve();
+		});
+		expect(calculateVat).not.toBeChecked();
+		expect(screen.getByLabelText('Precio bruto c/ IVA')).toHaveValue('$ 100');
+
+		await act(async () => {
+			fireEvent.change(screen.getByLabelText('Precio bruto c/ IVA'), {
+				target: { value: '120' },
+			});
+			await Promise.resolve();
+		});
+		expect(screen.queryByText('Bruto calculado: $ 120')).not.toBeInTheDocument();
+	});
+
+	it('mantiene el total oficial al ingresar un precio sin IVA', async () => {
+		renderModal();
+		const totalAmount = screen.getByLabelText(
+			'Total del documento — debe coincidir con la factura',
+		);
+		await act(async () => {
+			fireEvent.change(totalAmount, { target: { value: '475976' } });
+			fireEvent.change(screen.getByLabelText('Precio neto'), {
+				target: { value: '100' },
+			});
+			await Promise.resolve();
+		});
+		expect(screen.getByText('Bruto calculado: $ 119')).toBeInTheDocument();
+		expect(totalAmount).toHaveValue('$ 475.976');
+	});
+
+	it('muestra siempre la ayuda de desglose cuando el total oficial es positivo', async () => {
+		renderModal();
+		const totalAmount = screen.getByLabelText(
+			'Total del documento — debe coincidir con la factura',
+		);
+
+		await act(async () => {
+			fireEvent.change(totalAmount, { target: { value: '299950' } });
+			await Promise.resolve();
+		});
+
+		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
+		expect(screen.getByText('Neto: $ 252.059')).toBeInTheDocument();
+		expect(screen.getByText('IVA: $ 47.891')).toBeInTheDocument();
+		expect(screen.getByText('Total: $ 299.950')).toBeInTheDocument();
+
+		await act(async () => {
+			fireEvent.click(screen.getByLabelText('Calcular IVA'));
+			await Promise.resolve();
+		});
+		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
+	});
+
+	it('muestra el desglose en edición aunque el precio guardado no se reinterprete', () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+
+		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
+		expect(screen.getByText('Total: $ 2.500.000')).toBeInTheDocument();
+		expect(screen.getByLabelText('Precio bruto c/ IVA')).toBeInTheDocument();
+		expect(screen.getByRole('checkbox', { name: 'Calcular IVA' })).toHaveAccessibleName(
+			'Calcular IVA',
+		);
 	});
 
 	it('descarta el borrador al desmontar y reabrir el formulario', () => {
@@ -130,7 +254,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByLabelText('Código')).toBeInTheDocument();
 		expect(screen.getByLabelText('Descripción')).toBeInTheDocument();
 		expect(screen.getByLabelText('Cantidad')).toBeInTheDocument();
-		expect(screen.getByLabelText('Precio unitario (bruto, IVA incluido)')).toBeInTheDocument();
+		expect(screen.getByLabelText('Precio neto')).toBeInTheDocument();
 		const issueDate = screen.getAllByPlaceholderText('dd-mm-aaaa')[0];
 		fireEvent.change(issueDate, { target: { value: '' } });
 
@@ -142,36 +266,94 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByText('Selecciona la fecha de emisión')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa el código del ítem')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa la descripción del ítem')).toBeInTheDocument();
+		expect(screen.getByTestId('items.0.price-vat-row')).toHaveClass('md:col-span-2');
+		expect(screen.getByTestId('items.0.vat-toggle').parentElement).toHaveClass('md:col-span-2');
 		expect(screen.getByRole('button', { name: 'Quitar ítem 1' }).parentElement).toHaveClass(
-			'items-start',
-			'pt-7',
+			'absolute',
+			'right-4',
+			'top-4',
 		);
+	});
+	it('mantiene la ayuda de adjuntos mientras se envía el documento', async () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+
+		expect(screen.getByText(/cuando esté disponible/)).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled(),
+		);
+		expect(screen.getByText(/cuando esté disponible/)).toBeInTheDocument();
+		fireEvent.drop(window, {
+			dataTransfer: {
+				files: [new File(['contenido'], 'durante-envio.pdf', { type: 'application/pdf' })],
+				types: ['Files'],
+			},
+		});
+		expect(screen.queryByText('durante-envio.pdf')).not.toBeInTheDocument();
+	});
+	it('enfoca y desplaza el primer campo obligatorio inválido al crear', async () => {
+		renderModal();
+		scrollIntoViewSpy.mockImplementation(() => {
+			expect(screen.getByText('Selecciona un cliente')).toBeInTheDocument();
+		});
+
+		fireEvent.click(screen.getByRole('button', { name: 'Crear documento' }));
+
+		const customerField = screen.getByLabelText('Cliente');
+		await waitFor(() => expect(customerField).toHaveFocus());
+		expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+	});
+	it('enfoca el primer campo inválido de un ítem cuando los datos del documento son válidos', async () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+		const codeField = screen.getByLabelText('Código');
+		fireEvent.change(codeField, { target: { value: '' } });
+
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+		await waitFor(() => expect(codeField).toHaveFocus());
+		expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+	});
+	it('enfoca el campo obligatorio vacío al editar sin alterar el guardado', async () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+		const documentNumber = screen.getByLabelText('Número de documento');
+		fireEvent.change(documentNumber, { target: { value: '' } });
+
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+		await waitFor(() => expect(documentNumber).toHaveFocus());
+		expect(screen.getByText('Ingresa el número de documento')).toBeInTheDocument();
 	});
 	it('muestra el toast y marca el total oficial cuando es cero', async () => {
 		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
 		const totalAmount = screen.getByLabelText(
 			'Total del documento — debe coincidir con la factura',
 		);
-		fireEvent.change(totalAmount, { target: { value: '0' } });
-		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+		await act(async () => {
+			fireEvent.change(totalAmount, { target: { value: '0' } });
+			fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+			await Promise.resolve();
+		});
 
-		expect(
-			screen.queryByText('El total del documento debe ser mayor a 0'),
-		).not.toBeInTheDocument();
+		expect(screen.queryByText('El total del documento debe ser mayor a 0')).toBeInTheDocument();
 
 		await vi.waitFor(() => {
 			expect(toastSpies.error).toHaveBeenCalledWith(
 				'El total del documento debe ser mayor a 0',
 			);
 		});
+		await waitFor(() => expect(totalAmount).toHaveFocus());
 		expect(totalAmount).toHaveClass('!border-red-500');
 	});
-	it('advierte sin bloquear cuando los ítems difieren del total oficial', () => {
+	it('advierte sin bloquear cuando los ítems difieren del total oficial', async () => {
 		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
-		fireEvent.change(
-			screen.getByLabelText('Total del documento — debe coincidir con la factura'),
-			{ target: { value: '475976' } },
-		);
+		await act(async () => {
+			fireEvent.change(
+				screen.getByLabelText('Total del documento — debe coincidir con la factura'),
+				{ target: { value: '475976' } },
+			);
+			await Promise.resolve();
+		});
 
 		expect(
 			screen.getByText(/La suma de los ítems no coincide con el total del documento/),
@@ -195,6 +377,104 @@ describe('CreateEditDeferredPaymentModal', () => {
 			await Promise.resolve();
 		});
 		expect(screen.queryByText('SER-NUEVO-001')).not.toBeInTheDocument();
+	});
+	it('separa los seriales pegados y omite los duplicados', async () => {
+		renderModal();
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+
+		await act(async () => {
+			fireEvent.paste(serialInput, {
+				clipboardData: {
+					getData: () => ' SER-001,SER-002\nSER-001   SER-003 ',
+				},
+			});
+			await Promise.resolve();
+		});
+
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-001' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-002' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-003' })).toBeInTheDocument();
+		expect(toastSpies.warn).toHaveBeenCalledWith('Se omitió 1 serial duplicado.');
+
+		await act(async () => {
+			fireEvent.paste(serialInput, {
+				clipboardData: { getData: () => 'SER-003 SER-004' },
+			});
+			await Promise.resolve();
+		});
+
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-004' })).toBeInTheDocument();
+		expect(toastSpies.warn).toHaveBeenLastCalledWith('Se omitió 1 serial duplicado.');
+	});
+	it('agrega un único serial al pegarlo', async () => {
+		renderModal();
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+
+		await act(async () => {
+			fireEvent.paste(serialInput, {
+				clipboardData: { getData: () => ' SER-ÚNICO-001 ' },
+			});
+			await Promise.resolve();
+		});
+
+		expect(
+			screen.getByRole('button', { name: 'Quitar serial SER-ÚNICO-001' }),
+		).toBeInTheDocument();
+	});
+	it('reemplaza el borrador al pegar seriales', async () => {
+		renderModal();
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+
+		await act(async () => {
+			fireEvent.change(serialInput, { target: { value: 'VIEJO-1' } });
+			fireEvent.paste(serialInput, {
+				clipboardData: { getData: () => 'SER-A SER-B' },
+			});
+			await Promise.resolve();
+		});
+
+		expect(serialInput).toHaveValue('');
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-A' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-B' })).toBeInTheDocument();
+		fireEvent.keyDown(serialInput, { key: 'Enter' });
+		expect(
+			screen.queryByRole('button', { name: 'Quitar serial VIEJO-1' }),
+		).not.toBeInTheDocument();
+	});
+	it('omite un serial existente después de recortar sus espacios', async () => {
+		const document = {
+			...DEFERRED_PAYMENT_DOCUMENT_FIXTURES[1],
+			items: DEFERRED_PAYMENT_DOCUMENT_FIXTURES[1].items.map((item) => ({
+				...item,
+				serials: [' SER-1-001 '],
+			})),
+		};
+		renderModal(vi.fn(), document);
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+
+		await act(async () => {
+			fireEvent.paste(serialInput, {
+				clipboardData: { getData: () => 'SER-1-001' },
+			});
+			await Promise.resolve();
+		});
+
+		expect(screen.getAllByRole('button', { name: /Quitar serial/ })).toHaveLength(1);
+		expect(toastSpies.warn).toHaveBeenCalledWith('Se omitió 1 serial duplicado.');
+	});
+	it('crea 100 seriales independientes al pegar un bloque', async () => {
+		renderModal();
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+		const serials = Array.from({ length: 100 }, (_, index) => `SER-${index + 1}`);
+
+		await act(async () => {
+			fireEvent.paste(serialInput, {
+				clipboardData: { getData: () => serials.join(' \t\n') },
+			});
+			await Promise.resolve();
+		});
+
+		expect(screen.getAllByRole('button', { name: /Quitar serial SER-/ })).toHaveLength(100);
 	});
 
 	it('precarga notas y seriales al editar un documento', () => {

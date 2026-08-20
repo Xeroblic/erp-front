@@ -3,6 +3,7 @@ import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import useContextScopedSelection from '@/hooks/useContextScopedSelection';
 import type {
+	DeferredPaymentApiListParams,
 	DeferredPaymentApiSummaryParams,
 	DeferredPaymentsFilters,
 } from '@/interface/deferredPayments.interface';
@@ -37,9 +38,7 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 	const effectiveSubsidiaryId = subsidiaryId;
 	const hasDataContext = effectiveSubsidiaryId !== null;
 	const selection = useContextScopedSelection<number>(
-		effectiveSubsidiaryId === null
-			? null
-			: { type: 'subsidiary', id: effectiveSubsidiaryId },
+		effectiveSubsidiaryId === null ? null : { type: 'subsidiary', id: effectiveSubsidiaryId },
 	);
 	const hasInvalidDateRange = Boolean(
 		values.due_after && values.due_before && values.due_after > values.due_before,
@@ -71,6 +70,12 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 			values.status,
 		],
 	);
+	const exportFiltersForRequest = useMemo<DeferredPaymentApiListParams>(() => {
+		// El backend ignora `sort`; el resto de los filtros del listado viaja tal cual para que
+		// el archivo exportado siempre coincida con la tabla, incluso si se agregan filtros nuevos.
+		const { sort, ...apiFilters } = listFiltersForRequest;
+		return apiFilters;
+	}, [listFiltersForRequest]);
 	const summaryFiltersForRequest = useMemo<DeferredPaymentApiSummaryParams>(
 		() => ({
 			status: values.status,
@@ -203,6 +208,7 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 		state: { loading, loadingSummary, error, errorSummary, hasDataContext },
 		filters: {
 			values,
+			requestFilters: exportFiltersForRequest,
 			search,
 			setSearch,
 			setFilter,
