@@ -3,13 +3,21 @@
  */
 
 /**
- * Formatea un monto en pesos chilenos, redondeado sin decimales.
+ * Formatea un monto en pesos chilenos.
  */
-export const formatCLP = (amount: number | string): string => {
+export const formatCLP = (amount: number | string, maximumFractionDigits: number = 0): string => {
 	const numericAmount = typeof amount === 'string' ? Number.parseFloat(amount) : amount;
 	if (!Number.isFinite(numericAmount)) return '$ 0';
-	const roundedAmount = Math.round(numericAmount);
-	return `$ ${roundedAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+	const normalizedAmount =
+		maximumFractionDigits === 0
+			? Math.round(numericAmount)
+			: Number(numericAmount.toFixed(maximumFractionDigits));
+	const [integerPart, decimalPart] = normalizedAmount.toFixed(maximumFractionDigits).split('.');
+	const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+	const formattedDecimalPart = decimalPart && /^0+$/.test(decimalPart) ? undefined : decimalPart;
+	return formattedDecimalPart
+		? `$ ${formattedIntegerPart},${formattedDecimalPart}`
+		: `$ ${formattedIntegerPart}`;
 };
 
 /**

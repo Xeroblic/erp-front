@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+	calculateDeferredPaymentGrossUnitPrice,
 	calculateDeferredPaymentEstimatedTotal,
+	calculateDeferredPaymentVatBreakdown,
 	createDeferredPaymentInitialValues,
 	DeferredPaymentDocumentSchema,
 } from '../types';
+import { formatCLP } from '@/utils/format.utils';
+import { formatDeferredPaymentInputAmount, parseDeferredPaymentAmount } from '../utils';
 
 const validValues = {
 	...createDeferredPaymentInitialValues('2026-07-28'),
@@ -19,6 +23,8 @@ const validValues = {
 			description: 'Servicio mensual',
 			quantity: 2,
 			unit_price: 150000,
+			entered_unit_price: 150000,
+			calculates_vat: true,
 			serials: [],
 		},
 	],
@@ -148,5 +154,41 @@ describe('ZF-7 formulario de pago diferido', () => {
 		];
 
 		expect(calculateDeferredPaymentEstimatedTotal(items)).toBe(450000);
+	});
+
+	it('calcula el bruto con IVA al 19% y conserva el valor bruto ingresado', () => {
+		expect(calculateDeferredPaymentGrossUnitPrice(100, true)).toBe(119);
+		expect(calculateDeferredPaymentGrossUnitPrice(50411.76, true)).toBe(59989.99);
+		expect(calculateDeferredPaymentGrossUnitPrice(100, false)).toBe(100);
+		expect(calculateDeferredPaymentGrossUnitPrice('', true)).toBeNull();
+	});
+
+	it('deriva el desglose referencial desde el total oficial y conserva la suma exacta', () => {
+		expect(calculateDeferredPaymentVatBreakdown(299950)).toEqual({
+			net_amount: 252059,
+			vat_amount: 47891,
+		});
+		expect(calculateDeferredPaymentVatBreakdown(0)).toBeNull();
+		expect(calculateDeferredPaymentVatBreakdown(100.49)).toEqual({
+			net_amount: 84,
+			vat_amount: 16.49,
+		});
+	});
+
+	it('normaliza importes es-CL con separador de miles y hasta dos decimales', () => {
+		expect(parseDeferredPaymentAmount('$ 50.411,76')).toBe('50411.76');
+		expect(parseDeferredPaymentAmount('50.411,768')).toBe('50411.76');
+		expect(parseDeferredPaymentAmount('50411.76')).toBe('50411.76');
+		expect(parseDeferredPaymentAmount('1.234.567')).toBe('1234567');
+		expect(parseDeferredPaymentAmount('1.234')).toBe('1234');
+		expect(formatDeferredPaymentInputAmount('50.')).toBe('$ 50,');
+		expect(formatDeferredPaymentInputAmount('50.4')).toBe('$ 50,4');
+		expect(formatDeferredPaymentInputAmount('50.41')).toBe('$ 50,41');
+	});
+
+	it('preserva los decimales significativos solicitados al formatear moneda', () => {
+		expect(formatCLP(1234.5, 2)).toBe('$ 1.234,50');
+		expect(formatCLP(59989.9, 2)).toBe('$ 59.989,90');
+		expect(formatCLP(1234, 2)).toBe('$ 1.234');
 	});
 });
