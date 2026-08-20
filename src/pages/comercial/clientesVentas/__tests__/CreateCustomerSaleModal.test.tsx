@@ -96,6 +96,15 @@ const fillContactGroup = () => {
 	});
 };
 
+const fillRequiredFields = () => {
+	fireEvent.change(screen.getByPlaceholderText('12345678-9'), {
+		target: { value: '20761872-1' },
+	});
+	fireEvent.change(screen.getByPlaceholderText('Empresa S.A.'), {
+		target: { value: 'pruebaa' },
+	});
+};
+
 const getSubmittedPayload = (): Record<string, unknown> =>
 	(apiSpies.fetchNormalized.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
 
@@ -158,6 +167,37 @@ describe('CreateCustomerSaleModal', () => {
 		await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
 		expect(apiSpies.fetchData).not.toHaveBeenCalled();
 		expect(apiSpies.fetchNormalized).toHaveBeenCalledTimes(1);
+	});
+
+	it('permite crear sin correo y lo normaliza a null sin contacto principal parcial', async () => {
+		apiSpies.fetchNormalized.mockResolvedValue({ id: 9, rut: '20761872-1', is_active: true });
+		const onSuccess = vi.fn();
+		renderModal({ refreshStoreOnSuccess: false, onSuccess });
+		fillRequiredFields();
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+		await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+		const payload = getSubmittedPayload();
+		expect(payload.email).toBeNull();
+		expect(payload).not.toHaveProperty('primary_contact');
+		expect(payload).not.toHaveProperty('primary_contact_email');
+	});
+
+	it('rechaza un correo inválido cuando se informa', async () => {
+		apiSpies.fetchNormalized.mockResolvedValue({ id: 9, rut: '20761872-1', is_active: true });
+		renderModal({ refreshStoreOnSuccess: false });
+		fillRequiredFields();
+		fireEvent.change(screen.getByPlaceholderText('correo@example.cl'), {
+			target: { value: 'correo-inválido' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+		await waitFor(() =>
+			expect(screen.getByPlaceholderText('correo@example.cl').className).toContain(
+				'!border-red-500',
+			),
+		);
+		expect(apiSpies.fetchNormalized).not.toHaveBeenCalled();
 	});
 
 	describe('contacto principal', () => {
@@ -256,6 +296,26 @@ describe('CreateCustomerSaleModal', () => {
 			expect(payload.document_number).toBe('20761872-1');
 			// `rut` salta la comprobación de duplicado por subsidiaria en el update.
 			expect(payload).not.toHaveProperty('rut');
+		});
+
+		it('permite quitar el correo y elimina el contacto principal anterior', async () => {
+			apiSpies.fetchNormalized.mockResolvedValue({ ...initialData, email: null });
+			const onSuccess = vi.fn();
+			renderModal({ refreshStoreOnSuccess: false, onSuccess, isEdit: true, initialData });
+			fireEvent.change(screen.getByPlaceholderText('correo@example.cl'), {
+				target: { value: '   ' },
+			});
+			fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
+
+			await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+			const payload = getSubmittedPayload();
+			expect(payload.email).toBeNull();
+			expect(payload).not.toHaveProperty('primary_contact');
+			expect(payload).toMatchObject({
+				primary_contact_name: null,
+				primary_contact_email: null,
+				primary_contact_phone: null,
+			});
 		});
 
 		it('marca el campo y mantiene el modal abierto ante un 422 de RUT duplicado', async () => {

@@ -50,25 +50,40 @@ const isRequestError = (error: unknown): error is CustomerSaleRequestError =>
 	typeof error === 'object' &&
 	typeof (error as { message?: unknown }).message === 'string';
 
-interface PrimaryContactPayload {
+interface CompletePrimaryContactPayload {
 	primary_contact: { name: string; email: string; phone: string };
 	primary_contact_name: string;
 	primary_contact_email: string;
 	primary_contact_phone: string;
 }
 
+interface ClearedPrimaryContactPayload {
+	primary_contact_name: null;
+	primary_contact_email: null;
+	primary_contact_phone: null;
+}
+
 /**
  * El backend exige el trío completo si llega cualquiera de sus campos, así que el grupo
- * viaja entero o no viaja: enviarlo incompleto convierte el mínimo que el formulario da
- * por válido (RUT + empresa + email) en un `422 Contacto principal incompleto`.
+ * viaja entero o se omite al crear. Al editar, los tres `null` eliminan un contacto
+ * anterior sin construir un grupo incompleto.
  */
 const buildPrimaryContactPayload = (
 	values: CustomerSaleFormValues,
-): PrimaryContactPayload | Record<string, never> => {
+	clearIncomplete = false,
+): CompletePrimaryContactPayload | ClearedPrimaryContactPayload | Record<string, never> => {
 	const name = values.contact_name.trim();
 	const email = values.email.trim();
 	const phone = values.phone.trim();
-	if (!name || !email || !phone) return {};
+	if (!name || !email || !phone) {
+		return clearIncomplete
+			? {
+					primary_contact_name: null,
+					primary_contact_email: null,
+					primary_contact_phone: null,
+				}
+			: {};
+	}
 	return {
 		primary_contact: { name, email, phone },
 		primary_contact_name: name,
@@ -157,7 +172,7 @@ const CreateCustomerSaleModal = ({
 			document_number: Yup.string()
 				.required('RUT requerido')
 				.test('rut-valid', 'RUT inválido', (value) => validateRut(value || '')),
-			email: Yup.string().email('Email inválido').required('Email requerido'),
+			email: Yup.string().trim().email('Email inválido'),
 			billing_company: Yup.string().required('Empresa/Persona requerida'),
 		}),
 		onSubmit: async (values, { setSubmitting, setFieldError }) => {
@@ -174,7 +189,8 @@ const CreateCustomerSaleModal = ({
 				subsidiaryId,
 				customerId,
 			};
-			const primaryContact = buildPrimaryContactPayload(values);
+			const primaryContact = buildPrimaryContactPayload(values, isEdit);
+			const email = values.email.trim() || null;
 
 			try {
 				if (isEdit && customerId !== null) {
@@ -188,7 +204,7 @@ const CreateCustomerSaleModal = ({
 								document_number: values.document_number,
 								billing_company: values.billing_company,
 								contact_name: values.contact_name,
-								email: values.email,
+								email,
 								phone: values.phone,
 								is_active: values.is_active,
 								...primaryContact,
@@ -221,7 +237,7 @@ const CreateCustomerSaleModal = ({
 								rut: values.document_number,
 								billing_company: values.billing_company,
 								contact_name: values.contact_name,
-								email: values.email,
+								email,
 								phone: values.phone,
 								is_active: values.is_active,
 								...primaryContact,

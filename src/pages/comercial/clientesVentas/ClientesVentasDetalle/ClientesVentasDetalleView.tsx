@@ -247,6 +247,7 @@ const ClientesVentasDetalleView = () => {
 													label='Email'
 													isEditable={isEditable}
 													placeholder='ejemplo@correo.cl'
+													emptyValue='Sin correo registrado'
 												/>
 											</div>
 											<div className='detail-content-item'>

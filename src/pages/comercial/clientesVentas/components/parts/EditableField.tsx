@@ -10,6 +10,7 @@ interface EditableFieldProps<FormValues extends Record<string, any>> {
 	label: string;
 	isEditable: boolean;
 	placeholder?: string;
+	emptyValue?: string;
 	textarea?: boolean;
 	onChangeValue?: (value: string) => void;
 }
@@ -20,6 +21,7 @@ const EditableField = <FormValues extends Record<string, any>>({
 	label,
 	isEditable,
 	placeholder,
+	emptyValue = 'Sin información registrada.',
 	textarea = false,
 	onChangeValue,
 }: EditableFieldProps<FormValues>) => {
@@ -41,7 +43,7 @@ const EditableField = <FormValues extends Record<string, any>>({
 					className={`mt-1 font-semibold text-zinc-800 dark:text-zinc-200 ${
 						textarea ? 'whitespace-pre-wrap font-normal' : ''
 					}`}>
-					{hasValue ? String(value) : 'Sin información registrada.'}
+					{hasValue ? String(value) : emptyValue}
 				</p>
 			</div>
 		);

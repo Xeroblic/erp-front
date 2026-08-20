@@ -79,6 +79,12 @@ describe('ClienteVentasTable', () => {
 		expect(screen.getByText('Comercial Andina Ltda.')).toBeInTheDocument();
 	});
 
+	it.each([null, '', '   '])('muestra un fallback si el correo es %p', (email) => {
+		renderTable({ rows: [{ ...customer, contact: { ...customer.contact, email } }] });
+
+		expect(screen.getByText('Sin correo registrado')).toBeInTheDocument();
+	});
+
 	it('distingue una búsqueda sin resultados de una lista vacía', () => {
 		renderTable({
 			rows: [],
