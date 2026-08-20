@@ -148,8 +148,8 @@ export const ModalFooter: FC<IModalFooterProps> = (props) => {
 ModalFooter.displayName = 'ModalFooter';
 
 /**
- * Contador global de modales abiertos. Permite que cada modal apilado reciba
- * un z-index mayor que el anterior, de modo que su backdrop (blur/oscurecido)
+ * Pila global de modales abiertos. Permite que cada modal apilado reciba un
+ * z-index mayor que el anterior, de modo que su backdrop (blur/oscurecido)
  * quede por encima del modal inferior y lo difumine correctamente.
  */
 interface ActiveModal {
@@ -158,7 +158,6 @@ interface ActiveModal {
 }
 
 let activeModals: ActiveModal[] = [];
-let nextStackLevel = 0;
 const MODAL_BASE_Z = 1060;
 const MODAL_STACK_STEP = 20;
 let previousBodyOverflow = '';
@@ -340,13 +339,13 @@ const Modal: FC<IModalProps> = (props) => {
 			document.body.style.overflow = 'hidden';
 			document.documentElement.style.overflow = 'hidden';
 		}
-		const activeModal = { id: modalId, stackLevel: nextStackLevel + 1 };
-		nextStackLevel = activeModal.stackLevel;
-		activeModals = [...activeModals, activeModal];
-		setStackLevel(activeModal.stackLevel);
-		const initialFocusableElement = ref.current
-			? getFocusableElements(ref.current)[0]
-			: null;
+		// El nivel se deriva de la pila viva: si se calculara con un contador que
+		// sólo crece, reabrir un modal sobre otro subiría el z-index sin cota.
+		const nextStackLevel =
+			activeModals.reduce((maxLevel, modal) => Math.max(maxLevel, modal.stackLevel), 0) + 1;
+		activeModals = [...activeModals, { id: modalId, stackLevel: nextStackLevel }];
+		setStackLevel(nextStackLevel);
+		const initialFocusableElement = ref.current ? getFocusableElements(ref.current)[0] : null;
 		(initialFocusableElement ?? refModal.current)?.focus();
 		return () => {
 			const modalIndex = activeModals.findIndex((modal) => modal.id === modalId);
@@ -355,7 +354,6 @@ const Modal: FC<IModalProps> = (props) => {
 			if (activeModals.length === 0) {
 				document.body.style.overflow = previousBodyOverflow;
 				document.documentElement.style.overflow = previousHtmlOverflow;
-				nextStackLevel = 0;
 			}
 			if (wasTopModal) previousActiveElementRef.current?.focus();
 			previousActiveElementRef.current = null;
@@ -422,60 +420,30 @@ const Modal: FC<IModalProps> = (props) => {
 	};
 	const isTopModal = () => activeModals.at(-1)?.id === modalId;
 
+	// Devuelve el destino del evento sólo cuando cae fuera del diálogo activo,
+	// que es la única situación en la que el puntero está sobre el backdrop.
+	const getBackdropTarget = (event: MouseEvent | TouchEvent): Element | null => {
+		if (!isTopModal() || !ref.current) return null;
+		const target = event.target instanceof Element ? event.target : null;
+		if (target && ref.current.contains(target)) return null;
+		if (target?.closest('[data-component-name="Modal/Dialog"]')) return null;
+		return target ?? ref.current;
+	};
+
 	// Backdrop close function
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	// Backdrop close function
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const closeModal = (event: { target: any }) => {
-		// @ts-ignore
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-		if (
-			isTopModal() &&
-			ref.current &&
-			!ref.current.contains(event.target) &&
-			!isStaticBackdrop
-		) {
-			// @ts-ignore
-			if (
-				event.target.closest &&
-				event.target.closest('[data-component-name="Modal/Dialog"]')
-			) {
-				return;
-			}
-			setIsOpen(false);
-		}
+	const closeModal = (event: MouseEvent | TouchEvent) => {
+		if (isStaticBackdrop || !getBackdropTarget(event)) return;
+		setIsOpen(false);
 	};
 	useEventListener('mousedown', closeModal);
 	useEventListener('touchstart', closeModal); // Touchscreen
 
 	// Backdrop static function
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const modalStatic = (event: { target: any }) => {
-		// @ts-ignore
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-		if (
-			isTopModal() &&
-			ref.current &&
-			!ref.current.contains(event.target) &&
-			isStaticBackdrop
-		) {
-			// @ts-ignore
-			if (
-				event.target.closest &&
-				event.target.closest('[data-component-name="Modal/Dialog"]')
-			) {
-				return;
-			}
-
-			if (isStaticBackdropAnimation && refModal.current) {
-				// Added condition
-				// @ts-ignore
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-				refModal.current.classList.add('!scale-105');
-				// @ts-ignore
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-return
-				setTimeout(() => refModal.current?.classList.remove('!scale-105'), 300);
-			}
+	const modalStatic = (event: MouseEvent | TouchEvent) => {
+		if (!isStaticBackdrop || !getBackdropTarget(event)) return;
+		if (isStaticBackdropAnimation && refModal.current) {
+			refModal.current.classList.add('!scale-105');
+			setTimeout(() => refModal.current?.classList.remove('!scale-105'), 300);
 		}
 	};
 	useEventListener('mousedown', modalStatic);
@@ -500,6 +468,14 @@ const Modal: FC<IModalProps> = (props) => {
 		const firstFocusableElement = focusableElements[0];
 		const lastFocusableElement = focusableElements[focusableElements.length - 1];
 		const { activeElement } = document;
+		// El foco puede quedar fuera de la capa si el control que lo tenía se
+		// desmonta (por ejemplo al quitar un ítem): sin esto, el navegador seguiría
+		// tabulando desde el inicio del documento y alcanzaría el fondo.
+		if (!(activeElement instanceof Node) || !refModal.current.contains(activeElement)) {
+			event.preventDefault();
+			(event.shiftKey ? lastFocusableElement : firstFocusableElement).focus();
+			return;
+		}
 		if (
 			event.shiftKey &&
 			(activeElement === firstFocusableElement || activeElement === refModal.current)

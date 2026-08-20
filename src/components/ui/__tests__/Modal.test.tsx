@@ -109,7 +109,12 @@ describe('Modal', () => {
 		const { rerender } = render(
 			<>
 				<TestModal key='first' isOpen setIsOpen={setFirstModalOpen} title='Primer modal' />
-				<TestModal key='second' isOpen setIsOpen={setSecondModalOpen} title='Segundo modal' />
+				<TestModal
+					key='second'
+					isOpen
+					setIsOpen={setSecondModalOpen}
+					title='Segundo modal'
+				/>
 			</>,
 		);
 
