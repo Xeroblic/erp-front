@@ -52,6 +52,7 @@ const useCarteraCredito = () => {
 		debouncedSearch.subsidiaryId === subsidiaryId
 			? debouncedSearch.value.trim() || undefined
 			: undefined;
+	const isSearchDebouncing = debouncedSearch !== searchInput;
 
 	const requestFilters = useMemo(
 		() => ({
@@ -170,7 +171,9 @@ const useCarteraCredito = () => {
 		},
 		filters: {
 			values: filters,
+			requestFilters,
 			search,
+			isSearchDebouncing,
 			status,
 			setSearch: updateSearch,
 			setStatus: updateStatus,

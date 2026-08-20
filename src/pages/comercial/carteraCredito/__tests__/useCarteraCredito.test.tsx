@@ -117,6 +117,18 @@ describe('useCarteraCredito', () => {
 			),
 		);
 	});
+	it('expone el debounce para bloquear acciones que dependen de los filtros efectivos', async () => {
+		vi.useFakeTimers();
+		const { result } = renderHook(() => useCarteraCredito());
+		await act(async () => {
+			await Promise.resolve();
+		});
+
+		act(() => result.current.filters.setSearch('Andes'));
+		expect(result.current.filters.isSearchDebouncing).toBe(true);
+		await act(async () => vi.advanceTimersByTimeAsync(300));
+		expect(result.current.filters.isSearchDebouncing).toBe(false);
+	});
 
 	it('inicia en carga cuando existe una subsidiaria activa', () => {
 		const loadingFrames: boolean[] = [];

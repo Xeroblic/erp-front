@@ -181,7 +181,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 							variant='outline'
 							icon='HeroBuildingStorefront'
 							title='No se pudo resolver la subsidiaria'>
-							Seleccioná nuevamente el contexto comercial para consultar este
+							Selecciona nuevamente el contexto comercial para consultar este
 							documento.
 						</Alert>
 					)}

@@ -1,8 +1,10 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PagosDiferidosView from '../PagosDiferidosView';
+
+let subsidiaryId = 1;
 
 interface ButtonProps {
 	children: React.ReactNode;
@@ -26,6 +28,9 @@ vi.mock('@/components/layouts/Container/Container', () => ({
 	default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 vi.mock('@/components/icon/Icon', () => ({ default: () => null }));
+vi.mock('@/components/ui/Alert', () => ({
+	default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
 vi.mock('@/components/ui/Button', () => ({
 	default: ({ children, onClick }: ButtonProps) => (
 		<button type='button' onClick={onClick}>
@@ -40,7 +45,20 @@ vi.mock('@/components/ui/ProtectedButton', () => ({
 }));
 vi.mock('../components/kpis/DeferredPaymentsKpis', () => ({ default: () => null }));
 vi.mock('../components/filters/DeferredPaymentsFilters', () => ({ default: () => null }));
-vi.mock('../components/tables/DeferredPaymentsTable', () => ({ default: () => null }));
+vi.mock('../components/parts/DeferredPaymentsExportDropdown', () => ({
+	default: ({ disabled }: { disabled: boolean }) => (
+		<button type='button' disabled={disabled}>
+			Exportar
+		</button>
+	),
+}));
+vi.mock('../components/tables/DeferredPaymentsTable', () => ({
+	default: ({ onSort }: { onSort: (key: 'document_number') => void }) => (
+		<button type='button' onClick={() => onSort('document_number')}>
+			Ordenar por N° documento
+		</button>
+	),
+}));
 vi.mock('../components/drawers/DeferredPaymentDetailDrawer', () => ({ default: () => null }));
 vi.mock('../components/modals/CreateEditDeferredPaymentModal', () => ({ default: () => null }));
 vi.mock('../components/ReminderCadenceCard', () => ({
@@ -80,11 +98,55 @@ vi.mock('../hooks/usePagosDiferidos', () => ({
 			closeDetail: vi.fn(),
 		},
 		actions: { retryList: vi.fn(), retrySummary: vi.fn() },
-		branch: { branchId: 1, subsidiaryId: 1 },
+		branch: { branchId: subsidiaryId, subsidiaryId },
 	}),
 }));
 
 describe('PagosDiferidosView recordatorios', () => {
+	beforeEach(() => {
+		subsidiaryId = 1;
+	});
+
+	it('bloquea la exportación ordenada y permite restablecer el orden', () => {
+		render(
+			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+				<PagosDiferidosView />
+			</MemoryRouter>,
+		);
+
+		const exportButton = screen.getByRole('button', { name: 'Exportar' });
+		expect(exportButton).toBeEnabled();
+		fireEvent.click(screen.getByRole('button', { name: 'Ordenar por N° documento' }));
+
+		expect(exportButton).toBeDisabled();
+		expect(
+			screen.getByText(/Restablece el orden de la tabla para exportar/i),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: 'Restablecer orden' }));
+		expect(exportButton).toBeEnabled();
+	});
+
+	it('restablece el orden local al cambiar de subsidiaria', () => {
+		const view = render(
+			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+				<PagosDiferidosView />
+			</MemoryRouter>,
+		);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Ordenar por N° documento' }));
+		expect(screen.getByRole('button', { name: 'Exportar' })).toBeDisabled();
+
+		subsidiaryId = 2;
+		view.rerender(
+			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+				<PagosDiferidosView />
+			</MemoryRouter>,
+		);
+
+		expect(screen.getByRole('button', { name: 'Exportar' })).toBeEnabled();
+	});
+
 	it('abre y cierra la consulta de recordatorios desde el encabezado', () => {
 		render(
 			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
