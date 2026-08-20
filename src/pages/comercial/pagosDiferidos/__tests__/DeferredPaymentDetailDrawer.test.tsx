@@ -72,6 +72,10 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.getAllByText('Transportes del Sur SpA').length).toBeGreaterThan(0);
 		expect(screen.getByText('Saldo pendiente')).toBeInTheDocument();
 		expect(screen.getByText('$ 430.000')).toBeInTheDocument();
+		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
+		expect(screen.getByText('Neto: $ 823.529')).toBeInTheDocument();
+		expect(screen.getByText('IVA: $ 156.471')).toBeInTheDocument();
+		expect(screen.getByText('Total: $ 980.000')).toBeInTheDocument();
 		expect(screen.getByText('Responsables de cobranza')).toBeInTheDocument();
 		expect(screen.getByText('Carlos Muñoz')).toBeInTheDocument();
 		expect(screen.getByText('carlos.munoz@zentria.cl')).toBeInTheDocument();
@@ -93,6 +97,23 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.queryByText(/pago permitido/i)).not.toBeInTheDocument();
 		expect(screen.getByText('Nota del documento')).toBeInTheDocument();
 		expect(screen.getByText('Sin observaciones registradas.')).toBeInTheDocument();
+	});
+
+	it('muestra el desglose referencial de un documento con total decimal', () => {
+		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
+			...baseHookResult,
+			document: {
+				...DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
+				total_amount: '59989.99',
+			},
+		});
+
+		renderDrawer(2);
+
+		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
+		expect(screen.getByText('Neto: $ 50.412')).toBeInTheDocument();
+		expect(screen.getByText('IVA: $ 9.577,99')).toBeInTheDocument();
+		expect(screen.getByText('Total: $ 59.989,99')).toBeInTheDocument();
 	});
 
 	it('mantiene abierto el registro al interactuar con el modal renderizado en portal', async () => {

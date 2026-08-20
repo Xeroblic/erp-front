@@ -22,6 +22,7 @@ import Modal, {
 	ModalHeader,
 } from '@/components/ui/Modal';
 import DateInput from '@/components/form/DateInput';
+import Checkbox from '@/components/form/Checkbox';
 import Input from '@/components/form/Input';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
@@ -44,8 +45,18 @@ import CreateCustomerSaleModal from '@/pages/comercial/clientesVentas/components
 import type { ICustomerSale, ICustomerSaleOverview } from '@/interface/customerSales.interface';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
 import { useDeferredPaymentAttachments } from '../../hooks/useDeferredPaymentAttachments';
-import { createEmptyDeferredPaymentItem, DEFERRED_PAYMENT_TOTAL_ERROR } from '../../types';
-import { DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS } from '../../utils';
+import {
+	calculateDeferredPaymentGrossUnitPrice,
+	calculateDeferredPaymentVatBreakdown,
+	createEmptyDeferredPaymentItem,
+	DEFERRED_PAYMENT_TOTAL_ERROR,
+} from '../../types';
+import {
+	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
+	formatDeferredPaymentAmount,
+	formatDeferredPaymentInputAmount,
+	parseDeferredPaymentAmount,
+} from '../../utils';
 
 interface CreateEditDeferredPaymentModalProps {
 	isOpen: boolean;
@@ -136,7 +147,7 @@ const getFirstInvalidDeferredPaymentFieldId = (errors: unknown): string | null =
 				.map(Number),
 		),
 	].sort((first, second) => first - second);
-	const itemFieldOrder = ['code', 'description', 'quantity', 'unit_price', 'serials'];
+	const itemFieldOrder = ['code', 'description', 'quantity', 'entered_unit_price', 'serials'];
 	const firstItemField = itemIndexes
 		.flatMap((itemIndex) =>
 			itemFieldOrder.map((fieldName) => `items.${itemIndex}.${fieldName}`),
@@ -162,8 +173,6 @@ const asMultiOptions = (value: unknown): TSelectOption[] => {
 	const candidates: unknown[] = value;
 	return candidates.filter(isSelectOption);
 };
-
-const toCLPAmount = (value: string): string => value.replace(/\D/g, '');
 
 const formatCustomerLabel = (...values: Array<string | null | undefined>): string => {
 	const labelParts: string[] = [];
@@ -569,14 +578,36 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
 		[customerData],
 	);
-	const handleUnitPriceChange = (index: number, value: string) => {
-		const field = `items.${index}.unit_price`;
-		formik.setFieldTouched(field, true, false).catch(() => undefined);
-		formik.setFieldValue(field, toCLPAmount(value)).catch(() => undefined);
+	const handleEnteredUnitPriceChange = (index: number, value: string) => {
+		const enteredUnitPriceField = `items.${index}.entered_unit_price`;
+		const unitPriceField = `items.${index}.unit_price`;
+		const normalizedValue = parseDeferredPaymentAmount(value);
+		const item = formik.values.items[index];
+		formik.setFieldTouched(enteredUnitPriceField, true, false).catch(() => undefined);
+		formik.setFieldValue(enteredUnitPriceField, normalizedValue).catch(() => undefined);
+		const grossUnitPrice = calculateDeferredPaymentGrossUnitPrice(
+			normalizedValue,
+			item.calculates_vat,
+		);
+		formik.setFieldValue(unitPriceField, grossUnitPrice ?? '').catch(() => undefined);
+	};
+	const handleCalculatesVatChange = (index: number, calculatesVat: boolean) => {
+		const item = formik.values.items[index];
+		formik.setFieldValue(`items.${index}.calculates_vat`, calculatesVat).catch(() => undefined);
+		const grossUnitPrice = calculateDeferredPaymentGrossUnitPrice(
+			item.entered_unit_price,
+			calculatesVat,
+		);
+		if (grossUnitPrice !== null)
+			formik
+				.setFieldValue(`items.${index}.unit_price`, grossUnitPrice)
+				.catch(() => undefined);
 	};
 	const handleDocumentTotalChange = (value: string) => {
 		formik.setFieldTouched('total_amount', true, false).catch(() => undefined);
-		formik.setFieldValue('total_amount', toCLPAmount(value)).catch(() => undefined);
+		formik
+			.setFieldValue('total_amount', parseDeferredPaymentAmount(value))
+			.catch(() => undefined);
 	};
 	const assigneeOptions = useMemo<TSelectOption[]>(() => {
 		const currentUserName = [currentUser?.first_name, currentUser?.last_name]
@@ -632,7 +663,10 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			? formik.errors.total_amount
 			: undefined;
 	const itemTotalDiffersFromDocumentTotal =
-		Number.isFinite(documentTotal) && documentTotal > 0 && estimatedTotal !== documentTotal;
+		Number.isFinite(documentTotal) &&
+		documentTotal > 0 &&
+		Math.abs(estimatedTotal - documentTotal) >= 1;
+	const vatBreakdown = calculateDeferredPaymentVatBreakdown(documentTotal);
 	const hasSelectedCustomer = formik.values.customer_sale_id !== null;
 	const hasCreatedCreditProfile = creditProfile !== null && creditProfile.id !== null;
 	const shouldShowCreditProfileEmptyState =
@@ -1281,7 +1315,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											{formik.values.items.map((item, index) => (
 												<div
 													key={item.client_key}
-													className='grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900 md:grid-cols-12'>
+													className='relative grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 pr-14 dark:border-zinc-700 dark:bg-zinc-900 md:grid-cols-12'>
 													<DeferredPaymentField
 														name={`items.${index}.code`}
 														label='Código'
@@ -1340,40 +1374,84 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															/>
 														)}
 													</DeferredPaymentField>
+													<div
+														data-testid={`items.${index}.price-vat-row`}
+														className='md:col-span-2'>
+														<DeferredPaymentField
+															name={`items.${index}.entered_unit_price`}
+															hiddenErrorMessage={
+																DEFERRED_PAYMENT_TOTAL_ERROR
+															}
+															label={
+																item.calculates_vat
+																	? 'Precio neto'
+																	: 'Precio bruto c/ IVA'
+															}
+															labelClassName='whitespace-nowrap'
+															className='min-w-0'>
+															{({ error, isTouched, isValid }) => (
+																<Input
+																	id={`items.${index}.entered_unit_price`}
+																	name={`items.${index}.entered_unit_price`}
+																	type='text'
+																	inputMode='decimal'
+																	placeholder='$ 0'
+																	value={
+																		item.entered_unit_price ===
+																		''
+																			? ''
+																			: formatDeferredPaymentInputAmount(
+																					item.entered_unit_price,
+																				)
+																	}
+																	onChange={(event) =>
+																		handleEnteredUnitPriceChange(
+																			index,
+																			event.target.value,
+																		)
+																	}
+																	onBlur={formik.handleBlur}
+																	disabled={isPaidEdit}
+																	invalidFeedback={error}
+																	isTouched={isTouched}
+																	isValid={isValid}
+																/>
+															)}
+														</DeferredPaymentField>
+														{item.calculates_vat &&
+															item.entered_unit_price !== '' && (
+																<p className='mt-1 text-xs text-zinc-500'>
+																	Bruto calculado:{' '}
+																	{formatDeferredPaymentAmount(
+																		item.unit_price,
+																	)}
+																</p>
+															)}
+													</div>
 													<DeferredPaymentField
-														name={`items.${index}.unit_price`}
-														hiddenErrorMessage={
-															DEFERRED_PAYMENT_TOTAL_ERROR
-														}
-														label='Precio unitario (bruto, IVA incluido)'
-														className='md:col-span-3'>
-														{({ error, isTouched, isValid }) => (
-															<Input
-																id={`items.${index}.unit_price`}
-																name={`items.${index}.unit_price`}
-																type='text'
-																inputMode='numeric'
-																placeholder='$ 0'
-																value={
-																	item.unit_price === ''
-																		? ''
-																		: formatCLP(item.unit_price)
-																}
-																onChange={(event) =>
-																	handleUnitPriceChange(
-																		index,
-																		event.target.value,
-																	)
-																}
-																onBlur={formik.handleBlur}
-																disabled={isPaidEdit}
-																invalidFeedback={error}
-																isTouched={isTouched}
-																isValid={isValid}
-															/>
+														name={`items.${index}.calculates_vat`}
+														reservesLabelSpace
+														className='md:col-span-2'>
+														{() => (
+															<div
+																data-testid={`items.${index}.vat-toggle`}>
+																<Checkbox
+																	id={`items.${index}.calculates_vat`}
+																	name={`items.${index}.calculates_vat`}
+																	label='Calcular IVA'
+																	checked={item.calculates_vat}
+																	onChange={(event) =>
+																		handleCalculatesVatChange(
+																			index,
+																			event.target.checked,
+																		)
+																	}
+																	disabled={isPaidEdit}
+																/>
+															</div>
 														)}
 													</DeferredPaymentField>
-													<div className='flex items-start pt-7 md:col-span-1'>
+													<div className='absolute right-4 top-4'>
 														<Button
 															type='button'
 															variant='outline'
@@ -1444,12 +1522,14 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												id='total_amount'
 												name='total_amount'
 												type='text'
-												inputMode='numeric'
+												inputMode='decimal'
 												placeholder='$ 0'
 												value={
 													formik.values.total_amount === ''
 														? ''
-														: formatCLP(formik.values.total_amount)
+														: formatDeferredPaymentInputAmount(
+																formik.values.total_amount,
+															)
 												}
 												onChange={(event) =>
 													handleDocumentTotalChange(event.target.value)
@@ -1462,6 +1542,31 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											/>
 										)}
 									</DeferredPaymentField>
+									{vatBreakdown && (
+										<div className='rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950 md:col-span-2'>
+											<p className='font-medium text-zinc-700 dark:text-zinc-200'>
+												Si el total incluye IVA 19%:
+											</p>
+											<div className='mt-2 grid gap-2 sm:grid-cols-3'>
+												<p>
+													Neto:{' '}
+													{formatDeferredPaymentAmount(
+														vatBreakdown.net_amount,
+													)}
+												</p>
+												<p>
+													IVA:{' '}
+													{formatDeferredPaymentAmount(
+														vatBreakdown.vat_amount,
+													)}
+												</p>
+												<p>
+													Total:{' '}
+													{formatDeferredPaymentAmount(documentTotal)}
+												</p>
+											</div>
+										</div>
+									)}
 								</div>
 								{itemTotalDiffersFromDocumentTotal && (
 									<Alert

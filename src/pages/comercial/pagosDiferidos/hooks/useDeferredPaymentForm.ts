@@ -76,6 +76,9 @@ export const mapDeferredPaymentDocumentToForm = (
 		description: item.description,
 		quantity: item.quantity,
 		unit_price: Number(item.unit_price),
+		entered_unit_price: Number(item.unit_price),
+		// El precio persistido ya es bruto; al editar no se debe reinterpretar como neto.
+		calculates_vat: false,
 		serials: [...item.serials],
 	})),
 });
@@ -86,16 +89,18 @@ export const mapDeferredPaymentFormToPayload = (
 ): CreateDeferredPaymentPayload | null => {
 	if (values.customer_sale_id === null) return null;
 	return {
-		...values,
 		customer_sale_id: values.customer_sale_id,
+		document_type: values.document_type,
+		document_number: values.document_number.trim(),
+		issue_date: values.issue_date,
+		due_date: values.due_date,
+		total_amount: Number(values.total_amount),
+		purchase_order: values.purchase_order?.trim() || null,
+		notes: values.notes?.trim() || null,
 		assignee_ids:
 			values.assignee_ids.length === 0 && currentUserId && currentUserId > 0
 				? [currentUserId]
 				: values.assignee_ids,
-		document_number: values.document_number.trim(),
-		total_amount: Number(values.total_amount),
-		purchase_order: values.purchase_order?.trim() || null,
-		notes: values.notes?.trim() || null,
 		items: values.items.map((item) => ({
 			product_id: null,
 			code: item.code.trim(),

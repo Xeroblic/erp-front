@@ -31,7 +31,7 @@ import ConfirmDeferredPaymentActionModal from '../modals/ConfirmDeferredPaymentA
 import useDeferredPaymentDetail from '../../hooks/useDeferredPaymentDetail';
 import { useDeferredPaymentActions } from '../../hooks/useDeferredPaymentActions';
 import useAttachmentsFileDrop, { syncSingleFileInput } from '../../hooks/useAttachmentsFileDrop';
-import { DEFERRED_PAYMENT_RECEIPT_ACCEPT } from '../../types';
+import { calculateDeferredPaymentVatBreakdown, DEFERRED_PAYMENT_RECEIPT_ACCEPT } from '../../types';
 import {
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
 	formatDeferredPaymentAmount,
@@ -147,6 +147,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	}, [closeAfterDiscardingReceipt, onClose, paymentActions.actions]);
 	const total = Number(document?.total_amount ?? 0);
 	const paid = Number(document?.paid_amount ?? 0);
+	const vatBreakdown = calculateDeferredPaymentVatBreakdown(total);
 	const progress = total > 0 ? Math.min(100, Math.max(0, (paid / total) * 100)) : 0;
 	const progressLabel = `${Math.round(progress)}%`;
 	const customerDisplayName = document
@@ -285,6 +286,32 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 								/>
 								<AmountCard label='Avance del pago' value={progressLabel} />
 							</div>
+							{vatBreakdown && (
+								<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
+									<CardBody className='p-5 text-sm'>
+										<p className='font-medium text-zinc-700 dark:text-zinc-200'>
+											Si el total incluye IVA 19%:
+										</p>
+										<div className='mt-2 grid gap-2 sm:grid-cols-3'>
+											<p className='text-zinc-600 dark:text-zinc-300'>
+												Neto:{' '}
+												{formatDeferredPaymentAmount(
+													vatBreakdown.net_amount,
+												)}
+											</p>
+											<p className='text-zinc-600 dark:text-zinc-300'>
+												IVA:{' '}
+												{formatDeferredPaymentAmount(
+													vatBreakdown.vat_amount,
+												)}
+											</p>
+											<p className='font-semibold'>
+												Total: {formatDeferredPaymentAmount(total)}
+											</p>
+										</div>
+									</CardBody>
+								</Card>
+							)}
 							<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
 								<CardBody className='space-y-4 p-5'>
 									<div>
