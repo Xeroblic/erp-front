@@ -393,6 +393,15 @@ const updateCreditProfile = async (
 	return unwrapResource(response.data);
 };
 
+const deleteCreditProfile = async (subsidiaryId: number, customerSaleId: number): Promise<void> => {
+	await ApiService.fetchData({
+		url: creditProfileUrl(subsidiaryId, customerSaleId),
+		method: 'delete',
+	});
+	ApiService.invalidateCache(creditProfileUrl(subsidiaryId, customerSaleId));
+	invalidateCreditProfiles(subsidiaryId);
+};
+
 const deferredPaymentsService = {
 	getDocuments,
 	getSummary,
@@ -411,6 +420,7 @@ const deferredPaymentsService = {
 	getCreditProfile,
 	getCreditProfiles,
 	updateCreditProfile,
+	deleteCreditProfile,
 };
 
 export default deferredPaymentsService;
