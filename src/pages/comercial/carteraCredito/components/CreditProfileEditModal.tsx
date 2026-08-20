@@ -327,10 +327,10 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 					profile.customer_sale_id,
 					{
 						is_active: false,
-						payment_term_days: Number(formik.values.payment_term_days),
-						credit_limit: formik.values.credit_limit.trim() || null,
-						collection_email: formik.values.collection_email.trim() || null,
-						notes: formik.values.notes.trim() || null,
+						payment_term_days: loadedProfile.payment_term_days,
+						credit_limit: loadedProfile.credit_limit,
+						collection_email: loadedProfile.collection_email,
+						notes: loadedProfile.notes,
 					},
 				);
 				if (
@@ -383,6 +383,13 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	const closeModal = () => {
 		onClose();
 		if (shouldRefreshAfterClose) onSaved();
+	};
+	const cancelDeleteConfirmation = () => {
+		if (initialDeleteConfirmation) {
+			closeModal();
+			return;
+		}
+		setIsDeleteConfirmationOpen(false);
 	};
 	const guardClose = (nextState: React.SetStateAction<boolean>) => {
 		const open = typeof nextState === 'function' ? nextState(profile !== null) : nextState;
@@ -551,7 +558,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 						<Button
 							variant='outline'
 							type='button'
-							onClick={() => setIsDeleteConfirmationOpen(false)}
+							onClick={cancelDeleteConfirmation}
 							isDisable={isDeleting}>
 							Cancelar
 						</Button>
