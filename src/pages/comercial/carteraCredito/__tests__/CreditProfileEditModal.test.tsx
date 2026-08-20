@@ -312,14 +312,14 @@ describe('CreditProfileEditModal', () => {
 			}),
 		);
 		expect(await screen.findByRole('alert')).toHaveTextContent(
-			'El perfil no se puede eliminar.',
+			'La suspensión del crédito ya fue guardada. El perfil no se puede eliminar.',
 		);
 		expect(onClose).not.toHaveBeenCalled();
 	});
 
-	it('informa que la suspensión quedó aplicada si el DELETE falla sin mensaje', async () => {
+	it('informa la suspensión aplicada si el DELETE falla con un error de red', async () => {
 		updateCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
-		deleteCreditProfileMock.mockRejectedValue({});
+		deleteCreditProfileMock.mockRejectedValue(new Error('Network Error'));
 		render(
 			<CreditProfileEditModal
 				profile={listProfile}
@@ -336,10 +336,39 @@ describe('CreditProfileEditModal', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 
 		expect(await screen.findByRole('alert')).toHaveTextContent(
-			'No se pudo eliminar el perfil de crédito. La suspensión del crédito ya fue guardada.',
+			'La suspensión del crédito ya fue guardada. Network Error',
 		);
 		expect(updateCreditProfileMock).toHaveBeenCalledOnce();
 		expect(deleteCreditProfileMock).toHaveBeenCalledOnce();
+		expect(onClose).not.toHaveBeenCalled();
+	});
+
+	it('permite confirmar la eliminación de un crédito suspendido con un borrador inválido', async () => {
+		const suspendedProfile = { ...listProfile, is_active: false };
+		getCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
+		render(
+			<CreditProfileEditModal
+				profile={suspendedProfile}
+				subsidiaryId={4}
+				branchId={1}
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+
+		fireEvent.change(await screen.findByLabelText('Correo de cobranza'), {
+			target: { value: 'correo-invalido' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+
+		expect(
+			await screen.findByText(/¿Quieres eliminar este perfil de crédito/i),
+		).toBeInTheDocument();
+		expect(updateCreditProfileMock).not.toHaveBeenCalled();
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+
+		await waitFor(() => expect(deleteCreditProfileMock).toHaveBeenCalledWith(4, 8));
+		expect(updateCreditProfileMock).not.toHaveBeenCalled();
 	});
 
 	it('cierra el modal al guardar una suspensión sin eliminar el perfil', async () => {

@@ -88,7 +88,6 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	const requestIdRef = useRef(0);
 	const saveRequestIdRef = useRef(0);
 	const deleteRequestIdRef = useRef(0);
-	const deleteConfirmationRequestIdRef = useRef(0);
 	const loadControllerRef = useRef<AbortController | null>(null);
 	const mountedRef = useRef(true);
 	const [loadedProfileState, setLoadedProfileState] = useState<
@@ -99,7 +98,6 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [deleteError, setDeleteError] = useState<string | null>(null);
 	const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
-	const [isPreparingDelete, setIsPreparingDelete] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [shouldRefreshAfterClose, setShouldRefreshAfterClose] = useState(false);
 	identityRef.current = identity;
@@ -219,18 +217,15 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 		setSaveError(null);
 		setDeleteError(null);
 		setIsDeleteConfirmationOpen(initialDeleteConfirmation);
-		setIsPreparingDelete(false);
 		setIsDeleting(false);
 		setShouldRefreshAfterClose(false);
 		deleteRequestIdRef.current += 1;
-		deleteConfirmationRequestIdRef.current += 1;
 		if (profile === null || subsidiaryId === null) return undefined;
 		loadProfile().catch(() => undefined);
 		return () => {
 			loadControllerRef.current?.abort();
 			saveRequestIdRef.current += 1;
 			deleteRequestIdRef.current += 1;
-			deleteConfirmationRequestIdRef.current += 1;
 		};
 	}, [initialDeleteConfirmation, loadProfile, profile, subsidiaryId]);
 
@@ -241,7 +236,6 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 			requestIdRef.current += 1;
 			saveRequestIdRef.current += 1;
 			deleteRequestIdRef.current += 1;
-			deleteConfirmationRequestIdRef.current += 1;
 		},
 		[],
 	);
@@ -274,46 +268,9 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 		loadedProfile === null ||
 		isLoading ||
 		deleteDisabledTooltip !== '';
-	const openDeleteConfirmation = async () => {
-		if (isPreparingDelete) return;
-		const confirmationIdentity = identity;
-		const confirmationRequestId = deleteConfirmationRequestIdRef.current + 1;
-		deleteConfirmationRequestIdRef.current = confirmationRequestId;
-		setIsPreparingDelete(true);
-		try {
-			const formErrors = await formik.validateForm();
-			if (
-				!mountedRef.current ||
-				confirmationIdentity !== identityRef.current ||
-				confirmationRequestId !== deleteConfirmationRequestIdRef.current
-			)
-				return;
-			if (Object.keys(formErrors).length > 0) {
-				formik
-					.setTouched(
-						{
-							is_active: true,
-							payment_term_days: true,
-							credit_limit: true,
-							collection_email: true,
-							notes: true,
-						},
-						false,
-					)
-					.catch(() => undefined);
-				return;
-			}
-			setDeleteError(null);
-			setIsDeleteConfirmationOpen(true);
-		} finally {
-			if (
-				mountedRef.current &&
-				confirmationIdentity === identityRef.current &&
-				confirmationRequestId === deleteConfirmationRequestIdRef.current
-			) {
-				setIsPreparingDelete(false);
-			}
-		}
+	const openDeleteConfirmation = () => {
+		setDeleteError(null);
+		setIsDeleteConfirmationOpen(true);
 	};
 	const handleDelete = async () => {
 		if (profile === null || subsidiaryId === null || loadedProfile === null || isDeleting)
@@ -370,14 +327,19 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 				deleteRequestId !== deleteRequestIdRef.current
 			)
 				return;
-			let deleteFailureFallback = 'No se pudo eliminar el perfil de crédito.';
 			if (suspensionWasSaved) {
-				deleteFailureFallback =
-					'No se pudo eliminar el perfil de crédito. La suspensión del crédito ya fue guardada.';
-			} else if (requiresSuspensionBeforeDelete) {
-				deleteFailureFallback =
-					'No se pudo suspender el crédito antes de eliminar el perfil.';
+				const deleteFailureMessage = getApiErrorMessage(
+					error,
+					'No se pudo eliminar el perfil de crédito.',
+				);
+				setDeleteError(
+					`La suspensión del crédito ya fue guardada. ${deleteFailureMessage}`,
+				);
+				return;
 			}
+			const deleteFailureFallback = requiresSuspensionBeforeDelete
+				? 'No se pudo suspender el crédito antes de eliminar el perfil.'
+				: 'No se pudo eliminar el perfil de crédito.';
 			setDeleteError(getApiErrorMessage(error, deleteFailureFallback));
 		} finally {
 			if (
@@ -401,7 +363,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	};
 	const guardClose = (nextState: React.SetStateAction<boolean>) => {
 		const open = typeof nextState === 'function' ? nextState(profile !== null) : nextState;
-		if (!open && !formik.isSubmitting && !isPreparingDelete && !isDeleting) closeModal();
+		if (!open && !formik.isSubmitting && !isDeleting) closeModal();
 	};
 
 	return (
@@ -410,7 +372,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 			setIsOpen={guardClose}
 			size='md'
 			isCentered
-			isStaticBackdrop={formik.isSubmitting || isPreparingDelete || isDeleting}>
+			isStaticBackdrop={formik.isSubmitting || isDeleting}>
 			<ModalHeader>
 				{isDeleteConfirmationOpen
 					? 'Eliminar perfil de crédito'
@@ -606,7 +568,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 										type='button'
 										onClick={handleDelete}
 										isLoading={isDeleting}
-										isDisable={isDeleteDisabled || isPreparingDelete}>
+										isDisable={isDeleteDisabled}>
 										Eliminar perfil
 									</ProtectedButton>
 								</span>
@@ -646,7 +608,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 										color='red'
 										type='button'
 										onClick={openDeleteConfirmation}
-										isDisable={isDeleteDisabled || isPreparingDelete}>
+										isDisable={isDeleteDisabled}>
 										Eliminar perfil
 									</ProtectedButton>
 								</span>
