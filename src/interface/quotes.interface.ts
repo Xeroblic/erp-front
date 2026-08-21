@@ -88,15 +88,15 @@ export interface Quote {
 	internal_notes?: string | null;
 	terms_conditions?: Record<string, any> | null;
 	payment_method?:
-	| 'efectivo'
-	| 'tarjeta_credito'
-	| 'tarjeta_debito'
-	| 'transferencia'
-	| 'cheque'
-	| 'credito'
-	| string
-	| string[]
-	| null;
+		| 'efectivo'
+		| 'tarjeta_credito'
+		| 'tarjeta_debito'
+		| 'transferencia'
+		| 'cheque'
+		| 'credito'
+		| string
+		| string[]
+		| null;
 	purchase_order?: string | null;
 	payment_terms?: number | null;
 	fixed_discount?: number | null;

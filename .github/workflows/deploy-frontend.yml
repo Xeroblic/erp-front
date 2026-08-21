@@ -1,80 +1,80 @@
 name: Deploy Frontend
 
 on:
-  push:
-    branches: [ main ]
-    # or drop this block; if you keep it, align with real paths
-    paths:
-      - "src/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "vite.config.ts"
-      - "tsconfig*.json"
+    push:
+        branches: [main]
+        # or drop this block; if you keep it, align with real paths
+        paths:
+            - 'src/**'
+            - 'package.json'
+            - 'pnpm-lock.yaml'
+            - 'vite.config.ts'
+            - 'tsconfig*.json'
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+    build-and-deploy:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10.33.0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.x"
-          cache: "pnpm"
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22.x'
+                  cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
 
-      - name: Build frontend
-        run: pnpm run build
+            - name: Build frontend
+              run: pnpm run build
 
-      # 1) ACTIVAR MAINTENANCE EN EL VPS (NGINX)
-      - name: Enable maintenance (Nginx)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            set -e
-            cd /opt/zentria/backend
-            echo ">>> Front: activando maintenance global"
-            touch nginx/maintenance/maintenance.on
-            docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload || true
+            # 1) ACTIVAR MAINTENANCE EN EL VPS (NGINX)
+            - name: Enable maintenance (Nginx)
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.SSH_HOST }}
+                  username: ${{ secrets.SSH_USER }}
+                  port: ${{ secrets.SSH_PORT }}
+                  key: ${{ secrets.SSH_KEY }}
+                  script: |
+                      set -e
+                      cd /opt/zentria/backend
+                      echo ">>> Front: activando maintenance global"
+                      touch nginx/maintenance/maintenance.on
+                      docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload || true
 
-      # 2) DEPLOY DEL BUILD VIA RSYNC
-      - name: Deploy via rsync
-        uses: burnett01/rsync-deployments@7.1.0
-        with:
-          switches: -avz --delete
-          path: dist/
-          remote_path: ${{ secrets.SSH_PATH }}       # ej: /opt/zentria/frontend
-          remote_host: ${{ secrets.SSH_HOST }}
-          remote_user: ${{ secrets.SSH_USER }}
-          remote_key: ${{ secrets.SSH_KEY }}
-          remote_port: ${{ secrets.SSH_PORT || '22' }}
+            # 2) DEPLOY DEL BUILD VIA RSYNC
+            - name: Deploy via rsync
+              uses: burnett01/rsync-deployments@7.1.0
+              with:
+                  switches: -avz --delete
+                  path: dist/
+                  remote_path: ${{ secrets.SSH_PATH }} # ej: /opt/zentria/frontend
+                  remote_host: ${{ secrets.SSH_HOST }}
+                  remote_user: ${{ secrets.SSH_USER }}
+                  remote_key: ${{ secrets.SSH_KEY }}
+                  remote_port: ${{ secrets.SSH_PORT || '22' }}
 
-      # 3) DESACTIVAR MAINTENANCE (PASE LO QUE PASE)
-      - name: Disable maintenance (Nginx)
-        if: always()   # se ejecuta aunque falle el rsync
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            set -e
-            cd /opt/zentria/backend
-            echo ">>> Front: desactivando maintenance global"
-            rm -f nginx/maintenance/maintenance.on
-            docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload || true
+            # 3) DESACTIVAR MAINTENANCE (PASE LO QUE PASE)
+            - name: Disable maintenance (Nginx)
+              if: always() # se ejecuta aunque falle el rsync
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.SSH_HOST }}
+                  username: ${{ secrets.SSH_USER }}
+                  port: ${{ secrets.SSH_PORT }}
+                  key: ${{ secrets.SSH_KEY }}
+                  script: |
+                      set -e
+                      cd /opt/zentria/backend
+                      echo ">>> Front: desactivando maintenance global"
+                      rm -f nginx/maintenance/maintenance.on
+                      docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload || true

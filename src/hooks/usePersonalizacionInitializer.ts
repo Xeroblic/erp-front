@@ -9,7 +9,7 @@ import {
 	setThemeColorShade,
 	setDarkMode,
 } from '../store/slices/personalizacion/personalizacionSlice';
-import useDarkModeManager from './useDarkModeManager.ts';
+import useDarkModeManager from './useDarkModeManager';
 import DARK_MODE from '../constants/darkMode.constant';
 
 /**

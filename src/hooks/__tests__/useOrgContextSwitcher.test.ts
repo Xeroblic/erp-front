@@ -22,10 +22,7 @@ vi.mock('@/store', async (importOriginal) => {
 	};
 });
 
-import {
-	useOrgContextSwitcher,
-	ORG_CONTEXT_CHANGED_EVENT,
-} from '../useOrgContextSwitcher';
+import { useOrgContextSwitcher, ORG_CONTEXT_CHANGED_EVENT } from '../useOrgContextSwitcher';
 import { renderHookWithStore, PreloadedTestState } from '@/test-utils/renderWithStore';
 
 const state = (opts: {

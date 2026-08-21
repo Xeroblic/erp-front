@@ -4,9 +4,9 @@ import { selectIsDarkTheme } from '../store/slices/personalizacion/personalizaci
 
 /**
  * Hook para forzar el modo "Light" (claro) en una página específica.
- * Evita que el `AppInitializer` o cambios en Redux vuelvan a aplicar 
+ * Evita que el `AppInitializer` o cambios en Redux vuelvan a aplicar
  * la clase `dark` mediante el uso de un MutationObserver.
- * 
+ *
  * Uso: simplemente llama `useForceLightMode()` en el inicio de tu componente de página.
  */
 const useForceLightMode = () => {

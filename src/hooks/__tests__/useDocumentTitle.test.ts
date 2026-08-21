@@ -28,15 +28,10 @@ describe('useDocumentTitle', () => {
 	});
 
 	it('actualiza document.title al llamar al setter', () => {
-		const { result } = renderHook(() =>
-			useDocumentTitle({ title: 'Zentria', name: 'Inicio' }),
-		);
+		const { result } = renderHook(() => useDocumentTitle({ title: 'Zentria', name: 'Inicio' }));
 
 		act(() => {
-			const [, setDocumentTitle] = result.current as [
-				string,
-				(v: string) => void,
-			];
+			const [, setDocumentTitle] = result.current as [string, (v: string) => void];
 			setDocumentTitle('Nuevo Título');
 		});
 
@@ -49,9 +44,7 @@ describe('useDocumentTitle', () => {
 	});
 
 	it('el setter reemplaza el estado retornado', () => {
-		const { result } = renderHook(() =>
-			useDocumentTitle({ title: 'A', name: 'B' }),
-		);
+		const { result } = renderHook(() => useDocumentTitle({ title: 'A', name: 'B' }));
 
 		act(() => {
 			(result.current as [string, (v: string) => void])[1]('C');

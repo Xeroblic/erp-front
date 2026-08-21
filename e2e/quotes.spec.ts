@@ -46,11 +46,7 @@ const mockQuotesApi = async (page: Page) => {
 			json: {
 				data: [
 					quoteRow(101, 'draft', 'Cliente Borrador'),
-					quoteRow(
-						102,
-						state.converted ? 'converted' : 'approved',
-						'Cliente Aprobado',
-					),
+					quoteRow(102, state.converted ? 'converted' : 'approved', 'Cliente Aprobado'),
 				],
 				meta: { total: 2, current_page: 1, per_page: 10, last_page: 1 },
 			},
