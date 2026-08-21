@@ -58,15 +58,18 @@ const ChannelOverridesCard: React.FC<ChannelOverridesCardProps> = ({
 }) => {
 	const canAct = subsidiaryId !== null && integrationId !== null;
 
-	const effectivePrice = channelPrice?.effective_price ?? (basePrice !== null ? String(basePrice) : null);
+	const effectivePrice =
+		channelPrice?.effective_price ?? (basePrice !== null ? String(basePrice) : null);
 	const effectiveOfferPrice =
-		channelPrice?.effective_offer_price ?? (baseOfferPrice !== null ? String(baseOfferPrice) : null);
+		channelPrice?.effective_offer_price ??
+		(baseOfferPrice !== null ? String(baseOfferPrice) : null);
 	const basePricePlaceholder =
 		basePrice !== null ? `Base: ${formatMoney(String(basePrice))}` : 'Precio base del producto';
 	const baseOfferPlaceholder =
 		baseOfferPrice !== null ? `Base: ${formatMoney(String(baseOfferPrice))}` : 'Sin oferta';
 
-	const effectiveName = channelPrice?.effective_name ?? channelPrice?.name_override ?? baseName ?? null;
+	const effectiveName =
+		channelPrice?.effective_name ?? channelPrice?.name_override ?? baseName ?? null;
 	const baseNamePlaceholder = baseName ? `Base: ${baseName}` : 'Nombre original del producto';
 
 	const priceMutation = useChannelPriceMutation(subsidiaryId, productId);

@@ -2,7 +2,11 @@ import React, { useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { useAppDispatch } from '@/store';
-import { createCategory, fetchCategories, deleteCategory } from '@/store/slices/categories/categoriesSlice';
+import {
+	createCategory,
+	fetchCategories,
+	deleteCategory,
+} from '@/store/slices/categories/categoriesSlice';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 
@@ -77,8 +81,8 @@ const CategoryDedupModal: React.FC<CategoryDedupModalProps> = ({
 					</div>
 
 					<div className='rounded-md bg-red-50 p-3 text-xs text-red-800 dark:bg-red-900/30 dark:text-red-300'>
-						<strong>Advertencia:</strong> Las categorías no seleccionadas serán eliminadas
-						permanentemente. Este cambio no se puede deshacer.
+						<strong>Advertencia:</strong> Las categorías no seleccionadas serán
+						eliminadas permanentemente. Este cambio no se puede deshacer.
 					</div>
 				</div>
 			</ModalBody>
@@ -136,17 +140,12 @@ const isPotentialDuplicate = (a: string, b: string): boolean => {
 	return true;
 };
 
-const findDuplicateCategories = (
-	categories: { id: number; name: string }[],
-	targetId: number,
-) => {
+const findDuplicateCategories = (categories: { id: number; name: string }[], targetId: number) => {
 	if (!categories.length || !targetId) return [];
 	const target = categories.find((c) => c.id === targetId);
 	if (!target) return [];
 	const targetNormalized = normalizeName(target.name);
-	return categories.filter((c) =>
-		isPotentialDuplicate(targetNormalized, normalizeName(c.name)),
-	);
+	return categories.filter((c) => isPotentialDuplicate(targetNormalized, normalizeName(c.name)));
 };
 
 interface CategorySelectorWithCreateProps {
@@ -217,19 +216,14 @@ const CategorySelectorWithCreate: React.FC<CategorySelectorWithCreateProps> = ({
 					}),
 				).unwrap();
 
-				const reloadedCategories = await dispatch(
-					fetchCategories({ search: '' }),
-				).unwrap();
+				const reloadedCategories = await dispatch(fetchCategories({ search: '' })).unwrap();
 
 				if (reloadedCategories?.items) {
 					const categoryList = reloadedCategories.items.map((c) => ({
 						id: Number(c.id),
 						name: c.name,
 					}));
-					const duplicates = findDuplicateCategories(
-						categoryList,
-						createdCategory.id,
-					);
+					const duplicates = findDuplicateCategories(categoryList, createdCategory.id);
 
 					if (duplicates.length > 1) {
 						setDedupCandidates(duplicates);

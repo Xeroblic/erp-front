@@ -42,16 +42,16 @@ const IntegrationsHubPage = lazy(() => import('@/pages/integraciones/Integration
 const SalesDashboard = lazy(() => import('@/pages/reportes/sales-dashboard'));
 const InventoryReports = lazy(() => import('@/pages/reportes/inventory-reports'));
 
-const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales.tsx'));
-const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle.tsx'));
-const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/RolesPermisos.tsx'));
+const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales'));
+const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle'));
+const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/RolesPermisos'));
 const UserPermissionsDetail = lazy(
-	() => import('@/pages/gestionAdmin/roles y permisos/UserPermissionsDetail.tsx'),
+	() => import('@/pages/gestionAdmin/roles y permisos/UserPermissionsDetail'),
 );
 
 // Páginas de Administración
 const PermissionsAdmin = lazy(() => import('@/pages/admin/Permission/PermissionsAdmin'));
-const InvitationsAdmin = lazy(() => import('@/pages/invitations/InvitationsAdmin.tsx'));
+const InvitationsAdmin = lazy(() => import('@/pages/invitations/InvitationsAdmin'));
 const SystemParametersAdmin = lazy(
 	() => import('@/pages/admin/systemParameters/SystemParametersAdmin'),
 );

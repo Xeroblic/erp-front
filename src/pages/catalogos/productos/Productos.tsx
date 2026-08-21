@@ -126,9 +126,7 @@ const Productos: React.FC = () => {
 			return productMatchesSearch(product, term);
 		});
 		// ISO strings ordenan cronológicamente con localeCompare.
-		return filtered.sort((a, b) =>
-			(b.updated_at ?? '').localeCompare(a.updated_at ?? ''),
-		);
+		return filtered.sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''));
 	}, [products, filters.search, wooOnly, dateFrom, dateTo]);
 
 	// Paginación client-side sobre la lista ya filtrada.

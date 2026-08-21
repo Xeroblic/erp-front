@@ -75,10 +75,8 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 		getIntegrationName,
 	} = useWooIntegrations(subsidiaryId);
 
-	const { productLinks, publishedHereLink, isPublishedHere, isPublishedElsewhere } = useWooProductStatus(
-		marketplaceExternalIds,
-		selectedIntegrationId,
-	);
+	const { productLinks, publishedHereLink, isPublishedHere, isPublishedElsewhere } =
+		useWooProductStatus(marketplaceExternalIds, selectedIntegrationId);
 
 	const otherLink = useMemo(() => {
 		return productLinks.find((l) => l.integrationId !== selectedIntegrationId) ?? null;
@@ -186,9 +184,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 			toast.success('Producto enviado a publicar en WooCommerce');
 			onProductRefresh?.();
 		} catch (error) {
-			toast.error(
-				typeof error === 'string' ? error : 'No se pudo publicar el producto',
-			);
+			toast.error(typeof error === 'string' ? error : 'No se pudo publicar el producto');
 		}
 	};
 
@@ -212,7 +208,9 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 			onProductRefresh?.();
 		} catch (error) {
 			toast.error(
-				typeof error === 'string' ? error : 'No se pudo eliminar el producto de WooCommerce',
+				typeof error === 'string'
+					? error
+					: 'No se pudo eliminar el producto de WooCommerce',
 			);
 		} finally {
 			setUnpublishing(false);
@@ -263,8 +261,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	// sí sabemos si el producto está publicado aquí. Consideramos que coinciden
 	// cuando ambos están "publicados" (ERP publicado ↔ Woo en estado `publish`).
 	const localStatusLabel = isPublishedHere ? 'Publicado' : 'No publicado';
-	const statusDiff =
-		!!remote && (remote.status === 'publish') !== isPublishedHere;
+	const statusDiff = !!remote && (remote.status === 'publish') !== isPublishedHere;
 
 	const handleLinkChange = useCallback(() => {
 		onProductRefresh?.();
@@ -327,7 +324,9 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 										className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400'
 									/>
 									<p className='text-xs font-medium text-amber-800 dark:text-amber-200'>
-										Este producto ya está publicado en <strong>{otherIntegrationName}</strong>. Despublícalo antes de sincronizar aquí.
+										Este producto ya está publicado en{' '}
+										<strong>{otherIntegrationName}</strong>. Despublícalo antes
+										de sincronizar aquí.
 									</p>
 								</div>
 							)}
@@ -338,7 +337,9 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 										Sincronizar producto
 									</span>
 									<span className='text-xs text-neutral-400 dark:text-neutral-500'>
-										{isPublishedHere ? 'Sincronización activa' : 'Sincronización inactiva'}
+										{isPublishedHere
+											? 'Sincronización activa'
+											: 'Sincronización inactiva'}
 									</span>
 								</div>
 								<Checkbox
@@ -390,7 +391,11 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 							subsidiaryId={subsidiaryId}
 							productId={productId}
 							integrationId={selectedIntegrationId}
-							integrationName={selectedIntegrationId ? getIntegrationName(selectedIntegrationId) : undefined}
+							integrationName={
+								selectedIntegrationId
+									? getIntegrationName(selectedIntegrationId)
+									: undefined
+							}
 							channelPrice={channelPrice}
 							basePrice={basePrice}
 							baseOfferPrice={baseOfferPrice}
@@ -447,7 +452,8 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 											className='h-5 w-5 flex-shrink-0 text-neutral-400 dark:text-neutral-500'
 										/>
 										<p className='text-sm text-neutral-500 dark:text-neutral-400'>
-											Pulsa <strong>Consultar</strong> para comparar el producto local con WooCommerce.
+											Pulsa <strong>Consultar</strong> para comparar el
+											producto local con WooCommerce.
 										</p>
 									</div>
 								)}
@@ -495,7 +501,9 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 													icon='HeroInformationCircle'
 													className='mr-1 inline h-3.5 w-3.5'
 												/>
-												Este producto no está vinculado. Activa el switch de publicación o usa el emparejamiento manual para conectarlo.
+												Este producto no está vinculado. Activa el switch de
+												publicación o usa el emparejamiento manual para
+												conectarlo.
 											</div>
 										)}
 
@@ -505,7 +513,9 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 													<thead className='bg-neutral-100 dark:bg-neutral-800'>
 														<tr className='text-left text-xs uppercase tracking-wider text-neutral-600 dark:text-neutral-300'>
 															<th className='px-3 py-2.5'>Campo</th>
-															<th className='px-3 py-2.5'>ERP (local)</th>
+															<th className='px-3 py-2.5'>
+																ERP (local)
+															</th>
 															<th className='px-3 py-2.5'>
 																WooCommerce (remoto)
 															</th>
@@ -524,7 +534,10 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 																className={`px-3 py-2.5 ${statusDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
 																{formatValue(remote.status)}
 																{statusDiff && (
-																	<Badge color='red' variant='solid' className='ml-2'>
+																	<Badge
+																		color='red'
+																		variant='solid'
+																		className='ml-2'>
 																		Difiere
 																	</Badge>
 																)}
@@ -609,8 +622,8 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 									Esta acción eliminará el producto publicado en WooCommerce.
 								</p>
 								<p className='text-sm text-red-800 dark:text-red-100/90'>
-									El producto se enviará a la <strong>papelera</strong> de la tienda
-									y dejará de estar visible para los clientes.
+									El producto se enviará a la <strong>papelera</strong> de la
+									tienda y dejará de estar visible para los clientes.
 								</p>
 							</div>
 						</div>
@@ -622,9 +635,10 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 									className='mt-0.5 h-4 w-4 flex-shrink-0 text-sky-600 dark:text-sky-400'
 								/>
 								<p className='text-xs text-sky-800 dark:text-sky-200'>
-									¿Solo quieres desconectar la sincronización <strong>sin borrar</strong> el producto de la tienda? Esto mantiene
-									el producto vivo en WooCommerce y solo corta la sincronización
-									automática de stock.
+									¿Solo quieres desconectar la sincronización{' '}
+									<strong>sin borrar</strong> el producto de la tienda? Esto
+									mantiene el producto vivo en WooCommerce y solo corta la
+									sincronización automática de stock.
 								</p>
 							</div>
 							<Button

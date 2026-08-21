@@ -49,9 +49,7 @@ const getItemSerials = (item: ISaleItem): string[] => {
 };
 
 const CorrectSerialSchema = Yup.object({
-	sale_item_id: Yup.number()
-		.typeError('Selecciona un ítem')
-		.required('Selecciona un ítem'),
+	sale_item_id: Yup.number().typeError('Selecciona un ítem').required('Selecciona un ítem'),
 	old_serial: Yup.string().trim().required('Selecciona la serie a corregir').max(255),
 	new_serial: Yup.string()
 		.trim()
@@ -71,10 +69,7 @@ const CorrectSerialModal: React.FC<Props> = ({
 	onSuccess,
 }) => {
 	// Solo ítems con series conocidas son corregibles.
-	const serialItems = useMemo(
-		() => items.filter((it) => getItemSerials(it).length > 0),
-		[items],
-	);
+	const serialItems = useMemo(() => items.filter((it) => getItemSerials(it).length > 0), [items]);
 
 	const itemOptions = useMemo(
 		() =>
@@ -167,7 +162,8 @@ const CorrectSerialModal: React.FC<Props> = ({
 										variant='outline'
 										icon='HeroExclamationTriangle'
 										className='text-sm'>
-										Esta venta no tiene ítems con series asignadas para corregir.
+										Esta venta no tiene ítems con series asignadas para
+										corregir.
 									</Alert>
 								) : (
 									<>
@@ -206,7 +202,9 @@ const CorrectSerialModal: React.FC<Props> = ({
 										</div>
 
 										<div>
-											<Label htmlFor='old_serial'>Serie incorrecta (actual)</Label>
+											<Label htmlFor='old_serial'>
+												Serie incorrecta (actual)
+											</Label>
 											<SelectReact
 												id='old_serial'
 												name='old_serial'
@@ -241,7 +239,9 @@ const CorrectSerialModal: React.FC<Props> = ({
 										</div>
 
 										<div>
-											<Label htmlFor='new_serial'>Serie correcta (reemplazo)</Label>
+											<Label htmlFor='new_serial'>
+												Serie correcta (reemplazo)
+											</Label>
 											<Input
 												id='new_serial'
 												name='new_serial'
@@ -295,7 +295,11 @@ const CorrectSerialModal: React.FC<Props> = ({
 										type='submit'
 										variant='solid'
 										color='sky'
-										icon={formik.isSubmitting ? 'DuoLoading' : 'HeroArrowsRightLeft'}
+										icon={
+											formik.isSubmitting
+												? 'DuoLoading'
+												: 'HeroArrowsRightLeft'
+										}
 										isLoading={formik.isSubmitting}
 										isDisable={formik.isSubmitting || serialItems.length === 0}>
 										Corregir serie

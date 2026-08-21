@@ -33,27 +33,27 @@ const ActiveFiltersDisplay: React.FC<ActiveFiltersDisplayProps> = ({ filters }) 
 				Filtros activos
 			</span>
 			{filters.search && (
-				<Badge className='px-2'  variant='outline' color='violet'>
+				<Badge className='px-2' variant='outline' color='violet'>
 					Busqueda: "{filters.search}"
 				</Badge>
 			)}
 			{typeof filters.is_active === 'boolean' && (
-				<Badge className='px-2'  variant='outline' color='emerald'>
+				<Badge className='px-2' variant='outline' color='emerald'>
 					Estado: {filters.is_active ? 'Activo' : 'Inactivo'}
 				</Badge>
 			)}
 			{filters.brand_id && (
-				<Badge className='px-2'  variant='outline' color='blue'>
+				<Badge className='px-2' variant='outline' color='blue'>
 					Marca #{filters.brand_id}
 				</Badge>
 			)}
 			{filters.category_id && (
-				<Badge className='px-2'  variant='outline' color='amber'>
+				<Badge className='px-2' variant='outline' color='amber'>
 					Categoria #{filters.category_id}
 				</Badge>
 			)}
 			{filters.product_type && (
-				<Badge className='px-2'  variant='outline' color='violet'>
+				<Badge className='px-2' variant='outline' color='violet'>
 					Tipo: {filters.product_type}
 				</Badge>
 			)}

@@ -45,7 +45,7 @@ import ProductsTableV2 from './components/tables/ProductsTableV2';
 	onView={handleView}
 	onEdit={handleEdit}
 	onDelete={handleDelete}
-/>
+/>;
 ```
 
 ### 📦 Dependencias:

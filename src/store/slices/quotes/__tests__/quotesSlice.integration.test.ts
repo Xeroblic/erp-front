@@ -149,9 +149,7 @@ describe('quotesSlice (integración)', () => {
 		const store = makeStore();
 		await loadList(store);
 
-		await store
-			.dispatch(convertQuoteToSale({ subsidiaryId: SUBSIDIARY, quoteId: 2 }))
-			.unwrap();
+		await store.dispatch(convertQuoteToSale({ subsidiaryId: SUBSIDIARY, quoteId: 2 })).unwrap();
 
 		// El POST envía sale_number: null (el backend lo autogenera)
 		expect(lastConvertBody).toEqual({ sale_number: null });

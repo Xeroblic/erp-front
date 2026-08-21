@@ -463,4 +463,3 @@ export interface ILibraryMediaAttachResponse {
 	url?: string;
 	thumb_url?: string;
 }
-

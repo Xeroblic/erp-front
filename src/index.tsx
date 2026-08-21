@@ -40,7 +40,9 @@ root.render(
 	// <React.StrictMode>
 	<ErrorBoundary>
 		<Provider store={store}>
-			<PersistGate loading={<LoadingScreen message='Inicializando aplicación...' />} persistor={persistor}>
+			<PersistGate
+				loading={<LoadingScreen message='Inicializando aplicación...' />}
+				persistor={persistor}>
 				<ThemeContextProvider>
 					<BrowserRouter
 						future={{

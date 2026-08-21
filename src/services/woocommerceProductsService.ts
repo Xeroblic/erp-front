@@ -1,4 +1,3 @@
-
 import ApiService from './ApiService';
 import type {
 	ImportTermsPayload,
@@ -270,4 +269,3 @@ export const publishProductChildren = async (
 	});
 	return response.data;
 };
-

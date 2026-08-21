@@ -947,10 +947,12 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 							</p>
 							<p className='mt-0.5 text-xs text-sky-700 dark:text-sky-300'>
 								ERP: <span className='font-mono'>{comp?.erp?.sku ?? '—'}</span> vs
-								WooCommerce: <span className='font-mono'>{comp?.woo?.sku ?? '—'}</span>
+								WooCommerce:{' '}
+								<span className='font-mono'>{comp?.woo?.sku ?? '—'}</span>
 							</p>
 							<p className='mt-1.5 text-xs font-medium text-sky-800 dark:text-sky-200'>
-								Elige qué SKU mantener (para que coincidan y evitar errores lógicos):
+								Elige qué SKU mantener (para que coincidan y evitar errores
+								lógicos):
 							</p>
 						</div>
 					</div>
@@ -961,7 +963,11 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								variant='solid'
 								color={skuResolution === 'keep_erp' ? 'blue' : 'zinc'}
 								size='sm'
-								icon={skuResolution === 'keep_erp' ? 'HeroCheckCircle' : 'HeroCircleStack'}
+								icon={
+									skuResolution === 'keep_erp'
+										? 'HeroCheckCircle'
+										: 'HeroCircleStack'
+								}
 								onClick={() => onSkuResolutionChange('keep_erp')}
 								isDisable={isLinking}
 								className={`w-full transition-all ${
@@ -980,7 +986,11 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								variant='solid'
 								color={skuResolution === 'keep_woo' ? 'amber' : 'zinc'}
 								size='sm'
-								icon={skuResolution === 'keep_woo' ? 'HeroCheckCircle' : 'HeroShoppingBag'}
+								icon={
+									skuResolution === 'keep_woo'
+										? 'HeroCheckCircle'
+										: 'HeroShoppingBag'
+								}
 								onClick={() => onSkuResolutionChange('keep_woo')}
 								isDisable={isLinking}
 								className={`w-full transition-all ${
@@ -1084,7 +1094,8 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								</Button>
 							</div>
 							<p className='mt-1 text-xs text-neutral-500 dark:text-neutral-400'>
-								Si ambos tienen imagen, ¿cuál conservar? Por defecto usa la de WooCommerce.
+								Si ambos tienen imagen, ¿cuál conservar? Por defecto usa la de
+								WooCommerce.
 							</p>
 						</div>
 					</div>
@@ -1186,7 +1197,8 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								</Button>
 							</div>
 							<p className='mt-1 text-xs text-neutral-500 dark:text-neutral-400'>
-								Si ambos tienen imagen, ¿cuál conservar? Por defecto usa la de WooCommerce.
+								Si ambos tienen imagen, ¿cuál conservar? Por defecto usa la de
+								WooCommerce.
 							</p>
 						</div>
 					</div>

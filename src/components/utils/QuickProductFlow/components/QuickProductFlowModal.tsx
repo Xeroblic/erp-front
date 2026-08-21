@@ -183,9 +183,7 @@ export const QuickProductFlowModal: React.FC<QuickProductFlowModalProps> = ({
 									onChange={(option) => {
 										if (Array.isArray(option)) return;
 										const nextValue =
-											option && 'value' in option
-												? String(option.value)
-												: '';
+											option && 'value' in option ? String(option.value) : '';
 										form.setFieldValue('tipo', nextValue);
 									}}
 									onBlur={form.handleBlur}
@@ -235,9 +233,7 @@ export const QuickProductFlowModal: React.FC<QuickProductFlowModalProps> = ({
 									onChange={(option) => {
 										if (Array.isArray(option)) return;
 										const nextValue =
-											option && 'value' in option
-												? String(option.value)
-												: '';
+											option && 'value' in option ? String(option.value) : '';
 										onBrandChange(nextValue);
 									}}
 									onCreateOption={(inputValue) => {
@@ -324,8 +320,8 @@ export const QuickProductFlowModal: React.FC<QuickProductFlowModalProps> = ({
 									Seguimiento por número de serie
 								</p>
 								<p className='mt-0.5 text-xs text-zinc-500 dark:text-zinc-400'>
-									Rastrea el ciclo de vida individual de cada unidad con un
-									número único.
+									Rastrea el ciclo de vida individual de cada unidad con un número
+									único.
 								</p>
 								<Checkbox
 									id='serialTracking'

@@ -34,10 +34,7 @@ describe('warehouseSlice contexto organizacional', () => {
 			stats: { ...emptyStats, total: 1, actives: 1, empty: 1 },
 		};
 		let state = warehouseReducer(undefined, fetchWarehouses.pending('first', firstArg));
-		state = warehouseReducer(
-			state,
-			fetchWarehouses.fulfilled(firstPayload, 'first', firstArg),
-		);
+		state = warehouseReducer(state, fetchWarehouses.fulfilled(firstPayload, 'first', firstArg));
 		state = warehouseReducer(state, fetchWarehouses.pending('second', secondArg));
 
 		expect(state).toMatchObject({
@@ -47,10 +44,7 @@ describe('warehouseSlice contexto organizacional', () => {
 			loading: true,
 		});
 
-		state = warehouseReducer(
-			state,
-			fetchWarehouses.fulfilled(firstPayload, 'first', firstArg),
-		);
+		state = warehouseReducer(state, fetchWarehouses.fulfilled(firstPayload, 'first', firstArg));
 
 		expect(state.warehouses).toEqual([]);
 		expect(state.listBranchId).toBe(2);
@@ -58,12 +52,9 @@ describe('warehouseSlice contexto organizacional', () => {
 
 		state = warehouseReducer(
 			state,
-			fetchWarehouses.rejected(
-				new Error('fallo A'),
-				'first',
-				firstArg,
-				{ message: 'fallo A' },
-			),
+			fetchWarehouses.rejected(new Error('fallo A'), 'first', firstArg, {
+				message: 'fallo A',
+			}),
 		);
 
 		expect(state.error).toBeNull();
@@ -110,12 +101,9 @@ describe('warehouseSlice contexto organizacional', () => {
 		state = warehouseReducer(state, createWarehouse.pending('create-a-error', createArg));
 		state = warehouseReducer(
 			state,
-			createWarehouse.rejected(
-				new Error('fallo A'),
-				'create-a-error',
-				createArg,
-				{ message: 'fallo A' },
-			),
+			createWarehouse.rejected(new Error('fallo A'), 'create-a-error', createArg, {
+				message: 'fallo A',
+			}),
 		);
 
 		expect(state.warehouses).toEqual([warehouse(2)]);

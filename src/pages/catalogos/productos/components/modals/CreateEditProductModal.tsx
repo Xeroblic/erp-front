@@ -9,7 +9,11 @@ import {
 	type FormikErrors,
 } from 'formik';
 import { toast } from 'react-toastify';
-import OffCanvas, { OffCanvasBody, OffCanvasFooter, OffCanvasHeader } from '@/components/ui/OffCanvas';
+import OffCanvas, {
+	OffCanvasBody,
+	OffCanvasFooter,
+	OffCanvasHeader,
+} from '@/components/ui/OffCanvas';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import Checkbox from '@/components/form/Checkbox';
@@ -186,7 +190,10 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 					data.product_type = values.product_type;
 				}
 				if (values.attributes_json) {
-					data.attributes_json = values.attributes_json as unknown as Record<string, unknown>;
+					data.attributes_json = values.attributes_json as unknown as Record<
+						string,
+						unknown
+					>;
 				}
 
 				payload = { data, categoryIds };
@@ -247,7 +254,12 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 	};
 
 	return (
-		<OffCanvas isOpen={isOpen} setIsOpen={onClose} position='right' dialogClassName='md:!max-w-[65rem] w-full' isStaticBackdrop>
+		<OffCanvas
+			isOpen={isOpen}
+			setIsOpen={onClose}
+			position='right'
+			dialogClassName='md:!max-w-[65rem] w-full'
+			isStaticBackdrop>
 			<OffCanvasHeader>
 				<div className='flex items-center gap-3'>
 					<Icon
@@ -281,7 +293,11 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 					const isBusy = isLoading || isSubmitting;
 
 					// Determinar si los campos clave para SKU están completos
-					const skuFieldsComplete = !!(values.name?.trim() && values.brand_id && values.product_type);
+					const skuFieldsComplete = !!(
+						values.name?.trim() &&
+						values.brand_id &&
+						values.product_type
+					);
 
 					// Auto-save draft
 					useEffect(() => {
@@ -300,7 +316,9 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 						const currentBrandOpt = brandOptions.find(
 							(o) => String(o.value) === String(values.brand_id),
 						);
-						const currentBrandName = currentBrandOpt ? String(currentBrandOpt.label) : '';
+						const currentBrandName = currentBrandOpt
+							? String(currentBrandOpt.label)
+							: '';
 
 						// Si no hay datos suficientes, limpiar SKU
 						if (!values.name?.trim() || !currentBrandName || !values.product_type) {
@@ -323,7 +341,13 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 							if (skuGenTimerRef.current) clearTimeout(skuGenTimerRef.current);
 						};
 						// eslint-disable-next-line react-hooks/exhaustive-deps
-					}, [values.name, values.brand_id, values.product_type, isEditMode, skuManuallyEdited]);
+					}, [
+						values.name,
+						values.brand_id,
+						values.product_type,
+						isEditMode,
+						skuManuallyEdited,
+					]);
 
 					const selectedBrandOption: TSelectOption | null =
 						brandOptions.find(
@@ -417,62 +441,158 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																<Input
 																	id='sku'
 																	{...field}
-																	onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+																	onChange={(
+																		e: React.ChangeEvent<HTMLInputElement>,
+																	) => {
 																		field.onChange(e);
-																		if (!isEditMode) setSkuManuallyEdited(true);
+																		if (!isEditMode)
+																			setSkuManuallyEdited(
+																				true,
+																			);
 																	}}
 																	required
-																	disabled={isBusy || (!isEditMode && !skuFieldsComplete && !skuManuallyEdited)}
+																	disabled={
+																		isBusy ||
+																		(!isEditMode &&
+																			!skuFieldsComplete &&
+																			!skuManuallyEdited)
+																	}
 																	className='flex-1'
-																	placeholder={!isEditMode && !skuFieldsComplete ? 'Se genera automáticamente...' : ''}
+																	placeholder={
+																		!isEditMode &&
+																		!skuFieldsComplete
+																			? 'Se genera automáticamente...'
+																			: ''
+																	}
 																/>
-																<Tooltip text={skuChecking ? 'Verificando unicidad...' : skuManuallyEdited ? 'Volver a auto-generar' : 'Regenerar SKU'}>
+																<Tooltip
+																	text={
+																		skuChecking
+																			? 'Verificando unicidad...'
+																			: skuManuallyEdited
+																				? 'Volver a auto-generar'
+																				: 'Regenerar SKU'
+																	}>
 																	<Button
 																		variant='outline'
 																		type='button'
 																		onClick={async () => {
-																			if (!values.name?.trim()) {
-																				toast.warning('Ingresa un nombre de producto primero');
+																			if (
+																				!values.name?.trim()
+																			) {
+																				toast.warning(
+																					'Ingresa un nombre de producto primero',
+																				);
 																				return;
 																			}
-																			const currentBrandOpt = brandOptions.find(o => String(o.value) === String(values.brand_id));
-																			const currentBrand = currentBrandOpt ? String(currentBrandOpt.label) : '';
+																			const currentBrandOpt =
+																				brandOptions.find(
+																					(o) =>
+																						String(
+																							o.value,
+																						) ===
+																						String(
+																							values.brand_id,
+																						),
+																				);
+																			const currentBrand =
+																				currentBrandOpt
+																					? String(
+																							currentBrandOpt.label,
+																						)
+																					: '';
 																			setSkuChecking(true);
-																			setSkuManuallyEdited(false);
+																			setSkuManuallyEdited(
+																				false,
+																			);
 																			try {
-																				const branchId = values.branch_id || defaultBranchId;
+																				const branchId =
+																					values.branch_id ||
+																					defaultBranchId;
 																				let newSku: string;
 																				if (branchId) {
-																					newSku = await generateUniqueSmartSKU(
-																						{ name: values.name, brandName: currentBrand, productType: values.product_type || '' },
-																						'branches',
-																						Number(branchId),
-																					);
+																					newSku =
+																						await generateUniqueSmartSKU(
+																							{
+																								name: values.name,
+																								brandName:
+																									currentBrand,
+																								productType:
+																									values.product_type ||
+																									'',
+																							},
+																							'branches',
+																							Number(
+																								branchId,
+																							),
+																						);
 																				} else {
-																					newSku = generateSmartSKU({ name: values.name, brandName: currentBrand, productType: values.product_type || '' });
+																					newSku =
+																						generateSmartSKU(
+																							{
+																								name: values.name,
+																								brandName:
+																									currentBrand,
+																								productType:
+																									values.product_type ||
+																									'',
+																							},
+																						);
 																				}
-																				void setFieldValue('sku', newSku);
-																				toast.success('SKU generado y verificado ✓');
+																				void setFieldValue(
+																					'sku',
+																					newSku,
+																				);
+																				toast.success(
+																					'SKU generado y verificado ✓',
+																				);
 																			} catch {
-																				const fallback = generateSmartSKU({ name: values.name, brandName: currentBrand, productType: values.product_type || '' });
-																				void setFieldValue('sku', fallback);
+																				const fallback =
+																					generateSmartSKU(
+																						{
+																							name: values.name,
+																							brandName:
+																								currentBrand,
+																							productType:
+																								values.product_type ||
+																								'',
+																						},
+																					);
+																				void setFieldValue(
+																					'sku',
+																					fallback,
+																				);
 																			} finally {
-																				setSkuChecking(false);
+																				setSkuChecking(
+																					false,
+																				);
 																			}
 																		}}
-																		isDisable={isBusy || skuChecking}
-																	>
-																		{skuChecking
-																			? <Icon icon='HeroArrowPath' className='h-5 w-5 animate-spin text-blue-500' />
-																			: <Icon icon='HeroSparkles' className='h-5 w-5 text-amber-500' />
-																		}
+																		isDisable={
+																			isBusy || skuChecking
+																		}>
+																		{skuChecking ? (
+																			<Icon
+																				icon='HeroArrowPath'
+																				className='h-5 w-5 animate-spin text-blue-500'
+																			/>
+																		) : (
+																			<Icon
+																				icon='HeroSparkles'
+																				className='h-5 w-5 text-amber-500'
+																			/>
+																		)}
 																	</Button>
 																</Tooltip>
 															</div>
 															{!isEditMode && !skuFieldsComplete && (
 																<p className='mt-1 text-xs text-amber-500'>
-																	<Icon icon='HeroInformationCircle' className='mr-1 inline h-3 w-3' />
-																	Completa nombre, marca y tipo para habilitar edición
+																	<Icon
+																		icon='HeroInformationCircle'
+																		className='mr-1 inline h-3 w-3'
+																	/>
+																	Completa nombre, marca y tipo
+																	para habilitar edición
 																</p>
 															)}
 														</FieldContainer>
@@ -512,10 +632,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																	'branch_id',
 																	branchId,
 																);
-																setFieldTouched(
-																	'branch_id',
-																	true,
-																);
+																setFieldTouched('branch_id', true);
 																if (branchId) {
 																	void dispatch(
 																		fetchBrands({
@@ -530,15 +647,14 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															disabled={isBusy}
 															required
 														/>
-														{touched.branch_id &&
-															errors.branch_id && (
-																<p className='text-xs text-red-500'>
-																	{typeof errors.branch_id ===
-																		'string'
-																		? errors.branch_id
-																		: 'Selecciona una sucursal'}
-																</p>
-															)}
+														{touched.branch_id && errors.branch_id && (
+															<p className='text-xs text-red-500'>
+																{typeof errors.branch_id ===
+																'string'
+																	? errors.branch_id
+																	: 'Selecciona una sucursal'}
+															</p>
+														)}
 													</div>
 												)}
 
@@ -550,17 +666,26 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 														brandOptions={brandOptions}
 														value={values.brand_id}
 														onChange={(newBrandId) => {
-															void setFieldValue('brand_id', newBrandId);
+															void setFieldValue(
+																'brand_id',
+																newBrandId,
+															);
 														}}
 														onBlur={() => {
 															void setFieldTouched('brand_id', true);
 														}}
 														brandsLoading={brandsLoading}
-														isDisabled={isBusy || (!brandOptions.length && !values.brand_id && !values.branch_id)}
+														isDisabled={
+															isBusy ||
+															(!brandOptions.length &&
+																!values.brand_id &&
+																!values.branch_id)
+														}
 														placeholder={
 															brandsLoading
 																? 'Cargando marcas...'
-																: !brandOptions.length && !values.branch_id
+																: !brandOptions.length &&
+																	  !values.branch_id
 																	? 'Selecciona la sucursal primero'
 																	: 'Selecciona una marca'
 														}
@@ -600,9 +725,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															)
 														}
 														disabled={isBusy}>
-														<option value=''>
-															Seleccionar tipo
-														</option>
+														<option value=''>Seleccionar tipo</option>
 														{PRODUCT_DEVICE_TYPES.map((option) => (
 															<option
 																key={option.value}
@@ -621,12 +744,10 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 														name='categories'
 														branchId={values.branch_id ?? null}
 														categoryOptions={categoryOptions}
-														value={values.categories.map(
-															(option) => ({
-																value: String(option.value),
-																label: String(option.label),
-															}),
-														)}
+														value={values.categories.map((option) => ({
+															value: String(option.value),
+															label: String(option.label),
+														}))}
 														onChange={(nextOptions) => {
 															void setFieldValue(
 																'categories',
@@ -648,9 +769,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																? 'Cargando categorías...'
 																: 'Selecciona las categorías'
 														}
-														isDisabled={
-															isBusy || categoriesLoading
-														}
+														isDisabled={isBusy || categoriesLoading}
 													/>
 													<ErrorMessage name='categories'>
 														{(msg) => (
@@ -670,7 +789,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 								{PRODUCT_TOGGLES.map((toggle) => (
 									<Card
 										key={toggle.key}
-										className='border-2 border-dashed hover:border-solid hover:border-neutral-300 transition-all duration-200 ease-in-out cursor-pointer'>
+										className='cursor-pointer border-2 border-dashed transition-all duration-200 ease-in-out hover:border-solid hover:border-neutral-300'>
 										<CardBody className='p-0'>
 											<div className='flex w-full items-center gap-4 p-4'>
 												<span className='flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border'>
@@ -707,18 +826,24 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 							<OffCanvasBody className='space-y-5'>
 								<Tabs
 									activeTab={activeTab}
-									onTabChange={(id) => setActiveTab(id as 'formulario' | 'nuevo_formulario')}
+									onTabChange={(id) =>
+										setActiveTab(id as 'formulario' | 'nuevo_formulario')
+									}
 									variant='pills'
-									className='w-full'
-								>
-									<Tab id='formulario' text='Formulario Normal' icon='HeroDocumentText'>
-										<div className='space-y-5 mt-4'>
-											{formFieldsMarkup}
-										</div>
+									className='w-full'>
+									<Tab
+										id='formulario'
+										text='Formulario Normal'
+										icon='HeroDocumentText'>
+										<div className='mt-4 space-y-5'>{formFieldsMarkup}</div>
 									</Tab>
 									<Tab
 										id='nuevo_formulario'
-										text={isEditMode ? 'WooCommerce' : 'Publicacion Sincronizada WooErp'}
+										text={
+											isEditMode
+												? 'WooCommerce'
+												: 'Publicacion Sincronizada WooErp'
+										}
 										icon='HeroCodeBracketSquare'>
 										{isEditMode && product ? (
 											<WooCommercePublishPanel

@@ -214,7 +214,10 @@ export const createWarehouse = createAsyncThunk<
 >('warehouses/createWarehouse', async ({ branchId, data }, { rejectWithValue }) => {
 	try {
 		const body: Record<string, string | number | boolean> = {};
-		const assignIfDefined = (key: string, val: string | number | boolean | null | undefined) => {
+		const assignIfDefined = (
+			key: string,
+			val: string | number | boolean | null | undefined,
+		) => {
 			if (val !== undefined && val !== null && val !== '') body[key] = val;
 		};
 
@@ -235,7 +238,8 @@ export const createWarehouse = createAsyncThunk<
 		}
 		assignIfDefined('schedule', data.schedule);
 		if (data.is_active !== undefined) body.is_active = Boolean(data.is_active);
-		if (data.requires_serial_tracking !== undefined) body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
+		if (data.requires_serial_tracking !== undefined)
+			body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
 
 		const response = await ApiService.fetchData<{ data?: IWarehouse }>({
 			url: `/branches/${branchId}/warehouses`,
@@ -256,7 +260,10 @@ export const updateWarehouse = createAsyncThunk<
 >('warehouses/updateWarehouse', async ({ branchId, warehouseId, data }, { rejectWithValue }) => {
 	try {
 		const body: Record<string, string | number | boolean | null> = {};
-		const assignIfDefined = (key: string, val: string | number | boolean | null | undefined) => {
+		const assignIfDefined = (
+			key: string,
+			val: string | number | boolean | null | undefined,
+		) => {
 			if (val !== undefined && val !== null && val !== '') body[key] = val;
 		};
 
@@ -266,7 +273,8 @@ export const updateWarehouse = createAsyncThunk<
 		assignIfDefined('description', data.description);
 
 		if (data.maximum_capacity !== undefined) {
-			body.maximum_capacity = data.maximum_capacity === null ? null : Number(data.maximum_capacity);
+			body.maximum_capacity =
+				data.maximum_capacity === null ? null : Number(data.maximum_capacity);
 		}
 		if (data.manager_id !== undefined) {
 			body.manager_id = data.manager_id === null ? null : Number(data.manager_id);
@@ -277,7 +285,8 @@ export const updateWarehouse = createAsyncThunk<
 		}
 		assignIfDefined('schedule', data.schedule);
 		if (data.is_active !== undefined) body.is_active = Boolean(data.is_active);
-		if (data.requires_serial_tracking !== undefined) body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
+		if (data.requires_serial_tracking !== undefined)
+			body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
 
 		const response = await ApiService.fetchData<{ data?: IWarehouse }>({
 			url: `/branches/${branchId}/warehouses/${warehouseId}`,
@@ -313,7 +322,10 @@ export const attachWarehouseProducts = createAsyncThunk<
 	{ rejectValue: IWarehouseApiError }
 >('warehouses/attachProducts', async ({ branchId, warehouseId, data }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ data?: IWarehouseDetail }, IAttachProductRequest>({
+		const response = await ApiService.fetchData<
+			{ data?: IWarehouseDetail },
+			IAttachProductRequest
+		>({
 			url: `/branches/${branchId}/warehouses/${warehouseId}/products`,
 			method: 'post',
 			data,
@@ -331,7 +343,10 @@ export const detachWarehouseProduct = createAsyncThunk<
 	{ rejectValue: IWarehouseApiError }
 >('warehouses/detachProduct', async ({ branchId, warehouseId, data }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ data?: IWarehouseDetail }, IDetachProductRequest>({
+		const response = await ApiService.fetchData<
+			{ data?: IWarehouseDetail },
+			IDetachProductRequest
+		>({
 			url: `/branches/${branchId}/warehouses/${warehouseId}/products`,
 			method: 'delete',
 			data,
@@ -479,7 +494,10 @@ const warehouseSlice = createSlice({
 			})
 			.addCase(attachWarehouseProducts.rejected, (state, action) => {
 				state.attachingProducts = false;
-				state.warehouseDetailError = defaultError(action, 'No se pudieron agregar los productos');
+				state.warehouseDetailError = defaultError(
+					action,
+					'No se pudieron agregar los productos',
+				);
 			})
 			.addCase(detachWarehouseProduct.pending, (state) => {
 				state.detachingProduct = true;
