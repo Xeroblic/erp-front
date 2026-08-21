@@ -6,7 +6,6 @@
 
 /* Transición suave al cambiar tema/colores (respeta reduced motion) */
 @media (prefers-reduced-motion: no-preference) {
-
 	.theme-transition,
 	.theme-transition * {
 		--theme-transition-duration: 420ms;
@@ -317,7 +316,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-
 	.theme-transition,
 	.theme-transition * {
 		--theme-transition-duration: 420ms;
@@ -389,7 +387,6 @@
 }
 
 @keyframes driverGlow {
-
 	0%,
 	100% {
 		box-shadow:

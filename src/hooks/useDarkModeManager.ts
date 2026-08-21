@@ -49,7 +49,6 @@ const normalizeOptions = (
 	};
 };
 
-
 /**
  * Hook profesional para el manejo del Dark Mode
  * - Sincroniza con Redux
@@ -116,10 +115,10 @@ export const useDarkModeManager = () => {
 				// We don't need to distinguish between wipe/fade anymore as the user requested "Circular Reveal Transition" implies one unified effect.
 				// However, if we wanted to support 'fade' as fallback, we could keep it, but the user was specific about the effect.
 				// We'll trust the GSAP util primarily.
-				
-                // Dynamically import to ensure no SSR issues / circular deps if any, though standard import is fine.
-                // Using standard import since we added it to imports above (wait, I need to add the import).
-                runGsapThemeTransition(newMode, applyTheme);
+
+				// Dynamically import to ensure no SSR issues / circular deps if any, though standard import is fine.
+				// Using standard import since we added it to imports above (wait, I need to add the import).
+				runGsapThemeTransition(newMode, applyTheme);
 			}
 
 			// Guardar en API si se solicita

@@ -10,7 +10,7 @@ import type {
 	FetchBatchesParams,
 	FetchBatchItemsParams,
 	IItem,
-} from '../../../../interface/technicalReviews.interface.ts';
+} from '../../../../interface/technicalReviews.interface';
 import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,

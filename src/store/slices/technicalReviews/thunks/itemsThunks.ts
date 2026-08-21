@@ -9,7 +9,7 @@ import type {
 	IItem,
 	FetchItemsParams,
 	EquipmentType,
-} from '../../../../interface/technicalReviews.interface.ts';
+} from '../../../../interface/technicalReviews.interface';
 import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,

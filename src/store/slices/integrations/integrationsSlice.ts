@@ -146,9 +146,7 @@ export const updateIntegration = createAsyncThunk(
 			);
 			return response;
 		} catch (error: unknown) {
-			return rejectWithValue(
-				getApiErrorMessage(error, 'Error al actualizar integración'),
-			);
+			return rejectWithValue(getApiErrorMessage(error, 'Error al actualizar integración'));
 		}
 	},
 );
@@ -166,9 +164,7 @@ export const deleteIntegration = createAsyncThunk(
 			await integrationsService.deleteIntegration(subsidiaryId, integrationId);
 			return integrationId;
 		} catch (error: unknown) {
-			return rejectWithValue(
-				getApiErrorMessage(error, 'Error al eliminar integración'),
-			);
+			return rejectWithValue(getApiErrorMessage(error, 'Error al eliminar integración'));
 		}
 	},
 );
@@ -207,9 +203,7 @@ export const restoreIntegration = createAsyncThunk(
 			);
 			return response.data;
 		} catch (error: unknown) {
-			return rejectWithValue(
-				getApiErrorMessage(error, 'Error al restaurar integración'),
-			);
+			return rejectWithValue(getApiErrorMessage(error, 'Error al restaurar integración'));
 		}
 	},
 );

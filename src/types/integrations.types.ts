@@ -2,7 +2,6 @@ export type IntegrationProvider = 'woocommerce';
 export type IntegrationMode = 'webhook' | 'read' | 'read_write';
 export type ResolutionStatus = 'pending' | 'mapped' | 'ignored';
 
-
 export interface Integration {
 	id: string;
 	subsidiary_id: number;
@@ -590,4 +589,3 @@ export interface WebhookCatalogEntry {
 export interface WebhookCatalogResponse {
 	data: WebhookCatalogEntry[];
 }
-

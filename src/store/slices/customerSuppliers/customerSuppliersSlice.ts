@@ -7,11 +7,7 @@ import type {
 	IAttachSuppliersToCustomerSupplierRequest,
 } from '@/interface/customerSupplier.interface';
 import type { ISupplier } from '@/interface/supplier.interface';
-import type {
-	PaginationMeta,
-	PaginationLinks,
-	PaginatedResponse,
-} from '@/services/salesService';
+import type { PaginationMeta, PaginationLinks, PaginatedResponse } from '@/services/salesService';
 
 export interface CustomerSuppliersState {
 	items: ICustomerSupplier[];
@@ -43,7 +39,7 @@ const initialState: CustomerSuppliersState = {
 	suppliersLoading: false,
 	attaching: false,
 	detaching: false,
-}
+};
 
 const normalizeArray = (payload: any): any[] => {
 	const raw = payload?.data ?? payload;
@@ -58,11 +54,20 @@ const ep = (p: string) => join(CUSTOMER_SUPPLIERS_PREFIX, p);
 
 export const fetchCustomerSuppliers = createAsyncThunk<
 	PaginatedResponse<ICustomerSupplier>,
-	{ subsidiaryId: number; search?: string; with_suppliers?: boolean; page?: number; per_page?: number },
+	{
+		subsidiaryId: number;
+		search?: string;
+		with_suppliers?: boolean;
+		page?: number;
+		per_page?: number;
+	},
 	{ rejectValue: string }
 >(
 	'customerSuppliers/fetchList',
-	async ({ subsidiaryId, search, with_suppliers, page = 1, per_page = 5 }, { rejectWithValue }) => {
+	async (
+		{ subsidiaryId, search, with_suppliers, page = 1, per_page = 5 },
+		{ rejectWithValue },
+	) => {
 		try {
 			const resp = await ApiService.fetchData<any>({
 				url: ep(`/subsidiaries/${subsidiaryId}/customer-suppliers/`),
@@ -114,8 +119,8 @@ export const fetchCustomerSuppliers = createAsyncThunk<
 			}
 			return rejectWithValue(
 				error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los clientes-proveedor',
+					error?.message ??
+					'No se pudieron cargar los clientes-proveedor',
 			);
 		}
 	},
@@ -137,8 +142,8 @@ export const fetchCustomerSupplierById = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-			error?.message ??
-			'No se pudo cargar el cliente-proveedor',
+				error?.message ??
+				'No se pudo cargar el cliente-proveedor',
 		);
 	}
 });
@@ -159,8 +164,8 @@ export const createCustomerSupplier = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-			error?.message ??
-			'No se pudo crear el cliente-proveedor',
+				error?.message ??
+				'No se pudo crear el cliente-proveedor',
 		);
 	}
 });
@@ -182,8 +187,8 @@ export const updateCustomerSupplier = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-			error?.message ??
-			'No se pudo actualizar el cliente-proveedor',
+				error?.message ??
+				'No se pudo actualizar el cliente-proveedor',
 		);
 	}
 });
@@ -202,8 +207,8 @@ export const deleteCustomerSupplier = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-			error?.message ??
-			'No se pudo eliminar el cliente-proveedor',
+				error?.message ??
+				'No se pudo eliminar el cliente-proveedor',
 		);
 	}
 });
@@ -229,8 +234,8 @@ export const fetchSuppliersOfCustomerSupplier = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los proveedores del cliente-proveedor',
+					error?.message ??
+					'No se pudieron cargar los proveedores del cliente-proveedor',
 			);
 		}
 	},
@@ -263,8 +268,8 @@ export const attachSuppliersToCustomerSupplier = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo asociar proveedores',
+					error?.message ??
+					'No se pudo asociar proveedores',
 			);
 		}
 	},
@@ -297,8 +302,8 @@ export const detachSuppliersFromCustomerSupplier = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo desasociar proveedores',
+					error?.message ??
+					'No se pudo desasociar proveedores',
 			);
 		}
 	},

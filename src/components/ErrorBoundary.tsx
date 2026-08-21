@@ -88,8 +88,8 @@ class ErrorBoundary extends Component<Props, State> {
 						</h2>
 
 						<p className='mb-6 text-center text-sm text-zinc-600 dark:text-zinc-400'>
-							La página encontró un error inesperado. Puedes intentar recargar o volver
-							al inicio.
+							La página encontró un error inesperado. Puedes intentar recargar o
+							volver al inicio.
 						</p>
 
 						<div className='flex gap-3'>

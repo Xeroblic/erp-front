@@ -136,9 +136,9 @@
 // 			)}
 // 			{...rest}>
 // 			<style>{`
-// 			[data-slate-editor] :is(ol, ul) {list-style-position: inside;} 
-// 			[data-slate-editor] ul li {list-style-type: disc;} 
-// 			[data-slate-editor] ol li {list-style-type: numeric;} 
+// 			[data-slate-editor] :is(ol, ul) {list-style-position: inside;}
+// 			[data-slate-editor] ul li {list-style-type: disc;}
+// 			[data-slate-editor] ol li {list-style-type: numeric;}
 // 			[data-slate-editor] blockquote {font-style: italic; font-size: 110%; opacity: 0.9; border-left: 2px solid; padding-left: 0.5rem}
 // 			`}</style>
 // 			<Slate

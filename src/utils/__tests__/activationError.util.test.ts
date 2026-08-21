@@ -52,9 +52,7 @@ describe('resolveActivationError', () => {
 	});
 
 	it('sin respuesta del servidor devuelve el mensaje de red', () => {
-		expect(resolveActivationError({ message: 'Network Error' })).toBe(
-			NETWORK_ACTIVATION_ERROR,
-		);
+		expect(resolveActivationError({ message: 'Network Error' })).toBe(NETWORK_ACTIVATION_ERROR);
 	});
 
 	it('valores no-objeto devuelven el mensaje genérico', () => {

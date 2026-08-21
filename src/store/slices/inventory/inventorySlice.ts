@@ -1,7 +1,7 @@
-import { IInventoryMovement } from "@/interface/inventoryMovements.interface";
-import ApiService from "@/services/ApiService";
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import type { RootState } from "@/store";
+import { IInventoryMovement } from '@/interface/inventoryMovements.interface';
+import ApiService from '@/services/ApiService';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import type { RootState } from '@/store';
 
 // Interfaz para la respuesta paginada del API
 interface IInventoryMovementsResponse {
@@ -64,7 +64,7 @@ const initialState: IInventoryState = {
 		hasPrevPage: false,
 	},
 	filters: {},
-}
+};
 
 export interface FetchMovimientosParams {
 	branch_id: number;
@@ -81,54 +81,51 @@ export const fetchListaMovimientoSucursalThunk = createAsyncThunk<
 	IInventoryMovementsResponse,
 	FetchMovimientosParams & { append?: boolean },
 	{ rejectValue: string }
->(
-	'inventario/listaMovimientoSucursal',
-	async (params, { rejectWithValue }) => {
-		try {
-			const { branch_id, page = 1, per_page = 20, append, ...filters } = params;
-			
-			const queryParams = new URLSearchParams({
-				page: page.toString(),
-				per_page: per_page.toString(),
-			});
+>('inventario/listaMovimientoSucursal', async (params, { rejectWithValue }) => {
+	try {
+		const { branch_id, page = 1, per_page = 20, append, ...filters } = params;
 
-			// Agregar filtros opcionales
-			if (filters.occurred_from) queryParams.append('occurred_from', filters.occurred_from);
-			if (filters.occurred_to) queryParams.append('occurred_to', filters.occurred_to);
-			if (filters.q) queryParams.append('q', filters.q);
-			if (filters.warehouse_id) queryParams.append('warehouse_id', filters.warehouse_id.toString());
-			if (filters.movement_type) queryParams.append('movement_type', filters.movement_type);
+		const queryParams = new URLSearchParams({
+			page: page.toString(),
+			per_page: per_page.toString(),
+		});
 
-			const response = await ApiService.fetchData<IInventoryMovementsResponse>(
-				{
-					url: `/branches/${branch_id}/inventory-movements?${queryParams.toString()}`,
-					method: 'get',
-				}
-			)
-			return response.data;
-		} catch (error: any) {
-			return rejectWithValue(error.response?.data?.message || 'Error al cargar movimientos');
-		}
+		// Agregar filtros opcionales
+		if (filters.occurred_from) queryParams.append('occurred_from', filters.occurred_from);
+		if (filters.occurred_to) queryParams.append('occurred_to', filters.occurred_to);
+		if (filters.q) queryParams.append('q', filters.q);
+		if (filters.warehouse_id)
+			queryParams.append('warehouse_id', filters.warehouse_id.toString());
+		if (filters.movement_type) queryParams.append('movement_type', filters.movement_type);
+
+		const response = await ApiService.fetchData<IInventoryMovementsResponse>({
+			url: `/branches/${branch_id}/inventory-movements?${queryParams.toString()}`,
+			method: 'get',
+		});
+		return response.data;
+	} catch (error: any) {
+		return rejectWithValue(error.response?.data?.message || 'Error al cargar movimientos');
 	}
-)
+});
 
-export const fetchDetalleMovimientoSucursalThunk = createAsyncThunk<IInventoryMovement, {branch_id: number, movement_id: number}, {rejectValue: string}>(
+export const fetchDetalleMovimientoSucursalThunk = createAsyncThunk<
+	IInventoryMovement,
+	{ branch_id: number; movement_id: number },
+	{ rejectValue: string }
+>(
 	'inventario/detalleMovimientoSucursal',
-	async ({branch_id, movement_id}, {rejectWithValue}) => {
+	async ({ branch_id, movement_id }, { rejectWithValue }) => {
 		try {
-			const response = await ApiService.fetchData<IInventoryMovement>(
-				{
-					url: `/branches/${branch_id}/inventory-movements/${movement_id}`,
-					method: 'get',
-				}
-			)
+			const response = await ApiService.fetchData<IInventoryMovement>({
+				url: `/branches/${branch_id}/inventory-movements/${movement_id}`,
+				method: 'get',
+			});
 			return response.data;
 		} catch (error: any) {
 			return rejectWithValue(error.response?.data?.message || 'Error al cargar detalle');
 		}
-	}
-)
-
+	},
+);
 
 const inventorySlice = createSlice({
 	name: 'inventario',
@@ -165,7 +162,10 @@ const inventorySlice = createSlice({
 				// Si es append (cargar más), agregar a la lista existente
 				const isAppend = action.meta.arg.append;
 				if (isAppend) {
-					state.listaMovimientoSucursal = [...state.listaMovimientoSucursal, ...action.payload.data];
+					state.listaMovimientoSucursal = [
+						...state.listaMovimientoSucursal,
+						...action.payload.data,
+					];
 				} else {
 					state.listaMovimientoSucursal = action.payload.data;
 				}
@@ -194,16 +194,23 @@ const inventorySlice = createSlice({
 			.addCase(fetchDetalleMovimientoSucursalThunk.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload;
-			})
-	}
-})
+			});
+	},
+});
 
 // Selectors
-export const selectMovimientosSucursal = (state: RootState) => state.inventario.listaMovimientoSucursal;
+export const selectMovimientosSucursal = (state: RootState) =>
+	state.inventario.listaMovimientoSucursal;
 export const selectInventarioPagination = (state: RootState) => state.inventario.pagination;
 export const selectInventarioLoading = (state: RootState) => state.inventario.loading;
 export const selectInventarioError = (state: RootState) => state.inventario.error;
 export const selectInventarioFilters = (state: RootState) => state.inventario.filters;
 
-export const { clearDetalleMovimientoSucursal, clearListaMovimientoSucursal, setPage, setFilters, clearFilters } = inventorySlice.actions;
+export const {
+	clearDetalleMovimientoSucursal,
+	clearListaMovimientoSucursal,
+	setPage,
+	setFilters,
+	clearFilters,
+} = inventorySlice.actions;
 export default inventorySlice.reducer;

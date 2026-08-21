@@ -88,14 +88,12 @@ const extractMessage = (error: unknown, fallback: string): string => {
 // Async thunks
 export const fetchSales = createAsyncThunk(
 	'sales/fetchSales',
-	async (
-		params: {
-			subsidiaryId: number;
-			page?: number;
-			perPage?: number;
-			filters?: SalesState['filters'];
-		},
-	) => {
+	async (params: {
+		subsidiaryId: number;
+		page?: number;
+		perPage?: number;
+		filters?: SalesState['filters'];
+	}) => {
 		try {
 			const { subsidiaryId, page = 1, perPage = 20, filters = {} } = params;
 
@@ -122,41 +120,56 @@ export const fetchSales = createAsyncThunk(
 	},
 );
 
-export const fetchSaleById = createAsyncThunk('sales/fetchSaleById', async ({ subsidiaryId, id }: { subsidiaryId: number; id: number }) => {
-	try {
-		const response = await ApiService.fetchData<ISaleResponse>({
-			url: `/subsidiaries/${subsidiaryId}/sales/${id}`,
-			method: 'get',
-		});
-		return response.data;
-	} catch (error: unknown) {
-		toast.error(extractMessage(error, 'Error al cargar la venta'));
-		throw error;
-	}
-});
+export const fetchSaleById = createAsyncThunk(
+	'sales/fetchSaleById',
+	async ({ subsidiaryId, id }: { subsidiaryId: number; id: number }) => {
+		try {
+			const response = await ApiService.fetchData<ISaleResponse>({
+				url: `/subsidiaries/${subsidiaryId}/sales/${id}`,
+				method: 'get',
+			});
+			return response.data;
+		} catch (error: unknown) {
+			toast.error(extractMessage(error, 'Error al cargar la venta'));
+			throw error;
+		}
+	},
+);
 
-export const createSale = createAsyncThunk('sales/createSale', async ({ subsidiaryId, data }: { subsidiaryId: number; data: ICreateSaleRequest }) => {
-	try {
-		const response = await ApiService.fetchData<ISaleResponse>({
-			url: `/subsidiaries/${subsidiaryId}/sales`,
-			method: 'post',
-			data: data as unknown as Record<string, unknown>,
-		});
-		toast.success('Venta creada exitosamente');
-		return response.data;
-	} catch (error: unknown) {
-		const message =
-			typeof error === 'object' && error !== null && 'response' in error
-				? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-				: null;
-		toast.error(message || 'Error al crear la venta');
-		throw error;
-	}
-});
+export const createSale = createAsyncThunk(
+	'sales/createSale',
+	async ({ subsidiaryId, data }: { subsidiaryId: number; data: ICreateSaleRequest }) => {
+		try {
+			const response = await ApiService.fetchData<ISaleResponse>({
+				url: `/subsidiaries/${subsidiaryId}/sales`,
+				method: 'post',
+				data: data as unknown as Record<string, unknown>,
+			});
+			toast.success('Venta creada exitosamente');
+			return response.data;
+		} catch (error: unknown) {
+			const message =
+				typeof error === 'object' && error !== null && 'response' in error
+					? (error as { response?: { data?: { message?: string } } }).response?.data
+							?.message
+					: null;
+			toast.error(message || 'Error al crear la venta');
+			throw error;
+		}
+	},
+);
 
 export const updateSale = createAsyncThunk(
 	'sales/updateSale',
-	async ({ subsidiaryId, id, data }: { subsidiaryId: number; id: number; data: Partial<ICreateSaleRequest> }) => {
+	async ({
+		subsidiaryId,
+		id,
+		data,
+	}: {
+		subsidiaryId: number;
+		id: number;
+		data: Partial<ICreateSaleRequest>;
+	}) => {
 		try {
 			const response = await ApiService.fetchData<ISaleResponse>({
 				url: `/subsidiaries/${subsidiaryId}/sales/${id}`,
@@ -169,7 +182,7 @@ export const updateSale = createAsyncThunk(
 			const message =
 				typeof error === 'object' && error !== null && 'response' in error
 					? (error as { response?: { data?: { message?: string } } }).response?.data
-						?.message
+							?.message
 					: null;
 			toast.error(message || 'Error al actualizar la venta');
 			throw error;
@@ -177,19 +190,22 @@ export const updateSale = createAsyncThunk(
 	},
 );
 
-export const deleteSale = createAsyncThunk('sales/deleteSale', async ({ subsidiaryId, id }: { subsidiaryId: number; id: number }) => {
-	try {
-		await ApiService.fetchData({
-			url: `/subsidiaries/${subsidiaryId}/sales/${id}`,
-			method: 'delete',
-		});
-		toast.success('Venta eliminada exitosamente');
-		return id;
-	} catch (error: unknown) {
-		toast.error(extractMessage(error, 'Error al eliminar la venta'));
-		throw error;
-	}
-});
+export const deleteSale = createAsyncThunk(
+	'sales/deleteSale',
+	async ({ subsidiaryId, id }: { subsidiaryId: number; id: number }) => {
+		try {
+			await ApiService.fetchData({
+				url: `/subsidiaries/${subsidiaryId}/sales/${id}`,
+				method: 'delete',
+			});
+			toast.success('Venta eliminada exitosamente');
+			return id;
+		} catch (error: unknown) {
+			toast.error(extractMessage(error, 'Error al eliminar la venta'));
+			throw error;
+		}
+	},
+);
 
 export const fetchSalesStatistics = createAsyncThunk(
 	'sales/fetchStatistics',
@@ -227,7 +243,9 @@ export const downloadShippingLabel = createAsyncThunk(
 			});
 
 			// Create blob url and download
-			const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+			const blob = new Blob([response.data], {
+				type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+			});
 			const url = window.URL.createObjectURL(blob);
 			const link = document.createElement('a');
 			link.href = url;
@@ -243,7 +261,7 @@ export const downloadShippingLabel = createAsyncThunk(
 			toast.error(extractMessage(error, 'Error al descargar la etiqueta'));
 			throw error;
 		}
-	}
+	},
 );
 
 // Slice

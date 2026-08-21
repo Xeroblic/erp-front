@@ -62,7 +62,9 @@ export const loadPendingSerialCount = createAsyncThunk<
 	try {
 		return await fetchPendingSerialAssignmentCount(subsidiaryId);
 	} catch (err: unknown) {
-		return rejectWithValue(getErrorMessage(err, 'Error al cargar el contador de series pendientes'));
+		return rejectWithValue(
+			getErrorMessage(err, 'Error al cargar el contador de series pendientes'),
+		);
 	}
 });
 

@@ -340,9 +340,7 @@ export const fetchPendingSerialAssignment = async (
  * Contador rápido (polling) de ventas con series físicas pendientes de asignar.
  * Cacheado un breve TTL y deduplicado: alimenta el badge del navbar.
  */
-export const fetchPendingSerialAssignmentCount = async (
-	subsidiaryId: number,
-): Promise<number> => {
+export const fetchPendingSerialAssignmentCount = async (subsidiaryId: number): Promise<number> => {
 	const resp = await ApiService.fetchData<{ count?: number; data?: { count?: number } }>({
 		url: `${base(subsidiaryId)}/pending-serial-assignment/count`,
 		method: 'get',

@@ -26,12 +26,7 @@ vi.mock('@/store', () => ({
 
 import ApiService from '@/services/ApiService';
 import tokenManager from '@/services/auth/tokenManager';
-import authReducer, {
-	loginThunk,
-	logoutThunk,
-	userMeThunk,
-	type AuthState,
-} from '../authSlice';
+import authReducer, { loginThunk, logoutThunk, userMeThunk, type AuthState } from '../authSlice';
 import { makeIntegrationStore } from '@/test-utils/integrationStore';
 import type { ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
 import type { RootState } from '@/store/rootReducer';
@@ -51,8 +46,14 @@ const PERFIL_OK = {
 		all_permissions: ['view-sales', 'create-quote'],
 		direct_permissions: ['view-sales'],
 		global_roles: ['seller'],
-		access: { subsidiaries: [{ id: 3, name: 'Sub 3' }], branches: [{ id: 30, name: 'Suc 30' }] },
-		visible: { subsidiaries: [{ id: 3, name: 'Sub 3' }], branches: [{ id: 30, name: 'Suc 30' }] },
+		access: {
+			subsidiaries: [{ id: 3, name: 'Sub 3' }],
+			branches: [{ id: 30, name: 'Suc 30' }],
+		},
+		visible: {
+			subsidiaries: [{ id: 3, name: 'Sub 3' }],
+			branches: [{ id: 30, name: 'Suc 30' }],
+		},
 	},
 };
 
@@ -98,9 +99,7 @@ describe('authSlice (integración)', () => {
 
 	it('login exitoso guarda el token en memoria y pre-autentica el estado', async () => {
 		const store = makeStore();
-		await store
-			.dispatch(loginThunk({ email: 'a@b.cl', password: 'correcta' }))
-			.unwrap();
+		await store.dispatch(loginThunk({ email: 'a@b.cl', password: 'correcta' })).unwrap();
 
 		const auth = authOf(store);
 		expect(auth.isAuthenticated).toBe(true);
@@ -172,9 +171,7 @@ describe('authSlice (integración)', () => {
 
 	it('logoutThunk postea /logout y limpia token + estado', async () => {
 		const store = makeStore();
-		await store
-			.dispatch(loginThunk({ email: 'a@b.cl', password: 'correcta' }))
-			.unwrap();
+		await store.dispatch(loginThunk({ email: 'a@b.cl', password: 'correcta' })).unwrap();
 
 		await dispatchOf(store)(logoutThunk()).unwrap();
 

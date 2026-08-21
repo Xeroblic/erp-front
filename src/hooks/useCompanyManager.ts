@@ -160,7 +160,8 @@ const useCompanyManager = (): UseCompanyManager => {
 					// ✅ Solo companies accesibles
 					derived = (userSnapshot.companies as UserCompanyLike[])
 						.filter(
-							(c) => !accessibleSubsidiaryIds.size || accessibleSubsidiaryIds.has(c.id),
+							(c) =>
+								!accessibleSubsidiaryIds.size || accessibleSubsidiaryIds.has(c.id),
 						)
 						.map((c) => ({
 							id: c.id,
