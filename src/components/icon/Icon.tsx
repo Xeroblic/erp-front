@@ -13,9 +13,9 @@ type TIconComponent = React.ComponentType<Record<string, unknown>>;
 type TIconLoader = () => Promise<{ default: TIconComponent }>;
 type TResolvedIcon = { component: TIconComponent; kind: TIconKind };
 
-const svgIconModules = import.meta.glob<{ default: TIconComponent }>('./svg-icons/*');
-const duoToneModules = import.meta.glob<{ default: TIconComponent }>('./duotone/*');
-const heroIconModules = import.meta.glob<{ default: TIconComponent }>('./heroicons/*');
+const svgIconModules = import.meta.glob<{ default: TIconComponent }>('./svg-icons/*.tsx');
+const duoToneModules = import.meta.glob<{ default: TIconComponent }>('./duotone/*.tsx');
+const heroIconModules = import.meta.glob<{ default: TIconComponent }>('./heroicons/*.tsx');
 
 const iconCache = new Map<string, TResolvedIcon>();
 const pendingIconCache = new Map<string, Promise<TResolvedIcon | null>>();
