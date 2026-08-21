@@ -54,8 +54,7 @@ export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrati
 			if (selectedId !== null) clear();
 			return;
 		}
-		const stillActive =
-			selectedId && activeIntegrations.some((i) => i.id === selectedId);
+		const stillActive = selectedId && activeIntegrations.some((i) => i.id === selectedId);
 		if (!stillActive) {
 			select(activeIntegrations[0].id);
 		}
@@ -66,10 +65,13 @@ export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrati
 		[allWooIntegrations, selectedId],
 	);
 
-	const handleSetSelectedId = useCallback((id: string | null) => {
-		if (id === null) clear();
-		else select(id);
-	}, [clear, select]);
+	const handleSetSelectedId = useCallback(
+		(id: string | null) => {
+			if (id === null) clear();
+			else select(id);
+		},
+		[clear, select],
+	);
 
 	const getIntegrationName = useCallback(
 		(id: string | null | undefined): string => {

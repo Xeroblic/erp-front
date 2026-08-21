@@ -1,5 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { exportReport, fetchReportResults, fetchPaginatedReportResults, fetchReportTypes } from './reportsThunks';
+import {
+	exportReport,
+	fetchReportResults,
+	fetchPaginatedReportResults,
+	fetchReportTypes,
+} from './reportsThunks';
 import { IReportType, IReportResult } from '@/interface/reports.interface';
 
 export interface ReportsState {

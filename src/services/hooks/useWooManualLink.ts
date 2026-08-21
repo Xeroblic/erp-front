@@ -36,7 +36,8 @@ export const useWooCompare = (
 ) => {
 	const hasValidParams =
 		params !== null &&
-		(params.external_product_id != null || (params.external_sku != null && params.external_sku !== ''));
+		(params.external_product_id != null ||
+			(params.external_sku != null && params.external_sku !== ''));
 
 	return useQuery({
 		queryKey: [...KEYS.compare(subsidiaryId ?? 0, productId, integrationId), params],
@@ -63,7 +64,9 @@ export const useWooLink = (
 		onError: (error: unknown) => {
 			const conflict = extractConflictData(error);
 			if (conflict) {
-				toast.warning('Los precios difieren entre ERP y WooCommerce. Selecciona qué precio mantener.');
+				toast.warning(
+					'Los precios difieren entre ERP y WooCommerce. Selecciona qué precio mantener.',
+				);
 				return;
 			}
 			toast.error(extractErrorMessage(error));

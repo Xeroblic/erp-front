@@ -111,10 +111,7 @@ export const getTrashedIntegrations = async (
 /**
  * Restaurar una integración eliminada (soft-delete).
  */
-export const restoreIntegration = async (
-	subsidiaryId: number,
-	integrationId: string,
-) => {
+export const restoreIntegration = async (subsidiaryId: number, integrationId: string) => {
 	const response = await ApiService.fetchData<RestoreIntegrationResponse>({
 		url: `/subsidiaries/${subsidiaryId}/integrations/${integrationId}/restore`,
 		method: 'POST',

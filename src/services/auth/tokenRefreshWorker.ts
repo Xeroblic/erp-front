@@ -3,8 +3,7 @@ import type { RootState } from '@/store/rootReducer';
 import tokenManager from './tokenManager';
 import { triggerTokenRefresh } from '@/services/BaseService';
 
-const RAW_MARGIN_SECONDS =
-	Number(import.meta.env.VITE_JWT_REFRESH_MARGIN_SECONDS || '120') || 120;
+const RAW_MARGIN_SECONDS = Number(import.meta.env.VITE_JWT_REFRESH_MARGIN_SECONDS || '120') || 120;
 const MIN_MARGIN_SECONDS = 30;
 const MIN_WAIT_MS = 5_000;
 const MAX_RETRIES = 3;
