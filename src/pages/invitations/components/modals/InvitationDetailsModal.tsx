@@ -350,7 +350,7 @@ const InvitationDetailsModal: React.FC<InvitationDetailsModalProps> = ({
 			<ModalFooter className='border-t border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800'>
 				<ModalFooterChild>
 					<Button variant='solid' color='blue' onClick={onClose} className='shadow-sm'>
-						<Icon icon='HeroXMark' className='mr-2 h-4 w-4 text-white font-bold' />
+						<Icon icon='HeroXMark' className='mr-2 h-4 w-4 font-bold text-white' />
 						Cerrar
 					</Button>
 				</ModalFooterChild>

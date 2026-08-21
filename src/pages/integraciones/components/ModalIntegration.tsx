@@ -31,9 +31,24 @@ import WebhookCatalogPanel from './WebhookCatalogPanel';
  * `/orders`; los productos usan `/products`).
  */
 const WEBHOOK_EVENTS = [
-	{ value: 'order.created', label: 'Pedido creado (order.created)', scope: 'orders', urlSuffix: 'orders' },
-	{ value: 'order.updated', label: 'Pedido actualizado (order.updated)', scope: 'orders', urlSuffix: 'orders' },
-	{ value: 'product.updated', label: 'Producto actualizado (product.updated)', scope: 'products', urlSuffix: 'products' },
+	{
+		value: 'order.created',
+		label: 'Pedido creado (order.created)',
+		scope: 'orders',
+		urlSuffix: 'orders',
+	},
+	{
+		value: 'order.updated',
+		label: 'Pedido actualizado (order.updated)',
+		scope: 'orders',
+		urlSuffix: 'orders',
+	},
+	{
+		value: 'product.updated',
+		label: 'Producto actualizado (product.updated)',
+		scope: 'products',
+		urlSuffix: 'products',
+	},
 ] as const;
 
 const DEFAULT_WEBHOOK_EVENT = WEBHOOK_EVENTS[0].value;
@@ -72,7 +87,12 @@ const ModalDelete = memo(function ModalDelete({
 				</div>
 			</ModalBody>
 			<ModalFooter>
-				<Button variant='outline' color='red' onClick={onClose} icon='HeroX' title='Cancelar'>
+				<Button
+					variant='outline'
+					color='red'
+					onClick={onClose}
+					icon='HeroX'
+					title='Cancelar'>
 					Cancelar
 				</Button>
 				<Button
@@ -159,9 +179,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 	}>({});
 	const [reactivationSuggestion, setReactivationSuggestion] =
 		useState<ReactivationSuggestion | null>(null);
-	const [newlyCreatedIntegrationId, setNewlyCreatedIntegrationId] = useState<string | null>(
-		null,
-	);
+	const [newlyCreatedIntegrationId, setNewlyCreatedIntegrationId] = useState<string | null>(null);
 	const apiKeyInputId = useId();
 	const webhookInputId = useId();
 
@@ -329,9 +347,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 				onSuccess();
 				onClose();
 			} else {
-				toast.error(
-					(resultAction.payload as string) || 'Error al eliminar la integración',
-				);
+				toast.error((resultAction.payload as string) || 'Error al eliminar la integración');
 			}
 		} catch (error: unknown) {
 			const message =
@@ -448,11 +464,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 
 	if (reactivationSuggestion) {
 		return (
-			<Modal
-				isOpen={isOpen}
-				setIsOpen={onClose}
-				size='md'
-				isStaticBackdrop>
+			<Modal isOpen={isOpen} setIsOpen={onClose} size='md' isStaticBackdrop>
 				<ModalHeader>
 					<Badge color='amber'>
 						<Icon icon='HeroArrowUturnUp' className='me-1' />
@@ -463,8 +475,8 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 					<div className='space-y-4'>
 						<p className='text-sm text-neutral-700 dark:text-neutral-300'>
 							Ya existía una integración para esta tienda con sus productos
-							vinculados. ¿Deseas restaurar la integración original en lugar de
-							usar la recién creada?
+							vinculados. ¿Deseas restaurar la integración original en lugar de usar
+							la recién creada?
 						</p>
 						<div className='rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-500/30 dark:bg-emerald-950/30'>
 							<p className='text-sm font-medium text-emerald-800 dark:text-emerald-200'>
@@ -491,10 +503,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 					</div>
 				</ModalBody>
 				<ModalFooter>
-					<Button
-						variant='outline'
-						onClick={handleDeclineReactivation}
-						icon='HeroX'>
+					<Button variant='outline' onClick={handleDeclineReactivation} icon='HeroX'>
 						Usar la nueva
 					</Button>
 					<Button
@@ -553,8 +562,8 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 										URL del Webhook:{' '}
 										<code className='rounded bg-gray-100 px-2 py-1'>
 											{window.location.origin}
-											/api/integrations/woocommerce/webhooks/{secrets.api_key}/
-											{getWebhookEventMeta(formData.event).urlSuffix}
+											/api/integrations/woocommerce/webhooks/{secrets.api_key}
+											/{getWebhookEventMeta(formData.event).urlSuffix}
 										</code>
 									</p>
 								)}
@@ -614,7 +623,12 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 	// Vista normal
 	return (
 		<>
-			<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isStaticBackdrop isStaticBackdropAnimation>
+			<Modal
+				isOpen={isOpen}
+				setIsOpen={onClose}
+				size='xl'
+				isStaticBackdrop
+				isStaticBackdropAnimation>
 				<ModalHeader>
 					{mode === 'create' && 'Nueva Integración'}
 					{mode === 'edit' && 'Editar Integración'}

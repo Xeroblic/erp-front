@@ -27,7 +27,8 @@ const FormLockCareServiceRepair: React.FC<FormLockCareServiceRepairProps> = ({ f
 					isValid={formik.isValid}
 					isTouched={formik.touched.repairBrand}
 					invalidFeedback={formik.errors.repairBrand}>
-					<Input {...lockCareTheme}
+					<Input
+						{...lockCareTheme}
 						id='repairBrand'
 						name='repairBrand'
 						placeholder='Ej. Apple, Samsung, Lenovo'
@@ -45,7 +46,8 @@ const FormLockCareServiceRepair: React.FC<FormLockCareServiceRepairProps> = ({ f
 					isValid={formik.isValid}
 					isTouched={formik.touched.repairModel}
 					invalidFeedback={formik.errors.repairModel}>
-					<Input {...lockCareTheme}
+					<Input
+						{...lockCareTheme}
 						id='repairModel'
 						name='repairModel'
 						placeholder='Ej. MacBook Pro 14, Galaxy S23'
@@ -63,7 +65,8 @@ const FormLockCareServiceRepair: React.FC<FormLockCareServiceRepairProps> = ({ f
 					isValid={formik.isValid}
 					isTouched={formik.touched.repairSerialNumber}
 					invalidFeedback={formik.errors.repairSerialNumber}>
-					<Input {...lockCareTheme}
+					<Input
+						{...lockCareTheme}
 						id='repairSerialNumber'
 						name='repairSerialNumber'
 						placeholder='Número de serie'
@@ -81,7 +84,8 @@ const FormLockCareServiceRepair: React.FC<FormLockCareServiceRepairProps> = ({ f
 					isValid={formik.isValid}
 					isTouched={formik.touched.repairIncludesCharger}
 					invalidFeedback={formik.errors.repairIncludesCharger}>
-					<SelectReact {...lockCareTheme}
+					<SelectReact
+						{...lockCareTheme}
 						id='repairIncludesCharger'
 						name='repairIncludesCharger'
 						options={chargerOptions}

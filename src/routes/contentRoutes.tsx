@@ -72,9 +72,7 @@ const TransferenciasInventario = lazy(
 	() => import('@/pages/inventario/transferencias/Transferencias'),
 );
 const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas'));
-const BodegasDetailPage = lazy(
-	() => import('@/pages/catalogos/bodegas/WarehouseDetailView'),
-);
+const BodegasDetailPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseDetailView'));
 const TransferenciasComercial = lazy(
 	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
 );
@@ -119,7 +117,6 @@ const GarantiaDetailsPage = lazy(() => import('@/pages/garantias/GarantiaDetails
 
 // const ItemsList = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemListPage'));
 
-
 /// REFACTOR DE TECHNICAL REVIEW
 
 const RefactorTechnicalReview = lazy(() => import('@/pages/refactor-technical-review/index'));
@@ -163,8 +160,16 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.portalPedidosMock.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.portalPedidos.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.FormularioLockCare.to, element: <FormLockCare />, public: true },
-	{ path: cfg.FormularioLockCare.subPages.publicLockCare.to, element: <PublicLockCare />, public: true },
-	{ path: cfg.FormularioLockCare.subPages.checkOutLockCare.to, element: <CheckOutLockCare />, public: true },
+	{
+		path: cfg.FormularioLockCare.subPages.publicLockCare.to,
+		element: <PublicLockCare />,
+		public: true,
+	},
+	{
+		path: cfg.FormularioLockCare.subPages.checkOutLockCare.to,
+		element: <CheckOutLockCare />,
+		public: true,
+	},
 	// Gestión interna de casilleros
 	{
 		path: cfg.technical.subPages.lockersManagement.to,

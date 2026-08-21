@@ -82,8 +82,7 @@ const UserPermissionsDetail: React.FC = () => {
 	const [accessPending, setAccessPending] = React.useState<UserAccess | null>(null);
 	const { isSuperAdmin: hasSuperAdminAccess, authorize } = useAuthorization();
 
-	const isSuperAdmin =
-		hasSuperAdminAccess || userRoles.includes('super-admin');
+	const isSuperAdmin = hasSuperAdminAccess || userRoles.includes('super-admin');
 	const canManageRoles = isSuperAdmin;
 	const canManagePermissions = isSuperAdmin;
 	const canManageAccess = authorize({

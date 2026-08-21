@@ -14,6 +14,8 @@
 		"lint:fix": "eslint --fix . --ext .js,.jsx,.ts,.tsx",
 		"lint:imports": "eslint . --ext .js,.jsx,.ts,.tsx --no-eslintrc --no-inline-config --config .eslintrc.imports.json",
 		"check:eol": "node scripts/checkLineEndings.mjs",
+		"quality:style": "pnpm run check:eol && pnpm run prettier:check && pnpm run lint:imports",
+		"prettier:check": "prettier --check .",
 		"prettier:fix": "prettier --write .",
 		"icon": "svgr SvgIcons -d src/components/icon/svg-icons --typescript --no-prettier"
 	},

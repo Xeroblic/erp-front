@@ -23,7 +23,13 @@ export const useWarrantyLookups = (subsidiaryId?: number | null, branchId?: numb
 		if (!branchId || productsRequested) return;
 		setProductsRequested(true);
 		try {
-			await dispatch(fetchProductsList({ entityParam: 'branches', entityId: branchId, params: { page: 1, per_page: 200 } }));
+			await dispatch(
+				fetchProductsList({
+					entityParam: 'branches',
+					entityId: branchId,
+					params: { page: 1, per_page: 200 },
+				}),
+			);
 		} catch (error) {
 			setProductsRequested(false);
 			throw error;

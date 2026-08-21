@@ -31,24 +31,32 @@ export const fetchValidationRules = createAsyncThunk<
 	IValidationRules,
 	{ branchId?: number | null; subsidiaryId?: number | null },
 	{ state: RootState; rejectValue: string }
->('technicalReviews/fetchValidationRules', async ({ branchId, subsidiaryId }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: buildTechnicalReviewsEndpoint(context, '/validation/rules'),
-			method: 'get',
-		});
+>(
+	'technicalReviews/fetchValidationRules',
+	async ({ branchId, subsidiaryId }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any }>({
+				url: buildTechnicalReviewsEndpoint(context, '/validation/rules'),
+				method: 'get',
+			});
 
-		return normalizeObject(response.data) as IValidationRules;
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar las reglas de validación',
-		);
-	}
-});
+			return normalizeObject(response.data) as IValidationRules;
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudieron cargar las reglas de validación',
+			);
+		}
+	},
+);
 
 /**
  * Obtener reglas de validación por tipo de equipo
@@ -63,7 +71,12 @@ export const fetchValidationRulesByType = createAsyncThunk<
 	async ({ branchId, subsidiaryId, equipmentType }, { getState, dispatch, rejectWithValue }) => {
 		try {
 			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-			dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
 			const response = await ApiService.fetchData<{ data?: any }>({
 				url: buildTechnicalReviewsEndpoint(context, `/validation/rules/${equipmentType}`),
 				method: 'get',
@@ -103,30 +116,38 @@ export const validateField = createAsyncThunk<
 		};
 	},
 	{ state: RootState; rejectValue: string }
->('technicalReviews/validateField', async ({ branchId, subsidiaryId, data }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: buildTechnicalReviewsEndpoint(context, '/validation/validate-field'),
-			method: 'post',
-			data,
-		});
+>(
+	'technicalReviews/validateField',
+	async ({ branchId, subsidiaryId, data }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any }>({
+				url: buildTechnicalReviewsEndpoint(context, '/validation/validate-field'),
+				method: 'post',
+				data,
+			});
 
-		return normalizeObject(response.data) as {
-			valid: boolean;
-			message?: string;
-			errors?: string[];
-			warnings?: string[];
-			suggestion?: string;
-			help_text?: string;
-		};
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'Error al validar el campo',
-		);
-	}
-});
+			return normalizeObject(response.data) as {
+				valid: boolean;
+				message?: string;
+				errors?: string[];
+				warnings?: string[];
+				suggestion?: string;
+				help_text?: string;
+			};
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ?? error?.message ?? 'Error al validar el campo',
+			);
+		}
+	},
+);
 
 /**
  * Previsualización de calificación (sugerir grado)
@@ -145,34 +166,42 @@ export const suggestGrade = createAsyncThunk<
 	},
 	{ branchId?: number | null; subsidiaryId?: number | null; itemId: number },
 	{ state: RootState; rejectValue: string }
->('technicalReviews/suggestGrade', async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: buildTechnicalReviewsEndpoint(context, '/validation/suggest-grade'),
-			method: 'post',
-			data: { item_id: itemId },
-		});
+>(
+	'technicalReviews/suggestGrade',
+	async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any }>({
+				url: buildTechnicalReviewsEndpoint(context, '/validation/suggest-grade'),
+				method: 'post',
+				data: { item_id: itemId },
+			});
 
-		return normalizeObject(response.data) as {
-			suggested_grade: string;
-			grade_label: string;
-			confidence: number;
-			total_score: number;
-			breakdown: Record<string, any>;
-			reasoning: string[];
-			is_auto_assignable: boolean;
-			warnings: string[];
-		};
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'Error al calcular la sugerencia de grado',
-		);
-	}
-});
+			return normalizeObject(response.data) as {
+				suggested_grade: string;
+				grade_label: string;
+				confidence: number;
+				total_score: number;
+				breakdown: Record<string, any>;
+				reasoning: string[];
+				is_auto_assignable: boolean;
+				warnings: string[];
+			};
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'Error al calcular la sugerencia de grado',
+			);
+		}
+	},
+);
 
 /**
  * Obtener errores comunes del usuario actual
@@ -182,24 +211,32 @@ export const getMyCommonErrors = createAsyncThunk<
 	any[],
 	{ branchId?: number | null; subsidiaryId?: number | null },
 	{ state: RootState; rejectValue: string }
->('technicalReviews/getMyCommonErrors', async ({ branchId, subsidiaryId }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any[] }>({
-			url: buildTechnicalReviewsEndpoint(context, '/validation/my-common-errors'),
-			method: 'get',
-		});
+>(
+	'technicalReviews/getMyCommonErrors',
+	async ({ branchId, subsidiaryId }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any[] }>({
+				url: buildTechnicalReviewsEndpoint(context, '/validation/my-common-errors'),
+				method: 'get',
+			});
 
-		return normalizeArray(response.data);
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los errores comunes',
-		);
-	}
-});
+			return normalizeArray(response.data);
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudieron cargar los errores comunes',
+			);
+		}
+	},
+);
 
 /**
  * Obtener estadísticas de errores
@@ -207,24 +244,36 @@ export const getMyCommonErrors = createAsyncThunk<
  */
 export const getErrorStatistics = createAsyncThunk<
 	any,
-	{ branchId?: number | null; subsidiaryId?: number | null; params?: { start_date?: string; end_date?: string } },
+	{
+		branchId?: number | null;
+		subsidiaryId?: number | null;
+		params?: { start_date?: string; end_date?: string };
+	},
 	{ state: RootState; rejectValue: string }
->('technicalReviews/getErrorStatistics', async ({ branchId, subsidiaryId, params }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: buildTechnicalReviewsEndpoint(context, '/validation/error-statistics'),
-			method: 'get',
-			params,
-		});
+>(
+	'technicalReviews/getErrorStatistics',
+	async ({ branchId, subsidiaryId, params }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any }>({
+				url: buildTechnicalReviewsEndpoint(context, '/validation/error-statistics'),
+				method: 'get',
+				params,
+			});
 
-		return normalizeObject(response.data);
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar las estadísticas de errores',
-		);
-	}
-});
+			return normalizeObject(response.data);
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudieron cargar las estadísticas de errores',
+			);
+		}
+	},
+);

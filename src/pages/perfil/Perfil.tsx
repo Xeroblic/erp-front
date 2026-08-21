@@ -329,7 +329,7 @@ const Perfil = () => {
 						</div>
 
 						<div
-							className='z-1 relative flex h-[100vh] max-h-[30vh] min-h-[24vh] md:max-h-[24vh] md:h-[28vh]  w-[75%] md:w-[65%] items-center bg-white dark:bg-neutral-900'
+							className='z-1 relative flex h-[100vh] max-h-[30vh] min-h-[24vh] w-[75%] items-center bg-white dark:bg-neutral-900 md:h-[28vh] md:max-h-[24vh] md:w-[65%]'
 							style={{
 								clipPath:
 									'polygon(0% 0%, 100% 0%, 82% 59.21%, 100% 50.25%, 82% 100%, 0% 100%)',

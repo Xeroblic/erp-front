@@ -50,7 +50,7 @@ const RelojControlPage: React.FC = () => {
 	// ── Sin configuración ──────────────────────────────
 	if (!hasConfig) {
 		return (
-			<PageWrapper name='Reloj Control' title='Sin Configuración' isProtectedRoute={true} >
+			<PageWrapper name='Reloj Control' title='Sin Configuración' isProtectedRoute={true}>
 				<Subheader>
 					<SubheaderLeft>
 						<h2 className='text-xl font-semibold'>Reloj Control</h2>
@@ -58,7 +58,7 @@ const RelojControlPage: React.FC = () => {
 				</Subheader>
 				<Container>
 					<div className='flex min-h-[60vh] items-center justify-center'>
-						<Card className='max-w-md w-full'>
+						<Card className='w-full max-w-md'>
 							<CardBody>
 								<div className='flex flex-col items-center gap-4 px-4 py-8'>
 									<Icon
@@ -70,8 +70,8 @@ const RelojControlPage: React.FC = () => {
 										Configuración requerida
 									</h2>
 									<p className='text-center text-sm text-zinc-500 dark:text-zinc-400'>
-										Primero debes configurar la sucursal (ubicación, IP, horario y
-										QR) desde la sección de Configuración de RRHH.
+										Primero debes configurar la sucursal (ubicación, IP, horario
+										y QR) desde la sección de Configuración de RRHH.
 									</p>
 								</div>
 							</CardBody>
@@ -85,7 +85,7 @@ const RelojControlPage: React.FC = () => {
 	// ── Permiso denegado ───────────────────────────────
 	if (geoPermission === 'denied') {
 		return (
-			<PageWrapper title='Sin Permisos' name='Reloj Control' isProtectedRoute={true} >
+			<PageWrapper title='Sin Permisos' name='Reloj Control' isProtectedRoute={true}>
 				<Subheader>
 					<SubheaderLeft>
 						<h2 className='text-xl font-semibold'>Reloj Control</h2>
@@ -93,10 +93,14 @@ const RelojControlPage: React.FC = () => {
 				</Subheader>
 				<Container>
 					<div className='flex min-h-[60vh] items-center justify-center'>
-						<Card className='max-w-md w-full'>
+						<Card className='w-full max-w-md'>
 							<CardBody>
 								<div className='flex flex-col items-center gap-4 px-4 py-8'>
-									<Icon icon='HeroMapPin' size='text-5xl' className='text-red-500 dark:text-red-400' />
+									<Icon
+										icon='HeroMapPin'
+										size='text-5xl'
+										className='text-red-500 dark:text-red-400'
+									/>
 									<h2 className='text-xl font-semibold text-zinc-900 dark:text-zinc-200'>
 										Ubicación Requerida
 									</h2>
@@ -126,23 +130,29 @@ const RelojControlPage: React.FC = () => {
 		: 'Usuario';
 
 	return (
-		<PageWrapper name='Reloj Control' title={config.branchName + ' — ' + userName} isProtectedRoute={true} >
+		<PageWrapper
+			name='Reloj Control'
+			title={config.branchName + ' — ' + userName}
+			isProtectedRoute={true}>
 			<Subheader className='mb-6'>
 				<SubheaderLeft className='text-2xl font-bold text-zinc-900 dark:text-zinc-100'>
 					<Icon icon='HeroClock' className='text-3xl text-blue-500' />
 					<div className='flex flex-col items-start gap-1'>
-						<Badge className='text-2xl font-bold px-3 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700/50'>
+						<Badge className='border-zinc-200 bg-zinc-100 px-3 py-1 text-2xl font-bold text-zinc-800 dark:border-zinc-700/50 dark:bg-zinc-800 dark:text-zinc-100'>
 							Reloj Control
 						</Badge>
 						<p className='mt-1 text-sm font-normal text-zinc-500 dark:text-zinc-400'>
-							<span className='font-semibold text-zinc-700 dark:text-zinc-300'>{config.branchName}</span> — {userName}
+							<span className='font-semibold text-zinc-700 dark:text-zinc-300'>
+								{config.branchName}
+							</span>{' '}
+							— {userName}
 						</p>
 					</div>
 				</SubheaderLeft>
 			</Subheader>
 
 			<Container className='h-full'>
-				<div className='grid grid-cols-1 gap-6 lg:grid-cols-3 min-h-[72vh] pb-10'>
+				<div className='grid min-h-[72vh] grid-cols-1 gap-6 pb-10 lg:grid-cols-3'>
 					{/* ── Columna principal ── */}
 					<div className='lg:col-span-2'>
 						<div className='flex flex-col gap-6'>
@@ -162,16 +172,17 @@ const RelojControlPage: React.FC = () => {
 											<p className='text-xs text-zinc-500'>
 												Último registro:{' '}
 												<span className='font-medium text-zinc-700 dark:text-zinc-300'>
-													{lastRecord.type === 'entry' ? 'Entrada' : 'Salida'}{' '}
+													{lastRecord.type === 'entry'
+														? 'Entrada'
+														: 'Salida'}{' '}
 													a las{' '}
-													{new Date(lastRecord.timestamp).toLocaleTimeString(
-														'es-CL',
-														{
-															hour: '2-digit',
-															minute: '2-digit',
-															hour12: false,
-														},
-													)}
+													{new Date(
+														lastRecord.timestamp,
+													).toLocaleTimeString('es-CL', {
+														hour: '2-digit',
+														minute: '2-digit',
+														hour12: false,
+													})}
 													{lastRecord.punctuality === 'late' && (
 														<span className='ml-1 text-amber-600 dark:text-amber-400'>
 															(Atraso)
@@ -188,7 +199,12 @@ const RelojControlPage: React.FC = () => {
 
 										{/* Marcación exitosa */}
 										{justPunched && (
-											<Alert color='emerald' variant='outline' icon='HeroCheckCircle' title='¡Marcación registrada exitosamente!' className='w-full max-w-md'>
+											<Alert
+												color='emerald'
+												variant='outline'
+												icon='HeroCheckCircle'
+												title='¡Marcación registrada exitosamente!'
+												className='w-full max-w-md'>
 												{lastRecord?.punctuality === 'on_time'
 													? '✓ Puntual'
 													: lastRecord?.punctuality === 'late'
@@ -199,14 +215,22 @@ const RelojControlPage: React.FC = () => {
 
 										{/* Ya completó ambas marcaciones */}
 										{allPunchesComplete && !justPunched && (
-											<Alert color='blue' variant='outline' icon='HeroCheckBadge' className='w-full max-w-md'>
+											<Alert
+												color='blue'
+												variant='outline'
+												icon='HeroCheckBadge'
+												className='w-full max-w-md'>
 												Ya registraste entrada y salida hoy. ¡Buen trabajo!
 											</Alert>
 										)}
 
 										{/* Error */}
 										{error && !justPunched && (
-											<Alert color='red' variant='outline' icon='HeroExclamationTriangle' className='w-full max-w-md'>
+											<Alert
+												color='red'
+												variant='outline'
+												icon='HeroExclamationTriangle'
+												className='w-full max-w-md'>
 												{error}
 											</Alert>
 										)}
@@ -216,12 +240,13 @@ const RelojControlPage: React.FC = () => {
 											<button
 												onClick={handleStartPunch}
 												disabled={isValidating}
-												className={`group relative flex h-32 w-32 items-center justify-center rounded-full border-4 transition-all duration-300 ${isValidating
+												className={`group relative flex h-32 w-32 items-center justify-center rounded-full border-4 transition-all duration-300 ${
+													isValidating
 														? 'cursor-wait border-amber-500/30 bg-amber-500/10 dark:border-amber-500/50'
 														: nextPunchType === 'entry'
 															? 'border-emerald-500/30 bg-emerald-500/10 hover:border-emerald-500 hover:bg-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/20 dark:border-emerald-500/50 dark:hover:border-emerald-400'
 															: 'border-orange-500/30 bg-orange-500/10 hover:border-orange-500 hover:bg-orange-500/20 hover:shadow-lg hover:shadow-orange-500/20 dark:border-orange-500/50 dark:hover:border-orange-400'
-													}`}>
+												}`}>
 												{isValidating ? (
 													<Icon
 														icon='HeroArrowPath'
@@ -244,10 +269,11 @@ const RelojControlPage: React.FC = () => {
 															}
 														/>
 														<span
-															className={`text-xs font-semibold ${nextPunchType === 'entry'
+															className={`text-xs font-semibold ${
+																nextPunchType === 'entry'
 																	? 'text-emerald-600 dark:text-emerald-400'
 																	: 'text-orange-600 dark:text-orange-400'
-																}`}>
+															}`}>
 															{nextPunchType === 'entry'
 																? 'ENTRADA'
 																: 'SALIDA'}
@@ -257,10 +283,11 @@ const RelojControlPage: React.FC = () => {
 
 												{!isValidating && (
 													<span
-														className={`absolute inset-0 animate-ping rounded-full opacity-[0.15] dark:opacity-20 ${nextPunchType === 'entry'
+														className={`absolute inset-0 animate-ping rounded-full opacity-[0.15] dark:opacity-20 ${
+															nextPunchType === 'entry'
 																? 'bg-emerald-500'
 																: 'bg-orange-500'
-															}`}
+														}`}
 														style={{ animationDuration: '2s' }}
 													/>
 												)}
