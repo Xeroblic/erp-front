@@ -1,6 +1,15 @@
-# Auto detect text files and perform LF normalization
-* text=auto
-*.js text eol=lf
-*.jsx text eol=lf
-*.scss eol=lf
-*.css eol=lf
+# Normalize every tracked text file to LF on every platform.
+* text=auto eol=lf
+
+# Binary assets must never be modified by line-ending normalization.
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.mp3 binary
+*.png binary
+*.webp binary
+*.xlsx binary
+*.zip binary
+
+# Prettier may combine spaces and tabs to preserve Markdown nesting.
+*.md whitespace=-space-before-tab
