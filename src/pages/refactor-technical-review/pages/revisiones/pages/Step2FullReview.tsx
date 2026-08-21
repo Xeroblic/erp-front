@@ -200,16 +200,15 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 				<div className='flex items-center gap-2'>
 					{/* Prefill button */}
 					{/* {isEligibleForPrefill && ( */}
-						<Button
-							variant='outline'
-							color='blue'
-							className='border-blue-600 dark:border-blue-900/50 bg-blue-300/50 dark:bg-blue-900/10 hover:bg-blue-300 dark:hover:bg-blue-900/20 h-10 px-3'
-							icon='HeroBolt'
-							onClick={() => setIsPrefillModalOpen(true)}
-							title='Pre-rellenar con equipo similar'
-						>
-							Pre-rellenar
-						</Button>
+					<Button
+						variant='outline'
+						color='blue'
+						className='h-10 border-blue-600 bg-blue-300/50 px-3 hover:bg-blue-300 dark:border-blue-900/50 dark:bg-blue-900/10 dark:hover:bg-blue-900/20'
+						icon='HeroBolt'
+						onClick={() => setIsPrefillModalOpen(true)}
+						title='Pre-rellenar con equipo similar'>
+						Pre-rellenar
+					</Button>
 					{/* )} */}
 
 					{/* Auto-save indicator */}
@@ -217,7 +216,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 						<Badge
 							variant='outline'
 							color='amber'
-							className='inline-flex h-10 items-center px-3 whitespace-nowrap border-amber-600 bg-amber-300/35 text-amber-700 font-bold animate-pulse dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300'>
+							className='inline-flex h-10 animate-pulse items-center whitespace-nowrap border-amber-600 bg-amber-300/35 px-3 font-bold text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300'>
 							<span className='inline-flex items-center gap-0.5'>
 								<span>Guardando</span>
 								<span className='inline-flex'>
@@ -237,9 +236,11 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 						<Badge
 							variant='outline'
 							color='emerald'
-							className='inline-flex h-10 items-center px-3 whitespace-nowrap border-emerald-600 bg-emerald-300/35 font-bold text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'>
+							className='inline-flex h-10 items-center whitespace-nowrap border-emerald-600 bg-emerald-300/35 px-3 font-bold text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'>
 							<span className='inline-flex items-center gap-1.5'>
-								<span>Guardado a las {new Date(lastSavedAt).toLocaleTimeString()}</span>
+								<span>
+									Guardado a las {new Date(lastSavedAt).toLocaleTimeString()}
+								</span>
 								<Icon icon='HeroCheck' className='h-4 w-4' />
 							</span>
 						</Badge>
@@ -247,7 +248,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					<Badge
 						variant='outline'
 						color='blue'
-						className='inline-flex h-10 items-center px-3 whitespace-nowrap border-blue-600 bg-sky-300/40 font-bold text-blue-700 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-300'>
+						className='inline-flex h-10 items-center whitespace-nowrap border-blue-600 bg-sky-300/40 px-3 font-bold text-blue-700 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-300'>
 						{readOnly ? 'Solo Lectura' : 'En Progreso'}
 					</Badge>
 				</div>

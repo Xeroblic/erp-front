@@ -16,7 +16,7 @@ export const useStockDelta = ({ totalSubsidiaryStock, allocations }: UseStockDel
 			(acc, curr) => acc + (Number(curr.stock) || 0),
 			0,
 		);
-		
+
 		const delta = totalSubsidiaryStock - sumAllocations;
 		const isBalanced = delta === 0;
 

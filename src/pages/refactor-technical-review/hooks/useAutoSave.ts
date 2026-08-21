@@ -88,7 +88,7 @@ export const useAutoSave = ({
 		getFormDataRef.current = getFormData;
 	}, [getFormData]);
 
-	useEffect(() => { 
+	useEffect(() => {
 		transformDataRef.current = transformData;
 	}, [transformData]);
 
@@ -193,7 +193,10 @@ export const useAutoSave = ({
 					setLastSavedAt(new Date());
 					return true;
 				} catch (transformedError: unknown) {
-					const msg = transformedError instanceof Error ? transformedError.message : String(transformedError);
+					const msg =
+						transformedError instanceof Error
+							? transformedError.message
+							: String(transformedError);
 					toast.error(`Error al auto-guardar: ${msg}`);
 					return false;
 				}

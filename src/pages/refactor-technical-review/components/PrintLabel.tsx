@@ -100,7 +100,9 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					<React.Fragment key='screen'>
 						<span style={{ fontWeight: 'bold' }}>PANT: </span>
 						{extractValue(details.screen_inches)}{' '}
-						<span style={{ fontWeight: 'bold'}}>{details.is_touchscreen ? '(Tactil) ' : ''}</span>
+						<span style={{ fontWeight: 'bold' }}>
+							{details.is_touchscreen ? '(Tactil) ' : ''}
+						</span>
 					</React.Fragment>,
 					<React.Fragment key='battery'>
 						<span style={{ fontWeight: 'bold' }}>BAT: </span>

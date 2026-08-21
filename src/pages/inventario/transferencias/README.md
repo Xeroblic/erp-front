@@ -6,39 +6,39 @@ Formulario simplificado para crear nuevas transferencias de productos entre bode
 
 ## Casos de Uso
 
--   **CU014**: Transferencias de inventario entre bodegas
+- **CU014**: Transferencias de inventario entre bodegas
 
 ## Ubicación
 
--   **Ruta**: `/inventario/transferencias`
--   **Componente**: `src/pages/inventario/transferencias/Transferencias.tsx`
+- **Ruta**: `/inventario/transferencias`
+- **Componente**: `src/pages/inventario/transferencias/Transferencias.tsx`
 
 ## Funcionalidades
 
 ### Formulario Nueva Transferencia
 
--   **Bodega Origen**: Selección de bodega de origen (obligatorio)
--   **Bodega Destino**: Selección de bodega destino (obligatorio, diferente al origen)
--   **Responsable**: Usuario responsable de la transferencia (obligatorio)
--   **Notas**: Información adicional (opcional)
+- **Bodega Origen**: Selección de bodega de origen (obligatorio)
+- **Bodega Destino**: Selección de bodega destino (obligatorio, diferente al origen)
+- **Responsable**: Usuario responsable de la transferencia (obligatorio)
+- **Notas**: Información adicional (opcional)
 
 ### Gestión de Productos
 
--   **Agregar productos**: Seleccionar producto y cantidad
--   **Validación de stock**: Verificar disponibilidad antes de agregar
--   **Lista de productos**: Visualizar productos a transferir
--   **Remover productos**: Eliminar productos de la lista
+- **Agregar productos**: Seleccionar producto y cantidad
+- **Validación de stock**: Verificar disponibilidad antes de agregar
+- **Lista de productos**: Visualizar productos a transferir
+- **Remover productos**: Eliminar productos de la lista
 
 ### Confirmación y Procesamiento
 
--   **Validaciones**: Verificar datos obligatorios y consistencia
--   **Procesamiento**: Crear movimientos IN/OUT por cada producto
--   **Trazabilidad**: Campos `reference_type='transfer'` y `reference_id`
--   **Redirección**: Navegar al historial filtrado por transferencias
+- **Validaciones**: Verificar datos obligatorios y consistencia
+- **Procesamiento**: Crear movimientos IN/OUT por cada producto
+- **Trazabilidad**: Campos `reference_type='transfer'` y `reference_id`
+- **Redirección**: Navegar al historial filtrado por transferencias
 
 ## Permisos Requeridos
 
--   `inventory.transfer` - Para confirmar transferencias
+- `inventory.transfer` - Para confirmar transferencias
 
 ## Validaciones
 
@@ -72,7 +72,7 @@ Formulario simplificado para crear nuevas transferencias de productos entre bode
 
 ### Endpoint Utilizado
 
--   `POST /inventory/transfer` - Transferir inventario (implementado en `inventorySlice`)
+- `POST /inventory/transfer` - Transferir inventario (implementado en `inventorySlice`)
 
 ### Estructura de Request
 
@@ -90,13 +90,13 @@ Formulario simplificado para crear nuevas transferencias de productos entre bode
 
 Al confirmar exitosamente, redirecciona a:
 
--   **URL**: `/inventario/historial?tipo=TRANSFER`
--   **Propósito**: Mostrar historial filtrado por transferencias realizadas
+- **URL**: `/inventario/historial?tipo=TRANSFER`
+- **Propósito**: Mostrar historial filtrado por transferencias realizadas
 
 ## Diseño y UX
 
--   **Layout responsive**: Grid adaptable desktop/mobile
--   **Validación en tiempo real**: Feedback inmediato de errores
--   **Estados de loading**: Indicador durante procesamiento
--   **Tokens de diseño**: Sin colores hardcoded, uso de tokens globales
--   **Accesibilidad**: Labels descriptivos y navegación por teclado
+- **Layout responsive**: Grid adaptable desktop/mobile
+- **Validación en tiempo real**: Feedback inmediato de errores
+- **Estados de loading**: Indicador durante procesamiento
+- **Tokens de diseño**: Sin colores hardcoded, uso de tokens globales
+- **Accesibilidad**: Labels descriptivos y navegación por teclado

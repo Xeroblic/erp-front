@@ -21,13 +21,7 @@ export const NOTEBOOK_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Condición general',
 		group: 'Condición',
-		allowed_values: [
-			'like_new',
-			'good_shape',
-			'visible_wear',
-			'needs_repair',
-			'scrap',
-		],
+		allowed_values: ['like_new', 'good_shape', 'visible_wear', 'needs_repair', 'scrap'],
 		hint: 'Estado general del equipo considerando estética y funcionamiento global',
 	},
 	observations: {
@@ -124,14 +118,7 @@ export const NOTEBOOK_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Tapa superior',
 		group: 'Carcasa',
-		allowed_values: [
-			'ok',
-			'minor_wear',
-			'worn',
-			'missing_pieces',
-			'scratched',
-			'broken',
-		],
+		allowed_values: ['ok', 'minor_wear', 'worn', 'missing_pieces', 'scratched', 'broken'],
 		hint: 'Estado de la cubierta/tapa superior del equipo',
 	},
 	keyboard_condition: {

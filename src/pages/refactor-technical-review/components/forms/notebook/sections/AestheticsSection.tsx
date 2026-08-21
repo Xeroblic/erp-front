@@ -14,9 +14,9 @@ const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	setValue,
 }) => {
 	return (
-		<div className='hover:cursor-pointer space-y-6'>
+		<div className='space-y-6 hover:cursor-pointer'>
 			{/* General Condition */}
-			<div className='hover:cursor-pointer rounded-xl border border-green-200 bg-green-500/20 p-4 transition-colors duration-200 hover:bg-green-500/30 dark:border-green-800 dark:bg-green-900/10 dark:hover:bg-green-900/30'>
+			<div className='rounded-xl border border-green-200 bg-green-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-green-500/30 dark:border-green-800 dark:bg-green-900/10 dark:hover:bg-green-900/30'>
 				<label className='mb-3 block text-center text-sm font-bold text-green-800 dark:text-green-200'>
 					{getNotebookLabel('general_condition')} <span className='text-red-500'>*</span>
 				</label>
@@ -42,7 +42,7 @@ const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			</div>
 
 			{/* Connectivity Booleans */}
-			<div className='hover:cursor-pointer grid grid-cols-1 gap-4 md:grid-cols-3'>
+			<div className='grid grid-cols-1 gap-4 hover:cursor-pointer md:grid-cols-3'>
 				<YesNoSelector
 					label='¿Tiene WiFi?'
 					value={watch('has_wifi')}

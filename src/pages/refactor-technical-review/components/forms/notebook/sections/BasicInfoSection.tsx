@@ -101,9 +101,7 @@ const BasicInfoSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						/>
 					)}
 				/>
-				{errors.line && (
-					<p className='mt-1 text-xs text-red-500'>{errors.line.message}</p>
-				)}
+				{errors.line && <p className='mt-1 text-xs text-red-500'>{errors.line.message}</p>}
 				<p className='mt-1 text-xs text-zinc-500'>{NOTEBOOK_HINTS.line}</p>
 			</div>
 		</div>
