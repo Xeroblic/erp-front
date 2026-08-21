@@ -119,7 +119,7 @@ describe('DeferredPaymentDetailDrawer — eliminación del documento', () => {
 		await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
 	});
 
-	it('advierte que un documento con abonos no se puede eliminar', async () => {
+	it('advierte que un documento con abonos no se puede eliminar', () => {
 		renderDrawer(documentWithPayments);
 
 		const deleteTrigger = screen.getByRole('button', { name: 'Eliminar', hidden: true });
