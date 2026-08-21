@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import store from '@/store';
@@ -20,14 +20,6 @@ vi.mock('../hooks/useDeferredPaymentDetail');
 
 const deleteDocument = vi.fn();
 const clearMutationErrors = vi.fn();
-/** Deja resolver el guard anti-doble-click de Button antes del teardown de JSDOM. */
-const settleClickGuards = () =>
-	act(
-		() =>
-			new Promise<void>((resolve) => {
-				setTimeout(resolve, 450);
-			}),
-	);
 /** Documento pendiente sin abonos: el caso que el backend sí permite eliminar. */
 const documentWithoutPayments = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
 /** Documento con dos abonos: el backend lo rechaza. */
@@ -125,7 +117,6 @@ describe('DeferredPaymentDetailDrawer — eliminación del documento', () => {
 
 		await waitFor(() => expect(deleteDocument).toHaveBeenCalledOnce());
 		await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
-		await settleClickGuards();
 	});
 
 	it('advierte que un documento con abonos no se puede eliminar', async () => {
@@ -140,7 +131,6 @@ describe('DeferredPaymentDetailDrawer — eliminación del documento', () => {
 				`Los documentos con abonos no se pueden eliminar. Anula primero los ${documentWithPayments.payments.length} abono(s) registrado(s).`,
 			),
 		).toBeInTheDocument();
-		await settleClickGuards();
 	});
 
 	it('muestra el error del backend y mantiene abierta la confirmación', async () => {
@@ -158,7 +148,6 @@ describe('DeferredPaymentDetailDrawer — eliminación del documento', () => {
 			screen.getByText('No se puede eliminar un documento con abonos registrados.'),
 		).toBeInTheDocument();
 		expect(onClose).not.toHaveBeenCalled();
-		await settleClickGuards();
 	});
 
 	it('bloquea el segundo envío mientras la eliminación está en vuelo', () => {
