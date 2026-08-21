@@ -27,10 +27,7 @@ describe('useLocalStorage', () => {
 		const { result } = renderHook(() => useLocalStorage('k3', 'default'));
 
 		await act(async () => {
-			const [, setValue] = result.current as [
-				string,
-				(v: string | null) => Promise<unknown>,
-			];
+			const [, setValue] = result.current as [string, (v: string | null) => Promise<unknown>];
 			await setValue('nuevo');
 		});
 
@@ -40,10 +37,7 @@ describe('useLocalStorage', () => {
 
 	it('setValue resuelve la promesa a true al guardar', async () => {
 		const { result } = renderHook(() => useLocalStorage('k4', 'default'));
-		const [, setValue] = result.current as [
-			string,
-			(v: string | null) => Promise<unknown>,
-		];
+		const [, setValue] = result.current as [string, (v: string | null) => Promise<unknown>];
 
 		await act(async () => {
 			await expect(setValue('x')).resolves.toBe(true);

@@ -121,12 +121,7 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 	};
 
 	const rawRecord = asRecord(raw);
-	const sources: unknown[] = [
-		raw,
-		rawRecord?.data,
-		rawRecord?.children,
-		rawRecord?.attributes,
-	];
+	const sources: unknown[] = [raw, rawRecord?.data, rawRecord?.children, rawRecord?.attributes];
 
 	for (const source of sources) {
 		if (!source) continue;
@@ -154,11 +149,11 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 						soft_holds: normalizeSoftHolds(entry.soft_holds),
 						marketplace_external_ids:
 							entry.marketplace_external_ids &&
-								typeof entry.marketplace_external_ids === 'object'
+							typeof entry.marketplace_external_ids === 'object'
 								? (entry.marketplace_external_ids as Record<
-									string,
-									string | number
-								>)
+										string,
+										string | number
+									>)
 								: null,
 						is_synced_with_woo: toBoolean(entry.is_synced_with_woo),
 					};
@@ -197,10 +192,10 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 		brand_id: toNullableNumber(safe.brand_id),
 		brand: brandRecord
 			? {
-				id: Number(brandRecord.id ?? 0),
-				name: String(brandRecord.name ?? ''),
-				slug: (brandRecord.slug ?? null) as string | null | undefined,
-			}
+					id: Number(brandRecord.id ?? 0),
+					name: String(brandRecord.name ?? ''),
+					slug: (brandRecord.slug ?? null) as string | null | undefined,
+				}
 			: null,
 		product_type: (safe.product_type ?? safe.type ?? null) as string | null,
 		condition_policy: (safe.condition_policy ?? safe.condition ?? null) as string | null,
@@ -225,7 +220,7 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 				: null,
 		marketplace_external_ids:
 			typeof safe.marketplace_external_ids === 'object' &&
-				safe.marketplace_external_ids !== null
+			safe.marketplace_external_ids !== null
 				? (safe.marketplace_external_ids as Record<string, unknown>)
 				: null,
 		// Flags de sincronización Woo (autoritativos del backend). Se preservan para
@@ -245,10 +240,10 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 		),
 		parent: parentRecord
 			? ({
-				id: Number(parentRecord.id ?? 0),
-				sku: String(parentRecord.sku ?? ''),
-				name: String(parentRecord.name ?? ''),
-			} as IProductParentSummary)
+					id: Number(parentRecord.id ?? 0),
+					sku: String(parentRecord.sku ?? ''),
+					name: String(parentRecord.name ?? ''),
+				} as IProductParentSummary)
 			: undefined,
 		available_serials: Array.isArray(safe.available_serials)
 			? safe.available_serials.filter((v): v is string => typeof v === 'string')
@@ -290,7 +285,9 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 					if (!url) return null;
 					const abs = ensureAbsoluteUrl(url);
 					if (!abs) return null;
-					const thumbRaw = (itemRecord?.thumb ?? itemRecord?.thumbnail_url ?? url) as string;
+					const thumbRaw = (itemRecord?.thumb ??
+						itemRecord?.thumbnail_url ??
+						url) as string;
 					const thumb = ensureAbsoluteUrl(thumbRaw) ?? abs;
 					return {
 						id: toNullableNumber(itemRecord?.id),

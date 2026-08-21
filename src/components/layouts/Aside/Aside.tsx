@@ -67,7 +67,7 @@ const Aside: FC<IAsideProps> = ({ children, className, ...rest }) => {
 				{
 					'ltr:max-md:-left-[20rem] rtl:max-md:-right-[20rem]': !asideStatus,
 					'ltr:max-md:left-0 rtl:max-md:right-0': asideStatus,
-				},	
+				},
 			)}
 			{...rest}>
 			{children}

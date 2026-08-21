@@ -51,10 +51,7 @@ export default function useAuthorization(): UseAuthorizationResult {
 	const safePermissions = normalizedUserPermissions ?? EMPTY_STRING_ARRAY;
 	const safeRoles = userRoles ?? EMPTY_STRING_ARRAY;
 
-	const permissions = useMemo(
-		() => Array.from(new Set(safePermissions)),
-		[safePermissions],
-	);
+	const permissions = useMemo(() => Array.from(new Set(safePermissions)), [safePermissions]);
 	const roles = useMemo(() => Array.from(new Set(safeRoles)), [safeRoles]);
 
 	const permissionSet = useMemo(() => new Set(permissions), [permissions]);
@@ -69,13 +66,11 @@ export default function useAuthorization(): UseAuthorizationResult {
 		[user?.access?.branches],
 	);
 	const visibleSubsidiaryIds = useMemo(
-		() =>
-			toIdSet((user?.visible?.subsidiaries ?? []).map((subsidiary) => subsidiary.id)),
+		() => toIdSet((user?.visible?.subsidiaries ?? []).map((subsidiary) => subsidiary.id)),
 		[user?.visible?.subsidiaries],
 	);
 	const accessSubsidiaryIds = useMemo(
-		() =>
-			toIdSet((user?.access?.subsidiaries ?? []).map((subsidiary) => subsidiary.id)),
+		() => toIdSet((user?.access?.subsidiaries ?? []).map((subsidiary) => subsidiary.id)),
 		[user?.access?.subsidiaries],
 	);
 	const visibleCompanyIds = useMemo(

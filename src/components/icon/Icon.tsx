@@ -13,9 +13,9 @@ type TIconComponent = React.ComponentType<Record<string, unknown>>;
 type TIconLoader = () => Promise<{ default: TIconComponent }>;
 type TResolvedIcon = { component: TIconComponent; kind: TIconKind };
 
-const svgIconModules = import.meta.glob<{ default: TIconComponent }>('./svg-icons/*.tsx');
-const duoToneModules = import.meta.glob<{ default: TIconComponent }>('./duotone/*.tsx');
-const heroIconModules = import.meta.glob<{ default: TIconComponent }>('./heroicons/*.tsx');
+const svgIconModules = import.meta.glob<{ default: TIconComponent }>('./svg-icons/*');
+const duoToneModules = import.meta.glob<{ default: TIconComponent }>('./duotone/*');
+const heroIconModules = import.meta.glob<{ default: TIconComponent }>('./heroicons/*');
 
 const iconCache = new Map<string, TResolvedIcon>();
 const pendingIconCache = new Map<string, Promise<TResolvedIcon | null>>();
@@ -173,9 +173,12 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 					// marcamos como inexistente para no ocultarlo el resto de la
 					// sesión; reintentamos con un backoff corto.
 					if (attempt < 2) {
-						retryTimer = setTimeout(() => {
-							if (isMounted) load(attempt + 1);
-						}, 150 * (attempt + 1));
+						retryTimer = setTimeout(
+							() => {
+								if (isMounted) load(attempt + 1);
+							},
+							150 * (attempt + 1),
+						);
 						return;
 					}
 					setResolvedIcon(null);

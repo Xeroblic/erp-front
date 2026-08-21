@@ -3,13 +3,13 @@
  * Dominio de Stock, Asignaciones y Series en el Zentria Standard
  */
 
- export interface IStockAssignmentItemPayload {
+export interface IStockAssignmentItemPayload {
 	child_product_id: number;
 	assign_all?: boolean;
 	quantity?: number;
 	price_override?: number;
 	serial_numbers?: string[];
- }
+}
 
 // 1. Asignar Producto
 export interface IAssignProductPayload {

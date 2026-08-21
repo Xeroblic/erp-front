@@ -48,35 +48,39 @@ export default function useCan(): CanCheck {
 
 	// has - verifica un permiso único
 	const has = useMemo(
-		() => (perm: string): boolean => {
-			return hasPermission(perm);
-		},
+		() =>
+			(perm: string): boolean => {
+				return hasPermission(perm);
+			},
 		[hasPermission],
 	);
 
 	// any - verifica si tiene al menos uno (OR)
 	const any = useMemo(
-		() => (list: string[]): boolean => {
-			if (!Array.isArray(list) || list.length === 0) return true;
-			return hasAnyPermission(list);
-		},
+		() =>
+			(list: string[]): boolean => {
+				if (!Array.isArray(list) || list.length === 0) return true;
+				return hasAnyPermission(list);
+			},
 		[hasAnyPermission],
 	);
 
 	// all - verifica si tiene todos (AND)
 	const all = useMemo(
-		() => (list: string[]): boolean => {
-			if (!Array.isArray(list) || list.length === 0) return true;
-			return hasAllPermissions(list);
-		},
+		() =>
+			(list: string[]): boolean => {
+				if (!Array.isArray(list) || list.length === 0) return true;
+				return hasAllPermissions(list);
+			},
 		[hasAllPermissions],
 	);
 
 	// hasRole - verifica un rol
 	const hasRole = useMemo(
-		() => (role: string): boolean => {
-			return checkRole(role);
-		},
+		() =>
+			(role: string): boolean => {
+				return checkRole(role);
+			},
 		[checkRole],
 	);
 

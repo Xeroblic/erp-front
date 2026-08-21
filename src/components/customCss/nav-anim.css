@@ -1,48 +1,53 @@
-
-
 @property --border-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
+	syntax: '<angle>';
+	inherits: false;
+	initial-value: 0deg;
 }
-@keyframes border-rotate { to { --border-angle: 360deg; } }
+@keyframes border-rotate {
+	to {
+		--border-angle: 360deg;
+	}
+}
 
 .nav-active-conic {
-  position: relative;
-  isolation: isolate;
-  border-color: transparent !important;
-  z-index: 0;
-  --nav-accent: currentColor;
+	position: relative;
+	isolation: isolate;
+	border-color: transparent !important;
+	z-index: 0;
+	--nav-accent: currentColor;
 }
 
-.nav-active-conic > * { position: relative; z-index: 1; }
+.nav-active-conic > * {
+	position: relative;
+	z-index: 1;
+}
 
 .nav-active-conic::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  padding: 2px;
-  border-radius: inherit;
-  z-index: 0;
+	content: '';
+	position: absolute;
+	inset: 0;
+	padding: 2px;
+	border-radius: inherit;
+	z-index: 0;
 
-  background: conic-gradient(
-    from var(--border-angle),
-    var(--nav-accent) 0deg,
-    transparent 90deg,
-    var(--nav-accent) 180deg,
-    transparent 270deg,
-    var(--nav-accent) 360deg
-  );
+	background: conic-gradient(
+		from var(--border-angle),
+		var(--nav-accent) 0deg,
+		transparent 90deg,
+		var(--nav-accent) 180deg,
+		transparent 270deg,
+		var(--nav-accent) 360deg
+	);
 
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
 
-  animation: border-rotate 3s linear infinite;
-  pointer-events: none;
+	animation: border-rotate 3s linear infinite;
+	pointer-events: none;
 }
