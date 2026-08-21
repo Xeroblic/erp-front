@@ -2,10 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
-import Subheader, {
-	SubheaderLeft,
-	SubheaderRight,
-} from '@/components/layouts/Subheader/Subheader';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
@@ -107,7 +104,10 @@ const PendientesSerieView: React.FC = () => {
 								color='violet'
 								className='group bg-violet-500/10 hover:bg-violet-500/20'
 								onClick={() => openDetail(row.original.id)}>
-								<Icon icon='HeroEye' className='text-violet-500 group-hover:text-violet-400 text-xl' />
+								<Icon
+									icon='HeroEye'
+									className='text-xl text-violet-500 group-hover:text-violet-400'
+								/>
 							</Button>
 						</Tooltip>
 						<Tooltip text='Asignar series'>

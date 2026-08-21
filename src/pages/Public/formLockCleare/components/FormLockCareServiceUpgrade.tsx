@@ -26,7 +26,8 @@ const FormLockCareServiceUpgrade: React.FC<FormLockCareServiceUpgradeProps> = ({
 					isValid={formik.isValid}
 					isTouched={formik.touched.upgradeType}
 					invalidFeedback={formik.errors.upgradeType}>
-					<SelectReact {...lockCareTheme}
+					<SelectReact
+						{...lockCareTheme}
 						id='upgradeType'
 						name='upgradeType'
 						options={upgradeTypeOptions}
@@ -49,7 +50,8 @@ const FormLockCareServiceUpgrade: React.FC<FormLockCareServiceUpgradeProps> = ({
 					isValid={formik.isValid}
 					isTouched={formik.touched.upgradeBrand}
 					invalidFeedback={formik.errors.upgradeBrand}>
-					<Input {...lockCareTheme}
+					<Input
+						{...lockCareTheme}
 						id='upgradeBrand'
 						name='upgradeBrand'
 						placeholder='Ej. Apple, Dell, HP'
@@ -67,7 +69,8 @@ const FormLockCareServiceUpgrade: React.FC<FormLockCareServiceUpgradeProps> = ({
 					isValid={formik.isValid}
 					isTouched={formik.touched.upgradeModel}
 					invalidFeedback={formik.errors.upgradeModel}>
-					<Input {...lockCareTheme}
+					<Input
+						{...lockCareTheme}
 						id='upgradeModel'
 						name='upgradeModel'
 						placeholder='Ej. MacBook Air M2, Inspiron 15'
@@ -85,7 +88,8 @@ const FormLockCareServiceUpgrade: React.FC<FormLockCareServiceUpgradeProps> = ({
 					isValid={formik.isValid}
 					isTouched={formik.touched.upgradeSerialNumber}
 					invalidFeedback={formik.errors.upgradeSerialNumber}>
-					<Input {...lockCareTheme}
+					<Input
+						{...lockCareTheme}
 						id='upgradeSerialNumber'
 						name='upgradeSerialNumber'
 						placeholder='Número de serie'

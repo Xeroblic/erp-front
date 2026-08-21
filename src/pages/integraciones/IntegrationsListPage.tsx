@@ -269,9 +269,9 @@ export const IntegrationsListContent: React.FC = () => {
 					return (
 						<Tooltip text='Restaurar esta integración y sus productos vinculados'>
 							<ProtectedButton
-								permission="delete-integration"
+								permission='delete-integration'
 								branchId={branchId}
-								scope="access"
+								scope='access'
 								size='sm'
 								variant='outline'
 								color='emerald'
@@ -337,7 +337,7 @@ export const IntegrationsListContent: React.FC = () => {
 										variant='outline'
 										rounded='rounded-full'
 										color={modeColors[row.original.mode] || 'zinc'}
-										className='py-1 px-1.5 flex items-center justify-center shadow-sm w-fit'>
+										className='flex w-fit items-center justify-center px-1.5 py-1 shadow-sm'>
 										<span className='flex items-center gap-0.5'>
 											{icons.map((ic) => (
 												<Icon key={ic} icon={ic} className='text-2xl' />
@@ -445,7 +445,7 @@ export const IntegrationsListContent: React.FC = () => {
 									onClick={() => handleView(row.original)}>
 									<Icon
 										icon='HeroEye'
-										className='text-2xl me-1 text-violet-500 group-hover:text-violet-300'
+										className='me-1 text-2xl text-violet-500 group-hover:text-violet-300'
 									/>
 								</Button>
 							</Tooltip>
@@ -454,11 +454,11 @@ export const IntegrationsListContent: React.FC = () => {
 									size='sm'
 									variant='outline'
 									color='sky'
-									className='group bg-sky-600 hover:bg-sky-600/20	'
+									className='group bg-sky-600 hover:bg-sky-600/20'
 									onClick={() => handleEdit(row.original)}>
 									<Icon
 										icon='HeroPencil'
-										className='text-2xl me-1 text-sky-500 group-hover:text-sky-300'
+										className='me-1 text-2xl text-sky-500 group-hover:text-sky-300'
 									/>
 								</Button>
 							</Tooltip>
@@ -540,7 +540,7 @@ export const IntegrationsListContent: React.FC = () => {
 		<>
 			<Container>
 				<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-700/80'>
-					<CardHeader className='flex-col items-start gap-4 border-b border-neutral-200 bg-neutral-50/60 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-700 dark:bg-neutral-800/40'>
+					<CardHeader className='flex-col items-start gap-4 border-b border-neutral-200 bg-neutral-50/60 dark:border-neutral-700 dark:bg-neutral-800/40 sm:flex-row sm:items-center sm:justify-between'>
 						<div className='flex items-center gap-3'>
 							<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/25 dark:bg-emerald-500/20 dark:ring-emerald-400/30'>
 								<Icon
@@ -583,9 +583,7 @@ export const IntegrationsListContent: React.FC = () => {
 									onClick={() => setViewMode('trash')}>
 									Papelera
 									{trashedIntegrations.length > 0 && (
-										<Badge
-											color='zinc'
-											className='ms-1.5 px-1.5 py-0 text-xs'>
+										<Badge color='zinc' className='ms-1.5 px-1.5 py-0 text-xs'>
 											{trashedIntegrations.length}
 										</Badge>
 									)}
@@ -593,9 +591,9 @@ export const IntegrationsListContent: React.FC = () => {
 							</div>
 							{viewMode === 'active' && (
 								<ProtectedButton
-									permission="create-integration"
+									permission='create-integration'
 									branchId={branchId}
-									scope="access"
+									scope='access'
 									variant='solid'
 									color='emerald'
 									icon='HeroPlus'
@@ -650,11 +648,7 @@ export const IntegrationsListContent: React.FC = () => {
 							</div>
 						) : trashedIntegrations.length === 0 ? (
 							<div className='py-8 text-center text-gray-500'>
-								<Icon
-									icon='HeroTrash'
-									size='text-6xl'
-									className='mx-auto mb-4'
-								/>
+								<Icon icon='HeroTrash' size='text-6xl' className='mx-auto mb-4' />
 								<p className='text-lg'>La papelera está vacía</p>
 								<p className='mt-2 text-sm'>
 									Las integraciones eliminadas aparecerán aquí

@@ -35,7 +35,7 @@ const DeleteProductModal: React.FC<DeleteProductModalProps> = ({
 		<Modal isOpen={isOpen} setIsOpen={onClose} isCentered>
 			<ModalHeader>
 				<div className='flex items-center gap-3'>
-					<span className='flex h-10 w-10 items-center justify-center rounded-full  bg-red-500/20 text-red-600'>
+					<span className='flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-red-600'>
 						<Icon icon='HeroTrash' className='h-5 w-5' />
 					</span>
 					<div className='mt-3'>
@@ -63,13 +63,17 @@ const DeleteProductModal: React.FC<DeleteProductModalProps> = ({
 							)}
 							{isSerializedProduct && (
 								<div className='mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-100 p-3 dark:border-amber-400/40 dark:bg-amber-500/10'>
-									<Icon icon='HeroExclamationTriangle' className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-300' />
+									<Icon
+										icon='HeroExclamationTriangle'
+										className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-300'
+									/>
 									<div>
 										<p className='text-sm font-semibold text-amber-900 dark:text-amber-200'>
 											Producto no eliminable
 										</p>
 										<p className='text-sm text-amber-800 dark:text-amber-100/90'>
-											Este producto no se puede eliminar porque está serializado y tiene revisiones asociadas.
+											Este producto no se puede eliminar porque está
+											serializado y tiene revisiones asociadas.
 										</p>
 									</div>
 								</div>

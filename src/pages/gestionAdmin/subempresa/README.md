@@ -119,14 +119,14 @@ import {
 
 ### Campos obligatorios
 
--   Nombre (3-100 caracteres)
+- Nombre (3-100 caracteres)
 
 ### Campos opcionales con validación
 
--   RUT (9-12 caracteres)
--   Teléfono (8+ dígitos)
--   Email (formato válido, máx 100 caracteres)
--   Dirección (10-200 caracteres)
+- RUT (9-12 caracteres)
+- Teléfono (8+ dígitos)
+- Email (formato válido, máx 100 caracteres)
+- Dirección (10-200 caracteres)
 
 ## Beneficios
 

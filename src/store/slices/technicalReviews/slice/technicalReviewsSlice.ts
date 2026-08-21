@@ -8,7 +8,7 @@ import type {
 	TechnicalReviewsState,
 	IBatch,
 	IItem,
-} from '../../../../interface/technicalReviews.interface.ts';
+} from '../../../../interface/technicalReviews.interface';
 
 // Importar thunks por flujo
 import * as batchesThunks from '../thunks/batchesThunks';
@@ -658,10 +658,9 @@ export const {
 	clearErrors,
 	setSelectedBatch,
 	setSelectedItem,
-} =
-	technicalReviewsSlice.actions;
+} = technicalReviewsSlice.actions;
 
 // Exportar el tipo para usarlo en rootReducer
-export type { TechnicalReviewsState } from '../../../../interface/technicalReviews.interface.ts';
+export type { TechnicalReviewsState } from '../../../../interface/technicalReviews.interface';
 
 export default technicalReviewsSlice.reducer;

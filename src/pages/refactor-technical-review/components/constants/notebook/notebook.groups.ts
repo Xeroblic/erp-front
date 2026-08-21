@@ -109,7 +109,14 @@ export const NOTEBOOK_FIELD_GROUPS: Record<string, NotebookGroup> = {
 /** Campos agrupados por sección (inverso de NOTEBOOK_FIELD_GROUPS) */
 export const NOTEBOOK_FIELDS_BY_GROUP: Record<NotebookGroup, string[]> = {
 	Identificación: ['brand', 'model'],
-	Hardware: ['processor', 'ram_size', 'ram_slots', 'ram_type', 'storage_size', 'storage_technology'],
+	Hardware: [
+		'processor',
+		'ram_size',
+		'ram_slots',
+		'ram_type',
+		'storage_size',
+		'storage_technology',
+	],
 	Pantalla: ['screen_inches', 'screen_condition', 'is_touchscreen'],
 	Carcasa: [
 		'cover_condition',

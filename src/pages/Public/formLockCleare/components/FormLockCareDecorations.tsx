@@ -27,7 +27,8 @@ const FormLockCareDecorations: React.FC<FormLockCareDecorationsProps> = ({
 								fill='#047857'
 								d='M45.4,-64.6C59.7,-56.7,72.9,-45.2,77.7,-31.1C82.5,-17,78.8,-0.3,72.9,14.7C67,29.8,58.9,43.1,47.5,53.4C36.1,63.8,21.3,71.3,5.5,73.4C-10.3,75.5,-27.2,72.2,-41.2,63.7C-55.3,55.2,-66.5,41.5,-71.9,26.1C-77.3,10.6,-76.8,-6.6,-72.4,-22.7C-68,-38.8,-59.6,-53.9,-46.6,-62.3C-33.7,-70.7,-16.8,-72.3,-0.6,-71.4C15.6,-70.5,31.2,-67.1,45.4,-64.6Z'
 								transform='translate(100 100)'
-							/>r
+							/>
+							r
 						</svg>
 					</div>
 
@@ -47,13 +48,16 @@ const FormLockCareDecorations: React.FC<FormLockCareDecorationsProps> = ({
 
 			{showEnhancedEffects &&
 				ornaments.map((ornament) => (
-					<div key={ornament.id} className='pointer-event-none absolute hidden lg:block'
+					<div
+						key={ornament.id}
+						className='pointer-event-none absolute hidden lg:block'
 						style={{
 							left: `${ornament.left}%`,
 							top: `${ornament.top}%`,
 							transform: `translate( -50%, -50%)`,
 						}}>
-						<img src={ornament.assetPath}
+						<img
+							src={ornament.assetPath}
 							alt={ornament.id}
 							loading='lazy'
 							decoding='async'

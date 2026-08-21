@@ -46,14 +46,14 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 						colorIntensity='500'
 						variant='solid'
 						onClick={onCreateClick}
-						className='w-full sm:w-auto btn-product font-bold'>
-							<Icon 
-								icon='HeroPlus' 
-								size='text-2xl' 
-								color='white' 
-								aria-label='Nuevo producto'
-							/>
-							Crear Producto
+						className='btn-product w-full font-bold sm:w-auto'>
+						<Icon
+							icon='HeroPlus'
+							size='text-2xl'
+							color='white'
+							aria-label='Nuevo producto'
+						/>
+						Crear Producto
 					</ProtectedButton>
 					<Input
 						name='search'

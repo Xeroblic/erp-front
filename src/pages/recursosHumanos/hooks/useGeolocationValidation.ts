@@ -8,12 +8,7 @@ import type { IRHGeolocationValidation, TRHPermissionStatus } from '@/interface/
    HAVERSINE DISTANCE (metros)
    ====================================================== */
 
-function haversineDistance(
-	lat1: number,
-	lng1: number,
-	lat2: number,
-	lng2: number,
-): number {
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
 	const R = 6_371_000; // Radio de la Tierra en metros
 	const toRad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -37,7 +32,11 @@ interface UseGeolocationValidationReturn {
 	isValidating: boolean;
 	result: IRHGeolocationValidation | null;
 	error: string | null;
-	validate: (targetLat: number, targetLng: number, radiusMeters: number) => Promise<IRHGeolocationValidation>;
+	validate: (
+		targetLat: number,
+		targetLng: number,
+		radiusMeters: number,
+	) => Promise<IRHGeolocationValidation>;
 	checkPermission: () => Promise<void>;
 }
 
@@ -76,7 +75,11 @@ export function useGeolocationValidation(): UseGeolocationValidationReturn {
 	}, [checkPermission]);
 
 	const validate = useCallback(
-		(targetLat: number, targetLng: number, radiusMeters: number): Promise<IRHGeolocationValidation> => {
+		(
+			targetLat: number,
+			targetLng: number,
+			radiusMeters: number,
+		): Promise<IRHGeolocationValidation> => {
 			return new Promise((resolve, reject) => {
 				if (!navigator.geolocation) {
 					const err = 'Geolocalización no disponible en este navegador';
@@ -91,7 +94,12 @@ export function useGeolocationValidation(): UseGeolocationValidationReturn {
 				navigator.geolocation.getCurrentPosition(
 					(position) => {
 						const { latitude, longitude } = position.coords;
-						const distance = haversineDistance(latitude, longitude, targetLat, targetLng);
+						const distance = haversineDistance(
+							latitude,
+							longitude,
+							targetLat,
+							targetLng,
+						);
 						const withinRadius = distance <= radiusMeters;
 
 						const validation: IRHGeolocationValidation = {
@@ -116,7 +124,8 @@ export function useGeolocationValidation(): UseGeolocationValidationReturn {
 
 						switch (geoError.code) {
 							case geoError.PERMISSION_DENIED:
-								msg = 'Permiso de ubicación denegado. Habilítalo en la barra de direcciones.';
+								msg =
+									'Permiso de ubicación denegado. Habilítalo en la barra de direcciones.';
 								setPermissionStatus('denied');
 								dispatch(setGeoPermission('denied'));
 								break;

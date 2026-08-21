@@ -4,8 +4,6 @@ export const getFirstCapitalize = (text: string): string => {
 	return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 };
 
-
-
 export const getFirstLetter = (text: string, letterCount = 2): string =>
 	text
 		.split(/\s/)
@@ -13,4 +11,3 @@ export const getFirstLetter = (text: string, letterCount = 2): string =>
 		.map((word) => word[0])
 		.join('')
 		.toUpperCase();
-

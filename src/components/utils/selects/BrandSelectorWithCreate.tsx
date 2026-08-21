@@ -184,8 +184,7 @@ const BrandSelectorWithCreate: React.FC<BrandSelectorWithCreateProps> = ({
 		}
 	}, [dedupDefaultKeepId, branchId, dispatch, onChange]);
 
-	const selectedOption =
-		brandOptions.find((opt) => String(opt.value) === String(value)) || null;
+	const selectedOption = brandOptions.find((opt) => String(opt.value) === String(value)) || null;
 
 	return (
 		<>

@@ -27,7 +27,7 @@ const normalizeDate = (val?: string): string | undefined => {
 	if (!val) return undefined;
 	const trimmed = val.trim();
 	const datePart = trimmed.split(' ')[0].split('T')[0];
-	
+
 	// YYYY-MM-DD
 	if (/^\d{4}[/-]\d{2}[/-]\d{2}$/.test(datePart)) {
 		return datePart.replace(/\//g, '-');
@@ -37,7 +37,7 @@ const normalizeDate = (val?: string): string | undefined => {
 		const [d, m, y] = datePart.split(/[/-]/);
 		return `${y}-${m}-${d}`;
 	}
-	
+
 	const iso = new Date(trimmed);
 	if (!Number.isNaN(iso.getTime())) return iso.toISOString().slice(0, 10);
 	return undefined;
@@ -49,7 +49,7 @@ const parseDateSafe = (val: unknown): Date | null => {
 	if (typeof val === 'string') {
 		const trimmed = val.trim();
 		const datePart = trimmed.split(' ')[0].split('T')[0];
-		
+
 		// YYYY-MM-DD
 		if (/^\d{4}[/-]\d{2}[/-]\d{2}$/.test(datePart)) {
 			const [y, m, d] = datePart.split(/[/-]/);
@@ -62,7 +62,7 @@ const parseDateSafe = (val: unknown): Date | null => {
 			const parsed = new Date(Number(y), Number(m) - 1, Number(d), 0, 0, 0);
 			if (!Number.isNaN(parsed.getTime())) return parsed;
 		}
-		
+
 		// Fallback normal
 		const iso = new Date(trimmed);
 		if (!Number.isNaN(iso.getTime())) return iso;
@@ -145,9 +145,9 @@ export function useSalesDashboard() {
 	useEffect(() => {
 		const sid = Number(currentSubsidiaryId ?? 0);
 		if (!sid) return;
-		
+
 		const promise = dispatch(
-			fetchReportResults({ subsidiaryId: sid, type: 'sales', filters: mapFilters(filters) })
+			fetchReportResults({ subsidiaryId: sid, type: 'sales', filters: mapFilters(filters) }),
 		);
 
 		return () => {
@@ -179,16 +179,28 @@ export function useSalesDashboard() {
 			if (fromDate || toDate) {
 				const d = parseDateSafe(rawDate);
 				if (!d || Number.isNaN(d.getTime())) return false;
-				
+
 				// Normalizar fechas a tiempos locales a medianoche (start of day) para comparar justamente
 				const compareTime = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-				
+
 				if (fromDate) {
-					const fromTime = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate()).getTime();
+					const fromTime = new Date(
+						fromDate.getFullYear(),
+						fromDate.getMonth(),
+						fromDate.getDate(),
+					).getTime();
 					if (compareTime < fromTime) return false;
 				}
 				if (toDate) {
-					const toTime = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate(), 23, 59, 59, 999).getTime();
+					const toTime = new Date(
+						toDate.getFullYear(),
+						toDate.getMonth(),
+						toDate.getDate(),
+						23,
+						59,
+						59,
+						999,
+					).getTime();
 					if (d.getTime() > toTime) return false;
 				}
 			}
@@ -214,7 +226,15 @@ export function useSalesDashboard() {
 
 			return true;
 		});
-	}, [results, filters.priceMin, filters.priceMax, filters.dateFrom, filters.dateTo, filters.branch, filters.customer]);
+	}, [
+		results,
+		filters.priceMin,
+		filters.priceMax,
+		filters.dateFrom,
+		filters.dateTo,
+		filters.branch,
+		filters.customer,
+	]);
 
 	const currentMonthRange = useMemo(() => {
 		if (filters.dateFrom || filters.dateTo) {
@@ -238,20 +258,37 @@ export function useSalesDashboard() {
 
 		// Rango predeterminado (últimos 30 días)
 		const now = new Date();
-		const endDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(); // Hoy al final del día
-		
+		const endDay = new Date(
+			now.getFullYear(),
+			now.getMonth(),
+			now.getDate(),
+			23,
+			59,
+			59,
+			999,
+		).getTime(); // Hoy al final del día
+
 		const startDayDate = new Date();
-		startDayDate.setDate(now.getDate() - 30); 
+		startDayDate.setDate(now.getDate() - 30);
 		startDayDate.setHours(0, 0, 0, 0); // Inicio del día
-		
+
 		const startDay = startDayDate.getTime();
-		
+
 		return { start: startDay, end: endDay };
 	}, [filters.dateFrom, filters.dateTo]);
 
 	// Chart series + stats
 	const { chartSeries, chartCategories, stats } = useMemo(() => {
-		const dateMap = new Map<string, { total: number; returns: number; confirmed: number; process: number; cancelled: number }>();
+		const dateMap = new Map<
+			string,
+			{
+				total: number;
+				returns: number;
+				confirmed: number;
+				process: number;
+				cancelled: number;
+			}
+		>();
 		let totalConfirmedSales = 0;
 		let totalReturns = 0;
 		let confirmedCount = 0;
@@ -260,8 +297,10 @@ export function useSalesDashboard() {
 			const rawAmount = extractAmount(r);
 			const amount = Math.max(0, rawAmount); // Solo sumamos positivos para las barras
 			const retVal = extractReturns(r);
-			
-			let statusRaw = String(r.status || (r as any).estado || '').toLowerCase().trim();
+
+			let statusRaw = String(r.status || (r as any).estado || '')
+				.toLowerCase()
+				.trim();
 			if (statusRaw.startsWith('wc-')) statusRaw = statusRaw.substring(3);
 			if (statusRaw.startsWith('order-')) statusRaw = statusRaw.substring(6);
 
@@ -270,12 +309,34 @@ export function useSalesDashboard() {
 			if (!d) return;
 
 			const key = d.toISOString().split('T')[0];
-			if (!dateMap.has(key)) dateMap.set(key, { total: 0, returns: 0, confirmed: 0, process: 0, cancelled: 0 });
+			if (!dateMap.has(key))
+				dateMap.set(key, { total: 0, returns: 0, confirmed: 0, process: 0, cancelled: 0 });
 			const entry = dateMap.get(key)!;
-			
-			const isCancelled = ['refunded', 'returned', 'anulado', 'cancelled', 'canceled', 'cancelado', 'failed', 'devuelto', 'reembolsado', 'rechazado'].includes(statusRaw) || rawAmount < 0 || retVal > 0;
-			const isProcess = ['processing', 'on-hold', 'pending', 'procesando', 'espera', 'pendiente'].includes(statusRaw);
-			
+
+			const isCancelled =
+				[
+					'refunded',
+					'returned',
+					'anulado',
+					'cancelled',
+					'canceled',
+					'cancelado',
+					'failed',
+					'devuelto',
+					'reembolsado',
+					'rechazado',
+				].includes(statusRaw) ||
+				rawAmount < 0 ||
+				retVal > 0;
+			const isProcess = [
+				'processing',
+				'on-hold',
+				'pending',
+				'procesando',
+				'espera',
+				'pendiente',
+			].includes(statusRaw);
+
 			let actualReturn = 0;
 			if (isCancelled) {
 				actualReturn = Math.abs(rawAmount) > 0 ? Math.abs(rawAmount) : retVal;
@@ -284,7 +345,7 @@ export function useSalesDashboard() {
 			} else if (isProcess) {
 				entry.process += amount;
 			} else {
-				entry.confirmed += amount; // completed, confirmed, etc. 
+				entry.confirmed += amount; // completed, confirmed, etc.
 				totalConfirmedSales += amount;
 				confirmedCount++;
 			}
@@ -295,7 +356,7 @@ export function useSalesDashboard() {
 
 		// --- FIX: Crear un arreglo CONTINUO de fechas que cubra todo el rango temporal ---
 		let keys = Array.from(dateMap.keys()).sort();
-		
+
 		let startRange = currentMonthRange.start;
 		let endRange = currentMonthRange.end;
 
@@ -313,20 +374,27 @@ export function useSalesDashboard() {
 			const lastD = new Date(endRange);
 			firstD.setHours(12, 0, 0, 0);
 			lastD.setHours(12, 0, 0, 0);
-			
+
 			const tempKeys: string[] = [];
 			for (let d = new Date(firstD); d <= lastD; d.setDate(d.getDate() + 1)) {
 				const k = d.toISOString().split('T')[0];
 				tempKeys.push(k);
 				// Rellenar días intermedios con 0 si no hubo ventas
-				if (!dateMap.has(k)) dateMap.set(k, { total: 0, returns: 0, confirmed: 0, process: 0, cancelled: 0 });
+				if (!dateMap.has(k))
+					dateMap.set(k, {
+						total: 0,
+						returns: 0,
+						confirmed: 0,
+						process: 0,
+						cancelled: 0,
+					});
 			}
 			keys = tempKeys;
 		}
 
 		const dataSales = keys.map((k) => dateMap.get(k)?.total || 0);
 		const dataReturns = keys.map((k) => dateMap.get(k)?.returns || 0);
-		
+
 		const dataConfirmed = keys.map((k) => dateMap.get(k)?.confirmed || 0);
 		const dataProcess = keys.map((k) => dateMap.get(k)?.process || 0);
 		const dataCancelled = keys.map((k) => dateMap.get(k)?.cancelled || 0);
@@ -376,7 +444,6 @@ export function useSalesDashboard() {
 			.slice(0, 5)
 			.map(([name, total]) => ({ name, total }));
 	}, [filteredResults]);
-
 
 	return {
 		filters,

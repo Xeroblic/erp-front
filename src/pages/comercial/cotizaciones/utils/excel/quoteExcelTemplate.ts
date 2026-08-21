@@ -80,11 +80,7 @@ const clearItemRow = (ws: Worksheet, row: number): void => {
 	setValue(ws, `L${row}`, '');
 };
 
-const writeItemRow = (
-	ws: Worksheet,
-	row: number,
-	item: QuoteExcelModel['items'][number],
-): void => {
+const writeItemRow = (ws: Worksheet, row: number, item: QuoteExcelModel['items'][number]): void => {
 	setValue(ws, `B${row}`, item.cantidad);
 	setValue(ws, `C${row}`, item.codigo);
 

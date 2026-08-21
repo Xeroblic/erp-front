@@ -33,7 +33,12 @@ export const BATTERY_PERCENTAGE_THRESHOLDS = {
  * Para Dell: se puede ingresar texto como "Normal", "Service", "Replace Soon"
  * Para otras marcas: se recomienda ingresar el % directamente
  */
-export const BATTERY_HEALTH_DELL_STATUSES = ['Normal', 'Service', 'Replace Soon', 'Unknown'] as const;
+export const BATTERY_HEALTH_DELL_STATUSES = [
+	'Normal',
+	'Service',
+	'Replace Soon',
+	'Unknown',
+] as const;
 export const BATTERY_HEALTH_DELL_BRANDS = ['Dell', 'DELL', 'dell'] as const;
 
 /**
@@ -41,8 +46,10 @@ export const BATTERY_HEALTH_DELL_BRANDS = ['Dell', 'DELL', 'dell'] as const;
  */
 export const isDellBrand = (brand: string | null | undefined): boolean => {
 	if (!brand) return false;
-	return BATTERY_HEALTH_DELL_BRANDS.includes(brand.trim() as any) ||
-		brand.trim().toLowerCase() === 'dell';
+	return (
+		BATTERY_HEALTH_DELL_BRANDS.includes(brand.trim() as any) ||
+		brand.trim().toLowerCase() === 'dell'
+	);
 };
 
 // ─── Reglas de Puertos ────────────────────────────────────────────────────────
@@ -72,12 +79,12 @@ export const KEYBOARD_MAX_MISSING_KEYS_FOR_GRADE_C = 1;
  * Condiciones de pantalla y su impacto en la calificación máxima.
  */
 export const SCREEN_CONDITION_GRADE_LIMITS: Record<string, string | null> = {
-	ok: null,           // Sin restricción
-	minor_wear: 'A',    // Permite Grado A
-	worn: 'B',          // Máximo Grado B
-	spots: 'C',         // Máximo Grado C
-	dead_pixels: 'B',   // Máximo Grado B
-	broken: 'M',        // Fuerza Grado M
+	ok: null, // Sin restricción
+	minor_wear: 'A', // Permite Grado A
+	worn: 'B', // Máximo Grado B
+	spots: 'C', // Máximo Grado C
+	dead_pixels: 'B', // Máximo Grado B
+	broken: 'M', // Fuerza Grado M
 };
 
 // ─── Reglas de Tapa Superior ──────────────────────────────────────────────────
@@ -154,13 +161,7 @@ export const ALLOWED_GENERAL_CONDITIONS = [
 	'scrap',
 ] as const;
 
-export const ALLOWED_STORAGE_TECHNOLOGIES = [
-	'HDD',
-	'SSD',
-	'M2',
-	'NVME',
-	'HYBRID',
-] as const;
+export const ALLOWED_STORAGE_TECHNOLOGIES = ['HDD', 'SSD', 'M2', 'NVME', 'HYBRID'] as const;
 
 export const ALLOWED_CHARGER_STATUSES = [
 	'buen_estado',
@@ -190,21 +191,11 @@ export const ALLOWED_COVER_CONDITIONS = [
 	'broken',
 ] as const;
 
-export const ALLOWED_KEYBOARD_CONDITIONS = [
-	'ok',
-	'worn',
-	'missing_pieces',
-	'broken',
-] as const;
+export const ALLOWED_KEYBOARD_CONDITIONS = ['ok', 'worn', 'missing_pieces', 'broken'] as const;
 
 export const ALLOWED_KEYBOARD_LAYOUTS = ['es', 'us', 'latam'] as const;
 
-export const ALLOWED_HINGE_CONDITIONS = [
-	'ok',
-	'worn',
-	'missing_pieces',
-	'broken',
-] as const;
+export const ALLOWED_HINGE_CONDITIONS = ['ok', 'worn', 'missing_pieces', 'broken'] as const;
 
 export const ALLOWED_BATTERY_STATUSES = [
 	'excellent',
@@ -214,12 +205,7 @@ export const ALLOWED_BATTERY_STATUSES = [
 	'no_battery',
 ] as const;
 
-export const ALLOWED_TOUCHPAD_CONDITIONS = [
-	'ok',
-	'worn',
-	'missing_pieces',
-	'broken',
-] as const;
+export const ALLOWED_TOUCHPAD_CONDITIONS = ['ok', 'worn', 'missing_pieces', 'broken'] as const;
 
 export const ALLOWED_BOTTOM_CONDITIONS = [
 	'ok',

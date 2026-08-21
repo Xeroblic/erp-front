@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import lockersInternalService from '@/services/lockers/lockersInternalService';
-import {
-	ILockerInternal,
-	ILockerLocation,
-	IServiceOrder,
-} from '@/interface/lockers.interface';
+import { ILockerInternal, ILockerLocation, IServiceOrder } from '@/interface/lockers.interface';
 import { toast } from '@/utils/toast.utils';
 
 export const useLockersManagement = () => {
@@ -18,7 +14,9 @@ export const useLockersManagement = () => {
 
 	// --- Modal de acción ---
 	const [selectedLocker, setSelectedLocker] = useState<ILockerInternal | null>(null);
-	const [actionType, setActionType] = useState<'withdraw' | 'dropoff' | 'reset' | 'ready' | null>(null);
+	const [actionType, setActionType] = useState<'withdraw' | 'dropoff' | 'reset' | 'ready' | null>(
+		null,
+	);
 	const [isActionLoading, setIsActionLoading] = useState(false);
 
 	// --- Modal de éxito con PIN ---
@@ -31,7 +29,7 @@ export const useLockersManagement = () => {
 			setIsLoading(true);
 			setError(null);
 			const response = await lockersInternalService.getLocations();
-			const locs = Array.isArray(response) ? response : (response as any)?.data ?? [];
+			const locs = Array.isArray(response) ? response : ((response as any)?.data ?? []);
 			setLocations(locs);
 
 			// Si hay ubicaciones, seleccionar la primera por defecto
@@ -55,7 +53,9 @@ export const useLockersManagement = () => {
 			setIsLoading(true);
 			setError(null);
 			const response = await lockersInternalService.getLockersByLocation(selectedLocationId);
-			const lockersData = Array.isArray(response) ? response : (response as any)?.data ?? [];
+			const lockersData = Array.isArray(response)
+				? response
+				: ((response as any)?.data ?? []);
 			setLockers(lockersData);
 		} catch (err: any) {
 			const msg = err?.response?.data?.message || 'Error al cargar casilleros';
@@ -70,7 +70,7 @@ export const useLockersManagement = () => {
 	const fetchServiceOrders = useCallback(async () => {
 		try {
 			const response = await lockersInternalService.getServiceOrders();
-			const orders = Array.isArray(response) ? response : (response as any)?.data ?? [];
+			const orders = Array.isArray(response) ? response : ((response as any)?.data ?? []);
 			setServiceOrders(orders);
 		} catch {
 			// No bloquear la UI si falla la carga de órdenes
@@ -97,7 +97,11 @@ export const useLockersManagement = () => {
 
 	// --- Abrir / cerrar modal de acción ---
 	const openAction = useCallback(
-		(locker: ILockerInternal, type: 'withdraw' | 'dropoff' | 'reset' | 'ready', orderId?: number) => {
+		(
+			locker: ILockerInternal,
+			type: 'withdraw' | 'dropoff' | 'reset' | 'ready',
+			orderId?: number,
+		) => {
 			setSelectedLocker(locker);
 			setActionType(type);
 			setSelectedOrderId(orderId || null);
@@ -149,9 +153,12 @@ export const useLockersManagement = () => {
 				});
 
 				// El backend devuelve el locker actualizado, incluyendo el PIN necesario para abrir
-				const pinToOpen = (response as any)?.locker?.locker_pin || (response as any)?.pin_to_open || null;
+				const pinToOpen =
+					(response as any)?.locker?.locker_pin || (response as any)?.pin_to_open || null;
 				setSuccessPin(pinToOpen);
-				setSuccessMessage('Equipo retirado exitosamente. Usa este PIN para abrir la puerta del casillero:');
+				setSuccessMessage(
+					'Equipo retirado exitosamente. Usa este PIN para abrir la puerta del casillero:',
+				);
 				closeAction();
 				fetchLockers();
 				fetchServiceOrders();
@@ -174,7 +181,10 @@ export const useLockersManagement = () => {
 					locker_id: selectedLocker.id,
 					service_order_id: serviceOrderId,
 				});
-				const pinGenerated = (response as any)?.new_locker_pin || (response as any)?.locker?.locker_pin || null;
+				const pinGenerated =
+					(response as any)?.new_locker_pin ||
+					(response as any)?.locker?.locker_pin ||
+					null;
 				setSuccessPin(pinGenerated);
 				setSuccessMessage('Equipo depositado. El nuevo PIN del casillero es:');
 				closeAction();
@@ -197,7 +207,8 @@ export const useLockersManagement = () => {
 			const response = await lockersInternalService.resetLocker({
 				locker_id: selectedLocker.id,
 			});
-			const pinGenerated = (response as any)?.new_locker_pin || (response as any)?.locker?.locker_pin || null;
+			const pinGenerated =
+				(response as any)?.new_locker_pin || (response as any)?.locker?.locker_pin || null;
 			setSuccessPin(pinGenerated);
 			setSuccessMessage('Casillero reseteado. El nuevo PIN es:');
 			closeAction();

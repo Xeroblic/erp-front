@@ -302,7 +302,9 @@ const DefaultAsideTemplate = () => {
 									to={Pages.technical.subPages.lockersManagement.to}
 									icon={Pages.technical.subPages.lockersManagement.icon}
 									id={Pages.technical.subPages.lockersManagement.id}
-									onClick={() => navigate(Pages.technical.subPages.lockersManagement.to)}
+									onClick={() =>
+										navigate(Pages.technical.subPages.lockersManagement.to)
+									}
 								/>
 							</AuthorityCheckNav>
 						</NavCollapse>

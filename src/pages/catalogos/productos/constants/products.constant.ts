@@ -18,7 +18,6 @@ export const PRODUCT_STATUS_LABELS: Record<string, string> = {
 	archived: 'Archivado',
 };
 
-
 export const PRODUCT_TYPE_LABELS: Record<string, string> = {
 	general: 'General',
 	desktop_pc: 'Desktop reacondicionado',

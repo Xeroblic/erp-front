@@ -45,10 +45,7 @@ export const renderHookWithStore = <TResult, TProps>(
 };
 
 /** `render` de un componente envuelto en un store de Redux. */
-export const renderWithStore = (
-	ui: ReactElement,
-	preloadedState: PreloadedTestState = {},
-) => {
+export const renderWithStore = (ui: ReactElement, preloadedState: PreloadedTestState = {}) => {
 	const { store, Wrapper } = withStore(preloadedState);
 	return { store, ...render(ui, { wrapper: Wrapper }) };
 };
@@ -57,15 +54,17 @@ export const renderWithStore = (
  * Helper para construir la rama `auth` que consumen useAuthorization/useCan.
  * Pasa permisos/roles y, opcionalmente, sucursales/subsidiarias visibles/accesibles.
  */
-export const buildAuthState = (opts: {
-	loading?: boolean;
-	permisos?: string[];
-	roles?: string[];
-	visibleBranches?: Array<{ id: number; name?: string }>;
-	accessBranches?: Array<{ id: number; name?: string }>;
-	visibleSubsidiaries?: Array<{ id: number; company?: { id: number } }>;
-	accessSubsidiaries?: Array<{ id: number; company?: { id: number } }>;
-} = {}) => ({
+export const buildAuthState = (
+	opts: {
+		loading?: boolean;
+		permisos?: string[];
+		roles?: string[];
+		visibleBranches?: Array<{ id: number; name?: string }>;
+		accessBranches?: Array<{ id: number; name?: string }>;
+		visibleSubsidiaries?: Array<{ id: number; company?: { id: number } }>;
+		accessSubsidiaries?: Array<{ id: number; company?: { id: number } }>;
+	} = {},
+) => ({
 	auth: {
 		loading: opts.loading ?? false,
 		user: {

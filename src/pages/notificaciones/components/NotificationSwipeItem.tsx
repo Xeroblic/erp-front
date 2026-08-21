@@ -202,14 +202,18 @@ const NotificationSwipeItem: React.FC<Props> = ({
 						if (n.status !== 'read') {
 							onRead(n.id);
 							e.currentTarget.releasePointerCapture(e.pointerId);
-							toast.success(`La notificación con id: ${n.id} se a marcado como "No Leida" Exitosamente `)
+							toast.success(
+								`La notificación con id: ${n.id} se a marcado como "No Leida" Exitosamente `,
+							);
 						} else {
 							onUnread(n.id);
 							e.currentTarget.releasePointerCapture(e.pointerId);
-							toast.success(`La notificación con id: ${n.id} se a marcado como "Leida" exitosamente!`)
+							toast.success(
+								`La notificación con id: ${n.id} se a marcado como "Leida" exitosamente!`,
+							);
 						}
 					} catch {
-						toast.error('hubo un error al marcar como leido/no leido el elemento')
+						toast.error('hubo un error al marcar como leido/no leido el elemento');
 					}
 				} else {
 					try {
@@ -218,19 +222,18 @@ const NotificationSwipeItem: React.FC<Props> = ({
 						setTimeout(() => {
 							e.currentTarget.releasePointerCapture(e.pointerId);
 						}, 100);
-						toast.success('Se a Archivado correctamente el elemento')
+						toast.success('Se a Archivado correctamente el elemento');
 					} catch {
-						toast.error('hubo un error al archivar el elemento')
+						toast.error('hubo un error al archivar el elemento');
 					}
-
 				}
 			} else if (!shouldExecute && isHorizontal.current === null) {
 				try {
 					onOpen?.(n.id);
 					e.currentTarget.releasePointerCapture(e.pointerId);
-					toast.success(`Se a abierto correctamente el elemento`, { autoClose: 200 })
+					toast.success(`Se a abierto correctamente el elemento`, { autoClose: 200 });
 				} catch {
-					toast.error('hubo un error al abrir el elemento', { autoClose: 200 })
+					toast.error('hubo un error al abrir el elemento', { autoClose: 200 });
 				}
 			}
 			if (cardRef.current) {
@@ -273,8 +276,8 @@ const NotificationSwipeItem: React.FC<Props> = ({
 	const title = sanitize(n.event?.type_label ?? n.event?.type_key ?? 'Notificación');
 	const moduleLabel = sanitize(
 		n.event?.module_label ??
-		n.event?.module ??
-		((n.delivered_channels ?? []).includes('email') ? 'Correo' : 'Sistema'),
+			n.event?.module ??
+			((n.delivered_channels ?? []).includes('email') ? 'Correo' : 'Sistema'),
 	);
 	const message = sanitize(n.message ?? '');
 
@@ -316,10 +319,11 @@ const NotificationSwipeItem: React.FC<Props> = ({
 			)}
 			<div
 				ref={cardRef}
-				className={`relative cursor-pointer rounded-md border p-3 ${n.status === 'read'
+				className={`relative cursor-pointer rounded-md border p-3 ${
+					n.status === 'read'
 						? 'border-emerald-200/50 bg-emerald-50/40 dark:border-emerald-900/40 dark:bg-emerald-900/20'
 						: 'border-rose-200/60 bg-rose-50/60 dark:border-rose-900/40 dark:bg-rose-900/20'
-					}`}>
+				}`}>
 				<div className='grid grid-cols-[auto_1fr_auto] items-start gap-3'>
 					<div className='relative'>
 						<Avatar name={n.event?.type_key ?? 'N'} />

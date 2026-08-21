@@ -12,9 +12,7 @@ const IngresoStockPage: React.FC = () => {
 	const logic = useIngresoStock();
 
 	// Pasamos la lógica pre-masticada a la vista estática
-	return (
-		<IngresoStockView logic={logic} />
-	);
+	return <IngresoStockView logic={logic} />;
 };
 
 export default IngresoStockPage;

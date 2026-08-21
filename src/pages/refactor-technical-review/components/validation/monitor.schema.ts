@@ -8,25 +8,22 @@ import {
 
 export const monitorSchema = Yup.object({
 	// Identificación
-	brand: Yup.string()
-		.required('La marca es requerida')
-		.max(50, 'Máximo 50 caracteres'),
-	model: Yup.string()
-		.required('El modelo es requerido')
-		.max(50, 'Máximo 50 caracteres'),
+	brand: Yup.string().required('La marca es requerida').max(50, 'Máximo 50 caracteres'),
+	model: Yup.string().required('El modelo es requerido').max(50, 'Máximo 50 caracteres'),
 
 	// Condición
 	general_condition: Yup.string()
 		.required('Condición general es requerida')
-		.oneOf(
-			ALLOWED_GENERAL_CONDITIONS,
-			'Condición general selecta no válida',
-		),
+		.oneOf(ALLOWED_GENERAL_CONDITIONS, 'Condición general selecta no válida'),
 
 	// Pantalla & Físico
 	line: Yup.string().required('La línea es requerida').max(50, 'Máximo 50 caracteres'),
-	screen_inches: Yup.string().required('Las pulgadas son requeridas').max(20, 'Máximo 20 caracteres'),
-	screen_resolution: Yup.string().required('La resolución es requerida').max(50, 'Máximo 50 caracteres'),
+	screen_inches: Yup.string()
+		.required('Las pulgadas son requeridas')
+		.max(20, 'Máximo 20 caracteres'),
+	screen_resolution: Yup.string()
+		.required('La resolución es requerida')
+		.max(50, 'Máximo 50 caracteres'),
 	is_touchscreen: Yup.boolean().required('Debes indicar si es touch').default(false),
 	screen_condition: Yup.string()
 		.required('Condición de pantalla es requerida')
@@ -73,8 +70,7 @@ export const monitorSchema = Yup.object({
 				schema
 					.required('Debes indicar cuántos puertos defectuosos hay')
 					.min(1, 'Debe haber al menos 1 puerto defectuoso'),
-			otherwise: (schema) =>
-				schema.transform(() => 0).default(0),
+			otherwise: (schema) => schema.transform(() => 0).default(0),
 		}),
 	defective_ports_critical_count: Yup.number()
 		.nullable()
@@ -83,17 +79,23 @@ export const monitorSchema = Yup.object({
 			is: (val: any) => val === false,
 			then: (schema) =>
 				schema.required('Debes indicar cuántos puertos críticos defectuosos hay'),
-			otherwise: (schema) =>
-				schema.transform(() => 0).default(0),
+			otherwise: (schema) => schema.transform(() => 0).default(0),
 		}),
 
 	// Accesorios
-	includes_power_cable: Yup.boolean().required('Debes indicar si incluye cable de poder').default(false),
-	includes_video_cable: Yup.boolean().required('Debes indicar si incluye cable de video').default(false),
+	includes_power_cable: Yup.boolean()
+		.required('Debes indicar si incluye cable de poder')
+		.default(false),
+	includes_video_cable: Yup.boolean()
+		.required('Debes indicar si incluye cable de video')
+		.default(false),
 	includes_stand: Yup.boolean().required('Debes indicar si incluye base').default(false),
 
 	// Notas
-	observations: Yup.string().transform((v, o) => (o === '' ? null : v)).nullable().max(255, 'Máximo 255 caracteres'),
+	observations: Yup.string()
+		.transform((v, o) => (o === '' ? null : v))
+		.nullable()
+		.max(255, 'Máximo 255 caracteres'),
 
 	// Otros Atributos Extendibles
 	extra_attributes: Yup.object().nullable().default({}),

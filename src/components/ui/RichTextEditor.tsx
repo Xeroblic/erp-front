@@ -67,10 +67,7 @@ const hasFollowingContent = (node: Node): boolean => {
 	let sibling = node.nextSibling;
 	while (sibling) {
 		if (sibling.nodeType === Node.ELEMENT_NODE) return true;
-		if (
-			sibling.nodeType === Node.TEXT_NODE &&
-			(sibling.textContent?.trim().length ?? 0) > 0
-		) {
+		if (sibling.nodeType === Node.TEXT_NODE && (sibling.textContent?.trim().length ?? 0) > 0) {
 			return true;
 		}
 		sibling = sibling.nextSibling;

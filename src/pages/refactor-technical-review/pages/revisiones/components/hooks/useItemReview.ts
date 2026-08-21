@@ -62,7 +62,11 @@ export interface UseItemReviewReturn {
 	handleStepClick: (stepId: ReviewStep) => void;
 	handleStep1Submit: () => Promise<void>;
 	handleStep2Complete: () => Promise<void>;
-	handleStep3Submit: (grade: string, overrideSuggestion?: boolean, overrideReason?: string) => Promise<void>;
+	handleStep3Submit: (
+		grade: string,
+		overrideSuggestion?: boolean,
+		overrideReason?: string,
+	) => Promise<void>;
 	handleRecalculateGrade: () => Promise<void>;
 	handleModifyReview: () => Promise<void>;
 
@@ -76,7 +80,12 @@ export interface UseItemReviewReturn {
 
 export const REVIEW_STEPS = [
 	{ id: 'basic' as ReviewStep, label: 'Información Básica', icon: 'HeroDocumentText', step: 1 },
-	{ id: 'review' as ReviewStep, label: 'Revisión Completa', icon: 'HeroClipboardDocumentCheck', step: 2 },
+	{
+		id: 'review' as ReviewStep,
+		label: 'Revisión Completa',
+		icon: 'HeroClipboardDocumentCheck',
+		step: 2,
+	},
 	{ id: 'grading' as ReviewStep, label: 'Calificación', icon: 'HeroCheckBadge', step: 3 },
 ];
 
@@ -115,7 +124,7 @@ export const useItemReview = (): UseItemReviewReturn => {
 			// Auto-select the newly created product
 			if (product?.id) {
 				setProductId(Number(product.id));
-				
+
 				if (product.product_type) {
 					const pType = String(product.product_type).toLowerCase();
 					if (pType === 'desktop_pc' || pType === 'desktop') {
@@ -151,7 +160,13 @@ export const useItemReview = (): UseItemReviewReturn => {
 	// Load products
 	useEffect(() => {
 		if (branchId) {
-			dispatch(fetchProductsList({ entityParam: 'branches', entityId: branchId, params: { page: 1, per_page: 100 } }));
+			dispatch(
+				fetchProductsList({
+					entityParam: 'branches',
+					entityId: branchId,
+					params: { page: 1, per_page: 100 },
+				}),
+			);
 		}
 	}, [dispatch, branchId]);
 
@@ -234,9 +249,7 @@ export const useItemReview = (): UseItemReviewReturn => {
 
 	const batchDisplayLabel = useMemo(() => {
 		const fromItem =
-			item?.batch?.code ||
-			item?.batch?.name ||
-			(item?.batch && `Lote #${item.batch.id}`);
+			item?.batch?.code || item?.batch?.name || (item?.batch && `Lote #${item.batch.id}`);
 		if (fromItem) return fromItem;
 		if (batchId) return `Lote #${batchId}`;
 		return 'Sin lote';
@@ -338,16 +351,15 @@ export const useItemReview = (): UseItemReviewReturn => {
 		}
 
 		try {
-			const grading = await dispatch(
-				completeReview({ branchId, itemId: item.id }),
-			).unwrap();
+			const grading = await dispatch(completeReview({ branchId, itemId: item.id })).unwrap();
 
 			setAutomaticGrade(grading?.grade ?? grading?.suggested_grade ?? null);
 			setItem((prev: any) => ({
 				...prev,
 				...grading,
 				review_status: grading?.review_status ?? 'reviewed',
-				suggested_grade: grading?.grade ?? grading?.suggested_grade ?? prev?.suggested_grade,
+				suggested_grade:
+					grading?.grade ?? grading?.suggested_grade ?? prev?.suggested_grade,
 			}));
 			setCurrentStep('grading');
 		} catch (error) {
@@ -372,7 +384,9 @@ export const useItemReview = (): UseItemReviewReturn => {
 					itemId: item.id,
 					data: {
 						grade: grade ?? automaticGrade ?? 'C',
-						...(overrideSuggestion !== undefined && { override_suggestion: overrideSuggestion }),
+						...(overrideSuggestion !== undefined && {
+							override_suggestion: overrideSuggestion,
+						}),
 						...(overrideReason && { override_reason: overrideReason }),
 					},
 				}),
@@ -392,9 +406,7 @@ export const useItemReview = (): UseItemReviewReturn => {
 		try {
 			await dispatch(reopenReview({ branchId, itemId: item.id })).unwrap();
 
-			const grading = await dispatch(
-				completeReview({ branchId, itemId: item.id }),
-			).unwrap();
+			const grading = await dispatch(completeReview({ branchId, itemId: item.id })).unwrap();
 
 			setItem((prevItem: any) => ({
 				...prevItem,

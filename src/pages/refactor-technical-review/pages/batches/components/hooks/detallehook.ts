@@ -17,8 +17,7 @@ import { EquipmentType } from '@/interface/technicalReviews.interface';
 import ApiService from '@/services/ApiService';
 
 // Helper functions for API URL
-const TECHNICAL_REVIEWS_PREFIX =
-	(import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
 const ep = (branchId: number, path: string) =>
 	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${path}`);
@@ -46,7 +45,7 @@ export const useDetalleLote = () => {
 	const [quickEntryError, setQuickEntryError] = useState<string | null>(null);
 	const [quickEntryType, setQuickEntryType] = useState<EquipmentType>('notebook');
 	const [quickEntrySuccess, setQuickEntrySuccess] = useState<string | null>(null);
-	
+
 	const [missingSerial, setMissingSerial] = useState<string | null>(null);
 	const [isMissingSerialModalOpen, setIsMissingSerialModalOpen] = useState(false);
 
@@ -216,7 +215,7 @@ export const useDetalleLote = () => {
 		async (serial: string) => {
 			if (!batch || !branchId) return;
 			const normalizedSerial = serial.trim();
-			
+
 			try {
 				const response = await ApiService.fetchData<{ data?: any[] }>({
 					url: ep(branchId, '/items'),
@@ -254,7 +253,7 @@ export const useDetalleLote = () => {
 				console.error('Error en escaneo:', error);
 			}
 		},
-		[batch, branchId, operationMode, handleViewItem]
+		[batch, branchId, operationMode, handleViewItem],
 	);
 
 	// Scanner listener

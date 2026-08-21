@@ -10,7 +10,7 @@ import type {
 	ChangeCommercialStatusPayload,
 	ReserveItemPayload,
 	MarkAsSoldPayload,
-} from '../../../../interface/technicalReviews.interface.ts';
+} from '../../../../interface/technicalReviews.interface';
 import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,
@@ -39,12 +39,23 @@ export const changeCommercialStatus = createAsyncThunk<
 	{ state: RootState; rejectValue: string }
 >(
 	'technicalReviews/changeCommercialStatus',
-	async ({ branchId, subsidiaryId, traceabilityId, data }, { getState, dispatch, rejectWithValue }) => {
+	async (
+		{ branchId, subsidiaryId, traceabilityId, data },
+		{ getState, dispatch, rejectWithValue },
+	) => {
 		try {
 			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-			dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
 			const response = await ApiService.fetchData<{ data?: any }>({
-				url: buildTechnicalReviewsEndpoint(context, `/traceability/${traceabilityId}/change-status`),
+				url: buildTechnicalReviewsEndpoint(
+					context,
+					`/traceability/${traceabilityId}/change-status`,
+				),
 				method: 'post',
 				data: { ...data },
 			});
@@ -79,12 +90,23 @@ export const transferItem = createAsyncThunk<
 	{ state: RootState; rejectValue: string }
 >(
 	'technicalReviews/transferItem',
-	async ({ branchId, subsidiaryId, traceabilityId, data }, { getState, dispatch, rejectWithValue }) => {
+	async (
+		{ branchId, subsidiaryId, traceabilityId, data },
+		{ getState, dispatch, rejectWithValue },
+	) => {
 		try {
 			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-			dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
 			const response = await ApiService.fetchData<{ data?: any }>({
-				url: buildTechnicalReviewsEndpoint(context, `/traceability/${traceabilityId}/transfer`),
+				url: buildTechnicalReviewsEndpoint(
+					context,
+					`/traceability/${traceabilityId}/transfer`,
+				),
 				method: 'post',
 				data,
 			});
@@ -106,16 +128,32 @@ export const transferItem = createAsyncThunk<
  */
 export const reserveItem = createAsyncThunk<
 	IItem,
-	{ branchId?: number | null; subsidiaryId?: number | null; traceabilityId: number; data: ReserveItemPayload },
+	{
+		branchId?: number | null;
+		subsidiaryId?: number | null;
+		traceabilityId: number;
+		data: ReserveItemPayload;
+	},
 	{ state: RootState; rejectValue: string }
 >(
 	'technicalReviews/reserveItem',
-	async ({ branchId, subsidiaryId, traceabilityId, data }, { getState, dispatch, rejectWithValue }) => {
+	async (
+		{ branchId, subsidiaryId, traceabilityId, data },
+		{ getState, dispatch, rejectWithValue },
+	) => {
 		try {
 			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-			dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
 			const response = await ApiService.fetchData<{ data?: any }>({
-				url: buildTechnicalReviewsEndpoint(context, `/traceability/${traceabilityId}/reserve`),
+				url: buildTechnicalReviewsEndpoint(
+					context,
+					`/traceability/${traceabilityId}/reserve`,
+				),
 				method: 'post',
 				data: { ...data },
 			});
@@ -135,16 +173,32 @@ export const reserveItem = createAsyncThunk<
  */
 export const releaseReservation = createAsyncThunk<
 	IItem,
-	{ branchId?: number | null; subsidiaryId?: number | null; traceabilityId: number; data?: { reason?: string } },
+	{
+		branchId?: number | null;
+		subsidiaryId?: number | null;
+		traceabilityId: number;
+		data?: { reason?: string };
+	},
 	{ state: RootState; rejectValue: string }
 >(
 	'technicalReviews/releaseReservation',
-	async ({ branchId, subsidiaryId, traceabilityId, data }, { getState, dispatch, rejectWithValue }) => {
+	async (
+		{ branchId, subsidiaryId, traceabilityId, data },
+		{ getState, dispatch, rejectWithValue },
+	) => {
 		try {
 			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-			dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
 			const response = await ApiService.fetchData<{ data?: any }>({
-				url: buildTechnicalReviewsEndpoint(context, `/traceability/${traceabilityId}/release-reservation`),
+				url: buildTechnicalReviewsEndpoint(
+					context,
+					`/traceability/${traceabilityId}/release-reservation`,
+				),
 				method: 'post',
 				data: data ?? {},
 			});
@@ -164,16 +218,32 @@ export const releaseReservation = createAsyncThunk<
  */
 export const markAsSold = createAsyncThunk<
 	IItem,
-	{ branchId?: number | null; subsidiaryId?: number | null; traceabilityId: number; data: MarkAsSoldPayload },
+	{
+		branchId?: number | null;
+		subsidiaryId?: number | null;
+		traceabilityId: number;
+		data: MarkAsSoldPayload;
+	},
 	{ state: RootState; rejectValue: string }
 >(
 	'technicalReviews/markAsSold',
-	async ({ branchId, subsidiaryId, traceabilityId, data }, { getState, dispatch, rejectWithValue }) => {
+	async (
+		{ branchId, subsidiaryId, traceabilityId, data },
+		{ getState, dispatch, rejectWithValue },
+	) => {
 		try {
 			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-			dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
 			const response = await ApiService.fetchData<{ data?: any }>({
-				url: buildTechnicalReviewsEndpoint(context, `/traceability/${traceabilityId}/mark-as-sold`),
+				url: buildTechnicalReviewsEndpoint(
+					context,
+					`/traceability/${traceabilityId}/mark-as-sold`,
+				),
 				method: 'post',
 				data: { ...data },
 			});
@@ -202,9 +272,17 @@ export const getTraceabilityHistory = createAsyncThunk<
 	async ({ branchId, subsidiaryId, serialNumber }, { getState, dispatch, rejectWithValue }) => {
 		try {
 			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-			dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
 			const response = await ApiService.fetchData<{ success?: boolean; data?: any }>({
-				url: buildTechnicalReviewsEndpoint(context, `/traceability/history/${serialNumber}`),
+				url: buildTechnicalReviewsEndpoint(
+					context,
+					`/traceability/history/${serialNumber}`,
+				),
 				method: 'get',
 			});
 
@@ -233,25 +311,33 @@ export const getAvailableForSale = createAsyncThunk<
 		params?: { warehouse_id?: number; grade?: string; equipment_type?: string };
 	},
 	{ state: RootState; rejectValue: string }
->('technicalReviews/getAvailableForSale', async ({ branchId, subsidiaryId, params }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
-			url: buildTechnicalReviewsEndpoint(context, '/traceability/available-for-sale'),
-			method: 'get',
-			params,
-		});
+>(
+	'technicalReviews/getAvailableForSale',
+	async ({ branchId, subsidiaryId, params }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
+				url: buildTechnicalReviewsEndpoint(context, '/traceability/available-for-sale'),
+				method: 'get',
+				params,
+			});
 
-		const items = normalizeArray(response.data) as IItem[];
-		const meta = response.data?.meta ?? null;
+			const items = normalizeArray(response.data) as IItem[];
+			const meta = response.data?.meta ?? null;
 
-		return { items, meta };
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los equipos disponibles',
-		);
-	}
-});
+			return { items, meta };
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudieron cargar los equipos disponibles',
+			);
+		}
+	},
+);

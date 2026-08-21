@@ -42,16 +42,16 @@ const IntegrationsHubPage = lazy(() => import('@/pages/integraciones/Integration
 const SalesDashboard = lazy(() => import('@/pages/reportes/sales-dashboard'));
 const InventoryReports = lazy(() => import('@/pages/reportes/inventory-reports'));
 
-const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales.tsx'));
-const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle.tsx'));
-const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/RolesPermisos.tsx'));
+const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales'));
+const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle'));
+const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/RolesPermisos'));
 const UserPermissionsDetail = lazy(
-	() => import('@/pages/gestionAdmin/roles y permisos/UserPermissionsDetail.tsx'),
+	() => import('@/pages/gestionAdmin/roles y permisos/UserPermissionsDetail'),
 );
 
 // Páginas de Administración
 const PermissionsAdmin = lazy(() => import('@/pages/admin/Permission/PermissionsAdmin'));
-const InvitationsAdmin = lazy(() => import('@/pages/invitations/InvitationsAdmin.tsx'));
+const InvitationsAdmin = lazy(() => import('@/pages/invitations/InvitationsAdmin'));
 const SystemParametersAdmin = lazy(
 	() => import('@/pages/admin/systemParameters/SystemParametersAdmin'),
 );
@@ -72,9 +72,7 @@ const TransferenciasInventario = lazy(
 	() => import('@/pages/inventario/transferencias/Transferencias'),
 );
 const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas'));
-const BodegasDetailPage = lazy(
-	() => import('@/pages/catalogos/bodegas/WarehouseDetailView'),
-);
+const BodegasDetailPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseDetailView'));
 const TransferenciasComercial = lazy(
 	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
 );
@@ -119,7 +117,6 @@ const GarantiaDetailsPage = lazy(() => import('@/pages/garantias/GarantiaDetails
 
 // const ItemsList = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemListPage'));
 
-
 /// REFACTOR DE TECHNICAL REVIEW
 
 const RefactorTechnicalReview = lazy(() => import('@/pages/refactor-technical-review/index'));
@@ -163,8 +160,16 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.portalPedidosMock.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.portalPedidos.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.FormularioLockCare.to, element: <FormLockCare />, public: true },
-	{ path: cfg.FormularioLockCare.subPages.publicLockCare.to, element: <PublicLockCare />, public: true },
-	{ path: cfg.FormularioLockCare.subPages.checkOutLockCare.to, element: <CheckOutLockCare />, public: true },
+	{
+		path: cfg.FormularioLockCare.subPages.publicLockCare.to,
+		element: <PublicLockCare />,
+		public: true,
+	},
+	{
+		path: cfg.FormularioLockCare.subPages.checkOutLockCare.to,
+		element: <CheckOutLockCare />,
+		public: true,
+	},
 	// Gestión interna de casilleros
 	{
 		path: cfg.technical.subPages.lockersManagement.to,

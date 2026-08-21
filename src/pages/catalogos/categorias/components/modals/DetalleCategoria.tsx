@@ -25,7 +25,6 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 	const [desc, setDesc] = React.useState<string>('');
 	const [loading, setLoading] = React.useState<boolean>(false);
 
-
 	React.useEffect(() => {
 		setDesc(category?.description ?? '');
 	}, [category]);
@@ -94,7 +93,7 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 														src={
 															ensureAbsoluteUrl(
 																category.image?.thumb ??
-																category.image?.url,
+																	category.image?.url,
 															) ?? undefined
 														}
 														alt={category.image?.alt ?? category.name}
@@ -120,7 +119,8 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 												<ImageZoom
 													key={img.id ?? `${idx}`}
 													imageUrl={
-														ensureAbsoluteUrl(img.url ?? img.thumb) ?? ''
+														ensureAbsoluteUrl(img.url ?? img.thumb) ??
+														''
 													}
 													alt={img.alt ?? `${category.name}-${idx + 1}`}
 													modalTitle={category.name}
@@ -137,7 +137,10 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 																		img.thumb ?? img.url,
 																	) ?? undefined
 																}
-																alt={img.alt ?? `${category.name}-${idx + 1}`}
+																alt={
+																	img.alt ??
+																	`${category.name}-${idx + 1}`
+																}
 																loading='lazy'
 																className='block h-full w-full object-cover'
 															/>

@@ -4,6 +4,7 @@ import React, {
 	HTMLAttributes,
 	ReactNode,
 	useCallback,
+	useEffect,
 	useRef,
 	useState,
 } from 'react';
@@ -29,6 +30,14 @@ export type TButtonSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
 
 /** Tiempo mínimo de bloqueo anti-doble-click (ms) */
 const MIN_CLICK_GUARD_MS = 400;
+
+const isPromiseLike = (value: unknown): value is PromiseLike<unknown> => {
+	if (value === null || (typeof value !== 'object' && typeof value !== 'function')) {
+		return false;
+	}
+
+	return typeof (value as { then?: unknown }).then === 'function';
+};
 
 export interface IButtonProps
 	extends Omit<HTMLAttributes<HTMLButtonElement>, 'disabled' | 'color'> {
@@ -69,7 +78,50 @@ export interface IButtonProps
  */
 function useClickGuard(onClick: IButtonProps['onClick']) {
 	const busyRef = useRef(false);
+	const mountedRef = useRef(false);
+	const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [clickGuardActive, setClickGuardActive] = useState(false);
+
+	useEffect(() => {
+		mountedRef.current = true;
+
+		return () => {
+			mountedRef.current = false;
+			busyRef.current = false;
+
+			if (releaseTimerRef.current !== null) {
+				clearTimeout(releaseTimerRef.current);
+				releaseTimerRef.current = null;
+			}
+		};
+	}, []);
+
+	const releaseGuard = useCallback(() => {
+		releaseTimerRef.current = null;
+		busyRef.current = false;
+
+		if (mountedRef.current) {
+			setClickGuardActive(false);
+		}
+	}, []);
+
+	const releaseAfterMinimum = useCallback(
+		(startedAt: number) => {
+			if (!mountedRef.current) {
+				busyRef.current = false;
+				return;
+			}
+
+			const remainingMs = Math.max(0, MIN_CLICK_GUARD_MS - (Date.now() - startedAt));
+			if (remainingMs === 0) {
+				releaseGuard();
+				return;
+			}
+
+			releaseTimerRef.current = setTimeout(releaseGuard, remainingMs);
+		},
+		[releaseGuard],
+	);
 
 	const guardedOnClick = useCallback(
 		(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -78,36 +130,27 @@ function useClickGuard(onClick: IButtonProps['onClick']) {
 
 			busyRef.current = true;
 			setClickGuardActive(true);
-
-			const minTimer = new Promise<void>((resolve) =>
-				setTimeout(resolve, MIN_CLICK_GUARD_MS),
-			);
+			const startedAt = Date.now();
 
 			try {
 				const result: unknown = onClick(e);
 
 				// Si el handler devuelve una Promise, esperamos a que termine
-				if (result && typeof (result as any).then === 'function') {
-					Promise.all([result, minTimer]).finally(() => {
-						busyRef.current = false;
-						setClickGuardActive(false);
-					});
+				if (isPromiseLike(result)) {
+					void Promise.resolve(result).then(
+						() => releaseAfterMinimum(startedAt),
+						() => releaseAfterMinimum(startedAt),
+					);
 				} else {
 					// Handler síncrono: bloqueamos solo el tiempo mínimo
-					minTimer.then(() => {
-						busyRef.current = false;
-						setClickGuardActive(false);
-					});
+					releaseAfterMinimum(startedAt);
 				}
 			} catch {
 				// Si el handler lanza síncronamente, liberar el guard
-				minTimer.then(() => {
-					busyRef.current = false;
-					setClickGuardActive(false);
-				});
+				releaseAfterMinimum(startedAt);
 			}
 		},
-		[onClick],
+		[onClick, releaseAfterMinimum],
 	);
 
 	return { guardedOnClick: onClick ? guardedOnClick : undefined, clickGuardActive };

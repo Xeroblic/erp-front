@@ -20,7 +20,7 @@ const VariantRow: React.FC<{
 	child: IProductChild;
 	onView?: (product: IProduct) => void;
 }> = ({ product, child, onView }) => (
-	<tr className='bg-white/80 dark:bg-zinc-900/60 '>
+	<tr className='bg-white/80 dark:bg-zinc-900/60'>
 		<td className='px-3 py-3 align-top'>
 			{child.grade ? (
 				<Badge variant='outline' color={getGradeBadgeColor(child.grade)}>
@@ -117,7 +117,7 @@ const ProductVariantsRow: React.FC<ProductVariantsRowProps> = ({
 	colSpan,
 	onView,
 }) => (
-	<tr className='bg-zinc-50/40 dark:bg-zinc-900/40 hover:bg-zinc-50 dark:hover:bg-zinc-900'>
+	<tr className='bg-zinc-50/40 hover:bg-zinc-50 dark:bg-zinc-900/40 dark:hover:bg-zinc-900'>
 		<td colSpan={colSpan} className='px-6 pb-6 pt-0'>
 			<div className='mt-2 rounded-xl border border-dashed border-zinc-200 bg-white/80 p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/70'>
 				<div>

@@ -413,9 +413,11 @@ const cotizacionesSlice = createSlice({
 			})
 			.addCase(updateQuote.fulfilled, (state, action) => {
 				state.updating = false;
-				state.list = sortQuotesByIdDesc(state.list.map((quote) =>
-					quote.id === action.payload.id ? action.payload : quote,
-				));
+				state.list = sortQuotesByIdDesc(
+					state.list.map((quote) =>
+						quote.id === action.payload.id ? action.payload : quote,
+					),
+				);
 				if (state.currentQuote?.id === action.payload.id) {
 					state.currentQuote = action.payload;
 				}
@@ -512,7 +514,9 @@ const cotizacionesSlice = createSlice({
 					sale: sale && Object.keys(sale).length ? sale : (quote.sale ?? null),
 				});
 				state.list = sortQuotesByIdDesc(
-					state.list.map((quote) => (quote.id === quoteId ? markConverted(quote) : quote)),
+					state.list.map((quote) =>
+						quote.id === quoteId ? markConverted(quote) : quote,
+					),
 				);
 				if (state.currentQuote?.id === quoteId) {
 					state.currentQuote = markConverted(state.currentQuote);

@@ -200,7 +200,8 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 								JPG, GIF o PNG. Máx 400x400
 							</p>
 							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
-								¡¡¡¡¡ Puedes arrastrar tu nueva foto de perfil si lo deseas :D !!!!!!
+								¡¡¡¡¡ Puedes arrastrar tu nueva foto de perfil si lo deseas :D
+								!!!!!!
 							</p>
 						</div>
 					</div>

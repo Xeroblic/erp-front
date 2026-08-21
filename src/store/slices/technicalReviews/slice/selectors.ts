@@ -8,7 +8,7 @@ import type {
 	IItem,
 	IValidationRules,
 	ListMeta,
-} from '../../../../interface/technicalReviews.interface.ts';
+} from '../../../../interface/technicalReviews.interface';
 
 // ====================================================================
 // LOTES (BATCHES)
@@ -27,9 +27,8 @@ export const selectBatchesLoading = (state: RootState): boolean =>
 export const selectBatchesError = (state: RootState): string | null =>
 	state.technicalReviews.batchesError;
 
-export const selectTechnicalReviewsEndpointMode = (
-	state: RootState,
-): 'subsidiaries' | 'branches' => state.technicalReviews.endpointMode;
+export const selectTechnicalReviewsEndpointMode = (state: RootState): 'subsidiaries' | 'branches' =>
+	state.technicalReviews.endpointMode;
 
 export const selectTechnicalReviewsContextBranchId = (state: RootState): number | null =>
 	state.technicalReviews.contextBranchId;
@@ -111,7 +110,7 @@ export const selectError = (state: RootState): string | null => state.technicalR
 
 export const selectTraceabilityData = (
 	state: RootState,
-): import('../../../../interface/technicalReviews.interface.ts').ITraceabilityHistoryResponse | null =>
+): import('../../../../interface/technicalReviews.interface').ITraceabilityHistoryResponse | null =>
 	state.technicalReviews.traceabilityData;
 
 export const selectTraceabilityLoading = (state: RootState): boolean =>

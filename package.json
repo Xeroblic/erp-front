@@ -12,6 +12,10 @@
 		"preview": "vite preview",
 		"lint": "eslint . --ext .js,.jsx,.ts,.tsx",
 		"lint:fix": "eslint --fix . --ext .js,.jsx,.ts,.tsx",
+		"lint:imports": "eslint . --ext .js,.jsx,.ts,.tsx --no-eslintrc --no-inline-config --config .eslintrc.imports.json",
+		"check:eol": "node scripts/checkLineEndings.mjs",
+		"quality:style": "pnpm run check:eol && pnpm run prettier:check && pnpm run lint:imports",
+		"prettier:check": "prettier --check .",
 		"prettier:fix": "prettier --write .",
 		"icon": "svgr SvgIcons -d src/components/icon/svg-icons --typescript --no-prettier"
 	},
@@ -129,6 +133,7 @@
 		"eslint-config-airbnb": "19.0.4",
 		"eslint-config-airbnb-typescript": "^18.0.0",
 		"eslint-config-prettier": "^9.1.0",
+		"eslint-import-resolver-typescript": "^4.4.5",
 		"eslint-plugin-import": "^2.29.1",
 		"eslint-plugin-jsx-a11y": "^6.8.0",
 		"eslint-plugin-prettier": "^5.1.3",

@@ -302,7 +302,7 @@ const ImageZoomComponent = ({
 			<div
 				ref={viewerRef}
 				className={mergeClasses(
-					'relative flex h-[70vh] min-h-[420px] w-full overflow-hidden rounded-2xl border shadow-2xl px-0',
+					'relative flex h-[70vh] min-h-[420px] w-full overflow-hidden rounded-2xl border px-0 shadow-2xl',
 					isZoomed
 						? isPanning
 							? 'cursor-grabbing border-emerald-500/50 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900'
@@ -381,9 +381,7 @@ const ImageZoomComponent = ({
 				</ModalHeader>
 
 				{/* sin padding para maximizar viewport */}
-				<ModalBody className='bg-transparent p-0 [&:first-child]:pt-0'>
-					{viewer}
-				</ModalBody>
+				<ModalBody className='bg-transparent p-0 [&:first-child]:pt-0'>{viewer}</ModalBody>
 			</Modal>
 		</div>
 	);

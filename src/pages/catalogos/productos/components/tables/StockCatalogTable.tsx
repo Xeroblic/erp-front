@@ -70,7 +70,10 @@ const toRecord = (value: unknown): Record<string, unknown> | null => {
 	return value as Record<string, unknown>;
 };
 
-const sumNumbersFromList = (items: unknown[], picker: (item: Record<string, unknown>) => number): number =>
+const sumNumbersFromList = (
+	items: unknown[],
+	picker: (item: Record<string, unknown>) => number,
+): number =>
 	items.reduce<number>((total, item) => {
 		const record = toRecord(item);
 		if (!record) return total;
@@ -79,14 +82,13 @@ const sumNumbersFromList = (items: unknown[], picker: (item: Record<string, unkn
 
 const extractGrades = (value: unknown): Record<string, Record<string, unknown>> => {
 	if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-	return Object.entries(value as Record<string, unknown>).reduce<Record<string, Record<string, unknown>>>(
-		(acc, [gradeKey, gradeValue]) => {
-			const record = toRecord(gradeValue);
-			if (record) acc[gradeKey] = record;
-			return acc;
-		},
-		{},
-	);
+	return Object.entries(value as Record<string, unknown>).reduce<
+		Record<string, Record<string, unknown>>
+	>((acc, [gradeKey, gradeValue]) => {
+		const record = toRecord(gradeValue);
+		if (record) acc[gradeKey] = record;
+		return acc;
+	}, {});
 };
 
 const getQuantityTone = (quantity: number): 'emerald' | 'amber' | 'red' | 'blue' => {
@@ -204,11 +206,13 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 	const gradeEntries = Object.entries(grades);
 	const productId = toNumber(item.product_id, item.id);
 	const availableStock = gradeEntries.reduce(
-		(total, [, grade]) => total + toNumber(grade.total_available, toRecord(grade.stock_status)?.available),
+		(total, [, grade]) =>
+			total + toNumber(grade.total_available, toRecord(grade.stock_status)?.available),
 		0,
 	);
 	const soldStock = gradeEntries.reduce(
-		(total, [, grade]) => total + toNumber(grade.total_sold, toRecord(grade.stock_status)?.sold),
+		(total, [, grade]) =>
+			total + toNumber(grade.total_sold, toRecord(grade.stock_status)?.sold),
 		0,
 	);
 	const reservedStock = gradeEntries.reduce(
@@ -227,7 +231,9 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 		const branches = Array.isArray(grade.branches) ? grade.branches : [];
 		return (
 			total +
-			sumNumbersFromList(branches, (branch) => toNumber(branch.quantity, toRecord(branch.stock_status)?.available))
+			sumNumbersFromList(branches, (branch) =>
+				toNumber(branch.quantity, toRecord(branch.stock_status)?.available),
+			)
 		);
 	}, 0);
 	const branchMap = new Map<number, { name: string; quantity: number }>();
@@ -241,7 +247,9 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 			const current = branchMap.get(branchId);
 			branchMap.set(branchId, {
 				name: toString(record.branch_name, current?.name, `Sucursal ${branchId}`),
-				quantity: (current?.quantity ?? 0) + toNumber(record.quantity, toRecord(record.stock_status)?.available),
+				quantity:
+					(current?.quantity ?? 0) +
+					toNumber(record.quantity, toRecord(record.stock_status)?.available),
 			});
 		}
 	}
@@ -251,10 +259,13 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 		const quantity = toNumber(grade.total_available, toRecord(grade.stock_status)?.available);
 		return { label: gradeKey, quantity };
 	});
-	const branchSummary = Array.from(branchMap.values()).map(
-		(branch) => ({ label: branch.name, quantity: branch.quantity }),
-	);
-	const gradesPreview = gradeSummary.map((grade) => `${grade.label}:${grade.quantity}`).join(' · ');
+	const branchSummary = Array.from(branchMap.values()).map((branch) => ({
+		label: branch.name,
+		quantity: branch.quantity,
+	}));
+	const gradesPreview = gradeSummary
+		.map((grade) => `${grade.label}:${grade.quantity}`)
+		.join(' · ');
 	const topBranch = branchSummary[0];
 	const distributionPreview = topBranch
 		? branchSummary.length > 1
@@ -368,7 +379,9 @@ const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) =
 						<p className='text-base font-semibold text-neutral-900 dark:text-neutral-100'>
 							{row.original.distributedStock}
 						</p>
-						<p className='text-[11px] text-neutral-400'>Sucursales: {row.original.branchesCount}</p>
+						<p className='text-[11px] text-neutral-400'>
+							Sucursales: {row.original.branchesCount}
+						</p>
 					</div>
 				),
 			},

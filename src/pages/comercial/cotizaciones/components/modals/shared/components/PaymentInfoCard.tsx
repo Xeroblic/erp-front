@@ -22,11 +22,11 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
 	return (
 		<Card
 			rounded='rounded-2xl'
-			className='border border-white/80 bg-white/80 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5 dark:shadow-lg/10'>
+			className='dark:shadow-lg/10 border border-white/80 bg-white/80 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5'>
 			<CardHeader className='pb-2'>
 				<CardHeaderChild className='w-full items-center justify-between'>
 					<div>
-						<CardTitle className='flex items-center gap-3 text-lg font-semibold dark:text-white text-gray-900'>
+						<CardTitle className='flex items-center gap-3 text-lg font-semibold text-gray-900 dark:text-white'>
 							<span className='flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-600 dark:border-sky-400/40 dark:bg-sky-400/10 dark:text-sky-200'>
 								<Icon icon='DuoCreditCard' className='text-xl' />
 							</span>

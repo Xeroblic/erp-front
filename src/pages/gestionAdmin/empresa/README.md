@@ -49,11 +49,11 @@ empresa/
 
 La estructura es consistente con los módulos `usuarios` y `subempresa`:
 
--   `components/modals/` - Modales con campos inline (no separados)
--   `components/tables/` - Componentes de tabla principales
--   `components/forms/` - Solo para campos de Empresa (no subsidiaria)
--   `helpers/` - Lógica de negocio separada
--   Archivo principal reducido, solo renderizado y estado
+- `components/modals/` - Modales con campos inline (no separados)
+- `components/tables/` - Componentes de tabla principales
+- `components/forms/` - Solo para campos de Empresa (no subsidiaria)
+- `helpers/` - Lógica de negocio separada
+- Archivo principal reducido, solo renderizado y estado
 
 ## Componentes
 
@@ -63,12 +63,12 @@ La estructura es consistente con los módulos `usuarios` y `subempresa`:
 
 Modal para crear y editar subsidiarias con:
 
--   Todos los campos integrados inline (no componentes separados)
--   Campos: nombre, RUT, dirección, teléfono, email, sitio web
--   Selector de gerente responsable
--   Selectores geográficos: región, provincia, comuna
--   Validación con Yup
--   Manejo de errores específicos
+- Todos los campos integrados inline (no componentes separados)
+- Campos: nombre, RUT, dirección, teléfono, email, sitio web
+- Selector de gerente responsable
+- Selectores geográficos: región, provincia, comuna
+- Validación con Yup
+- Manejo de errores específicos
 
 ### Tabla de Subsidiarias (`components/tables/`)
 
@@ -76,10 +76,10 @@ Modal para crear y editar subsidiarias con:
 
 Tabla principal con:
 
--   Columnas: nombre, RUT, dirección, teléfono, email, sucursales, comuna, acciones
--   Estados: loading, empty, data
--   Integra componentes internos (header, loading, empty, content)
--   Acciones: crear, editar, ver
+- Columnas: nombre, RUT, dirección, teléfono, email, sucursales, comuna, acciones
+- Estados: loading, empty, data
+- Integra componentes internos (header, loading, empty, content)
+- Acciones: crear, editar, ver
 
 ### Componentes Internos de Tabla (`components/table/`)
 
@@ -109,50 +109,50 @@ Hook que define las columnas y su renderizado
 
 Campos generales de información de empresa:
 
--   Nombre comercial, razón social, RUT
--   Tipo de empresa, actividad comercial, sitio web
+- Nombre comercial, razón social, RUT
+- Tipo de empresa, actividad comercial, sitio web
 
 #### CompanyContactFields
 
 Campos de contacto de empresa:
 
--   Teléfono, email, dirección
--   Selectores geográficos
--   Representante legal
+- Teléfono, email, dirección
+- Selectores geográficos
+- Representante legal
 
 ## Helpers
 
 ### subsidiaryValidation.ts
 
--   Constantes de validación (MIN_NAME_LENGTH, MAX_EMAIL_LENGTH, etc.)
--   `subsidiaryValidationSchema`: Esquema Yup completo con todas las reglas
+- Constantes de validación (MIN_NAME_LENGTH, MAX_EMAIL_LENGTH, etc.)
+- `subsidiaryValidationSchema`: Esquema Yup completo con todas las reglas
 
 ### subsidiaryErrorHandler.ts
 
--   `handleSubsidiaryError()`: Función centralizada para manejar errores de API
--   Detecta duplicados específicos (email, RUT, nombre)
--   Maneja errores de validación, permisos, red, servidor
+- `handleSubsidiaryError()`: Función centralizada para manejar errores de API
+- Detecta duplicados específicos (email, RUT, nombre)
+- Maneja errores de validación, permisos, red, servidor
 
 ### subsidiaryDataMapper.ts
 
--   `COMPANY_ID`: Constante del ID de empresa
--   `buildSubsidiaryPayload()`: Construye el payload para crear/actualizar subsidiaria
--   `filterAdminUsers()`: Filtra usuarios con roles administrativos
+- `COMPANY_ID`: Constante del ID de empresa
+- `buildSubsidiaryPayload()`: Construye el payload para crear/actualizar subsidiaria
+- `filterAdminUsers()`: Filtra usuarios con roles administrativos
 
 ### subsidiaryPreValidation.ts
 
--   `validateManagerAvailability()`: Verifica que haya gerentes disponibles
--   `validateSelectedManager()`: Valida que se seleccionó un gerente
--   `validateName()`: Valida longitud mínima del nombre
--   `validateEmail()`: Valida formato de email
--   `validateWebsite()`: Valida protocolo de URL
--   `validatePhone()`: Valida cantidad de dígitos
--   `validateRut()`: Valida longitud de RUT
--   `runAllPreSubmitValidations()`: Ejecuta todas las validaciones
+- `validateManagerAvailability()`: Verifica que haya gerentes disponibles
+- `validateSelectedManager()`: Valida que se seleccionó un gerente
+- `validateName()`: Valida longitud mínima del nombre
+- `validateEmail()`: Valida formato de email
+- `validateWebsite()`: Valida protocolo de URL
+- `validatePhone()`: Valida cantidad de dígitos
+- `validateRut()`: Valida longitud de RUT
+- `runAllPreSubmitValidations()`: Ejecuta todas las validaciones
 
 ### companyValidation.ts
 
--   `companyValidationSchema`: Esquema Yup para validación de empresa
+- `companyValidationSchema`: Esquema Yup para validación de empresa
 
 ## Uso
 
@@ -189,26 +189,26 @@ import {
 
 ### Campos obligatorios
 
--   Nombre de subsidiaria (3-100 caracteres)
--   Gerente responsable (ID de usuario válido)
+- Nombre de subsidiaria (3-100 caracteres)
+- Gerente responsable (ID de usuario válido)
 
 ### Campos opcionales con validación
 
--   RUT (9-12 caracteres, formato chileno)
--   Email (único, formato válido)
--   Teléfono (8+ dígitos)
--   Sitio web (debe comenzar con http:// o https://)
--   Dirección (10-200 caracteres)
+- RUT (9-12 caracteres, formato chileno)
+- Email (único, formato válido)
+- Teléfono (8+ dígitos)
+- Sitio web (debe comenzar con http:// o https://)
+- Dirección (10-200 caracteres)
 
 ## Manejo de errores
 
 El sistema detecta y muestra mensajes específicos para:
 
--   Duplicados (email, RUT, nombre) - muestra el valor duplicado
--   Errores de validación - muestra campo específico
--   Errores de permisos - mensaje de autorización
--   Errores de red - mensaje de conexión
--   Errores de servidor - mensaje genérico
+- Duplicados (email, RUT, nombre) - muestra el valor duplicado
+- Errores de validación - muestra campo específico
+- Errores de permisos - mensaje de autorización
+- Errores de red - mensaje de conexión
+- Errores de servidor - mensaje genérico
 
 ## Beneficios de la refactorización
 

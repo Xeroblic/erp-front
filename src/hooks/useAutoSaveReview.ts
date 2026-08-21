@@ -127,8 +127,6 @@ export const useAutoSaveReview = ({
 		[dispatch, branchId, itemId, onSaveSuccess, onSaveError],
 	);
 
-
-
 	/**
 	 * PASO 2: Marcar cambios como pendientes
 	 * - Solo actualiza el ref de cambios pendientes y setea dirty = true.
@@ -240,7 +238,6 @@ export const useAutoSaveReview = ({
 			clearTimeout(autoSaveTimerRef.current);
 		}
 	}, []);
-
 
 	// --- CAMBIO ESTRATEGIA: Intervalo de 10s (Heartbeat) ---
 	// En lugar de reiniciar el timer con cada tecla (debounce),

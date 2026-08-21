@@ -8,21 +8,21 @@ Módulo matricial para visualizar y gestionar el inventario por estado técnico 
 
 ### 1. Vista Matricial
 
--   **Matriz Bodega × Estado Técnico**: Intersección muestra cantidad de productos
--   **Totales por fila/columna**: Totalizadores automáticos por bodega y estado
--   **Estados técnicos soportados**: Nuevo, Usado, Reacondicionado, Dañado, Obsoleto
+- **Matriz Bodega × Estado Técnico**: Intersección muestra cantidad de productos
+- **Totales por fila/columna**: Totalizadores automáticos por bodega y estado
+- **Estados técnicos soportados**: Nuevo, Usado, Reacondicionado, Dañado, Obsoleto
 
 ### 2. Drill-down Interactivo
 
--   **Click en celda**: Abre modal con detalles específicos del bucket
--   **Información detallada**: Productos individuales, condiciones, ubicaciones
--   **Deep-link**: Botón para navegar a inventario general filtrado
+- **Click en celda**: Abre modal con detalles específicos del bucket
+- **Información detallada**: Productos individuales, condiciones, ubicaciones
+- **Deep-link**: Botón para navegar a inventario general filtrado
 
 ### 3. Filtros y Controles
 
--   **Filtro por bodega**: Vista de todas las bodegas o bodega específica
--   **Leyenda visual**: Estados técnicos con códigos de color
--   **Resumen general**: Totales por estado técnico
+- **Filtro por bodega**: Vista de todas las bodegas o bodega específica
+- **Leyenda visual**: Estados técnicos con códigos de color
+- **Resumen general**: Totales por estado técnico
 
 ## Interfaces de Datos
 
@@ -112,12 +112,12 @@ const TECHNICAL_STATES = [
 
 El módulo incluye datos mock comprehensivos con:
 
--   **5 bodegas diferentes**: Central, Norte, Sur, Distribución, Reparaciones
--   **70+ productos**: Distribuidos entre diferentes estados técnicos
--   **Productos variados**: Laptops, monitores, tablets, smartphones, proyectores, etc.
--   **Grades de condición**: A+ (Excelente) hasta D (Deficiente)
--   **Ubicaciones físicas**: Códigos alfanuméricos por bodega (ej: A-01-03)
--   **Series y lotes**: Números de serie para productos individuales
+- **5 bodegas diferentes**: Central, Norte, Sur, Distribución, Reparaciones
+- **70+ productos**: Distribuidos entre diferentes estados técnicos
+- **Productos variados**: Laptops, monitores, tablets, smartphones, proyectores, etc.
+- **Grades de condición**: A+ (Excelente) hasta D (Deficiente)
+- **Ubicaciones físicas**: Códigos alfanuméricos por bodega (ej: A-01-03)
+- **Series y lotes**: Números de serie para productos individuales
 
 ### Ejemplos de Productos Mock
 
@@ -153,19 +153,19 @@ NEW: {
 
 ## Componentes UI Utilizados
 
--   **Card/CardBody/CardHeader/CardTitle**: Contenedores principales
--   **Container**: Layout principal de la página
--   **Button**: Botones de acción y navegación
--   **Badge**: Etiquetas para estados técnicos y condiciones
--   **Select**: Dropdown para filtro de bodegas
--   **Modal/ModalHeader/ModalBody/ModalFooter**: Modal de detalles
--   **Table/THead/TBody/Tr/Th/Td**: Tabla de productos en modal
--   **PermissionGuard**: Control de permisos de acceso
+- **Card/CardBody/CardHeader/CardTitle**: Contenedores principales
+- **Container**: Layout principal de la página
+- **Button**: Botones de acción y navegación
+- **Badge**: Etiquetas para estados técnicos y condiciones
+- **Select**: Dropdown para filtro de bodegas
+- **Modal/ModalHeader/ModalBody/ModalFooter**: Modal de detalles
+- **Table/THead/TBody/Tr/Th/Td**: Tabla de productos en modal
+- **PermissionGuard**: Control de permisos de acceso
 
 ## Permisos Requeridos
 
--   `ERP_PERMISSIONS.INVENTORY.VIEW`: Visualizar inventario general
--   El módulo principal no requiere permisos especiales (solo visualización)
+- `ERP_PERMISSIONS.INVENTORY.VIEW`: Visualizar inventario general
+- El módulo principal no requiere permisos especiales (solo visualización)
 
 ## Funciones de Utilidad
 
@@ -189,23 +189,23 @@ Genera badges para grados de condición de productos.
 
 ### Diseño Visual
 
--   **Matriz responsive**: Se adapta a diferentes tamaños de pantalla
--   **Códigos de color**: Estados técnicos tienen colores consistentes
--   **Hover effects**: Feedback visual al pasar sobre celdas interactivas
--   **Celdas vacías**: Estilo diferenciado para celdas sin productos
+- **Matriz responsive**: Se adapta a diferentes tamaños de pantalla
+- **Códigos de color**: Estados técnicos tienen colores consistentes
+- **Hover effects**: Feedback visual al pasar sobre celdas interactivas
+- **Celdas vacías**: Estilo diferenciado para celdas sin productos
 
 ### Interacciones
 
--   **Click en celda**: Solo funcional si hay productos (quantity > 0)
--   **Tooltips**: Información contextual en hover
--   **Modal detallado**: Información completa del bucket seleccionado
--   **Deep-linking**: Navegación a inventario general con filtros aplicados
+- **Click en celda**: Solo funcional si hay productos (quantity > 0)
+- **Tooltips**: Información contextual en hover
+- **Modal detallado**: Información completa del bucket seleccionado
+- **Deep-linking**: Navegación a inventario general con filtros aplicados
 
 ### Responsividad
 
--   **Mobile-first**: Grid adapta columnas en pantallas pequeñas
--   **Scroll horizontal**: Para matrices anchas en móvil
--   **Modal responsive**: Ajusta tamaño según viewport
+- **Mobile-first**: Grid adapta columnas en pantallas pequeñas
+- **Scroll horizontal**: Para matrices anchas en móvil
+- **Modal responsive**: Ajusta tamaño según viewport
 
 ## Casos de Uso
 
@@ -234,22 +234,22 @@ Genera badges para grados de condición de productos.
 
 ### APIs Esperadas
 
--   `GET /api/inventory/by-technical-state`: Datos de matriz
--   `GET /api/warehouses`: Lista de bodegas
--   `GET /api/products`: Información de productos
--   `PUT /api/inventory/technical-state`: Cambio de estado técnico
+- `GET /api/inventory/by-technical-state`: Datos de matriz
+- `GET /api/warehouses`: Lista de bodegas
+- `GET /api/products`: Información de productos
+- `PUT /api/inventory/technical-state`: Cambio de estado técnico
 
 ### Navegación
 
--   **Desde**: Menú principal → Inventario → Estado Técnico
--   **Hacia**: Inventario general (con filtros aplicados)
--   **Deep-link**: `/inventario?warehouse_id={id}&tech_state={state}`
+- **Desde**: Menú principal → Inventario → Estado Técnico
+- **Hacia**: Inventario general (con filtros aplicados)
+- **Deep-link**: `/inventario?warehouse_id={id}&tech_state={state}`
 
 ### Estado Redux
 
--   `inventorySlice.techStateMatrix`: Datos de la matriz
--   `warehouseSlice.warehouses`: Lista de bodegas
--   `productSlice.products`: Catálogo de productos
+- `inventorySlice.techStateMatrix`: Datos de la matriz
+- `warehouseSlice.warehouses`: Lista de bodegas
+- `productSlice.products`: Catálogo de productos
 
 ## Mantenimiento y Extensibilidad
 
@@ -261,12 +261,12 @@ Genera badges para grados de condición de productos.
 
 ### Personalización por Cliente
 
--   Estados técnicos configurables vía administración
--   Colores y nombres personalizables
--   Campos adicionales en productos (garantía, proveedor, etc.)
+- Estados técnicos configurables vía administración
+- Colores y nombres personalizables
+- Campos adicionales en productos (garantía, proveedor, etc.)
 
 ### Performance
 
--   Lazy loading para bodegas con gran volumen
--   Paginación en modal de productos si > 50 items
--   Cache de datos de matriz por sesión
+- Lazy loading para bodegas con gran volumen
+- Paginación en modal de productos si > 50 items
+- Cache de datos de matriz por sesión

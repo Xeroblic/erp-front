@@ -303,8 +303,8 @@ export const markAllDelivered = createAsyncThunk<void, void, { rejectValue: stri
 		} catch (e: any) {
 			return rejectWithValue(
 				e?.response?.data?.message ??
-				e?.message ??
-				'No se pudo marcar todas como entregadas',
+					e?.message ??
+					'No se pudo marcar todas como entregadas',
 			);
 		}
 	},

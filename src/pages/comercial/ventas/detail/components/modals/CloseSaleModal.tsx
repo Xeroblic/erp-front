@@ -229,8 +229,7 @@ const CloseSaleModal: React.FC<Props> = ({
 			isStaticBackdrop
 			isStaticBackdropAnimation
 			isAnimation={false}
-			className=""
-			>
+			className=''>
 			<ModalHeader>
 				<div className='flex items-center gap-3'>
 					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30'>

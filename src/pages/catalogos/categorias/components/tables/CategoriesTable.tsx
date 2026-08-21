@@ -209,8 +209,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 				cell: ({ row }) => {
 					const { category } = row.original;
 					const idKey = String(category.id ?? row.id);
-					const menuItemClass =
-						'flex w-full items-center gap-2 px-4 py-2 text-left';
+					const menuItemClass = 'flex w-full items-center gap-2 px-4 py-2 text-left';
 
 					return (
 						<div
@@ -227,7 +226,10 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 										color='violet'
 										className='group'
 										onClick={() => onView(category)}>
-										<Icon icon='HeroEye' className='h-4 w-4 text-violet-600 group-hover:text-violet-400' />
+										<Icon
+											icon='HeroEye'
+											className='h-4 w-4 text-violet-600 group-hover:text-violet-400'
+										/>
 									</Button>
 								</Tooltip>
 								<Tooltip text='Editar categoria'>
@@ -238,7 +240,10 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 										color='lime'
 										onClick={() => onEdit(category)}
 										className='group'>
-										<Icon icon='HeroPencilSquare' className='h-4 w-4 text-lime-600 group-hover:text-lime-400' />
+										<Icon
+											icon='HeroPencilSquare'
+											className='h-4 w-4 text-lime-600 group-hover:text-lime-400'
+										/>
 									</Button>
 								</Tooltip>
 								<Tooltip text='Eliminar categoria'>
@@ -249,7 +254,10 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 										color='red'
 										onClick={() => onDelete(category)}
 										className='group'>
-										<Icon icon='HeroTrash' className='h-4 w-4 text-red-600 group-hover:text-red-400' />
+										<Icon
+											icon='HeroTrash'
+											className='h-4 w-4 text-red-600 group-hover:text-red-400'
+										/>
 									</Button>
 								</Tooltip>
 							</div>

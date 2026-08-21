@@ -107,9 +107,8 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 						disabled={isDeleting}
 						className='bg-red-300/30'
 						icon='HeroXMark'
-						iconClassName='text-lg'
-						>
-							Cancelar
+						iconClassName='text-lg'>
+						Cancelar
 					</Button>
 				</ModalFooterChild>
 				<ModalFooterChild>

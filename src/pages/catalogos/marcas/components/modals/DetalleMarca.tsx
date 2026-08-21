@@ -174,7 +174,8 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 														<img
 															src={thumbUrl}
 															alt={
-																img.alt ?? `${brand.name}-${idx + 1}`
+																img.alt ??
+																`${brand.name}-${idx + 1}`
 															}
 															className='h-full w-full object-cover'
 														/>
