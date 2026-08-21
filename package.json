@@ -12,6 +12,7 @@
 		"preview": "vite preview",
 		"lint": "eslint . --ext .js,.jsx,.ts,.tsx",
 		"lint:fix": "eslint --fix . --ext .js,.jsx,.ts,.tsx",
+		"check:eol": "node scripts/checkLineEndings.mjs",
 		"prettier:fix": "prettier --write .",
 		"icon": "svgr SvgIcons -d src/components/icon/svg-icons --typescript --no-prettier"
 	},
