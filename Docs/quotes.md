@@ -99,13 +99,14 @@ POST /api/subsidiaries/3/quotes
 ### 2.5 Agregar Ítems (uno a la vez)
 
 `POST /api/subsidiaries/{subsidiary}/quotes/{quote}/items`
-\*Reglas\*\*:
+**Reglas**:
 
 - Los montos que se envían son **netos**.
 - `product_id` es opcional; si existe y no mandas `unit_price`, el backend trae `offer_price` o `price`. Si no hay precio, responde 422.
 - Calcula `subtotal = unit_price * quantity` y deja `total = subtotal`.
 - Este endpoint está diseñado para recibir **un solo ítem por request**. El motivo es que cada registro pasa por validaciones individuales (precio faltante, existencia de producto, etc.) y se generan FKs/IDs independientes. Si necesitas crear N ítems, el front debe iterar `sanitizeItemsForSubmit` y disparar N llamadas secuenciales/asíncronas. No existe hoy un endpoint de “bulk insert”.
--   - **Ejemplos**
+
+**Ejemplos**
 
 ```json
 // Ítem de catálogo: toma precio del producto

@@ -129,10 +129,10 @@ El modelo combina **permisos/roles** con **scope geográfico** (branch / subsidi
 company). Super-admin (`super-admin` en permisos o roles) siempre pasa.
 
 | Capa           | Herramienta                                                      | Uso                                                                                                                           |
-| -------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| -------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Ruta           | `ProtectedRoute` (`@/components/router/ProtectedRoute`)          | Protege una ruta; redirige si no hay acceso. En rutas se declara vía campo `authority` de `pages.config`.                     |
 | UI declarativa | `PermissionGuard` (`@/components/authorization/PermissionGuard`) | Oculta/condiciona bloques. Props: `permission`, `role`, `requireAll`, `branchId/subsidiaryId/companyId`, `scope`, `fallback`. |
-| Botón          | `ProtectedButton` (`@/components/ui/ProtectedButton`)            | Botón con permiso + scope; `fallbackMode: 'hidden'                                                                            | 'disabled'`. |
+| Botón          | `ProtectedButton` (`@/components/ui/ProtectedButton`)            | Botón con permiso + scope; `fallbackMode: 'hidden' \| 'disabled'`.                                                            |
 | Lógica         | `useAuthorization` (`@/hooks/useAuthorization`)                  | `authorize(...)`, `canAccessBranch/Subsidiary/Company`, `canViewBranch/...`, `hasPermission`, `isSuperAdmin`.                 |
 | Lógica simple  | `useCan` (`@/hooks/useCan`)                                      | `has`, `any`, `all`, `hasRole`, `isAdmin`, `isSuperAdmin`.                                                                    |
 
