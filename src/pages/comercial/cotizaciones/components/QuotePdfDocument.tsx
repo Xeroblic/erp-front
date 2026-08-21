@@ -623,7 +623,12 @@ const QuotePdfDocument = ({ quote, company, logoBase64, issuer }: QuotePdfDocume
 									const itemDiscount = Number(item.discount_amount || 0);
 
 									return (
-										<View key={index} style={[styles.tableRow, { paddingTop: 8, paddingBottom: 6 }]}>
+										<View
+											key={index}
+											style={[
+												styles.tableRow,
+												{ paddingTop: 8, paddingBottom: 6 },
+											]}>
 											<Text style={styles.colCant}>{quantity}</Text>
 											<Text style={styles.colCode}>{sku}</Text>
 											<View style={styles.colDesc}>

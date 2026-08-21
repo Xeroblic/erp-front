@@ -375,16 +375,16 @@ const DetalleClientePage: React.FC = () => {
 											Este cliente no tiene proveedores vinculados aún
 										</p>
 										{/* {isEditable && ( */}
-											<p className='mt-2 flex items-center gap-2 text-blue-600 dark:text-blue-400'>
-												<Icon
-													icon='DuoLamp2'
-													color='amber'
-													className='h-4 w-4'
-												/>
-												<span>
-													Activa el modo edición para asociar proveedores
-												</span>
-											</p>
+										<p className='mt-2 flex items-center gap-2 text-blue-600 dark:text-blue-400'>
+											<Icon
+												icon='DuoLamp2'
+												color='amber'
+												className='h-4 w-4'
+											/>
+											<span>
+												Activa el modo edición para asociar proveedores
+											</span>
+										</p>
 										{/* )} */}
 									</div>
 								</div>

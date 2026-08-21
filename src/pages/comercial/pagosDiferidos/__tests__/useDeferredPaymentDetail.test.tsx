@@ -64,9 +64,17 @@ describe('useDeferredPaymentDetail con servicio', () => {
 			<Provider store={store}>{children}</Provider>
 		);
 		const hook = renderHook(
-			({ selectedId, context }: { selectedId: number | null; context: { type: 'subsidiary'; id: number } | null }) =>
-				useDeferredPaymentDetail(selectedId, context),
-			{ initialProps: { selectedId: documentId, context: selectionContext }, wrapper: Wrapper },
+			({
+				selectedId,
+				context,
+			}: {
+				selectedId: number | null;
+				context: { type: 'subsidiary'; id: number } | null;
+			}) => useDeferredPaymentDetail(selectedId, context),
+			{
+				initialProps: { selectedId: documentId, context: selectionContext },
+				wrapper: Wrapper,
+			},
 		);
 		return { store, hook };
 	};

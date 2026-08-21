@@ -14,13 +14,7 @@ interface Props {
 	onDeleted?: () => void;
 }
 
-const DeleteSaleModal: React.FC<Props> = ({
-	isOpen,
-	setIsOpen,
-	sale,
-	subsidiaryId,
-	onDeleted,
-}) => {
+const DeleteSaleModal: React.FC<Props> = ({ isOpen, setIsOpen, sale, subsidiaryId, onDeleted }) => {
 	const dispatch = useAppDispatch();
 	const [isDeleting, setIsDeleting] = useState(false);
 
@@ -41,7 +35,13 @@ const DeleteSaleModal: React.FC<Props> = ({
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={() => { if (!isDeleting) setIsOpen(false); }} size='sm' isCentered>
+		<Modal
+			isOpen={isOpen}
+			setIsOpen={() => {
+				if (!isDeleting) setIsOpen(false);
+			}}
+			size='sm'
+			isCentered>
 			<ModalHeader>Eliminar venta</ModalHeader>
 
 			<ModalBody>
@@ -56,11 +56,7 @@ const DeleteSaleModal: React.FC<Props> = ({
 				<Button variant='outline' onClick={() => setIsOpen(false)} isDisable={isDeleting}>
 					Cancelar
 				</Button>
-				<Button
-					variant='outline'
-					color='red'
-					onClick={handleDelete}
-					isDisable={isDeleting}>
+				<Button variant='outline' color='red' onClick={handleDelete} isDisable={isDeleting}>
 					{isDeleting ? 'Eliminando…' : 'Eliminar'}
 				</Button>
 			</ModalFooter>

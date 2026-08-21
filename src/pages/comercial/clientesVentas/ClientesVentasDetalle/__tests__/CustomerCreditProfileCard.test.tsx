@@ -195,9 +195,9 @@ describe('CustomerCreditProfileCard', () => {
 		await waitFor(() =>
 			expect(apiSpies.fetchData).toHaveBeenCalledWith(
 				expect.objectContaining({
-				method: 'put',
-				data: expect.objectContaining({ collection_email: 'pagos@cliente.cl' }),
-			}),
+					method: 'put',
+					data: expect.objectContaining({ collection_email: 'pagos@cliente.cl' }),
+				}),
 			),
 		);
 		await waitForButtonClickGuard();

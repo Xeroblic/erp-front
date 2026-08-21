@@ -122,7 +122,9 @@ export function useProductos({
 		if (!enabled) return;
 		if (mode === 'subsidiaries') {
 			if (!subsidiaryId) return;
-			void dispatch(fetchInventorySummary({ entityParam: 'subsidiaries', entityId: subsidiaryId }));
+			void dispatch(
+				fetchInventorySummary({ entityParam: 'subsidiaries', entityId: subsidiaryId }),
+			);
 			return;
 		}
 		if (!activeBranchId) return;

@@ -6,9 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const navigateSpy = vi.hoisted(() => vi.fn());
 const routeState = vi.hoisted(() => ({ saleId: '7' }));
-const dispatchMock = vi.hoisted(() =>
-	vi.fn((action: { unwrap?: () => Promise<void> }) => action),
-);
+const dispatchMock = vi.hoisted(() => vi.fn((action: { unwrap?: () => Promise<void> }) => action));
 const salesServiceSpies = vi.hoisted(() => ({
 	fetchPendingSerialAssignment: vi.fn(),
 }));
@@ -53,12 +51,29 @@ vi.mock('@/components/ui/Card', () => ({
 	CardHeader: ({ children }: PropsWithChildren) => <div>{children}</div>,
 	CardTitle: ({ children }: PropsWithChildren) => <div>{children}</div>,
 }));
-vi.mock('@/components/ui/Button', () => ({ default: ({ children, onClick }: PropsWithChildren & { onClick?: () => void }) => <button onClick={onClick}>{children}</button> }));
-vi.mock('@/components/ui/ProtectedButton', () => ({ default: ({ children, onClick }: PropsWithChildren & { onClick?: () => void }) => <button onClick={onClick}>{children}</button> }));
+vi.mock('@/components/ui/Button', () => ({
+	default: ({ children, onClick }: PropsWithChildren & { onClick?: () => void }) => (
+		<button onClick={onClick}>{children}</button>
+	),
+}));
+vi.mock('@/components/ui/ProtectedButton', () => ({
+	default: ({ children, onClick }: PropsWithChildren & { onClick?: () => void }) => (
+		<button onClick={onClick}>{children}</button>
+	),
+}));
 vi.mock('@/components/form/Input', () => ({ default: () => <input /> }));
 vi.mock('@/components/form/SelectReact', () => ({ default: () => <select /> }));
 vi.mock('@/components/ui/DataTable', () => ({
-	default: ({ columns, data }: { columns: Array<{ id?: string; cell?: (props: { row: { original: unknown } }) => React.ReactNode }>; data: unknown[] }) => {
+	default: ({
+		columns,
+		data,
+	}: {
+		columns: Array<{
+			id?: string;
+			cell?: (props: { row: { original: unknown } }) => React.ReactNode;
+		}>;
+		data: unknown[];
+	}) => {
 		const actionColumn = columns.find((column) => column.id === 'actions');
 		return (
 			<div>
@@ -67,19 +82,39 @@ vi.mock('@/components/ui/DataTable', () => ({
 		);
 	},
 }));
-vi.mock('@/components/ui/Badge', () => ({ default: ({ children }: PropsWithChildren) => <span>{children}</span> }));
-vi.mock('@/components/ui/Alert', () => ({ default: ({ children }: PropsWithChildren) => <div>{children}</div> }));
-vi.mock('@/components/layouts/PageWrapper/PageWrapper', () => ({ default: ({ children }: PropsWithChildren) => <main>{children}</main> }));
-vi.mock('@/components/layouts/Container/Container', () => ({ default: ({ children }: PropsWithChildren) => <div>{children}</div> }));
+vi.mock('@/components/ui/Badge', () => ({
+	default: ({ children }: PropsWithChildren) => <span>{children}</span>,
+}));
+vi.mock('@/components/ui/Alert', () => ({
+	default: ({ children }: PropsWithChildren) => <div>{children}</div>,
+}));
+vi.mock('@/components/layouts/PageWrapper/PageWrapper', () => ({
+	default: ({ children }: PropsWithChildren) => <main>{children}</main>,
+}));
+vi.mock('@/components/layouts/Container/Container', () => ({
+	default: ({ children }: PropsWithChildren) => <div>{children}</div>,
+}));
 vi.mock('@/components/layouts/Subheader/Subheader', () => ({
 	default: ({ children }: PropsWithChildren) => <header>{children}</header>,
 	SubheaderLeft: ({ children }: PropsWithChildren) => <div>{children}</div>,
 }));
-vi.mock('@/components/icon/Icon', () => ({ default: ({ icon }: { icon: string }) => <span>{icon}</span> }));
-vi.mock('@/components/ui/Tooltip', () => ({ default: ({ children }: PropsWithChildren) => <>{children}</> }));
-vi.mock('../detail/components/modals/SaleDetailPage', () => ({ default: () => <div data-testid='sale-detail' /> }));
-vi.mock('../detail/components/modals/CloseSaleModal', () => ({ default: ({ open }: { open: boolean }) => open ? <div data-testid='close-sale-modal' /> : null }));
-vi.mock('../detail/components/modals/DeleteSaleModal', () => ({ default: ({ isOpen }: { isOpen: boolean }) => isOpen ? <div data-testid='delete-sale-modal' /> : null }));
+vi.mock('@/components/icon/Icon', () => ({
+	default: ({ icon }: { icon: string }) => <span>{icon}</span>,
+}));
+vi.mock('@/components/ui/Tooltip', () => ({
+	default: ({ children }: PropsWithChildren) => <>{children}</>,
+}));
+vi.mock('../detail/components/modals/SaleDetailPage', () => ({
+	default: () => <div data-testid='sale-detail' />,
+}));
+vi.mock('../detail/components/modals/CloseSaleModal', () => ({
+	default: ({ open }: { open: boolean }) =>
+		open ? <div data-testid='close-sale-modal' /> : null,
+}));
+vi.mock('../detail/components/modals/DeleteSaleModal', () => ({
+	default: ({ isOpen }: { isOpen: boolean }) =>
+		isOpen ? <div data-testid='delete-sale-modal' /> : null,
+}));
 
 import SalesListPage from '../SalesListPage';
 

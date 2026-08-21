@@ -245,7 +245,11 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 						</div>
 						<div className='flex flex-wrap gap-3'>
 							<Tooltip text='cerrar' placement='top-end'>
-								<Button variant='solid' color='red' className='hover:bg-red-700/20' onClick={onClose}>
+								<Button
+									variant='solid'
+									color='red'
+									className='hover:bg-red-700/20'
+									onClick={onClose}>
 									Cerrar
 								</Button>
 							</Tooltip>
@@ -266,15 +270,15 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 							)}
 
 							<Tooltip text='descargar' placement='top-end'>
-							<Button
-								variant='solid'
-								color='sky'
-								className='hover:bg-sky-700/20'
-								onClick={handleDownload}
-								isDisable={!quotation}
-								isLoading={downloading}>
-								Descargar PDF
-							</Button>
+								<Button
+									variant='solid'
+									color='sky'
+									className='hover:bg-sky-700/20'
+									onClick={handleDownload}
+									isDisable={!quotation}
+									isLoading={downloading}>
+									Descargar PDF
+								</Button>
 							</Tooltip>
 
 							{/* Aprobar: solo en borrador/enviada. Al aprobar se habilita

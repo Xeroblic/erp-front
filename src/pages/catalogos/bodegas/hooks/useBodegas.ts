@@ -31,8 +31,7 @@ export const useBodegas = () => {
 	latestBranchIdRef.current = branchId;
 
 	const warehouseState = useAppSelector((s) => s.warehouse);
-	const warehouses =
-		warehouseState.listBranchId === branchId ? warehouseState.warehouses : [];
+	const warehouses = warehouseState.listBranchId === branchId ? warehouseState.warehouses : [];
 	const { stats, loading, error, deleting } = warehouseState;
 
 	// UI state
@@ -44,15 +43,12 @@ export const useBodegas = () => {
 		[branchId],
 	);
 	const createSelection = useContextScopedSelection<'create'>(branchContext);
-	const selection = useContextScopedSelection<number>(
-		branchContext,
-		{
-			onInvalidate: () => {
-				setEditModalOpen(false);
-				setDeleteModalOpen(false);
-			},
+	const selection = useContextScopedSelection<number>(branchContext, {
+		onInvalidate: () => {
+			setEditModalOpen(false);
+			setDeleteModalOpen(false);
 		},
-	);
+	});
 	const selectedWarehouse = useMemo(
 		() => warehouses.find((warehouse) => warehouse.id === selection.selectedId) ?? null,
 		[selection.selectedId, warehouses],
@@ -135,7 +131,8 @@ export const useBodegas = () => {
 			if (!cleaned.maximum_capacity) delete cleaned.maximum_capacity;
 			if (!cleaned.address || cleaned.address.trim() === '') delete cleaned.address;
 			if (!cleaned.schedule || cleaned.schedule.trim() === '') delete cleaned.schedule;
-			if (!cleaned.description || cleaned.description.trim() === '') delete cleaned.description;
+			if (!cleaned.description || cleaned.description.trim() === '')
+				delete cleaned.description;
 
 			const success = await handleCreateWarehouse(cleaned);
 			setSubmitting(false);
@@ -160,7 +157,8 @@ export const useBodegas = () => {
 			if (!cleaned.maximum_capacity) delete cleaned.maximum_capacity;
 			if (!cleaned.address || cleaned.address.trim() === '') delete cleaned.address;
 			if (!cleaned.schedule || cleaned.schedule.trim() === '') delete cleaned.schedule;
-			if (!cleaned.description || cleaned.description.trim() === '') delete cleaned.description;
+			if (!cleaned.description || cleaned.description.trim() === '')
+				delete cleaned.description;
 
 			const success = await handleUpdateWarehouse(selectedWarehouse.id, cleaned);
 			setSubmitting(false);
@@ -198,28 +196,34 @@ export const useBodegas = () => {
 	}, [warehouses, globalFilter]);
 
 	// Actions
-	const handleEdit = useCallback((warehouse: IWarehouse) => {
-		editForm.setValues({
-			name: warehouse.name || '',
-			code: warehouse.code || '',
-			warehouse_type: warehouse.warehouse_type || 'Secundaria',
-			description: warehouse.description || '',
-			maximum_capacity: warehouse.maximum_capacity,
-			manager_id: warehouse.manager_id ?? null,
-			address: warehouse.address || '',
-			commune_id: warehouse.commune_id ?? null,
-			schedule: warehouse.schedule || '',
-			is_active: warehouse.is_active !== undefined ? warehouse.is_active : true,
-			requires_serial_tracking: warehouse.requires_serial_tracking || false,
-		});
-		selection.select(warehouse.id);
-		setEditModalOpen(true);
-	}, [editForm, selection]);
+	const handleEdit = useCallback(
+		(warehouse: IWarehouse) => {
+			editForm.setValues({
+				name: warehouse.name || '',
+				code: warehouse.code || '',
+				warehouse_type: warehouse.warehouse_type || 'Secundaria',
+				description: warehouse.description || '',
+				maximum_capacity: warehouse.maximum_capacity,
+				manager_id: warehouse.manager_id ?? null,
+				address: warehouse.address || '',
+				commune_id: warehouse.commune_id ?? null,
+				schedule: warehouse.schedule || '',
+				is_active: warehouse.is_active !== undefined ? warehouse.is_active : true,
+				requires_serial_tracking: warehouse.requires_serial_tracking || false,
+			});
+			selection.select(warehouse.id);
+			setEditModalOpen(true);
+		},
+		[editForm, selection],
+	);
 
-	const handleDelete = useCallback((warehouse: IWarehouse) => {
-		selection.select(warehouse.id);
-		setDeleteModalOpen(true);
-	}, [selection]);
+	const handleDelete = useCallback(
+		(warehouse: IWarehouse) => {
+			selection.select(warehouse.id);
+			setDeleteModalOpen(true);
+		},
+		[selection],
+	);
 
 	const confirmDelete = useCallback(async () => {
 		if (!selectedWarehouse) return false;
@@ -247,36 +251,68 @@ export const useBodegas = () => {
 		[createForm, createSelection],
 	);
 
-	const state = useMemo(() => ({
-		warehouses: filteredWarehouses,
-		stats,
-		loading,
-		deleting,
-		error,
-		globalFilter,
-		createModalOpen: createSelection.isOpen,
-		editModalOpen: editModalOpen && selection.isOpen,
-		deleteModalOpen: deleteModalOpen && selection.isOpen,
-		selectedWarehouse,
-		branchId,
-	}), [filteredWarehouses, stats, loading, deleting, error, globalFilter, createSelection.isOpen, editModalOpen, deleteModalOpen, selectedWarehouse, branchId, selection.isOpen]);
+	const state = useMemo(
+		() => ({
+			warehouses: filteredWarehouses,
+			stats,
+			loading,
+			deleting,
+			error,
+			globalFilter,
+			createModalOpen: createSelection.isOpen,
+			editModalOpen: editModalOpen && selection.isOpen,
+			deleteModalOpen: deleteModalOpen && selection.isOpen,
+			selectedWarehouse,
+			branchId,
+		}),
+		[
+			filteredWarehouses,
+			stats,
+			loading,
+			deleting,
+			error,
+			globalFilter,
+			createSelection.isOpen,
+			editModalOpen,
+			deleteModalOpen,
+			selectedWarehouse,
+			branchId,
+			selection.isOpen,
+		],
+	);
 
-	const forms = useMemo(() => ({
-		create: createForm,
-		edit: editForm,
-	}), [createForm, editForm]);
+	const forms = useMemo(
+		() => ({
+			create: createForm,
+			edit: editForm,
+		}),
+		[createForm, editForm],
+	);
 
-	const actions = useMemo(() => ({
-		setGlobalFilter,
-		openCreateModal,
-		setCreateModalOpen,
-		setEditModalOpen,
-		setDeleteModalOpen,
-		handleEdit,
-		handleDelete,
-		confirmDelete,
-		loadWarehouses,
-	}), [setGlobalFilter, openCreateModal, setCreateModalOpen, setEditModalOpen, setDeleteModalOpen, handleEdit, handleDelete, confirmDelete, loadWarehouses]);
+	const actions = useMemo(
+		() => ({
+			setGlobalFilter,
+			openCreateModal,
+			setCreateModalOpen,
+			setEditModalOpen,
+			setDeleteModalOpen,
+			handleEdit,
+			handleDelete,
+			confirmDelete,
+			loadWarehouses,
+		}),
+		[
+			setGlobalFilter,
+			openCreateModal,
+			setCreateModalOpen,
+			setEditModalOpen,
+			setDeleteModalOpen,
+			handleEdit,
+			handleDelete,
+			confirmDelete,
+			loadWarehouses,
+		],
+	);
 
 	return { state, forms, actions };
 };

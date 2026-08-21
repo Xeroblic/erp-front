@@ -67,7 +67,7 @@ const EditableComuneSelect = <FormValues extends Record<string, any>>({
 						// Al seleccionar, buscamos el nombre y lo guardamos en Formik
 						const comuna = listaComunas.find((c) => String(c.codigo) === String(code));
 						formik.setFieldValue(name, comuna ? comuna.nombre : '');
-						
+
 						// Si se requiere guardar más datos (provincia, región), se hace vía callback
 						if (onSelectData) {
 							onSelectData(data);

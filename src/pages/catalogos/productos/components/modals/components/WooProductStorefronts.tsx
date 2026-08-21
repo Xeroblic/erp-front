@@ -61,8 +61,7 @@ const WooProductStorefronts: React.FC<WooProductStorefrontsProps> = ({
 					const name = unidentified
 						? 'Tienda no identificada'
 						: getIntegrationName(link.integrationId);
-					const isActive =
-						!unidentified && activeIntegrationId === link.integrationId;
+					const isActive = !unidentified && activeIntegrationId === link.integrationId;
 					const isInactive =
 						link.integrationId != null &&
 						inactiveIntegrationIds?.has(link.integrationId);

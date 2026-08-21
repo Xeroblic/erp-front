@@ -167,7 +167,8 @@ const SuppliersTable: React.FC<SuppliersTableProps> = ({
 			</CardHeader>
 			<CardBody className='p-0'>
 				<div className='border-b border-dashed border-neutral-200 bg-neutral-50/80 px-5 py-3 text-xs text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900/40 dark:text-neutral-400'>
-					Visualiza proveedores, consulta su ficha y elimina registros rápidamente desde la misma tabla.
+					Visualiza proveedores, consulta su ficha y elimina registros rápidamente desde
+					la misma tabla.
 				</div>
 				<DataTable<ISupplier>
 					columns={columns}
