@@ -112,9 +112,6 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	// Fuente de la verdad: endpoint pending-serial-assignment (su serialized_items).
 	const [serialItemIds, setSerialItemIds] = useState<Set<number>>(new Set());
 
-
-
-
 	useEffect(() => {
 		if (!isOpen) return;
 		if (!subsidiaryId || !saleId) return;
@@ -178,8 +175,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			(sum, it) =>
 				sum +
 				parseAmount(
-					it.total ??
-						parseAmount(it.subtotal ?? 0) + parseAmount(it.tax_amount ?? 0),
+					it.total ?? parseAmount(it.subtotal ?? 0) + parseAmount(it.tax_amount ?? 0),
 				),
 			0,
 		);
@@ -199,9 +195,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					?.reservation as Record<string, unknown> | undefined;
 				const sold = (reservation?.sold_serials as string[] | undefined) ?? [];
 				const returned = (reservation?.returned_serials as string[] | undefined) ?? [];
-				return [...sold, ...returned].some(
-					(s) => typeof s === 'string' && s.trim() !== '',
-				);
+				return [...sold, ...returned].some((s) => typeof s === 'string' && s.trim() !== '');
 			}),
 		[items],
 	);
@@ -311,7 +305,6 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			dispatch(loadSaleItems({ subsidiaryId, saleId }));
 			toast.success('Venta cerrada correctamente');
 		} catch (err) {
-
 			console.error('Direct close failed', err);
 			toast.info('Se requiere ingresar números de serie. Abriendo formulario...');
 			setCloseOpen(true);
@@ -334,9 +327,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			if (seriesCount > 0) detailParts.push(`${seriesCount} serie(s) devuelta(s) al stock`);
 			if (restockCount > 0) detailParts.push(`${restockCount} ítem(es) reingresado(s)`);
 			const summary = detailParts.length ? ` (${detailParts.join(', ')})` : '';
-			toast.success(
-				`${res.message || 'Recepción confirmada correctamente'}${summary}`,
-			);
+			toast.success(`${res.message || 'Recepción confirmada correctamente'}${summary}`);
 			setConfirmReturnOpen(false);
 			dispatch(loadSaleDetail({ subsidiaryId, saleId }));
 			dispatch(loadSaleItems({ subsidiaryId, saleId }));
@@ -346,7 +337,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			const message = axiosError.response?.data?.message;
 			if (status === 422) {
 				// No hay ítems en espera de recepción física.
-				toast.info(message || 'No hay devoluciones pendientes para confirmar en esta venta.');
+				toast.info(
+					message || 'No hay devoluciones pendientes para confirmar en esta venta.',
+				);
 				setConfirmReturnOpen(false);
 			} else if (status === 403) {
 				toast.error(message || 'No tienes permiso para confirmar esta devolución.');
@@ -367,18 +360,17 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		? 'border-rose-500 bg-rose-500 text-rose-700 hover:bg-rose-100 hover:text-rose-900 dark:text-rose-200 dark:hover:bg-rose-500/20 dark:hover:text-rose-100'
 		: 'border-violet-500 bg-violet-500 text-violet-700 hover:bg-violet-100 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-500/20 dark:hover:text-violet-100';
 
-
 	const statusColorMap: Record<string, string> = {
-		'draft': 'zinc',
-		'pending': 'amber',
+		draft: 'zinc',
+		pending: 'amber',
 		'on-hold': 'orange',
-		'confirmed': 'sky',
-		'processing': 'indigo',
-		'paid': 'teal',
-		'completed': 'emerald',
-		'delivered': 'violet',
-		'cancelled': 'red',
-		'refunded': 'slate',
+		confirmed: 'sky',
+		processing: 'indigo',
+		paid: 'teal',
+		completed: 'emerald',
+		delivered: 'violet',
+		cancelled: 'red',
+		refunded: 'slate',
 	};
 
 	// Estado de la venta → qué acciones aplican. Nunca coexisten "Cerrar venta"
@@ -403,7 +395,10 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					</span>
 				</Badge>
 				{/* #{detail?.id ?? saleId} */}
-				<Badge variant='solid' color={`${statusColorMap[detail?.status ?? 'draft']}`} className='ml-4 w-fit px-2 text-sm text-white'>
+				<Badge
+					variant='solid'
+					color={`${statusColorMap[detail?.status ?? 'draft']}`}
+					className='ml-4 w-fit px-2 text-sm text-white'>
 					{translateStatus(detail?.status)}
 				</Badge>
 			</ModalHeader>
@@ -428,7 +423,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						</div>
 						<div className='flex flex-col gap-2 md:flex-row md:items-center md:gap-4'>
 							<div className='flex flex-row items-center justify-center space-y-3'>
-								<p className='mr-4 uppercase tracking-wide font-medium'>Detalle de Pago</p>
+								<p className='mr-4 font-medium uppercase tracking-wide'>
+									Detalle de Pago
+								</p>
 								<div className='flex flex-col items-center justify-center gap-2 space-y-2 rounded-md border-2 border-dashed border-yellow-500 p-2 px-4 dark:border-white'>
 									<Badge variant='solid' color='teal' className='w-fit px-2'>
 										{getFirstCapitalize(translateStatus(detail?.document_type))}
@@ -553,12 +550,10 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							<CardTitle>Notas del Cliente</CardTitle>
 						</CardHeader>
 						<CardBody>
-							<p>
-								{detail?.notes}
-							</p>
+							<p>{detail?.notes}</p>
 						</CardBody>
 					</Card>
-				) :(
+				) : (
 					<Card className='bg-red-500/40 shadow-sm'>
 						<CardHeader>
 							<CardTitle>Notas del Cliente</CardTitle>
@@ -571,23 +566,29 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 				<Card className='bg-white/90 shadow-sm'>
 					<CardHeader className='flex items-center justify-between'>
 						<CardTitle>Ítems de la venta</CardTitle>
-						{(isSaleClosed || isSaleRefunded) && hasSerialItems && !detail?.inventory_finalized && (
-							<Tooltip text='Corregir serie' placement='left-end'>
-								<ProtectedButton
-									permission='correct-sale-serials'
-									subsidiaryId={subsidiaryId}
-									scope='access'
-									fallbackMode='hidden'
-									variant='solid'
-									color='sky'
-									size='sm'
-									className='font-bold border-2 border-sky-600 hover:bg-sky-700/20'
-									onClick={() => setCorrectSerialOpen(true)}>
-										<Icon color='white' icon='HeroArrowsRightLeft' className="text-xl mr-1 font-bold" />
+						{(isSaleClosed || isSaleRefunded) &&
+							hasSerialItems &&
+							!detail?.inventory_finalized && (
+								<Tooltip text='Corregir serie' placement='left-end'>
+									<ProtectedButton
+										permission='correct-sale-serials'
+										subsidiaryId={subsidiaryId}
+										scope='access'
+										fallbackMode='hidden'
+										variant='solid'
+										color='sky'
+										size='sm'
+										className='border-2 border-sky-600 font-bold hover:bg-sky-700/20'
+										onClick={() => setCorrectSerialOpen(true)}>
+										<Icon
+											color='white'
+											icon='HeroArrowsRightLeft'
+											className='mr-1 text-xl font-bold'
+										/>
 										Corregir serie
-								</ProtectedButton>
-							</Tooltip>
-						)}
+									</ProtectedButton>
+								</Tooltip>
+							)}
 					</CardHeader>
 					<CardBody>
 						<SaleItemsTable items={items} />
@@ -660,10 +661,10 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					<ModalHeader>Confirmar recepción de devolución</ModalHeader>
 					<ModalBody>
 						<div className='text-zinc-600 dark:text-zinc-300'>
-							Se registrará la recepción física en bodega de los productos
-							devueltos de esta venta: las series se devolverán a stock disponible
-							y el stock no serializado se reingresará al inventario. Esta acción
-							no se puede deshacer.
+							Se registrará la recepción física en bodega de los productos devueltos
+							de esta venta: las series se devolverán a stock disponible y el stock no
+							serializado se reingresará al inventario. Esta acción no se puede
+							deshacer.
 						</div>
 					</ModalBody>
 					<ModalFooter>
@@ -686,41 +687,44 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					</ModalFooter>
 				</Modal>
 
-				{loading && (
-					<Spinner nombre='Cargando información actualizada...'/>
-				)}
+				{loading && <Spinner nombre='Cargando información actualizada...' />}
 				<ModalFooter className='flex flex-wrap justify-end gap-2 rounded-md p-3'>
 					<ModalFooterChild className='ml-auto flex flex-wrap items-center justify-end gap-2'>
 						<Tooltip text='Descargar etiqueta de envío'>
 							<Button
 								variant='solid'
 								color='blue'
-								className='border-2 border-blue-600 hover:bg-blue-700/20 bg-blue-500'
+								className='border-2 border-blue-600 bg-blue-500 hover:bg-blue-700/20'
 								isDisable={!subsidiaryId}
-								onClick={async () =>{
-									try{
+								onClick={async () => {
+									try {
 										await dispatch(
 											downloadShippingLabel({
 												subsidiaryId: Number(subsidiaryId),
 												id: saleId,
-												
-											})
+											}),
 										);
-									}catch(e: any){
+									} catch (e: any) {
 										if (e.statusCode === 404) {
 											toast.error('No se encontró la etiqueta de envío.');
 										} else if (e.statusCode === 422) {
 											if (e.message) {
 												toast.error(e.message);
 											} else {
-												toast.error('La venta no cumple los requisitos para generar etiqueta de envío.');
+												toast.error(
+													'La venta no cumple los requisitos para generar etiqueta de envío.',
+												);
 											}
 										} else {
 											toast.error('Error al descargar etiqueta.');
 										}
 									}
 								}}>
-									<Icon color='white' className="text-2xl mr-1 font-bold" icon='DuoFile' />
+								<Icon
+									color='white'
+									className='mr-1 text-2xl font-bold'
+									icon='DuoFile'
+								/>
 								Descargar etiqueta
 							</Button>
 						</Tooltip>
@@ -747,7 +751,11 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 									className='border-2 border-amber-600 hover:bg-amber-700/20'
 									isLoading={isConfirmingReturn}
 									onClick={() => setConfirmReturnOpen(true)}>
-										<Icon color='white' icon='HeroInboxArrowDown'  className='mr-1 font-bold text-2xl'/>
+									<Icon
+										color='white'
+										icon='HeroInboxArrowDown'
+										className='mr-1 text-2xl font-bold'
+									/>
 									Confirmar recepción de devolución
 								</ProtectedButton>
 							</Tooltip>

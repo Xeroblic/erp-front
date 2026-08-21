@@ -377,22 +377,30 @@ const extractModelCode = (productName: string): string => {
 
 	if (modelTokens.length > 0) {
 		// Concatenar tokens de modelo, limitando a 6 caracteres
-		const joined = modelTokens
-			.map((t) => t.replace(/[^A-Z0-9]/g, ''))
-			.join('');
+		const joined = modelTokens.map((t) => t.replace(/[^A-Z0-9]/g, '')).join('');
 		return joined.substring(0, 6);
 	}
 
 	// Sin números: tomar la primera palabra significativa (> 2 chars, no genérica)
 	const skipWords = new Set([
-		'REACONDICIONADO', 'REACOND', 'USADO', 'NUEVO', 'EQUIPO',
-		'COMPUTADOR', 'COMPUTADORA', 'PORTATIL', 'LAPTOP',
-		'DESKTOP', 'NOTEBOOK', 'MONITOR', 'DOCKING', 'ALL', 'ONE',
+		'REACONDICIONADO',
+		'REACOND',
+		'USADO',
+		'NUEVO',
+		'EQUIPO',
+		'COMPUTADOR',
+		'COMPUTADORA',
+		'PORTATIL',
+		'LAPTOP',
+		'DESKTOP',
+		'NOTEBOOK',
+		'MONITOR',
+		'DOCKING',
+		'ALL',
+		'ONE',
 	]);
 
-	const meaningfulToken = tokens.find(
-		(t) => t.length > 2 && !skipWords.has(t),
-	);
+	const meaningfulToken = tokens.find((t) => t.length > 2 && !skipWords.has(t));
 
 	if (meaningfulToken) {
 		return meaningfulToken.replace(/[^A-Z0-9]/g, '').substring(0, 6);
@@ -492,9 +500,7 @@ export const checkSkuExists = async (
 				: [];
 
 		// Verificar coincidencia exacta (insensible a mayúsculas)
-		return items.some(
-			(item) => item.sku?.toUpperCase().trim() === sku.toUpperCase().trim(),
-		);
+		return items.some((item) => item.sku?.toUpperCase().trim() === sku.toUpperCase().trim());
 	} catch {
 		// En caso de error de red, retornar false para no bloquear al usuario
 		console.warn('[SKU Check] No se pudo verificar la existencia del SKU:', sku);
@@ -529,4 +535,3 @@ export const generateUniqueSmartSKU = async (
 	const timestamp = Date.now().toString(36).slice(-3).toUpperCase();
 	return `${fallbackSku}${timestamp}`;
 };
-

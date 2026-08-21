@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback, ElementType } from 'r
 import { toast } from 'react-toastify';
 import DARK_MODE from '../../../../constants/darkMode.constant';
 import useFontSize from '../../../../hooks/useFontSize';
-import useDarkModeManager from '../../../../hooks/useDarkModeManager.ts';
+import useDarkModeManager from '../../../../hooks/useDarkModeManager';
 import useThemeColor from '../../../../hooks/useThemeColor';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -12,17 +12,17 @@ import {
 import { TColors } from '@/types/colors.type';
 import { TColorIntensity } from '@/types/colorIntensities.type';
 
-import { apiToDark, tDarkToApi, isTcolor, isTIntensity } from './utils/personalizacionMaps.ts';
-import { TDarkMode } from '@/types/darkMode.type.ts';
-import Dropdown, { DropdownItem, DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown.tsx';
-import Button from '@/components/ui/Button.tsx';
-import ButtonGroup from '@/components/ui/ButtonGroup.tsx';
-import ColorSelector from '@/components/ColorSelector.tsx';
-import Icon from '@/components/icon/Icon.tsx';
-import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal.tsx';
+import { apiToDark, tDarkToApi, isTcolor, isTIntensity } from './utils/personalizacionMaps';
+import { TDarkMode } from '@/types/darkMode.type';
+import Dropdown, { DropdownItem, DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown';
+import Button from '@/components/ui/Button';
+import ButtonGroup from '@/components/ui/ButtonGroup';
+import ColorSelector from '@/components/ColorSelector';
+import Icon from '@/components/icon/Icon';
+import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useNavigate } from 'react-router-dom';
 import { runPageTransition } from '@/utils/pageTransition.util';
-import { getPageTitleFromPath } from '@/utils/getPageTitle.util.ts';
+import { getPageTitleFromPath } from '@/utils/getPageTitle.util';
 
 const MIN_FONT = 12;
 const MAX_FONT = 18;

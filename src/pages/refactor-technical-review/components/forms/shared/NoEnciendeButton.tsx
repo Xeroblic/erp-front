@@ -9,7 +9,11 @@ interface NoEnciendeButtonProps {
 	className?: string;
 }
 
-export const NoEnciendeButton: React.FC<NoEnciendeButtonProps> = ({ onConfirm, onValidate, className = '' }) => {
+export const NoEnciendeButton: React.FC<NoEnciendeButtonProps> = ({
+	onConfirm,
+	onValidate,
+	className = '',
+}) => {
 	const [isConfirming, setIsConfirming] = useState(false);
 	return (
 		<>
@@ -36,19 +40,18 @@ export const NoEnciendeButton: React.FC<NoEnciendeButtonProps> = ({ onConfirm, o
 					</div>
 				</ModalHeader>
 				<ModalBody>
-					<p className='text-base font-black  text-red-700 dark:text-red-300'>
-						Asegúrate de haber revisado el equipo correctamente. Si alguna pieza es funcional o sirve como repuesto (ej. la pantalla), modifica la revisión después de enviar.
+					<p className='text-base font-black text-red-700 dark:text-red-300'>
+						Asegúrate de haber revisado el equipo correctamente. Si alguna pieza es
+						funcional o sirve como repuesto (ej. la pantalla), modifica la revisión
+						después de enviar.
 					</p>
 					<p className='mt-4 text-sm text-zinc-600 dark:text-zinc-400'>
-						Se llenará automáticamente el formulario con valores mínimos y observación "No enciende"
-						(Categoría M). El formulario se enviará de inmediato.
+						Se llenará automáticamente el formulario con valores mínimos y observación
+						"No enciende" (Categoría M). El formulario se enviará de inmediato.
 					</p>
 				</ModalBody>
 				<ModalFooter>
-					<Button
-						variant='outline'
-						color='zinc'
-						onClick={() => setIsConfirming(false)}>
+					<Button variant='outline' color='zinc' onClick={() => setIsConfirming(false)}>
 						Cancelar
 					</Button>
 					<Button

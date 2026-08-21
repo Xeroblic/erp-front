@@ -1,332 +1,391 @@
 <!doctype html>
 <html lang="es" dir="ltr">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<meta name="color-scheme" content="dark light" />
+		<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+		<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />
 
-    <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />
+		<title>Zentria | Plataforma Central</title>
+		<meta name="description" content="Zentria ERP - Gestión Inteligente" />
 
-    <title>Zentria | Plataforma Central</title>
-    <meta name="description" content="Zentria ERP - Gestión Inteligente" />
-    
-    <link rel="icon" href="/logo192.png?v=zentria1" type="image/png" />
-    <link rel="apple-touch-icon" href="/logo192.png?v=zentria1" />
-    <link rel="manifest" href="/manifest.json" />
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-        rel="preload"
-        as="style"
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap"
-        onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <noscript>
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-    </noscript>
+		<link rel="icon" href="/logo192.png?v=zentria1" type="image/png" />
+		<link rel="apple-touch-icon" href="/logo192.png?v=zentria1" />
+		<link rel="manifest" href="/manifest.json" />
 
-    <!-- GSAP Core for splash animations (non-blocking) -->
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			rel="preload"
+			as="style"
+			href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap"
+			onload="this.onload=null;this.rel='stylesheet'" />
+		<noscript>
+			<link
+				href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap"
+				rel="stylesheet" />
+		</noscript>
 
-    <style id="critical-styles">
-        :root {
-            --bg-dark: #0f172a;
-            --primary: #3b82f6; 
-            --secondary: #6366f1;
-        }
+		<!-- GSAP Core for splash animations (non-blocking) -->
+		<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--bg-dark);
-            color: #f8fafc;
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
-        }
+		<style id="critical-styles">
+			:root {
+				--bg-dark: #0f172a;
+				--primary: #3b82f6;
+				--secondary: #6366f1;
+			}
 
-        /* SPLASH CONTAINER */
-        #splash-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-dark);
-            /* Subtle radial gradient background */
-            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
-            will-change: transform;
-        }
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100%;
+				background-color: var(--bg-dark);
+				color: #f8fafc;
+				font-family: 'Inter', sans-serif;
+				overflow: hidden;
+			}
 
-        .splash-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            max-width: 400px;
-        }
+			/* SPLASH CONTAINER */
+			#splash-screen {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				z-index: 10000;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				background: var(--bg-dark);
+				/* Subtle radial gradient background */
+				background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+				will-change: transform;
+			}
 
-        .logo-wrap {
-            width: 220px;
-            height: 140px;
-            margin-bottom: 3rem;
-            position: relative;
-            opacity: 0; 
-        }
+			.splash-content {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				position: relative;
+				z-index: 2;
+				width: 100%;
+				max-width: 400px;
+			}
 
-        .zentria-logo-svg {
-            width: 100%;
-            height: 100%;
-            overflow: visible;
-        }
+			.logo-wrap {
+				width: 220px;
+				height: 140px;
+				margin-bottom: 3rem;
+				position: relative;
+				opacity: 0;
+			}
 
-        /* Initial states for GSAP to animate from */
-        .logo-path {
-            opacity: 0;
-        }
+			.zentria-logo-svg {
+				width: 100%;
+				height: 100%;
+				overflow: visible;
+			}
 
-        .brand-text {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 800;
-            letter-spacing: -0.05em;
-            background: linear-gradient(135deg, white 0%, #94a3b8 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            opacity: 0;
-            transform: translateY(20px);
-        }
+			/* Initial states for GSAP to animate from */
+			.logo-path {
+				opacity: 0;
+			}
 
-        .loader-line-container {
-            width: 0%; 
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            margin-top: 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .loader-line {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            position: absolute;
-            top: 0;
-            left: 0;
-            box-shadow: 0 0 20px var(--primary);
-        }
+			.brand-text {
+				font-family: 'Outfit', sans-serif;
+				font-size: 2.5rem;
+				font-weight: 800;
+				letter-spacing: -0.05em;
+				background: linear-gradient(135deg, white 0%, #94a3b8 100%);
+				-webkit-background-clip: text;
+				background-clip: text;
+				-webkit-text-fill-color: transparent;
+				opacity: 0;
+				transform: translateY(20px);
+			}
 
-        .skip-link {
-            position: absolute;
-            top: -100px;
-            left: 10px;
-            background: var(--primary);
-            color: white;
-            padding: 10px 15px;
-            z-index: 11000;
-            text-decoration: none;
-            font-weight: 600;
-            border-radius: 4px;
-        }
-        .skip-link:focus { top: 10px; }
-    </style>
-    
+			.loader-line-container {
+				width: 0%;
+				height: 4px;
+				background: rgba(255, 255, 255, 0.1);
+				border-radius: 4px;
+				margin-top: 1rem;
+				position: relative;
+				overflow: hidden;
+			}
 
+			.loader-line {
+				width: 100%;
+				height: 100%;
+				background: linear-gradient(90deg, var(--primary), var(--secondary));
+				position: absolute;
+				top: 0;
+				left: 0;
+				box-shadow: 0 0 20px var(--primary);
+			}
 
-<body>
-    <a href="#main-content" class="skip-link">Saltar al contenido</a>
-    <noscript>
-        <div style="padding: 2rem; text-align: center; color: #ef4444; background: #0f172a; height: 100vh;">
-            ⚠ Zentria requiere JavaScript.
-        </div>
-    </noscript>
+			.skip-link {
+				position: absolute;
+				top: -100px;
+				left: 10px;
+				background: var(--primary);
+				color: white;
+				padding: 10px 15px;
+				z-index: 11000;
+				text-decoration: none;
+				font-weight: 600;
+				border-radius: 4px;
+			}
+			.skip-link:focus {
+				top: 10px;
+			}
+		</style>
+	</head>
 
-    <div id="splash-screen">
-        <div class="splash-content">
-            <div class="logo-wrap" id="splash-logo">
-                <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" class="zentria-logo-svg">
-                    <defs>
-                        <linearGradient id='brandG1' x1='0%' y1='0%' x2='100%' y2='100%'>
-                            <stop offset='0%' stop-color='#1e40af'></stop>
-                            <stop offset='50%' stop-color='#6366f1'></stop> 
-                            <stop offset='100%' stop-color='#7c3aed'></stop>
-                        </linearGradient>
-                        <linearGradient id='brandG2' x1='0%' y1='0%' x2='100%' y2='100%'>
-                            <stop offset='0%' stop-color='#3b82f6'></stop>
-                            <stop offset='100%' stop-color='#8b5cf6'></stop>
-                        </linearGradient>
-                        <linearGradient id='brandG3' x1='0%' y1='0%' x2='100%' y2='100%'>
-                            <stop offset='0%' stop-color='#60a5fa'></stop>
-                            <stop offset='100%' stop-color='#a78bfa'></stop>
-                        </linearGradient>
-                    </defs>
+	<body>
+		<a href="#main-content" class="skip-link">Saltar al contenido</a>
+		<noscript>
+			<div
+				style="
+					padding: 2rem;
+					text-align: center;
+					color: #ef4444;
+					background: #0f172a;
+					height: 100vh;
+				">
+				⚠ Zentria requiere JavaScript.
+			</div>
+		</noscript>
 
-                    <!-- Exact Paths from Logo.template.tsx -->
-                    
-                    <!-- 1. Main Infinity Line -->
-                    <path class="logo-path path-main" 
-                        d='M 30 60 C 30 30, 60 20, 90 40 C 120 60, 140 60, 170 40 C 200 20, 200 30, 170 60 C 140 90, 120 90, 90 70 C 60 50, 30 50, 30 60 Z'
-                        fill='none' stroke='url(#brandG1)' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' />
+		<div id="splash-screen">
+			<div class="splash-content">
+				<div class="logo-wrap" id="splash-logo">
+					<svg
+						viewBox="0 0 200 120"
+						xmlns="http://www.w3.org/2000/svg"
+						class="zentria-logo-svg">
+						<defs>
+							<linearGradient id="brandG1" x1="0%" y1="0%" x2="100%" y2="100%">
+								<stop offset="0%" stop-color="#1e40af"></stop>
+								<stop offset="50%" stop-color="#6366f1"></stop>
+								<stop offset="100%" stop-color="#7c3aed"></stop>
+							</linearGradient>
+							<linearGradient id="brandG2" x1="0%" y1="0%" x2="100%" y2="100%">
+								<stop offset="0%" stop-color="#3b82f6"></stop>
+								<stop offset="100%" stop-color="#8b5cf6"></stop>
+							</linearGradient>
+							<linearGradient id="brandG3" x1="0%" y1="0%" x2="100%" y2="100%">
+								<stop offset="0%" stop-color="#60a5fa"></stop>
+								<stop offset="100%" stop-color="#a78bfa"></stop>
+							</linearGradient>
+						</defs>
 
-                    <!-- 2. Wavy Line -->
-                    <path class="logo-path path-wave" 
-                        d='M 35 55 C 35 35, 55 30, 80 45 C 105 60, 125 65, 150 50 C 175 35, 175 40, 165 65 C 155 90, 135 95, 110 80 C 85 65, 65 60, 40 75 C 15 90, 25 85, 35 55 Z'
-                        fill='none' stroke='url(#brandG2)' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' />
+						<!-- Exact Paths from Logo.template.tsx -->
 
-                    <!-- 3. Subtle Line -->
-                    <path class="logo-path path-subtle" 
-                        d='M 40 58 C 40 42, 55 38, 75 48 C 95 58, 115 62, 135 52 C 155 42, 155 46, 150 68 C 145 90, 125 94, 105 84 C 85 74, 65 70, 45 80 C 25 90, 35 86, 40 58 Z'
-                        fill='none' stroke='url(#brandG3)' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' />
-                    
-                    <!-- Fibers -->
-                    <path class="logo-path path-fiber" d='M 60 25 C 80 15, 100 20, 110 35' fill='none' stroke='url(#brandG2)' stroke-width='3' stroke-linecap='round' />
-                    <path class="logo-path path-fiber" d='M 130 25 C 150 15, 170 20, 180 35' fill='none' stroke='url(#brandG2)' stroke-width='3' stroke-linecap='round' />
-                    <path class="logo-path path-fiber" d='M 60 95 C 80 105, 100 100, 110 85' fill='none' stroke='url(#brandG2)' stroke-width='3' stroke-linecap='round' />
-                    <path class="logo-path path-fiber" d='M 130 95 C 150 105, 170 100, 180 85' fill='none' stroke='url(#brandG2)' stroke-width='3' stroke-linecap='round' />
+						<!-- 1. Main Infinity Line -->
+						<path
+							class="logo-path path-main"
+							d="M 30 60 C 30 30, 60 20, 90 40 C 120 60, 140 60, 170 40 C 200 20, 200 30, 170 60 C 140 90, 120 90, 90 70 C 60 50, 30 50, 30 60 Z"
+							fill="none"
+							stroke="url(#brandG1)"
+							stroke-width="8"
+							stroke-linecap="round"
+							stroke-linejoin="round" />
 
-                </svg>
-            </div>
-            
-            <div class="brand-text" id="splash-text">Zentria</div>
-            
-            <div class="loader-line-container" id="splash-loader">
-                <div class="loader-line"></div>
-            </div>
-        </div>
-    </div>
+						<!-- 2. Wavy Line -->
+						<path
+							class="logo-path path-wave"
+							d="M 35 55 C 35 35, 55 30, 80 45 C 105 60, 125 65, 150 50 C 175 35, 175 40, 165 65 C 155 90, 135 95, 110 80 C 85 65, 65 60, 40 75 C 15 90, 25 85, 35 55 Z"
+							fill="none"
+							stroke="url(#brandG2)"
+							stroke-width="6"
+							stroke-linecap="round"
+							stroke-linejoin="round" />
 
-    <div id="root"></div>
-    <div id="portal-root"></div>
-    <div id="toast-root"></div>
+						<!-- 3. Subtle Line -->
+						<path
+							class="logo-path path-subtle"
+							d="M 40 58 C 40 42, 55 38, 75 48 C 95 58, 115 62, 135 52 C 155 42, 155 46, 150 68 C 145 90, 125 94, 105 84 C 85 74, 65 70, 45 80 C 25 90, 35 86, 40 58 Z"
+							fill="none"
+							stroke="url(#brandG3)"
+							stroke-width="4"
+							stroke-linecap="round"
+							stroke-linejoin="round" />
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            // --- 1. SETUP ---
-            const minLoadTime = 2500; 
-            const startTime = Date.now();
-            
-            const screen = document.getElementById('splash-screen');
-            const logoPaths = document.querySelectorAll('.logo-path');
-            const text = document.getElementById('splash-text');
-            const loader = document.getElementById('splash-loader');
-            const logoWrap = document.getElementById('splash-logo');
+						<!-- Fibers -->
+						<path
+							class="logo-path path-fiber"
+							d="M 60 25 C 80 15, 100 20, 110 35"
+							fill="none"
+							stroke="url(#brandG2)"
+							stroke-width="3"
+							stroke-linecap="round" />
+						<path
+							class="logo-path path-fiber"
+							d="M 130 25 C 150 15, 170 20, 180 35"
+							fill="none"
+							stroke="url(#brandG2)"
+							stroke-width="3"
+							stroke-linecap="round" />
+						<path
+							class="logo-path path-fiber"
+							d="M 60 95 C 80 105, 100 100, 110 85"
+							fill="none"
+							stroke="url(#brandG2)"
+							stroke-width="3"
+							stroke-linecap="round" />
+						<path
+							class="logo-path path-fiber"
+							d="M 130 95 C 150 105, 170 100, 180 85"
+							fill="none"
+							stroke="url(#brandG2)"
+							stroke-width="3"
+							stroke-linecap="round" />
+					</svg>
+				</div>
 
+				<div class="brand-text" id="splash-text">Zentria</div>
 
-            // Setup strokes for drawing
-            logoPaths.forEach(path => {
-                const len = path.getTotalLength();
-                path.style.strokeDasharray = len;
-                path.style.strokeDashoffset = len;
-                path.style.opacity = 0;
-            });
-            logoWrap.style.opacity = 1;
+				<div class="loader-line-container" id="splash-loader">
+					<div class="loader-line"></div>
+				</div>
+			</div>
+		</div>
 
-            // --- 2. ENTRANCE TIMELINE ---
-            const tl = gsap.timeline();
+		<div id="root"></div>
+		<div id="portal-root"></div>
+		<div id="toast-root"></div>
 
-            // Draw lines
-            tl.to(logoPaths, {
-                opacity: 1,
-                strokeDashoffset: 0,
-                duration: 2,
-                stagger: 0.15,
-                ease: 'power2.out'
-            })
-            // Text Entry
-            .to(text, {
-                opacity: 1,
-                y: 0,
-                duration: 1,
-                ease: 'power3.out'
-            }, '-=1.5')
-            
-            // Loader Expand
-            .to(loader, {
-                width: '180px',
-                duration: 1.2,
-                ease: 'expo.out'
-            }, '-=1.2');
+		<script>
+			document.addEventListener('DOMContentLoaded', () => {
+				// --- 1. SETUP ---
+				const minLoadTime = 2500;
+				const startTime = Date.now();
 
-            // Continuous "Breathing" Loop
-            const breathingTl = gsap.to(logoWrap, {
-                y: -8,
-                scale: 1.02,
-                duration: 2,
-                repeat: -1,
-                yoyo: true,
-                ease: 'sine.inOut',
-                paused: true 
-            });
-            // Start breathing after entrance
-            tl.add(() => breathingTl.play());
+				const screen = document.getElementById('splash-screen');
+				const logoPaths = document.querySelectorAll('.logo-path');
+				const text = document.getElementById('splash-text');
+				const loader = document.getElementById('splash-loader');
+				const logoWrap = document.getElementById('splash-logo');
 
-            window.removeSplashScreen = () => {
-                if (screen) screen.remove();
-                tl.kill();
-                breathingTl.kill();
-            };
+				// Setup strokes for drawing
+				logoPaths.forEach((path) => {
+					const len = path.getTotalLength();
+					path.style.strokeDasharray = len;
+					path.style.strokeDashoffset = len;
+					path.style.opacity = 0;
+				});
+				logoWrap.style.opacity = 1;
 
+				// --- 2. ENTRANCE TIMELINE ---
+				const tl = gsap.timeline();
 
-            // --- 3. ORGANIC COMPLETION LOGIC ---
-            
-            const finishLoading = () => {
-                const elapsed = Date.now() - startTime;
-                const remaining = Math.max(0, minLoadTime - elapsed);
+				// Draw lines
+				tl.to(logoPaths, {
+					opacity: 1,
+					strokeDashoffset: 0,
+					duration: 2,
+					stagger: 0.15,
+					ease: 'power2.out',
+				})
+					// Text Entry
+					.to(
+						text,
+						{
+							opacity: 1,
+							y: 0,
+							duration: 1,
+							ease: 'power3.out',
+						},
+						'-=1.5',
+					)
 
-                setTimeout(() => {
-                    // EXIT SEQUENCE
-                    breathingTl.pause();
-                    
-                    const exitTl = gsap.timeline({
-                        onComplete: () => {
-                            if(screen) screen.remove();
-                        }
-                    });
+					// Loader Expand
+					.to(
+						loader,
+						{
+							width: '180px',
+							duration: 1.2,
+							ease: 'expo.out',
+						},
+						'-=1.2',
+					);
 
-                    exitTl
-                    // 1. Loader finishes (flash)
-                    .to(loader.querySelector('.loader-line'), {
-                         boxShadow: '0 0 60px white',
-                         background: 'white',
-                         duration: 0.3
-                    })
-                    // 2. Elements explode/fade
-                    .to([loader, text, logoWrap], {
-                        scale: 1.1,
-                        opacity: 0,
-                        duration: 0.4,
-                        stagger: 0.05,
-                        ease: 'power2.in'
-                    })
-                    // 3. Curtain Wipe Up
-                    .to(screen, {
-                        yPercent: -100,
-                        duration: 0.85,
-                        ease: 'power4.inOut'
-                    }, '-=0.2');
+				// Continuous "Breathing" Loop
+				const breathingTl = gsap.to(logoWrap, {
+					y: -8,
+					scale: 1.02,
+					duration: 2,
+					repeat: -1,
+					yoyo: true,
+					ease: 'sine.inOut',
+					paused: true,
+				});
+				// Start breathing after entrance
+				tl.add(() => breathingTl.play());
 
-                }, remaining);
-            };
+				window.removeSplashScreen = () => {
+					if (screen) screen.remove();
+					tl.kill();
+					breathingTl.kill();
+				};
 
-            if (document.readyState === 'complete') {
-                finishLoading();
-            } else {
-                window.addEventListener('load', finishLoading);
-            }
-        });
-    </script>
-    <script type="module" src="/src/index.tsx"></script>
-</body>
+				// --- 3. ORGANIC COMPLETION LOGIC ---
+
+				const finishLoading = () => {
+					const elapsed = Date.now() - startTime;
+					const remaining = Math.max(0, minLoadTime - elapsed);
+
+					setTimeout(() => {
+						// EXIT SEQUENCE
+						breathingTl.pause();
+
+						const exitTl = gsap.timeline({
+							onComplete: () => {
+								if (screen) screen.remove();
+							},
+						});
+
+						exitTl
+							// 1. Loader finishes (flash)
+							.to(loader.querySelector('.loader-line'), {
+								boxShadow: '0 0 60px white',
+								background: 'white',
+								duration: 0.3,
+							})
+							// 2. Elements explode/fade
+							.to([loader, text, logoWrap], {
+								scale: 1.1,
+								opacity: 0,
+								duration: 0.4,
+								stagger: 0.05,
+								ease: 'power2.in',
+							})
+							// 3. Curtain Wipe Up
+							.to(
+								screen,
+								{
+									yPercent: -100,
+									duration: 0.85,
+									ease: 'power4.inOut',
+								},
+								'-=0.2',
+							);
+					}, remaining);
+				};
+
+				if (document.readyState === 'complete') {
+					finishLoading();
+				} else {
+					window.addEventListener('load', finishLoading);
+				}
+			});
+		</script>
+		<script type="module" src="/src/index.tsx"></script>
+	</body>
 </html>

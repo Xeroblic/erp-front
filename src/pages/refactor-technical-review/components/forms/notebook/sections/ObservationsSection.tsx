@@ -14,7 +14,7 @@ const ObservationsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	return (
 		<div className='space-y-6'>
 			{/* Observations */}
-			<div className='hover:cursor-pointer rounded-xl border border-zinc-200 bg-zinc-500/20 p-4 transition-colors duration-200 hover:bg-zinc-500/30 dark:border-zinc-700 dark:bg-zinc-800/30 dark:hover:bg-zinc-800/50'>
+			<div className='rounded-xl border border-zinc-200 bg-zinc-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-zinc-500/30 dark:border-zinc-700 dark:bg-zinc-800/30 dark:hover:bg-zinc-800/50'>
 				<label className='mb-3 block text-sm font-bold text-zinc-700 dark:text-zinc-200'>
 					{getNotebookLabel('observations')}
 				</label>

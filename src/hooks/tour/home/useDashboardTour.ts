@@ -21,7 +21,9 @@ const useDashboardTour = () => {
 
 	const startTour = useCallback(() => {
 		// ── resolve hex colours from tailwind palette ──
-		const palette = colors[themeColor as keyof typeof colors] as Record<string, string> | undefined;
+		const palette = colors[themeColor as keyof typeof colors] as
+			| Record<string, string>
+			| undefined;
 		const primary = palette?.[themeColorShade] ?? '#10b981';
 		const primaryLight = palette?.['400'] ?? '#34d399';
 		const primaryDark = palette?.['700'] ?? '#047857';
@@ -223,15 +225,15 @@ const useDashboardTour = () => {
 			const isMobile = window.innerWidth <= 640;
 
 			// Override steps configuration for mobile to ensure standard positioning
-			const finalSteps: DriveStep[] = steps.map(step => {
+			const finalSteps: DriveStep[] = steps.map((step) => {
 				if (!isMobile) return step;
 				return {
 					...step,
 					popover: {
 						...step.popover,
 						side: 'bottom' as const,
-						align: 'center' as const
-					}
+						align: 'center' as const,
+					},
 				};
 			});
 

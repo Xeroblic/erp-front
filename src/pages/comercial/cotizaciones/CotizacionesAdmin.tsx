@@ -182,7 +182,10 @@ const CotizacionesAdmin: React.FC = () => {
 	};
 
 	const [confirmStatusModalOpen, setConfirmStatusModalOpen] = useState(false);
-	const [statusToChange, setStatusToChange] = useState<{ id: number; status: QuoteStatus } | null>(null);
+	const [statusToChange, setStatusToChange] = useState<{
+		id: number;
+		status: QuoteStatus;
+	} | null>(null);
 
 	const handleChangeStatus = (id: number, status: QuoteStatus) => {
 		setStatusToChange({ id, status });
@@ -493,7 +496,10 @@ const CotizacionesAdmin: React.FC = () => {
 					<ModalHeader>
 						<div className='flex items-center space-x-3'>
 							<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950'>
-								<Icon icon='HeroQuestionMarkCircle' className='h-6 w-6 text-blue-600 dark:text-blue-400' />
+								<Icon
+									icon='HeroQuestionMarkCircle'
+									className='h-6 w-6 text-blue-600 dark:text-blue-400'
+								/>
 							</div>
 							<div>
 								<h3 className='text-lg font-semibold text-gray-900 dark:text-gray-50'>

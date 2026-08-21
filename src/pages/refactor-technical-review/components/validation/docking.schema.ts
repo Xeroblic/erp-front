@@ -6,20 +6,13 @@ import {
 
 export const dockingSchema = Yup.object({
 	// Identificación
-	brand: Yup.string()
-		.required('La marca es requerida')
-		.max(50, 'Máximo 50 caracteres'),
-	model: Yup.string()
-		.required('El modelo es requerido')
-		.max(50, 'Máximo 50 caracteres'),
+	brand: Yup.string().required('La marca es requerida').max(50, 'Máximo 50 caracteres'),
+	model: Yup.string().required('El modelo es requerido').max(50, 'Máximo 50 caracteres'),
 
 	// Condición
 	general_condition: Yup.string()
 		.required('Condición general es requerida')
-		.oneOf(
-			ALLOWED_GENERAL_CONDITIONS,
-			'Condición general selecta no válida',
-		),
+		.oneOf(ALLOWED_GENERAL_CONDITIONS, 'Condición general selecta no válida'),
 
 	// Puertos
 	line: Yup.string().required('La línea es requerida').max(50, 'Máximo 50 caracteres'),
@@ -42,22 +35,23 @@ export const dockingSchema = Yup.object({
 				schema
 					.required('Debes indicar cuántos puertos defectuosos hay')
 					.min(1, 'Debe haber al menos 1 puerto defectuoso'),
-			otherwise: (schema) =>
-				schema.transform(() => 0).default(0),
+			otherwise: (schema) => schema.transform(() => 0).default(0),
 		}),
 
 	// Extras
 	has_wifi: Yup.boolean().required('Debes indicar si tiene Wi-Fi').default(false),
-	includes_power_adapter: Yup.boolean().required('Debes indicar si incluye adaptador de poder').default(false),
+	includes_power_adapter: Yup.boolean()
+		.required('Debes indicar si incluye adaptador de poder')
+		.default(false),
 	cover_condition: Yup.string()
 		.required('La condición de carcasa es requerida')
-		.oneOf(
-			ALLOWED_COVER_CONDITIONS,
-			'Condición de carcasa selecta no válida',
-		),
+		.oneOf(ALLOWED_COVER_CONDITIONS, 'Condición de carcasa selecta no válida'),
 
 	// Notas
-	observations: Yup.string().transform((v, o) => (o === '' ? null : v)).nullable().max(255, 'Máximo 255 caracteres'),
+	observations: Yup.string()
+		.transform((v, o) => (o === '' ? null : v))
+		.nullable()
+		.max(255, 'Máximo 255 caracteres'),
 
 	// Otros Atributos Extendibles
 	extra_attributes: Yup.object().nullable().default({}),

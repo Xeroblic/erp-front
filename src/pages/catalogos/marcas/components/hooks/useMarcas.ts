@@ -34,7 +34,6 @@ interface BranchCandidate {
 	alias?: string | null;
 }
 
-
 const applyLocalFilters = (items: IBrand[], filters: IBrandFilters): IBrand[] => {
 	let result = [...items];
 

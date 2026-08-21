@@ -32,7 +32,7 @@ import {
 	setThemeColorShade,
 	setDarkMode,
 } from '../store/slices/personalizacion/personalizacionSlice';
-import useDarkModeManager from '../hooks/useDarkModeManager.ts';
+import useDarkModeManager from '../hooks/useDarkModeManager';
 import useDeviceScreen from '../hooks/useDeviceScreen';
 import { TLang } from '../types/lang.type';
 import { useAppDispatch, useAppSelector } from '../store/hook';

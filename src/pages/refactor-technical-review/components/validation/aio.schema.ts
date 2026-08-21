@@ -38,14 +38,17 @@ export const aioSchema = Yup.object({
 		.required('El procesador es obligatorio')
 		.max(200, 'Máximo 200 caracteres'),
 
-	ram_size: Yup.string()
+	ram_size: Yup.string().trim().required('La RAM es obligatoria').max(50, 'Máximo 50 caracteres'),
+
+	ram_slots: Yup.string()
 		.trim()
-		.required('La RAM es obligatoria')
-		.max(50, 'Máximo 50 caracteres'),
+		.max(20, 'Máximo 20 caracteres')
+		.required('Los slots de RAM son obligatorios'),
 
-	ram_slots: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('Los slots de RAM son obligatorios'),
-
-	ram_type: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('El tipo de RAM es obligatorio'),
+	ram_type: Yup.string()
+		.trim()
+		.max(20, 'Máximo 20 caracteres')
+		.required('El tipo de RAM es obligatorio'),
 
 	storage_size: Yup.string()
 		.trim()
@@ -57,7 +60,10 @@ export const aioSchema = Yup.object({
 		.required('La tecnología de disco es obligatoria'),
 
 	// ─── Pantalla y Base (Específico AIO) ────────────────────────────────────
-	screen_inches: Yup.string().trim().max(50, 'Máximo 50 caracteres').required('Las pulgadas de pantalla son obligatorias'),
+	screen_inches: Yup.string()
+		.trim()
+		.max(50, 'Máximo 50 caracteres')
+		.required('Las pulgadas de pantalla son obligatorias'),
 
 	is_touchscreen: Yup.boolean().required('Debes indicar si es touch'),
 

@@ -54,15 +54,17 @@ export const fetchPaginatedReportResults = createAsyncThunk(
 						last: resData.last_page_url || null,
 						prev: resData.prev_page_url || null,
 						next: resData.next_page_url || null,
-					}
+					},
 				} as IReportResult<unknown>;
 			}
 
 			// Fallback if we just got a raw array or something else
-			const pageData = Array.isArray(resData) 
-				? resData 
-				: Array.isArray(resData?.data) ? resData.data : [];
-				
+			const pageData = Array.isArray(resData)
+				? resData
+				: Array.isArray(resData?.data)
+					? resData.data
+					: [];
+
 			return {
 				data: pageData,
 				meta: {
@@ -73,7 +75,7 @@ export const fetchPaginatedReportResults = createAsyncThunk(
 					to: pageData.length,
 					total: pageData.length,
 				},
-				links: {}
+				links: {},
 			} as unknown as IReportResult<unknown>;
 		} catch (err: unknown) {
 			const error = err as { response?: { data?: unknown }; message?: string };
@@ -108,11 +110,11 @@ export const fetchReportResults = createAsyncThunk(
 				};
 
 				// 1. Petición
-				const rawRes = await ReportsService.getResults(
+				const rawRes = (await ReportsService.getResults(
 					params.subsidiaryId,
 					params.type,
 					pageFilters,
-				) as unknown as Record<string, unknown>;
+				)) as unknown as Record<string, unknown>;
 
 				// 2. EXTRACCIÓN DE DATA (A prueba de interceptores ladrones)
 				// Intentamos sacar .data si es Axios, o usamos rawRes si ya viene limpio.

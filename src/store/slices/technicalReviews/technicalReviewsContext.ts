@@ -51,7 +51,10 @@ const resolveSubsidiaryFromBranch = (state: RootState, branchId: number | null):
 			if (candidateId !== branchId) continue;
 
 			const subsidiarySource =
-				branch?.subsidiary ?? branch?.subsidiary_info ?? branch?.subsidiaryId ?? branch?.subsidiary_id;
+				branch?.subsidiary ??
+				branch?.subsidiary_info ??
+				branch?.subsidiaryId ??
+				branch?.subsidiary_id;
 			if (typeof subsidiarySource === 'object' && subsidiarySource !== null) {
 				const nestedId =
 					toValidNumber(subsidiarySource.id) ??
@@ -86,13 +89,12 @@ export const resolveTechnicalReviewsContext = (
 		resolveSubsidiaryFromBranch(state, branchId);
 
 	// Determinamos el modo del endpoint basado en los inputs proporcionados.
-	// Si se proporciona branchId, priorizamos el modo 'branches' para evitar 403 
+	// Si se proporciona branchId, priorizamos el modo 'branches' para evitar 403
 	// en usuarios que pertenecen a una subsidiaria pero no tienen acceso global a ella.
-	const endpointMode: TechnicalReviewsEndpointMode = (input.subsidiaryId && !input.branchId) 
-		? 'subsidiaries' 
-		: 'branches';
+	const endpointMode: TechnicalReviewsEndpointMode =
+		input.subsidiaryId && !input.branchId ? 'subsidiaries' : 'branches';
 
-	const entityId = endpointMode === 'subsidiaries' ? subsidiaryId ?? branchId : branchId;
+	const entityId = endpointMode === 'subsidiaries' ? (subsidiaryId ?? branchId) : branchId;
 	if (!entityId) {
 		throw new Error('No se pudo resolver el contexto de technical reviews');
 	}
@@ -108,4 +110,8 @@ export const resolveTechnicalReviewsContext = (
 export const buildTechnicalReviewsEndpoint = (
 	context: TechnicalReviewsResolvedContext,
 	path: string,
-) => join(TECHNICAL_REVIEWS_PREFIX, `/${context.endpointMode}/${context.entityId}/technical-reviews${path}`);
+) =>
+	join(
+		TECHNICAL_REVIEWS_PREFIX,
+		`/${context.endpointMode}/${context.entityId}/technical-reviews${path}`,
+	);

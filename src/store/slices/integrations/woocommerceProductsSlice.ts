@@ -93,13 +93,22 @@ export const runImportTerms = createAsyncThunk<
 	ImportTermsResponse,
 	{ subsidiaryId: number; payload: ImportTermsPayload; integrationId?: string },
 	{ rejectValue: string }
->('woocommerceProducts/runImportTerms', async ({ subsidiaryId, payload, integrationId }, { rejectWithValue }) => {
-	try {
-		return await woocommerceProductsService.importTerms(subsidiaryId, payload, integrationId);
-	} catch (error) {
-		return rejectWithValue(getErrorMessage(error, 'Error al programar la importación de términos'));
-	}
-});
+>(
+	'woocommerceProducts/runImportTerms',
+	async ({ subsidiaryId, payload, integrationId }, { rejectWithValue }) => {
+		try {
+			return await woocommerceProductsService.importTerms(
+				subsidiaryId,
+				payload,
+				integrationId,
+			);
+		} catch (error) {
+			return rejectWithValue(
+				getErrorMessage(error, 'Error al programar la importación de términos'),
+			);
+		}
+	},
+);
 
 /**
  * #2 · Consulta el progreso del lote de importación de términos.
@@ -112,7 +121,11 @@ export const pollImportTermsStatus = createAsyncThunk<
 	'woocommerceProducts/pollImportTermsStatus',
 	async ({ subsidiaryId, params, integrationId }, { rejectWithValue }) => {
 		try {
-			return await woocommerceProductsService.getImportTermsStatus(subsidiaryId, params, integrationId);
+			return await woocommerceProductsService.getImportTermsStatus(
+				subsidiaryId,
+				params,
+				integrationId,
+			);
 		} catch (error) {
 			return rejectWithValue(
 				getErrorMessage(error, 'Error al consultar el estado de la importación'),
@@ -132,7 +145,11 @@ export const createQuickProductThunk = createAsyncThunk<
 	'woocommerceProducts/createQuickProduct',
 	async ({ subsidiaryId, payload, integrationId }, { rejectWithValue }) => {
 		try {
-			return await woocommerceProductsService.createQuickProduct(subsidiaryId, payload, integrationId);
+			return await woocommerceProductsService.createQuickProduct(
+				subsidiaryId,
+				payload,
+				integrationId,
+			);
 		} catch (error) {
 			return rejectWithValue(getErrorMessage(error, 'Error al crear el producto rápido'));
 		}
@@ -144,7 +161,12 @@ export const createQuickProductThunk = createAsyncThunk<
  */
 export const publishProductThunk = createAsyncThunk<
 	{ productId: number; response: WooProductActionResponse },
-	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload; integrationId?: string },
+	{
+		subsidiaryId: number;
+		productId: number;
+		payload?: WooSyncStockPayload;
+		integrationId?: string;
+	},
 	{ rejectValue: string }
 >(
 	'woocommerceProducts/publishProduct',
@@ -168,7 +190,12 @@ export const publishProductThunk = createAsyncThunk<
  */
 export const unpublishProductThunk = createAsyncThunk<
 	{ productId: number; response: WooProductActionResponse },
-	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload; integrationId?: string },
+	{
+		subsidiaryId: number;
+		productId: number;
+		payload?: WooSyncStockPayload;
+		integrationId?: string;
+	},
 	{ rejectValue: string }
 >(
 	'woocommerceProducts/unpublishProduct',
@@ -198,7 +225,11 @@ export const fetchRemoteState = createAsyncThunk<
 	'woocommerceProducts/fetchRemoteState',
 	async ({ subsidiaryId, productId, integrationId }, { rejectWithValue }) => {
 		try {
-			return await woocommerceProductsService.getProductRemoteState(subsidiaryId, productId, integrationId);
+			return await woocommerceProductsService.getProductRemoteState(
+				subsidiaryId,
+				productId,
+				integrationId,
+			);
 		} catch (error) {
 			return rejectWithValue(getErrorMessage(error, 'Error al consultar el estado remoto'));
 		}
@@ -216,7 +247,11 @@ export const fetchWooProducts = createAsyncThunk<
 	'woocommerceProducts/fetchWooProducts',
 	async ({ subsidiaryId, params, integrationId }, { rejectWithValue }) => {
 		try {
-			return await woocommerceProductsService.getWooProducts(subsidiaryId, params, integrationId);
+			return await woocommerceProductsService.getWooProducts(
+				subsidiaryId,
+				params,
+				integrationId,
+			);
 		} catch (error) {
 			return rejectWithValue(
 				getErrorMessage(error, 'Error al obtener los productos de WooCommerce'),
@@ -230,7 +265,12 @@ export const fetchWooProducts = createAsyncThunk<
  */
 export const syncProductPriceThunk = createAsyncThunk<
 	{ productId: number; response: WooProductActionResponse },
-	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload; integrationId?: string },
+	{
+		subsidiaryId: number;
+		productId: number;
+		payload?: WooSyncStockPayload;
+		integrationId?: string;
+	},
 	{ rejectValue: string }
 >(
 	'woocommerceProducts/syncProductPrice',
@@ -256,7 +296,12 @@ export const syncProductPriceThunk = createAsyncThunk<
  */
 export const syncProductStockThunk = createAsyncThunk<
 	{ productId: number; response: WooProductActionResponse },
-	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload; integrationId?: string },
+	{
+		subsidiaryId: number;
+		productId: number;
+		payload?: WooSyncStockPayload;
+		integrationId?: string;
+	},
 	{ rejectValue: string }
 >(
 	'woocommerceProducts/syncProductStock',
@@ -282,7 +327,12 @@ export const syncProductStockThunk = createAsyncThunk<
  */
 export const publishChildrenThunk = createAsyncThunk<
 	{ productId: number; response: WooProductActionResponse },
-	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload; integrationId?: string },
+	{
+		subsidiaryId: number;
+		productId: number;
+		payload?: WooSyncStockPayload;
+		integrationId?: string;
+	},
 	{ rejectValue: string }
 >(
 	'woocommerceProducts/publishChildren',

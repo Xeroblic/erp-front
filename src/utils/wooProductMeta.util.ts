@@ -64,7 +64,10 @@ const looksLikeLink = (record: Record<string, unknown>): boolean =>
 
 // El backend identifica la integración del vínculo con `integration_hint`
 // (UUID de la integración). Se acepta `integration_id` por compatibilidad futura.
-const parseLink = (record: Record<string, unknown>, fallbackIntegrationId?: string): WooProductLink => ({
+const parseLink = (
+	record: Record<string, unknown>,
+	fallbackIntegrationId?: string,
+): WooProductLink => ({
 	integrationId:
 		toStr(record.integration_id) ??
 		toStr(record.integration_hint) ??

@@ -1,6 +1,4 @@
-export const toPriceNumber = (
-	value: string | number | null | undefined,
-): number | null => {
+export const toPriceNumber = (value: string | number | null | undefined): number | null => {
 	if (value === null || value === undefined || value === '') return null;
 	const n = typeof value === 'number' ? value : Number(value);
 	return Number.isFinite(n) ? n : null;

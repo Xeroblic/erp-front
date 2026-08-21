@@ -88,7 +88,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 				cell: (info) => {
 					const badge = getQuoteStatusBadge(info.getValue());
 					return (
-						<Badge variant={'outline'} color={badge.color} className='px-2 text-md'>
+						<Badge variant={'outline'} color={badge.color} className='text-md px-2'>
 							{badge.label}
 						</Badge>
 					);
@@ -116,9 +116,8 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 									variant='solid'
 									size='sm'
 									title='Descargar'
-									className='bg-sky-600 hover:bg-sky-700/20 p-1'
-									color='sky'
-								>
+									className='bg-sky-600 p-1 hover:bg-sky-700/20'
+									color='sky'>
 									<Icon
 										icon='HeroArrowDownTray'
 										color='white'
@@ -129,14 +128,12 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 							<DropdownMenu placement='bottom-end'>
 								<DropdownItem
 									icon='HeroDocumentText'
-									onClick={() => onDownloadPdf?.(info.row.original.id)}
-								>
+									onClick={() => onDownloadPdf?.(info.row.original.id)}>
 									Descargar PDF
 								</DropdownItem>
 								<DropdownItem
 									icon='HeroTableCells'
-									onClick={() => onDownloadExcel?.(info.row.original.id)}
-								>
+									onClick={() => onDownloadExcel?.(info.row.original.id)}>
 									Descargar Excel
 								</DropdownItem>
 							</DropdownMenu>
@@ -147,13 +144,12 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 								size='sm'
 								color='violet'
 								onClick={() => onView?.(info.row.original)}
-								className='bg-violet-600 hover:bg-violet-700/30 p-1'
-							>
+								className='bg-violet-600 p-1 hover:bg-violet-700/30'>
 								<Icon icon='HeroEye' color='white' className='text-xl' />
 							</Button>
 						</Tooltip>
 						{['draft'].includes(
-							normalizeQuoteStatusValue(info.row.original.status)
+							normalizeQuoteStatusValue(info.row.original.status),
 						) && (
 							<Tooltip text='Enviar cotizacion'>
 								<Button
@@ -161,42 +157,47 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 									size='sm'
 									color='zinc'
 									onClick={() => onChangeStatus?.(info.row.original.id, 'sent')}
-									className='bg-zinc-600 hover:bg-zinc-700/20 p-1'
-									>
-										<Icon icon='HeroPaperAirplane' color='white' className='text-xl' />
+									className='bg-zinc-600 p-1 hover:bg-zinc-700/20'>
+									<Icon
+										icon='HeroPaperAirplane'
+										color='white'
+										className='text-xl'
+									/>
 								</Button>
 							</Tooltip>
 						)}
-						{['sent'].includes(
-							normalizeQuoteStatusValue(info.row.original.status)
-						) && (
+						{['sent'].includes(normalizeQuoteStatusValue(info.row.original.status)) && (
 							<Tooltip text='Aprobar cotización' placement='top-end'>
 								<Button
 									variant='solid'
 									size='sm'
 									color='teal'
-									onClick={() => onChangeStatus?.(info.row.original.id, 'approved')}
-									className='bg-teal-600 hover:bg-teal-700/20 p-1'
-								>
-									<Icon icon='HeroCheckCircle' color='white' className='text-xl' />
+									onClick={() =>
+										onChangeStatus?.(info.row.original.id, 'approved')
+									}
+									className='bg-teal-600 p-1 hover:bg-teal-700/20'>
+									<Icon
+										icon='HeroCheckCircle'
+										color='white'
+										className='text-xl'
+									/>
 								</Button>
 							</Tooltip>
 						)}
 						{['approved'].includes(
-							normalizeQuoteStatusValue(info.row.original.status)
+							normalizeQuoteStatusValue(info.row.original.status),
 						) && (
-								<Tooltip text='Convertir a venta' placement='top-end'>
-									<Button
-										variant='solid'
-										size='sm'
-										color='emerald'
-										onClick={() => onConvertToSale?.(info.row.original.id)}
-										className='bg-emerald-600 hover:bg-emerald-700/20 p-1'
-									>
-										<Icon icon='DuoFire' color={'white'} className='text-xl' />
-									</Button>
-								</Tooltip>
-							)}
+							<Tooltip text='Convertir a venta' placement='top-end'>
+								<Button
+									variant='solid'
+									size='sm'
+									color='emerald'
+									onClick={() => onConvertToSale?.(info.row.original.id)}
+									className='bg-emerald-600 p-1 hover:bg-emerald-700/20'>
+									<Icon icon='DuoFire' color={'white'} className='text-xl' />
+								</Button>
+							</Tooltip>
+						)}
 						{['draft', 'expired', 'rejected'].includes(
 							normalizeQuoteStatusValue(info.row.original.status),
 						) && (
@@ -207,8 +208,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 										size='sm'
 										color='green'
 										onClick={() => onEdit?.(info.row.original)}
-										className='bg-green-600 hover:bg-green-700/20 p-1'
-										>
+										className='bg-green-600 p-1 hover:bg-green-700/20'>
 										<Icon icon='HeroPencil' color='white' className='text-xl' />
 									</Button>
 								</Tooltip>
@@ -218,8 +218,12 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 										size='sm'
 										color='red'
 										onClick={() => onDelete?.(info.row.original.id)}
-										className='bg-red-600 hover:bg-red-700/20 p-0'>
-										<Icon icon='HeroTrash' color={'white'} className='text-xl' />
+										className='bg-red-600 p-0 hover:bg-red-700/20'>
+										<Icon
+											icon='HeroTrash'
+											color={'white'}
+											className='text-xl'
+										/>
 									</Button>
 								</Tooltip>
 							</>

@@ -41,7 +41,9 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 					const item = row.original;
 					return (
 						<div className='space-y-1'>
-							<p className='font-medium text-neutral-800 dark:text-neutral-100'>{item.name}</p>
+							<p className='font-medium text-neutral-800 dark:text-neutral-100'>
+								{item.name}
+							</p>
 							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
 								SKU: {item.sku} · Marca: {item.brand}
 							</p>
@@ -67,9 +69,7 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 				cell: ({ row }) => {
 					const { status, stock } = row.original;
 					const label =
-						status === 'out'
-							? 'Sin stock'
-							: `Stock bajo (${formatNumber(stock)})`;
+						status === 'out' ? 'Sin stock' : `Stock bajo (${formatNumber(stock)})`;
 					return (
 						<Badge color={status === 'out' ? 'red' : 'amber'} variant='outline'>
 							{label}
@@ -181,7 +181,12 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 												<th
 													key={header.id}
 													className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-400'>
-													{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+													{header.isPlaceholder
+														? null
+														: flexRender(
+																header.column.columnDef.header,
+																header.getContext(),
+															)}
 												</th>
 											))}
 										</tr>
@@ -189,12 +194,17 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 								</thead>
 								<tbody className='divide-y divide-neutral-200 bg-white dark:divide-neutral-800 dark:bg-neutral-950/60'>
 									{table.getRowModel().rows.map((row) => (
-										<tr key={row.id} className='hover:bg-neutral-100 dark:hover:bg-neutral-900/40'>
+										<tr
+											key={row.id}
+											className='hover:bg-neutral-100 dark:hover:bg-neutral-900/40'>
 											{row.getVisibleCells().map((cell) => (
 												<td
 													key={cell.id}
 													className='px-4 py-4 align-top text-sm text-neutral-700 dark:text-neutral-200'>
-													{flexRender(cell.column.columnDef.cell, cell.getContext())}
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext(),
+													)}
 												</td>
 											))}
 										</tr>

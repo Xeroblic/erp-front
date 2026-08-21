@@ -82,10 +82,7 @@ export const NOTEBOOK_LABELS: Record<string, string> = {
  */
 export const getNotebookLabel = (field: string): string => {
 	return (
-		NOTEBOOK_LABELS[field] ??
-		field
-			.replace(/_/g, ' ')
-			.replace(/\b\w/g, (c) => c.toUpperCase())
+		NOTEBOOK_LABELS[field] ?? field.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 	);
 };
 

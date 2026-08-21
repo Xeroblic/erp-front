@@ -22,9 +22,7 @@ const BodegasView: React.FC = () => {
 				<SubheaderLeft>
 					<div className='start-0'>
 						<Badge className='text-3xl font-semibold'>Bodegas</Badge>
-						<p>
-							Administración de las bodegas asociadas a la sucursal principal.
-						</p>
+						<p>Administración de las bodegas asociadas a la sucursal principal.</p>
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight className='flex space-x-2'>

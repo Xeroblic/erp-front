@@ -96,10 +96,7 @@ export const useAttributesValidator = (
 				if (cpuVal && !(cpuObj && cpuObj.model)) {
 					ensure(parsedRecord, 'cpu.model', cpuVal);
 				}
-				if (
-					typeof parsedRecord.cpu === 'string' &&
-					!(asRecord(parsedRecord.cpu)?.model)
-				) {
+				if (typeof parsedRecord.cpu === 'string' && !asRecord(parsedRecord.cpu)?.model) {
 					ensure(parsedRecord, 'cpu.model', parsedRecord.cpu);
 				}
 
@@ -124,10 +121,7 @@ export const useAttributesValidator = (
 				if (nextRam && nextRam.capacity_gb === undefined && nextRam.capacity) {
 					const n = tryParseNumber(nextRam.capacity);
 					if (n !== undefined) nextRam.capacity_gb = n;
-					if (
-						nextRam.capacity_gb !== undefined &&
-						nextRam.gb === undefined
-					) {
+					if (nextRam.capacity_gb !== undefined && nextRam.gb === undefined) {
 						nextRam.gb = nextRam.capacity_gb;
 					}
 				}
@@ -138,14 +132,14 @@ export const useAttributesValidator = (
 				}
 
 				// gpu flat
-				if (parsedRecord.GPU && !(asRecord(parsedRecord.gpu)?.model)) {
+				if (parsedRecord.GPU && !asRecord(parsedRecord.gpu)?.model) {
 					ensure(parsedRecord, 'gpu.model', parsedRecord.GPU);
 				}
 
 				// storage flat (primary capacity)
 				if (
 					typeof parsedRecord.storage === 'number' &&
-					!(asRecord(parsedRecord.storage)?.primary)
+					!asRecord(parsedRecord.storage)?.primary
 				) {
 					ensure(parsedRecord, 'storage.primary.capacity_gb', parsedRecord.storage);
 				}

@@ -19,7 +19,7 @@ export const ReportsService = {
 			url: `/subsidiaries/${subsidiaryId}/reports/${type}`,
 			method: 'get',
 			params: filters,
-		}).then(res => res.data); // Return the raw response data without stripping
+		}).then((res) => res.data); // Return the raw response data without stripping
 	},
 
 	export(subsidiaryId: number, type: string, params: IReportExportParams) {

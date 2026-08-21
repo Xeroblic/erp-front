@@ -73,8 +73,7 @@ const resolveColumnValue = (item: IItem, key: string): string => {
 			return item.serial_number ?? '';
 		case '__grade': {
 			const g = item.grade;
-			if (g && typeof g === 'object' && 'label' in (g as any))
-				return (g as any).label;
+			if (g && typeof g === 'object' && 'label' in (g as any)) return (g as any).label;
 			return normalizeDetailValue(g);
 		}
 		case '__customer':
@@ -93,7 +92,9 @@ const resolveColumnValue = (item: IItem, key: string): string => {
 			const st = details.battery_status || extra.battery_status;
 			const pt = details.battery_percentage ?? extra.battery_percentage;
 
-			const brandStr = String((item as any).brand || details.brand || extra.brand || '').toLowerCase();
+			const brandStr = String(
+				(item as any).brand || details.brand || extra.brand || '',
+			).toLowerCase();
 			const isDell = brandStr.includes('dell');
 
 			if (isDell) {
@@ -137,7 +138,7 @@ export const applyHeader = (
 			ext: { width: 220, height: 120 },
 		});
 	}
-	
+
 	const logoRow = sheet.addRow([]);
 	logoRow.height = 60;
 
@@ -145,12 +146,12 @@ export const applyHeader = (
 	const titleRow = sheet.addRow([formattedSheetTitle]);
 	titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
 	titleRow.alignment = { horizontal: 'center' };
-	
+
 	const maxMerge = Math.min(headers.length, 4);
 	const finalMerge = Math.max(maxMerge, 4);
 	sheet.mergeCells(3, 1, 3, finalMerge);
 	sheet.mergeCells(2, 1, 2, 2);
-	
+
 	if (customerName) {
 		const clientCell = sheet.getCell('G2');
 		clientCell.value = `Cliente: ${customerName}`;
@@ -161,19 +162,20 @@ export const applyHeader = (
 	sheet.mergeCells(2, 3, 2, 6);
 	const revisionNameCell = sheet.getCell('C2');
 	let revisionLabel =
-	revisionName || (sheetTitle.includes('Revisión') ? sheetTitle.split('-')[0].trim() : sheetTitle);
-	
+		revisionName ||
+		(sheetTitle.includes('Revisión') ? sheetTitle.split('-')[0].trim() : sheetTitle);
+
 	// Format YYYY-MM-DD dates to DD-MM-YYYY anywhere in the string
 	revisionLabel = revisionLabel.replace(/(\d{4})-(\d{2})-(\d{2})/g, '$3-$2-$1');
-	
+
 	revisionNameCell.value = revisionLabel;
 	revisionNameCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: '1F4E78' } };
 	revisionNameCell.alignment = { horizontal: 'center', vertical: 'middle' };
-	
+
 	const today = new Date();
 	const rDate = batchDate ? new Date(batchDate + 'T00:00:00') : today;
 	const fDate = reviewDate ? new Date(reviewDate + 'T00:00:00') : today;
-	
+
 	const dateLabelStyle = {
 		font: { name: 'Arial', size: 10, bold: true },
 		alignment: { horizontal: 'left' },
@@ -182,12 +184,11 @@ export const applyHeader = (
 		font: { name: 'Arial', size: 10, bold: false },
 		alignment: { horizontal: 'left' },
 	};
-	
+
 	const cellI2 = sheet.getCell('I2');
 	cellI2.value = 'Fecha Recepción:';
 	cellI2.font = dateLabelStyle.font as Partial<ExcelJS.Font>;
 	cellI2.alignment = dateLabelStyle.alignment as Partial<ExcelJS.Alignment>;
-
 
 	const formatDateToDDMMYYYY = (d: Date) => {
 		const dd = String(d.getDate()).padStart(2, '0');
@@ -276,8 +277,8 @@ export const setColumnWidths = (sheet: ExcelJS.Worksheet, headers: string[]) => 
 				cellValue == null
 					? 0
 					: typeof cellValue === 'string'
-					? cellValue.length
-					: cellValue.toString().length;
+						? cellValue.length
+						: cellValue.toString().length;
 			if (len + 2 > maxLength) maxLength = len + 2;
 		});
 		column.width = Math.min(maxLength, 30);
@@ -395,9 +396,12 @@ export const exportItemsToExcel = async (
 			}
 
 			finalEntries.forEach(([key, payload], index) => {
-				const sheetNameBase = payload.label || EQUIPMENT_TYPE_LABELS[key] || key || 'General';
+				const sheetNameBase =
+					payload.label || EQUIPMENT_TYPE_LABELS[key] || key || 'General';
 				const sheetName =
-					sheetNameBase.length > 28 ? `${sheetNameBase.slice(0, 28)}_${index + 1}` : sheetNameBase;
+					sheetNameBase.length > 28
+						? `${sheetNameBase.slice(0, 28)}_${index + 1}`
+						: sheetNameBase;
 				const sheet = workbook.addWorksheet(sheetName);
 
 				const columnDefs = EXCEL_COLUMNS[key];
@@ -442,8 +446,8 @@ export const exportItemsToExcel = async (
 								const fillColor = isHighlighted
 									? HIGHLIGHT_ROW_COLOR
 									: isEven
-									? 'FFFFFFFF'
-									: 'FFF2F2F2';
+										? 'FFFFFFFF'
+										: 'FFF2F2F2';
 								cell.fill = {
 									type: 'pattern',
 									pattern: 'solid',
@@ -501,7 +505,7 @@ export const exportItemsToExcel = async (
 						...orderedKeys.map((k) => formatAttributeLabel(k)),
 					];
 					applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`);
-					
+
 					if (!payload.list.length) {
 						sheet.addRow(headers.map(() => ''));
 					} else {
@@ -518,8 +522,8 @@ export const exportItemsToExcel = async (
 								const fillColor = isHighlighted
 									? HIGHLIGHT_ROW_COLOR
 									: isEven
-									? 'FFFFFFFF'
-									: 'FFF2F2F2';
+										? 'FFFFFFFF'
+										: 'FFF2F2F2';
 								cell.fill = {
 									type: 'pattern',
 									pattern: 'solid',
@@ -544,10 +548,10 @@ export const exportItemsToExcel = async (
 		const blob = new Blob([buffer], {
 			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 		});
-		
+
 		const FileSaver = await import('file-saver');
 		FileSaver.default.saveAs(blob, `${exportFileName}.xlsx`);
-		
+
 		toast.success('Excel exportado exitosamente');
 	} catch (error) {
 		console.error('Error exporting to Excel:', error);

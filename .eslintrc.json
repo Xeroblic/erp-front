@@ -11,6 +11,13 @@
 	"parserOptions": {
 		"project": "./tsconfig.eslint.json"
 	},
+	"settings": {
+		"import/resolver": {
+			"typescript": {
+				"project": "./tsconfig.eslint.json"
+			}
+		}
+	},
 	"rules": {
 		"no-use-before-define": "off",
 		"no-case-declarations": "off",
@@ -18,8 +25,19 @@
 		"react/jsx-filename-extension": [1, { "extensions": [".js", ".jsx", ".ts", ".tsx"] }],
 		"react/react-in-jsx-scope": "off",
 		"no-param-reassign": "off",
+		"no-void": ["error", { "allowAsStatement": true }],
 		"no-empty": "warn",
 		"import/no-extraneous-dependencies": "warn",
+		"import/extensions": [
+			"error",
+			"ignorePackages",
+			{
+				"js": "never",
+				"jsx": "never",
+				"ts": "never",
+				"tsx": "never"
+			}
+		],
 		"react/jsx-props-no-spreading": [
 			"warn",
 			{

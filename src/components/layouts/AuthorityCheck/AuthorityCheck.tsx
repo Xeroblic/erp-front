@@ -24,7 +24,11 @@ const AuthorityCheck = (props: AuthorityGuardProps) => {
 	}
 
 	// Si es super admin, acceso completo
-	if (isSuperAdmin || user?.authority?.includes('super-admin') || safeUserAuthority.includes('super-admin')) {
+	if (
+		isSuperAdmin ||
+		user?.authority?.includes('super-admin') ||
+		safeUserAuthority.includes('super-admin')
+	) {
 		return <>{children}</>;
 	}
 

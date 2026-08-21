@@ -56,7 +56,8 @@ const PrefillReviewModal: React.FC<PrefillReviewModalProps> = ({
 				const filtered = result.items.filter((it) => {
 					// Si tenemos productId, exigimos match exacto. Si no, solo verificamos que no sea él mismo y tenga details.
 					const matchesProduct = productId ? it.product_id === productId : true;
-					const isValid = it.id !== currentItemId && it.details && Object.keys(it.details).length > 0;
+					const isValid =
+						it.id !== currentItemId && it.details && Object.keys(it.details).length > 0;
 					return matchesProduct && isValid;
 				});
 
@@ -121,8 +122,8 @@ const PrefillReviewModal: React.FC<PrefillReviewModalProps> = ({
 					) : items.length === 0 ? (
 						<div className='rounded-lg border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center dark:border-zinc-700/50 dark:bg-zinc-800/50'>
 							<p className='text-sm text-zinc-500'>
-								No se encontraron otros equipos ({equipmentType}) idénticos en este lote
-								con opciones para copiar.
+								No se encontraron otros equipos ({equipmentType}) idénticos en este
+								lote con opciones para copiar.
 							</p>
 						</div>
 					) : (
@@ -130,8 +131,14 @@ const PrefillReviewModal: React.FC<PrefillReviewModalProps> = ({
 							<SelectReact
 								name='prefill-source-select'
 								options={reactSelectOptions}
-								value={reactSelectOptions.find((opt) => opt.value === selectedItemId) || null}
-								onChange={(selected: any) => setSelectedItemId(selected?.value || '')}
+								value={
+									reactSelectOptions.find(
+										(opt) => opt.value === selectedItemId,
+									) || null
+								}
+								onChange={(selected: any) =>
+									setSelectedItemId(selected?.value || '')
+								}
 								placeholder='Busca y seleccione una serie...'
 								isClearable
 								isSearchable
@@ -151,8 +158,7 @@ const PrefillReviewModal: React.FC<PrefillReviewModalProps> = ({
 						color='blue'
 						disabled={!selectedItemId || loading}
 						onClick={handleApply}
-						icon='HeroCheck'
-					>
+						icon='HeroCheck'>
 						Aplicar Datos
 					</Button>
 				</div>

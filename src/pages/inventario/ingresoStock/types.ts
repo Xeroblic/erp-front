@@ -97,9 +97,9 @@ export const AdjustmentSchema = Yup.object().shape({
 	notes: Yup.string().optional(),
 });
 
-/** 
+/**
  * Data requerida para validar Delta de Stock (Distribución por sucursales)
- * @Full_TS 
+ * @Full_TS
  */
 import type { IProduct } from '@/interface/product.interface';
 import type { IBranch } from '@/interface/empresas.interface';
@@ -118,13 +118,13 @@ export const StockDistributionSchema = Yup.object().shape({
 		Yup.object().shape({
 			queriedBranchId: Yup.number().required(),
 			stock: Yup.number().required().min(0),
-		})
+		}),
 	),
 	delta: Yup.number()
 		.test(
 			'is-balanced',
 			'La suma del stock por sucursales no coincide con el total.',
-			(value) => value === 0
+			(value) => value === 0,
 		)
-		.required()
+		.required(),
 });

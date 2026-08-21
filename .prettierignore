@@ -4,3 +4,6 @@ dist/
 src/components/icon/duotone
 src/components/icon/svg-icons
 SvgIcons
+
+# Generated dependency lockfile; pnpm owns its canonical formatting.
+pnpm-lock.yaml

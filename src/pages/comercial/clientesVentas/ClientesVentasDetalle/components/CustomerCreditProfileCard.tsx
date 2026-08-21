@@ -334,7 +334,9 @@ const CustomerCreditProfileCardContent: React.FC<{
 							</div>
 						</div>
 						<div>
-							<Label htmlFor='credit-profile-collection-email'>Correo de cobranza</Label>
+							<Label htmlFor='credit-profile-collection-email'>
+								Correo de cobranza
+							</Label>
 							<Input
 								id='credit-profile-collection-email'
 								name='collection_email'

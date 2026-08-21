@@ -128,13 +128,15 @@ const RefactorSeries: React.FC = () => {
 
 	const customerSupplierOptionsMemo = useMemo<TSelectOption[]>(() => {
 		return customerSuppliers.map((cs) => {
-			const suppliersNames = cs.suppliers?.length 
-				? ` ${cs.suppliers.map(s => s.name).join(', ')}` 
+			const suppliersNames = cs.suppliers?.length
+				? ` ${cs.suppliers.map((s) => s.name).join(', ')}`
 				: '';
-				
+
 			return {
 				value: String(cs.id),
-				label: `${cs.name}`.trim() + (suppliersNames ? ' / ' + suppliersNames : '') || `Cliente/Proveedor #${cs.id}`,
+				label:
+					`${cs.name}`.trim() + (suppliersNames ? ' / ' + suppliersNames : '') ||
+					`Cliente/Proveedor #${cs.id}`,
 			};
 		});
 	}, [customerSuppliers]);
@@ -169,7 +171,8 @@ const RefactorSeries: React.FC = () => {
 	const endpointEntityType: 'branches' | 'subsidiaries' =
 		effectiveSubsidiaryId && isMultiBranchUser ? 'subsidiaries' : 'branches';
 
-	const endpointEntityId = endpointEntityType === 'subsidiaries' ? effectiveSubsidiaryId : branchId;
+	const endpointEntityId =
+		endpointEntityType === 'subsidiaries' ? effectiveSubsidiaryId : branchId;
 
 	const effectiveSubsidiaryIdForTransfer = useMemo<number | null>(() => {
 		if (!branchId) return effectiveSubsidiaryId;
@@ -383,9 +386,12 @@ const RefactorSeries: React.FC = () => {
 
 		dispatch(
 			fetchItems({
-				branchId: endpointEntityType === 'branches' ? (endpointEntityId as number) : undefined,
+				branchId:
+					endpointEntityType === 'branches' ? (endpointEntityId as number) : undefined,
 				subsidiaryId:
-					endpointEntityType === 'subsidiaries' ? (endpointEntityId as number) : undefined,
+					endpointEntityType === 'subsidiaries'
+						? (endpointEntityId as number)
+						: undefined,
 				params: queryParams,
 			}),
 		);
@@ -420,9 +426,13 @@ const RefactorSeries: React.FC = () => {
 				dispatch(
 					fetchItems({
 						branchId:
-							endpointEntityType === 'branches' ? (endpointEntityId as number) : undefined,
+							endpointEntityType === 'branches'
+								? (endpointEntityId as number)
+								: undefined,
 						subsidiaryId:
-							endpointEntityType === 'subsidiaries' ? (endpointEntityId as number) : undefined,
+							endpointEntityType === 'subsidiaries'
+								? (endpointEntityId as number)
+								: undefined,
 						params: queryParams,
 					}),
 				);
@@ -445,12 +455,8 @@ const RefactorSeries: React.FC = () => {
 			<Subheader className='mb-6 flex flex-col items-center justify-between'>
 				<SubheaderLeft>
 					<div className='flex items-center gap-4'>
-						<Button
-							onClick={handleBackToDetail}
-							color='red'
-							variant='outline'
-						>
-							<Icon icon='HeroArrowLeft' className='text-xl font-bold ' />
+						<Button onClick={handleBackToDetail} color='red' variant='outline'>
+							<Icon icon='HeroArrowLeft' className='text-xl font-bold' />
 						</Button>
 						<div>
 							<Icon icon='DuoArchive' className='h-10 w-10 text-blue-500' />
@@ -842,7 +848,9 @@ const RefactorSeries: React.FC = () => {
 								</div>
 
 								<div>
-									<Label htmlFor='customer-provedor' className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
+									<Label
+										htmlFor='customer-provedor'
+										className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
 										Recepción Cliente/Prov.
 									</Label>
 									<SelectReact

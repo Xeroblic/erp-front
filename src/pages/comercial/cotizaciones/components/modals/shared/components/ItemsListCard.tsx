@@ -139,7 +139,9 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 										{isCustomItem ? (
 											<div className='grid grid-cols-1 gap-3 rounded-xl border border-zinc-100/80 bg-zinc-50/50 p-3 dark:border-white/10 dark:bg-white/[0.03] xl:grid-cols-[110px_150px_minmax(0,1fr)_190px_150px]'>
 												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>Cantidad</p>
+													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+														Cantidad
+													</p>
 													<Input
 														name={`items.${index}.quantity`}
 														type='number'
@@ -150,8 +152,14 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 															setFieldValue(
 																`items.${index}.quantity`,
 																(() => {
-																	const rawValue = Number(e.target.value);
-																	return Number.isFinite(rawValue) && rawValue > 0 ? rawValue : 1;
+																	const rawValue = Number(
+																		e.target.value,
+																	);
+																	return Number.isFinite(
+																		rawValue,
+																	) && rawValue > 0
+																		? rawValue
+																		: 1;
 																})(),
 															)
 														}
@@ -159,26 +167,36 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 													/>
 												</div>
 												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>Código</p>
+													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+														Código
+													</p>
 													<Input
 														name={`items.${index}.customer_sku`}
 														placeholder='SKU / código'
 														value={item.customer_sku ?? ''}
 														onChange={(e) =>
-															setFieldValue(`items.${index}.customer_sku`, e.target.value)
+															setFieldValue(
+																`items.${index}.customer_sku`,
+																e.target.value,
+															)
 														}
 														dimension='sm'
 													/>
 												</div>
 												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>Producto / descripción</p>
+													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+														Producto / descripción
+													</p>
 													<div className='space-y-2'>
 														<Input
 															name={`items.${index}.customer_name`}
 															placeholder='Nombre del ítem'
 															value={item.customer_name ?? ''}
 															onChange={(e) =>
-																setFieldValue(`items.${index}.customer_name`, e.target.value)
+																setFieldValue(
+																	`items.${index}.customer_name`,
+																	e.target.value,
+																)
 															}
 															dimension='sm'
 														/>
@@ -188,13 +206,18 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 															placeholder='Descripción o detalle del ítem'
 															value={item.description ?? ''}
 															onChange={(e) =>
-																setFieldValue(`items.${index}.description`, e.target.value)
+																setFieldValue(
+																	`items.${index}.description`,
+																	e.target.value,
+																)
 															}
 														/>
 													</div>
 												</div>
 												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>Precio unitario</p>
+													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+														Precio unitario
+													</p>
 													<div className='space-y-2'>
 														<Input
 															name={`items.${index}.unit_price`}
@@ -206,7 +229,9 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 															onChange={(e) =>
 																setFieldValue(
 																	`items.${index}.unit_price`,
-																	e.target.value === '' ? '' : Number(e.target.value),
+																	e.target.value === ''
+																		? ''
+																		: Number(e.target.value),
 																)
 															}
 															dimension='sm'
@@ -214,7 +239,12 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 														<Checkbox
 															name={`items.${index}.includes_tax`}
 															checked={Boolean(item.includes_tax)}
-															onChange={(e) => setFieldValue(`items.${index}.includes_tax`, e.target.checked)}
+															onChange={(e) =>
+																setFieldValue(
+																	`items.${index}.includes_tax`,
+																	e.target.checked,
+																)
+															}
 															label='Con IVA'
 															color='indigo'
 															dimension='sm'
@@ -222,7 +252,9 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 													</div>
 												</div>
 												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>Total</p>
+													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+														Total
+													</p>
 													<div className='rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100'>
 														{formatCurrency(rowGrossTotal)}
 													</div>
@@ -231,7 +263,9 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 										) : (
 											<div className='grid grid-cols-1 gap-3 rounded-xl border border-zinc-100/80 bg-zinc-50/50 p-3 dark:border-white/10 dark:bg-white/[0.03] xl:grid-cols-[110px_150px_minmax(0,1fr)_190px_150px]'>
 												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>Cantidad</p>
+													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+														Cantidad
+													</p>
 													<Input
 														name={`items.${index}.quantity`}
 														type='number'
@@ -243,9 +277,19 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 															setFieldValue(
 																`items.${index}.quantity`,
 																(() => {
-																	const rawValue = Number(e.target.value);
-																	const normalizedValue = Number.isFinite(rawValue) && rawValue > 0 ? rawValue : 1;
-																	if (maxQuantity && normalizedValue > maxQuantity) {
+																	const rawValue = Number(
+																		e.target.value,
+																	);
+																	const normalizedValue =
+																		Number.isFinite(rawValue) &&
+																		rawValue > 0
+																			? rawValue
+																			: 1;
+																	if (
+																		maxQuantity &&
+																		normalizedValue >
+																			maxQuantity
+																	) {
 																		return maxQuantity;
 																	}
 																	return normalizedValue;
@@ -256,7 +300,9 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 													/>
 												</div>
 												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>Código</p>
+													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+														Código
+													</p>
 													<Input
 														name={`items.${index}.product_code_preview`}
 														value={productInfo?.sku ?? ''}
@@ -266,36 +312,77 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 													/>
 												</div>
 												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>Producto / descripción</p>
+													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+														Producto / descripción
+													</p>
 													<div className='space-y-2'>
 														<SelectReact
 															name={`items.${index}.product_id`}
 															options={productOptions}
 															placeholder='Seleccionar producto...'
 															value={productOptions.find(
-																(opt) => opt.value === String(item.product_id),
+																(opt) =>
+																	opt.value ===
+																	String(item.product_id),
 															)}
 															onChange={(option) => {
-																const selectedOption = option as TSelectOption;
-																if (selectedOption && !Array.isArray(selectedOption)) {
-																	const nextProductId = Number(selectedOption.value) || 0;
-																	setFieldValue(`items.${index}.product_id`, nextProductId);
-																	setFieldValue(`items.${index}.type`, 'product');
-																	const selectedProduct = saleableProductsMap[nextProductId];
+																const selectedOption =
+																	option as TSelectOption;
+																if (
+																	selectedOption &&
+																	!Array.isArray(selectedOption)
+																) {
+																	const nextProductId =
+																		Number(
+																			selectedOption.value,
+																		) || 0;
+																	setFieldValue(
+																		`items.${index}.product_id`,
+																		nextProductId,
+																	);
+																	setFieldValue(
+																		`items.${index}.type`,
+																		'product',
+																	);
+																	const selectedProduct =
+																		saleableProductsMap[
+																			nextProductId
+																		];
 																	if (selectedProduct) {
-																		setFieldValue(`items.${index}.unit_price`, selectedProduct.unit_price_net);
+																		setFieldValue(
+																			`items.${index}.unit_price`,
+																			selectedProduct.unit_price_net,
+																		);
 																	}
-																	const stock = getAvailableStock(saleableProductsMap[nextProductId]);
-																	const currentQuantity = values.items?.[index]?.quantity ?? 1;
-																	if (stock && currentQuantity > stock) {
-																		setFieldValue(`items.${index}.quantity`, stock);
+																	const stock = getAvailableStock(
+																		saleableProductsMap[
+																			nextProductId
+																		],
+																	);
+																	const currentQuantity =
+																		values.items?.[index]
+																			?.quantity ?? 1;
+																	if (
+																		stock &&
+																		currentQuantity > stock
+																	) {
+																		setFieldValue(
+																			`items.${index}.quantity`,
+																			stock,
+																		);
 																	}
 																}
 															}}
 															menuPortalTarget={document.body}
 															styles={{
-																menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-																menu: (base) => ({ ...base, zIndex: 9999 }),
+																menuPortal: (base) => ({
+																	...base,
+																	zIndex: 9999,
+																}),
+																menu: (base) => ({
+																	...base,
+																	zIndex: 9999,
+																}),
 															}}
 															dimension='sm'
 														/>
@@ -304,24 +391,42 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 															rows={2}
 															placeholder='Descripción adicional del producto'
 															value={item.description ?? ''}
-															onChange={(e) => setFieldValue(`items.${index}.description`, e.target.value)}
+															onChange={(e) =>
+																setFieldValue(
+																	`items.${index}.description`,
+																	e.target.value,
+																)
+															}
 														/>
 														{productInfo && (
 															<p className='text-xs text-gray-500 dark:text-gray-300'>
-																Stock: <strong>{maxQuantity ?? 0}</strong> · Neto: {formatCurrency(productInfo.unit_price_net)} · Bruto: {formatCurrency(productInfo.unit_price_gross)}
+																Stock:{' '}
+																<strong>{maxQuantity ?? 0}</strong>{' '}
+																· Neto:{' '}
+																{formatCurrency(
+																	productInfo.unit_price_net,
+																)}{' '}
+																· Bruto:{' '}
+																{formatCurrency(
+																	productInfo.unit_price_gross,
+																)}
 															</p>
 														)}
 														{productInfo?.soft_holds &&
 															productInfo.soft_holds.quantity > 0 && (
 																<SoftHoldsBadge
-																	softHolds={productInfo.soft_holds}
+																	softHolds={
+																		productInfo.soft_holds
+																	}
 																	availableStock={maxQuantity}
 																/>
 															)}
 													</div>
 												</div>
 												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>Precio unitario</p>
+													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+														Precio unitario
+													</p>
 													<div className='space-y-2'>
 														<Input
 															name={`items.${index}.unit_price`}
@@ -333,7 +438,9 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 															onChange={(e) =>
 																setFieldValue(
 																	`items.${index}.unit_price`,
-																	e.target.value === '' ? '' : Number(e.target.value),
+																	e.target.value === ''
+																		? ''
+																		: Number(e.target.value),
 																)
 															}
 															dimension='sm'
@@ -341,7 +448,12 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 														<Checkbox
 															name={`items.${index}.includes_tax`}
 															checked={Boolean(item.includes_tax)}
-															onChange={(e) => setFieldValue(`items.${index}.includes_tax`, e.target.checked)}
+															onChange={(e) =>
+																setFieldValue(
+																	`items.${index}.includes_tax`,
+																	e.target.checked,
+																)
+															}
 															label='Con IVA'
 															color='indigo'
 															dimension='sm'
@@ -349,7 +461,9 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 													</div>
 												</div>
 												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>Total</p>
+													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+														Total
+													</p>
 													<div className='rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100'>
 														{formatCurrency(rowGrossTotal)}
 													</div>

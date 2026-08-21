@@ -28,7 +28,9 @@ function BatchesListPage() {
 							<Badge className='text-2xl font-semibold'>Listado de Lotes</Badge>
 						</div>
 						<div className='flex flex-row gap-2'>
-							<p className='text-sm text-gray-500'>Aqui puedes gestionar todos los lotes de productos</p>
+							<p className='text-sm text-gray-500'>
+								Aqui puedes gestionar todos los lotes de productos
+							</p>
 						</div>
 					</div>
 				</SubheaderLeft>
