@@ -3,6 +3,13 @@ name: Style Quality
 on:
     pull_request:
 
+concurrency:
+    group: style-quality-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
 jobs:
     style-quality:
         runs-on: ubuntu-latest
@@ -25,5 +32,13 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Check style quality
-              run: pnpm run quality:style
+            - name: Check line endings
+              run: pnpm run check:eol
+
+            - name: Check Prettier
+              if: always()
+              run: pnpm run prettier:check
+
+            - name: Check import extensions
+              if: always()
+              run: pnpm run lint:imports
