@@ -8,7 +8,7 @@ import type {
 	IItem,
 	IValidationRules,
 	ListMeta,
-} from '../../../../interface/technicalReviews.interface.ts';
+} from '../../../../interface/technicalReviews.interface';
 
 // ====================================================================
 // LOTES (BATCHES)
@@ -111,7 +111,7 @@ export const selectError = (state: RootState): string | null => state.technicalR
 
 export const selectTraceabilityData = (
 	state: RootState,
-): import('../../../../interface/technicalReviews.interface.ts').ITraceabilityHistoryResponse | null =>
+): import('../../../../interface/technicalReviews.interface').ITraceabilityHistoryResponse | null =>
 	state.technicalReviews.traceabilityData;
 
 export const selectTraceabilityLoading = (state: RootState): boolean =>

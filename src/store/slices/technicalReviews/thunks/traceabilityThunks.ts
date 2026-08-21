@@ -10,7 +10,7 @@ import type {
 	ChangeCommercialStatusPayload,
 	ReserveItemPayload,
 	MarkAsSoldPayload,
-} from '../../../../interface/technicalReviews.interface.ts';
+} from '../../../../interface/technicalReviews.interface';
 import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,
