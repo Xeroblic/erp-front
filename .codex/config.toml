@@ -1,0 +1,37 @@
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 2
+default_subagent_model = "gpt-5.6-terra"
+default_subagent_reasoning_effort = "medium"
+
+[agents.architect]
+description = "Diseña arquitectura, límites y contratos para Zentria ERP."
+config_file = "./agents/architect.toml"
+
+[agents.full_ts]
+description = "Modela tipos, DTOs, contratos API y schemas Yup estrictos."
+config_file = "./agents/full-ts.toml"
+
+[agents.full_react]
+description = "Trabaja lógica React, hooks, Formik, Redux y efectos asíncronos."
+config_file = "./agents/full-react.toml"
+
+[agents.ui_ux]
+description = "Implementa y revisa UI, Design System y accesibilidad."
+config_file = "./agents/ui-ux.toml"
+
+[agents.implementer]
+description = "Integra funcionalidades frontend completas y verificadas."
+config_file = "./agents/implementer.toml"
+
+[agents.qa]
+description = "Audita riesgos y crea pruebas de regresión para Zentria ERP."
+config_file = "./agents/qa.toml"
+
+[agents.test_designer]
+description = "Identifica brechas materiales y diseña sólo las pruebas indispensables."
+config_file = "./agents/test-designer.toml"
+
+[agents.pr_publisher]
+description = "Publica o actualiza PRs autorizados y verifica su estado remoto sin modificar código funcional."
+config_file = "./agents/pr-publisher.toml"
