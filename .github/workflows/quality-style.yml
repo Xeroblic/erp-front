@@ -36,9 +36,9 @@ jobs:
               run: pnpm run check:eol
 
             - name: Check Prettier
-              if: always()
+              if: ${{ !cancelled() }}
               run: pnpm run prettier:check
 
             - name: Check import extensions
-              if: always()
+              if: ${{ !cancelled() }}
               run: pnpm run lint:imports
