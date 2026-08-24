@@ -51,6 +51,7 @@ const customer = {
 	id: 8,
 	name: 'Comercial Andina Ltda.',
 	rut: '76.123.456-7',
+	type: 'company' as const,
 	contact: { name: 'Ana Pérez', email: 'ana@example.com', phone: '+56912345678' },
 	loyalty: 70,
 	total_sales: 150000,
@@ -77,6 +78,18 @@ describe('ClienteVentasTable', () => {
 		renderTable();
 		expect(screen.getByText('12 clientes')).toBeInTheDocument();
 		expect(screen.getByText('Comercial Andina Ltda.')).toBeInTheDocument();
+		expect(screen.getByRole('cell', { name: 'Empresa' })).toBeInTheDocument();
+	});
+
+	it('muestra persona natural según el tipo real del overview', () => {
+		renderTable({ rows: [{ ...customer, type: 'natural' }] });
+		expect(screen.getByRole('cell', { name: 'Persona Natural' })).toBeInTheDocument();
+	});
+
+	it('usa un estado neutral cuando el overview todavía no entrega el tipo', () => {
+		renderTable({ rows: [{ ...customer, type: undefined }] });
+		expect(screen.getByRole('cell', { name: 'Sin información' })).toBeInTheDocument();
+		expect(screen.queryByRole('cell', { name: 'Persona Natural' })).not.toBeInTheDocument();
 	});
 
 	it('distingue una búsqueda sin resultados de una lista vacía', () => {

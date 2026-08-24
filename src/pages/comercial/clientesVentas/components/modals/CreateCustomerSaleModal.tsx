@@ -7,6 +7,7 @@ import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
 import Checkbox from '@/components/form/Checkbox';
 import Label from '@/components/form/Label';
+import Select from '@/components/form/Select';
 
 import { useAppDispatch } from '@/store';
 import {
@@ -16,10 +17,12 @@ import {
 	fetchCustomersOverviewThunk,
 	type CustomerSaleRequestError,
 } from '@/store/slices/customerSales/customerSalesSlice';
-import { ICustomerSale } from '@/interface/customerSales.interface';
+import type { CustomerSaleType, ICustomerSale } from '@/interface/customerSales.interface';
 import { formatRut, validateRut } from '../../../../../utils/validateRut';
+import { CUSTOMER_SALE_TYPE_OPTIONS, isCustomerSaleType } from '../../customerSaleType';
 
 interface CustomerSaleFormValues {
+	type: CustomerSaleType | '';
 	document_number: string;
 	billing_company: string;
 	contact_name: string;
@@ -33,6 +36,7 @@ interface CustomerSaleFormValues {
  * coinciden con los del formulario (`rut` → `document_number`).
  */
 const FORM_FIELD_BY_API_FIELD: Record<string, keyof CustomerSaleFormValues> = {
+	type: 'type',
 	document_number: 'document_number',
 	rut: 'document_number',
 	billing_company: 'billing_company',
@@ -109,6 +113,8 @@ const CreateCustomerSaleModal = ({
 }) => {
 	const dispatch = useAppDispatch();
 	const rutId = React.useId();
+	const typeId = React.useId();
+	const typeErrorId = React.useId();
 	const companyId = React.useId();
 	const contactId = React.useId();
 	const emailId = React.useId();
@@ -145,6 +151,7 @@ const CreateCustomerSaleModal = ({
 
 	const formik = useFormik<CustomerSaleFormValues>({
 		initialValues: {
+			type: isCustomerSaleType(initialData?.type) ? initialData.type : '',
 			document_number: initialData?.document_number ?? initialData?.rut ?? '',
 			billing_company: initialData?.billing_company ?? '',
 			contact_name: initialData?.contact_name ?? initialData?.primary_contact?.name ?? '',
@@ -154,6 +161,9 @@ const CreateCustomerSaleModal = ({
 		},
 		enableReinitialize: true,
 		validationSchema: Yup.object({
+			type: Yup.string()
+				.oneOf(['natural', 'company'], 'Selecciona un tipo de cliente válido')
+				.required('Selecciona el tipo de cliente'),
 			document_number: Yup.string()
 				.required('RUT requerido')
 				.test('rut-valid', 'RUT inválido', (value) => validateRut(value || '')),
@@ -163,6 +173,11 @@ const CreateCustomerSaleModal = ({
 		onSubmit: async (values, { setSubmitting, setFieldError }) => {
 			if (!subsidiaryId) {
 				toast.error('No se pudo determinar la subsidiaria activa');
+				setSubmitting(false);
+				return;
+			}
+			if (!isCustomerSaleType(values.type)) {
+				setFieldError('type', 'Selecciona el tipo de cliente');
 				setSubmitting(false);
 				return;
 			}
@@ -183,6 +198,7 @@ const CreateCustomerSaleModal = ({
 							subsidiary: subsidiaryId,
 							id: customerId,
 							payload: {
+								type: values.type,
 								// `document_number`, no `rut`: la unicidad por subsidiaria del
 								// backend sólo se valida sobre este campo.
 								document_number: values.document_number,
@@ -217,6 +233,7 @@ const CreateCustomerSaleModal = ({
 						createCustomerThunk({
 							subsidiary: subsidiaryId,
 							payload: {
+								type: values.type,
 								document_type: 'rut',
 								rut: values.document_number,
 								billing_company: values.billing_company,
@@ -267,6 +284,7 @@ const CreateCustomerSaleModal = ({
 		setIsOpen(false);
 		formik.resetForm();
 	};
+	const typeError = formik.touched.type ? formik.errors.type : undefined;
 
 	return (
 		<Modal
@@ -278,6 +296,36 @@ const CreateCustomerSaleModal = ({
 
 			<ModalBody>
 				<form onSubmit={formik.handleSubmit} className='space-y-4'>
+					<div className='space-y-1'>
+						<Label htmlFor={typeId}>Tipo de cliente</Label>
+						<Select
+							id={typeId}
+							name='type'
+							value={formik.values.type}
+							onChange={formik.handleChange}
+							onBlur={formik.handleBlur}
+							isTouched={formik.touched.type}
+							isValid={!formik.errors.type}
+							invalidFeedback={typeError}
+							required
+							aria-invalid={Boolean(typeError)}
+							aria-describedby={typeError ? typeErrorId : undefined}>
+							<option value=''>Selecciona el tipo de cliente</option>
+							{CUSTOMER_SALE_TYPE_OPTIONS.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
+						</Select>
+						{typeError && (
+							<p
+								id={typeErrorId}
+								role='alert'
+								className='text-sm text-red-600 dark:text-red-400'>
+								{typeError}
+							</p>
+						)}
+					</div>
 					<div className='space-y-1'>
 						<Label htmlFor={rutId}>RUT</Label>
 						<Input

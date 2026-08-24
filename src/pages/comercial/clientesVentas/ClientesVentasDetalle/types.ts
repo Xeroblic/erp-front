@@ -1,7 +1,9 @@
 import * as Yup from 'yup';
+import type { CustomerSaleType } from '@/interface/customerSales.interface';
 import { validateRut } from '@/utils/validateRut';
 
 export interface IClientesVentasDetalleForm {
+	type: CustomerSaleType | '';
 	document_number: string;
 	billing_company: string;
 	contact_name: string;
@@ -28,6 +30,9 @@ export interface CreditProfileFormValues {
 }
 
 export const ClientesVentasDetalleSchema = Yup.object({
+	type: Yup.string()
+		.oneOf(['natural', 'company'], 'Selecciona un tipo de cliente válido')
+		.required('Selecciona el tipo de cliente'),
 	document_number: Yup.string()
 		.required('RUT requerido')
 		.test('rut-valid', 'RUT inválido', (value) => validateRut(value || '')),

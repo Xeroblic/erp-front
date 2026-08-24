@@ -10,6 +10,7 @@ interface EditableSelectProps<FormValues extends Record<string, any>> {
 	options: TSelectOptions;
 	isEditable: boolean;
 	placeholder?: string;
+	displayValueFormatter?: (value: unknown) => string;
 }
 
 const EditableSelect = <FormValues extends Record<string, any>>({
@@ -19,6 +20,7 @@ const EditableSelect = <FormValues extends Record<string, any>>({
 	options,
 	isEditable,
 	placeholder = 'Seleccionar',
+	displayValueFormatter,
 }: EditableSelectProps<FormValues>) => {
 	const value = (formik.values as Record<string, any>)[name];
 	const touched = (formik.touched as Record<string, any>)[name];
@@ -27,9 +29,10 @@ const EditableSelect = <FormValues extends Record<string, any>>({
 	const hasValue = typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
 
 	if (!isEditable) {
-		const display =
-			options.find((opt) => opt.value === String(value))?.label ||
-			(hasValue ? String(value) : 'Sin información registrada.');
+		const display = displayValueFormatter
+			? displayValueFormatter(value)
+			: options.find((opt) => opt.value === String(value))?.label ||
+				(hasValue ? String(value) : 'Sin información registrada.');
 		return (
 			<div className='w-full border-t border-zinc-200 pt-3 dark:border-zinc-700'>
 				<p className='text-sm text-zinc-500 dark:text-zinc-400'>{label}</p>

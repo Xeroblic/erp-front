@@ -8,6 +8,7 @@ import {
 	updateCustomerThunk,
 } from '@/store/slices/customerSales/customerSalesSlice';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import { isCustomerSaleType } from '../../customerSaleType';
 import { ClientesVentasDetalleSchema, IClientesVentasDetalleForm } from '../types';
 
 export const useClientesVentasDetalle = () => {
@@ -42,6 +43,7 @@ export const useClientesVentasDetalle = () => {
 
 	const initialFormValues: IClientesVentasDetalleForm = useMemo(
 		() => ({
+			type: isCustomerSaleType(detalle?.type) ? detalle.type : '',
 			document_number: detalle?.document_number || detalle?.rut || '',
 			billing_company: detalle?.billing_company || '',
 			contact_name: contacto.name || '',
@@ -65,11 +67,17 @@ export const useClientesVentasDetalle = () => {
 		enableReinitialize: true,
 		initialValues: initialFormValues,
 		validationSchema: ClientesVentasDetalleSchema,
-		onSubmit: async (values, { setSubmitting }) => {
+		onSubmit: async (values, { setFieldError, setSubmitting }) => {
 			if (!detalle) return;
+			if (!isCustomerSaleType(values.type)) {
+				setFieldError('type', 'Selecciona el tipo de cliente');
+				setSubmitting(false);
+				return;
+			}
 			try {
 				const payload = {
 					...values,
+					type: values.type,
 					rut: values.document_number,
 					document_number: values.document_number,
 					contact_name: values.contact_name,

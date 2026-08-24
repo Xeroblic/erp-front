@@ -13,6 +13,7 @@ import type { PaginationMeta } from '@/services/salesService';
 import TableCardFooterTemplateV2, {
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
+import { getCustomerSaleTypeLabel } from '../../customerSaleType';
 
 interface ClienteVentasTableProps {
 	rows: ICustomerSaleOverview[];
@@ -158,6 +159,7 @@ const ClienteVentasTable: React.FC<ClienteVentasTableProps> = ({
 								onSort={handleSort}
 							/>
 							<Th>Contacto</Th>
+							<Th>Tipo</Th>
 							<SortableTableHeader
 								label='Fidelidad'
 								sortKey='loyalty'
@@ -186,7 +188,7 @@ const ClienteVentasTable: React.FC<ClienteVentasTableProps> = ({
 						{loading &&
 							Array.from({ length: 5 }, (_, rowIndex) => (
 								<Tr key={`customer-skeleton-${rowIndex}`}>
-									{Array.from({ length: 7 }, (_cell, cellIndex) => (
+									{Array.from({ length: 8 }, (_cell, cellIndex) => (
 										<Td key={`customer-skeleton-${rowIndex}-${cellIndex}`}>
 											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
@@ -195,7 +197,7 @@ const ClienteVentasTable: React.FC<ClienteVentasTableProps> = ({
 							))}
 						{!loading && hasError && (
 							<Tr>
-								<Td colSpan={7} className='py-12 text-center'>
+								<Td colSpan={8} className='py-12 text-center'>
 									<p className='font-medium text-red-700 dark:text-red-300'>
 										No fue posible mostrar los clientes
 									</p>
@@ -204,7 +206,7 @@ const ClienteVentasTable: React.FC<ClienteVentasTableProps> = ({
 						)}
 						{!loading && !hasError && rows.length === 0 && (meta?.total ?? 0) === 0 && (
 							<Tr>
-								<Td colSpan={7} className='py-12 text-center'>
+								<Td colSpan={8} className='py-12 text-center'>
 									<p className='font-medium text-zinc-700 dark:text-zinc-200'>
 										{hasSearch
 											? 'Sin resultados para la búsqueda aplicada'
@@ -239,6 +241,7 @@ const ClienteVentasTable: React.FC<ClienteVentasTableProps> = ({
 											<span className='text-zinc-400'>Sin datos</span>
 										)}
 									</Td>
+									<Td>{getCustomerSaleTypeLabel(customer.type)}</Td>
 									<Td>
 										<div className='flex justify-center'>
 											<Badge
