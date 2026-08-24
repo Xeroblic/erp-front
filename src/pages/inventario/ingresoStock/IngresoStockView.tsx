@@ -167,8 +167,8 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 													</Badge>
 												</div>
 												<p className='mt-1 text-xs text-zinc-500'>
-													Ajusta la cantidad de cada producto y luego confirma con
-													"Procesar Ajuste".
+													Ajusta la cantidad de cada producto y luego
+													confirma con "Procesar Ajuste".
 												</p>
 											</div>
 										</CardHeaderChild>

@@ -133,7 +133,11 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 										value={opt.value}
 										isSelected={watch('charger_status') === opt.value}
 										onClick={() =>
-											!readOnly && setValue('charger_status', opt.value, { shouldValidate: true, shouldDirty: true })
+											!readOnly &&
+											setValue('charger_status', opt.value, {
+												shouldValidate: true,
+												shouldDirty: true,
+											})
 										}
 										variant='default'
 										className='text-xs'
@@ -183,11 +187,23 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									isSelected={batteryStatus === opt.value}
 									onClick={() => {
 										if (readOnly) return;
-										setValue('battery_status', opt.value, { shouldValidate: true, shouldDirty: true });
-										setValue('battery_health', opt.label, { shouldValidate: true, shouldDirty: true });
+										setValue('battery_status', opt.value, {
+											shouldValidate: true,
+											shouldDirty: true,
+										});
+										setValue('battery_health', opt.label, {
+											shouldValidate: true,
+											shouldDirty: true,
+										});
 										if (opt.value === 'no_battery') {
-											setValue('battery_percentage', 0, { shouldValidate: true, shouldDirty: true });
-											setValue('battery_health', 'Sin Batería', { shouldValidate: true, shouldDirty: true });
+											setValue('battery_percentage', 0, {
+												shouldValidate: true,
+												shouldDirty: true,
+											});
+											setValue('battery_health', 'Sin Batería', {
+												shouldValidate: true,
+												shouldDirty: true,
+											});
 										}
 									}}
 									color={getBatteryColor(opt.value)}
@@ -215,7 +231,10 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 														? null
 														: Number(e.target.value);
 												field.onChange(val);
-												setValue('battery_percentage', val, { shouldValidate: true, shouldDirty: true });
+												setValue('battery_percentage', val, {
+													shouldValidate: true,
+													shouldDirty: true,
+												});
 											}}
 											placeholder='0'
 											className='h-16 text-center text-3xl font-bold text-zinc-700 dark:text-zinc-200'
@@ -272,11 +291,24 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 											isSelected={secondBatteryStatus === opt.value}
 											onClick={() => {
 												if (readOnly) return;
-												setValue('second_battery_status', opt.value, { shouldValidate: true, shouldDirty: true });
-												setValue('second_battery_condition', opt.label, { shouldValidate: true, shouldDirty: true });
+												setValue('second_battery_status', opt.value, {
+													shouldValidate: true,
+													shouldDirty: true,
+												});
+												setValue('second_battery_condition', opt.label, {
+													shouldValidate: true,
+													shouldDirty: true,
+												});
 												if (opt.value === 'no_battery') {
-													setValue('second_battery_percentage', 0, { shouldValidate: true, shouldDirty: true });
-													setValue('second_battery_condition', 'Sin Batería', { shouldValidate: true, shouldDirty: true });
+													setValue('second_battery_percentage', 0, {
+														shouldValidate: true,
+														shouldDirty: true,
+													});
+													setValue(
+														'second_battery_condition',
+														'Sin Batería',
+														{ shouldValidate: true, shouldDirty: true },
+													);
 												}
 											}}
 											color={getBatteryColor(opt.value)}
@@ -303,7 +335,14 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 																	? null
 																	: Number(e.target.value);
 															field.onChange(val);
-															setValue('second_battery_percentage', val, { shouldValidate: true, shouldDirty: true });
+															setValue(
+																'second_battery_percentage',
+																val,
+																{
+																	shouldValidate: true,
+																	shouldDirty: true,
+																},
+															);
 														}}
 														placeholder='0'
 														className='h-16 text-center text-3xl font-bold text-zinc-700 dark:text-zinc-200'

@@ -20,7 +20,13 @@ export const useTransferLookups = (branchId?: number | null, subsidiaryId?: numb
 
 	useEffect(() => {
 		if (!branchId) return;
-		dispatch(fetchProductsList({ entityParam: 'branches', entityId: branchId, params: { per_page: 200 } }));
+		dispatch(
+			fetchProductsList({
+				entityParam: 'branches',
+				entityId: branchId,
+				params: { per_page: 200 },
+			}),
+		);
 	}, [branchId, dispatch]);
 
 	useEffect(() => {

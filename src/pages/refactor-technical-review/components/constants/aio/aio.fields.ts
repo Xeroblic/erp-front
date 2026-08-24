@@ -21,13 +21,7 @@ export const AIO_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Condición general',
 		group: 'Condición',
-		allowed_values: [
-			'like_new',
-			'good_shape',
-			'visible_wear',
-			'needs_repair',
-			'scrap',
-		],
+		allowed_values: ['like_new', 'good_shape', 'visible_wear', 'needs_repair', 'scrap'],
 		hint: 'Estado general del equipo',
 	},
 	observations: {
@@ -100,14 +94,7 @@ export const AIO_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Condición de pantalla',
 		group: 'Pantalla',
-		allowed_values: [
-			'ok',
-			'minor_wear',
-			'worn',
-			'missing_pieces',
-			'dead_pixels',
-			'broken',
-		],
+		allowed_values: ['ok', 'minor_wear', 'worn', 'missing_pieces', 'dead_pixels', 'broken'],
 	},
 	stand_condition: {
 		type: 'string',
@@ -124,13 +111,7 @@ export const AIO_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Carcasa',
 		group: 'Carcasa',
-		allowed_values: [
-			'ok',
-			'worn',
-			'missing_pieces',
-			'scratched',
-			'broken',
-		],
+		allowed_values: ['ok', 'worn', 'missing_pieces', 'scratched', 'broken'],
 	},
 	vga_ports: {
 		type: 'integer',

@@ -81,13 +81,7 @@ export const ALLOWED_GENERAL_CONDITIONS = [
 	'scrap',
 ] as const;
 
-export const ALLOWED_STORAGE_TECHNOLOGIES = [
-	'HDD',
-	'SSD',
-	'M2',
-	'NVME',
-	'HYBRID',
-] as const;
+export const ALLOWED_STORAGE_TECHNOLOGIES = ['HDD', 'SSD', 'M2', 'NVME', 'HYBRID'] as const;
 
 export const ALLOWED_CHARGER_STATUSES = [
 	'good_condition',

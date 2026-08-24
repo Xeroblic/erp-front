@@ -27,13 +27,7 @@ export const DESKTOP_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Condición general',
 		group: 'Condición',
-		allowed_values: [
-			'like_new',
-			'good_shape',
-			'visible_wear',
-			'needs_repair',
-			'scrap',
-		],
+		allowed_values: ['like_new', 'good_shape', 'visible_wear', 'needs_repair', 'scrap'],
 		hint: 'Estado general del equipo considerando estética y funcionamiento global',
 	},
 	observations: {
@@ -109,13 +103,7 @@ export const DESKTOP_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Carcasa',
 		group: 'Carcasa',
-		allowed_values: [
-			'ok',
-			'good_condition',
-			'light_scratches',
-			'noticeable_wear',
-			'broken',
-		],
+		allowed_values: ['ok', 'good_condition', 'light_scratches', 'noticeable_wear', 'broken'],
 		hint: 'Estado estético del case/gabinete',
 	},
 	vga_ports: {

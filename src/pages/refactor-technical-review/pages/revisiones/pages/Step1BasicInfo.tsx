@@ -135,7 +135,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 						<div className='md:col-span-1'>
 							<QuickProductTriggerButton
 								onClick={onOpenQuickProductModal}
-								disabled={	
+								disabled={
 									readOnly ||
 									quickProductDisabled ||
 									productsLoading ||

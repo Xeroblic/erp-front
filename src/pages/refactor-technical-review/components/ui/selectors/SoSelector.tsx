@@ -256,7 +256,12 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 			{/* 1. SELECCIÓN RÁPIDA (Con Iconos) */}
 			<div>
 				<div className='mb-3 flex items-center gap-2'>
-					<Icon icon='DuoThunder' className='h-4 w-4' color='amber' colorIntensity='500' />
+					<Icon
+						icon='DuoThunder'
+						className='h-4 w-4'
+						color='amber'
+						colorIntensity='500'
+					/>
 					<label className='text-sm font-bold text-zinc-700 dark:text-zinc-300'>
 						Configuraciones comunes
 					</label>
@@ -312,7 +317,12 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 							<span className='flex h-4 w-4 items-center justify-center rounded-full bg-zinc-200 text-[10px] dark:bg-zinc-700'>
 								1
 							</span>
-							<Icon icon='DuoLayers' className='h-3.5 w-3.5' color='zinc' colorIntensity='500' />
+							<Icon
+								icon='DuoLayers'
+								className='h-3.5 w-3.5'
+								color='zinc'
+								colorIntensity='500'
+							/>
 							Fabricante
 						</label>
 						<SelectReact
@@ -331,7 +341,12 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 							<span className='flex h-4 w-4 items-center justify-center rounded-full bg-zinc-200 text-[10px] dark:bg-zinc-700'>
 								2
 							</span>
-							<Icon icon='DuoShieldCheck' className='h-3.5 w-3.5' color='zinc' colorIntensity='500' />
+							<Icon
+								icon='DuoShieldCheck'
+								className='h-3.5 w-3.5'
+								color='zinc'
+								colorIntensity='500'
+							/>
 							Versión
 						</label>
 						{!isVersionManual ? (
@@ -339,7 +354,8 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 								name='so-version'
 								options={versionOptions}
 								value={
-									versionOptions.find((o) => o.value === selectedVersionId) || null
+									versionOptions.find((o) => o.value === selectedVersionId) ||
+									null
 								}
 								onChange={handleVersionChange}
 								placeholder='Selecciona...'
@@ -379,7 +395,12 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 								<span className='flex h-4 w-4 items-center justify-center rounded-full bg-zinc-200 text-[10px] dark:bg-zinc-700'>
 									3
 								</span>
-								<Icon icon='DuoSelect' className='h-3.5 w-3.5' color='zinc' colorIntensity='500' />
+								<Icon
+									icon='DuoSelect'
+									className='h-3.5 w-3.5'
+									color='zinc'
+									colorIntensity='500'
+								/>
 								Edición específica
 							</label>
 							<div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
@@ -394,7 +415,9 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 										}
 										onChange={handleEditionChange}
 										placeholder='Edición...'
-										isDisabled={readOnly || (!selectedVersionId && !isVersionManual)}
+										isDisabled={
+											readOnly || (!selectedVersionId && !isVersionManual)
+										}
 									/>
 								) : (
 									<div className='relative'>
@@ -431,7 +454,12 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 								<span className='flex h-4 w-4 items-center justify-center rounded-full bg-zinc-200 text-[10px] dark:bg-zinc-700'>
 									3
 								</span>
-								<Icon icon='DuoSelect' className='h-3.5 w-3.5' color='zinc' colorIntensity='500' />
+								<Icon
+									icon='DuoSelect'
+									className='h-3.5 w-3.5'
+									color='zinc'
+									colorIntensity='500'
+								/>
 								Edición (opcional)
 							</label>
 							<div className='relative'>
@@ -453,7 +481,12 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 			{value && (
 				<div className='flex items-center justify-between rounded-xl border border-dashed border-zinc-300 bg-zinc-100 p-3 dark:border-zinc-700 dark:bg-white/5'>
 					<span className='ml-2 flex items-center gap-1.5 text-[10px] font-bold uppercase text-zinc-400'>
-						<Icon icon='DuoShieldCheck' className='h-3.5 w-3.5' color='emerald' colorIntensity='500' />
+						<Icon
+							icon='DuoShieldCheck'
+							className='h-3.5 w-3.5'
+							color='emerald'
+							colorIntensity='500'
+						/>
 						Resultado:
 					</span>
 					<div className='flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-1 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>

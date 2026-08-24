@@ -6,51 +6,51 @@ Página dedicada al historial completo de movimientos de inventario con funciona
 
 ## Casos de Uso
 
--   **CU024**: Historial de movimientos de inventario
+- **CU024**: Historial de movimientos de inventario
 
 ## Ubicación
 
--   **Ruta**: `/inventario/historial`
--   **Componente**: `src/pages/inventario/historial/HistorialInventario.tsx`
+- **Ruta**: `/inventario/historial`
+- **Componente**: `src/pages/inventario/historial/HistorialInventario.tsx`
 
 ## Funcionalidades
 
 ### Tabla TanStack con Funciones Avanzadas
 
--   **Ordenamiento**: Por cualquier columna (ascendente/descendente)
--   **Filtrado por columna**: Filtros específicos para cada campo
--   **Búsqueda global**: Texto libre en todos los campos
--   **Paginación**: 20 registros por página con navegación
--   **Columnas redimensionables**: Ajuste dinámico de ancho
+- **Ordenamiento**: Por cualquier columna (ascendente/descendente)
+- **Filtrado por columna**: Filtros específicos para cada campo
+- **Búsqueda global**: Texto libre en todos los campos
+- **Paginación**: 20 registros por página con navegación
+- **Columnas redimensionables**: Ajuste dinámico de ancho
 
 ### Sistema de Filtros Avanzado
 
--   **Fecha**: Rango desde/hasta con date picker
--   **Tipo**: Dropdown con todos los tipos de movimiento
--   **SKU**: Búsqueda por código de producto
--   **Bodega**: Selección por bodega específica
--   **Sucursal**: Filtro por sucursal
--   **Usuario**: Filtro por usuario responsable
--   **Tipo de referencia**: Origen del movimiento (transfer, sale, purchase, etc.)
--   **ID de referencia**: Número específico de referencia
+- **Fecha**: Rango desde/hasta con date picker
+- **Tipo**: Dropdown con todos los tipos de movimiento
+- **SKU**: Búsqueda por código de producto
+- **Bodega**: Selección por bodega específica
+- **Sucursal**: Filtro por sucursal
+- **Usuario**: Filtro por usuario responsable
+- **Tipo de referencia**: Origen del movimiento (transfer, sale, purchase, etc.)
+- **ID de referencia**: Número específico de referencia
 
 ### Modal de Información (InfoMovementModal)
 
--   **Información completa** del movimiento seleccionado
--   **Datos del producto** con SKU y nombre
--   **Trazabilidad** con referencia al origen
--   **Deep-linking** a documento de origen
--   **Formato visual** con badges y colores diferenciados
+- **Información completa** del movimiento seleccionado
+- **Datos del producto** con SKU y nombre
+- **Trazabilidad** con referencia al origen
+- **Deep-linking** a documento de origen
+- **Formato visual** con badges y colores diferenciados
 
 ### Deep-linking desde Transferencias
 
--   **URL con parámetros**: `/inventario/historial?tipo=TRANSFER&ref_id=123`
--   **Auto-filtrado**: Aplicación automática de filtros desde URL
--   **Integración**: Navegación directa desde confirmación de transferencias
+- **URL con parámetros**: `/inventario/historial?tipo=TRANSFER&ref_id=123`
+- **Auto-filtrado**: Aplicación automática de filtros desde URL
+- **Integración**: Navegación directa desde confirmación de transferencias
 
 ## Permisos Requeridos
 
--   `inventory.view_movements` - Para acceder al historial
+- `inventory.view_movements` - Para acceder al historial
 
 ## Datos Mock (5+ registros)
 
@@ -137,11 +137,11 @@ const typeConfig = {
 
 ### Características Implementadas
 
--   **createColumnHelper**: Definición tipada de columnas
--   **useReactTable**: Hook principal con configuración completa
--   **Sorting**: Estado de ordenamiento persistente
--   **Filtering**: Filtros por columna y global
--   **Pagination**: Control de páginas con información de estado
+- **createColumnHelper**: Definición tipada de columnas
+- **useReactTable**: Hook principal con configuración completa
+- **Sorting**: Estado de ordenamiento persistente
+- **Filtering**: Filtros por columna y global
+- **Pagination**: Control de páginas con información de estado
 
 ### Estados Manejados
 
@@ -165,17 +165,17 @@ const [globalFilter, setGlobalFilter] = useState('');
 
 ### Deep-linking de Referencias
 
--   **Transferencias**: Abre `/inventario/transferencias?id={reference_id}` en nueva pestaña
--   **Ventas**: Futuro enlace a módulo de ventas
--   **Compras**: Futuro enlace a módulo de compras
+- **Transferencias**: Abre `/inventario/transferencias?id={reference_id}` en nueva pestaña
+- **Ventas**: Futuro enlace a módulo de ventas
+- **Compras**: Futuro enlace a módulo de compras
 
 ## Parámetros de URL Soportados
 
 ### Query Parameters
 
--   `tipo`: Filtro automático por tipo de movimiento
--   `ref_id`: Filtro por ID de referencia específico
--   **Ejemplo**: `/inventario/historial?tipo=TRANSFER&ref_id=123`
+- `tipo`: Filtro automático por tipo de movimiento
+- `ref_id`: Filtro por ID de referencia específico
+- **Ejemplo**: `/inventario/historial?tipo=TRANSFER&ref_id=123`
 
 ### Aplicación Automática
 
@@ -185,25 +185,25 @@ El componente detecta parámetros de URL al cargar y aplica filtros correspondie
 
 ### Estados de Carga
 
--   **Loading**: Indicador durante fetch de datos
--   **Empty State**: Mensaje cuando no hay registros
--   **Error State**: Manejo de errores de red
+- **Loading**: Indicador durante fetch de datos
+- **Empty State**: Mensaje cuando no hay registros
+- **Error State**: Manejo de errores de red
 
 ### Validaciones de Filtros
 
--   **Fechas**: Validación de formato y rango coherente
--   **Números**: Validación para campos numéricos
--   **Selecciones**: Validación de opciones existentes
+- **Fechas**: Validación de formato y rango coherente
+- **Números**: Validación para campos numéricos
+- **Selecciones**: Validación de opciones existentes
 
 ## Responsive Design
 
--   **Mobile**: Grid colapsable y tabla con scroll horizontal
--   **Desktop**: Grid completo con todas las columnas visibles
--   **Tablet**: Adaptación intermedia con columns essenciales
+- **Mobile**: Grid colapsable y tabla con scroll horizontal
+- **Desktop**: Grid completo con todas las columnas visibles
+- **Tablet**: Adaptación intermedia con columns essenciales
 
 ## Accesibilidad
 
--   **Keyboard Navigation**: Navegación completa por teclado
--   **Screen Readers**: Labels descriptivos y ARIA attributes
--   **Color Contrast**: Cumplimiento con estándares WCAG
--   **Focus Management**: Manejo apropiado del foco en modales
+- **Keyboard Navigation**: Navegación completa por teclado
+- **Screen Readers**: Labels descriptivos y ARIA attributes
+- **Color Contrast**: Cumplimiento con estándares WCAG
+- **Focus Management**: Manejo apropiado del foco en modales
