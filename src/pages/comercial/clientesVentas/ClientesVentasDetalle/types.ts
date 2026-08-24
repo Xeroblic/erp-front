@@ -29,16 +29,20 @@ export interface CreditProfileFormValues {
 	notes: string;
 }
 
-export const ClientesVentasDetalleSchema = Yup.object({
-	type: Yup.string()
-		.oneOf(['natural', 'company'], 'Selecciona un tipo de cliente válido')
-		.required('Selecciona el tipo de cliente'),
-	document_number: Yup.string()
-		.required('RUT requerido')
-		.test('rut-valid', 'RUT inválido', (value) => validateRut(value || '')),
-	billing_company: Yup.string().required('Nombre o empresa requerido'),
-	email: Yup.string().email('Email inválido').required('Email requerido'),
-});
+export const createClientesVentasDetalleSchema = (requiresType: boolean) => {
+	const typeSchema = Yup.string()
+		.transform((value: unknown) => (value === null ? '' : value))
+		.oneOf(['', 'natural', 'company'], 'Selecciona un tipo de cliente válido');
+
+	return Yup.object({
+		type: requiresType ? typeSchema.required('Selecciona el tipo de cliente') : typeSchema,
+		document_number: Yup.string()
+			.required('RUT requerido')
+			.test('rut-valid', 'RUT inválido', (value) => validateRut(value || '')),
+		billing_company: Yup.string().required('Nombre o empresa requerido'),
+		email: Yup.string().email('Email inválido').required('Email requerido'),
+	});
+};
 
 export const CreditProfileSchema = Yup.object({
 	is_active: Yup.boolean().required(),

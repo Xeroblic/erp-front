@@ -9,7 +9,7 @@ import {
 } from '@/store/slices/customerSales/customerSalesSlice';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import { isCustomerSaleType } from '../../customerSaleType';
-import { ClientesVentasDetalleSchema, IClientesVentasDetalleForm } from '../types';
+import { createClientesVentasDetalleSchema, IClientesVentasDetalleForm } from '../types';
 
 export const useClientesVentasDetalle = () => {
 	const { clienteId } = useParams();
@@ -62,22 +62,22 @@ export const useClientesVentasDetalle = () => {
 		}),
 		[detalle, contacto],
 	);
+	const validationSchema = useMemo(
+		() => createClientesVentasDetalleSchema(isCustomerSaleType(detalle?.type)),
+		[detalle?.type],
+	);
 
 	const formik = useFormik<IClientesVentasDetalleForm>({
 		enableReinitialize: true,
 		initialValues: initialFormValues,
-		validationSchema: ClientesVentasDetalleSchema,
-		onSubmit: async (values, { setFieldError, setSubmitting }) => {
+		validationSchema,
+		onSubmit: async (values, { setSubmitting }) => {
 			if (!detalle) return;
-			if (!isCustomerSaleType(values.type)) {
-				setFieldError('type', 'Selecciona el tipo de cliente');
-				setSubmitting(false);
-				return;
-			}
 			try {
+				const { type, ...valuesWithoutType } = values;
 				const payload = {
-					...values,
-					type: values.type,
+					...valuesWithoutType,
+					...(isCustomerSaleType(type) ? { type } : {}),
 					rut: values.document_number,
 					document_number: values.document_number,
 					contact_name: values.contact_name,

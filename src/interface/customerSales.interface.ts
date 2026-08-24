@@ -7,7 +7,7 @@ export interface ICustomerSale {
 	name: string;
 	document_type: string;
 	document_number: string;
-	type: CustomerSaleType;
+	type?: CustomerSaleType | null;
 
 	rut: string;
 

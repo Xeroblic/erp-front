@@ -82,4 +82,45 @@ describe('useClientesVentasDetalle', () => {
 		);
 		expect(toastSpies.success).toHaveBeenCalledWith('Cliente actualizado correctamente');
 	});
+
+	it('permite editar otro campo y omite type si el detalle no lo trae', async () => {
+		state.detail = { ...detail, type: undefined };
+		const { result } = renderHook(() => useClientesVentasDetalle());
+
+		expect(result.current.formik.values.type).toBe('');
+		await act(async () => {
+			await result.current.formik.setFieldValue('billing_company', 'Comercial Andina SpA');
+		});
+		await act(async () => {
+			await result.current.formik.submitForm();
+		});
+
+		await waitFor(() => expect(thunkSpies.updateCustomer).toHaveBeenCalledTimes(1));
+		const updatePayload = thunkSpies.updateCustomer.mock.calls[0]?.[0] as
+			| { payload?: Record<string, unknown> }
+			| undefined;
+		expect(updatePayload).toEqual(
+			expect.objectContaining({
+				subsidiary: 3,
+				id: 8,
+				payload: expect.objectContaining({ billing_company: 'Comercial Andina SpA' }),
+			}),
+		);
+		expect(updatePayload?.payload).not.toHaveProperty('type');
+		expect(toastSpies.success).toHaveBeenCalledWith('Cliente actualizado correctamente');
+	});
+
+	it('mantiene obligatorio el tipo cuando el detalle ya tenía uno válido', async () => {
+		const { result } = renderHook(() => useClientesVentasDetalle());
+
+		await act(async () => {
+			await result.current.formik.setFieldValue('type', null);
+		});
+		await act(async () => {
+			await result.current.formik.submitForm();
+		});
+
+		expect(result.current.formik.errors.type).toBe('Selecciona el tipo de cliente');
+		expect(thunkSpies.updateCustomer).not.toHaveBeenCalled();
+	});
 });
