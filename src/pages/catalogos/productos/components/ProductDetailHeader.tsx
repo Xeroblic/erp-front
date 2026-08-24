@@ -56,7 +56,10 @@ export const ProductDetailHeader: React.FC<ProductDetailHeaderProps> = ({
 						<div className='flex flex-wrap items-center gap-2 text-sm text-neutral-500'>
 							<span>SKU: {product.sku}</span>
 							<span>•</span>
-							<Badge className='px-2' variant='outline' color={product.is_active ? 'emerald' : 'zinc'}>
+							<Badge
+								className='px-2'
+								variant='outline'
+								color={product.is_active ? 'emerald' : 'zinc'}>
 								{product.is_active ? 'Activo' : 'Inactivo'}
 							</Badge>
 							<span>•</span>
@@ -71,14 +74,17 @@ export const ProductDetailHeader: React.FC<ProductDetailHeaderProps> = ({
 								).length;
 								const syncedChildren = (product.children ?? []).filter(
 									(child) =>
-										getWooProductLinks(child.marketplace_external_ids).length > 0,
+										getWooProductLinks(child.marketplace_external_ids).length >
+										0,
 								).length;
 								if (directStores === 0 && syncedChildren === 0) return null;
 								const onlyChildren = directStores === 0 && syncedChildren > 0;
 								return (
 									<>
 										<span>•</span>
-										<Badge className='flex items-center gap-1 px-2' color='indigo'>
+										<Badge
+											className='flex items-center gap-1 px-2'
+											color='indigo'>
 											<Icon icon='HeroShoppingBag' className='h-3 w-3' />
 											{onlyChildren
 												? 'Variantes en Woo'

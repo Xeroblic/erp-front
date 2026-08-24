@@ -100,14 +100,11 @@ export function mapQuoteToPdfTemplate(quote: IQuote) {
 		return isNaN(n) ? 0 : n;
 	};
 
-	const totalNet =
-		items.reduce(
-			(s, i) =>
-				s +
-				toNumber(i.quantity) * toNumber(i.unit_price) -
-				toNumber(i.discount_amount ?? 0),
-			0,
-		);
+	const totalNet = items.reduce(
+		(s, i) =>
+			s + toNumber(i.quantity) * toNumber(i.unit_price) - toNumber(i.discount_amount ?? 0),
+		0,
+	);
 
 	const taxRate = toNumber(quote.totals?.tax_rate ?? quote.tax_rate);
 	const taxAmount =

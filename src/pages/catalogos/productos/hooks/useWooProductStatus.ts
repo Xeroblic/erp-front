@@ -33,7 +33,9 @@ export const useWooProductStatus = (
 		return true;
 	}, [productLinks, isPublishedHere]);
 
-	const getLinkForIntegration = (integrationId: string | null | undefined): WooProductLink | null => {
+	const getLinkForIntegration = (
+		integrationId: string | null | undefined,
+	): WooProductLink | null => {
 		if (!integrationId) return null;
 		return productLinks.find((l) => l.integrationId === integrationId) ?? null;
 	};

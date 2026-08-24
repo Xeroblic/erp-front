@@ -79,9 +79,12 @@ const WooSyncGuide: React.FC<WooSyncGuideProps> = ({ isOpen, onClose }) => {
 						<Icon icon='HeroShoppingBag' className='h-6 w-6' />
 					</span>
 					<div className='mt-3'>
-						<p className='text-xl font-bold'>¿Cómo funciona la sincronización con WooCommerce?</p>
+						<p className='text-xl font-bold'>
+							¿Cómo funciona la sincronización con WooCommerce?
+						</p>
 						<p className='text-sm text-neutral-500'>
-							Publica este producto en tu tienda y mantenlo sincronizado automáticamente.
+							Publica este producto en tu tienda y mantenlo sincronizado
+							automáticamente.
 						</p>
 					</div>
 				</div>
@@ -95,9 +98,9 @@ const WooSyncGuide: React.FC<WooSyncGuideProps> = ({ isOpen, onClose }) => {
 							className='mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600 dark:text-emerald-400'
 						/>
 						<p className='text-sm text-emerald-900 dark:text-emerald-100'>
-							Al <strong>activar la sincronización</strong>, el producto se publica en la
-							tienda seleccionada y se mantiene conectado. A partir de ahí, cada campo se
-							sincroniza según estas reglas:
+							Al <strong>activar la sincronización</strong>, el producto se publica en
+							la tienda seleccionada y se mantiene conectado. A partir de ahí, cada
+							campo se sincroniza según estas reglas:
 						</p>
 					</div>
 
@@ -140,10 +143,11 @@ const WooSyncGuide: React.FC<WooSyncGuideProps> = ({ isOpen, onClose }) => {
 								Nombre y precio propios por canal
 							</p>
 							<p className='text-xs text-sky-800 dark:text-sky-200'>
-								Cada tienda guarda su <strong>propio nombre y precio</strong>, sin pisar
-								los del ERP. Así no tienes que reescribir nada y cada marketplace
-								mantiene los suyos. Es <strong>agnóstico al canal</strong>: la misma
-								lógica aplica a los próximos marketplaces que se integren.
+								Cada tienda guarda su <strong>propio nombre y precio</strong>, sin
+								pisar los del ERP. Así no tienes que reescribir nada y cada
+								marketplace mantiene los suyos. Es{' '}
+								<strong>agnóstico al canal</strong>: la misma lógica aplica a los
+								próximos marketplaces que se integren.
 							</p>
 						</div>
 					</div>
@@ -164,7 +168,11 @@ const WooSyncGuide: React.FC<WooSyncGuideProps> = ({ isOpen, onClose }) => {
 			</ModalBody>
 			<ModalFooter>
 				<div className='flex w-full justify-end'>
-					<Button variant='solid' color='emerald' icon='HeroCheckCircle' onClick={onClose}>
+					<Button
+						variant='solid'
+						color='emerald'
+						icon='HeroCheckCircle'
+						onClick={onClose}>
 						Entendido
 					</Button>
 				</div>

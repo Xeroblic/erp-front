@@ -11,10 +11,7 @@ import {
 	clearWarehouseDetail,
 	type IWarehouseApiError,
 } from '@/store/slices/warehouses/warehouseSlice';
-import type {
-	IAttachProductRequest,
-	IWarehouseProduct,
-} from '@/interface/warehouse.interface';
+import type { IAttachProductRequest, IWarehouseProduct } from '@/interface/warehouse.interface';
 import type { IProduct } from '@/interface/product.interface';
 import type { IWarehouseDetail } from '@/interface/warehouse.interface';
 
@@ -58,11 +55,11 @@ export const useBodegaDetail = () => {
 	// Load detail
 	useEffect(() => {
 		if (branchId && id) {
-			dispatch(fetchWarehouseDetail({ branchId, warehouseId: Number(id) })).unwrap().catch(
-				(e: unknown) => {
+			dispatch(fetchWarehouseDetail({ branchId, warehouseId: Number(id) }))
+				.unwrap()
+				.catch((e: unknown) => {
 					toast.error(getErrorMessage(e, 'Error al cargar el detalle de la bodega'));
-				},
-			);
+				});
 		}
 	}, [branchId, id, dispatch]);
 
@@ -70,7 +67,11 @@ export const useBodegaDetail = () => {
 	useEffect(() => {
 		if (!id || !branchId) return;
 		dispatch(
-			fetchProductsList({ entityParam: 'branches', entityId: branchId, params: { per_page: 50 } }),
+			fetchProductsList({
+				entityParam: 'branches',
+				entityId: branchId,
+				params: { per_page: 50 },
+			}),
 		);
 	}, [dispatch, branchId, id]);
 
@@ -197,34 +198,62 @@ export const useBodegaDetail = () => {
 
 	const closeAttachModal = useCallback(() => setAttachProduct(null), []);
 
-	const state = useMemo(() => ({
-		warehouse,
-		warehouseDetailLoading,
-		allProducts,
-		productsLoading,
-		isEditable,
-		productToRemove,
-		attachProduct,
-		showCharts,
-		isAttaching,
-		branchId,
-	}), [warehouse, warehouseDetailLoading, allProducts, productsLoading, isEditable, productToRemove, attachProduct, showCharts, isAttaching, branchId]);
+	const state = useMemo(
+		() => ({
+			warehouse,
+			warehouseDetailLoading,
+			allProducts,
+			productsLoading,
+			isEditable,
+			productToRemove,
+			attachProduct,
+			showCharts,
+			isAttaching,
+			branchId,
+		}),
+		[
+			warehouse,
+			warehouseDetailLoading,
+			allProducts,
+			productsLoading,
+			isEditable,
+			productToRemove,
+			attachProduct,
+			showCharts,
+			isAttaching,
+			branchId,
+		],
+	);
 
-	const derived = useMemo(() => ({
-		associatedProductIds,
-		availableProducts,
-		isProductAssociated,
-	}), [associatedProductIds, availableProducts, isProductAssociated]);
+	const derived = useMemo(
+		() => ({
+			associatedProductIds,
+			availableProducts,
+			isProductAssociated,
+		}),
+		[associatedProductIds, availableProducts, isProductAssociated],
+	);
 
-	const actions = useMemo(() => ({
-		setIsEditable,
-		setShowCharts,
-		setProductToRemove,
-		closeAttachModal,
-		onSelectProductToAttach,
-		onConfirmAttach,
-		onConfirmRemove,
-	}), [setIsEditable, setShowCharts, setProductToRemove, closeAttachModal, onSelectProductToAttach, onConfirmAttach, onConfirmRemove]);
+	const actions = useMemo(
+		() => ({
+			setIsEditable,
+			setShowCharts,
+			setProductToRemove,
+			closeAttachModal,
+			onSelectProductToAttach,
+			onConfirmAttach,
+			onConfirmRemove,
+		}),
+		[
+			setIsEditable,
+			setShowCharts,
+			setProductToRemove,
+			closeAttachModal,
+			onSelectProductToAttach,
+			onConfirmAttach,
+			onConfirmRemove,
+		],
+	);
 
 	return { state, derived, actions };
 };

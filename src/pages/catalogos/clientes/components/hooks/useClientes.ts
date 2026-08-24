@@ -14,7 +14,6 @@ interface UseClientesParams {
 	per_page?: number;
 }
 
-
 export function useClientes({ subsidiaryId, filters, page = 1, per_page = 5 }: UseClientesParams) {
 	const dispatch = useAppDispatch();
 	const { items, loading } = useAppSelector((s) => s.customerSuppliers);

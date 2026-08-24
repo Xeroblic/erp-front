@@ -50,7 +50,9 @@ describe('useBodegas con cambio de sucursal', () => {
 
 	it('cierra edición y descarta la bodega seleccionada antes de cargar la nueva sucursal', async () => {
 		const store = configureStore({ reducer: { warehouse: warehouseReducer } });
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		const hook = renderHook(() => useBodegas(), { wrapper: Wrapper });
 
 		await waitFor(() => expect(hook.result.current.state.warehouses).toHaveLength(1));
@@ -71,7 +73,9 @@ describe('useBodegas con cambio de sucursal', () => {
 
 	it('cierra la creación en el primer render al cambiar de sucursal', async () => {
 		const store = configureStore({ reducer: { warehouse: warehouseReducer } });
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		const hook = renderHook(() => useBodegas(), { wrapper: Wrapper });
 
 		await waitFor(() => expect(hook.result.current.state.loading).toBe(false));

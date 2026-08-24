@@ -94,24 +94,22 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
 				cell: ({ row }) => (
 					<div className='flex flex-wrap gap-2 py-1'>
 						<Tooltip text='Ver detalle'>
-
 							<Button
 								size='sm'
 								variant='outline'
 								onClick={() => onView(row.original)}
 								className='border-violet-200 text-violet-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 dark:border-violet-500/30 dark:text-violet-300 dark:hover:bg-violet-500/10'>
-									<Icon icon='HeroEye' color={"violet"} className='text-2xl' />
+								<Icon icon='HeroEye' color={'violet'} className='text-2xl' />
 							</Button>
 						</Tooltip>
 						<Tooltip text='Eliminar'>
-
 							<Button
 								size='sm'
 								variant='outline'
 								color='red'
 								onClick={() => onDelete(row.original)}
 								className='border-rose-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10'>
-									<Icon icon='HeroTrash' color={"red"} className='text-2xl'/>
+								<Icon icon='HeroTrash' color={'red'} className='text-2xl' />
 							</Button>
 						</Tooltip>
 					</div>
@@ -152,7 +150,8 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
 			</CardHeader>
 			<CardBody className='p-0'>
 				<div className='border-b border-dashed border-neutral-200 bg-neutral-50/80 px-5 py-3 text-xs text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900/40 dark:text-neutral-400'>
-					Visualiza clientes, consulta su ficha y elimina registros rápidamente desde la misma tabla.
+					Visualiza clientes, consulta su ficha y elimina registros rápidamente desde la
+					misma tabla.
 				</div>
 				<DataTable<ICustomerSupplier>
 					columns={columns}

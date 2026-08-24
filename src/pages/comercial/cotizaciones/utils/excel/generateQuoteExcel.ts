@@ -100,7 +100,9 @@ const buildQuoteExcelModel = (
 
 	const validity =
 		company.quoteValidityText ||
-		(company.quoteValidityDays ? `${company.quoteValidityDays} días hábiles` : '7 días hábiles');
+		(company.quoteValidityDays
+			? `${company.quoteValidityDays} días hábiles`
+			: '7 días hábiles');
 	const deliveryTerm = company.deliveryTerm || 'A convenir o retiro en tienda.';
 	const conditions = [
 		`• Validez Oferta: ${validity}`,
@@ -152,8 +154,10 @@ const buildQuoteExcelModel = (
 		conditions,
 		bank: Array.isArray(company.bankInfo) ? company.bankInfo.join('\n') : '',
 		footerGeneratedBy: `Documento generado electrónicamente por ${company.name || 'la empresa'}`,
-		emitidoPor: `Emitido por: ${[issuer?.first_name, issuer?.last_name].filter(Boolean).join(' ')}`.trim(),
-		creadoPor: `Creado por: ${[quoteUser?.first_name, quoteUser?.last_name].filter(Boolean).join(' ')}`.trim(),
+		emitidoPor:
+			`Emitido por: ${[issuer?.first_name, issuer?.last_name].filter(Boolean).join(' ')}`.trim(),
+		creadoPor:
+			`Creado por: ${[quoteUser?.first_name, quoteUser?.last_name].filter(Boolean).join(' ')}`.trim(),
 	};
 };
 

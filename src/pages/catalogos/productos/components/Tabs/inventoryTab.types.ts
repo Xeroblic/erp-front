@@ -1,4 +1,10 @@
-import type { IProduct, IProductSoftHolds, ProductInventoryCriticalProduct, ProductInventorySummary, ProductListMeta } from '@/interface/product.interface';
+import type {
+	IProduct,
+	IProductSoftHolds,
+	ProductInventoryCriticalProduct,
+	ProductInventorySummary,
+	ProductListMeta,
+} from '@/interface/product.interface';
 
 export interface InventoryTabProps {
 	products: IProduct[];

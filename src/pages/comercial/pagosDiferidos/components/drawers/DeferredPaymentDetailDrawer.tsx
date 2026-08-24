@@ -80,8 +80,10 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	onClose,
 	onEdit,
 }) => {
-	const { document, loading, error, actions, branch, hasDataContext } =
-		useDeferredPaymentDetail(documentId, selectionContext);
+	const { document, loading, error, actions, branch, hasDataContext } = useDeferredPaymentDetail(
+		documentId,
+		selectionContext,
+	);
 	const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 	const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
 	const [isDiscardMarkPaidReceiptOpen, setIsDiscardMarkPaidReceiptOpen] = useState(false);
