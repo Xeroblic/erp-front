@@ -54,6 +54,22 @@ const isRequestError = (error: unknown): error is CustomerSaleRequestError =>
 	typeof error === 'object' &&
 	typeof (error as { message?: unknown }).message === 'string';
 
+const createCustomerSaleSchema = (requiresType: boolean) => {
+	const typeSchema = Yup.string().oneOf(
+		['', 'natural', 'company'],
+		'Selecciona un tipo de cliente válido',
+	);
+
+	return Yup.object({
+		type: requiresType ? typeSchema.required('Selecciona el tipo de cliente') : typeSchema,
+		document_number: Yup.string()
+			.required('RUT requerido')
+			.test('rut-valid', 'RUT inválido', (value) => validateRut(value || '')),
+		email: Yup.string().email('Email inválido').required('Email requerido'),
+		billing_company: Yup.string().required('Empresa/Persona requerida'),
+	});
+};
+
 interface PrimaryContactPayload {
 	primary_contact: { name: string; email: string; phone: string };
 	primary_contact_name: string;
@@ -126,6 +142,7 @@ const CreateCustomerSaleModal = ({
 	latestSubsidiaryIdRef.current = subsidiaryId;
 	latestCustomerIdRef.current = initialData?.id ?? null;
 	latestIsOpenRef.current = isOpen;
+	const requiresType = !isEdit || isCustomerSaleType(initialData?.type);
 
 	React.useEffect(
 		() => () => {
@@ -160,23 +177,14 @@ const CreateCustomerSaleModal = ({
 			is_active: typeof initialData?.is_active === 'boolean' ? initialData.is_active : true,
 		},
 		enableReinitialize: true,
-		validationSchema: Yup.object({
-			type: Yup.string()
-				.oneOf(['natural', 'company'], 'Selecciona un tipo de cliente válido')
-				.required('Selecciona el tipo de cliente'),
-			document_number: Yup.string()
-				.required('RUT requerido')
-				.test('rut-valid', 'RUT inválido', (value) => validateRut(value || '')),
-			email: Yup.string().email('Email inválido').required('Email requerido'),
-			billing_company: Yup.string().required('Empresa/Persona requerida'),
-		}),
+		validationSchema: createCustomerSaleSchema(requiresType),
 		onSubmit: async (values, { setSubmitting, setFieldError }) => {
 			if (!subsidiaryId) {
 				toast.error('No se pudo determinar la subsidiaria activa');
 				setSubmitting(false);
 				return;
 			}
-			if (!isCustomerSaleType(values.type)) {
+			if (requiresType && !isCustomerSaleType(values.type)) {
 				setFieldError('type', 'Selecciona el tipo de cliente');
 				setSubmitting(false);
 				return;
@@ -190,6 +198,7 @@ const CreateCustomerSaleModal = ({
 				customerId,
 			};
 			const primaryContact = buildPrimaryContactPayload(values);
+			const typePayload = isCustomerSaleType(values.type) ? { type: values.type } : {};
 
 			try {
 				if (isEdit && customerId !== null) {
@@ -198,7 +207,7 @@ const CreateCustomerSaleModal = ({
 							subsidiary: subsidiaryId,
 							id: customerId,
 							payload: {
-								type: values.type,
+								...typePayload,
 								// `document_number`, no `rut`: la unicidad por subsidiaria del
 								// backend sólo se valida sobre este campo.
 								document_number: values.document_number,
@@ -233,7 +242,7 @@ const CreateCustomerSaleModal = ({
 						createCustomerThunk({
 							subsidiary: subsidiaryId,
 							payload: {
-								type: values.type,
+								...typePayload,
 								document_type: 'rut',
 								rut: values.document_number,
 								billing_company: values.billing_company,
@@ -307,7 +316,7 @@ const CreateCustomerSaleModal = ({
 							isTouched={formik.touched.type}
 							isValid={!formik.errors.type}
 							invalidFeedback={typeError}
-							required
+							required={requiresType}
 							aria-invalid={Boolean(typeError)}
 							aria-describedby={typeError ? typeErrorId : undefined}>
 							<option value=''>Selecciona el tipo de cliente</option>

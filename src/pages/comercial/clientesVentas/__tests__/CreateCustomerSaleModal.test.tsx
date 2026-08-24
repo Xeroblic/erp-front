@@ -319,6 +319,50 @@ describe('CreateCustomerSaleModal', () => {
 			expect(getSubmittedPayload().type).toBe('natural');
 		});
 
+		it('permite editar un cliente histórico sin tipo y omite el campo del payload', async () => {
+			const initialDataWithoutType = { ...initialData, type: undefined };
+			apiSpies.fetchNormalized.mockResolvedValue({
+				...initialDataWithoutType,
+				phone: '+56987654321',
+				is_active: true,
+			});
+			const onSuccess = vi.fn();
+			renderModal({
+				refreshStoreOnSuccess: false,
+				onSuccess,
+				isEdit: true,
+				initialData: initialDataWithoutType,
+			});
+
+			const typeSelect = screen.getByLabelText('Tipo de cliente');
+			expect(typeSelect).not.toBeRequired();
+			expect(typeSelect).toHaveValue('');
+			fireEvent.change(screen.getByPlaceholderText('+56 9 1234 5678'), {
+				target: { value: '+56987654321' },
+			});
+			fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
+
+			await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+			const payload = getSubmittedPayload();
+			expect(payload.phone).toBe('+56987654321');
+			expect(payload).not.toHaveProperty('type');
+		});
+
+		it('mantiene obligatorio el tipo si el cliente editado ya lo tenía', async () => {
+			renderModal({ refreshStoreOnSuccess: false, isEdit: true, initialData });
+			const typeSelect = screen.getByLabelText('Tipo de cliente');
+			expect(typeSelect).toBeRequired();
+			fireEvent.change(typeSelect, { target: { value: '' } });
+			fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
+
+			await waitFor(() =>
+				expect(screen.getByRole('alert')).toHaveTextContent(
+					'Selecciona el tipo de cliente',
+				),
+			);
+			expect(apiSpies.fetchNormalized).not.toHaveBeenCalled();
+		});
+
 		it('marca el campo y mantiene el modal abierto ante un 422 de RUT duplicado', async () => {
 			apiSpies.fetchNormalized.mockRejectedValue({
 				response: {
