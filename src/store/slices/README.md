@@ -41,23 +41,23 @@ Ejemplo (patrón):
 
 ```ts
 export interface FeatureState<T> {
-    items: T[];
-    loading: boolean;
-    creating: boolean;
-    updating: boolean;
-    deleting: boolean;
-    error: string | null;
-    current: T | null;
+	items: T[];
+	loading: boolean;
+	creating: boolean;
+	updating: boolean;
+	deleting: boolean;
+	error: string | null;
+	current: T | null;
 }
 
 const initialState: FeatureState<MyEntity> = {
-    items: [],
-    loading: false,
-    creating: false,
-    updating: false,
-    deleting: false,
-    error: null,
-    current: null,
+	items: [],
+	loading: false,
+	creating: false,
+	updating: false,
+	deleting: false,
+	error: null,
+	current: null,
 };
 ```
 
@@ -73,8 +73,8 @@ const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
 const ep = (p: string) => join(PREFIX, p);
 
 const normalizeArray = (payload: any): any[] => {
-    const raw = payload?.data ?? payload;
-    return Array.isArray(raw) ? raw : [];
+	const raw = payload?.data ?? payload;
+	return Array.isArray(raw) ? raw : [];
 };
 
 const normalizeObject = (payload: any): any => payload?.data ?? payload ?? null;
@@ -97,25 +97,24 @@ Ejemplo (detalle por id) siguiendo tu patrón:
 
 ```ts
 export const fetchCustomerSupplierById = createAsyncThunk<
-    ICustomerSupplier,
-    { subsidiaryId: number; id: number },
-    { rejectValue: string }
->(
-    'customerSuppliers/fetchById',
-    async ({ subsidiaryId, id }, { rejectWithValue }) => {
-        try {
-            const resp = await ApiService.fetchData<{ data?: any }>({
-                url: ep(`/subsidiaries/${subsidiaryId}/customer-suppliers/${id}/`),
-                method: 'get',
-            });
-            return normalizeObject(resp.data) as ICustomerSupplier;
-        } catch (error: any) {
-            return rejectWithValue(
-                error?.response?.data?.message ?? error?.message ?? 'No se pudo cargar el cliente-proveedor'
-            );
-        }
-    }
-);
+	ICustomerSupplier,
+	{ subsidiaryId: number; id: number },
+	{ rejectValue: string }
+>('customerSuppliers/fetchById', async ({ subsidiaryId, id }, { rejectWithValue }) => {
+	try {
+		const resp = await ApiService.fetchData<{ data?: any }>({
+			url: ep(`/subsidiaries/${subsidiaryId}/customer-suppliers/${id}/`),
+			method: 'get',
+		});
+		return normalizeObject(resp.data) as ICustomerSupplier;
+	} catch (error: any) {
+		return rejectWithValue(
+			error?.response?.data?.message ??
+				error?.message ??
+				'No se pudo cargar el cliente-proveedor',
+		);
+	}
+});
 ```
 
 Recomendaciones:
@@ -135,69 +134,69 @@ import ApiService from '@/services/ApiService';
 import type { RootState } from '@/store/rootReducer';
 
 export interface ThingsState {
-    items: IThing[];
-    loading: boolean;
-    creating: boolean;
-    updating: boolean;
-    deleting: boolean;
-    error: string | null;
-    current: IThing | null;
+	items: IThing[];
+	loading: boolean;
+	creating: boolean;
+	updating: boolean;
+	deleting: boolean;
+	error: string | null;
+	current: IThing | null;
 }
 
 const initialState: ThingsState = {
-    items: [],
-    loading: false,
-    creating: false,
-    updating: false,
-    deleting: false,
-    error: null,
-    current: null,
+	items: [],
+	loading: false,
+	creating: false,
+	updating: false,
+	deleting: false,
+	error: null,
+	current: null,
 };
 
 // Thunks de ejemplo (ver sección anterior)
 
 const slice = createSlice({
-    name: 'things',
-    initialState,
-    reducers: {
-        // Reducers síncronos opcionales: setCurrent, clearError, etc.
-        clearError(state) {
-            state.error = null;
-        },
-    },
-    extraReducers: (builder) => {
-        // List
-        builder.addCase(fetchThings.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        });
-        builder.addCase(fetchThings.fulfilled, (state, action) => {
-            state.loading = false;
-            state.items = action.payload;
-        });
-        builder.addCase(fetchThings.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload ?? 'Error al cargar';
-        });
+	name: 'things',
+	initialState,
+	reducers: {
+		// Reducers síncronos opcionales: setCurrent, clearError, etc.
+		clearError(state) {
+			state.error = null;
+		},
+	},
+	extraReducers: (builder) => {
+		// List
+		builder.addCase(fetchThings.pending, (state) => {
+			state.loading = true;
+			state.error = null;
+		});
+		builder.addCase(fetchThings.fulfilled, (state, action) => {
+			state.loading = false;
+			state.items = action.payload;
+		});
+		builder.addCase(fetchThings.rejected, (state, action) => {
+			state.loading = false;
+			state.error = action.payload ?? 'Error al cargar';
+		});
 
-        // Create
-        builder.addCase(createThing.pending, (state) => {
-            state.creating = true;
-            state.error = null;
-        });
-        builder.addCase(createThing.fulfilled, (state, action) => {
-            state.creating = false;
-            state.items.unshift(action.payload);
-            state.current = action.payload;
-        });
-        builder.addCase(createThing.rejected, (state, action) => {
-            state.creating = false;
-            state.error = action.payload ?? 'Error al crear';
-        });
+		// Create
+		builder.addCase(createThing.pending, (state) => {
+			state.creating = true;
+			state.error = null;
+		});
+		builder.addCase(createThing.fulfilled, (state, action) => {
+			state.creating = false;
+			state.items.unshift(action.payload);
+			state.current = action.payload;
+		});
+		builder.addCase(createThing.rejected, (state, action) => {
+			state.creating = false;
+			state.error = action.payload ?? 'Error al crear';
+		});
 
-        // Update: set updating, reemplazar item por id y actualizar current si aplica
-        // Delete: set deleting, filtrar item por id y limpiar current si coincide
-    },
+		// Update: set updating, reemplazar item por id y actualizar current si aplica
+		// Delete: set deleting, filtrar item por id y limpiar current si coincide
+	},
 });
 
 export const { clearError } = slice.actions;
@@ -227,9 +226,9 @@ Archivo: `src/store/rootReducer.ts`
 
 ```ts
 const staticReducers = {
-    // ...otros reducers
-    things,
-    [RtkQueryService.reducerPath]: RtkQueryService.reducer,
+	// ...otros reducers
+	things,
+	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };
 ```
 
@@ -251,10 +250,10 @@ Archivo: `src/store/storeSetup.ts`
 Puntos a considerar al agregar un nuevo slice:
 
 - Registro estático (lo más común):
-  - Importar el slice en `rootReducer.ts` y añadirlo a `staticReducers`.
-  - Tipar `RootState` con `ReturnType<typeof mySlice>` o `MySliceState`.
+    - Importar el slice en `rootReducer.ts` y añadirlo a `staticReducers`.
+    - Tipar `RootState` con `ReturnType<typeof mySlice>` o `MySliceState`.
 - Registro dinámico:
-  - Llamar `injectReducer('things', thingsReducer)` desde el módulo que se carga bajo demanda.
+    - Llamar `injectReducer('things', thingsReducer)` desde el módulo que se carga bajo demanda.
 
 ---
 
@@ -271,16 +270,16 @@ import { useAppDispatch, useAppSelector } from '@/store/hook';
 import { fetchThings, selectThings, selectThingsLoading } from '@/store/slices/things/thingsSlice';
 
 function MiComponente() {
-    const dispatch = useAppDispatch();
-    const items = useAppSelector(selectThings);
-    const loading = useAppSelector(selectThingsLoading);
+	const dispatch = useAppDispatch();
+	const items = useAppSelector(selectThings);
+	const loading = useAppSelector(selectThingsLoading);
 
-    useEffect(() => {
-        dispatch(fetchThings({ subsidiaryId: 1 }));
-    }, [dispatch]);
+	useEffect(() => {
+		dispatch(fetchThings({ subsidiaryId: 1 }));
+	}, [dispatch]);
 
-    if (loading) return <Spinner />;
-    return <Lista data={items} />;
+	if (loading) return <Spinner />;
+	return <Lista data={items} />;
 }
 ```
 
@@ -298,11 +297,11 @@ function MiComponente() {
 ## Checklist de un nuevo slice
 
 - [ ] Crear `/<feature>/<feature>Slice.ts` con:
-  - [ ] Interface `XxxState` (items, current, flags, error)
-  - [ ] `initialState` con valores por defecto
-  - [ ] Thunks tipados (`rejectValue: string`)
-  - [ ] `createSlice` + `extraReducers` para cada thunk
-  - [ ] Selectores exportados
+    - [ ] Interface `XxxState` (items, current, flags, error)
+    - [ ] `initialState` con valores por defecto
+    - [ ] Thunks tipados (`rejectValue: string`)
+    - [ ] `createSlice` + `extraReducers` para cada thunk
+    - [ ] Selectores exportados
 - [ ] Agregar a `rootReducer.ts` en `staticReducers` y tipar `RootState`.
 - [ ] Usar `useAppDispatch/useAppSelector` en componentes.
 
@@ -326,4 +325,3 @@ function MiComponente() {
 - Slices de referencia: `src/store/slices/suppliers/suppliersSlice.ts`, `src/store/slices/customerSuppliers/customerSuppliersSlice.ts`.
 
 Si quieres, puedo generar un template base de slice vacío para copiar/pegar con la estructura estándar.
-

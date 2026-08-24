@@ -5,7 +5,7 @@ export const priceFormat = (price: number): string => {
 	});
 };
 
-export const priceFormatWhitDecimals = (price:number):string => {
+export const priceFormatWhitDecimals = (price: number): string => {
 	return price.toLocaleString('es-CL', {
 		style: 'currency',
 		currency: 'CLP',

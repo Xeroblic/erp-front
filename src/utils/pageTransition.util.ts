@@ -44,7 +44,7 @@ export const runPageTransition = (
 	textContent: string = 'Zentria ERP',
 	iconName?: string,
 	containerId: string = 'page-transition-overlay',
-	type: 'manual' | 'auto' = 'auto'
+	type: 'manual' | 'auto' = 'auto',
 ) => {
 	if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 		onNavigate();
@@ -141,27 +141,35 @@ export const runPageTransition = (
 	const root = createRoot(contentContainer);
 	currentRoot = root;
 
-	const iconElement = iconName
-		? createElement(TransitionGlyph, { name: iconName })
-		: null;
+	const iconElement = iconName ? createElement(TransitionGlyph, { name: iconName }) : null;
 
-	const textElement = createElement('div', {
-		style: {
-			color: '#fff',
-			fontSize: '2.5rem',
-			fontWeight: 'bold',
-			fontFamily: 'system-ui, sans-serif',
-			// Text shadow is cheaper than SVG drop-shadow filter
-			textShadow: '0 2px 4px rgba(0,0,0,0.2)',
-			textAlign: 'center'
-		}
-	}, textContent);
+	const textElement = createElement(
+		'div',
+		{
+			style: {
+				color: '#fff',
+				fontSize: '2.5rem',
+				fontWeight: 'bold',
+				fontFamily: 'system-ui, sans-serif',
+				// Text shadow is cheaper than SVG drop-shadow filter
+				textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+				textAlign: 'center',
+			},
+		},
+		textContent,
+	);
 
 	// Static container: avoid endless CSS animation loop
-	root.render(createElement('div', {
-		className: 'flex flex-col items-center justify-center'
-	}, iconElement, textElement));
-
+	root.render(
+		createElement(
+			'div',
+			{
+				className: 'flex flex-col items-center justify-center',
+			},
+			iconElement,
+			textElement,
+		),
+	);
 
 	// 5. Animation Sequence
 	const tl = gsap.timeline({
@@ -190,12 +198,16 @@ export const runPageTransition = (
 		ease: 'power2.inOut',
 	})
 		// Show Content
-		.to(contentContainer, {
-			opacity: 1,
-			scale: 1,
-			duration: 0.4,
-			ease: 'back.out(1.5)',
-		}, '-=0.2')
+		.to(
+			contentContainer,
+			{
+				opacity: 1,
+				scale: 1,
+				duration: 0.4,
+				ease: 'back.out(1.5)',
+			},
+			'-=0.2',
+		)
 
 		// Navigate
 		.call(onNavigate)

@@ -29,11 +29,7 @@ declare module 'html5-qrcode' {
 	}
 
 	export class Html5QrcodeScanner {
-		constructor(
-			elementId: string,
-			config: Html5QrcodeScannerConfig,
-			verbose?: boolean,
-		);
+		constructor(elementId: string, config: Html5QrcodeScannerConfig, verbose?: boolean);
 		render(
 			qrCodeSuccessCallback: (decodedText: string, result?: unknown) => void,
 			qrCodeErrorCallback?: (errorMessage: string, error?: unknown) => void,

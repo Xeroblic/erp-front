@@ -252,7 +252,8 @@ export const fetchInventorySummary = createAsyncThunk<
 			};
 
 			const inventory: ProductInventorySummary = {
-				branchId: Number(payload.branch_id ?? payload.subsidiary_id ?? entityId) || entityId,
+				branchId:
+					Number(payload.branch_id ?? payload.subsidiary_id ?? entityId) || entityId,
 				criticalThreshold:
 					typeof reqParams?.critical_threshold === 'number'
 						? Number(reqParams.critical_threshold)
@@ -286,22 +287,23 @@ export const fetchInventorySummary = createAsyncThunk<
 				payload.critical_products,
 			)
 				? payload.critical_products
-					.map((item) => ({
-						id: Number(item?.id ?? 0),
-						name: String(item?.name ?? ''),
-						sku: String(item?.sku ?? ''),
-						brand_name:
-							item?.brand_name !== undefined && item?.brand_name !== null
-								? String(item.brand_name)
-								: null,
-						stock: (() => {
-							const source = asRecord(item);
-							if (!source || source.stock === undefined || source.stock === null) return null;
-							const num = Number(source.stock);
-							return Number.isFinite(num) ? num : null;
-						})(),
-					}))
-					.filter((item) => Number.isFinite(item.id) && item.id > 0)
+						.map((item) => ({
+							id: Number(item?.id ?? 0),
+							name: String(item?.name ?? ''),
+							sku: String(item?.sku ?? ''),
+							brand_name:
+								item?.brand_name !== undefined && item?.brand_name !== null
+									? String(item.brand_name)
+									: null,
+							stock: (() => {
+								const source = asRecord(item);
+								if (!source || source.stock === undefined || source.stock === null)
+									return null;
+								const num = Number(source.stock);
+								return Number.isFinite(num) ? num : null;
+							})(),
+						}))
+						.filter((item) => Number.isFinite(item.id) && item.id > 0)
 				: [];
 
 			return { stats, inventory, criticalProducts, entityId };
@@ -317,28 +319,31 @@ export const fetchProductById = createAsyncThunk<
 	IProduct,
 	{ entityParam: ProductEntityParam; entityId: number; productId: number },
 	{ rejectValue: string }
->('products/fetchProductById', async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
-	try {
-		const response = await ApiService.fetchData<IProductResponse>({
-			url: `/${entityParam}/${entityId}/products/${productId}`,
-			method: 'get',
-		});
+>(
+	'products/fetchProductById',
+	async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
+		try {
+			const response = await ApiService.fetchData<IProductResponse>({
+				url: `/${entityParam}/${entityId}/products/${productId}`,
+				method: 'get',
+			});
 
-		const raw = response.data?.data ?? response.data;
-		return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
-	} catch (error: unknown) {
-		if (getErrorStatus(error) === 404) {
-			const backendMessage = getResponseMessage(error);
-			const message =
-				backendMessage && backendMessage.trim().length > 0
-					? backendMessage
-					: 'El producto no esta asignado a esta sucursal';
-			toast.error(message);
-			return rejectWithValue(message);
+			const raw = response.data?.data ?? response.data;
+			return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
+		} catch (error: unknown) {
+			if (getErrorStatus(error) === 404) {
+				const backendMessage = getResponseMessage(error);
+				const message =
+					backendMessage && backendMessage.trim().length > 0
+						? backendMessage
+						: 'El producto no esta asignado a esta sucursal';
+				toast.error(message);
+				return rejectWithValue(message);
+			}
+			return rejectWithValue(getErrorMessage(error, 'No se pudo obtener el producto'));
 		}
-		return rejectWithValue(getErrorMessage(error, 'No se pudo obtener el producto'));
-	}
-});
+	},
+);
 
 export interface ProductAttributesPatchPayload {
 	set?: Record<string, unknown>;
@@ -349,27 +354,35 @@ export const fetchProductAttributes = createAsyncThunk<
 	{ productId: number; attributes: Record<string, unknown> | null },
 	{ entityParam: ProductEntityParam; entityId: number; productId: number },
 	{ rejectValue: string }
->('products/fetchProductAttributes', async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
-	try {
-		const response = await ApiService.fetchData<IProductAttributesResponse>({
-			url: `/${entityParam}/${entityId}/products/${productId}/attributes`,
-			method: 'get',
-		});
+>(
+	'products/fetchProductAttributes',
+	async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
+		try {
+			const response = await ApiService.fetchData<IProductAttributesResponse>({
+				url: `/${entityParam}/${entityId}/products/${productId}/attributes`,
+				method: 'get',
+			});
 
-		return {
-			productId,
-			attributes: response.data?.attributes ?? null,
-		};
-	} catch (error: unknown) {
-		return rejectWithValue(
-			getErrorMessage(error, 'No se pudieron cargar los atributos del producto'),
-		);
-	}
-});
+			return {
+				productId,
+				attributes: response.data?.attributes ?? null,
+			};
+		} catch (error: unknown) {
+			return rejectWithValue(
+				getErrorMessage(error, 'No se pudieron cargar los atributos del producto'),
+			);
+		}
+	},
+);
 
 export const patchProductAttributes = createAsyncThunk<
 	{ productId: number; attributes: Record<string, unknown> | null },
-	{ entityParam: ProductEntityParam; entityId: number; productId: number; payload: ProductAttributesPatchPayload },
+	{
+		entityParam: ProductEntityParam;
+		entityId: number;
+		productId: number;
+		payload: ProductAttributesPatchPayload;
+	},
 	{ rejectValue: string }
 >(
 	'products/patchProductAttributes',
@@ -398,61 +411,77 @@ export const patchProductAttributes = createAsyncThunk<
 
 export const createProduct = createAsyncThunk<
 	IProduct,
-	{ entityParam: ProductEntityParam; entityId: number; data: Partial<IProduct>; categoryIds: number[] },
+	{
+		entityParam: ProductEntityParam;
+		entityId: number;
+		data: Partial<IProduct>;
+		categoryIds: number[];
+	},
 	{ rejectValue: ApiValidationError }
->('products/createProduct', async ({ entityParam, entityId, data, categoryIds }, { rejectWithValue }) => {
-	try {
-		const body: Record<string, unknown> = {};
+>(
+	'products/createProduct',
+	async ({ entityParam, entityId, data, categoryIds }, { rejectWithValue }) => {
+		try {
+			const body: Record<string, unknown> = {};
 
-		const assignIfDefined = (key: string, val: unknown) => {
-			if (val !== undefined && val !== null && val !== '') body[key] = val;
-		};
+			const assignIfDefined = (key: string, val: unknown) => {
+				if (val !== undefined && val !== null && val !== '') body[key] = val;
+			};
 
-		assignIfDefined('sku', data.sku);
-		assignIfDefined('name', data.name);
-		if (data.price !== undefined && data.price !== null) body.price = Number(data.price);
-		assignIfDefined('commercial_sku', data.commercial_sku);
-		assignIfDefined('barcode', data.barcode);
-		if (data.brand_id !== undefined && data.brand_id !== null)
-			body.brand_id = Number(data.brand_id);
-		if (data.branch_id !== undefined && data.branch_id !== null)
-			body.branch_id = Number(data.branch_id);
-		assignIfDefined('product_type', data.product_type);
-		if (data.serial_tracking !== undefined)
-			body.serial_tracking = Boolean(data.serial_tracking);
-		assignIfDefined('condition_policy', data.condition_policy);
-		assignIfDefined('uom', data.uom);
-		if (data.warranty_months !== undefined) body.warranty_months = Number(data.warranty_months);
-		if (data.cost !== undefined) body.cost = Number(data.cost);
-		if (data.offer_price !== undefined) body.offer_price = Number(data.offer_price);
-		if (data.attributes_json !== undefined && data.attributes_json !== null)
-			body.attributes_json = data.attributes_json;
-		if (data.is_active !== undefined) body.is_active = Boolean(data.is_active);
-		if (data.product_status !== undefined) body.product_status = data.product_status;
-		if (data.snippet_description !== undefined)
-			body.snippet_description = data.snippet_description;
-		if (data.short_description !== undefined) body.short_description = data.short_description;
-		if (data.long_description !== undefined) body.long_description = data.long_description;
-		if (data.stock !== undefined) body.stock = Number(data.stock);
+			assignIfDefined('sku', data.sku);
+			assignIfDefined('name', data.name);
+			if (data.price !== undefined && data.price !== null) body.price = Number(data.price);
+			assignIfDefined('commercial_sku', data.commercial_sku);
+			assignIfDefined('barcode', data.barcode);
+			if (data.brand_id !== undefined && data.brand_id !== null)
+				body.brand_id = Number(data.brand_id);
+			if (data.branch_id !== undefined && data.branch_id !== null)
+				body.branch_id = Number(data.branch_id);
+			assignIfDefined('product_type', data.product_type);
+			if (data.serial_tracking !== undefined)
+				body.serial_tracking = Boolean(data.serial_tracking);
+			assignIfDefined('condition_policy', data.condition_policy);
+			assignIfDefined('uom', data.uom);
+			if (data.warranty_months !== undefined)
+				body.warranty_months = Number(data.warranty_months);
+			if (data.cost !== undefined) body.cost = Number(data.cost);
+			if (data.offer_price !== undefined) body.offer_price = Number(data.offer_price);
+			if (data.attributes_json !== undefined && data.attributes_json !== null)
+				body.attributes_json = data.attributes_json;
+			if (data.is_active !== undefined) body.is_active = Boolean(data.is_active);
+			if (data.product_status !== undefined) body.product_status = data.product_status;
+			if (data.snippet_description !== undefined)
+				body.snippet_description = data.snippet_description;
+			if (data.short_description !== undefined)
+				body.short_description = data.short_description;
+			if (data.long_description !== undefined) body.long_description = data.long_description;
+			if (data.stock !== undefined) body.stock = Number(data.stock);
 
-		if (Array.isArray(categoryIds) && categoryIds.length) body.category_ids = categoryIds;
+			if (Array.isArray(categoryIds) && categoryIds.length) body.category_ids = categoryIds;
 
-		const response = await ApiService.fetchData<IProductResponse, Record<string, unknown>>({
-			url: `/${entityParam}/${entityId}/products`,
-			method: 'post',
-			data: body,
-		});
+			const response = await ApiService.fetchData<IProductResponse, Record<string, unknown>>({
+				url: `/${entityParam}/${entityId}/products`,
+				method: 'post',
+				data: body,
+			});
 
-		const raw = response.data?.data ?? response.data;
-		return normalizeProduct((raw as IProduct) ?? body);
-	} catch (error: unknown) {
-		return rejectWithValue(getErrorPayload(error, 'No se pudo crear el producto'));
-	}
-});
+			const raw = response.data?.data ?? response.data;
+			return normalizeProduct((raw as IProduct) ?? body);
+		} catch (error: unknown) {
+			return rejectWithValue(getErrorPayload(error, 'No se pudo crear el producto'));
+		}
+	},
+);
 
 export const updateProduct = createAsyncThunk<
 	IProduct,
-	{ entityParam: ProductEntityParam; entityId: number; productId: number; data: Partial<IProduct>; categoryIds?: number[] },
+	{
+		entityParam: ProductEntityParam;
+		entityId: number;
+		productId: number;
+		data: Partial<IProduct>;
+		categoryIds?: number[];
+	},
 	{ rejectValue: string }
 >(
 	'products/updateProduct',
@@ -495,18 +524,23 @@ export const toggleProductStatus = createAsyncThunk<
 	IProduct,
 	{ entityParam: ProductEntityParam; entityId: number; productId: number },
 	{ rejectValue: string }
->('products/toggleProductStatus', async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
-	try {
-		const response = await ApiService.fetchData<IProductResponse>({
-			url: `/${entityParam}/${entityId}/products/${productId}/toggle-status`,
-			method: 'patch',
-		});
-		const raw = response.data?.data ?? response.data;
-		return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
-	} catch (error: unknown) {
-		return rejectWithValue(getErrorMessage(error, 'No se pudo cambiar el estado del producto'));
-	}
-});
+>(
+	'products/toggleProductStatus',
+	async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
+		try {
+			const response = await ApiService.fetchData<IProductResponse>({
+				url: `/${entityParam}/${entityId}/products/${productId}/toggle-status`,
+				method: 'patch',
+			});
+			const raw = response.data?.data ?? response.data;
+			return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
+		} catch (error: unknown) {
+			return rejectWithValue(
+				getErrorMessage(error, 'No se pudo cambiar el estado del producto'),
+			);
+		}
+	},
+);
 
 export const fetchSaleableProducts = createAsyncThunk<
 	IProduct[],
@@ -533,7 +567,13 @@ export const fetchSaleableProducts = createAsyncThunk<
 
 export const uploadProductMedia = createAsyncThunk<
 	string | null,
-	{ entityParam: ProductEntityParam; entityId: number; productId: number; file: File; meta?: string },
+	{
+		entityParam: ProductEntityParam;
+		entityId: number;
+		productId: number;
+		file: File;
+		meta?: string;
+	},
 	{ rejectValue: string }
 >(
 	'products/uploadProductMedia',
@@ -627,7 +667,13 @@ export const fetchLibraryMedia = createAsyncThunk<
 
 export const deleteProductAttributes = createAsyncThunk<
 	boolean,
-	{ entityParam: ProductEntityParam; entityId: number; productId: number; paths?: string[]; path?: string },
+	{
+		entityParam: ProductEntityParam;
+		entityId: number;
+		productId: number;
+		paths?: string[];
+		path?: string;
+	},
 	{ rejectValue: string }
 >(
 	'products/deleteProductAttributes',
@@ -653,89 +699,97 @@ export const deleteProductMedia = createAsyncThunk<
 	boolean,
 	{ entityParam: ProductEntityParam; entityId: number; productId: number; mediaId: number },
 	{ rejectValue: string }
->('products/deleteProductMedia', async ({ entityParam, entityId, productId, mediaId }, { rejectWithValue }) => {
-	try {
-		await ApiService.fetchData({
-			url: `/${entityParam}/${entityId}/media/${mediaId}`,
-			method: 'delete',
-			data: { product_id: productId },
-		});
-		return true;
-	} catch (error: unknown) {
-		return rejectWithValue(getErrorMessage(error, 'Error al eliminar la imagen'));
-	}
-});
+>(
+	'products/deleteProductMedia',
+	async ({ entityParam, entityId, productId, mediaId }, { rejectWithValue }) => {
+		try {
+			await ApiService.fetchData({
+				url: `/${entityParam}/${entityId}/media/${mediaId}`,
+				method: 'delete',
+				data: { product_id: productId },
+			});
+			return true;
+		} catch (error: unknown) {
+			return rejectWithValue(getErrorMessage(error, 'Error al eliminar la imagen'));
+		}
+	},
+);
 
 export const setProductMainImage = createAsyncThunk<
 	IProduct,
 	{ entityParam: ProductEntityParam; entityId: number; productId: number; mediaId: number },
 	{ rejectValue: string }
->('products/setProductMainImage', async ({ entityParam, entityId, productId, mediaId }, { rejectWithValue }) => {
-	try {
-		const currentProductResponse = await ApiService.fetchData<{ data: unknown }>({
-			url: `/${entityParam}/${entityId}/products/${productId}`,
-			method: 'get',
-		});
-		const currentProduct = normalizeProduct(
-			currentProductResponse.data?.data ?? currentProductResponse.data,
-		);
-
-		const galleryImage = currentProduct.gallery?.find((img) => img.id === mediaId);
-		if (!galleryImage) {
-			return rejectWithValue('La imagen no se encuentra en la galería');
-		}
-
-		let imageBlob: Blob;
+>(
+	'products/setProductMainImage',
+	async ({ entityParam, entityId, productId, mediaId }, { rejectWithValue }) => {
 		try {
-			const response = await fetch(galleryImage.url, {
-				credentials: 'include',
-				headers: { Accept: 'image/*' },
-			});
-			if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-			imageBlob = await response.blob();
-		} catch {
-			const urlPath = galleryImage.url.replace(/^https?:\/\/[^/]+/, '');
-			const imageResponse = await ApiService.fetchData<Blob>({
-				url: urlPath,
+			const currentProductResponse = await ApiService.fetchData<{ data: unknown }>({
+				url: `/${entityParam}/${entityId}/products/${productId}`,
 				method: 'get',
-				responseType: 'blob',
 			});
-			imageBlob = imageResponse.data as unknown as Blob;
-		}
+			const currentProduct = normalizeProduct(
+				currentProductResponse.data?.data ?? currentProductResponse.data,
+			);
 
-		const fileName = galleryImage.url.split('/').pop()?.split('?')[0] || `image-${mediaId}.jpg`;
-		const imageFile = new File([imageBlob], fileName, { type: imageBlob.type });
+			const galleryImage = currentProduct.gallery?.find((img) => img.id === mediaId);
+			if (!galleryImage) {
+				return rejectWithValue('La imagen no se encuentra en la galería');
+			}
 
-		const formData = new FormData();
-		formData.append('files', imageFile);
-		formData.append('collection', 'main');
-		formData.append('alt_text', galleryImage.alt || 'Imagen principal');
+			let imageBlob: Blob;
+			try {
+				const response = await fetch(galleryImage.url, {
+					credentials: 'include',
+					headers: { Accept: 'image/*' },
+				});
+				if (!response.ok)
+					throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+				imageBlob = await response.blob();
+			} catch {
+				const urlPath = galleryImage.url.replace(/^https?:\/\/[^/]+/, '');
+				const imageResponse = await ApiService.fetchData<Blob>({
+					url: urlPath,
+					method: 'get',
+					responseType: 'blob',
+				});
+				imageBlob = imageResponse.data as unknown as Blob;
+			}
 
-		await ApiService.fetchData({
-			url: `/${entityParam}/${entityId}/products/${productId}/media/upload-multiple`,
-			method: 'post',
-			data: formData,
-		});
+			const fileName =
+				galleryImage.url.split('/').pop()?.split('?')[0] || `image-${mediaId}.jpg`;
+			const imageFile = new File([imageBlob], fileName, { type: imageBlob.type });
 
-		try {
+			const formData = new FormData();
+			formData.append('files', imageFile);
+			formData.append('collection', 'main');
+			formData.append('alt_text', galleryImage.alt || 'Imagen principal');
+
 			await ApiService.fetchData({
-				url: `/${entityParam}/${entityId}/media/${mediaId}`,
-				method: 'delete',
+				url: `/${entityParam}/${entityId}/products/${productId}/media/upload-multiple`,
+				method: 'post',
+				data: formData,
 			});
-		} catch (deleteError) {
-			console.warn('No se pudo eliminar la imagen de gallery:', deleteError);
+
+			try {
+				await ApiService.fetchData({
+					url: `/${entityParam}/${entityId}/media/${mediaId}`,
+					method: 'delete',
+				});
+			} catch (deleteError) {
+				console.warn('No se pudo eliminar la imagen de gallery:', deleteError);
+			}
+
+			const finalProductResponse = await ApiService.fetchData<{ data: unknown }>({
+				url: `/${entityParam}/${entityId}/products/${productId}`,
+				method: 'get',
+			});
+
+			return normalizeProduct(finalProductResponse.data?.data ?? finalProductResponse.data);
+		} catch (error: unknown) {
+			return rejectWithValue(getErrorMessage(error, 'Error al establecer imagen principal'));
 		}
-
-		const finalProductResponse = await ApiService.fetchData<{ data: unknown }>({
-			url: `/${entityParam}/${entityId}/products/${productId}`,
-			method: 'get',
-		});
-
-		return normalizeProduct(finalProductResponse.data?.data ?? finalProductResponse.data);
-	} catch (error: unknown) {
-		return rejectWithValue(getErrorMessage(error, 'Error al establecer imagen principal'));
-	}
-});
+	},
+);
 
 const productsSlice = createSlice({
 	name: 'products',
@@ -779,7 +833,8 @@ const productsSlice = createSlice({
 			})
 			.addCase(fetchInventorySummary.rejected, (state, action) => {
 				state.inventoryLoading = false;
-				state.inventoryError = action.payload ?? 'No se pudo cargar el resumen de inventario';
+				state.inventoryError =
+					action.payload ?? 'No se pudo cargar el resumen de inventario';
 			})
 			.addCase(fetchProductById.pending, (state) => {
 				state.currentLoading = true;
