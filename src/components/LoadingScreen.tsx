@@ -4,7 +4,7 @@ const LoadingScreen = ({ message = 'Cargando...' }: { message?: string }) => (
 			{/* Spinner */}
 			<div className='relative h-16 w-16'>
 				<div className='absolute inset-0 rounded-full border-4 border-zinc-200 dark:border-zinc-700' />
-				<div className='absolute inset-0 rounded-full border-4 border-transparent border-t-primary-500 animate-spin' />
+				<div className='absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-primary-500' />
 			</div>
 
 			{/* Message */}

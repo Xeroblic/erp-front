@@ -114,9 +114,7 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
 
 	return (
 		<div
-			className={`w-full select-none space-y-3 ${className} ${
-				disabled ? 'opacity-60' : ''
-			}`}>
+			className={`w-full select-none space-y-3 ${className} ${disabled ? 'opacity-60' : ''}`}>
 			{label && (
 				<div className='flex items-center justify-between gap-3 text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 					<div className='flex items-center gap-2 text-xs uppercase tracking-wide'>
@@ -130,15 +128,17 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
 					{!hideValueBadge && (
 						<span className='inline-flex items-center gap-1 rounded-xl border border-white/10 bg-zinc-900/80 px-3 py-1 text-xs font-bold text-white shadow-lg shadow-emerald-400/10 dark:border-zinc-700'>
 							{formattedValue}
-							{unit && <span className='text-[10px] font-semibold text-zinc-300'>{unit}</span>}
+							{unit && (
+								<span className='text-[10px] font-semibold text-zinc-300'>
+									{unit}
+								</span>
+							)}
 						</span>
 					)}
 				</div>
 			)}
 
-			<div
-				className='relative flex h-12 flex-col justify-center'
-				aria-hidden='true'>
+			<div className='relative flex h-12 flex-col justify-center' aria-hidden='true'>
 				{/* Track Background */}
 				<div className='absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700'>
 					{/* Progress Bar */}
@@ -172,7 +172,7 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
 				{/* Glow Accent */}
 				<div
 					ref={glowRef}
-					className='pointer-events-none absolute top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full blur-md opacity-0'
+					className='pointer-events-none absolute top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 blur-md'
 				/>
 			</div>
 

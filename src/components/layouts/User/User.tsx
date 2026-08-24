@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import useRoundedSize from '../../../hooks/useRoundedSize';
 import useAsideStatus from '../../../hooks/useAsideStatus';
 import themeConfig from '../../../config/theme.config';
-import {getFirstLetter} from '../../../utils/getFirstLetter';
+import { getFirstLetter } from '../../../utils/getFirstLetter';
 import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 import useColorIntensity from '@/hooks/useColorIntensity';
 

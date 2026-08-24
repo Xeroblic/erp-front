@@ -1,6 +1,6 @@
 // src/config/pages.config.ts
 
-import { id } from "date-fns/locale";
+import { id } from 'date-fns/locale';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 
 /* =================================================
@@ -299,11 +299,7 @@ export const privatePages = {
 				text: 'Ingreso de Stock',
 				icon: 'DuoBox',
 				authority: [],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-				],
+				roles: ['super-admin', 'admin', 'company-admin'],
 				requireAll: false,
 			},
 		},
@@ -832,7 +828,6 @@ export const privatePages = {
 		},
 	},
 
-
 	catalogs: {
 		id: 'catalogs',
 		to: '/catalogos',
@@ -1062,7 +1057,7 @@ export type QuickLinkConfig = {
 export const dashboardQuickLinksConfig: QuickLinkConfig[] = [
 	{
 		section: 'technical',
-		items: ['refactor', 'lotes', 'reviews']
+		items: ['refactor', 'lotes', 'reviews'],
 	},
 	{ section: 'catalogs' },
 	{

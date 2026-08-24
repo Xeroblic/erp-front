@@ -47,9 +47,7 @@ describe('useGeoSelector', () => {
 		const { result } = renderHook(() =>
 			useGeoSelector(formik, { regiones, provincias, comunas: EMPTY }),
 		);
-		expect(result.current.optionsProvincia).toEqual([
-			{ value: '11', label: 'Santiago' },
-		]);
+		expect(result.current.optionsProvincia).toEqual([{ value: '11', label: 'Santiago' }]);
 	});
 
 	it('sin región: limpia opciones de provincia y resetea los campos dependientes', () => {
@@ -67,9 +65,7 @@ describe('useGeoSelector', () => {
 		const { result } = renderHook(() =>
 			useGeoSelector(formik, { regiones, provincias, comunas }),
 		);
-		expect(result.current.optionsComuna).toEqual([
-			{ value: '111', label: 'Ñuñoa' },
-		]);
+		expect(result.current.optionsComuna).toEqual([{ value: '111', label: 'Ñuñoa' }]);
 	});
 
 	it('inyecta la comuna preseleccionada aunque no pertenezca a la provincia', () => {
@@ -85,14 +81,16 @@ describe('useGeoSelector', () => {
 	it('respeta los nombres de campo personalizados (cfg)', () => {
 		const formik = makeFormik({ reg: '1', prov: '11', com: '' });
 		const { result } = renderHook(() =>
-			useGeoSelector(formik, { regiones, provincias, comunas }, {
-				fieldRegion: 'reg',
-				fieldProvincia: 'prov',
-				fieldComuna: 'com',
-			}),
+			useGeoSelector(
+				formik,
+				{ regiones, provincias, comunas },
+				{
+					fieldRegion: 'reg',
+					fieldProvincia: 'prov',
+					fieldComuna: 'com',
+				},
+			),
 		);
-		expect(result.current.optionsProvincia).toEqual([
-			{ value: '11', label: 'Santiago' },
-		]);
+		expect(result.current.optionsProvincia).toEqual([{ value: '11', label: 'Santiago' }]);
 	});
 });

@@ -65,7 +65,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 						'animate-pulse',
 						'rounded-l-full',
 						'group relative flex h-16 w-8 items-center justify-center transition-all duration-300',
-						'border-l border-y backdrop-blur-xl',
+						'border-y border-l backdrop-blur-xl',
 						buttonColorClasses[color],
 						'shadow-lg hover:w-10 hover:shadow-xl',
 						'transform hover:scale-105',
@@ -74,7 +74,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 					<Icon
 						icon={buttonIcon}
 						className={classNames(
-							'transition-all duration-300 text-white',
+							'text-white transition-all duration-300',
 							isHovered ? 'rotate-180 scale-110' : '',
 						)}
 						size='text-2xl'
@@ -85,7 +85,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 						className={classNames(
 							'absolute inset-0 rounded-l-full transition-opacity duration-300',
 							buttonColorClasses[color],
-							'opacity-0 group-hover:opacity-30 blur-xl',
+							'opacity-0 blur-xl group-hover:opacity-30',
 						)}
 					/>
 				</button>
@@ -93,16 +93,16 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 				{/* Aside Panel */}
 				<aside
 					className={classNames(
-						'fixed top-0 right-0 h-screen transition-all duration-500 ease-out',
+						'fixed right-0 top-0 h-screen transition-all duration-500 ease-out',
 						asideWidth,
 						isHovered ? 'translate-x-0' : 'translate-x-full',
 						'bg-gradient-to-br backdrop-blur-2xl',
 						colorClasses[color],
-						'border-l border-y shadow-2xl',
+						'border-y border-l shadow-2xl',
 						'overflow-hidden',
 					)}>
 					{/* Decorative gradient overlay */}
-					<div className='absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none' />
+					<div className='pointer-events-none absolute inset-0 bg-gradient-to-br from-white/5 to-transparent' />
 
 					{/* Animated border glow */}
 					<div
@@ -110,22 +110,20 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 							'absolute inset-0 opacity-0 transition-opacity duration-500',
 							isHovered ? 'opacity-100' : '',
 						)}>
-						<div className='absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/50 to-transparent animate-pulse' />
+						<div className='absolute left-0 top-0 h-px w-full animate-pulse bg-gradient-to-r from-transparent via-white/50 to-transparent' />
 					</div>
 
 					{/* Content Container */}
 					<div
 						className={classNames(
-							'relative h-full overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent',
+							'scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent relative h-full overflow-y-auto p-6',
 							className,
 						)}>
 						{/* Fade-in animation for content */}
 						<div
 							className={classNames(
-								'transition-all duration-700 transform',
-								isHovered
-									? 'opacity-100 translate-x-0'
-									: 'opacity-0 translate-x-4',
+								'transform transition-all duration-700',
+								isHovered ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0',
 							)}>
 							{children}
 						</div>
