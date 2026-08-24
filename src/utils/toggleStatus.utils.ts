@@ -1,8 +1,6 @@
 export interface ToggleStatusResponse {
-	success: boolean;
-	message: string;
-	data: {
-		is_active: boolean;
+	data?: {
+		is_active?: unknown;
 	};
 }
 

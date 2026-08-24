@@ -277,4 +277,112 @@ describe('contrato de toggle-status', () => {
 			is_active: false,
 		});
 	});
+
+	it('producto por subsidiaria acepta el sobre envuelto', async () => {
+		server.use(
+			http.patch(`*/subsidiaries/${SUBSIDIARY_ID}/products/${product.id}/toggle-status`, () =>
+				HttpResponse.json({
+					data: {
+						is_active: false,
+						product: {
+							...rawProduct,
+							branch_id: null,
+							is_active: false,
+							name: 'Producto envuelto actualizado',
+						},
+					},
+				}),
+			),
+		);
+		const store = makeStore();
+		seedStore(store);
+
+		await store
+			.dispatch(
+				toggleProductStatus({
+					entityParam: 'subsidiaries',
+					entityId: SUBSIDIARY_ID,
+					productId: product.id,
+				}),
+			)
+			.unwrap();
+
+		expect(store.getState().products.items[0]).toMatchObject({
+			id: product.id,
+			name: 'Producto envuelto actualizado',
+			is_active: false,
+		});
+	});
+
+	it('producto por subsidiaria rechaza un sobre sin producto sin modificar la entidad', async () => {
+		server.use(
+			http.patch(`*/subsidiaries/${SUBSIDIARY_ID}/products/${product.id}/toggle-status`, () =>
+				HttpResponse.json({ is_active: false }),
+			),
+		);
+		const store = makeStore();
+		seedStore(store);
+
+		await expect(
+			store
+				.dispatch(
+					toggleProductStatus({
+						entityParam: 'subsidiaries',
+						entityId: SUBSIDIARY_ID,
+						productId: product.id,
+					}),
+				)
+				.unwrap(),
+		).rejects.toBe('La API devolvió un producto inválido');
+
+		expect(store.getState().products.items[0]).toEqual(product);
+		expect(store.getState().products.stats.actives).toBe(1);
+		expect(store.getState().products.error).toBe('La API devolvió un producto inválido');
+	});
+
+	it.each([
+		{
+			name: 'una identidad de producto inválida',
+			response: { is_active: false, product: {} },
+			expectedError: 'La API devolvió un producto inválido',
+		},
+		{
+			name: 'la identidad de otro producto',
+			response: { is_active: false, product: { ...rawProduct, id: product.id + 1 } },
+			expectedError: 'La API devolvió un producto inválido',
+		},
+		{
+			name: 'un estado de activación no booleano',
+			response: { is_active: 'false', product: rawProduct },
+			expectedError: 'La API devolvió un estado de activación inválido',
+		},
+	])(
+		'producto por subsidiaria rechaza $name sin modificar la entidad',
+		async ({ response, expectedError }) => {
+			server.use(
+				http.patch(
+					`*/subsidiaries/${SUBSIDIARY_ID}/products/${product.id}/toggle-status`,
+					() => HttpResponse.json(response),
+				),
+			);
+			const store = makeStore();
+			seedStore(store);
+
+			await expect(
+				store
+					.dispatch(
+						toggleProductStatus({
+							entityParam: 'subsidiaries',
+							entityId: SUBSIDIARY_ID,
+							productId: product.id,
+						}),
+					)
+					.unwrap(),
+			).rejects.toBe(expectedError);
+
+			expect(store.getState().products.items[0]).toEqual(product);
+			expect(store.getState().products.stats.actives).toBe(1);
+			expect(store.getState().products.error).toBe(expectedError);
+		},
+	);
 });

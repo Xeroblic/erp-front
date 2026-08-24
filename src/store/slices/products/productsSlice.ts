@@ -16,7 +16,6 @@ import type {
 	ILibraryMediaItem,
 	ILibraryMediaResponse,
 	ILibraryMediaAttachResponse,
-	ProductResourcePayload,
 } from '@/interface/product.interface';
 import {
 	buildUpdatePayload,
@@ -126,6 +125,43 @@ const getErrorStatus = (error: unknown): number | null => {
 		return status;
 	}
 	return null;
+};
+
+const readSubsidiaryTogglePayload = (
+	response: unknown,
+	expectedProductId: number,
+): {
+	isActive: boolean;
+	product: IProduct;
+} => {
+	const responseRecord = asRecord(response);
+	const payload = asRecord(responseRecord?.data) ?? responseRecord;
+	if (!payload) {
+		throw new Error('La API devolvió una respuesta de activación inválida');
+	}
+
+	const productPayload = asRecord(payload.product);
+	if (
+		!productPayload ||
+		typeof productPayload.id !== 'number' ||
+		!Number.isInteger(productPayload.id) ||
+		productPayload.id <= 0 ||
+		productPayload.id !== expectedProductId
+	) {
+		throw new Error('La API devolvió un producto inválido');
+	}
+
+	try {
+		return {
+			isActive: readToggleIsActive({ data: payload }),
+			product: normalizeProduct(productPayload),
+		};
+	} catch (error: unknown) {
+		if (error instanceof Error && error.message.startsWith('La API devolvió')) {
+			throw error;
+		}
+		throw new Error('La API devolvió un producto inválido');
+	}
 };
 
 const initialState: ProductsState = {
@@ -540,16 +576,13 @@ export const toggleProductStatus = createAsyncThunk<
 				return { productId, isActive: readToggleIsActive(response.data) };
 			}
 
-			const response = await ApiService.fetchData<{
-				is_active: boolean;
-				product: ProductResourcePayload;
-			}>({
+			const response = await ApiService.fetchData<unknown>({
 				url: `/subsidiaries/${entityId}/products/${productId}/toggle-status`,
 				method: 'patch',
 			});
-			const product = normalizeProduct(response.data.product);
+			const { isActive, product } = readSubsidiaryTogglePayload(response.data, productId);
 
-			return { productId, isActive: response.data.is_active, product };
+			return { productId, isActive, product };
 		} catch (error: unknown) {
 			return rejectWithValue(
 				extractApiErrorMessage(error, 'No se pudo cambiar el estado del producto'),
