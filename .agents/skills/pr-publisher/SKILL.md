@@ -11,6 +11,10 @@ Leer `CLAUDE.md`, `AGENTS.md` y la sección de publicación de `.agents/skills/p
 
 Consumir un handoff de publicación con alcance, base/HEAD, requisito, archivos, validaciones exactas, deuda y operaciones autorizadas. Si falta un dato estable, solicitarlo al agente productor; recalcular siempre los hechos volátiles o remotos como SHA, commits, métricas, PR actual, labels y mergeabilidad.
 
+Reutilizar las validaciones estables del handoff. No repetir TypeScript, suites globales, build ni una
+auditoría ya cerrada durante la publicación, salvo que el contenido haya cambiado después de esas
+validaciones o exista evidencia concreta de obsolescencia.
+
 ## Responsabilidad
 
 - No modificar código funcional ni corregir hallazgos.
@@ -21,6 +25,22 @@ Consumir un handoff de publicación con alcance, base/HEAD, requisito, archivos,
 - Al crear o actualizar el PR, añadir `needs-review`, quitar `changes-requested` si existe y conservar los demás labels.
 - Verificar remotamente número/URL, base, `headRefOid`, cuerpo, labels, `mergeStateStatus` y `mergeable`. Si GitHub aún está calculando, reconsultar de forma acotada; no declarar éxito con estado desconocido.
 - Detenerse al completar exactamente las operaciones autorizadas. Nunca fusionar, publicar releases, crear tags ni borrar ramas sin autorización explícita e independiente.
+
+## Vía rápida para actualizar un PR existente
+
+Cuando el cambio ya está validado, es literal y determinista, y el usuario autoriza commit, push y
+actualización del PR:
+
+1. Confirmar rama, archivos autorizados y `git diff --check`.
+2. Crear el commit y hacer push sin ejecutar gates globales adicionales.
+3. Conservar el cuerpo existente y modificar sólo los hechos obsoletos: métricas, archivos,
+   correcciones o verificaciones afectadas.
+4. Aplicar los labels requeridos y hacer una sola lectura final de SHA, cuerpo, labels y estado. Si
+   GitHub devuelve un estado desconocido, reconsultar una vez y reportarlo como pendiente si persiste.
+
+No regenerar todo el cuerpo, no repetir descubrimiento cerrado y no ampliar las pruebas por el solo
+hecho de publicar. Objetivo operativo: completar esta fase en menos de 2 minutos cuando GitHub
+responda normalmente.
 
 ## Salida
 

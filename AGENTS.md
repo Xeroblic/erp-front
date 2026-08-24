@@ -32,6 +32,24 @@ Los agentes personalizados equivalentes están registrados en `.codex/config.tom
 
 Para documentación de librerías o APIs cuya versión o superficie no esté clara, usa el MCP local `context7` de forma selectiva. No lo uses para comportamiento propio del repositorio, contratos internos ni preguntas que se resuelven leyendo el código local; así se evita añadir latencia y contexto innecesarios.
 
+### Vía rápida para correcciones triviales
+
+Considera trivial un cambio literal y determinista de hasta 3 archivos de configuración,
+documentación o copy cuando el resultado esperado esté completamente especificado y no cambie
+lógica, API, permisos, estado, formularios, overlays, componentes compartidos ni accesibilidad.
+
+Para estos cambios:
+
+- no actives `pr-readiness`, especialistas, `implementer`, `test_designer` ni QA independiente;
+- inspecciona sólo el requisito autoritativo, los archivos afectados y su configuración vecina;
+- ejecuta únicamente el check directamente relacionado y `git diff --check`; no ejecutes
+  TypeScript, Vitest global ni build salvo que el check focal revele un riesgo funcional;
+- no crees un archivo de bitácora sólo por esta corrección; actualiza el archivo del día únicamente
+  si ya existe o si el usuario pide registrarla;
+- si el usuario autoriza commit, push y actualización del PR, reutiliza las validaciones vigentes y
+  completa esas operaciones sin auditorías ni esperas adicionales. Objetivo operativo: menos de 2
+  minutos cuando GitHub y los comandos respondan normalmente.
+
 ### Circuito de calidad antes de un PR
 
 Activa `.agents/skills/pr-readiness/` antes de modificar cualquier cambio no trivial que toque al menos una de estas categorías: contrato/API, archivos, permisos, estado remoto, contexto organizacional, formulario, overlay, mutación, componente compartido o accesibilidad. La activación depende del riesgo del diff, no de que el usuario mencione un PR.
@@ -68,6 +86,9 @@ Todo texto de PR se entrega en español, listo para copiar, y usa este orden exa
 8. Separador y `## Deuda conocida (no bloqueante)`, separando deuda previa, limitaciones de entorno y comprobaciones manuales pendientes. Si no existe deuda, indicar explícitamente `Sin deuda conocida para este alcance.`
 
 No inventar conteos, commits, archivos, riesgos, resultados de pruebas ni correcciones. Mantener las afirmaciones financieras, de permisos, contrato y estado remoto respaldadas por la evidencia de la revisión.
+
+Al actualizar un PR existente, conserva su cuerpo y modifica sólo métricas, archivos, correcciones o
+validaciones que hayan quedado obsoletos. No regeneres ni revalides secciones sin cambios.
 
 ## Revisión de código
 
