@@ -15,6 +15,8 @@ import {
 	normalizeBrand,
 } from '@/components/helper/brand.helper';
 import { validateFile, extractMediaUrl as extractMediaUrlUtil } from '@/utils/apiHelpers';
+import extractApiErrorMessage from '@/utils/apiError.utils';
+import { readToggleIsActive, type ToggleStatusResponse } from '@/utils/toggleStatus.utils';
 
 export interface BrandStatsState {
 	total_brands: number;
@@ -319,18 +321,14 @@ export const toggleBrandStatus = createAsyncThunk<
 	{ rejectValue: string }
 >('brands/toggleBrandStatus', async ({ branchId, brand }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: `/branches/${branchId}/brands/${brand.id}`,
+		const response = await ApiService.fetchData<ToggleStatusResponse>({
+			url: `/branches/${branchId}/brands/${brand.id}/toggle-status`,
 			method: 'patch',
-			data: { is_active: !brand.is_active },
 		});
 
-		const raw = response.data?.data ?? response.data;
-		return normalizeBrand(raw ?? { ...brand, is_active: !brand.is_active });
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo actualizar el estado',
-		);
+		return normalizeBrand({ ...brand, is_active: readToggleIsActive(response.data) });
+	} catch (error: unknown) {
+		return rejectWithValue(extractApiErrorMessage(error, 'No se pudo actualizar el estado'));
 	}
 });
 

@@ -8,18 +8,19 @@ import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Spinner from '@/components/ui/Spinner';
+import ProtectedButton from '@/components/ui/ProtectedButton';
+import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
+import { buildCategoryTableRows } from '@/components/helper/category.helper';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import extractApiErrorMessage from '@/utils/apiError.utils';
 import CategoryStats from './components/CategoryStats';
 import CategoriesTable from './components/tables/CategoriesTable';
 import CrearCategoria from './components/modals/CrearCategoria';
 import EditarCategoria from './components/modals/EditarCategoria';
 import EliminarCategoria from './components/modals/EliminarCategoria';
 import DetalleCategoria from './components/modals/DetalleCategoria';
-import ProtectedButton from '@/components/ui/ProtectedButton';
-import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
-import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useCategorias } from './hooks/useCategorias';
 import type { ICategory, ICategoryFilters } from './types';
-import { buildCategoryTableRows } from '@/components/helper/category.helper';
 
 const Categorias: React.FC = () => {
 	const [filters, setFilters] = useState<ICategoryFilters>({ search: '' });
@@ -161,8 +162,8 @@ const Categorias: React.FC = () => {
 		try {
 			await toggleCategoryStatus(category);
 			toast.info(`Categoria ${category.is_active ? 'desactivada' : 'activada'}`);
-		} catch (err: any) {
-			toast.error(err?.message ?? 'No se pudo cambiar el estado');
+		} catch (caughtError: unknown) {
+			toast.error(extractApiErrorMessage(caughtError, 'No se pudo cambiar el estado'));
 		}
 	};
 

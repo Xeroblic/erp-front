@@ -7,6 +7,7 @@ import useCan from '@/hooks/useCan';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleProductStatus } from '@/store/slices/products/productsSlice';
 import type { IProduct, ProductListMeta } from '@/interface/product.interface';
+import extractApiErrorMessage from '@/utils/apiError.utils';
 import { useProductColumns } from './useProductColumns';
 import ProductVariantsRow from './ProductVariantsRow';
 import { extractProductVariants } from './productTable.utils';
@@ -102,11 +103,9 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 						: 'Producto activado correctamente',
 				);
 			} catch (error: unknown) {
-				const message =
-					typeof error === 'string' && error.trim().length > 0
-						? error
-						: 'No se pudo cambiar el estado del producto';
-				toast.error(message);
+				toast.error(
+					extractApiErrorMessage(error, 'No se pudo cambiar el estado del producto'),
+				);
 			}
 		},
 		[dispatch, subsidiaryId, onRefresh],

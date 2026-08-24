@@ -17,6 +17,8 @@ import {
 	normalizeCategory,
 	normalizeCategoryTree,
 } from '@/components/helper/category.helper';
+import extractApiErrorMessage from '@/utils/apiError.utils';
+import { readToggleIsActive, type ToggleStatusResponse } from '@/utils/toggleStatus.utils';
 
 export interface CategoryStatsState extends CategoryStatsShape {}
 
@@ -346,19 +348,17 @@ export const toggleCategoryStatus = createAsyncThunk<ICategory, ICategory, { rej
 	'categories/toggleCategoryStatus',
 	async (category, { rejectWithValue }) => {
 		try {
-			const response = await ApiService.fetchData<{ data?: any }>({
-				url: `/categories/${category.id}`,
+			const response = await ApiService.fetchData<ToggleStatusResponse>({
+				url: `/categories/${category.id}/toggle-status`,
 				method: 'patch',
-				data: { is_active: !category.is_active },
-				headers: { 'Content-Type': 'application/json' },
 			});
 
-			const raw = response.data?.data ?? response.data;
-			return normalizeCategory(raw ?? { ...category, is_active: !category.is_active });
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ?? error?.message ?? 'No se pudo actualizar estado',
-			);
+			return normalizeCategory({
+				...category,
+				is_active: readToggleIsActive(response.data),
+			});
+		} catch (error: unknown) {
+			return rejectWithValue(extractApiErrorMessage(error, 'No se pudo actualizar estado'));
 		}
 	},
 );

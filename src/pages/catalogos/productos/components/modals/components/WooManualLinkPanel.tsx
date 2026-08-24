@@ -15,8 +15,8 @@ import {
 	useWooLink,
 	useWooUnlink,
 	extractConflictData,
-	extractErrorMessage,
 } from '@/services/hooks/useWooManualLink';
+import extractApiErrorMessage from '@/utils/apiError.utils';
 import type {
 	WooCandidate,
 	WooImageResolution,
@@ -93,14 +93,14 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 
 	useEffect(() => {
 		if (compareQuery.error) {
-			toast.error(`Error al comparar: ${extractErrorMessage(compareQuery.error)}`);
+			toast.error(`Error al comparar: ${extractApiErrorMessage(compareQuery.error)}`);
 		}
 	}, [compareQuery.error]);
 
 	useEffect(() => {
 		if (candidatesQuery.error) {
 			toast.error(
-				`Error al buscar candidatos: ${extractErrorMessage(candidatesQuery.error)}`,
+				`Error al buscar candidatos: ${extractApiErrorMessage(candidatesQuery.error)}`,
 			);
 		}
 	}, [candidatesQuery.error]);
@@ -383,7 +383,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 								isError={candidatesQuery.isError}
 								errorMessage={
 									candidatesQuery.error
-										? extractErrorMessage(candidatesQuery.error)
+										? extractApiErrorMessage(candidatesQuery.error)
 										: undefined
 								}
 								searchTerm={searchTerm}
@@ -398,7 +398,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 								isComparing={compareQuery.isFetching}
 								compareError={
 									compareQuery.error
-										? extractErrorMessage(compareQuery.error)
+										? extractApiErrorMessage(compareQuery.error)
 										: null
 								}
 								priceConflict={priceConflict}

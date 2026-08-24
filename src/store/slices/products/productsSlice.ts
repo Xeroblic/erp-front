@@ -16,6 +16,7 @@ import type {
 	ILibraryMediaItem,
 	ILibraryMediaResponse,
 	ILibraryMediaAttachResponse,
+	ProductResourcePayload,
 } from '@/interface/product.interface';
 import {
 	buildUpdatePayload,
@@ -27,6 +28,8 @@ import { PRODUCT_EMPTY_INVENTORY_SUMMARY, PRODUCT_EMPTY_STATS } from '@/constant
 import { validateFile, extractMediaUrl } from '@/utils/apiHelpers';
 import { convertFileToWebP } from '@/components/helper/brand.helper';
 import { toast } from 'react-toastify';
+import extractApiErrorMessage from '@/utils/apiError.utils';
+import { readToggleIsActive, type ToggleStatusResponse } from '@/utils/toggleStatus.utils';
 
 // ---------------------------------------------------------------------------
 // Entity param: determines whether the URL uses /branches or /subsidiaries
@@ -521,22 +524,35 @@ export const deleteProduct = createAsyncThunk<
 });
 
 export const toggleProductStatus = createAsyncThunk<
-	IProduct,
+	{ productId: number; isActive: boolean; product?: IProduct },
 	{ entityParam: ProductEntityParam; entityId: number; productId: number },
 	{ rejectValue: string }
 >(
 	'products/toggleProductStatus',
 	async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
 		try {
-			const response = await ApiService.fetchData<IProductResponse>({
-				url: `/${entityParam}/${entityId}/products/${productId}/toggle-status`,
+			if (entityParam === 'branches') {
+				const response = await ApiService.fetchData<ToggleStatusResponse>({
+					url: `/branches/${entityId}/products/${productId}/toggle-status`,
+					method: 'patch',
+				});
+
+				return { productId, isActive: readToggleIsActive(response.data) };
+			}
+
+			const response = await ApiService.fetchData<{
+				is_active: boolean;
+				product: ProductResourcePayload;
+			}>({
+				url: `/subsidiaries/${entityId}/products/${productId}/toggle-status`,
 				method: 'patch',
 			});
-			const raw = response.data?.data ?? response.data;
-			return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
+			const product = normalizeProduct(response.data.product);
+
+			return { productId, isActive: response.data.is_active, product };
 		} catch (error: unknown) {
 			return rejectWithValue(
-				getErrorMessage(error, 'No se pudo cambiar el estado del producto'),
+				extractApiErrorMessage(error, 'No se pudo cambiar el estado del producto'),
 			);
 		}
 	},
@@ -1020,13 +1036,14 @@ const productsSlice = createSlice({
 			})
 			.addCase(toggleProductStatus.fulfilled, (state, action) => {
 				state.updating = false;
-				const index = state.items.findIndex((p) => p.id === action.payload.id);
+				const { productId, isActive, product } = action.payload;
+				const index = state.items.findIndex((item) => item.id === productId);
 				if (index !== -1) {
-					state.items[index] = action.payload;
+					state.items[index] = product ?? { ...state.items[index], is_active: isActive };
 					state.stats = computeProductStats(state.items);
 				}
-				if (state.current && state.current.id === action.payload.id) {
-					state.current = action.payload;
+				if (state.current?.id === productId) {
+					state.current = product ?? { ...state.current, is_active: isActive };
 				}
 			})
 			.addCase(toggleProductStatus.rejected, (state, action) => {
