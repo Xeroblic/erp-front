@@ -41,18 +41,17 @@ Archivos clave involucrados:
 
 ### Síntomas
 
-* Respuestas 401 continuas seguidas de fallos en `POST /refresh`.
-* La sesión termina inmediatamente después de un intento de refresh.
-* El worker en segundo plano ejecuta refresh con demasiada frecuencia o no lo hace nunca.
+- Respuestas 401 continuas seguidas de fallos en `POST /refresh`.
+- La sesión termina inmediatamente después de un intento de refresh.
+- El worker en segundo plano ejecuta refresh con demasiada frecuencia o no lo hace nunca.
 
 ### Pasos de troubleshooting
 
 1. **Verificar valores de entorno** – Asegúrate de que `VITE_API_URL`, `VITE_JWT_REFRESH_TTL_MINUTES` y `VITE_JWT_REFRESH_MARGIN_SECONDS` coincidan con la configuración del backend. TTL desalineados pueden hacer que el worker piense que el token es refrescable cuando ya no lo es.
 
 2. **Inspeccionar logs de red** – Usa la pestaña Network de las DevTools del navegador:
-
-   * Confirma que, cuando un token expira, solo se emite un `POST /refresh`. Refresh paralelos indican que se está saltando la compuerta; revisa si hay instancias personalizadas de Axios que no usan `BaseService`.
-   * Revisa el payload de las respuestas de `/refresh`. Si el backend retorna `401 Token invalid`, es posible que el token haya sido revocado o que la ventana de refresh (backend `refresh_ttl`) haya expirado.
+    - Confirma que, cuando un token expira, solo se emite un `POST /refresh`. Refresh paralelos indican que se está saltando la compuerta; revisa si hay instancias personalizadas de Axios que no usan `BaseService`.
+    - Revisa el payload de las respuestas de `/refresh`. Si el backend retorna `401 Token invalid`, es posible que el token haya sido revocado o que la ventana de refresh (backend `refresh_ttl`) haya expirado.
 
 3. **Revisar estado de Redux** – En Redux DevTools, confirma que `auth.access` se actualiza después de un refresh. Si sigue indefinido, es posible que `setToken` no se esté disparando (busca errores en consola en los interceptores).
 
@@ -64,8 +63,8 @@ Archivos clave involucrados:
 
 ### Recuperación
 
-* Si el flujo de refresh se cae (por ejemplo, por tokens malformados), los interceptores llaman a `logout()`, limpian `tokenManager`, cancelan requests y navegan a `/login`. El usuario debe volver a autenticarse.
-* Cuando la disponibilidad del backend es intermitente, las requests posteriores seguirán disparando la compuerta de refresh. Revisa los logs del servidor para ver fallos en el endpoint de `refresh`.
+- Si el flujo de refresh se cae (por ejemplo, por tokens malformados), los interceptores llaman a `logout()`, limpian `tokenManager`, cancelan requests y navegan a `/login`. El usuario debe volver a autenticarse.
+- Cuando la disponibilidad del backend es intermitente, las requests posteriores seguirán disparando la compuerta de refresh. Revisa los logs del servidor para ver fallos en el endpoint de `refresh`.
 
 ## Extensión del flujo
 
@@ -85,8 +84,6 @@ Si necesitas disparar un refresh manualmente (por ejemplo, cuando el backend not
 
 ## Referencias
 
-* Configuración JWT del backend: `config/jwt.php`
-* Controlador de autenticación: `app/Http/Controllers/AuthController.php`
-* Endpoints de notificaciones: `routes/api-notifications.php`
-
-
+- Configuración JWT del backend: `config/jwt.php`
+- Controlador de autenticación: `app/Http/Controllers/AuthController.php`
+- Endpoints de notificaciones: `routes/api-notifications.php`
