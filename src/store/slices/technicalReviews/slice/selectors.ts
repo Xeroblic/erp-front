@@ -27,9 +27,8 @@ export const selectBatchesLoading = (state: RootState): boolean =>
 export const selectBatchesError = (state: RootState): string | null =>
 	state.technicalReviews.batchesError;
 
-export const selectTechnicalReviewsEndpointMode = (
-	state: RootState,
-): 'subsidiaries' | 'branches' => state.technicalReviews.endpointMode;
+export const selectTechnicalReviewsEndpointMode = (state: RootState): 'subsidiaries' | 'branches' =>
+	state.technicalReviews.endpointMode;
 
 export const selectTechnicalReviewsContextBranchId = (state: RootState): number | null =>
 	state.technicalReviews.contextBranchId;

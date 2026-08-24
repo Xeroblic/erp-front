@@ -118,7 +118,10 @@ const ProductListTab: React.FC<ProductListTabProps> = ({
 	useEffect(() => {
 		if (!calendarOpen) return;
 		const onDoc = (event: MouseEvent) => {
-			if (dateDropdownRef.current && !dateDropdownRef.current.contains(event.target as Node)) {
+			if (
+				dateDropdownRef.current &&
+				!dateDropdownRef.current.contains(event.target as Node)
+			) {
 				setCalendarOpen(false);
 			}
 		};
@@ -176,14 +179,19 @@ const ProductListTab: React.FC<ProductListTabProps> = ({
 						<div
 							className='flex w-64 cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm transition-colors hover:border-indigo-300 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-indigo-600'
 							onClick={() => setCalendarOpen((prev) => !prev)}>
-							<Icon icon='HeroCalendarDays' className='h-4 w-4 flex-shrink-0 text-zinc-400' />
+							<Icon
+								icon='HeroCalendarDays'
+								className='h-4 w-4 flex-shrink-0 text-zinc-400'
+							/>
 							{hasDateRange ? (
 								<span className='flex-1 truncate text-zinc-800 dark:text-zinc-200'>
 									{displayFrom || '...'}
 									{` → ${displayTo || '...'}`}
 								</span>
 							) : (
-								<span className='flex-1 text-zinc-400'>Actualizado: seleccionar rango…</span>
+								<span className='flex-1 text-zinc-400'>
+									Actualizado: seleccionar rango…
+								</span>
 							)}
 							{hasDateRange && (
 								<button

@@ -19,8 +19,10 @@ export const mapFormToCheckInPayload = (values: TicketFormValues, qrToken: strin
 		device_description: values.message,
 		is_invoice: values.requiresInvoice === 'si',
 		invoice_rut: values.requiresInvoice === 'si' ? values.invoiceRut : undefined,
-		invoice_company_name: values.requiresInvoice === 'si' ? values.invoiceBusinessName : undefined,
-		invoice_company_address: values.requiresInvoice === 'si' ? values.invoiceAddress : undefined,
+		invoice_company_name:
+			values.requiresInvoice === 'si' ? values.invoiceBusinessName : undefined,
+		invoice_company_address:
+			values.requiresInvoice === 'si' ? values.invoiceAddress : undefined,
 		serial_number: serial || undefined,
 		service_type: values.serviceType || undefined,
 		upgrade_type: values.upgradeType || undefined,

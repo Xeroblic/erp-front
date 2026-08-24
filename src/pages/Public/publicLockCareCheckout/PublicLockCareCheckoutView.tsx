@@ -19,7 +19,6 @@ interface PublicLockCareCheckoutViewProps {
 	isBlocked: boolean;
 }
 
-
 export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProps> = ({
 	formik,
 	isSubmittingCheckOut,
@@ -29,11 +28,14 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 	useForceLightMode();
 
 	return (
-		<PageWrapper isProtectedRoute={false} name='Retiro de Equipo — Lock Care' title='Retiro de Equipo'>
-			<main className='relative flex min-h-screen flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950 font-sans'>
+		<PageWrapper
+			isProtectedRoute={false}
+			name='Retiro de Equipo — Lock Care'
+			title='Retiro de Equipo'>
+			<main className='relative flex min-h-screen flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-zinc-950'>
 				{/* Fondo Decorativo */}
-				<div className='absolute inset-0 z-0 pointer-events-none'>
-					<div className='absolute -top-[10%] -left-[10%] h-[40%] w-[40%] rounded-full bg-blue-400/10 blur-[120px]' />
+				<div className='pointer-events-none absolute inset-0 z-0'>
+					<div className='absolute -left-[10%] -top-[10%] h-[40%] w-[40%] rounded-full bg-blue-400/10 blur-[120px]' />
 					<div className='absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full bg-emerald-400/10 blur-[120px]' />
 				</div>
 
@@ -43,10 +45,15 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 						<div className='flex h-16 items-center justify-between'>
 							<div className='flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-500/20'>
-									<Icon icon='HeroCubeTransparent' className='h-6 w-6' color={'white'} />
+									<Icon
+										icon='HeroCubeTransparent'
+										className='h-6 w-6'
+										color={'white'}
+									/>
 								</div>
 								<h1 className='text-xl font-bold tracking-tight text-zinc-900 dark:text-white'>
-									Zentria <span className='font-light text-zinc-400 ml-1'>| Retiro</span>
+									Zentria{' '}
+									<span className='ml-1 font-light text-zinc-400'>| Retiro</span>
 								</h1>
 							</div>
 						</div>
@@ -55,54 +62,77 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 
 				{/* Contenido Principal */}
 				<div className='relative z-10 flex flex-1 items-center justify-center p-4 sm:p-6 lg:p-8'>
-					<div className='w-full max-w-md animate-fade-in'>
+					<div className='animate-fade-in w-full max-w-md'>
 						{!checkoutResult ? (
-							<Card className='overflow-hidden border-zinc-200/60  shadow-2xl shadow-zinc-200/50 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-900/90'>
+							<Card className='overflow-hidden border-zinc-200/60 shadow-2xl shadow-zinc-200/50 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-900/90'>
 								<div className='relative overflow-hidden bg-emerald-600 px-6 py-10 text-center text-white'>
 									{/* Patrón de fondo sutil */}
-									<div className='absolute inset-0 opacity-10' style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+									<div
+										className='absolute inset-0 opacity-10'
+										style={{
+											backgroundImage:
+												'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
+											backgroundSize: '24px 24px',
+										}}
+									/>
 
-									<div className='relative z-10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-inner'>
+									<div className='relative z-10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 shadow-inner backdrop-blur-md'>
 										<Icon icon='HeroKey' className='h-8 w-8 text-white' />
 									</div>
-									<h2 className='relative z-10 text-2xl font-bold text-white'>Retira tu Equipo</h2>
-									<p className='relative z-10 mt-2 text-sm text-blue-100 font-medium'>
+									<h2 className='relative z-10 text-2xl font-bold text-white'>
+										Retira tu Equipo
+									</h2>
+									<p className='relative z-10 mt-2 text-sm font-medium text-blue-100'>
 										Ingresa la palabra clave de tu correo
 									</p>
 								</div>
 
-								<CardBody className='p-8 bg-zinc-300/50'>
+								<CardBody className='bg-zinc-300/50 p-8'>
 									<form onSubmit={formik.handleSubmit} className='space-y-6'>
 										<div className='space-y-2'>
-											<Label htmlFor='withdrawal_keyword' className='text-zinc-700 font-semibold uppercase text-[10px] tracking-widest ml-1'>
+											<Label
+												htmlFor='withdrawal_keyword'
+												className='ml-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-700'>
 												Palabra Clave
 											</Label>
 											<FieldWrap
-												className='group transition-all duration-300 focus-within:ring-2 focus-within:ring-blue-500/20 rounded-xl overflow-hidden'
-												firstSuffix={<Icon className='mx-3 text-zinc-400 group-focus-within:text-blue-500 transition-colors' icon='HeroFingerPrint' />}
+												className='group overflow-hidden rounded-xl transition-all duration-300 focus-within:ring-2 focus-within:ring-blue-500/20'
+												firstSuffix={
+													<Icon
+														className='mx-3 text-zinc-400 transition-colors group-focus-within:text-blue-500'
+														icon='HeroFingerPrint'
+													/>
+												}
 												lastSuffix={
-													formik.touched.withdrawal_keyword && formik.errors.withdrawal_keyword ? (
-														<Icon className='mx-3 text-red-500 animate-pulse' icon='HeroExclamationCircle' />
+													formik.touched.withdrawal_keyword &&
+													formik.errors.withdrawal_keyword ? (
+														<Icon
+															className='mx-3 animate-pulse text-red-500'
+															icon='HeroExclamationCircle'
+														/>
 													) : undefined
 												}>
 												<Input
 													id='withdrawal_keyword'
 													name='withdrawal_keyword'
 													placeholder='Palabra clave'
-
 													autoComplete='off'
-													className='uppercase tracking-[0.2em] text-center text-2xl font-bold py-4 border-none bg-zinc-50/50 focus:bg-white transition-all'
+													className='border-none bg-zinc-50/50 py-4 text-center text-2xl font-bold uppercase tracking-[0.2em] transition-all focus:bg-white'
 													onChange={(e) => {
-														e.target.value = e.target.value.toUpperCase();
+														e.target.value =
+															e.target.value.toUpperCase();
 														formik.handleChange(e);
 													}}
 													onBlur={formik.handleBlur}
 													value={formik.values.withdrawal_keyword}
 												/>
 											</FieldWrap>
-											{formik.touched.withdrawal_keyword && formik.errors.withdrawal_keyword && (
-												<p className='text-[11px] text-red-500 mt-2 text-center font-medium animate-slide-up'>{formik.errors.withdrawal_keyword}</p>
-											)}
+											{formik.touched.withdrawal_keyword &&
+												formik.errors.withdrawal_keyword && (
+													<p className='animate-slide-up mt-2 text-center text-[11px] font-medium text-red-500'>
+														{formik.errors.withdrawal_keyword}
+													</p>
+												)}
 										</div>
 
 										<Button
@@ -110,49 +140,69 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 											color='emerald'
 											colorIntensity='500'
 											variant='solid'
-											className=' w-full py-4 text-lg font-bold shadow-xl 
-													shadow-blue-500/20 active:scale-[0.98]
-													 transition-transform rounded-xl'
-											isDisable={isSubmittingCheckOut || !formik.values.withdrawal_keyword}
-											icon={isSubmittingCheckOut ? 'HeroArrowPath' : 'HeroUnlock'}>
-											{isBlocked ? 'Acceso Bloqueado' : isSubmittingCheckOut ? 'Validando...' : 'Verificar y Abrir'}
+											className='w-full rounded-xl py-4 text-lg font-bold shadow-xl shadow-blue-500/20 transition-transform active:scale-[0.98]'
+											isDisable={
+												isSubmittingCheckOut ||
+												!formik.values.withdrawal_keyword
+											}
+											icon={
+												isSubmittingCheckOut
+													? 'HeroArrowPath'
+													: 'HeroUnlock'
+											}>
+											{isBlocked
+												? 'Acceso Bloqueado'
+												: isSubmittingCheckOut
+													? 'Validando...'
+													: 'Verificar y Abrir'}
 										</Button>
 
 										{isBlocked && (
-											<p className='text-center text-[11px] text-red-500 mt-4 font-bold animate-pulse'>
-												Has excedido los intentos. Por seguridad, el sistema se ha bloqueado temporalmente.
+											<p className='mt-4 animate-pulse text-center text-[11px] font-bold text-red-500'>
+												Has excedido los intentos. Por seguridad, el sistema
+												se ha bloqueado temporalmente.
 											</p>
 										)}
 
-										<p className='text-center text-xs text-zinc-400 font-medium'>
-											¿No tienes tu clave? Revisa tu bandeja de entrada o spam.
+										<p className='text-center text-xs font-medium text-zinc-400'>
+											¿No tienes tu clave? Revisa tu bandeja de entrada o
+											spam.
 										</p>
 									</form>
 								</CardBody>
 							</Card>
 						) : (
-							<div className='relative overflow-hidden rounded-3xl border border-emerald-100 bg-white p-8 text-center shadow-2xl shadow-emerald-200/50 dark:border-emerald-900/20 dark:bg-zinc-900 animate-scale-in'>
+							<div className='animate-scale-in relative overflow-hidden rounded-3xl border border-emerald-100 bg-white p-8 text-center shadow-2xl shadow-emerald-200/50 dark:border-emerald-900/20 dark:bg-zinc-900'>
 								{/* Decoración de éxito */}
-								<div className='absolute top-0 left-1/2 -translate-x-1/2 h-1 w-24 bg-emerald-500 rounded-b-full' />
+								<div className='absolute left-1/2 top-0 h-1 w-24 -translate-x-1/2 rounded-b-full bg-emerald-500' />
 
-								<div className='mx-auto flex h-24 w-24 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-500 shadow-inner dark:bg-emerald-900/20 mb-8'>
+								<div className='mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-500 shadow-inner dark:bg-emerald-900/20'>
 									<Icon icon='HeroCheckCircle' className='h-12 w-12' />
 								</div>
 
-								<h2 className='text-3xl font-black text-zinc-900 dark:text-white tracking-tight'>¡Listo para Retiro!</h2>
-								<p className='mt-2 text-zinc-500 font-medium'>Tu equipo te espera en el casillero.</p>
+								<h2 className='text-3xl font-black tracking-tight text-zinc-900 dark:text-white'>
+									¡Listo para Retiro!
+								</h2>
+								<p className='mt-2 font-medium text-zinc-500'>
+									Tu equipo te espera en el casillero.
+								</p>
 
 								<div className='mt-10 space-y-6'>
 									{/* Intentar sacar el número del casiller de varias formas posibles */}
-									{(checkoutResult.locker_number || (checkoutResult as any).locker?.number || (checkoutResult as any).number) && (
-										<div className='relative group'>
-											<div className='absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 opacity-20 blur group-hover:opacity-30 transition duration-1000'></div>
-											<div className='relative flex flex-col items-center justify-center rounded-2xl bg-zinc-50 p-6 border border-zinc-100 dark:bg-zinc-800/50 dark:border-zinc-700'>
-												<span className='text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 mb-1'>Casillero</span>
-												<p className='text-5xl font-black text-zinc-900 dark:text-white tracking-tighter'>
+									{(checkoutResult.locker_number ||
+										(checkoutResult as any).locker?.number ||
+										(checkoutResult as any).number) && (
+										<div className='group relative'>
+											<div className='absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 opacity-20 blur transition duration-1000 group-hover:opacity-30'></div>
+											<div className='relative flex flex-col items-center justify-center rounded-2xl border border-zinc-100 bg-zinc-50 p-6 dark:border-zinc-700 dark:bg-zinc-800/50'>
+												<span className='mb-1 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400'>
+													Casillero
+												</span>
+												<p className='text-5xl font-black tracking-tighter text-zinc-900 dark:text-white'>
 													{checkoutResult.locker_number ||
 														(checkoutResult as any).locker?.number ||
-														(checkoutResult as any).data?.locker?.number ||
+														(checkoutResult as any).data?.locker
+															?.number ||
 														(checkoutResult as any).number ||
 														(checkoutResult as any).casillero_numero ||
 														'—'}
@@ -162,14 +212,20 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 									)}
 
 									{/* Intentar sacar el PIN de varias formas posibles */}
-									{(checkoutResult.locker_pin || (checkoutResult as any).locker?.locker_pin || (checkoutResult as any).data?.locker_pin || (checkoutResult as any).pin) && (
-										<div className='relative group'>
-											<div className='absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-500 opacity-20 blur group-hover:opacity-30 transition duration-1000'></div>
-											<div className='relative flex flex-col items-center justify-center rounded-2xl bg-blue-50 p-8 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/20'>
-												<span className='text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-1'>PIN de Apertura</span>
-												<p className='text-6xl font-mono font-black text-blue-600 tracking-[0.2em] ml-4 dark:text-blue-400'>
+									{(checkoutResult.locker_pin ||
+										(checkoutResult as any).locker?.locker_pin ||
+										(checkoutResult as any).data?.locker_pin ||
+										(checkoutResult as any).pin) && (
+										<div className='group relative'>
+											<div className='absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-500 opacity-20 blur transition duration-1000 group-hover:opacity-30'></div>
+											<div className='relative flex flex-col items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 p-8 dark:border-blue-900/20 dark:bg-blue-900/10'>
+												<span className='mb-1 text-[10px] font-black uppercase tracking-[0.3em] text-blue-400'>
+													PIN de Apertura
+												</span>
+												<p className='ml-4 font-mono text-6xl font-black tracking-[0.2em] text-blue-600 dark:text-blue-400'>
 													{checkoutResult.locker_pin ||
-														(checkoutResult as any).locker?.locker_pin ||
+														(checkoutResult as any).locker
+															?.locker_pin ||
 														(checkoutResult as any).data?.locker_pin ||
 														(checkoutResult as any).pin ||
 														(checkoutResult as any).pin_apertura ||
@@ -183,22 +239,29 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 								<div className='mt-10 rounded-2xl bg-zinc-900 p-5 text-white shadow-xl dark:bg-zinc-800'>
 									<div className='flex items-start gap-3'>
 										<div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white'>
-											<Icon icon='HeroInformationCircle' className='h-4 w-4' />
+											<Icon
+												icon='HeroInformationCircle'
+												className='h-4 w-4'
+											/>
 										</div>
-										<p className='text-left text-xs leading-relaxed opacity-90 font-medium'>
-											Ingresa el código <strong>{
-												checkoutResult.locker_pin ||
-												(checkoutResult as any).locker?.locker_pin ||
-												(checkoutResult as any).data?.locker_pin ||
-												(checkoutResult as any).pin ||
-												'—'
-											}</strong> en el teclado del casillero <strong>{
-												checkoutResult.locker_number ||
-												(checkoutResult as any).locker?.number ||
-												(checkoutResult as any).data?.locker?.number ||
-												(checkoutResult as any).number ||
-												'—'
-											}</strong> para abrir la puerta.
+										<p className='text-left text-xs font-medium leading-relaxed opacity-90'>
+											Ingresa el código{' '}
+											<strong>
+												{checkoutResult.locker_pin ||
+													(checkoutResult as any).locker?.locker_pin ||
+													(checkoutResult as any).data?.locker_pin ||
+													(checkoutResult as any).pin ||
+													'—'}
+											</strong>{' '}
+											en el teclado del casillero{' '}
+											<strong>
+												{checkoutResult.locker_number ||
+													(checkoutResult as any).locker?.number ||
+													(checkoutResult as any).data?.locker?.number ||
+													(checkoutResult as any).number ||
+													'—'}
+											</strong>{' '}
+											para abrir la puerta.
 										</p>
 									</div>
 								</div>
@@ -207,8 +270,8 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 									<Button
 										variant='outline'
 										color='zinc'
-										className='text-xs font-bold uppercase tracking-widest py-2 px-6 rounded-full opacity-50 hover:opacity-100 transition-opacity'
-										onClick={() => window.location.href = '/'}>
+										className='rounded-full px-6 py-2 text-xs font-bold uppercase tracking-widest opacity-50 transition-opacity hover:opacity-100'
+										onClick={() => (window.location.href = '/')}>
 										Finalizar
 									</Button>
 								</div>
@@ -218,9 +281,10 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 				</div>
 
 				{/* Footer */}
-				<footer className='relative z-10 w-full py-6 px-4 text-center'>
-					<p className='text-[10px] font-bold text-zinc-400 uppercase tracking-widest'>
-						&copy; {new Date().getFullYear()} Zentria ERP • Soporte Técnico de Excelencia
+				<footer className='relative z-10 w-full px-4 py-6 text-center'>
+					<p className='text-[10px] font-bold uppercase tracking-widest text-zinc-400'>
+						&copy; {new Date().getFullYear()} Zentria ERP • Soporte Técnico de
+						Excelencia
 					</p>
 				</footer>
 			</main>

@@ -1,7 +1,10 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { FormikProps } from 'formik';
-import { TicketFormValues, FloatingOrnament } from '@/pages/Public/formLockCleare/components/FormLockCare.types';
+import {
+	TicketFormValues,
+	FloatingOrnament,
+} from '@/pages/Public/formLockCleare/components/FormLockCare.types';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
@@ -180,7 +183,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 						scannerRunningRef.current = false;
 
 						// Detener el escáner
-						scanner.stop().catch(() => { });
+						scanner.stop().catch(() => {});
 						scannerRef.current = null;
 
 						// Navegar a la URL del QR escaneado
@@ -216,7 +219,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 			cancelled = true;
 			clearTimeout(timer);
 			if (scannerRef.current && scannerRunningRef.current) {
-				scannerRef.current.stop().catch(() => { });
+				scannerRef.current.stop().catch(() => {});
 				scannerRunningRef.current = false;
 			}
 			scannerRef.current = null;
@@ -225,7 +228,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 
 	const handleStopScanner = useCallback(() => {
 		if (scannerRef.current && scannerRunningRef.current) {
-			scannerRef.current.stop().catch(() => { });
+			scannerRef.current.stop().catch(() => {});
 			scannerRunningRef.current = false;
 		}
 		scannerRef.current = null;
@@ -263,17 +266,19 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 								<p className='mt-3 text-zinc-600'>{infoError}</p>
 								{/* --- SECCIÓN NUEVA: BADGES DE CASILLEROS DISPONIBLES --- */}
 								{suggestedLockers && suggestedLockers.length > 0 && (
-									<div className='mt-5 rounded-xl bg-emerald-50/80 p-4 border border-emerald-100 text-left shadow-sm'>
-										<p className='text-sm text-emerald-800 font-semibold mb-3 flex items-center gap-2'>
-											<Icon icon='HeroCheckCircle' className='h-5 w-5 text-emerald-600' />
+									<div className='mt-5 rounded-xl border border-emerald-100 bg-emerald-50/80 p-4 text-left shadow-sm'>
+										<p className='mb-3 flex items-center gap-2 text-sm font-semibold text-emerald-800'>
+											<Icon
+												icon='HeroCheckCircle'
+												className='h-5 w-5 text-emerald-600'
+											/>
 											Prueba con estos casilleros disponibles:
 										</p>
 										<div className='flex flex-wrap gap-2'>
 											{suggestedLockers.map((num, idx) => (
 												<span
 													key={idx}
-													className='inline-flex items-center gap-x-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-emerald-700 shadow-sm ring-1 ring-inset ring-emerald-200 hover:bg-emerald-50 transition-colors'
-												>
+													className='inline-flex items-center gap-x-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-emerald-700 shadow-sm ring-1 ring-inset ring-emerald-200 transition-colors hover:bg-emerald-50'>
 													#{num}
 												</span>
 											))}
@@ -283,15 +288,23 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 								{/* --- FIN SECCIÓN NUEVA --- */}
 
 								{/* Detectar si es un caso de retiro pendiente */}
-								{(infoError.toLowerCase().includes('retiro') || infoError.toLowerCase().includes('listo')) && (
-									<div className='mt-6 rounded-xl bg-blue-50 p-4 border border-blue-100 text-left'>
-										<p className='text-sm text-blue-800 font-medium'>¿Vienes a retirar tu equipo?</p>
-										<p className='text-xs text-blue-600 mt-1'>Usa la palabra clave que recibiste por correo para abrir el casillero.</p>
+								{(infoError.toLowerCase().includes('retiro') ||
+									infoError.toLowerCase().includes('listo')) && (
+									<div className='mt-6 rounded-xl border border-blue-100 bg-blue-50 p-4 text-left'>
+										<p className='text-sm font-medium text-blue-800'>
+											¿Vienes a retirar tu equipo?
+										</p>
+										<p className='mt-1 text-xs text-blue-600'>
+											Usa la palabra clave que recibiste por correo para abrir
+											el casillero.
+										</p>
 										<Button
 											color='blue'
 											variant='solid'
 											className='mt-3 w-full justify-center py-2'
-											onClick={() => window.location.href = '/lockers/check-out'}>
+											onClick={() =>
+												(window.location.href = '/lockers/check-out')
+											}>
 											Ir a Retiro de Equipo
 										</Button>
 									</div>
@@ -354,7 +367,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 					showEnhancedEffects={shouldRenderHeavyDecorations && decorationsReady}
 				/>
 
-				<div className='relative z-10 w-full max-w-5xl animate-in fade-in zoom-in duration-500'>
+				<div className='animate-in fade-in zoom-in relative z-10 w-full max-w-5xl duration-500'>
 					<CheckInSuccessSteps
 						lockerNumber={lockerNumberReceived || '---'}
 						pin={pinReceived || '----'}
@@ -418,10 +431,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 								onToggleChecklist={handleToggleChecklist}
 							/>
 
-							<FormLockCareFormPanel
-								formik={formik}
-								onOpenTerms={handleOpenTerms}
-							/>
+							<FormLockCareFormPanel formik={formik} onOpenTerms={handleOpenTerms} />
 						</div>
 					</CardBody>
 				</Card>

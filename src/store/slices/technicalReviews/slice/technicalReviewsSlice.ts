@@ -658,8 +658,7 @@ export const {
 	clearErrors,
 	setSelectedBatch,
 	setSelectedItem,
-} =
-	technicalReviewsSlice.actions;
+} = technicalReviewsSlice.actions;
 
 // Exportar el tipo para usarlo en rootReducer
 export type { TechnicalReviewsState } from '../../../../interface/technicalReviews.interface';

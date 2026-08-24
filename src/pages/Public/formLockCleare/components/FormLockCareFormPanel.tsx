@@ -139,7 +139,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.name}
 						invalidFeedback={formik.errors.name}>
-						<Input {...lockCareTheme}
+						<Input
+							{...lockCareTheme}
 							id='name'
 							name='name'
 							placeholder='Tu Nombre'
@@ -157,7 +158,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.email}
 						invalidFeedback={formik.errors.email}>
-						<Input {...lockCareTheme}
+						<Input
+							{...lockCareTheme}
 							id='email'
 							name='email'
 							type='email'
@@ -176,7 +178,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.phone}
 						invalidFeedback={formik.errors.phone}>
-						<Input {...lockCareTheme}
+						<Input
+							{...lockCareTheme}
 							id='phone'
 							name='phone'
 							placeholder='Número de telefono'
@@ -194,7 +197,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.requiresInvoice}
 						invalidFeedback={formik.errors.requiresInvoice}>
-						<SelectReact {...lockCareTheme}
+						<SelectReact
+							{...lockCareTheme}
 							id='requiresInvoice'
 							name='requiresInvoice'
 							options={invoiceOptions}
@@ -215,7 +219,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 								isValid={formik.isValid}
 								isTouched={formik.touched.invoiceRut}
 								invalidFeedback={formik.errors.invoiceRut}>
-								<Input {...lockCareTheme}
+								<Input
+									{...lockCareTheme}
 									id='invoiceRut'
 									name='invoiceRut'
 									placeholder='Ej. 76.123.456-7'
@@ -233,7 +238,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 								isValid={formik.isValid}
 								isTouched={formik.touched.invoiceBusinessName}
 								invalidFeedback={formik.errors.invoiceBusinessName}>
-								<Input {...lockCareTheme}
+								<Input
+									{...lockCareTheme}
 									id='invoiceBusinessName'
 									name='invoiceBusinessName'
 									placeholder='Giro comercial'
@@ -251,7 +257,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 								isValid={formik.isValid}
 								isTouched={formik.touched.invoiceAddress}
 								invalidFeedback={formik.errors.invoiceAddress}>
-								<Input {...lockCareTheme}
+								<Input
+									{...lockCareTheme}
 									id='invoiceAddress'
 									name='invoiceAddress'
 									placeholder='Direccion de facturacion'
@@ -277,7 +284,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.serviceType}
 						invalidFeedback={formik.errors.serviceType}>
-						<SelectReact {...lockCareTheme}
+						<SelectReact
+							{...lockCareTheme}
 							id='serviceType'
 							name='serviceType'
 							options={serviceTypeOptions}
@@ -329,7 +337,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.message}
 						invalidFeedback={formik.errors.message}>
-						<Textarea {...lockCareTheme}
+						<Textarea
+							{...lockCareTheme}
 							id='message'
 							name='message'
 							rows={3}
@@ -352,7 +361,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 							Agregar adjuntos
 						</span>
 					</label>
-					<Input {...lockCareTheme}
+					<Input
+						{...lockCareTheme}
 						id='attachments'
 						name='attachments'
 						type='file'
@@ -369,7 +379,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 				</div>
 
 				<div className='md:col-span-2'>
-					<Checkbox {...lockCareTheme}
+					<Checkbox
+						{...lockCareTheme}
 						id='terms'
 						name='termsAccepted'
 						isInline
