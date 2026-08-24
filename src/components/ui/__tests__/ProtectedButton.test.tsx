@@ -62,7 +62,7 @@ describe('ProtectedButton', () => {
 		expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
 	});
 
-	it('muestra el fallback deshabilitado con su contenido y estilos sin ejecutar onClick', () => {
+	it('muestra el fallback deshabilitado con explicación genérica sin ejecutar onClick', async () => {
 		const onClick = vi.fn();
 		render(
 			<ProtectedButton
@@ -75,8 +75,19 @@ describe('ProtectedButton', () => {
 		);
 
 		const button = screen.getByRole('button', { name: 'Editar cliente' });
+		const trigger = button.parentElement as HTMLElement;
 		expect(button).toBeDisabled();
 		expect(button).toHaveClass('accion-protegida');
+		expect(trigger).toHaveAttribute('tabindex', '0');
+		expect(trigger).toHaveClass('!cursor-not-allowed');
+
+		await act(async () => {
+			fireEvent.focus(trigger);
+			await Promise.resolve();
+		});
+		expect(screen.getByRole('tooltip')).toHaveTextContent(
+			'No tienes permiso para realizar esta acción',
+		);
 
 		fireEvent.click(button);
 		expect(onClick).not.toHaveBeenCalled();
@@ -125,7 +136,7 @@ describe('ProtectedButton', () => {
 		expect(onClick).not.toHaveBeenCalled();
 	});
 
-	it('prioriza disabledTooltip y conserva el title original cuando no se define', () => {
+	it('prioriza disabledTooltip y expone el title original por mouse cuando no se define', async () => {
 		const { rerender } = render(
 			<ProtectedButton
 				permission='edit-customer'
@@ -154,6 +165,13 @@ describe('ProtectedButton', () => {
 			'title',
 			'Título original',
 		);
+
+		const trigger = screen.getByRole('button', { name: 'Editar' }).parentElement as HTMLElement;
+		await act(async () => {
+			fireEvent.mouseEnter(trigger);
+			await Promise.resolve();
+		});
+		expect(screen.getByRole('tooltip')).toHaveTextContent('Título original');
 	});
 
 	it('renderiza el botón operativo cuando la autorización permite la acción', () => {

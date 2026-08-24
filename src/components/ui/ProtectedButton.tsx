@@ -44,25 +44,27 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 	}
 
 	const combinedPermission = permission ?? permissions;
+	const fallbackExplanation =
+		disabledTooltip ?? buttonProps.title ?? 'No tienes permiso para realizar esta acción';
 	const disabledButton = (
-		<Button ref={ref} {...buttonProps} isDisable title={disabledTooltip ?? buttonProps.title} />
+		<Button ref={ref} {...buttonProps} isDisable title={fallbackExplanation} />
 	);
 	let fallback: React.ReactNode = null;
 
+	/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- Trigger enfocable para explicar un botón nativamente deshabilitado. */
 	if (fallbackMode === 'disabled') {
-		fallback = disabledButton;
-
-		if (disabledTooltip) {
-			fallback = (
-				<Tooltip id={disabledTooltipId} text={disabledTooltip}>
-					{/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Trigger enfocable para explicar un botón nativamente deshabilitado. */}
-					<span className='inline-flex' tabIndex={0} aria-describedby={disabledTooltipId}>
-						{disabledButton}
-					</span>
-				</Tooltip>
-			);
-		}
+		fallback = (
+			<Tooltip id={disabledTooltipId} text={fallbackExplanation}>
+				<span
+					tabIndex={0}
+					className='inline-flex !cursor-not-allowed'
+					aria-describedby={disabledTooltipId}>
+					{disabledButton}
+				</span>
+			</Tooltip>
+		);
 	}
+	/* eslint-enable jsx-a11y/no-noninteractive-tabindex */
 
 	return (
 		<PermissionGuard
