@@ -19,6 +19,10 @@ Aquí se anota **actividad**: cambios, decisiones, problemas y resultados del d�
   archivo (ver §3).
 - El registro debe ser entendible por alguien que no estuvo presente: _qué_, _dónde_
   (rama) y _por qué_.
+- Una corrección literal y determinista de revisión, limitada a configuración, documentación o copy
+  y sin cambio funcional, no obliga a crear un archivo diario nuevo. Si el archivo del día ya existe,
+  puede agregarse de forma resumida; si no existe, sólo se registra cuando el usuario lo pida o el
+  cambio sea material.
 
 ---
 

@@ -314,6 +314,11 @@ Reglas (ver `bitacora_trabajo/instrucciones.md` para el detalle completo):
 Al cerrar una tarea, **actualizá el índice de temas** y el bloque del tema en el archivo
 del día (créalo si no existe).
 
+**Excepción:** una corrección literal y determinista de revisión, limitada a configuración,
+documentación o copy y sin cambio funcional, no crea por sí sola un archivo diario nuevo. Si el
+archivo del día ya existe, puede agregarse de forma resumida; si no existe, sólo se registra cuando
+el usuario lo pida o el cambio sea material.
+
 ## 14. Flujo de trabajo (branching + PRs)
 
 - **Commits en español**, formato **Conventional Commits** (`feat:`, `fix:`, `chore:`, `refactor:`, `style:`, `docs:`, `test:`).

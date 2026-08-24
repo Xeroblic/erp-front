@@ -1,6 +1,6 @@
 ---
 name: pr-readiness
-description: Preparar y auditar cambios no triviales de Zentria ERP mediante gates proporcionales de contrato, estado, formularios, UI y pruebas. Usar antes de modificar código que toque API, archivos, permisos, estado remoto, contexto organizacional, mutaciones, overlays o componentes compartidos, y antes de declarar una implementación lista para PR.
+description: Preparar y auditar cambios no triviales de Zentria ERP mediante gates proporcionales de contrato, estado, formularios, UI y pruebas. Usar ante riesgo funcional o de contrato; no usar para cambios literales y deterministas de hasta 3 archivos de configuración, documentación o copy sin cambio de comportamiento.
 ---
 
 ## Texto UTF-8 desde el origen
@@ -11,6 +11,17 @@ description: Preparar y auditar cambios no triviales de Zentria ERP mediante gat
 # Puerta de calidad de PR para Zentria
 
 Leer primero `CLAUDE.md`. Este skill no reemplaza los skills de arquitectura, tipos, React, UI o QA: selecciona qué evidencias deben existir antes de implementar y revisar. Aplicar sólo las categorías activadas por el cambio.
+
+## Exclusión de vía rápida
+
+No activar este skill para un cambio literal y determinista de hasta 3 archivos de configuración,
+documentación o copy cuando el comentario autoritativo especifica por completo el resultado y no se
+modifican lógica, API, permisos, estado, formularios, overlays, componentes compartidos ni
+accesibilidad. En ese caso basta con revisar el archivo y su configuración vecina, ejecutar el check
+directamente relacionado y `git diff --check`.
+
+La preparación de un PR no convierte por sí sola un cambio trivial en no trivial. No delegar QA ni
+solicitar especialistas para la vía rápida.
 
 ## Preflight mínimo
 
@@ -90,7 +101,7 @@ El implementador entrega esta matriz junto al cambio:
 
 QA recibe el requisito, base/HEAD, diff y pruebas como artefactos crudos. Debe intentar invalidar la identidad, el contrato y las transiciones sin asumir correctas las conclusiones del implementador. Si no intervino otro agente, llamar al resultado «autorrevisión», no «auditoría independiente».
 
-Después de una corrección, reverificar todos los hallazgos anteriores y revisar otra vez el diff completo. Retirar o actualizar pruebas y documentación que describan la semántica reemplazada; buscar regresiones introducidas por el propio fix.
+Después de una corrección dentro de un flujo donde este skill sí está activo, reverificar todos los hallazgos anteriores y revisar otra vez el diff completo. Retirar o actualizar pruebas y documentación que describan la semántica reemplazada; buscar regresiones introducidas por el propio fix.
 
 Ejecutar primero las pruebas afectadas; informar con precisión suites/casos ejecutados, TypeScript, lint del alcance y `git diff --check`. Para un flujo crítico de API, permisos o finanzas, ejecutar un smoke test integrado o E2E cuando el entorno lo permita; si no, declararlo pendiente con la limitación concreta.
 
