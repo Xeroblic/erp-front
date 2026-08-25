@@ -1,7 +1,11 @@
 import { act, renderHook } from '@testing-library/react';
-import type { FieldValues, UseFormSetValue } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
-import { getHardwareVisualValidationMessage, useHardwareAbsence } from '../useHardwareAbsence';
+import {
+	getHardwareVisualValidationMessage,
+	type HardwareAbsenceFields,
+	type HardwareAbsenceSetters,
+	useHardwareAbsence,
+} from '../useHardwareAbsence';
 
 describe('useHardwareAbsence', () => {
 	it('names only the hardware groups that are actually pending', () => {
@@ -17,39 +21,57 @@ describe('useHardwareAbsence', () => {
 	});
 
 	it('clears every dependent field when RAM and storage become absent', () => {
-		const setValue = vi.fn() as unknown as UseFormSetValue<FieldValues>;
-		const { result } = renderHook(() => useHardwareAbsence(setValue));
+		const setHasNoRam = vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setHasNoRam']>();
+		const setRamSize = vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setRamSize']>();
+		const setRamSlots = vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setRamSlots']>();
+		const setRamType = vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setRamType']>();
+		const setHasNoStorage =
+			vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setHasNoStorage']>();
+		const setStorageSize =
+			vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setStorageSize']>();
+		const setStorageTechnology =
+			vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setStorageTechnology']>();
+		const setters: HardwareAbsenceSetters<HardwareAbsenceFields> = {
+			setHasNoRam,
+			setRamSize,
+			setRamSlots,
+			setRamType,
+			setHasNoStorage,
+			setStorageSize,
+			setStorageTechnology,
+		};
+		const { result } = renderHook(() => useHardwareAbsence(setters));
 
 		act(() => {
 			result.current.setRamAbsence(true);
 			result.current.setStorageAbsence(true);
 		});
 
-		expect(setValue).toHaveBeenCalledWith('has_no_ram', true, {
+		expect(setHasNoRam).toHaveBeenCalledWith(true, {
 			shouldDirty: true,
 			shouldValidate: true,
 		});
-		expect(setValue).toHaveBeenCalledWith('ram_size', '', {
+		expect(setRamSize).toHaveBeenCalledWith('', {
 			shouldDirty: true,
 			shouldValidate: false,
 		});
-		expect(setValue).toHaveBeenCalledWith('ram_slots', '', {
+		expect(setRamSlots).toHaveBeenCalledWith('', {
 			shouldDirty: true,
 			shouldValidate: false,
 		});
-		expect(setValue).toHaveBeenCalledWith('ram_type', undefined, {
+		expect(setRamType).toHaveBeenCalledWith(undefined, {
 			shouldDirty: true,
 			shouldValidate: false,
 		});
-		expect(setValue).toHaveBeenCalledWith('has_no_storage', true, {
+		expect(setHasNoStorage).toHaveBeenCalledWith(true, {
 			shouldDirty: true,
 			shouldValidate: true,
 		});
-		expect(setValue).toHaveBeenCalledWith('storage_size', '', {
+		expect(setStorageSize).toHaveBeenCalledWith('', {
 			shouldDirty: true,
 			shouldValidate: false,
 		});
-		expect(setValue).toHaveBeenCalledWith('storage_technology', undefined, {
+		expect(setStorageTechnology).toHaveBeenCalledWith(undefined, {
 			shouldDirty: true,
 			shouldValidate: false,
 		});
