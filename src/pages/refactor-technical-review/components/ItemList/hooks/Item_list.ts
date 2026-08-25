@@ -1,6 +1,7 @@
 import { deleteItem } from '@/store/slices/technicalReviews';
 import { toast } from 'react-toastify';
 import ExcelJS from 'exceljs';
+import { getHardwareDisplayValue } from '../../utils/hardwareAbsence';
 import { saveAs } from 'file-saver';
 import JsBarcode from 'jsbarcode';
 import { resolveEquipmentTypeMeta } from '../../utils/utilsItems';
@@ -436,6 +437,8 @@ const resolveColumnValue = (item: IItem, key: string): string => {
 		...(item.details || {}),
 		...(item.extra_attributes || {}),
 	};
+	const hardwareDisplay = getHardwareDisplayValue(detailSource, key);
+	if (hardwareDisplay !== null) return hardwareDisplay;
 	return normalizeDetailValue(detailSource[key]);
 };
 

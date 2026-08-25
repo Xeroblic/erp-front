@@ -95,6 +95,8 @@ const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 	'basic-info': ['brand', 'model', 'line'],
 	hardware: [
 		'processor',
+		'has_no_ram',
+		'has_no_storage',
 		'ram_size',
 		'ram_slots',
 		'ram_type',

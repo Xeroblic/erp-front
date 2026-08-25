@@ -16,6 +16,7 @@ import {
 	generateConnectivityText,
 	getFieldsForType,
 } from './utils/reviewTranslations';
+import { getHardwareDisplayValue } from '../../../components/utils/hardwareAbsence';
 
 /** Datos del item necesarios para el panel lateral */
 interface ReviewItemSummary {
@@ -53,11 +54,16 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 	);
 
 	// Filtra solo los campos válidos para el tipo de equipo actual
-	const detailEntries = useMemo(() => {
+	const detailEntries = useMemo<Array<[string, unknown]>>(() => {
 		const allEntries = Object.entries(detailValues);
 		const validFields = getFieldsForType(equipmentType);
-		if (!validFields) return allEntries;
-		return allEntries.filter(([key]) => validFields.has(key));
+		const entries = validFields
+			? allEntries.filter(([key]) => validFields.has(key))
+			: allEntries;
+		return entries.map(([key, value]): [string, unknown] => [
+			key,
+			getHardwareDisplayValue(detailValues, key) ?? value,
+		]);
 	}, [detailValues, equipmentType]);
 	const hasDetails = detailEntries.length > 0;
 

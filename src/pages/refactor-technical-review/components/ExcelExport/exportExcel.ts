@@ -11,6 +11,7 @@ import {
 import { IItem } from '@/interface/technicalReviews.interface';
 import { resolveEquipmentTypeMeta } from '@/pages/refactor-technical-review/components/utils/utilsItems';
 import { serialNumbers } from '../../ESPECIA_CANAL13/list_serialNumber';
+import { getHardwareDisplayValue } from '../utils/hardwareAbsence';
 
 const HIGHLIGHT_ROW_COLOR = '86c723';
 const SERIALS_TO_HIGHLIGHT = new Set(serialNumbers.map((serial) => serial.trim().toUpperCase()));
@@ -118,6 +119,8 @@ const resolveColumnValue = (item: IItem, key: string): string => {
 		...(item.details || {}),
 		...(item.extra_attributes || {}),
 	};
+	const hardwareDisplay = getHardwareDisplayValue(detailSource, key);
+	if (hardwareDisplay !== null) return hardwareDisplay;
 	return normalizeDetailValue(detailSource[key]);
 };
 

@@ -182,8 +182,10 @@ export interface UpdateItemDetailsPayload {
 	ram_size?: string;
 	ram_slots?: string;
 	ram_type?: string;
+	has_no_ram?: boolean;
 	storage_size?: string;
 	storage_technology?: string;
+	has_no_storage?: boolean;
 	general_condition?: string;
 	observations?: string | null;
 	includes_power_adapter?: boolean;
