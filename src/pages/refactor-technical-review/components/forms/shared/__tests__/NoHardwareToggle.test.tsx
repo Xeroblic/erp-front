@@ -4,7 +4,15 @@ import { describe, expect, it, vi } from 'vitest';
 import NoHardwareToggle from '../NoHardwareToggle';
 
 vi.mock('@/components/form/Checkbox', () => ({
-	default: ({ checked, label, onChange }: { checked?: boolean; label?: string; onChange?: React.ChangeEventHandler<HTMLInputElement> }) => (
+	default: ({
+		checked,
+		label,
+		onChange,
+	}: {
+		checked?: boolean;
+		label?: string;
+		onChange?: React.ChangeEventHandler<HTMLInputElement>;
+	}) => (
 		<label>
 			<input type='checkbox' checked={checked} onChange={onChange} />
 			{label}
