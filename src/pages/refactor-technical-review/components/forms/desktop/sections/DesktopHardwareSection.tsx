@@ -201,7 +201,7 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					readOnly={readOnly}>
 					{/* Storage Technology Selection Cards */}
 					<label className='mb-2 block text-xs font-semibold text-zinc-500'>
-						TecnologÃ­a
+						Tecnología
 					</label>
 					<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-3'>
 						{STORAGE_TECHNOLOGY_OPTIONS.map((opt) => (
