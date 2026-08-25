@@ -12,15 +12,13 @@ import {
 	RAM_TYPE_OPTIONS,
 } from '../../../constants/notebook/notebook.options';
 import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
-import SelectReact from '@/components/form/SelectReact';
-import InputUnitSelector from '../../../ui/InputUnitSelector';
+import { InputUnitSelector } from '../../../ui/InputUnitSelector';
 import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
-import NoHardwareToggle from '../../shared/NoHardwareToggle';
+import HardwareCard from '../../shared/HardwareCard';
 import {
 	getHardwareVisualValidationMessage,
 	useHardwareAbsence,
 } from '../../shared/useHardwareAbsence';
-import HardwareAbsenceStatus from '../../shared/HardwareAbsenceStatus';
 
 const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	control,
@@ -53,12 +51,13 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						onValidate={() => {
 							const ramSize = watch('ram_size');
 							const ramSlots = watch('ram_slots');
-							const ramType = watch('ram_type');
+							const watchedRamType = watch('ram_type');
 							const storageSize = watch('storage_size');
-							const storageTech = watch('storage_technology');
+							const watchedStorageTech = watch('storage_technology');
 
-							const missingRam = !noRam && (!ramSize || !ramSlots || !ramType);
-							const missingStorage = !noStorage && (!storageSize || !storageTech);
+							const missingRam = !noRam && (!ramSize || !ramSlots || !watchedRamType);
+							const missingStorage =
+								!noStorage && (!storageSize || !watchedStorageTech);
 
 							if (missingRam || missingStorage) {
 								toast.warning(
@@ -126,36 +125,16 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				)}
 			</div>
 
-			<div className='flex flex-wrap gap-3'>
-				{!readOnly && (
-					<NoHardwareToggle
-						isActive={noRam}
-						onToggle={setRamAbsence}
-						hardwareLabel='RAM'
-					/>
-				)}
-				{!readOnly && (
-					<NoHardwareToggle
-						isActive={noStorage}
-						onToggle={setStorageAbsence}
-						hardwareLabel='disco'
-					/>
-				)}
-				{readOnly && <HardwareAbsenceStatus hasNoRam={noRam} hasNoStorage={noStorage} />}
-			</div>
 			<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 				{/* Memory RAM Card */}
-				<div
-					className={
-						noRam
-							? 'hidden'
-							: 'rounded-xl border border-blue-200 bg-blue-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-blue-500/30 dark:border-blue-800 dark:bg-blue-900/10 dark:hover:bg-blue-900/30'
-					}>
-					<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
-						Memoria RAM
-						<span className='text-red-500'>*</span>
-					</label>
-
+				<HardwareCard
+					title='Memoria RAM'
+					accent='blue'
+					isRequired
+					isAbsent={noRam}
+					onToggleAbsence={setRamAbsence}
+					hardwareLabel='RAM'
+					readOnly={readOnly}>
 					{/* RAM Type Selection Cards */}
 					<label className='mb-2 block text-xs font-semibold text-zinc-500'>Tipo</label>
 					<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-4'>
@@ -192,12 +171,11 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							<p className='mt-1 text-xs text-red-500'>{errors.ram_size.message}</p>
 						)}
 					</div>
-					<div></div>
 
 					{/* RAM Slots */}
 					<div>
 						<label className='mb-1 block text-xs font-semibold text-zinc-500'>
-							{getNotebookLabel('	ram_slots')} <span className='text-red-500'>*</span>
+							{getNotebookLabel('ram_slots')} <span className='text-red-500'>*</span>
 						</label>
 						<Controller
 							name='ram_slots'
@@ -213,22 +191,19 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						/>
 						<p className='mt-1 text-xs text-zinc-400'>{NOTEBOOK_HINTS.ram_slots}</p>
 					</div>
-				</div>
+				</HardwareCard>
 
 				{/* Storage Card */}
-				<div
-					className={
-						noStorage
-							? 'hidden'
-							: 'rounded-xl border border-purple-200 bg-purple-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-purple-500/30 dark:border-purple-800 dark:bg-purple-900/10 dark:hover:bg-purple-900/30'
-					}>
-					<label className='mb-3 block text-sm font-bold text-purple-800 dark:text-purple-200'>
-						Almacenamiento
-					</label>
-
+				<HardwareCard
+					title='Almacenamiento'
+					accent='purple'
+					isAbsent={noStorage}
+					onToggleAbsence={setStorageAbsence}
+					hardwareLabel='disco'
+					readOnly={readOnly}>
 					{/* Storage Technology Selection Cards */}
 					<label className='mb-2 block text-xs font-semibold text-zinc-500'>
-						Tecnología
+						TecnologÃ­a
 						<span className='text-red-500'>*</span>
 					</label>
 					<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-3'>
@@ -270,7 +245,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					{errors.storage_size && (
 						<p className='mt-1 text-xs text-red-500'>{errors.storage_size.message}</p>
 					)}
-				</div>
+				</HardwareCard>
 			</div>
 		</div>
 	);
