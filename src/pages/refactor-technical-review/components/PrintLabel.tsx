@@ -24,6 +24,12 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 	};
 
 	const details = item.details || {};
+	const hasNoRam = details.has_no_ram === true;
+	const hasNoStorage = details.has_no_storage === true;
+	const ramDisplay = hasNoRam ? 'No tiene' : `${extractValue(details.ram_size)}GB`;
+	const storageDisplay = hasNoStorage
+		? 'No tiene'
+		: `${extractValue(details.storage_size)} ${extractValue(details.storage_technology)}`;
 	const grade = extractValue(item.grade) || 'C';
 	const clientName = item.customer_supplier?.name || 'SIN CLIENTE';
 
@@ -85,13 +91,12 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
-						{extractValue(details.ram_size)}GB{' '}
-						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
+						{ramDisplay}{' '}
+						{!hasNoRam && details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
 						<span style={{ fontWeight: 'bold' }}>ALM: </span>
-						{extractValue(details.storage_size)}{' '}
-						{extractValue(details.storage_technology)}{' '}
+						{storageDisplay}{' '}
 					</React.Fragment>,
 					<React.Fragment key='os'>
 						<span style={{ fontWeight: 'bold' }}>OS: </span>
@@ -124,13 +129,12 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
-						{extractValue(details.ram_size)}GB{' '}
-						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
+						{ramDisplay}{' '}
+						{!hasNoRam && details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
 						<span style={{ fontWeight: 'bold' }}>ALM: </span>
-						{extractValue(details.storage_size)}{' '}
-						{extractValue(details.storage_technology)}{' '}
+						{storageDisplay}{' '}
 					</React.Fragment>,
 					<React.Fragment key='os'>
 						<span style={{ fontWeight: 'bold' }}>OS: </span>
@@ -147,13 +151,12 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
-						{extractValue(details.ram_size)}GB{' '}
-						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
+						{ramDisplay}{' '}
+						{!hasNoRam && details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
 						<span style={{ fontWeight: 'bold' }}>ALM: </span>
-						{extractValue(details.storage_size)}{' '}
-						{extractValue(details.storage_technology)}{' '}
+						{storageDisplay}{' '}
 					</React.Fragment>,
 					<React.Fragment key='os'>
 						<span style={{ fontWeight: 'bold' }}>OS: </span>
@@ -199,13 +202,12 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
-						{extractValue(details.ram_size)}GB{' '}
-						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
+						{ramDisplay}{' '}
+						{!hasNoRam && details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
 						<span style={{ fontWeight: 'bold' }}>ALM: </span>
-						{extractValue(details.storage_size)}{' '}
-						{extractValue(details.storage_technology)}{' '}
+						{storageDisplay}{' '}
 					</React.Fragment>,
 					<React.Fragment key='os'>
 						<span style={{ fontWeight: 'bold' }}>OS: </span>

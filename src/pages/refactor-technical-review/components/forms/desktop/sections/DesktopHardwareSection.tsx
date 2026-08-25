@@ -16,6 +16,12 @@ import {
 import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
 import InputUnitSelector from '../../../ui/InputUnitSelector';
 import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
+import NoHardwareToggle from '../../shared/NoHardwareToggle';
+import {
+	getHardwareVisualValidationMessage,
+	useHardwareAbsence,
+} from '../../shared/useHardwareAbsence';
+import HardwareAbsenceStatus from '../../shared/HardwareAbsenceStatus';
 
 const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	control,
@@ -27,6 +33,17 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 }) => {
 	const ramType = watch('ram_type');
 	const storageTech = watch('storage_technology');
+	const noRam = watch('has_no_ram') === true;
+	const noStorage = watch('has_no_storage') === true;
+	const { setRamAbsence, setStorageAbsence } = useHardwareAbsence<DesktopFormData>({
+		setHasNoRam: (value, options) => setValue('has_no_ram', value, options),
+		setRamSize: (value, options) => setValue('ram_size', value, options),
+		setRamSlots: (value, options) => setValue('ram_slots', value, options),
+		setRamType: (value, options) => setValue('ram_type', value, options),
+		setHasNoStorage: (value, options) => setValue('has_no_storage', value, options),
+		setStorageSize: (value, options) => setValue('storage_size', value, options),
+		setStorageTechnology: (value, options) => setValue('storage_technology', value, options),
+	});
 
 	return (
 		<div className='space-y-6'>
@@ -36,12 +53,17 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					<NoEnciendeButton
 						onValidate={() => {
 							const ramSize = watch('ram_size');
+							const ramSlots = watch('ram_slots');
+							const ramType = watch('ram_type');
 							const storageSize = watch('storage_size');
 							const storageTech = watch('storage_technology');
 
-							if (!ramSize || !storageSize || !storageTech) {
+							const missingRam = !noRam && (!ramSize || !ramSlots || !ramType);
+							const missingStorage = !noStorage && (!storageSize || !storageTech);
+
+							if (missingRam || missingStorage) {
 								toast.warning(
-									'Debes completar la Memoria RAM y el Almacenamiento, ya que pueden ser revisados visualmente.',
+									getHardwareVisualValidationMessage(missingRam, missingStorage),
 								);
 								return false;
 							}
@@ -50,11 +72,13 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 						onConfirm={() => {
 							onDirectSubmit({
 								processor: watch('processor') || '0',
-								ram_size: watch('ram_size') || '0',
-								ram_slots: watch('ram_slots') || '0',
-								ram_type: watch('ram_type') || '0',
-								storage_size: watch('storage_size') || '0',
-								storage_technology: watch('storage_technology') || 'HDD',
+								has_no_ram: noRam,
+								has_no_storage: noStorage,
+								ram_size: watch('ram_size') || undefined,
+								ram_slots: watch('ram_slots') || undefined,
+								ram_type: watch('ram_type') || undefined,
+								storage_size: watch('storage_size') || undefined,
+								storage_technology: watch('storage_technology') || undefined,
 								general_condition: 'scrap',
 								cover_condition: 'broken',
 								vga_ports: 0,
@@ -100,9 +124,31 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 				)}
 			</div>
 
+			<div className='flex flex-wrap gap-3'>
+				{!readOnly && (
+					<NoHardwareToggle
+						isActive={noRam}
+						onToggle={setRamAbsence}
+						hardwareLabel='RAM'
+					/>
+				)}
+				{!readOnly && (
+					<NoHardwareToggle
+						isActive={noStorage}
+						onToggle={setStorageAbsence}
+						hardwareLabel='disco'
+					/>
+				)}
+				{readOnly && <HardwareAbsenceStatus hasNoRam={noRam} hasNoStorage={noStorage} />}
+			</div>
 			<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 				{/* Memory RAM Card */}
-				<div className='rounded-xl border border-blue-200 bg-blue-50 p-4 transition-colors hover:bg-blue-100/50 dark:border-blue-900/30 dark:bg-blue-900/10'>
+				<div
+					className={
+						noRam
+							? 'hidden'
+							: 'rounded-xl border border-blue-200 bg-blue-50 p-4 transition-colors hover:bg-blue-100/50 dark:border-blue-900/30 dark:bg-blue-900/10'
+					}>
 					<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
 						Memoria RAM
 					</label>
@@ -166,7 +212,12 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 				</div>
 
 				{/* Storage Card */}
-				<div className='rounded-xl border border-purple-200 bg-purple-50 p-4 transition-colors hover:bg-purple-100/50 dark:border-purple-900/30 dark:bg-purple-900/10'>
+				<div
+					className={
+						noStorage
+							? 'hidden'
+							: 'rounded-xl border border-purple-200 bg-purple-50 p-4 transition-colors hover:bg-purple-100/50 dark:border-purple-900/30 dark:bg-purple-900/10'
+					}>
 					<label className='mb-3 block text-sm font-bold text-purple-800 dark:text-purple-200'>
 						Almacenamiento
 					</label>

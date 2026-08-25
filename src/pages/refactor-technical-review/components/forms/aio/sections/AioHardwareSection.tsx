@@ -12,6 +12,12 @@ import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
 import Icon from '@/components/icon/Icon';
 import InputUnitSelector from '../../../ui/InputUnitSelector';
 import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
+import NoHardwareToggle from '../../shared/NoHardwareToggle';
+import {
+	getHardwareVisualValidationMessage,
+	useHardwareAbsence,
+} from '../../shared/useHardwareAbsence';
+import HardwareAbsenceStatus from '../../shared/HardwareAbsenceStatus';
 
 interface SelectionCardProps {
 	label: string;
@@ -67,6 +73,17 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 	onDirectSubmit,
 }) => {
 	const storageTech = watch('storage_technology');
+	const noRam = watch('has_no_ram') === true;
+	const noStorage = watch('has_no_storage') === true;
+	const { setRamAbsence, setStorageAbsence } = useHardwareAbsence<AioFormData>({
+		setHasNoRam: (value, options) => setValue('has_no_ram', value, options),
+		setRamSize: (value, options) => setValue('ram_size', value, options),
+		setRamSlots: (value, options) => setValue('ram_slots', value, options),
+		setRamType: (value, options) => setValue('ram_type', value, options),
+		setHasNoStorage: (value, options) => setValue('has_no_storage', value, options),
+		setStorageSize: (value, options) => setValue('storage_size', value, options),
+		setStorageTechnology: (value, options) => setValue('storage_technology', value, options),
+	});
 
 	return (
 		<div className='space-y-6'>
@@ -76,12 +93,17 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 					<NoEnciendeButton
 						onValidate={() => {
 							const ramSize = watch('ram_size');
+							const ramSlots = watch('ram_slots');
+							const ramType = watch('ram_type');
 							const storageSize = watch('storage_size');
 							const storageTech = watch('storage_technology');
 
-							if (!ramSize || !storageSize || !storageTech) {
+							const missingRam = !noRam && (!ramSize || !ramSlots || !ramType);
+							const missingStorage = !noStorage && (!storageSize || !storageTech);
+
+							if (missingRam || missingStorage) {
 								toast.warning(
-									'Debes completar la Memoria RAM y el Almacenamiento, ya que pueden ser revisados visualmente.',
+									getHardwareVisualValidationMessage(missingRam, missingStorage),
 								);
 								return false;
 							}
@@ -90,11 +112,13 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 						onConfirm={() => {
 							onDirectSubmit({
 								processor: watch('processor') || '0',
-								ram_size: watch('ram_size') || '0',
-								ram_slots: watch('ram_slots') || '0',
-								ram_type: watch('ram_type') || '0',
-								storage_size: watch('storage_size') || '0',
-								storage_technology: watch('storage_technology') || 'HDD',
+								has_no_ram: noRam,
+								has_no_storage: noStorage,
+								ram_size: watch('ram_size') || undefined,
+								ram_slots: watch('ram_slots') || undefined,
+								ram_type: watch('ram_type') || undefined,
+								storage_size: watch('storage_size') || undefined,
+								storage_technology: watch('storage_technology') || undefined,
 								general_condition: 'scrap',
 								screen_condition: 'broken',
 								stand_condition: 'broken',
@@ -146,7 +170,24 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 			</div>
 
 			{/* RAM Memory Group */}
-			<div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
+			<div className='flex flex-wrap gap-3'>
+				{!readOnly && (
+					<NoHardwareToggle
+						isActive={noRam}
+						onToggle={setRamAbsence}
+						hardwareLabel='RAM'
+					/>
+				)}
+				{!readOnly && (
+					<NoHardwareToggle
+						isActive={noStorage}
+						onToggle={setStorageAbsence}
+						hardwareLabel='disco'
+					/>
+				)}
+				{readOnly && <HardwareAbsenceStatus hasNoRam={noRam} hasNoStorage={noStorage} />}
+			</div>
+			<div className={noRam ? 'hidden' : 'grid grid-cols-1 gap-6 md:grid-cols-3'}>
 				{/* RAM Size */}
 				<div className='rounded-xl border border-teal-200 bg-teal-500/10 p-5 transition-colors duration-200 hover:cursor-pointer hover:bg-teal-500/20 dark:border-teal-800/50 dark:bg-teal-900/10 dark:hover:bg-teal-900/20'>
 					<label className='mb-3 flex items-center gap-2 text-sm font-bold text-teal-800 dark:text-teal-200'>
@@ -215,7 +256,12 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 				</div>
 			</div>
 
-			<div className='rounded-xl border border-orange-200 bg-orange-500/10 p-6 transition-colors duration-200 hover:cursor-pointer hover:bg-orange-500/20 dark:border-orange-800/50 dark:bg-orange-900/10 dark:hover:bg-orange-900/20'>
+			<div
+				className={
+					noStorage
+						? 'hidden'
+						: 'rounded-xl border border-orange-200 bg-orange-500/10 p-6 transition-colors duration-200 hover:cursor-pointer hover:bg-orange-500/20 dark:border-orange-800/50 dark:bg-orange-900/10 dark:hover:bg-orange-900/20'
+				}>
 				<div className='mb-4 flex items-center gap-2 text-orange-800 dark:text-orange-200'>
 					<Icon icon='HeroCircleStack' className='h-6 w-6' />
 					<h4 className='text-sm font-bold uppercase tracking-wider'>

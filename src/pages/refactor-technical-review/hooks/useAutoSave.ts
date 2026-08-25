@@ -12,6 +12,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppDispatch } from '@/store';
 import { updateItemDetails } from '@/store/slices/technicalReviews';
 import { toast } from 'react-toastify';
+import {
+	filterTechnicalReviewPayload,
+	HARDWARE_NULLABLE_FIELDS,
+} from '@/utils/technicalReviewHardware';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -104,9 +108,7 @@ export const useAutoSave = ({
 				data = transformDataRef.current(data);
 			}
 
-			let payload = Object.fromEntries(
-				Object.entries(data).filter(([, v]) => v !== null && v !== undefined && v !== ''),
-			);
+			const payload = filterTechnicalReviewPayload(data, HARDWARE_NULLABLE_FIELDS);
 
 			if (!payload.extra_attributes) {
 				payload.extra_attributes = {};

@@ -179,11 +179,13 @@ export interface UpdateItemDetailsPayload {
 	model?: string;
 	line?: string | null;
 	processor?: string;
-	ram_size?: string;
-	ram_slots?: string;
-	ram_type?: string;
-	storage_size?: string;
-	storage_technology?: string;
+	ram_size?: string | null;
+	ram_slots?: string | null;
+	ram_type?: string | null;
+	has_no_ram?: boolean;
+	storage_size?: string | null;
+	storage_technology?: string | null;
+	has_no_storage?: boolean;
 	general_condition?: string;
 	observations?: string | null;
 	includes_power_adapter?: boolean;
