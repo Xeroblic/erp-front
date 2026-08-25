@@ -45,7 +45,7 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 
 	const combinedPermission = permission ?? permissions;
 	const fallbackExplanation =
-		disabledTooltip ?? buttonProps.title ?? 'No tienes permiso para realizar esta acción';
+		disabledTooltip ?? buttonProps.title ?? 'No tienes autorización para realizar esta acción';
 	const disabledButton = (
 		<Button ref={ref} {...buttonProps} isDisable title={fallbackExplanation} />
 	);

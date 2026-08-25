@@ -243,7 +243,7 @@ const Marcas: React.FC = () => {
 							branchId={branchId}
 							scope='access'
 							fallbackMode='disabled'
-							disabledTooltip='No tienes permiso para importar marcas desde WooCommerce'
+							disabledTooltip='No tienes autorización para importar marcas desde WooCommerce'
 							variant='outline'
 							color='violet'
 							icon='HeroArrowDownTray'

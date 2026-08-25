@@ -231,7 +231,7 @@ const Categorias: React.FC = () => {
 							branchId={branchId}
 							scope='access'
 							fallbackMode='disabled'
-							disabledTooltip='No tienes permiso para importar categorías desde WooCommerce'
+							disabledTooltip='No tienes autorización para importar categorías desde WooCommerce'
 							variant='outline'
 							color='indigo'
 							onClick={() => setImportOpen(true)}

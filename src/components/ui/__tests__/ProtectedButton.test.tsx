@@ -86,7 +86,7 @@ describe('ProtectedButton', () => {
 			await Promise.resolve();
 		});
 		expect(screen.getByRole('tooltip')).toHaveTextContent(
-			'No tienes permiso para realizar esta acción',
+			'No tienes autorización para realizar esta acción',
 		);
 
 		fireEvent.click(button);
