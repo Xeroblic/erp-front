@@ -41,10 +41,15 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					<NoEnciendeButton
 						onValidate={() => {
 							const ramSize = watch('ram_size');
+							const ramSlots = watch('ram_slots');
+							const ramType = watch('ram_type');
 							const storageSize = watch('storage_size');
 							const storageTech = watch('storage_technology');
 
-							if ((!noRam && !ramSize) || (!noStorage && (!storageSize || !storageTech))) {
+							if (
+								(!noRam && (!ramSize || !ramSlots || !ramType)) ||
+								(!noStorage && (!storageSize || !storageTech))
+							) {
 								toast.warning(
 									'Debes completar la Memoria RAM y el Almacenamiento, ya que pueden ser revisados visualmente.',
 								);
@@ -104,10 +109,8 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 			</div>
 
 			<div className='flex flex-wrap gap-3'>
-				{!readOnly && <NoHardwareToggle isActive={noRam} onToggle={setRamAbsence} label='No tiene / No trae RAM' />}
-				{!readOnly && <NoHardwareToggle isActive={noStorage} onToggle={setStorageAbsence} label='No tiene disco / No trae disco' />}
-				{noRam && <span className='text-sm font-semibold text-red-700 dark:text-red-300'>Equipo sin memoria RAM</span>}
-				{noStorage && <span className='text-sm font-semibold text-red-700 dark:text-red-300'>Equipo sin disco de almacenamiento</span>}
+				{!readOnly && <NoHardwareToggle isActive={noRam} onToggle={setRamAbsence} hardwareLabel='RAM' />}
+				{!readOnly && <NoHardwareToggle isActive={noStorage} onToggle={setStorageAbsence} hardwareLabel='disco' />}
 			</div>
 			<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 				{/* Memory RAM Card */}

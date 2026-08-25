@@ -1,32 +1,29 @@
 import React from 'react';
-import Button from '@/components/ui/Button';
-import Icon from '@/components/icon/Icon';
+import Checkbox from '@/components/form/Checkbox';
 
 interface NoHardwareToggleProps {
 	isActive: boolean;
-	label: string;
+	hardwareLabel: string;
 	onToggle: (active: boolean) => void;
 	disabled?: boolean;
 }
 
 const NoHardwareToggle: React.FC<NoHardwareToggleProps> = ({
 	isActive,
-	label,
+	hardwareLabel,
 	onToggle,
 	disabled = false,
 }) => (
-	<Button
-		type='button'
-		variant='outline'
-		color={isActive ? 'red' : 'zinc'}
-		size='sm'
-		isActive={isActive}
+	<Checkbox
+		variant='switch'
+		dimension='sm'
+		color='blue'
+		checked={!isActive}
 		disabled={disabled}
-		aria-pressed={isActive}
-		onClick={() => onToggle(!isActive)}>
-		<Icon icon={isActive ? 'HeroXMark' : 'HeroExclamationTriangle'} className='mr-1 h-4 w-4' />
-		{label}
-	</Button>
+		inputClassName={isActive ? '!border-red-500 !bg-red-500' : undefined}
+		label={isActive ? `No tiene ${hardwareLabel}` : `Tiene ${hardwareLabel}`}
+		onChange={(event) => onToggle(!event.target.checked)}
+	/>
 );
 
 export default NoHardwareToggle;
