@@ -5,6 +5,10 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
 import type { RootState } from '@/store/rootReducer';
+import {
+	filterTechnicalReviewPayload,
+	HARDWARE_NULLABLE_FIELDS,
+} from '@/utils/technicalReviewHardware';
 import type {
 	IItem,
 	UpdateItemDetailsPayload,
@@ -134,14 +138,14 @@ export const updateItemDetails = createAsyncThunk<
 			// The backend rejects nulls for fields with allowed_values constraints
 			// (e.g. cover_condition, charger_status).
 			// Algunos campos sí pueden ser null o vacíos explícitamente (ej: borrar observaciones)
-			const NULLABLE_FIELDS = ['observations', 'extra_attributes', 'battery_health'];
+			const NULLABLE_FIELDS = [
+				'observations',
+				'extra_attributes',
+				'battery_health',
+				...HARDWARE_NULLABLE_FIELDS,
+			];
 
-			const cleanData = Object.fromEntries(
-				Object.entries(filteredData).filter(([k, v]) => {
-					if (NULLABLE_FIELDS.includes(k)) return v !== undefined;
-					return v !== null && v !== undefined && v !== '';
-				}),
-			);
+			const cleanData = filterTechnicalReviewPayload({ ...filteredData }, NULLABLE_FIELDS);
 
 			const response = await ApiService.fetchData<{ data?: any }>({
 				url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/details`),

@@ -17,6 +17,11 @@ import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
 import InputUnitSelector from '../../../ui/InputUnitSelector';
 import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
 import NoHardwareToggle from '../../shared/NoHardwareToggle';
+import {
+	getHardwareVisualValidationMessage,
+	useHardwareAbsence,
+} from '../../shared/useHardwareAbsence';
+import HardwareAbsenceStatus from '../../shared/HardwareAbsenceStatus';
 
 const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	control,
@@ -30,21 +35,7 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	const storageTech = watch('storage_technology');
 	const noRam = watch('has_no_ram') === true;
 	const noStorage = watch('has_no_storage') === true;
-	const setRamAbsence = (active: boolean) => {
-		setValue('has_no_ram', active, { shouldDirty: true, shouldValidate: true });
-		if (active) {
-			setValue('ram_size', '', { shouldDirty: true });
-			setValue('ram_slots', '', { shouldDirty: true });
-			setValue('ram_type', undefined, { shouldDirty: true });
-		}
-	};
-	const setStorageAbsence = (active: boolean) => {
-		setValue('has_no_storage', active, { shouldDirty: true, shouldValidate: true });
-		if (active) {
-			setValue('storage_size', '', { shouldDirty: true });
-			setValue('storage_technology', undefined, { shouldDirty: true });
-		}
-	};
+	const { setRamAbsence, setStorageAbsence } = useHardwareAbsence(setValue);
 
 	return (
 		<div className='space-y-6'>
@@ -59,12 +50,12 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 							const storageSize = watch('storage_size');
 							const storageTech = watch('storage_technology');
 
-							if (
-								(!noRam && (!ramSize || !ramSlots || !ramType)) ||
-								(!noStorage && (!storageSize || !storageTech))
-							) {
+							const missingRam = !noRam && (!ramSize || !ramSlots || !ramType);
+							const missingStorage = !noStorage && (!storageSize || !storageTech);
+
+							if (missingRam || missingStorage) {
 								toast.warning(
-									'Debes completar la Memoria RAM y el Almacenamiento, ya que pueden ser revisados visualmente.',
+									getHardwareVisualValidationMessage(missingRam, missingStorage),
 								);
 								return false;
 							}
@@ -140,6 +131,7 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 						hardwareLabel='disco'
 					/>
 				)}
+				{readOnly && <HardwareAbsenceStatus hasNoRam={noRam} hasNoStorage={noStorage} />}
 			</div>
 			<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 				{/* Memory RAM Card */}
