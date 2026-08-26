@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import * as wooService from '@/services/woocommerceProductsService';
+import extractApiErrorMessage from '@/utils/apiError.utils';
 import type {
 	WooCompareParams,
 	WooCandidatesParams,
@@ -69,7 +70,7 @@ export const useWooLink = (
 				);
 				return;
 			}
-			toast.error(extractErrorMessage(error));
+			toast.error(extractApiErrorMessage(error));
 		},
 	});
 };
@@ -89,7 +90,7 @@ export const useWooUnlink = (
 			});
 		},
 		onError: (error: unknown) => {
-			toast.error(extractErrorMessage(error));
+			toast.error(extractApiErrorMessage(error));
 		},
 	});
 };
@@ -99,32 +100,6 @@ type UnknownRecord = Record<string, unknown>;
 const asRecord = (value: unknown): UnknownRecord | undefined => {
 	if (value && typeof value === 'object' && !Array.isArray(value)) return value as UnknownRecord;
 	return undefined;
-};
-
-export const extractErrorMessage = (error: unknown): string => {
-	const responseRecord = asRecord(asRecord(error)?.response);
-	const dataRecord = asRecord(responseRecord?.data);
-
-	const errors = asRecord(dataRecord?.errors);
-	if (errors) {
-		const seen = new Set<string>();
-		const msgs: string[] = [];
-		for (const fieldMsgs of Object.values(errors)) {
-			if (!Array.isArray(fieldMsgs)) continue;
-			for (const m of fieldMsgs) {
-				if (typeof m === 'string' && m.trim() && !seen.has(m)) {
-					seen.add(m);
-					msgs.push(m);
-				}
-			}
-		}
-		if (msgs.length > 0) return msgs.join(' · ');
-	}
-
-	const message = dataRecord?.message;
-	if (typeof message === 'string' && message.trim()) return message;
-	if (error instanceof Error && error.message.trim()) return error.message;
-	return 'Error inesperado';
 };
 
 export const extractConflictData = (

@@ -17,6 +17,7 @@ import DetalleCategoria from './components/modals/DetalleCategoria';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import extractApiErrorMessage from '@/utils/apiError.utils';
 import { useCategorias } from './hooks/useCategorias';
 import type { ICategory, ICategoryFilters } from './types';
 import { buildCategoryTableRows } from '@/components/helper/category.helper';
@@ -161,8 +162,8 @@ const Categorias: React.FC = () => {
 		try {
 			await toggleCategoryStatus(category);
 			toast.info(`Categoria ${category.is_active ? 'desactivada' : 'activada'}`);
-		} catch (err: any) {
-			toast.error(err?.message ?? 'No se pudo cambiar el estado');
+		} catch (caughtError: unknown) {
+			toast.error(extractApiErrorMessage(caughtError, 'No se pudo cambiar el estado'));
 		}
 	};
 
