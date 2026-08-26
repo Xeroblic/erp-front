@@ -146,6 +146,7 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 								value={opt.value}
 								isSelected={ramType === opt.value}
 								onClick={() => !readOnly && setValue('ram_type', opt.value)}
+								disabled={readOnly}
 							/>
 						))}
 					</div>
@@ -221,6 +222,7 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 										opt.value as AioFormData['storage_technology'],
 									)
 								}
+								disabled={readOnly}
 							/>
 						))}
 					</div>

@@ -143,6 +143,7 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 								value={opt.value}
 								isSelected={ramType === opt.value}
 								onClick={() => !readOnly && setValue('ram_type', opt.value)}
+								disabled={readOnly}
 							/>
 						))}
 					</div>
@@ -213,6 +214,7 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 								onClick={() =>
 									!readOnly && setValue('storage_technology', opt.value)
 								}
+								disabled={readOnly}
 							/>
 						))}
 					</div>

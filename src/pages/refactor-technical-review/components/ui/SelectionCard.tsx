@@ -43,6 +43,8 @@ export interface SelectionCardProps {
 	className?: string;
 	/** Variante de visualización. Default: 'default' */
 	variant?: 'default' | 'compact';
+	/** Impide la interacción cuando el formulario está en modo lectura. */
+	disabled?: boolean;
 }
 
 // ─── Color Tokens ─────────────────────────────────────────────────────────────
@@ -99,12 +101,12 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
 	icon,
 	className = '',
 	variant = 'default',
+	disabled = false,
 }) => {
 	const tokens = COLOR_STYLES[color];
 	const stateClass = isSelected ? tokens.selected : tokens.idle;
-	const interactionClass = isSelected
-		? 'z-0 scale-100'
-		: 'z-0 scale-100 hover:-translate-y-[1px]';
+	const interactionClass =
+		isSelected || disabled ? 'z-0 scale-100' : 'z-0 scale-100 hover:-translate-y-[1px]';
 
 	// Base styles based on variant
 	const isCompact = variant === 'compact';
@@ -121,7 +123,8 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
 			aria-checked={isSelected}
 			data-value={value}
 			onClick={onClick}
-			className={`relative cursor-pointer rounded-xl border-2 text-center transition-all duration-200 ${interactionClass} ${stateClass} flex flex-col items-center justify-center ${paddingClass} ${minHeightClass} ${gapClass} ${className}`}>
+			disabled={disabled}
+			className={`relative cursor-pointer rounded-xl border-2 text-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${interactionClass} ${stateClass} flex flex-col items-center justify-center ${paddingClass} ${minHeightClass} ${gapClass} ${className}`}>
 			{icon && (
 				<Icon
 					icon={icon}

@@ -31,6 +31,7 @@ interface RenderOptions {
 	onToggleAbsence?: (absent: boolean) => void;
 	hardwareLabel?: string;
 	readOnly?: boolean;
+	isRequired?: boolean;
 }
 
 const renderHardwareCard = (options: RenderOptions = {}) => {
@@ -41,6 +42,7 @@ const renderHardwareCard = (options: RenderOptions = {}) => {
 		onToggleAbsence: options.onToggleAbsence ?? vi.fn(),
 		hardwareLabel: options.hardwareLabel ?? 'RAM',
 		readOnly: options.readOnly ?? false,
+		isRequired: options.isRequired ?? false,
 		children: <div data-testid='hardware-fields'>Campos de hardware</div>,
 	};
 	return render(
@@ -50,7 +52,8 @@ const renderHardwareCard = (options: RenderOptions = {}) => {
 			isAbsent={props.isAbsent}
 			onToggleAbsence={props.onToggleAbsence}
 			hardwareLabel={props.hardwareLabel}
-			readOnly={props.readOnly}>
+			readOnly={props.readOnly}
+			isRequired={props.isRequired}>
 			{props.children}
 		</HardwareCard>,
 	);
@@ -102,10 +105,12 @@ describe('HardwareCard', () => {
 			title: 'Almacenamiento',
 			accent: 'purple',
 			hardwareLabel: 'disco',
+			isRequired: true,
 		});
 
 		const title = screen.getByText('Almacenamiento');
 		expect(title).toHaveClass('text-purple-800');
+		expect(screen.getByText('*')).toBeInTheDocument();
 		expect(screen.getByRole('checkbox', { name: 'Tiene disco' })).toBeInTheDocument();
 	});
 });

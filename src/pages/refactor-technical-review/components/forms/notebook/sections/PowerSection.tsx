@@ -12,7 +12,10 @@ import {
 	BATTERY_STATUS_OPTIONS,
 	CHARGER_STATUS_OPTIONS,
 } from '../../../constants/notebook/notebook.options';
-import type { BatteryStatusValue } from '../../../constants/notebook/notebook.options';
+import type {
+	BatteryStatusValue,
+	ChargerStatusValue,
+} from '../../../constants/notebook/notebook.options';
 
 /** Color semántico de la tarjeta de estado de batería según su valor. */
 const BATTERY_COLOR_BY_STATUS: Record<BatteryStatusValue, SelectionCardColor> = {
@@ -25,11 +28,16 @@ const BATTERY_COLOR_BY_STATUS: Record<BatteryStatusValue, SelectionCardColor> = 
 
 const getBatteryColor = (value: BatteryStatusValue) => BATTERY_COLOR_BY_STATUS[value];
 
-const getChargerStatusColor = (value: string): SelectionCardColor => {
-	if (value === 'buen_estado') return 'green';
-	if (value.includes('broken') || value.includes('mal')) return 'red';
-	return 'gray';
+const CHARGER_COLOR_BY_STATUS: Record<ChargerStatusValue, SelectionCardColor> = {
+	buen_estado: 'green',
+	cable_en_mal_estado: 'red',
+	no_corresponde_a_equipo: 'gray',
+	no_incluye: 'gray',
+	broken_charger: 'red',
+	broken_port: 'red',
 };
+
+const getChargerStatusColor = (value: ChargerStatusValue) => CHARGER_COLOR_BY_STATUS[value];
 
 /** Oculta las flechas nativas de los input numéricos para que no choquen con sufijos (% / W). */
 const NO_NATIVE_SPINNERS =

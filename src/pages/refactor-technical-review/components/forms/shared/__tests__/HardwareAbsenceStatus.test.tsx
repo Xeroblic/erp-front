@@ -20,9 +20,9 @@ describe('HardwareAbsenceStatus', () => {
 		expect(screen.getByText('No tiene disco')).toBeInTheDocument();
 	});
 
-	it('does not render messages for other hardware labels', () => {
-		render(<HardwareAbsenceStatus hardwareLabel='RAM' />);
+	it('renders exactly the message for the received hardware label', () => {
+		render(<HardwareAbsenceStatus hardwareLabel='Unidad óptica' />);
 
-		expect(screen.queryByText(/Almacenamiento/)).not.toBeInTheDocument();
+		expect(screen.getByText('No tiene Unidad óptica')).toBeInTheDocument();
 	});
 });

@@ -54,10 +54,10 @@ const HardwareCard: React.FC<HardwareCardProps> = ({
 				isAbsent ? 'opacity-60 saturate-[0.85]' : 'hover:cursor-pointer'
 			}`}>
 			<div className='mb-3 flex items-center justify-between gap-3'>
-				<label className={`block text-sm font-bold ${tokens.title}`}>
+				<h4 className={`text-sm font-bold ${tokens.title}`}>
 					{title}
 					{isRequired && <span className='text-red-500'> *</span>}
-				</label>
+				</h4>
 				{!readOnly && (
 					<NoHardwareToggle
 						isActive={isAbsent}

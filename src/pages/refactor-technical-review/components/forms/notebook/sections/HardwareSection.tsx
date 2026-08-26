@@ -145,6 +145,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								value={opt.value}
 								isSelected={ramType === opt.value}
 								onClick={() => !readOnly && setValue('ram_type', opt.value)}
+								disabled={readOnly}
 							/>
 						))}
 					</div>
@@ -216,6 +217,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								onClick={() =>
 									!readOnly && setValue('storage_technology', opt.value)
 								}
+								disabled={readOnly}
 							/>
 						))}
 					</div>
