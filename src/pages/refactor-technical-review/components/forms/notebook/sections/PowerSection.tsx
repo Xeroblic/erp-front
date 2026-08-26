@@ -1,33 +1,39 @@
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import Input from '@/components/form/Input';
+import Icon from '@/components/icon/Icon';
+import RangeSlider from '@/components/ui/RangeSlider';
+import { SelectionCard } from '../../../ui/SelectionCard';
+import type { SelectionCardColor } from '../../../ui/SelectionCard';
+import { YesNoSelector } from '../../../ui/YesNoSelector';
 import type { FormSectionProps } from '../../shared/types';
 import type { NotebookFormData } from '../../../validation/notebook.schema';
-import { getNotebookLabel } from '../../../translations/notebook.labels';
-import {
-	NOTEBOOK_HINTS,
-	NOTEBOOK_PLACEHOLDERS,
-	NOTEBOOK_WARNINGS,
-} from '../../../constants/notebook/notebook.hints';
-import { SelectionCard } from '../../../ui/SelectionCard';
-import { YesNoSelector } from '../../../ui/YesNoSelector';
 import {
 	BATTERY_STATUS_OPTIONS,
 	CHARGER_STATUS_OPTIONS,
 } from '../../../constants/notebook/notebook.options';
-import Icon from '@/components/icon/Icon';
-import RangeSlider from '@/components/ui/RangeSlider';
 import type { BatteryStatusValue } from '../../../constants/notebook/notebook.options';
 
 /** Color semántico de la tarjeta de estado de batería según su valor. */
-const getBatteryColor = (value: BatteryStatusValue) =>
-	value === 'excellent' || value === 'good'
-		? 'green'
-		: value === 'fair'
-			? 'orange'
-			: value === 'poor'
-				? 'red'
-				: 'gray';
+const BATTERY_COLOR_BY_STATUS: Record<BatteryStatusValue, SelectionCardColor> = {
+	excellent: 'green',
+	good: 'green',
+	fair: 'orange',
+	poor: 'red',
+	no_battery: 'gray',
+};
+
+const getBatteryColor = (value: BatteryStatusValue) => BATTERY_COLOR_BY_STATUS[value];
+
+const getChargerStatusColor = (value: string): SelectionCardColor => {
+	if (value === 'buen_estado') return 'green';
+	if (value.includes('broken') || value.includes('mal')) return 'red';
+	return 'gray';
+};
+
+/** Oculta las flechas nativas de los input numéricos para que no choquen con sufijos (% / W). */
+const NO_NATIVE_SPINNERS =
+	'[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
 const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	control,
@@ -94,7 +100,6 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 													step={5}
 													unit='W'
 													disabled={readOnly}
-													className='h-2'
 												/>
 											</div>
 											<div className='relative w-20'>
@@ -104,19 +109,15 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 													value={field.value || ''}
 													onChange={(e) => field.onChange(e.target.value)}
 													placeholder='0'
-													className='pr-6 text-center text-sm'
+													className={`pr-7 text-center text-sm ${NO_NATIVE_SPINNERS}`}
 													disabled={readOnly}
 													min={0}
 													max={300}
 												/>
-												<span className='absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400'>
+												<span className='pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400'>
 													W
 												</span>
 											</div>
-										</div>
-										<div className='flex justify-between text-[10px] text-zinc-400'>
-											<span>0W</span>
-											<span>300W</span>
 										</div>
 									</div>
 								)}
@@ -141,14 +142,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 										}
 										variant='default'
 										className='text-xs'
-										color={
-											opt.value === 'buen_estado'
-												? 'green'
-												: opt.value.includes('broken') ||
-													  opt.value.includes('mal')
-													? 'red'
-													: 'gray'
-										}
+										color={getChargerStatusColor(opt.value)}
 									/>
 								))}
 							</div>
@@ -237,12 +231,12 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 												});
 											}}
 											placeholder='0'
-											className='h-16 text-center text-3xl font-bold text-zinc-700 dark:text-zinc-200'
+											className={`h-16 pr-9 text-center text-3xl font-bold text-zinc-700 dark:text-zinc-200 ${NO_NATIVE_SPINNERS}`}
 											disabled={readOnly}
 											min={0}
 											max={100}
 										/>
-										<span className='absolute right-4 top-1/2 -translate-y-1/2 text-xl font-bold text-zinc-400'>
+										<span className='pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xl font-bold text-zinc-400'>
 											%
 										</span>
 									</div>
@@ -345,12 +339,12 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 															);
 														}}
 														placeholder='0'
-														className='h-16 text-center text-3xl font-bold text-zinc-700 dark:text-zinc-200'
+														className={`h-16 pr-9 text-center text-3xl font-bold text-zinc-700 dark:text-zinc-200 ${NO_NATIVE_SPINNERS}`}
 														disabled={readOnly}
 														min={0}
 														max={100}
 													/>
-													<span className='absolute right-4 top-1/2 -translate-y-1/2 text-xl font-bold text-zinc-400'>
+													<span className='pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xl font-bold text-zinc-400'>
 														%
 													</span>
 												</div>

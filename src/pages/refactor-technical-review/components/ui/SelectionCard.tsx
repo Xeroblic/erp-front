@@ -16,7 +16,7 @@ import type { TIcons } from '@/types/icons.type';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SelectionCardColor =
+export type SelectionCardColor =
 	| 'green'
 	| 'red'
 	| 'yellow'
