@@ -16,25 +16,8 @@ export interface HardwareAbsenceSetters<TFieldValues extends HardwareAbsenceFiel
 		value: boolean & NonNullable<TFieldValues['has_no_ram']>,
 		options: SetValueConfig,
 	) => void;
-	setRamSize: (
-		value: '' & NonNullable<TFieldValues['ram_size']>,
-		options: SetValueConfig,
-	) => void;
-	setRamSlots: (
-		value: '' & NonNullable<TFieldValues['ram_slots']>,
-		options: SetValueConfig,
-	) => void;
-	setRamType: (value: undefined & TFieldValues['ram_type'], options: SetValueConfig) => void;
 	setHasNoStorage: (
 		value: boolean & NonNullable<TFieldValues['has_no_storage']>,
-		options: SetValueConfig,
-	) => void;
-	setStorageSize: (
-		value: '' & NonNullable<TFieldValues['storage_size']>,
-		options: SetValueConfig,
-	) => void;
-	setStorageTechnology: (
-		value: undefined & TFieldValues['storage_technology'],
 		options: SetValueConfig,
 	) => void;
 }
@@ -58,12 +41,7 @@ export const getHardwareVisualValidationMessage = (
 
 export const useHardwareAbsence = <TFieldValues extends HardwareAbsenceFields>({
 	setHasNoRam,
-	setRamSize,
-	setRamSlots,
-	setRamType,
 	setHasNoStorage,
-	setStorageSize,
-	setStorageTechnology,
 }: HardwareAbsenceSetters<TFieldValues>) => {
 	const setRamAbsence = useCallback(
 		(active: boolean) => {
@@ -71,13 +49,8 @@ export const useHardwareAbsence = <TFieldValues extends HardwareAbsenceFields>({
 				shouldDirty: true,
 				shouldValidate: true,
 			});
-			if (active) {
-				setRamSize('', { shouldDirty: true, shouldValidate: false });
-				setRamSlots('', { shouldDirty: true, shouldValidate: false });
-				setRamType(undefined, { shouldDirty: true, shouldValidate: false });
-			}
 		},
-		[setHasNoRam, setRamSize, setRamSlots, setRamType],
+		[setHasNoRam],
 	);
 
 	const setStorageAbsence = useCallback(
@@ -86,12 +59,8 @@ export const useHardwareAbsence = <TFieldValues extends HardwareAbsenceFields>({
 				shouldDirty: true,
 				shouldValidate: true,
 			});
-			if (active) {
-				setStorageSize('', { shouldDirty: true, shouldValidate: false });
-				setStorageTechnology(undefined, { shouldDirty: true, shouldValidate: false });
-			}
 		},
-		[setHasNoStorage, setStorageSize, setStorageTechnology],
+		[setHasNoStorage],
 	);
 
 	return { setRamAbsence, setStorageAbsence };

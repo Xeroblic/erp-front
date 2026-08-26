@@ -37,12 +37,21 @@ describe('NoHardwareToggle', () => {
 		expect(onToggle).toHaveBeenCalledWith(true);
 	});
 
-	it('keeps a stable accessible label and exposes the active absence state', () => {
+	it('keeps a stable accessible label and highlights the active absence state', () => {
 		render(<NoHardwareToggle isActive hardwareLabel='RAM' onToggle={vi.fn()} />);
 
 		const checkbox = screen.getByRole('checkbox', { name: 'Tiene RAM' });
 		expect(checkbox).not.toBeChecked();
 		expect(checkbox).toHaveClass('!border-red-500', '!bg-red-500');
-		expect(screen.getByText('No tiene RAM')).toBeInTheDocument();
+		expect(screen.queryByText('No tiene RAM')).not.toBeInTheDocument();
+	});
+
+	it('restores the presence state when toggled back on', () => {
+		const onToggle = vi.fn();
+		render(<NoHardwareToggle isActive hardwareLabel='disco' onToggle={onToggle} />);
+		const checkbox = screen.getByRole('checkbox', { name: 'Tiene disco' });
+		expect(checkbox).not.toBeChecked();
+		fireEvent.click(checkbox);
+		expect(onToggle).toHaveBeenCalledWith(false);
 	});
 });
