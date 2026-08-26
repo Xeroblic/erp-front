@@ -34,12 +34,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	const noStorage = watch('has_no_storage') === true;
 	const { setRamAbsence, setStorageAbsence } = useHardwareAbsence<NotebookFormData>({
 		setHasNoRam: (value, options) => setValue('has_no_ram', value, options),
-		setRamSize: (value, options) => setValue('ram_size', value, options),
-		setRamSlots: (value, options) => setValue('ram_slots', value, options),
-		setRamType: (value, options) => setValue('ram_type', value, options),
 		setHasNoStorage: (value, options) => setValue('has_no_storage', value, options),
-		setStorageSize: (value, options) => setValue('storage_size', value, options),
-		setStorageTechnology: (value, options) => setValue('storage_technology', value, options),
 	});
 
 	return (

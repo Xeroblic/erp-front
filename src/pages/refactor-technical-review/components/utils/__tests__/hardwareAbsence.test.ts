@@ -18,10 +18,15 @@ describe('hardware absence flags', () => {
 		['desktop', desktopSchema],
 		['aio', aioSchema],
 	])('%s allows absent hardware dependencies', async (_type, schema) => {
-		await expect(schema.validateAt('ram_type', { has_no_ram: true })).resolves.toBeUndefined();
 		await expect(
-			schema.validateAt('storage_technology', { has_no_storage: true }),
-		).resolves.toBeUndefined();
+			schema.validateAt('ram_type', { has_no_ram: true, ram_type: 'DDR4' }),
+		).resolves.toBe('DDR4');
+		await expect(
+			schema.validateAt('storage_technology', {
+				has_no_storage: true,
+				storage_technology: 'SSD',
+			}),
+		).resolves.toBe('SSD');
 		await expect(schema.validateAt('ram_size', { has_no_ram: false })).rejects.toThrow(
 			'La RAM es obligatoria',
 		);

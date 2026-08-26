@@ -20,25 +20,29 @@ describe('useHardwareAbsence', () => {
 		);
 	});
 
-	it('clears every dependent field when RAM and storage become absent', () => {
-		const setHasNoRam = vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setHasNoRam']>();
-		const setRamSize = vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setRamSize']>();
-		const setRamSlots = vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setRamSlots']>();
-		const setRamType = vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setRamType']>();
-		const setHasNoStorage =
-			vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setHasNoStorage']>();
-		const setStorageSize =
-			vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setStorageSize']>();
-		const setStorageTechnology =
-			vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setStorageTechnology']>();
+	it('preserves the hardware values when absence is activated and reverted', () => {
+		const values = {
+			has_no_ram: false,
+			has_no_storage: false,
+			ram_size: '8GB',
+			ram_slots: '2',
+			ram_type: 'DDR4',
+			storage_size: '512GB',
+			storage_technology: 'ssd',
+		};
+		const setHasNoRam = vi.fn<HardwareAbsenceSetters<HardwareAbsenceFields>['setHasNoRam']>(
+			(value) => {
+				values.has_no_ram = value;
+			},
+		);
+		const setHasNoStorage = vi.fn<
+			HardwareAbsenceSetters<HardwareAbsenceFields>['setHasNoStorage']
+		>((value) => {
+			values.has_no_storage = value;
+		});
 		const setters: HardwareAbsenceSetters<HardwareAbsenceFields> = {
 			setHasNoRam,
-			setRamSize,
-			setRamSlots,
-			setRamType,
 			setHasNoStorage,
-			setStorageSize,
-			setStorageTechnology,
 		};
 		const { result } = renderHook(() => useHardwareAbsence(setters));
 
@@ -51,29 +55,33 @@ describe('useHardwareAbsence', () => {
 			shouldDirty: true,
 			shouldValidate: true,
 		});
-		expect(setRamSize).toHaveBeenCalledWith('', {
-			shouldDirty: true,
-			shouldValidate: false,
-		});
-		expect(setRamSlots).toHaveBeenCalledWith('', {
-			shouldDirty: true,
-			shouldValidate: false,
-		});
-		expect(setRamType).toHaveBeenCalledWith(undefined, {
-			shouldDirty: true,
-			shouldValidate: false,
-		});
 		expect(setHasNoStorage).toHaveBeenCalledWith(true, {
 			shouldDirty: true,
 			shouldValidate: true,
 		});
-		expect(setStorageSize).toHaveBeenCalledWith('', {
-			shouldDirty: true,
-			shouldValidate: false,
+		expect(values).toMatchObject({
+			has_no_ram: true,
+			has_no_storage: true,
+			ram_size: '8GB',
+			ram_slots: '2',
+			ram_type: 'DDR4',
+			storage_size: '512GB',
+			storage_technology: 'ssd',
 		});
-		expect(setStorageTechnology).toHaveBeenCalledWith(undefined, {
-			shouldDirty: true,
-			shouldValidate: false,
+
+		act(() => {
+			result.current.setRamAbsence(false);
+			result.current.setStorageAbsence(false);
+		});
+
+		expect(values).toEqual({
+			has_no_ram: false,
+			has_no_storage: false,
+			ram_size: '8GB',
+			ram_slots: '2',
+			ram_type: 'DDR4',
+			storage_size: '512GB',
+			storage_technology: 'ssd',
 		});
 	});
 });
