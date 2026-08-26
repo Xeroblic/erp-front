@@ -139,6 +139,15 @@ export const ERP_PERMISSIONS = {
 		DELETE: 'delete-warehouse',
 	},
 
+	WITHDRAWALS: {
+		VIEW: 'view-withdrawal',
+		CREATE: 'create-withdrawal',
+		UPDATE: 'edit-withdrawal',
+		CONFIRM: 'confirm-withdrawal',
+		RETURN: 'return-withdrawal',
+		DELETE: 'delete-withdrawal',
+	},
+
 	REPORTS: {
 		VIEW: 'reports.view',
 		SALES_DASHBOARD: 'reports.sales_dashboard',
