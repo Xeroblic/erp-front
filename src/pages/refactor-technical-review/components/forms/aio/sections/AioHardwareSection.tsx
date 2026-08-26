@@ -133,7 +133,7 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 					readOnly={readOnly}>
 					{/* RAM Type Selection Cards */}
 					<label className='mb-2 block text-xs font-semibold text-zinc-500'>Tipo</label>
-					<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-4'>
+					<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-5'>
 						{RAM_TYPE_OPTIONS.map((opt) => (
 							<SelectionCard
 								key={opt.value}

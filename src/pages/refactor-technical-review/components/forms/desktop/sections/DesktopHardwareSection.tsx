@@ -124,6 +124,7 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 				<HardwareCard
 					title='Memoria RAM'
 					accent='blue'
+					isRequired
 					isAbsent={noRam}
 					onToggleAbsence={setRamAbsence}
 					hardwareLabel='RAM'
