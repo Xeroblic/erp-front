@@ -544,13 +544,13 @@ const DefaultAsideTemplate = () => {
 					 * ====================== */}
 					<AuthorityCheckNav
 						authority={Pages.catalogs.authority}
-						roles={Pages.catalogs.roles}
+						requireAll={Pages.catalogs.requireAll}
 						userAuthority={userAuthority}>
 						<NavTitle>Catálogos</NavTitle>
 					</AuthorityCheckNav>
 					<AuthorityCheckNav
 						authority={Pages.catalogs.authority}
-						roles={Pages.catalogs.roles}
+						requireAll={Pages.catalogs.requireAll}
 						userAuthority={userAuthority}>
 						<NavCollapse
 							key='catalogos-nav'
@@ -562,7 +562,6 @@ const DefaultAsideTemplate = () => {
 							{/* Productos */}
 							<AuthorityCheckNav
 								authority={Pages.catalogs.subPages.products.authority}
-								roles={Pages.catalogs.subPages.products.roles}
 								userAuthority={userAuthority}
 								requireAll={Pages.catalogs.subPages.products.requireAll}>
 								<NavItem

@@ -830,23 +830,10 @@ export const privatePages = {
 		to: '/catalogos',
 		text: 'Catálogos',
 		icon: 'DuoArchive',
+		// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`): el
+		// allowlist de nombres de rol ocultaba la sección a perfiles que sí tienen
+		// `view-product`, que es lo que realmente habilita el catálogo.
 		authority: ['view-product'],
-		roles: [
-			'super-admin',
-			'admin',
-			'company-admin',
-			'subsidiary-admin',
-			'branch-admin',
-			'catalog-admin',
-			'company-supervisor',
-			'manager',
-			'employee',
-			'technician',
-			'warehouse-employee',
-			'warehouse-manager',
-			'salesperson',
-			'after-sales',
-		],
 		requireAll: false,
 		subPages: {
 			products: {
@@ -854,23 +841,9 @@ export const privatePages = {
 				to: '/catalogos/productos',
 				text: 'Productos',
 				icon: 'DuoPixels',
+				// Mismo permiso que ya protege la ruta en `contentRoutes`; sin el
+				// allowlist de roles, que dejaba el ítem oculto pese al permiso.
 				authority: ['view-product'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'catalog-admin',
-					'company-supervisor',
-					'manager',
-					'employee',
-					'technician',
-					'warehouse-employee',
-					'warehouse-manager',
-					'salesperson',
-					'after-sales',
-				],
 				requireAll: false,
 			},
 			productsDetail: {
