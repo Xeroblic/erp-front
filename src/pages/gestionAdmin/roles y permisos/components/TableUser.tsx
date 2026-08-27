@@ -1,7 +1,12 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
+import {
+	createColumnHelper,
+	type ColumnDef,
+	type OnChangeFn,
+	type PaginationState,
+} from '@tanstack/react-table';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
@@ -10,7 +15,6 @@ import ApiService from '@/services/ApiService';
 import { toggleUserStatus, type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { usePermissionLabels } from '@/hooks/usePermissionLabels';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchUsuariosConRolesPerms } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import Tooltip from '@/components/ui/Tooltip';
 import { zinc } from 'tailwindcss/colors';
@@ -33,6 +37,11 @@ type Props = {
 	error?: string | null;
 	globalFilter: string;
 	setGlobalFilter: (v: string) => void;
+	pagination: PaginationState;
+	onPaginationChange: OnChangeFn<PaginationState>;
+	pageCount: number;
+	totalResults: number;
+	onRefresh: () => void;
 };
 
 const TableUser: React.FC<Props> = ({
@@ -41,6 +50,11 @@ const TableUser: React.FC<Props> = ({
 	error,
 	globalFilter,
 	setGlobalFilter,
+	pagination,
+	onPaginationChange,
+	pageCount,
+	totalResults,
+	onRefresh,
 }) => {
 	const navigate = useNavigate();
 	const currentUser = useAppSelector((s) => s.auth.user);
@@ -65,12 +79,11 @@ const TableUser: React.FC<Props> = ({
 				toggleUserStatus({ userId: userId, status: currentStatus }),
 			);
 			if (response.meta.requestStatus === 'fulfilled') {
-				const data = await dispatch(fetchUsuariosConRolesPerms());
-				console.log(data);
+				onRefresh();
+				toast.success('Estado del usuario cambiado exitosamente');
 			} else {
-				toast.error(error + ' ' + 'No se ha podido obtener los datos de la tabla');
+				toast.error(error ?? 'No se ha podido actualizar el estado del usuario');
 			}
-			toast.success('Estado del usuario cambiado exitosamente');
 		} catch (err) {
 			console.error('Error al cambiar el estado del usuario:', err);
 		}
@@ -285,10 +298,15 @@ const TableUser: React.FC<Props> = ({
 					? `Error: ${error ?? 'Error desconocido'}`
 					: 'No se encontraron usuarios'
 			}
-			searchPlaceholder='Buscar usuario por nombre, email, cargo...'
+			searchPlaceholder='Buscar usuario por nombre, correo o RUT...'
 			searchValue={globalFilter}
 			onSearchChange={setGlobalFilter}
 			pageSize={10}
+			manualPagination
+			paginationState={pagination}
+			onPaginationChange={onPaginationChange}
+			pageCount={pageCount}
+			totalResults={totalResults}
 		/>
 	);
 };

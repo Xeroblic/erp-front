@@ -1,16 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
-import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody } from '@/components/ui/Card';
-import Input from '@/components/form/Input';
-import { fetchUsuariosConRolesPerms } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
+import {
+	fetchUsuariosConRolesPerms,
+	type FetchUsuariosConRolesPermsParams,
+} from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 import type { UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
-import TableUser from './components/TableUser';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
+import TableUser from './components/TableUser';
+import useRolesPermisosPagination from './hooks/useRolesPermisosPagination';
 
 type UserRow = UserWithDetails & {
 	displayName: string;
@@ -24,18 +26,17 @@ type UserRow = UserWithDetails & {
 
 const RolesPermisos: React.FC = () => {
 	const dispatch = useAppDispatch();
-	const { data: usuarios, loading, error } = useAppSelector((s) => s.rolesPermisos.users);
-	const listStatus: 'idle' | 'loading' | 'failed' = loading
-		? 'loading'
-		: error
-			? 'failed'
-			: 'idle';
-
-	const [globalFilter, setGlobalFilter] = useState('');
-
-	useEffect(() => {
-		dispatch(fetchUsuariosConRolesPerms());
-	}, [dispatch]);
+	const { data: usuarios, meta, loading, error } = useAppSelector((s) => s.rolesPermisos.users);
+	let listStatus: 'idle' | 'loading' | 'failed' = 'idle';
+	if (loading) listStatus = 'loading';
+	else if (error) listStatus = 'failed';
+	const fetchUsers = useCallback(
+		(params: FetchUsuariosConRolesPermsParams) => {
+			void dispatch(fetchUsuariosConRolesPerms(params));
+		},
+		[dispatch],
+	);
+	const { search, pagination, refresh } = useRolesPermisosPagination({ onFetch: fetchUsers });
 
 	const tableData: UserRow[] = useMemo(() => {
 		if (!usuarios) return [];
@@ -110,8 +111,13 @@ const RolesPermisos: React.FC = () => {
 							tableData={tableData}
 							status={listStatus}
 							error={error}
-							globalFilter={globalFilter}
-							setGlobalFilter={setGlobalFilter}
+							globalFilter={search.value}
+							setGlobalFilter={search.onChange}
+							pagination={pagination.state}
+							onPaginationChange={pagination.onChange}
+							pageCount={meta?.last_page ?? 1}
+							totalResults={meta?.total ?? 0}
+							onRefresh={refresh}
 						/>
 					</CardBody>
 				</Card>
