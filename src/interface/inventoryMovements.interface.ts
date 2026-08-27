@@ -28,10 +28,7 @@ export interface IInventoryMovement {
 		name: string;
 		email: string;
 	};
-	metadata: {
-		origin: string;
-		stock_target: number;
-	};
+	metadata: Record<string, unknown> | null;
 	occurred_at: string;
 	created_at: string;
 }

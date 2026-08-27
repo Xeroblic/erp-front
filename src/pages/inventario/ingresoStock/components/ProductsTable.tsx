@@ -3,7 +3,7 @@
  * Responsabilidad única: renderizar y permitir selección de productos (Single Responsibility)
  */
 import { useMemo } from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, OnChangeFn, PaginationState } from '@tanstack/react-table';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
@@ -32,6 +32,20 @@ interface ProductsTableProps {
 	 * deshabilitar su acción "Ingresar/Ajustar" y evitar duplicados.
 	 */
 	selectedProductIds?: ReadonlySet<number>;
+
+	/**
+	 * Paginación server-side. Si se entrega `paginationState`, la tabla deja de
+	 * paginar y buscar en memoria y delega ambas cosas en el llamador.
+	 */
+	paginationState?: PaginationState;
+	onPaginationChange?: OnChangeFn<PaginationState>;
+	pageCount?: number;
+
+	/** Total de productos sin serie en el servidor (no sólo la página actual). */
+	totalResults?: number;
+
+	/** Recibe el término de búsqueda para consultarlo contra el servidor. */
+	onSearchChange?: (value: string) => void;
 }
 
 const clpFormatter = new Intl.NumberFormat('es-CL', {
@@ -55,6 +69,11 @@ export const ProductsTable = ({
 	loading = false,
 	onSelectProduct,
 	selectedProductIds,
+	paginationState,
+	onPaginationChange,
+	pageCount,
+	totalResults,
+	onSearchChange,
 }: ProductsTableProps) => {
 	const columns = useMemo<ColumnDef<IProduct>[]>(
 		() => [
@@ -163,6 +182,12 @@ export const ProductsTable = ({
 			loading={loading}
 			emptyMessage='No hay productos disponibles (sin serialización).'
 			searchPlaceholder='Buscar por nombre o SKU...'
+			manualPagination={paginationState !== undefined}
+			paginationState={paginationState}
+			onPaginationChange={onPaginationChange}
+			pageCount={pageCount}
+			totalResults={totalResults}
+			onSearchChange={onSearchChange}
 		/>
 	);
 };

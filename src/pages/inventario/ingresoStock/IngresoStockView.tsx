@@ -28,6 +28,9 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 		isLoadingProducts,
 		productsError,
 		productRows,
+		catalogPagination,
+		catalogPageCount,
+		catalogTotal,
 		workItems,
 		modals,
 		loaders,
@@ -130,6 +133,11 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 										loading={isLoadingProducts}
 										onSelectProduct={actions.handleAddProduct}
 										selectedProductIds={workspaceProductIds}
+										paginationState={catalogPagination}
+										onPaginationChange={actions.handleCatalogPaginationChange}
+										pageCount={catalogPageCount}
+										totalResults={catalogTotal}
+										onSearchChange={actions.handleCatalogSearchChange}
 									/>
 								</CardBody>
 							</Card>
