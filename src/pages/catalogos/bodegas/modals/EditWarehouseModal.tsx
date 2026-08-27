@@ -179,21 +179,19 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 						</CardHeader>
 						<CardBody className='space-y-4'>
 							<div>
-								<Label htmlFor='edit-maximum_capacity'>
-									Capacidad Máxima
-								</Label>
-<Input
-								id='edit-maximum_capacity'
-								name='maximum_capacity'
-								type='number'
-								placeholder='1000'
-								value={form.values.maximum_capacity ?? ''}
-								onChange={form.handleChange}
-								onBlur={form.handleBlur}
-								isValid={form.isValid}
-								isTouched={!!form.touched.maximum_capacity}
-								invalidFeedback={form.errors.maximum_capacity as string}
-							/>
+								<Label htmlFor='edit-maximum_capacity'>Capacidad Máxima</Label>
+								<Input
+									id='edit-maximum_capacity'
+									name='maximum_capacity'
+									type='number'
+									placeholder='1000'
+									value={form.values.maximum_capacity ?? ''}
+									onChange={form.handleChange}
+									onBlur={form.handleBlur}
+									isValid={form.isValid}
+									isTouched={!!form.touched.maximum_capacity}
+									invalidFeedback={form.errors.maximum_capacity as string}
+								/>
 								<div className='mt-1 text-sm text-gray-500'>
 									Dejar vacío para capacidad ilimitada
 								</div>

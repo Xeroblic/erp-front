@@ -5,11 +5,15 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
 import type { RootState } from '@/store/rootReducer';
+import {
+	filterTechnicalReviewPayload,
+	HARDWARE_NULLABLE_FIELDS,
+} from '@/utils/technicalReviewHardware';
 import type {
 	IItem,
 	UpdateItemDetailsPayload,
 	ApproveItemPayload,
-} from '../../../../interface/technicalReviews.interface.ts';
+} from '../../../../interface/technicalReviews.interface';
 import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,
@@ -27,22 +31,32 @@ export const startReview = createAsyncThunk<
 	IItem,
 	{ branchId?: number | null; subsidiaryId?: number | null; itemId: number },
 	{ state: RootState; rejectValue: string }
->('technicalReviews/startReview', async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/start-review`),
-			method: 'post',
-		});
+>(
+	'technicalReviews/startReview',
+	async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any }>({
+				url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/start-review`),
+				method: 'post',
+			});
 
-		return normalizeObject(response.data) as IItem;
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo iniciar la revisión',
-		);
-	}
-});
+			return normalizeObject(response.data) as IItem;
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudo iniciar la revisión',
+			);
+		}
+	},
+);
 
 /**
  * Campos de puertos que solo aplican a ciertos tipos de equipos
@@ -105,7 +119,10 @@ export const updateItemDetails = createAsyncThunk<
 	{ state: RootState; rejectValue: string }
 >(
 	'technicalReviews/updateItemDetails',
-	async ({ branchId, subsidiaryId, itemId, data, equipmentType }, { getState, dispatch, rejectWithValue }) => {
+	async (
+		{ branchId, subsidiaryId, itemId, data, equipmentType },
+		{ getState, dispatch, rejectWithValue },
+	) => {
 		try {
 			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
 			dispatch(
@@ -121,16 +138,14 @@ export const updateItemDetails = createAsyncThunk<
 			// The backend rejects nulls for fields with allowed_values constraints
 			// (e.g. cover_condition, charger_status).
 			// Algunos campos sí pueden ser null o vacíos explícitamente (ej: borrar observaciones)
-			const NULLABLE_FIELDS = ['observations', 'extra_attributes', 'battery_health'];
-			
-			const cleanData = Object.fromEntries(
-				Object.entries(filteredData).filter(
-					([k, v]) => {
-						if (NULLABLE_FIELDS.includes(k)) return v !== undefined;
-						return v !== null && v !== undefined && v !== '';
-					}
-				),
-			);
+			const NULLABLE_FIELDS = [
+				'observations',
+				'extra_attributes',
+				'battery_health',
+				...HARDWARE_NULLABLE_FIELDS,
+			];
+
+			const cleanData = filterTechnicalReviewPayload({ ...filteredData }, NULLABLE_FIELDS);
 
 			const response = await ApiService.fetchData<{ data?: any }>({
 				url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/details`),
@@ -142,8 +157,8 @@ export const updateItemDetails = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron actualizar los detalles',
+					error?.message ??
+					'No se pudieron actualizar los detalles',
 			);
 		}
 	},
@@ -159,22 +174,32 @@ export const completeReview = createAsyncThunk<
 	IItem,
 	{ branchId?: number | null; subsidiaryId?: number | null; itemId: number },
 	{ state: RootState; rejectValue: string }
->('technicalReviews/completeReview', async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/complete-review`),
-			method: 'post',
-		});
+>(
+	'technicalReviews/completeReview',
+	async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any }>({
+				url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/complete-review`),
+				method: 'post',
+			});
 
-		return normalizeObject(response.data) as IItem;
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo finalizar la revisión',
-		);
-	}
-});
+			return normalizeObject(response.data) as IItem;
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudo finalizar la revisión',
+			);
+		}
+	},
+);
 
 /**
  * Paso 4: Aprobar serie con grado final
@@ -184,25 +209,38 @@ export const completeReview = createAsyncThunk<
  */
 export const approveItem = createAsyncThunk<
 	IItem,
-	{ branchId?: number | null; subsidiaryId?: number | null; itemId: number; data: ApproveItemPayload },
+	{
+		branchId?: number | null;
+		subsidiaryId?: number | null;
+		itemId: number;
+		data: ApproveItemPayload;
+	},
 	{ state: RootState; rejectValue: string }
->('technicalReviews/approveItem', async ({ branchId, subsidiaryId, itemId, data }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/approve`),
-			method: 'post',
-			data: { ...data },
-		});
+>(
+	'technicalReviews/approveItem',
+	async ({ branchId, subsidiaryId, itemId, data }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any }>({
+				url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/approve`),
+				method: 'post',
+				data: { ...data },
+			});
 
-		return normalizeObject(response.data) as IItem;
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo aprobar la serie',
-		);
-	}
-});
+			return normalizeObject(response.data) as IItem;
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ?? error?.message ?? 'No se pudo aprobar la serie',
+			);
+		}
+	},
+);
 
 /**
  * Obtener grado sugerido sin finalizar revisión
@@ -212,28 +250,36 @@ export const getSuggestedGrade = createAsyncThunk<
 	{ suggested_grade: string; confidence: number; breakdown: Record<string, any> },
 	{ branchId?: number | null; subsidiaryId?: number | null; itemId: number },
 	{ state: RootState; rejectValue: string }
->('technicalReviews/getSuggestedGrade', async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/suggested-grade`),
-			method: 'get',
-		});
+>(
+	'technicalReviews/getSuggestedGrade',
+	async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any }>({
+				url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/suggested-grade`),
+				method: 'get',
+			});
 
-		return normalizeObject(response.data) as {
-			suggested_grade: string;
-			confidence: number;
-			breakdown: Record<string, any>;
-		};
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ??
-			error?.message ??
-			'No se pudo calcular el grado sugerido',
-		);
-	}
-});
+			return normalizeObject(response.data) as {
+				suggested_grade: string;
+				confidence: number;
+				breakdown: Record<string, any>;
+			};
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudo calcular el grado sugerido',
+			);
+		}
+	},
+);
 
 /**
  * Volver item a estado "in_review" para permitir re-edición
@@ -244,19 +290,29 @@ export const reopenReview = createAsyncThunk<
 	IItem,
 	{ branchId?: number | null; subsidiaryId?: number | null; itemId: number },
 	{ state: RootState; rejectValue: string }
->('technicalReviews/reopenReview', async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
-	try {
-		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
-		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/reopen-review`),
-			method: 'post', // ← Cambiado de 'patch' a 'post'
-		});
+>(
+	'technicalReviews/reopenReview',
+	async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
+		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
+			const response = await ApiService.fetchData<{ data?: any }>({
+				url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/reopen-review`),
+				method: 'post', // ← Cambiado de 'patch' a 'post'
+			});
 
-		return normalizeObject(response.data) as IItem;
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo reabrir la revisión',
-		);
-	}
-});
+			return normalizeObject(response.data) as IItem;
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudo reabrir la revisión',
+			);
+		}
+	},
+);

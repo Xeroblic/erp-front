@@ -16,6 +16,7 @@ import {
 	generateConnectivityText,
 	getFieldsForType,
 } from './utils/reviewTranslations';
+import { getHardwareDisplayValue } from '../../../components/utils/hardwareAbsence';
 
 /** Datos del item necesarios para el panel lateral */
 interface ReviewItemSummary {
@@ -53,11 +54,16 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 	);
 
 	// Filtra solo los campos válidos para el tipo de equipo actual
-	const detailEntries = useMemo(() => {
+	const detailEntries = useMemo<Array<[string, unknown]>>(() => {
 		const allEntries = Object.entries(detailValues);
 		const validFields = getFieldsForType(equipmentType);
-		if (!validFields) return allEntries;
-		return allEntries.filter(([key]) => validFields.has(key));
+		const entries = validFields
+			? allEntries.filter(([key]) => validFields.has(key))
+			: allEntries;
+		return entries.map(([key, value]): [string, unknown] => [
+			key,
+			getHardwareDisplayValue(detailValues, key) ?? value,
+		]);
 	}, [detailValues, equipmentType]);
 	const hasDetails = detailEntries.length > 0;
 
@@ -112,7 +118,7 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 				</div>
 
 				{/* Cards Container */}
-				<div className='flex-grow overflow-y-auto px-6 pb-2 space-y-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 hover:[&::-webkit-scrollbar-thumb]:bg-white/30'>
+				<div className='flex-grow space-y-4 overflow-y-auto px-6 pb-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 hover:[&::-webkit-scrollbar-thumb]:bg-white/30 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-2'>
 					{/* Identificación */}
 					<div className='rounded-xl bg-white/10 p-4 shadow-inner backdrop-blur-sm'>
 						<h3 className='mb-3 text-lg font-bold tracking-wide text-white'>
@@ -235,20 +241,20 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 					{/* Detalles Técnicos */}
 					{hasDetails && (
 						<div className='flex flex-col rounded-xl bg-white/10 shadow-inner backdrop-blur-sm'>
-							<div className='px-4 pt-4 pb-2'>
+							<div className='px-4 pb-2 pt-4'>
 								<h3 className='text-lg font-bold tracking-wide text-white'>
 									Detalles
 								</h3>
 							</div>
-							<div className='max-h-[35vh] overflow-y-auto px-4 pb-4 space-y-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 hover:[&::-webkit-scrollbar-thumb]:bg-white/30'>
+							<div className='max-h-[35vh] space-y-1.5 overflow-y-auto px-4 pb-4 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 hover:[&::-webkit-scrollbar-thumb]:bg-white/30 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5'>
 								{detailEntries.map(([key, value]) => (
 									<div
 										key={key}
 										className='flex items-start justify-between gap-4 py-0.5'>
-										<span className='text-sm font-medium capitalize text-white/70 shrink-0'>
+										<span className='shrink-0 text-sm font-medium capitalize text-white/70'>
 											{translateField(key, equipmentType)}
 										</span>
-										<span className='text-right text-sm font-bold text-white whitespace-normal break-words'>
+										<span className='whitespace-normal break-words text-right text-sm font-bold text-white'>
 											{translateValue(value) || '-'}
 										</span>
 									</div>
@@ -262,7 +268,7 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 				<div className='flex-shrink-0 px-6 py-6'>
 					<Button
 						variant='solid'
-						className='w-full justify-center !bg-white/10 hover:!bg-white/20 text-white font-bold py-2.5 text-base shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 border-0 rounded-xl'
+						className='w-full justify-center rounded-xl border-0 !bg-white/10 py-2.5 text-base font-bold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:!bg-white/20 hover:shadow-xl'
 						onClick={handleCopyInfo}>
 						<Icon icon='HeroClipboardDocument' className='mr-2 h-5 w-5' />
 						Copiar Información

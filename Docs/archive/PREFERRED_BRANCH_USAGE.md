@@ -10,25 +10,26 @@ Este documento explica cómo funciona el selector global de sucursal, qué event
 - **Se renderiza en:** `DefaultHeaderRight.common.tsx` → `DefaultHeader.template.tsx`, por lo tanto aparece en toda la aplicación cuando se usa el layout estándar.
 
 El selector:
+
 1. Carga las sucursales accesibles para el usuario (`useUserBranches`).
 2. Inicializa la opción actual con `personalizacion.sucursal_principal` o el branch del usuario.
 3. Al cambiar la selección:
-   - Hace `PUT /user/personalization` (campo `sucursal_principal`).
-   - Opcionalmente hace `POST /user/switch-company` (si hay `company_id` disponible).
-   - Emite el evento global `window.dispatchEvent(new CustomEvent('user-branch-changed', { detail: { branchId } }))`.
-   - Muestra un toast de confirmación.
+    - Hace `PUT /user/personalization` (campo `sucursal_principal`).
+    - Opcionalmente hace `POST /user/switch-company` (si hay `company_id` disponible).
+    - Emite el evento global `window.dispatchEvent(new CustomEvent('user-branch-changed', { detail: { branchId } }))`.
+    - Muestra un toast de confirmación.
 
 ---
 
 ## 🔄 ¿Qué estado almacena la sucursal?
 
-Todo se centraliza en el *slice* de personalización.
+Todo se centraliza en el _slice_ de personalización.
 
 - **Archivo:** `src/store/slices/personalizacion/personalizacionSlice.ts`
 - Campos relevantes: `personalizacionUsuario.sucursal_principal`
 - Thunks principales:
-  - `obtenerPersonalizacionThunk`: trae la personalización (GET).
-  - `actualizarSucursalPrincipalThunk`: guarda la sucursal preferida (PUT) y devuelve la personalización actualizada.
+    - `obtenerPersonalizacionThunk`: trae la personalización (GET).
+    - `actualizarSucursalPrincipalThunk`: guarda la sucursal preferida (PUT) y devuelve la personalización actualizada.
 
 El slice normaliza la respuesta por si la API envía `{ personalization: { … } }` para mantener siempre un `IPersonalizacionUsuario` consistente.
 
@@ -40,13 +41,13 @@ Cualquier componente puede reaccionar a los cambios de sucursal escuchando un ú
 
 ```ts
 useEffect(() => {
-  const handler = (event: Event) => {
-    const { branchId } = (event as CustomEvent<{ branchId: number | null }>).detail;
-    // Aquí aplicas tus filtros, vuelves a pedir datos, etc.
-  };
+	const handler = (event: Event) => {
+		const { branchId } = (event as CustomEvent<{ branchId: number | null }>).detail;
+		// Aquí aplicas tus filtros, vuelves a pedir datos, etc.
+	};
 
-  window.addEventListener('user-branch-changed', handler);
-  return () => window.removeEventListener('user-branch-changed', handler);
+	window.addEventListener('user-branch-changed', handler);
+	return () => window.removeEventListener('user-branch-changed', handler);
 }, []);
 ```
 
@@ -66,22 +67,24 @@ const { branches } = useUserBranches(currentUserId, { enabled: !!currentUserId }
 
 ```ts
 const personalizacion = useAppSelector(selectPersonalizacionUsuario);
-const [branchId, setBranchId] = useState<number | null>(personalizacion?.sucursal_principal ?? null);
+const [branchId, setBranchId] = useState<number | null>(
+	personalizacion?.sucursal_principal ?? null,
+);
 ```
 
 ### 3. Escucha el evento global para sincronizar tu vista
 
 ```ts
 useEffect(() => {
-  const handler = (event: Event) => {
-    const nextBranchId = (event as CustomEvent<{ branchId: number | null }>).detail.branchId;
-    if (nextBranchId != null) {
-      setBranchId(nextBranchId);
-      refetchSomething(nextBranchId);
-    }
-  };
-  window.addEventListener('user-branch-changed', handler);
-  return () => window.removeEventListener('user-branch-changed', handler);
+	const handler = (event: Event) => {
+		const nextBranchId = (event as CustomEvent<{ branchId: number | null }>).detail.branchId;
+		if (nextBranchId != null) {
+			setBranchId(nextBranchId);
+			refetchSomething(nextBranchId);
+		}
+	};
+	window.addEventListener('user-branch-changed', handler);
+	return () => window.removeEventListener('user-branch-changed', handler);
 }, [refetchSomething]);
 ```
 
@@ -91,8 +94,8 @@ Ejemplo en un hook de datos (`useProductos` ya sigue este patrón):
 
 ```ts
 useEffect(() => {
-  if (!branchId) return;
-  dispatch(fetchProducts({ branchId, params: filters }));
+	if (!branchId) return;
+	dispatch(fetchProducts({ branchId, params: filters }));
 }, [dispatch, branchId, filters]);
 ```
 
@@ -112,7 +115,7 @@ useEffect(() => {
 
 ## 🧪 Tips para probar
 
-- Revisa en *DevTools → Network* que existan solicitudes `PUT /user/personalization` (y opcionalmente `POST /user/switch-company`) al cambiar la sucursal.
+- Revisa en _DevTools → Network_ que existan solicitudes `PUT /user/personalization` (y opcionalmente `POST /user/switch-company`) al cambiar la sucursal.
 - Usa Redux DevTools para validar que `personalizacion.personalizacionUsuario.sucursal_principal` se actualiza.
 - Confirma que la página cuya data depende de la sucursal escucha el evento y re-renderiza sin recargar la app.
 
@@ -120,14 +123,14 @@ useEffect(() => {
 
 ## 📁 Archivos clave involucrados
 
-| Función | Ruta |
-| --- | --- |
-| Selector global de sucursal | `src/templates/layouts/Headers/_partial/SelectSucursalEmpresa.tsx` |
-| Slice de personalización | `src/store/slices/personalizacion/personalizacionSlice.ts` |
-| Hook de compañías (emite evento extra) | `src/hooks/useCompanyManager.ts` |
-| Hook de sucursales de usuario | `src/pages/catalogos/productos/components/modals/hooks/userBranch.tsx` |
-| Hook de productos (ejemplo de consumo) | `src/pages/catalogos/productos/hooks/useProductos.ts` |
-| Página Productos (escucha `user-branch-changed`) | `src/pages/catalogos/productos/Productos.tsx` |
+| Función                                          | Ruta                                                                   |
+| ------------------------------------------------ | ---------------------------------------------------------------------- |
+| Selector global de sucursal                      | `src/templates/layouts/Headers/_partial/SelectSucursalEmpresa.tsx`     |
+| Slice de personalización                         | `src/store/slices/personalizacion/personalizacionSlice.ts`             |
+| Hook de compañías (emite evento extra)           | `src/hooks/useCompanyManager.ts`                                       |
+| Hook de sucursales de usuario                    | `src/pages/catalogos/productos/components/modals/hooks/userBranch.tsx` |
+| Hook de productos (ejemplo de consumo)           | `src/pages/catalogos/productos/hooks/useProductos.ts`                  |
+| Página Productos (escucha `user-branch-changed`) | `src/pages/catalogos/productos/Productos.tsx`                          |
 
 ---
 

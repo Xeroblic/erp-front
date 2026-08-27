@@ -32,9 +32,8 @@ vi.mock('@/store/slices/customerSales/customerSalesSlice', async () => {
 	const actual = await vi.importActual<
 		typeof import('@/store/slices/customerSales/customerSalesSlice')
 	>('@/store/slices/customerSales/customerSalesSlice');
-	customerSalesSpies.overviewThunkImplementation = actual.fetchCustomersOverviewThunk as unknown as (
-		...args: unknown[]
-	) => unknown;
+	customerSalesSpies.overviewThunkImplementation =
+		actual.fetchCustomersOverviewThunk as unknown as (...args: unknown[]) => unknown;
 	customerSalesSpies.overviewThunk.mockImplementation((...args: unknown[]) =>
 		customerSalesSpies.overviewThunkImplementation?.(...args),
 	);
@@ -203,11 +202,16 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			Promise.resolve({
 				data: url.includes('/overview')
 					? { ...emptyPagination, data: customers, total: customers.length }
-					: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+					: {
+							data: [],
+							meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+						},
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'zentria' } });
@@ -275,11 +279,16 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									current: { count: 0, amount: '0' },
 								},
 							}
-						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+						: {
+								data: [],
+								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+							},
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(
 			<CreateEditDeferredPaymentModal
 				isOpen
@@ -299,7 +308,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(await screen.findByText('45 días')).toBeInTheDocument();
 		expect(
 			screen.queryByText('Este cliente no tiene un perfil de crédito creado.'),
-	).not.toBeInTheDocument();
+		).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Editar perfil' }));
 		expect(await screen.findByText('Editar perfil de crédito')).toBeInTheDocument();
 		expect(
@@ -335,11 +344,16 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 										notes: null,
 									},
 						}
-					: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+					: {
+							data: [],
+							meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+						},
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(
 			<CreateEditDeferredPaymentModal
 				isOpen
@@ -447,11 +461,16 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			Promise.resolve({
 				data: url.includes('/overview')
 					? { ...emptyPagination, data: [remoteCustomer], total: 1 }
-					: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+					: {
+							data: [],
+							meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+						},
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		fireEvent.change(screen.getByLabelText('Cliente'), {
@@ -459,9 +478,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		});
 
 		expect(
-			await screen.findByText(
-				'Industria Norte SpA · Carla Pérez · 76.803.000-1',
-			),
+			await screen.findByText('Industria Norte SpA · Carla Pérez · 76.803.000-1'),
 		).toBeInTheDocument();
 	});
 
@@ -490,11 +507,16 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									notes: null,
 								},
 							}
-						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+						: {
+								data: [],
+								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+							},
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		const customerInput = screen.getByLabelText('Cliente');
@@ -534,15 +556,22 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		});
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) => {
 			if (url.includes('/overview')) {
-				return Promise.resolve({ data: { ...emptyPagination, data: [customer], total: 1 } });
+				return Promise.resolve({
+					data: { ...emptyPagination, data: [customer], total: 1 },
+				});
 			}
 			if (url.includes('/458/credit-profile')) return profileRequest;
 			return Promise.resolve({
-				data: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+				data: {
+					data: [],
+					meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+				},
 			});
 		});
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		const customerInput = screen.getByLabelText('Cliente');
@@ -589,16 +618,21 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									id: 10,
 									customer_sale_id: customer.id,
 									is_active: false,
-								payment_term_days: 45,
-								credit_limit: '500000',
+									payment_term_days: 45,
+									credit_limit: '500000',
 									notes: null,
 								},
 							}
-						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+						: {
+								data: [],
+								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+							},
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		const customerInput = screen.getByLabelText('Cliente');
@@ -642,11 +676,16 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									notes: null,
 								},
 							}
-						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+						: {
+								data: [],
+								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+							},
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		const onClose = vi.fn();
 		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />, {
 			wrapper: Wrapper,
@@ -664,7 +703,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			rerender(<CreateEditDeferredPaymentModal isOpen={false} onClose={onClose} />);
 		});
 		await waitFor(() =>
-			expect(screen.queryByRole('dialog', { name: 'Nuevo documento' })).not.toBeInTheDocument(),
+			expect(
+				screen.queryByRole('dialog', { name: 'Nuevo documento' }),
+			).not.toBeInTheDocument(),
 		);
 		act(() => {
 			rerender(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />);
@@ -701,11 +742,16 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									notes: null,
 								},
 							}
-						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+						: {
+								data: [],
+								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+							},
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'sin perfil' } });
@@ -758,7 +804,14 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 				});
 			}
 			if (url.includes('/deferred-payments/summary')) {
-				return Promise.resolve({ data: { total_outstanding: '0', overdue: { count: 0, amount: '0' }, due_within_7_days: { count: 0, amount: '0' }, current: { count: 0, amount: '0' } } });
+				return Promise.resolve({
+					data: {
+						total_outstanding: '0',
+						overdue: { count: 0, amount: '0' },
+						due_within_7_days: { count: 0, amount: '0' },
+						current: { count: 0, amount: '0' },
+					},
+				});
 			}
 			if (url.includes('/credit-profile')) {
 				if (profileFails && url.includes('/460/credit-profile')) {
@@ -776,18 +829,21 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 				});
 			}
 			return Promise.resolve({
-				data: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+				data: {
+					data: [],
+					meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+				},
 			});
 		});
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'error' } });
 		fireEvent.click(await screen.findByText('Cliente con error · Ana Pérez · 76.460.000-1'));
-		expect(
-			await screen.findByText('Perfil no disponible'),
-		).toBeInTheDocument();
+		expect(await screen.findByText('Perfil no disponible')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 
 		profileFails = false;
@@ -841,7 +897,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		const customerInput = screen.getByLabelText('Cliente');
@@ -890,11 +948,16 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			if (url.includes('/463/credit-profile')) return firstProfileRequest;
 			if (url.includes('/464/credit-profile')) return secondProfileRequest;
 			return Promise.resolve({
-				data: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+				data: {
+					data: [],
+					meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+				},
 			});
 		});
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		const customerInput = screen.getByLabelText('Cliente');
@@ -934,7 +997,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			await Promise.resolve();
 		});
 
-		expect(screen.queryByText(/El crédito de este cliente está suspendido/)).not.toBeInTheDocument();
+		expect(
+			screen.queryByText(/El crédito de este cliente está suspendido/),
+		).not.toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 	});
 
@@ -958,26 +1023,37 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		});
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) => {
 			if (url.includes('/overview'))
-				return Promise.resolve({ data: { ...emptyPagination, data: [customer], total: 1 } });
+				return Promise.resolve({
+					data: { ...emptyPagination, data: [customer], total: 1 },
+				});
 			if (url === '/subsidiaries/1/customer-sales/470/credit-profile')
 				return firstProfileRequest;
 			if (url === '/subsidiaries/2/customer-sales/470/credit-profile')
 				return secondProfileRequest;
 			return Promise.resolve({
-				data: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+				data: {
+					data: [],
+					meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+				},
 			});
 		});
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
 			wrapper: Wrapper,
 		});
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'multi' } });
-		fireEvent.click(await screen.findByText('Cliente multi subsidiaria · Ana Pérez · 76.470.000-1'));
+		fireEvent.click(
+			await screen.findByText('Cliente multi subsidiaria · Ana Pérez · 76.470.000-1'),
+		);
 		await waitFor(() =>
 			expect(apiSpies.fetchData).toHaveBeenCalledWith(
-				expect.objectContaining({ url: '/subsidiaries/1/customer-sales/470/credit-profile' }),
+				expect.objectContaining({
+					url: '/subsidiaries/1/customer-sales/470/credit-profile',
+				}),
 			),
 		);
 
@@ -985,7 +1061,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		rerender(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />);
 		await waitFor(() =>
 			expect(apiSpies.fetchData).toHaveBeenCalledWith(
-				expect.objectContaining({ url: '/subsidiaries/2/customer-sales/470/credit-profile' }),
+				expect.objectContaining({
+					url: '/subsidiaries/2/customer-sales/470/credit-profile',
+				}),
 			),
 		);
 
@@ -1002,7 +1080,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			});
 			await Promise.resolve();
 		});
-		expect(screen.queryByText(/El crédito de este cliente está suspendido/)).not.toBeInTheDocument();
+		expect(
+			screen.queryByText(/El crédito de este cliente está suspendido/),
+		).not.toBeInTheDocument();
 
 		await act(async () => {
 			resolveSecondProfile({
@@ -1037,26 +1117,33 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		};
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
-				data: url === '/subsidiaries/1/customer-sales/overview'
-					? { ...emptyPagination, data: [customer], total: 1 }
-					: emptyPagination,
+				data:
+					url === '/subsidiaries/1/customer-sales/overview'
+						? { ...emptyPagination, data: [customer], total: 1 }
+						: emptyPagination,
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
 			wrapper: Wrapper,
 		});
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'exclusivo' } });
-		expect(await screen.findByText('Cliente exclusivo A · Contacto A · 76.991.000-1')).toBeInTheDocument();
+		expect(
+			await screen.findByText('Cliente exclusivo A · Contacto A · 76.991.000-1'),
+		).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Crear cliente' }));
 		expect(screen.getByRole('dialog', { name: 'Crear Cliente' })).toBeInTheDocument();
 
 		branchContext.subsidiaryId = 2;
 		rerender(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />);
 
-		expect(screen.queryByText('Cliente exclusivo A · Contacto A · 76.991.000-1')).not.toBeInTheDocument();
+		expect(
+			screen.queryByText('Cliente exclusivo A · Contacto A · 76.991.000-1'),
+		).not.toBeInTheDocument();
 		await waitFor(() =>
 			expect(screen.queryByRole('dialog', { name: 'Crear Cliente' })).not.toBeInTheDocument(),
 		);
@@ -1064,7 +1151,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 	it('cierra el alta rápida en el mismo render del cambio de subsidiaria', async () => {
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
 			wrapper: Wrapper,
 		});
@@ -1153,11 +1242,16 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									notes: null,
 								},
 							}
-						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+						: {
+								data: [],
+								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+							},
 			}),
 		);
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		const onClose = vi.fn();
 		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />, {
 			wrapper: Wrapper,

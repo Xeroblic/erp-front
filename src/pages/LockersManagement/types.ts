@@ -46,7 +46,9 @@ export const getStatusConfig = (status: string) => {
 	};
 
 	const key = aliasMap[normalized] || normalized;
-	return LOCKER_STATUS_MAP[key] || { label: status, color: 'zinc', icon: 'HeroQuestionMarkCircle' };
+	return (
+		LOCKER_STATUS_MAP[key] || { label: status, color: 'zinc', icon: 'HeroQuestionMarkCircle' }
+	);
 };
 
 /**

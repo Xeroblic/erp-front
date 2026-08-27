@@ -146,8 +146,8 @@ const Proveedores: React.FC = () => {
 					<div className='mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300'>
 						<Icon icon='HeroShieldExclamation' className='size-5 shrink-0' />
 						<span>
-							No tienes acceso de operación a la sucursal seleccionada.
-							Los datos se muestran en modo lectura.
+							No tienes acceso de operación a la sucursal seleccionada. Los datos se
+							muestran en modo lectura.
 						</span>
 					</div>
 				)}

@@ -12,7 +12,7 @@ const footerRoutes: RouteProps[] = [
 	{ path: authPages.portalPedidosMock.to, element: null },
 	{ path: authPages.FormularioLockCare.to, element: null },
 	{ path: authPages.FormularioLockCare.subPages.publicLockCare.to, element: null },
-	{ path: authPages.FormularioLockCare.subPages.checkOutLockCare.to, element: null},
+	{ path: authPages.FormularioLockCare.subPages.checkOutLockCare.to, element: null },
 	{ path: '*', element: <DefaultFooterTemplate /> },
 ];
 

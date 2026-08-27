@@ -25,10 +25,7 @@ export const desktopSchema = Yup.object({
 		.required('El modelo es obligatorio')
 		.max(150, 'Máximo 150 caracteres'),
 
-	line: Yup.string()
-		.trim()
-		.max(100, 'Máximo 100 caracteres')
-		.required('La línea es obligatoria'),
+	line: Yup.string().trim().max(100, 'Máximo 100 caracteres').required('La línea es obligatoria'),
 
 	// ─── Condición General ───────────────────────────────────────────────────
 	general_condition: Yup.string()
@@ -41,23 +38,52 @@ export const desktopSchema = Yup.object({
 		.required('El procesador es obligatorio')
 		.max(200, 'Máximo 200 caracteres'),
 
+	has_no_ram: Yup.boolean().default(false),
+	has_no_storage: Yup.boolean().default(false),
+
 	ram_size: Yup.string()
 		.trim()
-		.required('La RAM es obligatoria')
-		.max(50, 'Máximo 50 caracteres'),
+		.max(50, 'Máximo 50 caracteres')
+		.when('has_no_ram', {
+			is: true,
+			then: (schema) => schema.notRequired(),
+			otherwise: (schema) => schema.required('La RAM es obligatoria'),
+		}),
 
-	ram_slots: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('Los slots de RAM son obligatorios'),
+	ram_slots: Yup.string()
+		.trim()
+		.max(20, 'Máximo 20 caracteres')
+		.when('has_no_ram', {
+			is: true,
+			then: (schema) => schema.notRequired(),
+			otherwise: (schema) => schema.required('Los slots de RAM son obligatorios'),
+		}),
 
-	ram_type: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('El tipo de RAM es obligatorio'),
+	ram_type: Yup.string()
+		.trim()
+		.max(20, 'Máximo 20 caracteres')
+		.when('has_no_ram', {
+			is: true,
+			then: (schema) => schema.notRequired(),
+			otherwise: (schema) => schema.required('El tipo de RAM es obligatorio'),
+		}),
 
 	storage_size: Yup.string()
 		.trim()
-		.required('El almacenamiento es obligatorio')
-		.max(50, 'Máximo 50 caracteres'),
+		.max(50, 'Máximo 50 caracteres')
+		.when('has_no_storage', {
+			is: true,
+			then: (schema) => schema.notRequired(),
+			otherwise: (schema) => schema.required('El almacenamiento es obligatorio'),
+		}),
 
 	storage_technology: Yup.string()
 		.oneOf([...ALLOWED_STORAGE_TECHNOLOGIES], 'Tecnología de disco no válida')
-		.required('La tecnología de disco es obligatoria'),
+		.when('has_no_storage', {
+			is: true,
+			then: (schema) => schema.notRequired(),
+			otherwise: (schema) => schema.required('La tecnología de disco es obligatoria'),
+		}),
 
 	// ─── Carcasa ─────────────────────────────────────────────────────────────
 	cover_condition: Yup.string()

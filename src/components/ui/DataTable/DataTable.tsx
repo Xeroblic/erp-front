@@ -20,6 +20,14 @@ import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 
+/**
+ * Cabecera fija: se aplica sobre las celdas (`th`) y no sobre `thead` porque el
+ * `border-collapse: collapse` del preflight rompe el sticky a nivel de sección en
+ * varios navegadores. El fondo opaco evita que las filas se vean por detrás.
+ */
+const STICKY_HEADER_CLASSES =
+	'[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-zinc-200 dark:[&_th]:bg-zinc-950';
+
 interface DataTableProps<TData> {
 	columns: ColumnDef<TData, any>[];
 	data: TData[];
@@ -35,12 +43,21 @@ interface DataTableProps<TData> {
 	pageCount?: number;
 	paginationState?: PaginationState;
 	onPaginationChange?: OnChangeFn<PaginationState>;
+	/**
+	 * Total de resultados en el servidor. Sólo aplica con `manualPagination`: sin
+	 * esto la tabla únicamente puede informar el tamaño de la página actual.
+	 */
+	totalResults?: number;
 
 	// Customization
 	enableSearch?: boolean;
 	actions?: React.ReactNode;
 	initialSortingState?: SortingState;
 	className?: string;
+	/** Clases del contenedor scrollable de la tabla (p. ej. un alto máximo). */
+	tableContainerClassName?: string;
+	/** Fija la cabecera mientras se hace scroll vertical dentro del contenedor. */
+	stickyHeader?: boolean;
 }
 
 export default function DataTable<TData>({
@@ -57,11 +74,14 @@ export default function DataTable<TData>({
 	pageCount,
 	paginationState,
 	onPaginationChange,
+	totalResults,
 	// Customization
 	enableSearch = true,
 	actions,
 	initialSortingState,
 	className,
+	tableContainerClassName,
+	stickyHeader = false,
 }: DataTableProps<TData>) {
 	const defaultSorting = React.useMemo<SortingState>(() => {
 		if (initialSortingState) return initialSortingState;
@@ -131,6 +151,13 @@ export default function DataTable<TData>({
 		setGlobalFilter(searchValue);
 	}, [searchValue]);
 
+	// Con paginación server-side sólo se conocen las filas de la página actual; el
+	// total real depende de que el llamador entregue `totalResults`.
+	const visibleRowsCount = manualPagination ? data.length : table.getRowModel().rows.length;
+	const totalRowsCount = manualPagination
+		? totalResults
+		: table.getFilteredRowModel().rows.length;
+
 	return (
 		<div className={['w-full space-y-4', className].filter(Boolean).join(' ')}>
 			{/* Barra de búsqueda y Acciones */}
@@ -155,17 +182,15 @@ export default function DataTable<TData>({
 				<div className='flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-0 sm:space-x-2'>
 					{actions}
 					<Badge variant='outline' className='self-end px-2'>
-						{manualPagination
-							? `${data.length} resultados`
-							: `${table.getFilteredRowModel().rows.length} resultados`}
+						{`${totalRowsCount ?? visibleRowsCount} resultados`}
 					</Badge>
 				</div>
 			</div>
 
 			{/* Tabla */}
-			<div className='overflow-x-auto'>
+			<div className={['overflow-x-auto', tableContainerClassName].filter(Boolean).join(' ')}>
 				<Table className='w-full'>
-					<THead>
+					<THead className={stickyHeader ? STICKY_HEADER_CLASSES : ''}>
 						{table.getHeaderGroups().map((headerGroup) => (
 							<Tr className='overflow-x-auto' key={headerGroup.id}>
 								{headerGroup.headers.map((header) => (
@@ -262,15 +287,12 @@ export default function DataTable<TData>({
 			{/* Información de selección */}
 			<div className='text-muted-foreground flex items-center justify-between text-sm'>
 				<div>
-					{manualPagination ? (
-						// Server-side: mostrar info desde la página actual
-						<>Mostrando {data.length} resultados de la página actual</>
-					) : (
-						// Client-side: mostrar filtrados vs totales
+					{totalRowsCount !== undefined ? (
 						<>
-							Mostrando {table.getRowModel().rows.length} de{' '}
-							{table.getFilteredRowModel().rows.length} resultados
+							Mostrando {visibleRowsCount} de {totalRowsCount} resultados
 						</>
+					) : (
+						<>Mostrando {visibleRowsCount} resultados de la página actual</>
 					)}
 				</div>
 			</div>

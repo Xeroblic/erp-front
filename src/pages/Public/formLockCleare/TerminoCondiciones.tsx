@@ -139,8 +139,9 @@ export const TerminoCondicionesContent = ({
 					Terminos y Condiciones del Servicio Tecnico
 				</h2>
 				<p className='text-sm leading-6 text-zinc-600'>
-					En Santiago de Chile, entre Comercial Tr3s Marias SPA, con domicilio en Til Til 2640, comuna de Macul, Santiago, y el cliente identificado en la orden de ingreso, se
-					acuerda el presente contrato de servicio tecnico.
+					En Santiago de Chile, entre Comercial Tr3s Marias SPA, con domicilio en Til Til
+					2640, comuna de Macul, Santiago, y el cliente identificado en la orden de
+					ingreso, se acuerda el presente contrato de servicio tecnico.
 				</p>
 			</header>
 
@@ -180,7 +181,7 @@ const TerminoCondiciones = ({
 				<TerminoCondicionesContent className='space-y-6 rounded-xl border border-zinc-200 bg-white p-4 text-zinc-700 shadow-none sm:p-5' />
 			</ModalBody>
 
-			<ModalFooter className='p-8 bg-zinc-200'>
+			<ModalFooter className='bg-zinc-200 p-8'>
 				<Button variant='outline' onClick={onClose}>
 					{closeText}
 				</Button>

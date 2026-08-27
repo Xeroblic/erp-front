@@ -5,12 +5,7 @@ import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelecto
 import { fetchPaginatedReportResults } from '@/store/slices/reports/reportsThunks';
 import { clearResults } from '@/store/slices/reports/reportSlice';
 import type { IReportResult } from '@/interface/reports.interface';
-import type {
-	StockRecord,
-	InventoryRow,
-	ReportFiltersState,
-	MappedFilters,
-} from '../../types';
+import type { StockRecord, InventoryRow, ReportFiltersState, MappedFilters } from '../../types';
 
 export function useInventoryReports() {
 	const [filters, setFilters] = useState<ReportFiltersState>({});

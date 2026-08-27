@@ -80,7 +80,6 @@ export const WorkspaceTable = ({
 	onQuantityChange,
 	onRemoveItem,
 }: WorkspaceTableProps) => {
-
 	// 2. Las columnas ahora son estables y no dependen de borradores locales
 	const columns = useMemo<ColumnDef<IWorkItem, unknown>[]>(
 		() => [
@@ -149,7 +148,11 @@ export const WorkspaceTable = ({
 									variant='solid'
 									className='inline-flex items-center gap-1'>
 									<Icon
-										icon={isIngreso ? 'HeroArrowTrendingUp' : 'HeroArrowTrendingDown'}
+										icon={
+											isIngreso
+												? 'HeroArrowTrendingUp'
+												: 'HeroArrowTrendingDown'
+										}
 										className='h-3 w-3'
 									/>
 									{isIngreso ? `+${signedQuantity}` : signedQuantity}
@@ -186,7 +189,8 @@ export const WorkspaceTable = ({
 			enableSearch={false}
 			pageSize={10}
 			emptyMessage='Agrega productos desde la tabla principal para iniciar el ajuste.'
-			className='max-h-[25vh]'
+			tableContainerClassName='max-h-[50vh] overflow-y-auto'
+			stickyHeader
 		/>
 	);
 };

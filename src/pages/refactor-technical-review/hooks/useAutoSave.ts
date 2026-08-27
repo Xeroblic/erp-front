@@ -12,6 +12,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppDispatch } from '@/store';
 import { updateItemDetails } from '@/store/slices/technicalReviews';
 import { toast } from 'react-toastify';
+import {
+	filterTechnicalReviewPayload,
+	HARDWARE_NULLABLE_FIELDS,
+} from '@/utils/technicalReviewHardware';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -88,7 +92,7 @@ export const useAutoSave = ({
 		getFormDataRef.current = getFormData;
 	}, [getFormData]);
 
-	useEffect(() => { 
+	useEffect(() => {
 		transformDataRef.current = transformData;
 	}, [transformData]);
 
@@ -104,9 +108,7 @@ export const useAutoSave = ({
 				data = transformDataRef.current(data);
 			}
 
-			let payload = Object.fromEntries(
-				Object.entries(data).filter(([, v]) => v !== null && v !== undefined && v !== ''),
-			);
+			const payload = filterTechnicalReviewPayload(data, HARDWARE_NULLABLE_FIELDS);
 
 			if (!payload.extra_attributes) {
 				payload.extra_attributes = {};
@@ -193,7 +195,10 @@ export const useAutoSave = ({
 					setLastSavedAt(new Date());
 					return true;
 				} catch (transformedError: unknown) {
-					const msg = transformedError instanceof Error ? transformedError.message : String(transformedError);
+					const msg =
+						transformedError instanceof Error
+							? transformedError.message
+							: String(transformedError);
 					toast.error(`Error al auto-guardar: ${msg}`);
 					return false;
 				}

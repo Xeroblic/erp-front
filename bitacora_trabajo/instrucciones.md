@@ -17,8 +17,12 @@ Aquí se anota **actividad**: cambios, decisiones, problemas y resultados del d�
   `analisis-foo.md`, etc.). Todo el trabajo del día va en el único archivo de esa fecha.
 - Si hay varias sesiones o varios frentes, se organizan como **temas** dentro del mismo
   archivo (ver §3).
-- El registro debe ser entendible por alguien que no estuvo presente: *qué*, *dónde*
-  (rama) y *por qué*.
+- El registro debe ser entendible por alguien que no estuvo presente: _qué_, _dónde_
+  (rama) y _por qué_.
+- Una corrección literal y determinista de revisión, limitada a configuración, documentación o copy
+  y sin cambio funcional, no obliga a crear un archivo diario nuevo. Si el archivo del día ya existe,
+  puede agregarse de forma resumida; si no existe, sólo se registra cuando el usuario lo pida o el
+  cambio sea material.
 
 ---
 
@@ -47,7 +51,7 @@ Orden fijo:
    (`grep`, búsqueda del IDE, informe semanal) si ese día se tocó un tema.
 3. **Bloques por tema** — detalle separado; cada tema indica rama y, si aplica, hora/sesión.
 
-````markdown
+```markdown
 # Bitácora — 24-06-2026
 
 ## Temas del día
@@ -71,7 +75,7 @@ Orden fijo:
 **Rama:** `feat/login-recordar-cuenta` · **Sesión:** 23:23 – 23:37
 
 - **[feat]** Checkbox “Recordar cuenta” y persistencia del identificador en localStorage.
-````
+```
 
 ### Reglas del índice «Temas del día»
 
@@ -84,15 +88,15 @@ Orden fijo:
 
 ### Convención de etiquetas (alineadas con los commits)
 
-| Etiqueta     | Cuándo usarla                                 |
-|--------------|-----------------------------------------------|
-| `[feat]`     | Nueva funcionalidad / página / módulo         |
-| `[fix]`      | Corrección de bug                             |
-| `[style]`    | Cambios visuales / UI sin lógica nueva        |
-| `[refactor]` | Reorganización sin cambiar conducta           |
-| `[docs]`     | Documentación                                 |
-| `[chore]`    | Config, dependencias, limpieza de repo        |
-| `[test]`     | Pruebas                                       |
+| Etiqueta     | Cuándo usarla                          |
+| ------------ | -------------------------------------- |
+| `[feat]`     | Nueva funcionalidad / página / módulo  |
+| `[fix]`      | Corrección de bug                      |
+| `[style]`    | Cambios visuales / UI sin lógica nueva |
+| `[refactor]` | Reorganización sin cambiar conducta    |
+| `[docs]`     | Documentación                          |
+| `[chore]`    | Config, dependencias, limpieza de repo |
+| `[test]`     | Pruebas                                |
 
 ---
 
@@ -155,8 +159,8 @@ Por eso el índice inicial y las etiquetas deben ser **consistentes**.
 
 Si encontrás restos de formatos viejos:
 
-| Incorrecto | Correcto |
-|------------|----------|
-| `08-07-2026-cleanup.md` | Contenido dentro de `08-07-2026.md` como un `## Tema:` |
-| `analisis-foo.md` suelto | Tema del día en que se hizo el análisis |
-| Varios archivos el mismo día | Un solo `dd-mm-yyyy.md` |
+| Incorrecto                   | Correcto                                               |
+| ---------------------------- | ------------------------------------------------------ |
+| `08-07-2026-cleanup.md`      | Contenido dentro de `08-07-2026.md` como un `## Tema:` |
+| `analisis-foo.md` suelto     | Tema del día en que se hizo el análisis                |
+| Varios archivos el mismo día | Un solo `dd-mm-yyyy.md`                                |

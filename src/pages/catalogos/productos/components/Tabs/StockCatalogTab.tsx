@@ -29,7 +29,9 @@ const StockCatalogTab: React.FC<StockCatalogTabProps> = ({ subsidiaryId }) => {
 						Catálogo Global de Stock
 					</CardTitle>
 					<div className='flex items-center gap-3'>
-						<Badge variant='outline' color='emerald'>Matriz vs sucursales</Badge>
+						<Badge variant='outline' color='emerald'>
+							Matriz vs sucursales
+						</Badge>
 						<Button
 							variant='outline'
 							size='sm'
@@ -43,7 +45,8 @@ const StockCatalogTab: React.FC<StockCatalogTabProps> = ({ subsidiaryId }) => {
 				</CardHeader>
 				<CardBody>
 					<div className='mb-4 rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300'>
-						Vista operativa para revisar cuánto stock sigue en la matriz, cuánto ya fue asignado a sucursales y cuántos productos están distribuidos.
+						Vista operativa para revisar cuánto stock sigue en la matriz, cuánto ya fue
+						asignado a sucursales y cuántos productos están distribuidos.
 					</div>
 					<StockCatalogTable items={stockCatalog} loading={isLoadingStockCatalog} />
 				</CardBody>

@@ -302,7 +302,9 @@ const DefaultAsideTemplate = () => {
 									to={Pages.technical.subPages.lockersManagement.to}
 									icon={Pages.technical.subPages.lockersManagement.icon}
 									id={Pages.technical.subPages.lockersManagement.id}
-									onClick={() => navigate(Pages.technical.subPages.lockersManagement.to)}
+									onClick={() =>
+										navigate(Pages.technical.subPages.lockersManagement.to)
+									}
 								/>
 							</AuthorityCheckNav>
 						</NavCollapse>
@@ -313,13 +315,13 @@ const DefaultAsideTemplate = () => {
 					 * ====================== */}
 					<AuthorityCheckNav
 						authority={Pages.inventory.authority}
-						roles={Pages.inventory.roles}
+						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
 						<NavTitle>Inventario</NavTitle>
 					</AuthorityCheckNav>
 					<AuthorityCheckNav
 						authority={Pages.inventory.authority}
-						roles={Pages.inventory.roles}
+						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
 						<NavCollapse
 							key='inventario-nav'
@@ -348,7 +350,6 @@ const DefaultAsideTemplate = () => {
 								authority={
 									Pages.inventory.subPages.trazabilidadSubsidiary.authority
 								}
-								roles={Pages.inventory.subPages.trazabilidadSubsidiary.roles}
 								userAuthority={userAuthority}
 								requireAll={
 									Pages.inventory.subPages.trazabilidadSubsidiary.requireAll
@@ -381,7 +382,7 @@ const DefaultAsideTemplate = () => {
 							{/* Ingreso de Stock */}
 							<AuthorityCheckNav
 								authority={Pages.inventory.subPages.ingresoStock.authority}
-								roles={Pages.inventory.subPages.ingresoStock.roles}
+								requireAll={Pages.inventory.subPages.ingresoStock.requireAll}
 								userAuthority={userAuthority}>
 								<NavItem
 									text={Pages.inventory.subPages.ingresoStock.text}
@@ -542,13 +543,13 @@ const DefaultAsideTemplate = () => {
 					 * ====================== */}
 					<AuthorityCheckNav
 						authority={Pages.catalogs.authority}
-						roles={Pages.catalogs.roles}
+						requireAll={Pages.catalogs.requireAll}
 						userAuthority={userAuthority}>
 						<NavTitle>Catálogos</NavTitle>
 					</AuthorityCheckNav>
 					<AuthorityCheckNav
 						authority={Pages.catalogs.authority}
-						roles={Pages.catalogs.roles}
+						requireAll={Pages.catalogs.requireAll}
 						userAuthority={userAuthority}>
 						<NavCollapse
 							key='catalogos-nav'
@@ -560,7 +561,6 @@ const DefaultAsideTemplate = () => {
 							{/* Productos */}
 							<AuthorityCheckNav
 								authority={Pages.catalogs.subPages.products.authority}
-								roles={Pages.catalogs.subPages.products.roles}
 								userAuthority={userAuthority}
 								requireAll={Pages.catalogs.subPages.products.requireAll}>
 								<NavItem

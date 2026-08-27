@@ -72,7 +72,7 @@ export default function EmpresaDetalle() {
 		onSubmit: async (values) => {
 			console.log('Submitting Empresa:', values);
 			try {
-				// Enviamos todos los datos completos. El error de guardado de correos 
+				// Enviamos todos los datos completos. El error de guardado de correos
 				// y representantes radica en el validador del Backend (updateMyCompany).
 				const payloadToBackend: any = {
 					...values,

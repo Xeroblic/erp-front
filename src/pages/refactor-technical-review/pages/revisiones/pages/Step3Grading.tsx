@@ -203,8 +203,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 		try {
 			await onApprove(manualGrade, true, overrideReason);
 		} catch (e: unknown) {
-			const msg =
-				e instanceof Error ? e.message : 'Error al aprobar con grado manual';
+			const msg = e instanceof Error ? e.message : 'Error al aprobar con grado manual';
 			setError(msg);
 		} finally {
 			setIsApproving(false);
@@ -217,8 +216,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 		try {
 			await onRecalculate();
 		} catch (e: unknown) {
-			const msg =
-				e instanceof Error ? e.message : 'Error al recalcular el grado';
+			const msg = e instanceof Error ? e.message : 'Error al recalcular el grado';
 			setError(msg);
 		} finally {
 			setIsRecalculating(false);
@@ -231,8 +229,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 		try {
 			await onModifyReview();
 		} catch (e: unknown) {
-			const msg =
-				e instanceof Error ? e.message : 'Error al reabrir la revisión';
+			const msg = e instanceof Error ? e.message : 'Error al reabrir la revisión';
 			setError(msg);
 		} finally {
 			setIsReopening(false);
@@ -335,11 +332,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 
 			// 7. Status badge float-up
 			if (statusBadgeRef.current) {
-				tl.from(
-					statusBadgeRef.current,
-					{ y: 15, opacity: 0, duration: 0.4 },
-					'-=0.3',
-				);
+				tl.from(statusBadgeRef.current, { y: 15, opacity: 0, duration: 0.4 }, '-=0.3');
 			}
 
 			// 8. Glow breathing loop
@@ -381,7 +374,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 								¡EQUIPO VENDIDO!
 							</h3>
 							<p className='mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-300'>
-								Este equipo forma parte de la venta especial de Canal 13. 
+								Este equipo forma parte de la venta especial de Canal 13.
 								<span className='block text-lg underline decoration-emerald-500 decoration-double'>
 									SÉPARALO INMEDIATAMENTE y márcalo físicamente.
 								</span>
@@ -402,9 +395,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 						<h4 className='text-sm font-semibold text-red-900 dark:text-red-100'>
 							Error
 						</h4>
-						<p className='mt-1 text-sm text-red-700 dark:text-red-300'>
-							{error}
-						</p>
+						<p className='mt-1 text-sm text-red-700 dark:text-red-300'>{error}</p>
 					</div>
 				</div>
 			)}
@@ -444,7 +435,10 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 								variant='solid'
 								color='emerald'
 								className='gap-1 rounded-full px-3'>
-								<Icon icon='HeroCheckBadge' className='text-xl font-extrabold text-white' />
+								<Icon
+									icon='HeroCheckBadge'
+									className='text-xl font-extrabold text-white'
+								/>
 								Aprobado
 							</Badge>
 						)}
@@ -476,7 +470,10 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 								isLoading={isReopening}
 								disabled={isReopening}
 								className='flex-shrink-0'>
-								<Icon icon='HeroArrowPath' className='mr-2 h-4 w-4 text-white font-bold' />
+								<Icon
+									icon='HeroArrowPath'
+									className='mr-2 h-4 w-4 font-bold text-white'
+								/>
 								Reabrir
 							</Button>
 						</div>
@@ -541,14 +538,8 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 											y1='0%'
 											x2='100%'
 											y2='0%'>
-											<stop
-												offset='0%'
-												stopColor={gradeConfig.ringStart}
-											/>
-											<stop
-												offset='100%'
-												stopColor={gradeConfig.ringEnd}
-											/>
+											<stop offset='0%' stopColor={gradeConfig.ringStart} />
+											<stop offset='100%' stopColor={gradeConfig.ringEnd} />
 										</linearGradient>
 									</defs>
 									{/* Track */}
@@ -656,10 +647,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 					{hasBreakdown && (
 						<div className='rounded-xl border border-zinc-200/60 bg-zinc-50/50 p-5 dark:border-white/[0.06] dark:bg-zinc-800/30'>
 							<h4 className='mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
-								<Icon
-									icon='HeroBolt'
-									className='h-4 w-4 text-zinc-400'
-								/>
+								<Icon icon='HeroBolt' className='h-4 w-4 text-zinc-400' />
 								Desglose de Puntuación
 							</h4>
 							<div className='grid gap-2 sm:grid-cols-2'>
@@ -689,8 +677,8 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 										¿Modificaste los detalles técnicos?
 									</h4>
 									<p className='mt-1 text-xs text-blue-700 dark:text-blue-300'>
-										Si cambiaste información importante, puedes
-										recalcular el grado automáticamente.
+										Si cambiaste información importante, puedes recalcular el
+										grado automáticamente.
 									</p>
 								</div>
 								<Button
@@ -701,9 +689,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 									disabled={isRecalculating || isApproving}
 									className='flex-shrink-0'>
 									<Icon icon='HeroArrowPath' className='mr-2 h-4 w-4' />
-									{isRecalculating
-										? 'Recalculando...'
-										: 'Recalcular'}
+									{isRecalculating ? 'Recalculando...' : 'Recalcular'}
 								</Button>
 							</div>
 
@@ -717,12 +703,11 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 										/>
 										<div>
 											<h4 className='text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
-												¿No estás de acuerdo con la
-												calificación?
+												¿No estás de acuerdo con la calificación?
 											</h4>
 											<p className='mt-1 text-xs text-zinc-500'>
-												Puedes modificar el grado manualmente
-												proporcionando una justificación.
+												Puedes modificar el grado manualmente proporcionando
+												una justificación.
 											</p>
 										</div>
 									</div>
@@ -758,8 +743,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 									<CardBody className='space-y-4'>
 										<div>
 											<label className='mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-												Nuevo Grado{' '}
-												<span className='text-red-500'>*</span>
+												Nuevo Grado <span className='text-red-500'>*</span>
 											</label>
 											<SelectReact
 												name='manual_grade'
@@ -767,17 +751,14 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 												value={
 													manualGrade
 														? GRADE_OPTIONS.find(
-																(o) =>
-																	o.value ===
-																	manualGrade,
+																(o) => o.value === manualGrade,
 															) || null
 														: null
 												}
 												onChange={(option) => {
 													setManualGrade(
-														(
-															option as TSelectOption | null
-														)?.value || null,
+														(option as TSelectOption | null)?.value ||
+															null,
 													);
 													setError(null);
 												}}
@@ -800,8 +781,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 												placeholder='Explica por qué el grado sugerido no es correcto...'
 											/>
 											<p className='mt-1 text-xs text-zinc-500'>
-												Esta información quedará registrada en
-												el historial.
+												Esta información quedará registrada en el historial.
 											</p>
 										</div>
 									</CardBody>
@@ -828,10 +808,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 									isLoading={isReopening}
 									disabled={isReopening || isApproving}
 									title='Reabrir la revisión para modificar datos técnicos'>
-									<Icon
-										icon='HeroPencilSquare'
-										className='mr-2 h-4 w-4'
-									/>
+									<Icon icon='HeroPencilSquare' className='mr-2 h-4 w-4' />
 									Modificar Revisión
 								</Button>
 							)}
@@ -850,10 +827,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 											!manualGrade ||
 											!overrideReason.trim()
 										}>
-										<Icon
-											icon='HeroCheck'
-											className='mr-2 h-4 w-4'
-										/>
+										<Icon icon='HeroCheck' className='mr-2 h-4 w-4' />
 										Aprobar con Grado Manual
 									</Button>
 								) : (
@@ -862,15 +836,8 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 										color='emerald'
 										onClick={handleAcceptSuggestion}
 										isLoading={isApproving || approving}
-										disabled={
-											isApproving ||
-											approving ||
-											isReopening
-										}>
-										<Icon
-											icon='HeroCheckBadge'
-											className='mr-2 h-4 w-4'
-										/>
+										disabled={isApproving || approving || isReopening}>
+										<Icon icon='HeroCheckBadge' className='mr-2 h-4 w-4' />
 										Aceptar y Aprobar
 									</Button>
 								)}

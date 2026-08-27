@@ -122,7 +122,10 @@ export default function EnlacesPublicosPage() {
 	];
 
 	return (
-		<PageWrapper isProtectedRoute={true} title='Enlaces Públicos (Ventas)' name='Enlaces Públicos'>
+		<PageWrapper
+			isProtectedRoute={true}
+			title='Enlaces Públicos (Ventas)'
+			name='Enlaces Públicos'>
 			<Subheader>
 				<SubheaderLeft>
 					<div className='flex items-center gap-3'>
@@ -143,7 +146,8 @@ export default function EnlacesPublicosPage() {
 			<Container>
 				<Card className='w-full'>
 					<CardBody>
-						<div className='mb-4 flex justify-end'>l
+						<div className='mb-4 flex justify-end'>
+							l
 							<Button variant='solid' color='emerald' icon='HeroPlus'>
 								Generar Nuevo Enlace
 							</Button>

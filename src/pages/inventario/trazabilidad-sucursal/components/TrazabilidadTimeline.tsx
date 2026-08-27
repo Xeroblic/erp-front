@@ -163,7 +163,7 @@ export function TrazabilidadTimeline({
 			</div>
 
 			{/* Timeline */}
-			<div className='relative pl-2'>
+			<div className='relative isolate pl-2'>
 				{movimientos.map((movement, index) => (
 					<TimelineItem
 						key={movement.id}

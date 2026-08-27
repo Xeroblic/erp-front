@@ -173,9 +173,12 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 					// marcamos como inexistente para no ocultarlo el resto de la
 					// sesión; reintentamos con un backoff corto.
 					if (attempt < 2) {
-						retryTimer = setTimeout(() => {
-							if (isMounted) load(attempt + 1);
-						}, 150 * (attempt + 1));
+						retryTimer = setTimeout(
+							() => {
+								if (isMounted) load(attempt + 1);
+							},
+							150 * (attempt + 1),
+						);
 						return;
 					}
 					setResolvedIcon(null);

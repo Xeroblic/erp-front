@@ -148,9 +148,10 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 		if (customerTerm) {
 			data = data.filter((q) => {
 				const customerName = getCustomerDisplayName(q.customer).toLowerCase();
-				const matchesId = Number.isFinite(customerNumericId) && customerNumericId > 0
-					? Number(q.customer_id) === customerNumericId
-					: false;
+				const matchesId =
+					Number.isFinite(customerNumericId) && customerNumericId > 0
+						? Number(q.customer_id) === customerNumericId
+						: false;
 				return matchesId || customerName.includes(customerTerm);
 			});
 		}
@@ -209,10 +210,10 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			const quantity = Math.max(1, Number(item.quantity) || 1);
 			const rawUnitPrice = Number(
 				item.unit_price ??
-				(item as any).unit_net ??
-				(item as any).unitPrice ??
-				(item as any).unit ??
-				0,
+					(item as any).unit_net ??
+					(item as any).unitPrice ??
+					(item as any).unit ??
+					0,
 			);
 			const unitPrice =
 				hasProduct && rawUnitPrice <= 0
@@ -306,8 +307,8 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 				desiredPayload.length === 0
 					? existing
 					: existing.filter(
-						(item) => !toUpdate.some((desiredItem) => desiredItem.id === item.id),
-					);
+							(item) => !toUpdate.some((desiredItem) => desiredItem.id === item.id),
+						);
 
 			if (!toUpdate.length && !toCreate.length && !toDelete.length) {
 				return;

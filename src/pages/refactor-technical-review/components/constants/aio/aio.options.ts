@@ -101,6 +101,7 @@ export const OPERATING_SYSTEM_OPTIONS: TypedOption<string>[] = [
 // ─── Tipo de RAM (sugeridos) ──────────────────────────────────────────────────
 
 export const RAM_TYPE_OPTIONS: TypedOption<string>[] = [
+	{ value: 'DDR3', label: 'DDR3' },
 	{ value: 'DDR4', label: 'DDR4' },
 	{ value: 'DDR5', label: 'DDR5' },
 	{ value: 'LPDDR4', label: 'LPDDR4' },

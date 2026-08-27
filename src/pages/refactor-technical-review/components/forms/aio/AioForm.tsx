@@ -71,6 +71,8 @@ const AIO_SECTION_FIELDS: Record<string, FieldPath<AioFormData>[]> = {
 	'basic-info': ['brand', 'model', 'general_condition'],
 	hardware: [
 		'processor',
+		'has_no_ram',
+		'has_no_storage',
 		'ram_size',
 		'ram_slots',
 		'ram_type',

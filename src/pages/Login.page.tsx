@@ -8,15 +8,15 @@ import { toast } from 'react-toastify';
 import PageWrapper from '../components/layouts/PageWrapper/PageWrapper';
 import Button from '../components/ui/Button';
 import Input from '../components/form/Input';
-import LogoTemplate from '../templates/layouts/Logo/Logo.template.tsx';
+import LogoTemplate from '../templates/layouts/Logo/Logo.template';
 import FieldWrap from '../components/form/FieldWrap';
 import Icon from '../components/icon/Icon';
 import Validation from '../components/form/Validation';
 import Card, { CardBody } from '../components/ui/Card';
 import { useAppDispatch } from '@/store';
 import { loginThunk } from '@/store/slices/auth/authSlice';
-import Badge from '@/components/ui/Badge.tsx';
-import useForceLightMode from '@/hooks/useForceLightMode.ts';
+import Badge from '@/components/ui/Badge';
+import useForceLightMode from '@/hooks/useForceLightMode';
 import { getRememberedEmail, rememberEmail } from '@/utils/rememberedAccount';
 
 const LoginPage = () => {

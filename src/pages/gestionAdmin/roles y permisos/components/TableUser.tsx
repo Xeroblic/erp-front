@@ -213,10 +213,7 @@ const TableUser: React.FC<Props> = ({
 											color='zinc'
 											size='sm'
 											onClick={() => handleManageUser(info.row.original.id)}>
-											<Icon
-												icon='HeroCog6Tooth'
-												className='h-5 w-5'
-											/>
+											<Icon icon='HeroCog6Tooth' className='h-5 w-5' />
 										</Button>
 									</Tooltip>
 								</PermissionGuard>
@@ -224,7 +221,9 @@ const TableUser: React.FC<Props> = ({
 								<PermissionGuard role={'super-admin'}>
 									<Tooltip
 										text={
-											info.row.original.is_active ? 'Inactivar usuario' : 'Activar usuario'
+											info.row.original.is_active
+												? 'Inactivar usuario'
+												: 'Activar usuario'
 										}>
 										<Button
 											variant='ghost'

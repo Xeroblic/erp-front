@@ -1,0 +1,7 @@
+interface:
+  display_name: "PR Readiness Zentria"
+  short_description: "Preflight y auditoría proporcional de cambios"
+  default_prompt: "Usa $pr-readiness para preparar o auditar este cambio antes de declararlo listo."
+
+policy:
+  allow_implicit_invocation: true

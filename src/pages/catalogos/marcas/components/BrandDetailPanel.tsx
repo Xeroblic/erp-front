@@ -92,7 +92,12 @@ const BrandDetailPanel: React.FC<BrandDetailPanelProps> = ({ brand, onSave, onDe
 			{/* Encabezado */}
 			<Card>
 				<CardBody className='flex items-center gap-4'>
-					<BrandLogo brand={brand} className='h-16 w-16' iconClassName='h-8 w-8' zoomable />
+					<BrandLogo
+						brand={brand}
+						className='h-16 w-16'
+						iconClassName='h-8 w-8'
+						zoomable
+					/>
 					<div className='min-w-0 flex-1'>
 						{editing ? (
 							<div className='space-y-2'>
@@ -268,7 +273,7 @@ const BrandDetailPanel: React.FC<BrandDetailPanelProps> = ({ brand, onSave, onDe
 			</div>
 
 			{/* Línea de tiempo + galería */}
-			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2 '>
+			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
 				<Card>
 					<CardBody>
 						<h3 className='mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-200'>

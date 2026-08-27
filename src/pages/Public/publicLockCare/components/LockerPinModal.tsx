@@ -14,12 +14,7 @@ interface ILockerPinModalProps {
  * después de un check-in exitoso. El usuario puede copiar el PIN
  * y tiene instrucciones claras de cómo usarlo.
  */
-const LockerPinModal: React.FC<ILockerPinModalProps> = ({
-	isOpen,
-	pin,
-	lockerNumber,
-	onClose,
-}) => {
+const LockerPinModal: React.FC<ILockerPinModalProps> = ({ isOpen, pin, lockerNumber, onClose }) => {
 	const [copied, setCopied] = useState(false);
 
 	// Resetear estado de copiado al abrir
@@ -155,12 +150,10 @@ const LockerPinModal: React.FC<ILockerPinModalProps> = ({
 								/>
 							</div>
 							<div>
-								<p className='text-sm font-semibold text-blue-800'>
-									PIN pendiente
-								</p>
+								<p className='text-sm font-semibold text-blue-800'>PIN pendiente</p>
 								<p className='mt-0.5 text-xs leading-relaxed text-blue-700'>
-									El PIN de acceso será enviado a tu correo electrónico.
-									Revisa tu bandeja de entrada en los próximos minutos.
+									El PIN de acceso será enviado a tu correo electrónico. Revisa tu
+									bandeja de entrada en los próximos minutos.
 								</p>
 							</div>
 						</div>

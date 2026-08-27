@@ -269,7 +269,9 @@ describe('DeferredPaymentDetailDrawer', () => {
 		dragFile();
 		expect(screen.queryByTestId('attachments-drop-overlay')).not.toBeInTheDocument();
 		dropFile(new File(['contenido'], 'invalido.txt', { type: 'text/plain' }));
-		expect(within(dialog).queryByText('Formato de comprobante no permitido')).not.toBeInTheDocument();
+		expect(
+			within(dialog).queryByText('Formato de comprobante no permitido'),
+		).not.toBeInTheDocument();
 
 		act(() => {
 			store.dispatch(

@@ -39,10 +39,7 @@ import CloseSaleModal from './detail/components/modals/CloseSaleModal';
 import DeleteSaleModal from './detail/components/modals/DeleteSaleModal';
 import Tooltip from '@/components/ui/Tooltip';
 import { downloadShippingLabel } from '@/store/slices/sales/salesSlice';
-import {
-	fetchPendingSerialAssignment,
-	type PendingSerialSale,
-} from '@/services/salesService';
+import { fetchPendingSerialAssignment, type PendingSerialSale } from '@/services/salesService';
 import { useParams, useNavigate } from 'react-router-dom';
 
 injectReducer('salesModule', salesReducer);
@@ -436,7 +433,7 @@ const SalesListPage: React.FC = () => {
 									<Icon
 										icon='DuoBarcodeRead'
 										color='white'
-										className=' hover:text-amber-200'
+										className='hover:text-amber-200'
 										size='text-xl'
 									/>
 								</Button>
@@ -491,10 +488,13 @@ const SalesListPage: React.FC = () => {
 										color='red'
 										className='bg-red-200/30'
 										onClick={() => {
-										if (subsidiaryId) {
-											setSaleToDelete({ sale: row.original, subsidiaryId });
-										}
-									}}
+											if (subsidiaryId) {
+												setSaleToDelete({
+													sale: row.original,
+													subsidiaryId,
+												});
+											}
+										}}
 										isDisable={!subsidiaryId || isClosedSale}>
 										<Icon
 											icon='HeroTrash'
@@ -661,15 +661,19 @@ const SalesListPage: React.FC = () => {
 							<div className='flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-300/80 bg-gradient-to-r from-red-50 to-red-100/60 p-4 shadow-sm dark:border-red-500/30 dark:from-red-500/10 dark:to-red-400/5'>
 								<div className='flex items-center gap-3'>
 									<span className='flex h-11 w-11 flex-none items-center justify-center rounded-full bg-red-400/25 text-red-600 dark:text-red-300'>
-										<Icon icon='HeroExclamationTriangle' className='text-white font-bold h-6 w-6' />
+										<Icon
+											icon='HeroExclamationTriangle'
+											className='h-6 w-6 font-bold text-white'
+										/>
 									</span>
 									<div>
 										<p className='font-semibold text-red-900 dark:text-red-200'>
-											Tienes {pendingMap.size} venta(s) con series pendientes de
-											asignar
+											Tienes {pendingMap.size} venta(s) con series pendientes
+											de asignar
 										</p>
 										<p className='text-sm text-red-700/80 dark:text-red-300/70'>
-											Ingresa los numeros de serie para poder cerrar una venta.
+											Ingresa los numeros de serie para poder cerrar una
+											venta.
 										</p>
 									</div>
 								</div>

@@ -2,7 +2,13 @@
  * Shared types for the modular form system.
  * Each equipment type form uses these interfaces to define its sections.
  */
-import type { Control, FieldErrors, UseFormWatch, UseFormSetValue, FieldValues } from 'react-hook-form';
+import type {
+	Control,
+	FieldErrors,
+	UseFormWatch,
+	UseFormSetValue,
+	FieldValues,
+} from 'react-hook-form';
 import type { TIcons } from '@/types/icons.type';
 
 /** Props passed to every section component */

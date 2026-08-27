@@ -206,8 +206,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 	};
 
 	return (
-		<Card
-			className={``}>
+		<Card className={``}>
 			<CardBody>
 				<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
 					{/* ── Rango de Fechas (Dropdown con Calendar Pro) ── */}

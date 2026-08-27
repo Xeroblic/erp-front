@@ -28,6 +28,9 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 		isLoadingProducts,
 		productsError,
 		productRows,
+		catalogPagination,
+		catalogPageCount,
+		catalogTotal,
 		workItems,
 		modals,
 		loaders,
@@ -130,6 +133,11 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 										loading={isLoadingProducts}
 										onSelectProduct={actions.handleAddProduct}
 										selectedProductIds={workspaceProductIds}
+										paginationState={catalogPagination}
+										onPaginationChange={actions.handleCatalogPaginationChange}
+										pageCount={catalogPageCount}
+										totalResults={catalogTotal}
+										onSearchChange={actions.handleCatalogSearchChange}
 									/>
 								</CardBody>
 							</Card>
@@ -167,8 +175,8 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 													</Badge>
 												</div>
 												<p className='mt-1 text-xs text-zinc-500'>
-													Ajusta la cantidad de cada producto y luego confirma con
-													"Procesar Ajuste".
+													Ajusta la cantidad de cada producto y luego
+													confirma con "Procesar Ajuste".
 												</p>
 											</div>
 										</CardHeaderChild>

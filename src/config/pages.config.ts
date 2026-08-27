@@ -1,6 +1,6 @@
 // src/config/pages.config.ts
 
-import { id } from "date-fns/locale";
+import { id } from 'date-fns/locale';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 
 /* =================================================
@@ -219,19 +219,14 @@ export const privatePages = {
 		to: '/inventario',
 		text: 'Inventario',
 		icon: 'DuoBox3',
-		authority: ['view-warehouse'],
-		roles: [
-			'super-admin',
-			'admin',
-			'company-admin',
-			'subsidiary-admin',
-			'branch-admin',
-			'company-supervisor',
-			'manager',
-			'warehouse-employee',
-			'warehouse-manager',
-			'after-sales',
-		],
+		// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`): el
+		// allowlist de nombres de rol dejaba fuera a perfiles que sí tienen los
+		// permisos del flujo. Cada permiso abre al menos una subpágina —
+		// `view-warehouse` Bodegas, `edit-product` Ingreso de Stock,
+		// `view-inventory-movements` Trazabilidad, `view-transfer` Transferencias —
+		// así que basta con cualquiera de ellos para mostrar la sección.
+		authority: ['view-warehouse', 'edit-product', 'view-inventory-movements', 'view-transfer'],
+		requireAll: false,
 		subPages: {
 			transfers: {
 				id: 'commercialTransfers',
@@ -274,16 +269,12 @@ export const privatePages = {
 				to: '/inventario/trazabilidad-subsidiary',
 				text: 'Trazabilidad de Sucursal',
 				icon: 'HeroArrowsRightLeft',
-				authority: ['view-transfer'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'warehouse-manager',
-				],
+				// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`).
+				// El permiso es el de la API que alimenta la vista: consume
+				// `inventorySlice` → GET /branches/{id}/inventory-movements. Antes
+				// pedía `view-transfer`, que pertenece a Transferencias Comerciales:
+				// el gate y el endpoint quedaban desalineados en ambos sentidos.
+				authority: ['view-inventory-movements'],
 				requireAll: false,
 			},
 			movements: {
@@ -298,13 +289,13 @@ export const privatePages = {
 				to: '/inventario/ingreso-stock',
 				text: 'Ingreso de Stock',
 				icon: 'DuoBox',
-				authority: [],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-				],
-				requireAll: false,
+				// La vista necesita ambos permisos para ser útil: `view-product` carga
+				// el catálogo y el detalle en la sucursal destino; `edit-product`
+				// autoriza el POST de ajustes que cierra el flujo.
+				// Antes iba con `authority: []`, lo que dejaba la ruta accesible por
+				// URL directa a cualquier usuario autenticado.
+				authority: ['view-product', 'edit-product'],
+				requireAll: true,
 			},
 		},
 	},
@@ -832,29 +823,15 @@ export const privatePages = {
 		},
 	},
 
-
 	catalogs: {
 		id: 'catalogs',
 		to: '/catalogos',
 		text: 'Catálogos',
 		icon: 'DuoArchive',
+		// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`): el
+		// allowlist de nombres de rol ocultaba la sección a perfiles que sí tienen
+		// `view-product`, que es lo que realmente habilita el catálogo.
 		authority: ['view-product'],
-		roles: [
-			'super-admin',
-			'admin',
-			'company-admin',
-			'subsidiary-admin',
-			'branch-admin',
-			'catalog-admin',
-			'company-supervisor',
-			'manager',
-			'employee',
-			'technician',
-			'warehouse-employee',
-			'warehouse-manager',
-			'salesperson',
-			'after-sales',
-		],
 		requireAll: false,
 		subPages: {
 			products: {
@@ -862,23 +839,9 @@ export const privatePages = {
 				to: '/catalogos/productos',
 				text: 'Productos',
 				icon: 'DuoPixels',
+				// Mismo permiso que ya protege la ruta en `contentRoutes`; sin el
+				// allowlist de roles, que dejaba el ítem oculto pese al permiso.
 				authority: ['view-product'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'catalog-admin',
-					'company-supervisor',
-					'manager',
-					'employee',
-					'technician',
-					'warehouse-employee',
-					'warehouse-manager',
-					'salesperson',
-					'after-sales',
-				],
 				requireAll: false,
 			},
 			productsDetail: {
@@ -1062,7 +1025,7 @@ export type QuickLinkConfig = {
 export const dashboardQuickLinksConfig: QuickLinkConfig[] = [
 	{
 		section: 'technical',
-		items: ['refactor', 'lotes', 'reviews']
+		items: ['refactor', 'lotes', 'reviews'],
 	},
 	{ section: 'catalogs' },
 	{

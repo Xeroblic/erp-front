@@ -42,11 +42,11 @@ const Dropdown: FC<IDropdownProps> = (props) => {
 		!!(isOpen !== null && !!setIsOpen ? isOpen : false),
 	);
 
-	useEffect (() => {
-		if (isOpen !== null ){
+	useEffect(() => {
+		if (isOpen !== null) {
 			setState(isOpen);
 		}
-	}, [isOpen])
+	}, [isOpen]);
 
 	const dropdownRef = useRef<HTMLElement>(null);
 
@@ -295,14 +295,10 @@ export const DropdownNavLinkItem: FC<IDropdownNavLinkItemProps> = (props) => {
 			onClick(e);
 		}
 		navigate(to);
-	}
+	};
 
 	return (
-		<DropdownItem 
-			{...rest} 
-			onClick={handleClick}
-			isActive={!!match}
-			>
+		<DropdownItem {...rest} onClick={handleClick} isActive={!!match}>
 			{children}
 		</DropdownItem>
 	);

@@ -1,7 +1,17 @@
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import type { SalesDashboardStats, SaleRecord, ReportFiltersState } from '../../../types';
 import { generateSmartInsights } from '../smartInsights';
-import { buildCoverPage, buildExecutiveSummary, buildSmartKPIs, buildTopPerformersTable, buildYearlyAnalytics, buildSemesterDeepDive, buildRiskAnalytics, buildMethodology, type PdfContent } from './reportBuilder';
+import {
+	buildCoverPage,
+	buildExecutiveSummary,
+	buildSmartKPIs,
+	buildTopPerformersTable,
+	buildYearlyAnalytics,
+	buildSemesterDeepDive,
+	buildRiskAnalytics,
+	buildMethodology,
+	type PdfContent,
+} from './reportBuilder';
 import { format } from 'date-fns';
 
 export interface ExecutiveReportData {
@@ -33,7 +43,7 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 		buildYearlyAnalytics(data.filteredResults),
 		...(buildSemesterDeepDive(data.filteredResults) as PdfContent[]),
 		buildRiskAnalytics(data.filteredResults),
-		buildMethodology()
+		buildMethodology(),
 	];
 
 	const docDefinition: TDocumentDefinitions = {
@@ -54,8 +64,19 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 		footer: (currentPage: number, pageCount: number) => {
 			return {
 				columns: [
-					{ text: 'Confidencial - Uso Interno Exclusivo', fontSize: 8, color: '#94a3b8', margin: [40, 20, 0, 0] },
-					{ text: `Página ${currentPage} de ${pageCount}`, fontSize: 8, color: '#94a3b8', alignment: 'right', margin: [0, 20, 40, 0] },
+					{
+						text: 'Confidencial - Uso Interno Exclusivo',
+						fontSize: 8,
+						color: '#94a3b8',
+						margin: [40, 20, 0, 0],
+					},
+					{
+						text: `Página ${currentPage} de ${pageCount}`,
+						fontSize: 8,
+						color: '#94a3b8',
+						alignment: 'right',
+						margin: [0, 20, 40, 0],
+					},
 				],
 			};
 		},

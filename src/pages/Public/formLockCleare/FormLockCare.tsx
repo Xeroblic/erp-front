@@ -1,11 +1,4 @@
-	import React, {
-	Suspense,
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useState,
-} from 'react';
+import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -52,7 +45,7 @@ const FormLockCare: React.FC = () => {
 	const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 	const [decorationsReady, setDecorationsReady] = useState(false);
 	const [floatingOrnaments, setFloatingOrnaments] = useState<FloatingOrnament[]>([]);
-	
+
 	// Fuerza el modo light mediante el nuevo hook
 	useForceLightMode();
 

@@ -88,35 +88,34 @@ import Icon from '@/components/icon/Icon';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 
 const ModuloView = () => (
-  <PageWrapper isProtectedRoute title="Clientes">
-    <Subheader>
-      <SubheaderLeft>
-        <Icon icon="HeroUsers" />
-        <span>Catálogos / Clientes</span>
-      </SubheaderLeft>
-      <SubheaderRight>
-        {/* Botón con permiso + scope de sucursal */}
-        <ProtectedButton
-          permission="create-customer"
-          branchId={currentBranchId}
-          scope="access"
-          variant="solid"
-          color="blue"
-          icon="HeroPlus"
-          onClick={onCreate}>
-          Nuevo
-        </ProtectedButton>
-      </SubheaderRight>
-    </Subheader>
+	<PageWrapper isProtectedRoute title='Clientes'>
+		<Subheader>
+			<SubheaderLeft>
+				<Icon icon='HeroUsers' />
+				<span>Catálogos / Clientes</span>
+			</SubheaderLeft>
+			<SubheaderRight>
+				{/* Botón con permiso + scope de sucursal */}
+				<ProtectedButton
+					permission='create-customer'
+					branchId={currentBranchId}
+					scope='access'
+					variant='solid'
+					color='blue'
+					icon='HeroPlus'
+					onClick={onCreate}>
+					Nuevo
+				</ProtectedButton>
+			</SubheaderRight>
+		</Subheader>
 
-    <Container>
-      {/* Card, tablas, modales... */}
-    </Container>
-  </PageWrapper>
+		<Container>{/* Card, tablas, modales... */}</Container>
+	</PageWrapper>
 );
 ```
 
 Componentes UI clave (rutas reales):
+
 - Layouts: `@/components/layouts/{PageWrapper,Subheader,Container}/...`
 - Form: `@/components/form/*` (Input, SelectReact, Label, etc.)
 - UI: `@/components/ui/*` (`Button`, `ProtectedButton`, Card/Modal system)
@@ -129,13 +128,13 @@ Componentes UI clave (rutas reales):
 El modelo combina **permisos/roles** con **scope geográfico** (branch / subsidiary /
 company). Super-admin (`super-admin` en permisos o roles) siempre pasa.
 
-| Capa | Herramienta | Uso |
-|------|-------------|-----|
-| Ruta | `ProtectedRoute` (`@/components/router/ProtectedRoute`) | Protege una ruta; redirige si no hay acceso. En rutas se declara vía campo `authority` de `pages.config`. |
+| Capa           | Herramienta                                                      | Uso                                                                                                                           |
+| -------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Ruta           | `ProtectedRoute` (`@/components/router/ProtectedRoute`)          | Protege una ruta; redirige si no hay acceso. En rutas se declara vía campo `authority` de `pages.config`.                     |
 | UI declarativa | `PermissionGuard` (`@/components/authorization/PermissionGuard`) | Oculta/condiciona bloques. Props: `permission`, `role`, `requireAll`, `branchId/subsidiaryId/companyId`, `scope`, `fallback`. |
-| Botón | `ProtectedButton` (`@/components/ui/ProtectedButton`) | Botón con permiso + scope; `fallbackMode: 'hidden' | 'disabled'`. |
-| Lógica | `useAuthorization` (`@/hooks/useAuthorization`) | `authorize(...)`, `canAccessBranch/Subsidiary/Company`, `canViewBranch/...`, `hasPermission`, `isSuperAdmin`. |
-| Lógica simple | `useCan` (`@/hooks/useCan`) | `has`, `any`, `all`, `hasRole`, `isAdmin`, `isSuperAdmin`. |
+| Botón          | `ProtectedButton` (`@/components/ui/ProtectedButton`)            | Botón con permiso + scope; `fallbackMode: 'hidden' \| 'disabled'`.                                                            |
+| Lógica         | `useAuthorization` (`@/hooks/useAuthorization`)                  | `authorize(...)`, `canAccessBranch/Subsidiary/Company`, `canViewBranch/...`, `hasPermission`, `isSuperAdmin`.                 |
+| Lógica simple  | `useCan` (`@/hooks/useCan`)                                      | `has`, `any`, `all`, `hasRole`, `isAdmin`, `isSuperAdmin`.                                                                    |
 
 **`scope`**: `'none'` (sin validación geográfica), `'visible'`, `'access'`, `'both'`.
 Para acciones de escritura usa normalmente `scope="access"`. Si el usuario no tiene
@@ -145,8 +144,8 @@ devuelven `true` (no bloquean).
 Ejemplo declarativo:
 
 ```tsx
-<PermissionGuard permission="create-product" branchId={currentBranchId} scope="access">
-  <CrearProductoButton />
+<PermissionGuard permission='create-product' branchId={currentBranchId} scope='access'>
+	<CrearProductoButton />
 </PermissionGuard>
 ```
 
@@ -170,6 +169,7 @@ const { branchId, subsidiaryId, hasValidBranch, visibleBranches } = useCurrentBr
 - `visibleBranches`: lista normalizada (`{ id, name }`) de las sucursales del usuario.
 
 Flujo típico: `useCurrentBranch()` da el contexto → se pasa a:
+
 1. el hook de datos del módulo (`useModulo({ subsidiaryId, ... })`) para filtrar la
    petición, y
 2. los guards (`branchId` + `scope`) para autorizar acciones.
@@ -182,6 +182,7 @@ llamadas API innecesarias. Prefiere `useCurrentBranch` + `useAuthorization`.
 ## 7. Store (Redux Toolkit)
 
 Estructura en `src/store/`:
+
 - `storeSetup.ts` — configura el store (+ persistencia). `rootReducer.ts` — combina.
 - `hook.ts` — **usa siempre** `useAppDispatch` y `useAppSelector` (tipados), no los de
   `react-redux` crudos.
@@ -190,6 +191,7 @@ Estructura en `src/store/`:
 - `selectors/`, `selectors.ts` — selectores reutilizables.
 
 Patrón de slice (ver `slices/products/productsSlice.ts` como referencia):
+
 - Estado tipado con flags explícitos: `loading`, `creating`, `updating`, `deleting`,
   `error`, `current`, `meta`, etc.
 - Efectos async con `createAsyncThunk`, llamando a `ApiService.fetchData(...)`.
@@ -214,11 +216,11 @@ await dispatch(createCustomerSupplier(payload)).unwrap(); // .unwrap() para try/
 - **`BaseService`** — instancia Axios con interceptores (token JWT, refresh, 401/403,
   abort). No llamar Axios directo.
 - **`ApiService`** (`src/services/ApiService.ts`) — envuelve `BaseService` y añade:
-  - **Caché en memoria por TTL** para GETs: pasa `cacheTTLms` y opcional `forceRefetch`.
-  - **Dedupe** de requests en vuelo: `dedupe: true` (+ `dedupeKey` opcional).
-  - `fetchData<Resp, Req>(config)` → `AxiosResponse<Resp>`.
-  - `fetchNormalized<T>(config)` → devuelve `data.data ?? data` (desempaqueta el wrapper).
-  - Invalidación: `clearCache()`, `invalidateCache(urlPattern)`, `invalidateExact(config)`.
+    - **Caché en memoria por TTL** para GETs: pasa `cacheTTLms` y opcional `forceRefetch`.
+    - **Dedupe** de requests en vuelo: `dedupe: true` (+ `dedupeKey` opcional).
+    - `fetchData<Resp, Req>(config)` → `AxiosResponse<Resp>`.
+    - `fetchNormalized<T>(config)` → devuelve `data.data ?? data` (desempaqueta el wrapper).
+    - Invalidación: `clearCache()`, `invalidateCache(urlPattern)`, `invalidateExact(config)`.
 - Servicios por dominio: `documentsService`, `salesService`, `integrationsService`,
   `falabellaApi.service`, `reports/`, `lockers/`, `auth/`, etc.
 
@@ -226,11 +228,11 @@ Uso típico dentro de un thunk:
 
 ```ts
 const resp = await ApiService.fetchData<IProductListResponse>({
-  url: '/products',
-  method: 'get',
-  params: { subsidiary_id, page, per_page },
-  cacheTTLms: 30_000,   // opcional
-  dedupe: true,         // opcional
+	url: '/products',
+	method: 'get',
+	params: { subsidiary_id, page, per_page },
+	cacheTTLms: 30_000, // opcional
+	dedupe: true, // opcional
 });
 ```
 
@@ -240,6 +242,7 @@ const resp = await ApiService.fetchData<IProductListResponse>({
 
 Las rutas se declaran en `src/routes/contentRoutes.tsx` (lazy imports) y se cruzan con
 `src/config/pages.config.ts`:
+
 - Páginas públicas: `{ path, element, public: true }`.
 - Páginas protegidas: `{ path, element, authority: cfg.<area>.subPages.<x>.authority }`.
 - Plantillas de layout: `asideRoutes`, `headerRoutes`, `footerRoutes`.
@@ -259,7 +262,7 @@ Para una página nueva: añade el `lazy(() => import('@/pages/...'))`, su entrad
    Las llamadas pasan por `ApiService`.
 4. **Lógica:** hook `hooks/use<Modulo>.ts` — toma `useCurrentBranch()`, configura
    **Formik** con `XSchema`, hace `dispatch(...).unwrap()`, expone `{ data, state, form,
-   actions }` memoizados.
+actions }` memoizados.
 5. **Vista:** `<Modulo>View.tsx` presentacional con `PageWrapper > Subheader > Container`
    y componentes del Design System. Inputs enlazados a Formik.
 6. **Autorización:** ruta con `ProtectedRoute`/`authority`; acciones con
@@ -294,9 +297,10 @@ cualquier conflicto manda este CLAUDE.md** (sobre todo: Formik + Yup, no RHF + Z
 
 Registro cronológico de la actividad del proyecto para luego generar informes que
 justifiquen el trabajo. **No es documentación técnica** (eso vive aquí y en el código);
-es el *qué se hizo, en qué rama y por qué* de cada día.
+es el _qué se hizo, en qué rama y por qué_ de cada día.
 
 Reglas (ver `bitacora_trabajo/instrucciones.md` para el detalle completo):
+
 - **Un archivo por día**, nombrado `dd-mm-yyyy.md` (ej. `24-06-2026.md`). **Prohibido**
   satélites por tema (`08-07-2026-foo.md`, `analisis-*.md` sueltos).
 - Al **inicio** del archivo: sección **`## Temas del día`** (índice de viñetas) para
@@ -309,6 +313,11 @@ Reglas (ver `bitacora_trabajo/instrucciones.md` para el detalle completo):
 
 Al cerrar una tarea, **actualizá el índice de temas** y el bloque del tema en el archivo
 del día (créalo si no existe).
+
+**Excepción:** una corrección literal y determinista de revisión, limitada a configuración,
+documentación o copy y sin cambio funcional, no crea por sí sola un archivo diario nuevo. Si el
+archivo del día ya existe, puede agregarse de forma resumida; si no existe, sólo se registra cuando
+el usuario lo pida o el cambio sea material.
 
 ## 14. Flujo de trabajo (branching + PRs)
 

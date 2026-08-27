@@ -436,8 +436,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 	}, [isMobileViewport, rest.styles]);
 
 	const computedMenuPortalTarget =
-		rest.menuPortalTarget ??
-		(typeof document !== 'undefined' ? document.body : undefined);
+		rest.menuPortalTarget ?? (typeof document !== 'undefined' ? document.body : undefined);
 
 	const computedMenuPosition = rest.menuPosition ?? (isMobileViewport ? 'fixed' : 'absolute');
 	const computedMenuIsOpen = isMobileViewport ? isMobileMenuOpen : undefined;
@@ -489,7 +488,13 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 				classNames('px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400'),
 			group: () => classNames('border-zinc-500/25', '[&:not(:last-child)]:border-b'),
 			groupHeading: () =>
-				classNames('font-semibold', 'px-1.5', 'pt-1.5', 'pb-0.5', 'text-zinc-700 dark:text-zinc-300'),
+				classNames(
+					'font-semibold',
+					'px-1.5',
+					'pt-1.5',
+					'pb-0.5',
+					'text-zinc-700 dark:text-zinc-300',
+				),
 			placeholder: () => classNames('text-black/50', 'dark:text-white/50'),
 			indicatorSeparator: () => classNames('rounded', '!bg-zinc-500/50'),
 			multiValue: (state: MultiValuePropsExtends): string =>

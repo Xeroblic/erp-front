@@ -31,14 +31,19 @@ export const StockDeltaValidator: React.FC<StockDeltaValidatorProps> = ({
 	const bgColor = isBalanced
 		? 'bg-emerald-50 dark:bg-emerald-900/20'
 		: 'bg-rose-50 dark:bg-rose-900/20';
-	const textColor = isBalanced ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400';
+	const textColor = isBalanced
+		? 'text-emerald-700 dark:text-emerald-400'
+		: 'text-rose-700 dark:text-rose-400';
 	const iconColor = isBalanced ? 'text-emerald-500' : 'text-rose-500';
 	const iconName = isBalanced ? 'HeroCheckCircle' : 'HeroExclamationTriangle';
 
 	return (
 		<Card className={`border border-transparent ${bgColor} shadow-none`}>
 			<CardBody className='flex items-start gap-3 p-4'>
-				<Icon icon={iconName as any} className={`mt-0.5 h-6 w-6 flex-shrink-0 ${iconColor}`} />
+				<Icon
+					icon={iconName as any}
+					className={`mt-0.5 h-6 w-6 flex-shrink-0 ${iconColor}`}
+				/>
 				<div className='flex-1'>
 					<h4 className={`text-sm font-bold ${textColor}`}>
 						Balance de Stock Inter-Sucursal

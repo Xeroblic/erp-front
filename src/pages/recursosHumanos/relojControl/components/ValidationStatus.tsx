@@ -29,8 +29,10 @@ const StatusItem: React.FC<StatusItemProps> = ({ label, passed, message, isLoadi
 	};
 
 	const getBg = () => {
-		if (isLoading) return 'bg-amber-100 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20';
-		if (passed === null) return 'bg-zinc-100 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700';
+		if (isLoading)
+			return 'bg-amber-100 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20';
+		if (passed === null)
+			return 'bg-zinc-100 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700';
 		return passed
 			? 'bg-emerald-100 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20'
 			: 'bg-red-100 dark:bg-red-500/10 border-red-200 dark:border-red-500/20';
@@ -56,7 +58,9 @@ const ValidationStatus: React.FC<ValidationStatusProps> = ({ validations, isVali
 
 	return (
 		<div className='flex flex-col gap-2'>
-			<h3 className='mb-1 text-sm font-semibold text-zinc-700 dark:text-zinc-300'>Estado de Validaciones</h3>
+			<h3 className='mb-1 text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
+				Estado de Validaciones
+			</h3>
 
 			{/* Geolocalización */}
 			<StatusItem
