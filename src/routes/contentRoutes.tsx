@@ -290,9 +290,12 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.inventory.subPages.transfers.authority,
 	},
 	{
+		// No usa `cfg.inventory.authority`: ese nodo agrupa los permisos que abren la
+		// sección (view-warehouse O edit-product) y `AuthorityCheck` evalúa siempre
+		// con requireAll, así que exigiría ambos. El historial es de bodega.
 		path: '/inventario/historial',
 		element: <HistorialInventario />,
-		authority: cfg.inventory.authority,
+		authority: cfg.inventory.subPages.warehouses.authority,
 	},
 	{
 		path: cfg.commercial.subPages.sales.to,
