@@ -267,16 +267,10 @@ export const privatePages = {
 				to: '/inventario/trazabilidad-subsidiary',
 				text: 'Trazabilidad de Sucursal',
 				icon: 'HeroArrowsRightLeft',
+				// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`).
+				// `view-transfer` es el permiso real de la vista: sin él sigue oculta,
+				// aunque ya no haya allowlist de nombres de rol.
 				authority: ['view-transfer'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'warehouse-manager',
-				],
 				requireAll: false,
 			},
 			movements: {

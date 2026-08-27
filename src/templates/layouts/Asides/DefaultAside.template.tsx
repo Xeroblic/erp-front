@@ -350,7 +350,6 @@ const DefaultAsideTemplate = () => {
 								authority={
 									Pages.inventory.subPages.trazabilidadSubsidiary.authority
 								}
-								roles={Pages.inventory.subPages.trazabilidadSubsidiary.roles}
 								userAuthority={userAuthority}
 								requireAll={
 									Pages.inventory.subPages.trazabilidadSubsidiary.requireAll
