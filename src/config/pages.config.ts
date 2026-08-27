@@ -221,9 +221,11 @@ export const privatePages = {
 		icon: 'DuoBox3',
 		// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`): el
 		// allowlist de nombres de rol dejaba fuera a perfiles que sí tienen los
-		// permisos del flujo de ajuste de stock. `edit-product` habilita la sección
-		// para quien puede ejecutar ajustes sin necesitar `view-warehouse`.
-		authority: ['view-warehouse', 'edit-product'],
+		// permisos del flujo. Cada permiso abre al menos una subpágina —
+		// `view-warehouse` Bodegas, `edit-product` Ingreso de Stock,
+		// `view-inventory-movements` Trazabilidad, `view-transfer` Transferencias —
+		// así que basta con cualquiera de ellos para mostrar la sección.
+		authority: ['view-warehouse', 'edit-product', 'view-inventory-movements', 'view-transfer'],
 		requireAll: false,
 		subPages: {
 			transfers: {
@@ -268,9 +270,11 @@ export const privatePages = {
 				text: 'Trazabilidad de Sucursal',
 				icon: 'HeroArrowsRightLeft',
 				// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`).
-				// `view-transfer` es el permiso real de la vista: sin él sigue oculta,
-				// aunque ya no haya allowlist de nombres de rol.
-				authority: ['view-transfer'],
+				// El permiso es el de la API que alimenta la vista: consume
+				// `inventorySlice` → GET /branches/{id}/inventory-movements. Antes
+				// pedía `view-transfer`, que pertenece a Transferencias Comerciales:
+				// el gate y el endpoint quedaban desalineados en ambos sentidos.
+				authority: ['view-inventory-movements'],
 				requireAll: false,
 			},
 			movements: {
