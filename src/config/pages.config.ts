@@ -219,19 +219,12 @@ export const privatePages = {
 		to: '/inventario',
 		text: 'Inventario',
 		icon: 'DuoBox3',
-		authority: ['view-warehouse'],
-		roles: [
-			'super-admin',
-			'admin',
-			'company-admin',
-			'subsidiary-admin',
-			'branch-admin',
-			'company-supervisor',
-			'manager',
-			'warehouse-employee',
-			'warehouse-manager',
-			'after-sales',
-		],
+		// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`): el
+		// allowlist de nombres de rol dejaba fuera a perfiles que sí tienen los
+		// permisos del flujo de ajuste de stock. `edit-product` habilita la sección
+		// para quien puede ejecutar ajustes sin necesitar `view-warehouse`.
+		authority: ['view-warehouse', 'edit-product'],
+		requireAll: false,
 		subPages: {
 			transfers: {
 				id: 'commercialTransfers',
@@ -298,9 +291,13 @@ export const privatePages = {
 				to: '/inventario/ingreso-stock',
 				text: 'Ingreso de Stock',
 				icon: 'DuoBox',
-				authority: [],
-				roles: ['super-admin', 'admin', 'company-admin'],
-				requireAll: false,
+				// La vista necesita ambos permisos para ser útil: `view-product` carga
+				// el catálogo y el detalle en la sucursal destino; `edit-product`
+				// autoriza el POST de ajustes que cierra el flujo.
+				// Antes iba con `authority: []`, lo que dejaba la ruta accesible por
+				// URL directa a cualquier usuario autenticado.
+				authority: ['view-product', 'edit-product'],
+				requireAll: true,
 			},
 		},
 	},

@@ -315,13 +315,13 @@ const DefaultAsideTemplate = () => {
 					 * ====================== */}
 					<AuthorityCheckNav
 						authority={Pages.inventory.authority}
-						roles={Pages.inventory.roles}
+						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
 						<NavTitle>Inventario</NavTitle>
 					</AuthorityCheckNav>
 					<AuthorityCheckNav
 						authority={Pages.inventory.authority}
-						roles={Pages.inventory.roles}
+						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
 						<NavCollapse
 							key='inventario-nav'
@@ -383,7 +383,7 @@ const DefaultAsideTemplate = () => {
 							{/* Ingreso de Stock */}
 							<AuthorityCheckNav
 								authority={Pages.inventory.subPages.ingresoStock.authority}
-								roles={Pages.inventory.subPages.ingresoStock.roles}
+								requireAll={Pages.inventory.subPages.ingresoStock.requireAll}
 								userAuthority={userAuthority}>
 								<NavItem
 									text={Pages.inventory.subPages.ingresoStock.text}
