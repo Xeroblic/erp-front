@@ -6,13 +6,15 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 
 ## [v2.3.1] - 2026-08-27
 
-**Enfoque de la versión:** Estabilidad de Revisiones Técnicas y endurecimiento de contratos visibles de catálogo, ventas y autorización.
+**Enfoque de la versión:** Estabilidad de Revisiones Técnicas, Inventario y Cartera de Crédito, con endurecimiento de contratos visibles, permisos y calidad.
 
 ### Puntos Destacados:
 
 - **Revisiones técnicas:** ausencia explícita de RAM y almacenamiento, preservación del borrador al alternar el estado y paridad visual para notebook, desktop y AIO.
 - **Catálogo y ventas:** contratos seguros para toggles de estado y visualización/edición consistente del tipo de cliente de ventas.
 - **Autorización y calidad:** fallback deshabilitado accesible en acciones protegidas y saneamiento de imports, formato y finales de línea.
+- **Inventario y catálogos:** permisos alineados con rutas y API, tabla de ingreso de stock con scroll contenido y catálogo paginado/buscable contra el servidor.
+- **Trazabilidad y crédito:** detalle de movimientos más legible sin recortes y pruebas de hidratación Formik estabilizadas para perfiles de crédito.
 
 [Ver archivo detallado en Docs/releases/v2.3.1.md](./Docs/releases/v2.3.1.md)
 
