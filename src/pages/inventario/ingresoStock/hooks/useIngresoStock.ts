@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
+import type { OnChangeFn, PaginationState } from '@tanstack/react-table';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useStockCatalog } from './useStockCatalog';
-import type { IProduct } from '@/interface/product.interface';
+import type { IProduct, ProductFilters } from '@/interface/product.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
 import ApiService from '@/services/ApiService';
@@ -14,6 +15,8 @@ import { useQuickProductCreate } from './useQuickProductCreate';
 import { useBrandDeduplication } from './useBrandDeduplication';
 import { AdjustmentSchema, QuickProductSchema } from '../types';
 import type { IAdjustmentForm, IQuickProductForm } from '../types';
+
+const CATALOG_PAGE_SIZE = 10;
 
 export const useIngresoStock = () => {
 	// Modals state
@@ -106,10 +109,37 @@ export const useIngresoStock = () => {
 	}, [selectedBranchId, branches, user, externalBranchContext]);
 
 	// Contexto local (Catálogo de Stock)
-	// Contexto local (Catálogo de Stock)
-	const [filters] = useState({});
+	// El catálogo pagina y busca contra el servidor: traer una sola página y filtrar
+	// en cliente ocultaba los productos sin serie que quedaban fuera de esa página.
+	const [catalogSearchInput, setCatalogSearchInput] = useState('');
+	const [catalogSearch, setCatalogSearch] = useState('');
+	const [catalogPagination, setCatalogPagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: CATALOG_PAGE_SIZE,
+	});
+
+	useEffect(() => {
+		const timer = setTimeout(() => setCatalogSearch(catalogSearchInput.trim()), 350);
+		return () => clearTimeout(timer);
+	}, [catalogSearchInput]);
+
+	// Al cambiar la búsqueda o la subempresa, la página actual deja de ser válida.
+	useEffect(() => {
+		setCatalogPagination((prev) => (prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 }));
+	}, [catalogSearch, currentSubsidiaryId]);
+
+	const catalogFilters = useMemo<ProductFilters>(
+		() => ({
+			// El backend excluye los serializados; así la paginación cuenta sólo lo que se muestra.
+			serial_tracking: false,
+			...(catalogSearch ? { search: catalogSearch } : {}),
+		}),
+		[catalogSearch],
+	);
+
 	const {
 		products,
+		meta: catalogMeta,
 		loading: isLoadingProducts,
 		error: productsError,
 		refresh,
@@ -118,14 +148,26 @@ export const useIngresoStock = () => {
 		// Evita que el backend sobreescriba `product.stock` con el asignado a la sucursal
 		branchId: undefined,
 		subsidiaryId: currentSubsidiaryId ?? undefined,
-		filters,
-		page: 1,
-		perPage: 50,
+		filters: catalogFilters,
+		page: catalogPagination.pageIndex + 1,
+		perPage: catalogPagination.pageSize,
 	});
 
+	// Red de seguridad por si el backend ignorara el filtro `serial_tracking`.
 	const productRows = useMemo<IProduct[]>(() => {
 		return products.filter((p: IProduct) => !p.serial_tracking);
 	}, [products]);
+
+	const handleCatalogPaginationChange = useCallback<OnChangeFn<PaginationState>>((updater) => {
+		setCatalogPagination((prev) => (typeof updater === 'function' ? updater(prev) : updater));
+	}, []);
+
+	const handleCatalogSearchChange = useCallback((value: string) => {
+		setCatalogSearchInput(value);
+	}, []);
+
+	const catalogPageCount = Math.max(1, Number(catalogMeta.last_page) || 1);
+	const catalogTotal = Number(catalogMeta.total) || 0;
 
 	// Workspace state — fuente de verdad: currentSubsidiaryId
 	const {
@@ -516,6 +558,9 @@ export const useIngresoStock = () => {
 			isLoadingProducts,
 			productsError,
 			productRows,
+			catalogPagination,
+			catalogPageCount,
+			catalogTotal,
 			workItems,
 			isWorkspaceVisible,
 			setIsWorkspaceVisible,
@@ -552,6 +597,8 @@ export const useIngresoStock = () => {
 		},
 		actions: {
 			setIsWorkspaceVisible,
+			handleCatalogPaginationChange,
+			handleCatalogSearchChange,
 			handleAddProduct,
 			handleStartAdjustment,
 			handleCloseDetail,
