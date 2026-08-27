@@ -4,6 +4,20 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 
 ---
 
+## [v2.3.1] - 2026-08-27
+
+**Enfoque de la versión:** Estabilidad de Revisiones Técnicas y endurecimiento de contratos visibles de catálogo, ventas y autorización.
+
+### Puntos Destacados:
+
+- **Revisiones técnicas:** ausencia explícita de RAM y almacenamiento, preservación del borrador al alternar el estado y paridad visual para notebook, desktop y AIO.
+- **Catálogo y ventas:** contratos seguros para toggles de estado y visualización/edición consistente del tipo de cliente de ventas.
+- **Autorización y calidad:** fallback deshabilitado accesible en acciones protegidas y saneamiento de imports, formato y finales de línea.
+
+[Ver archivo detallado en Docs/releases/v2.3.1.md](./Docs/releases/v2.3.1.md)
+
+---
+
 ## [v2.3.0] - 2026-08-20
 
 **Enfoque de la versión:** Consolidación operativa de Pagos Diferidos y Cartera de Crédito, con correcciones de aislamiento organizacional, formularios financieros y componentes compartidos.
