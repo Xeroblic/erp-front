@@ -189,7 +189,8 @@ export const WorkspaceTable = ({
 			enableSearch={false}
 			pageSize={10}
 			emptyMessage='Agrega productos desde la tabla principal para iniciar el ajuste.'
-			className='max-h-[25vh]'
+			tableContainerClassName='max-h-[50vh] overflow-y-auto'
+			stickyHeader
 		/>
 	);
 };
