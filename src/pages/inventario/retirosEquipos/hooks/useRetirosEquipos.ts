@@ -65,7 +65,7 @@ export interface UseRetirosEquiposResult {
 export const useRetirosEquipos = (): UseRetirosEquiposResult => {
 	const dispatch = useAppDispatch();
 	const [searchParams, setSearchParams] = useSearchParams();
-	const debouncedSearchRef = useRef<ReturnType<typeof setTimeout>>();
+	const debouncedSearchRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
 	const cancelPendingSearch = useCallback(() => {
 		if (debouncedSearchRef.current === undefined) return;

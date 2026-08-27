@@ -52,7 +52,7 @@ const RetirosFilters: React.FC<RetirosFiltersProps> = ({
 							id='withdrawals-search'
 							name='search'
 							value={searchDraft}
-							placeholder='Código, notas o serie'
+							placeholder='Código o notas'
 							onChange={(event) => {
 								setSearchDraft(event.target.value);
 								onSearchChange(event.target.value);

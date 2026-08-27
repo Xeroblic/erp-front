@@ -9,11 +9,10 @@ import type {
 import { WITHDRAWAL_STATUSES, WITHDRAWAL_TYPES } from '@/interface/equipmentWithdrawals.interface';
 
 /**
- * Card 1 (ZB-83): el listado corre contra mocks con la forma exacta del
- * contrato §9. Al integrar los endpoints reales basta apagar esta bandera:
- * el thunk ya resuelve el prefijo y los parámetros definitivos.
+ * Card 1 (ZB-83): los mocks sólo se habilitan explícitamente para desarrollo.
+ * En cualquier otro entorno la bandera falla cerrada y el thunk usa el API real.
  */
-export const WITHDRAWALS_USE_MOCKS = true;
+export const WITHDRAWALS_USE_MOCKS = import.meta.env.VITE_WITHDRAWALS_USE_MOCKS === 'true';
 
 // ───────────────── Resolución de prefijo branches/subsidiaries ─────────────────
 
@@ -60,6 +59,20 @@ const readNestedId = (source: unknown, ...keys: string[]): number | null => {
 	return null;
 };
 
+const readRecordPath = (root: unknown, ...path: string[]): unknown => {
+	let current: unknown = root;
+	for (const key of path) {
+		if (!isRecord(current)) return undefined;
+		current = current[key];
+	}
+	return current;
+};
+
+const resolveUserBranchId = (user: unknown): number | null => {
+	if (!isRecord(user)) return null;
+	return readNestedId(user.branch, 'id') ?? toValidNumber(user.branch_id);
+};
+
 /** Deriva la subsidiaria desde las sucursales visibles del usuario. */
 const resolveSubsidiaryFromBranch = (state: RootState, branchId: number | null): number | null => {
 	if (!branchId) return null;
@@ -100,15 +113,6 @@ const resolveSubsidiaryFromBranch = (state: RootState, branchId: number | null):
 	return null;
 };
 
-const readRecordPath = (root: unknown, ...path: string[]): unknown => {
-	let current: unknown = root;
-	for (const key of path) {
-		if (!isRecord(current)) return undefined;
-		current = current[key];
-	}
-	return current;
-};
-
 export const resolveWithdrawalsContext = (
 	state: RootState,
 	input: IWithdrawalsRequestContextInput = {},
@@ -144,11 +148,6 @@ export const resolveWithdrawalsContext = (
 		branchId,
 		subsidiaryId,
 	};
-};
-
-const resolveUserBranchId = (user: unknown): number | null => {
-	if (!isRecord(user)) return null;
-	return readNestedId(user.branch, 'id') ?? toValidNumber(user.branch_id);
 };
 
 export const buildWithdrawalsEndpoint = (

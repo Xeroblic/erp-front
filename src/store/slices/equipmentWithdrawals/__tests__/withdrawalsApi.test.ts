@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { RootState } from '@/store/rootReducer';
 import {
+	WITHDRAWALS_USE_MOCKS,
 	buildWithdrawalsEndpoint,
 	resolveWithdrawalsContext,
 	withdrawalsFiltersFromSearchParams,
 } from '../withdrawalsApi';
+
+it('mantiene los mocks desactivados si el entorno no los habilita explícitamente', () => {
+	expect(WITHDRAWALS_USE_MOCKS).toBe(false);
+});
 
 const buildState = (
 	options: {

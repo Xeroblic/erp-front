@@ -401,7 +401,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Retiros de equipos */}
 							<AuthorityCheckNav
 								authority={Pages.inventory.subPages.retirosEquipos.authority}
 								userAuthority={userAuthority}

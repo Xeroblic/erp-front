@@ -6,6 +6,7 @@ import Alert from '@/components/ui/Alert';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
+import { WITHDRAWALS_USE_MOCKS } from '@/store/slices/equipmentWithdrawals';
 import RetirosFilters from './components/filters/RetirosFilters';
 import RetirosTable from './components/tables/RetirosTable';
 import { useRetirosEquipos } from './hooks/useRetirosEquipos';
@@ -36,6 +37,12 @@ const RetirosEquiposView: React.FC = () => {
 			</Subheader>
 
 			<Container className='space-y-4'>
+				{WITHDRAWALS_USE_MOCKS && (
+					<Alert color='amber' variant='outline' icon='HeroExclamationTriangle'>
+						Estás viendo datos de ejemplo. No representan retiros reales ni deben usarse
+						para tomar decisiones operativas.
+					</Alert>
+				)}
 				<RetirosFilters
 					quickFilter={quickFilter}
 					searchValue={searchValue}
