@@ -20,6 +20,14 @@ import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 
+/**
+ * Cabecera fija: se aplica sobre las celdas (`th`) y no sobre `thead` porque el
+ * `border-collapse: collapse` del preflight rompe el sticky a nivel de sección en
+ * varios navegadores. El fondo opaco evita que las filas se vean por detrás.
+ */
+const STICKY_HEADER_CLASSES =
+	'[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-zinc-200 dark:[&_th]:bg-zinc-950';
+
 interface DataTableProps<TData> {
 	columns: ColumnDef<TData, any>[];
 	data: TData[];
@@ -41,6 +49,10 @@ interface DataTableProps<TData> {
 	actions?: React.ReactNode;
 	initialSortingState?: SortingState;
 	className?: string;
+	/** Clases del contenedor scrollable de la tabla (p. ej. un alto máximo). */
+	tableContainerClassName?: string;
+	/** Fija la cabecera mientras se hace scroll vertical dentro del contenedor. */
+	stickyHeader?: boolean;
 }
 
 export default function DataTable<TData>({
@@ -62,6 +74,8 @@ export default function DataTable<TData>({
 	actions,
 	initialSortingState,
 	className,
+	tableContainerClassName,
+	stickyHeader = false,
 }: DataTableProps<TData>) {
 	const defaultSorting = React.useMemo<SortingState>(() => {
 		if (initialSortingState) return initialSortingState;
@@ -163,9 +177,9 @@ export default function DataTable<TData>({
 			</div>
 
 			{/* Tabla */}
-			<div className='overflow-x-auto'>
+			<div className={['overflow-x-auto', tableContainerClassName].filter(Boolean).join(' ')}>
 				<Table className='w-full'>
-					<THead>
+					<THead className={stickyHeader ? STICKY_HEADER_CLASSES : ''}>
 						{table.getHeaderGroups().map((headerGroup) => (
 							<Tr className='overflow-x-auto' key={headerGroup.id}>
 								{headerGroup.headers.map((header) => (
