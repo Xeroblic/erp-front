@@ -145,6 +145,12 @@ const createDeferred = <T,>() => {
 	return { promise, resolve, reject };
 };
 
+const waitForCollectionEmail = async (expectedValue: string) => {
+	const collectionEmail = await screen.findByLabelText('Correo de cobranza');
+	await waitFor(() => expect(collectionEmail).toHaveValue(expectedValue));
+	return collectionEmail;
+};
+
 describe('CreditProfileEditModal', () => {
 	const getCreditProfileMock = vi.mocked(deferredPaymentsService.getCreditProfile);
 	const updateCreditProfileMock = vi.mocked(deferredPaymentsService.updateCreditProfile);
@@ -171,9 +177,8 @@ describe('CreditProfileEditModal', () => {
 		);
 
 		expect(screen.getByLabelText('Cargando condiciones de crédito')).toBeInTheDocument();
-		const collectionEmail = await screen.findByLabelText('Correo de cobranza');
+		const collectionEmail = await waitForCollectionEmail('cobranza@cliente.cl');
 		expect(getCreditProfileMock).toHaveBeenCalledWith(4, 8, expect.any(AbortSignal));
-		expect(collectionEmail).toHaveValue('cobranza@cliente.cl');
 		fireEvent.change(collectionEmail, { target: { value: '   ' } });
 		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
 
@@ -206,9 +211,7 @@ describe('CreditProfileEditModal', () => {
 		expect(await screen.findByText('Servicio no disponible')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Guardar condiciones' })).toBeDisabled();
 		fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
-		expect(await screen.findByLabelText('Correo de cobranza')).toHaveValue(
-			'cobranza@cliente.cl',
-		);
+		await waitForCollectionEmail('cobranza@cliente.cl');
 		expect(getCreditProfileMock).toHaveBeenCalledTimes(2);
 	});
 
@@ -223,7 +226,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		const collectionEmail = await screen.findByLabelText('Correo de cobranza');
+		const collectionEmail = await waitForCollectionEmail('cobranza@cliente.cl');
 		fireEvent.change(collectionEmail, { target: { value: 'invalido' } });
 		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
 
@@ -243,7 +246,8 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		const activeCredit = await screen.findByLabelText('Crédito vigente');
+		await waitForCollectionEmail('cobranza@cliente.cl');
+		const activeCredit = screen.getByLabelText('Crédito vigente');
 		expect(screen.getByText(/Suspender conserva las condiciones/i)).toBeInTheDocument();
 		fireEvent.click(activeCredit);
 		const deleteButton = screen.getByRole('button', { name: 'Eliminar perfil' });
@@ -284,7 +288,8 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		fireEvent.change(await screen.findByLabelText('Plazo de pago (días)'), {
+		await waitForCollectionEmail('cobranza@cliente.cl');
+		fireEvent.change(screen.getByLabelText('Plazo de pago (días)'), {
 			target: { value: '90' },
 		});
 		fireEvent.change(screen.getByLabelText('Cupo de crédito'), {
@@ -330,7 +335,8 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		fireEvent.click(await screen.findByLabelText('Crédito vigente'));
+		await waitForCollectionEmail('cobranza@cliente.cl');
+		fireEvent.click(screen.getByLabelText('Crédito vigente'));
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
@@ -356,7 +362,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		fireEvent.change(await screen.findByLabelText('Correo de cobranza'), {
+		fireEvent.change(await waitForCollectionEmail('cobranza@cliente.cl'), {
 			target: { value: 'correo-invalido' },
 		});
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
@@ -383,7 +389,8 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		fireEvent.click(await screen.findByLabelText('Crédito vigente'));
+		await waitForCollectionEmail('cobranza@cliente.cl');
+		fireEvent.click(screen.getByLabelText('Crédito vigente'));
 		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
 
 		await waitFor(() =>
@@ -411,7 +418,8 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		fireEvent.click(await screen.findByLabelText('Crédito vigente'));
+		await waitForCollectionEmail('cobranza@cliente.cl');
+		fireEvent.click(screen.getByLabelText('Crédito vigente'));
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
@@ -444,7 +452,8 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		fireEvent.click(await screen.findByLabelText('Crédito vigente'));
+		await waitForCollectionEmail('cobranza@cliente.cl');
+		fireEvent.click(screen.getByLabelText('Crédito vigente'));
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
@@ -467,7 +476,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		await screen.findByLabelText('Correo de cobranza');
+		await waitForCollectionEmail('cobranza@cliente.cl');
 		const deleteButton = screen.getByRole('button', { name: 'Eliminar perfil' });
 		expect(deleteButton).toBeDisabled();
 		const deleteTooltip = deleteButton.closest('[data-tooltip]');
@@ -495,7 +504,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		await screen.findByLabelText('Correo de cobranza');
+		await waitForCollectionEmail('cobranza@cliente.cl');
 		const deleteButton = screen.getByRole('button', { name: 'Eliminar perfil' });
 		expect(deleteButton).toBeDisabled();
 		expect(deleteButton.closest('[data-tooltip]')).toHaveAttribute(
@@ -546,7 +555,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		await screen.findByLabelText('Correo de cobranza');
+		await waitForCollectionEmail('cobranza@cliente.cl');
 		expect(screen.getByLabelText('Crédito suspendido')).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 
@@ -599,7 +608,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		await screen.findByLabelText('Correo de cobranza');
+		await waitForCollectionEmail('cobranza@cliente.cl');
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
 		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
 		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
@@ -647,7 +656,7 @@ describe('CreditProfileEditModal', () => {
 		);
 
 		expect(firstSignal?.aborted).toBe(true);
-		expect(await screen.findByLabelText('Correo de cobranza')).toHaveValue('nuevo@cliente.cl');
+		await waitForCollectionEmail('nuevo@cliente.cl');
 	});
 
 	it('descarta el resultado de un guardado anterior al cambiar de cliente', async () => {
@@ -669,7 +678,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		await screen.findByLabelText('Correo de cobranza');
+		await waitForCollectionEmail('cobranza@cliente.cl');
 		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
 		await waitFor(() => expect(updateCreditProfileMock).toHaveBeenCalledTimes(1));
 		view.rerender(
@@ -682,7 +691,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		expect(await screen.findByLabelText('Correo de cobranza')).toHaveValue('nuevo@cliente.cl');
+		await waitForCollectionEmail('nuevo@cliente.cl');
 		await act(async () => {
 			pendingSave.resolve(detailProfile);
 			await Promise.resolve();
@@ -708,7 +717,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		await screen.findByLabelText('Correo de cobranza');
+		await waitForCollectionEmail('cobranza@cliente.cl');
 		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
 		await waitFor(() => expect(updateCreditProfileMock).toHaveBeenCalledTimes(1));
 		view.rerender(
@@ -721,9 +730,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		expect(await screen.findByLabelText('Correo de cobranza')).toHaveValue(
-			'cobranza@cliente.cl',
-		);
+		await waitForCollectionEmail('cobranza@cliente.cl');
 		await act(async () => {
 			pendingSave.resolve(detailProfile);
 			await Promise.resolve();
@@ -752,7 +759,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		await screen.findByLabelText('Correo de cobranza');
+		await waitForCollectionEmail('cobranza@cliente.cl');
 		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
 		await waitFor(() => expect(updateCreditProfileMock).toHaveBeenCalledTimes(1));
 		view.rerender(
@@ -765,7 +772,7 @@ describe('CreditProfileEditModal', () => {
 			/>,
 		);
 
-		expect(await screen.findByLabelText('Correo de cobranza')).toHaveValue('nuevo@cliente.cl');
+		await waitForCollectionEmail('nuevo@cliente.cl');
 		await act(async () => {
 			pendingSave.reject(new Error('Error del cliente anterior'));
 			await Promise.resolve();
