@@ -1,20 +1,19 @@
 # Zentria ERP Frontend
 
-## Release Actual: v2.3.0 (2026-08-20)
+## Release Actual: v2.3.1 (2026-08-27)
 
-Esta versión consolida Pagos Diferidos y Cartera de Crédito con mejoras de contexto organizacional, comprobantes, seriales, recordatorios, accesibilidad de modales y exportación a Excel.
+Esta versión fortalece Revisiones Técnicas, los contratos de estado de catálogo y el feedback accesible de acciones protegidas.
 
 ### Cambios relevantes del release
 
-- Exportación a Excel de cartera y pagos diferidos.
-- Gestión más segura de perfiles de crédito, contexto organizacional y capas modales.
-- Mejoras de captura financiera con precios netos/brutos, IVA, seriales y comprobantes arrastrados.
-- Recordatorios y validaciones de fechas de pagos diferidos más consistentes.
+- Ausencia explícita de RAM y almacenamiento, sin perder el borrador al alternar el estado.
+- Contratos de respuesta más seguros para toggles de estado y presentación consistente del tipo de cliente de ventas.
+- Acciones protegidas visibles y explicables cuando quedan deshabilitadas por autorización.
 
 ### Referencias de versión
 
 - Notas generales: `RELEASE_NOTES.md`
-- Detalle completo de la versión actual: `Docs/releases/v2.3.0.md`
+- Detalle completo de la versión actual: `Docs/releases/v2.3.1.md`
 
 ---
 
