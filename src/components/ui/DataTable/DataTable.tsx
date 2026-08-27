@@ -43,6 +43,11 @@ interface DataTableProps<TData> {
 	pageCount?: number;
 	paginationState?: PaginationState;
 	onPaginationChange?: OnChangeFn<PaginationState>;
+	/**
+	 * Total de resultados en el servidor. Sólo aplica con `manualPagination`: sin
+	 * esto la tabla únicamente puede informar el tamaño de la página actual.
+	 */
+	totalResults?: number;
 
 	// Customization
 	enableSearch?: boolean;
@@ -69,6 +74,7 @@ export default function DataTable<TData>({
 	pageCount,
 	paginationState,
 	onPaginationChange,
+	totalResults,
 	// Customization
 	enableSearch = true,
 	actions,
@@ -145,6 +151,13 @@ export default function DataTable<TData>({
 		setGlobalFilter(searchValue);
 	}, [searchValue]);
 
+	// Con paginación server-side sólo se conocen las filas de la página actual; el
+	// total real depende de que el llamador entregue `totalResults`.
+	const visibleRowsCount = manualPagination ? data.length : table.getRowModel().rows.length;
+	const totalRowsCount = manualPagination
+		? totalResults
+		: table.getFilteredRowModel().rows.length;
+
 	return (
 		<div className={['w-full space-y-4', className].filter(Boolean).join(' ')}>
 			{/* Barra de búsqueda y Acciones */}
@@ -169,9 +182,7 @@ export default function DataTable<TData>({
 				<div className='flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-0 sm:space-x-2'>
 					{actions}
 					<Badge variant='outline' className='self-end px-2'>
-						{manualPagination
-							? `${data.length} resultados`
-							: `${table.getFilteredRowModel().rows.length} resultados`}
+						{`${totalRowsCount ?? visibleRowsCount} resultados`}
 					</Badge>
 				</div>
 			</div>
@@ -276,15 +287,12 @@ export default function DataTable<TData>({
 			{/* Información de selección */}
 			<div className='text-muted-foreground flex items-center justify-between text-sm'>
 				<div>
-					{manualPagination ? (
-						// Server-side: mostrar info desde la página actual
-						<>Mostrando {data.length} resultados de la página actual</>
-					) : (
-						// Client-side: mostrar filtrados vs totales
+					{totalRowsCount !== undefined ? (
 						<>
-							Mostrando {table.getRowModel().rows.length} de{' '}
-							{table.getFilteredRowModel().rows.length} resultados
+							Mostrando {visibleRowsCount} de {totalRowsCount} resultados
 						</>
+					) : (
+						<>Mostrando {visibleRowsCount} resultados de la página actual</>
 					)}
 				</div>
 			</div>
