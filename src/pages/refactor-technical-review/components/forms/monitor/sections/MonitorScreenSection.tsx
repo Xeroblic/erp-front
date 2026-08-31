@@ -25,6 +25,7 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 	const currentStand = watch('stand_condition');
 	const currentFrame = watch('frame_condition');
 	const currentSpotsCount = watch('spots_count');
+	const currentDeadPixelsCount = watch('dead_pixels_count');
 	const currentScreenResolution = watch('screen_resolution');
 
 	return (
@@ -253,6 +254,32 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 						{errors.spots_count && (
 							<p className='mt-2 text-xs text-red-500'>
 								{errors.spots_count.message}
+							</p>
+						)}
+					</div>
+				)}
+				{currentScreen === 'dead_pixels' && (
+					<div className='mt-5 w-full max-w-[220px]'>
+						<label className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+							{getMonitorLabel('dead_pixels_count')}
+						</label>
+						<StepperInput
+							value={
+								typeof currentDeadPixelsCount === 'number'
+									? currentDeadPixelsCount
+									: 0
+							}
+							onChange={(value) => {
+								if (readOnly) return;
+								setValue('dead_pixels_count', value, { shouldValidate: true });
+							}}
+							min={0}
+							max={50}
+							disabled={readOnly}
+						/>
+						{errors.dead_pixels_count && (
+							<p className='mt-2 text-xs text-red-500'>
+								{errors.dead_pixels_count.message}
 							</p>
 						)}
 					</div>

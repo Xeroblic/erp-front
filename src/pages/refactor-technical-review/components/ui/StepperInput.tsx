@@ -17,6 +17,8 @@ interface StepperInputProps {
 	min?: number;
 	/** Valor máximo permitido. Default: 99 */
 	max?: number;
+	/** Impide la interacción con el contador. */
+	disabled?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -26,12 +28,15 @@ export const StepperInput: React.FC<StepperInputProps> = ({
 	onChange,
 	min = 0,
 	max = 99,
+	disabled = false,
 }) => {
 	const handleDecrement = () => {
+		if (disabled) return;
 		if (value > min) onChange(value - 1);
 	};
 
 	const handleIncrement = () => {
+		if (disabled) return;
 		if (value < max) onChange(value + 1);
 	};
 
@@ -40,7 +45,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
 			<button
 				type='button'
 				onClick={handleDecrement}
-				disabled={value <= min}
+				disabled={disabled || value <= min}
 				aria-label='Decrementar'
 				className='flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-bold text-gray-700 shadow-sm transition hover:bg-gray-100 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-200'>
 				−
@@ -53,7 +58,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
 			<button
 				type='button'
 				onClick={handleIncrement}
-				disabled={value >= max}
+				disabled={disabled || value >= max}
 				aria-label='Incrementar'
 				className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50'>
 				+

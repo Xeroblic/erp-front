@@ -24,6 +24,7 @@ export const MONITOR_LABELS: Record<string, string> = {
 	rj45_ports: 'Puertos RJ45',
 	usb_hub_ports: 'Puertos USB Hub',
 	spots_count: 'Cantidad de manchas',
+	dead_pixels_count: 'Cantidad de píxeles muertos',
 	all_ports_functional: 'Todos los puertos funcionales',
 	defective_ports_count: 'Puertos defectuosos',
 	defective_ports_critical_count: 'Puertos críticos defectuosos',

@@ -83,6 +83,7 @@ const AIO_SECTION_FIELDS: Record<string, FieldPath<AioFormData>[]> = {
 		'screen_inches',
 		'is_touchscreen',
 		'screen_condition',
+		'dead_pixels_count',
 		'stand_condition',
 		'cover_condition',
 	],

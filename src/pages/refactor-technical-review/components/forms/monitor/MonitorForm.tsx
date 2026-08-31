@@ -74,6 +74,7 @@ const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
 		'is_touchscreen',
 		'screen_condition',
 		'spots_count',
+		'dead_pixels_count',
 		'stand_condition',
 		'frame_condition',
 	],

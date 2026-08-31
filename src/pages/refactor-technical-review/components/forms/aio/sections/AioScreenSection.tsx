@@ -3,6 +3,7 @@ import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
 import { AioFormData } from '../../../validation/aio.schema';
 import { SelectionCard } from '../../../ui/SelectionCard';
+import { StepperInput } from '../../../ui/StepperInput';
 import Input from '@/components/form/Input';
 import Checkbox from '@/components/form/Checkbox';
 import { getAioLabel } from '../../../translations/aio.labels';
@@ -22,6 +23,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 	setValue,
 }) => {
 	const screenCondition = watch('screen_condition');
+	const deadPixelsCount = watch('dead_pixels_count');
 	const standCondition = watch('stand_condition');
 	const coverCondition = watch('cover_condition');
 
@@ -110,6 +112,28 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 						<p className='mt-3 text-center text-xs text-red-500'>
 							{errors.screen_condition.message}
 						</p>
+					)}
+					{screenCondition === 'dead_pixels' && (
+						<div className='mt-5 w-full max-w-[220px]'>
+							<label className='mb-2 block text-xs font-bold text-purple-900 dark:text-purple-100'>
+								{getAioLabel('dead_pixels_count')}
+							</label>
+							<StepperInput
+								value={typeof deadPixelsCount === 'number' ? deadPixelsCount : 0}
+								onChange={(value) => {
+									if (readOnly) return;
+									setValue('dead_pixels_count', value, { shouldValidate: true });
+								}}
+								min={0}
+								max={50}
+								disabled={readOnly}
+							/>
+							{errors.dead_pixels_count && (
+								<p className='mt-2 text-xs text-red-500'>
+									{errors.dead_pixels_count.message}
+								</p>
+							)}
+						</div>
 					)}
 				</div>
 
