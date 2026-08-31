@@ -98,14 +98,23 @@ describe('fetchUsuariosConRolesPerms', () => {
 	});
 
 	it('prioriza el mensaje del backend en un error de Axios', async () => {
-		const fetchData = vi.spyOn(ApiService, 'fetchData').mockRejectedValue(
-			Object.assign(new Error('Request failed with status code 403'), {
-				response: { data: { message: 'No tienes permiso para ver usuarios' } },
-			}),
-		);
+		const fetchData = vi
+			.spyOn(ApiService, 'fetchData')
+			.mockResolvedValueOnce({
+				data: { success: true, data: payload.users, meta },
+			} as never)
+			.mockRejectedValueOnce(
+				Object.assign(new Error('Request failed with status code 403'), {
+					response: { data: { message: 'No tienes permiso para ver usuarios' } },
+				}),
+			);
 		const store = configureStore({ reducer: rolesPermisosReducer });
 
 		await store.dispatch(fetchUsuariosConRolesPerms({ page: 1, per_page: 10 }));
+		expect(store.getState().users.data).toEqual(payload.users);
+		expect(store.getState().users.meta).toEqual(meta);
+
+		await store.dispatch(fetchUsuariosConRolesPerms({ page: 2, per_page: 15 }));
 
 		expect(store.getState().users.error).toBe('No tienes permiso para ver usuarios');
 		expect(store.getState().users.data).toEqual([]);

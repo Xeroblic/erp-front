@@ -77,22 +77,16 @@ const TableUser: React.FC<Props> = ({
 
 	const handleToggleStatus = useCallback(
 		async (userId: number, currentStatus: boolean) => {
-			try {
-				const response = await dispatch(
-					toggleUserStatus({ userId, status: currentStatus }),
+			const response = await dispatch(toggleUserStatus({ userId, status: currentStatus }));
+			if (toggleUserStatus.fulfilled.match(response)) {
+				onRefresh();
+				toast.success('Estado del usuario cambiado exitosamente');
+			} else {
+				toast.error(
+					typeof response.payload === 'string'
+						? response.payload
+						: 'No se ha podido actualizar el estado del usuario',
 				);
-				if (toggleUserStatus.fulfilled.match(response)) {
-					onRefresh();
-					toast.success('Estado del usuario cambiado exitosamente');
-				} else {
-					toast.error(
-						typeof response.payload === 'string'
-							? response.payload
-							: 'No se ha podido actualizar el estado del usuario',
-					);
-				}
-			} catch (err) {
-				console.error('Error al cambiar el estado del usuario:', err);
 			}
 		},
 		[dispatch, onRefresh],
