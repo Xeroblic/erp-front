@@ -12,9 +12,7 @@ import {
 	ALLOWED_COVER_CONDITIONS,
 	ALLOWED_KEYBOARD_CONDITIONS,
 	ALLOWED_KEYBOARD_LAYOUTS,
-	ALLOWED_HINGE_CONDITIONS,
 	ALLOWED_BATTERY_STATUSES,
-	ALLOWED_TOUCHPAD_CONDITIONS,
 	ALLOWED_BOTTOM_CONDITIONS,
 	BATTERY_PERCENTAGE_MIN,
 	BATTERY_PERCENTAGE_MAX,
@@ -143,21 +141,22 @@ export const notebookSchema = Yup.object({
 		.oneOf([...ALLOWED_COVER_CONDITIONS], 'Condición de tapa no válida')
 		.required('La condición de la tapa es obligatoria'),
 
-	keyboard_condition: Yup.string()
-		.oneOf([...ALLOWED_KEYBOARD_CONDITIONS], 'Condición de teclado no válida')
-		.required('La condición del teclado es obligatoria'),
+	keyboard_condition: Yup.string().required('La condición del teclado es obligatoria'),
+
+	non_functional_keys_count: Yup.number()
+		.integer('Debe ser un número entero')
+		.min(0, 'No puede ser negativo')
+		.nullable(),
+
+	speakers_condition: Yup.string().nullable(),
 
 	keyboard_layout: Yup.string()
 		.oneOf([...ALLOWED_KEYBOARD_LAYOUTS], 'Distribución de teclado no válida')
 		.required('La distribución del teclado es obligatoria'),
 
-	hinge_condition: Yup.string()
-		.oneOf([...ALLOWED_HINGE_CONDITIONS], 'Condición de bisagras no válida')
-		.required('La condición de bisagras es obligatoria'),
+	hinge_condition: Yup.string().required('La condición de bisagras es obligatoria'),
 
-	touchpad_condition: Yup.string()
-		.oneOf([...ALLOWED_TOUCHPAD_CONDITIONS], 'Condición de touchpad no válida')
-		.required('La condición del touchpad es obligatoria'),
+	touchpad_condition: Yup.string().required('La condición del touchpad es obligatoria'),
 
 	bottom_condition: Yup.string()
 		.oneOf([...ALLOWED_BOTTOM_CONDITIONS], 'Condición de tapa inferior no válida')

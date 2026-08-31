@@ -64,4 +64,17 @@ describe('applyHardwareAbsenceToPayload', () => {
 			storage_technology: null,
 		});
 	});
+
+	it('preserves false and zero while omitting incomplete ZF-48 fields', () => {
+		expect(
+			filterTechnicalReviewPayload(
+				{
+					powers_on: false,
+					non_functional_keys_count: 0,
+					speakers_condition: '',
+				},
+				HARDWARE_NULLABLE_FIELDS,
+			),
+		).toEqual({ powers_on: false, non_functional_keys_count: 0 });
+	});
 });

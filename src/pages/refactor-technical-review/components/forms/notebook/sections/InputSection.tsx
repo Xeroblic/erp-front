@@ -1,32 +1,37 @@
 import React from 'react';
+import Icon from '@/components/icon/Icon';
+import Checkbox from '@/components/form/Checkbox';
 import type { FormSectionProps } from '../../shared/types';
 import type { NotebookFormData } from '../../../validation/notebook.schema';
-import { getNotebookLabel } from '../../../translations/notebook.labels';
-import { NOTEBOOK_HINTS, NOTEBOOK_WARNINGS } from '../../../constants/notebook/notebook.hints';
+import { NOTEBOOK_WARNINGS } from '../../../constants/notebook/notebook.hints';
 import { SelectionCard } from '../../../ui/SelectionCard';
-import { YesNoSelector } from '../../../ui/YesNoSelector';
+import { StepperInput } from '../../../ui/StepperInput';
 import {
 	COVER_CONDITION_OPTIONS,
-	KEYBOARD_CONDITION_OPTIONS,
 	KEYBOARD_LAYOUT_OPTIONS,
-	HINGE_CONDITION_OPTIONS,
-	TOUCHPAD_CONDITION_OPTIONS,
 	BOTTOM_CONDITION_OPTIONS,
 } from '../../../constants/notebook/notebook.options';
-import Icon from '@/components/icon/Icon';
+import { getSchemaFieldOptions } from '../../../validation/technicalReviewSchema';
 
 const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	errors,
 	readOnly,
 	watch,
 	setValue,
+	schemaFields,
 }) => {
+	const keyboardField = schemaFields?.keyboard_condition;
+	const keysCountField = schemaFields?.non_functional_keys_count;
+	const touchpadField = schemaFields?.touchpad_condition;
+	const hingeField = schemaFields?.hinge_condition;
+	const speakersField = schemaFields?.speakers_condition;
+	const nonFunctionalKeysCount = watch('non_functional_keys_count') ?? 0;
 	return (
 		<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
 			{/* ─── ZONE 1: INPUT DEVICES (The "Control Center") ─── */}
 			<div className='flex flex-col gap-6 lg:col-span-8'>
 				{/* Keyboard Main Widget */}
-				<div className='relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
+				<div className='relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
 					<div className='mb-6 flex items-center justify-between'>
 						<div className='flex items-center gap-3'>
 							<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'>
@@ -34,41 +39,23 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</div>
 							<div>
 								<h3 className='text-lg font-bold text-zinc-900 dark:text-zinc-100'>
-									Teclado
+									{keyboardField?.label}
 								</h3>
 								<p className='text-xs text-zinc-500'>
 									Estado funcional y distribución física
 								</p>
 							</div>
 						</div>
-						{/* Warning Badge */}
-						{NOTEBOOK_WARNINGS.keyboard_condition && (
-							<div className='hidden items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-600 dark:bg-red-900/20 dark:text-red-400 sm:flex'>
-								<Icon icon='HeroExclamationTriangle' className='h-3.5 w-3.5' />
-								<span>Atención Requerida</span>
-							</div>
-						)}
 					</div>
-
-					{/* Inline Warning for Mobile */}
-					{NOTEBOOK_WARNINGS.keyboard_condition && (
-						<div className='mb-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-xs text-red-800 dark:bg-red-900/20 dark:text-red-200 sm:hidden'>
-							<Icon
-								icon='HeroExclamationTriangle'
-								className='mt-0.5 h-4 w-4 flex-shrink-0'
-							/>
-							<span>{NOTEBOOK_WARNINGS.keyboard_condition}</span>
-						</div>
-					)}
 
 					<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 						{/* Condition */}
 						<div>
-							<label className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
-								Condición Física <span className='text-red-500'>*</span>
-							</label>
+							<p className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
+								{keyboardField?.label} <span className='text-red-500'>*</span>
+							</p>
 							<div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
-								{KEYBOARD_CONDITION_OPTIONS.map((opt) => (
+								{getSchemaFieldOptions(keyboardField).map((opt) => (
 									<SelectionCard
 										key={opt.value}
 										label={opt.label}
@@ -85,6 +72,9 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								<p className='mt-2 text-xs text-red-500'>
 									{errors.keyboard_condition.message}
 								</p>
+							)}
+							{keyboardField?.hint && (
+								<p className='mt-2 text-xs text-zinc-500'>{keyboardField.hint}</p>
 							)}
 						</div>
 
@@ -118,6 +108,38 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</div>
 						</div>
 					</div>
+
+					{keysCountField && (
+						<div className='mt-6 flex flex-1 flex-col justify-end'>
+							<div className='flex min-h-[72px] flex-wrap items-center gap-4'>
+								<Checkbox
+									checked={nonFunctionalKeysCount > 0}
+									disabled={readOnly}
+									label={keysCountField.label}
+									onChange={(event) =>
+										setValue(
+											'non_functional_keys_count',
+											event.target.checked ? 1 : 0,
+										)
+									}
+								/>
+								<div className='min-w-[152px]'>
+									{nonFunctionalKeysCount > 0 && (
+										<StepperInput
+											value={nonFunctionalKeysCount}
+											min={1}
+											onChange={(value) =>
+												!readOnly && setValue('non_functional_keys_count', value)
+											}
+										/>
+									)}
+								</div>
+							</div>
+							{keysCountField.hint && (
+								<p className='text-xs text-zinc-600'>{keysCountField.hint}</p>
+							)}
+						</div>
+					)}
 				</div>
 
 				{/* Toggles Row */}
@@ -209,19 +231,19 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			</div>
 
 			{/* ─── ZONE 1.5: TOUCHPAD (Side Widget) ─── */}
-			<div className='lg:col-span-4'>
-				<div className='h-full rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
+			<div className='flex flex-col gap-6 lg:col-span-4 lg:h-full'>
+				<div className='flex flex-1 flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
 					<div className='mb-4 flex items-center gap-3'>
 						<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'>
 							<Icon icon='HeroHandRaised' className='h-6 w-6' />
 						</div>
 						<h3 className='text-lg font-bold text-zinc-900 dark:text-zinc-100'>
-							Touchpad
+							{touchpadField?.label}
 						</h3>
 					</div>
 
 					<div className='mt-10 grid grid-cols-2 gap-3'>
-						{TOUCHPAD_CONDITION_OPTIONS.map((opt) => (
+						{getSchemaFieldOptions(touchpadField).map((opt) => (
 							<SelectionCard
 								key={opt.value}
 								label={opt.label}
@@ -234,7 +256,43 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							/>
 						))}
 					</div>
+					{touchpadField?.hint && (
+						<p className='mt-3 text-xs text-zinc-500'>{touchpadField.hint}</p>
+					)}
 				</div>
+
+				{speakersField && (
+					<div className='flex flex-1 flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
+						<div className='mb-4 flex items-center gap-3'>
+							<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'>
+								<Icon icon='HeroSpeakerWave' className='h-6 w-6' />
+							</div>
+							<div>
+								<h3 className='text-lg font-bold text-zinc-900 dark:text-zinc-100'>
+									{speakersField.label}
+								</h3>
+							</div>
+						</div>
+						<div className='mt-10 grid grid-cols-1 gap-2 sm:grid-cols-2'>
+							{getSchemaFieldOptions(speakersField).map((opt) => (
+								<SelectionCard
+									key={opt.value}
+									label={opt.label}
+									value={opt.value}
+									isSelected={watch('speakers_condition') === opt.value}
+									onClick={() =>
+										!readOnly && setValue('speakers_condition', opt.value)
+									}
+									variant='compact'
+								/>
+							))}
+						</div>
+						<p className='mt-3 text-xs text-zinc-600 dark:text-zinc-400'>
+							Sin audio, reventados o distorsionados son el mismo caso: limitan a
+							Grado C.
+						</p>
+					</div>
+				)}
 			</div>
 
 			{/* ─── ZONE 2: CHASSIS & STRUCTURE (The "Body") ─── */}
@@ -285,11 +343,11 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 						{/* Hinge */}
 						<div>
-							<label className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
-								Bisagras
-							</label>
+							<p className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
+								{hingeField?.label}
+							</p>
 							<div className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'>
-								{HINGE_CONDITION_OPTIONS.map((opt) => (
+								{getSchemaFieldOptions(hingeField).map((opt) => (
 									<SelectionCard
 										key={opt.value}
 										label={opt.label}
@@ -302,13 +360,16 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									/>
 								))}
 							</div>
+							{hingeField?.hint && (
+								<p className='mt-2 text-xs text-zinc-500'>{hingeField.hint}</p>
+							)}
 						</div>
 
 						{/* Bottom */}
 						<div>
-							<label className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
+							<p className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
 								Tapa Inferior
-							</label>
+							</p>
 							<div className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'>
 								{BOTTOM_CONDITION_OPTIONS.map((opt) => (
 									<SelectionCard

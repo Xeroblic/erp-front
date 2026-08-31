@@ -7,7 +7,7 @@ import ApiService from '@/services/ApiService';
 import type { RootState } from '@/store/rootReducer';
 import type {
 	IValidationRules,
-	IValidationRule,
+	ITechnicalReviewSchema,
 	EquipmentType,
 } from '../../../../interface/technicalReviews.interface';
 import {
@@ -22,6 +22,15 @@ const normalizeArray = (payload: any): any[] => {
 };
 
 const normalizeObject = (payload: any): any => payload?.data ?? payload ?? null;
+
+const normalizeSchema = (payload: unknown): ITechnicalReviewSchema => {
+	if (!payload || typeof payload !== 'object') return {};
+	const wrapped = payload as { data?: unknown };
+	const data = wrapped.data ?? payload;
+	return data && typeof data === 'object' && !Array.isArray(data)
+		? (data as ITechnicalReviewSchema)
+		: {};
+};
 
 /**
  * Obtener reglas completas de validación (comunes + por tipo)
@@ -63,7 +72,7 @@ export const fetchValidationRules = createAsyncThunk<
  * GET /api/branches/{branch}/technical-reviews/validation/rules/{equipmentType}
  */
 export const fetchValidationRulesByType = createAsyncThunk<
-	IValidationRule[],
+	ITechnicalReviewSchema,
 	{ branchId?: number | null; subsidiaryId?: number | null; equipmentType: EquipmentType },
 	{ state: RootState; rejectValue: string }
 >(
@@ -82,7 +91,7 @@ export const fetchValidationRulesByType = createAsyncThunk<
 				method: 'get',
 			});
 
-			return normalizeArray(response.data) as IValidationRule[];
+			return normalizeSchema(response.data);
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??

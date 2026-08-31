@@ -13,6 +13,12 @@ import AutoSaveConfirmModal from '../../../components/modals/AutoSaveConfirmModa
 import PrefillReviewModal from '../../../components/modals/PrefillReviewModal';
 import { sanitizeByAllowedValues } from '../../../components/validation/constants/allowedValuesMap';
 import Icon from '@/components/icon/Icon';
+import useReviewValidationSchema from '../../../hooks/useReviewValidationSchema';
+import {
+	selectTechnicalReviewSchemaFields,
+	ZF48_DESKTOP_FIELDS,
+	ZF48_NOTEBOOK_FIELDS,
+} from '../../../components/validation/technicalReviewSchema';
 
 interface Step2FullReviewProps {
 	equipmentType: string;
@@ -49,6 +55,26 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 }) => {
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
+	const reviewSchema = useReviewValidationSchema({
+		equipmentType,
+		branchId: branchId ?? null,
+		subsidiaryId: subsidiaryId ?? null,
+	});
+	const schemaFields = React.useMemo(() => {
+		if (!reviewSchema.schema) return undefined;
+		const fields =
+			equipmentType.toLowerCase() === 'notebook' ? ZF48_NOTEBOOK_FIELDS : ZF48_DESKTOP_FIELDS;
+		return selectTechnicalReviewSchemaFields(reviewSchema.schema, fields);
+	}, [equipmentType, reviewSchema.schema]);
+	const schemaContractError = React.useMemo(() => {
+		if (!reviewSchema.schema) return null;
+		const expectedFields =
+			equipmentType.toLowerCase() === 'notebook' ? ZF48_NOTEBOOK_FIELDS : ZF48_DESKTOP_FIELDS;
+		const missingFields = expectedFields.filter((field) => !schemaFields?.[field]);
+		return missingFields.length > 0
+			? 'El backend activo aún no publica los campos requeridos para esta revisión. Actualiza ZB-89 y reintenta.'
+			: null;
+	}, [equipmentType, reviewSchema.schema, schemaFields]);
 	// const { isSuperAdmin, hasRole } = useAuthorization();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [showSavingBadge, setShowSavingBadge] = useState(false);
@@ -97,9 +123,10 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	const { saveNow, isSaving, lastSavedAt, showIdleSaveModal, dismissIdleSaveModal } = useAutoSave(
 		{
 			branchId: branchId ?? null,
+			subsidiaryId: subsidiaryId ?? null,
 			itemId: initialData?.id ?? null,
 			getFormData,
-			enabled: !readOnly && !!initialData?.id && !!branchId,
+			enabled: !readOnly && !!initialData?.id && (!!branchId || !!subsidiaryId),
 			idleTimeoutMs: 20_000,
 			equipmentType,
 			transformData,
@@ -176,9 +203,15 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 			).unwrap();
 
 			await onComplete();
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error(error);
-			toast.error(error?.message || 'Error al guardar la revisión');
+			const message =
+				typeof error === 'string'
+					? error
+					: error instanceof Error
+						? error.message
+						: 'Error al guardar la revisión';
+			toast.error(message);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -270,6 +303,10 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					registerGetFormValues={registerGetFormValues}
 					isSaving={isSaving}
 					initialSectionKey={initialSectionKey}
+					schemaFields={schemaFields}
+					schemaLoading={reviewSchema.isLoading}
+					schemaError={reviewSchema.error ?? schemaContractError}
+					onRetrySchema={reviewSchema.retry}
 				/>
 			</ReviewPhotosProvider>
 

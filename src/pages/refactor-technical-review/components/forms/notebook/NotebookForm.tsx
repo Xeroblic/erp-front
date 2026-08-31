@@ -14,6 +14,7 @@ import { toast } from 'react-toastify';
 import { notebookSchema, type NotebookFormData } from '../../validation/notebook.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 
 // ─── Section Components ──────────────────────────────────────────────────────
 import BasicInfoSection from './sections/BasicInfoSection';
@@ -133,14 +134,17 @@ const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 		'dead_pixels_count',
 		'spots_count',
 	],
-	input: ['keyboard_condition', 'keyboard_layout', 'has_numeric_keypad', 'has_backlit_keyboard'],
-	aesthetics: [
-		'general_condition',
-		'cover_condition',
-		'hinge_condition',
+	input: [
+		'keyboard_condition',
+		'non_functional_keys_count',
+		'keyboard_layout',
+		'has_numeric_keypad',
+		'has_backlit_keyboard',
 		'touchpad_condition',
-		'bottom_condition',
+		'hinge_condition',
+		'speakers_condition',
 	],
+	aesthetics: ['general_condition', 'cover_condition', 'bottom_condition'],
 	software: ['operating_system', 'has_biometric', 'has_wifi', 'has_bluetooth'],
 	observations: ['observations'],
 };
@@ -160,6 +164,7 @@ interface NotebookFormProps {
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
 	initialSectionKey?: string;
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 const NotebookForm: React.FC<NotebookFormProps> = ({
@@ -172,6 +177,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	registerGetFormValues,
 	isSaving = false,
 	initialSectionKey,
+	schemaFields,
 }) => {
 	const normalizedDefaultValues = useMemo<Partial<NotebookFormData>>(
 		() => ({
@@ -207,13 +213,14 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			readOnly,
 			watch,
 			setValue,
+			schemaFields,
 			onDirectSubmit: (partialData) => {
 				const currentData = getValues();
 				const payload = { ...currentData, ...partialData } as NotebookFormData;
 				onSubmit(payload);
 			},
 		}),
-		[control, errors, readOnly, watch, setValue, getValues, onSubmit],
+		[control, errors, readOnly, watch, setValue, getValues, onSubmit, schemaFields],
 	);
 
 	// Expose getFormValues to parent for auto-save

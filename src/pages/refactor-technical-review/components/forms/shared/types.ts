@@ -10,6 +10,7 @@ import type {
 	FieldValues,
 } from 'react-hook-form';
 import type { TIcons } from '@/types/icons.type';
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 
 /** Props passed to every section component */
 export interface FormSectionProps<T extends FieldValues = FieldValues> {
@@ -19,6 +20,7 @@ export interface FormSectionProps<T extends FieldValues = FieldValues> {
 	watch: UseFormWatch<T>;
 	setValue: UseFormSetValue<T>;
 	onDirectSubmit?: (payload: Partial<T>) => void;
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 /** Configuration for a single form section/step */

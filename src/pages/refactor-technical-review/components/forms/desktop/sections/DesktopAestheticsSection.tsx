@@ -1,4 +1,5 @@
 import React from 'react';
+import Icon from '@/components/icon/Icon';
 import type { FormSectionProps } from '../../shared/types';
 import type { DesktopFormData } from '../../../validation/desktop.schema';
 import { getDesktopLabel } from '../../../translations/desktop.labels';
@@ -8,16 +9,18 @@ import {
 	GENERAL_CONDITION_OPTIONS,
 	COVER_CONDITION_OPTIONS,
 } from '../../../constants/desktop/desktop.options';
-import Icon from '@/components/icon/Icon';
+import { YesNoSelector } from '../../../ui/YesNoSelector';
 
 const DesktopAestheticsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	errors,
 	readOnly,
 	watch,
 	setValue,
+	schemaFields,
 }) => {
 	const generalCondition = watch('general_condition');
 	const coverCondition = watch('cover_condition');
+	const powersOnField = schemaFields?.powers_on;
 
 	return (
 		<div className='space-y-6'>
@@ -80,6 +83,26 @@ const DesktopAestheticsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					</div>
 				)}
 			</div>
+
+			{powersOnField && (
+				<div className='rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-900/30 dark:bg-blue-900/10'>
+					<YesNoSelector
+						label={powersOnField.label ?? ''}
+						value={watch('powers_on')}
+						onChange={(value) => !readOnly && setValue('powers_on', value)}
+					/>
+					{powersOnField.hint && (
+						<p className='mt-2 text-center text-xs text-zinc-500'>
+							{powersOnField.hint}
+						</p>
+					)}
+					{powersOnField.warning && (
+						<p className='mt-2 text-center text-xs text-blue-800'>
+							{powersOnField.warning}
+						</p>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };

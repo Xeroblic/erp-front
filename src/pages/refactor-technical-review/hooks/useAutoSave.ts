@@ -22,6 +22,8 @@ import {
 export interface UseAutoSaveOptions {
 	/** Branch ID from useCurrentBranch */
 	branchId: number | null;
+	/** Subsidiary ID from useCurrentBranch when the review uses subsidiary scope */
+	subsidiaryId?: number | null;
 	/** Item ID being reviewed */
 	itemId: number | null;
 	/** Function that returns the current form data snapshot */
@@ -62,6 +64,7 @@ const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
 
 export const useAutoSave = ({
 	branchId,
+	subsidiaryId = null,
 	itemId,
 	getFormData,
 	enabled = true,
@@ -137,7 +140,7 @@ export const useAutoSave = ({
 	const saveNow = useCallback(
 		async (silent = false): Promise<boolean> => {
 			// Guards
-			if (!branchId || !itemId) return false;
+			if ((!branchId && !subsidiaryId) || !itemId) return false;
 			if (!enabledRef.current) return false;
 			if (isSavingRef.current) return false;
 
@@ -157,6 +160,7 @@ export const useAutoSave = ({
 				await dispatch(
 					updateItemDetails({
 						branchId,
+						subsidiaryId,
 						itemId,
 						data: rawPayload,
 						equipmentType,
@@ -185,6 +189,7 @@ export const useAutoSave = ({
 					await dispatch(
 						updateItemDetails({
 							branchId,
+							subsidiaryId,
 							itemId,
 							data: transformedPayload,
 							equipmentType,
@@ -207,7 +212,7 @@ export const useAutoSave = ({
 				setIsSaving(false);
 			}
 		},
-		[branchId, itemId, equipmentType, dispatch, buildPayload],
+		[branchId, subsidiaryId, itemId, equipmentType, dispatch, buildPayload],
 	);
 
 	// ─── Idle Detection ──────────────────────────────────────────────────────
@@ -231,7 +236,7 @@ export const useAutoSave = ({
 
 	// Set up activity listeners
 	useEffect(() => {
-		if (!enabled || !branchId || !itemId) return;
+		if (!enabled || (!branchId && !subsidiaryId) || !itemId) return;
 
 		// Start initial idle timer
 		resetIdleTimer();
@@ -251,18 +256,18 @@ export const useAutoSave = ({
 				window.removeEventListener(event, handler);
 			});
 		};
-	}, [enabled, branchId, itemId, resetIdleTimer]);
+	}, [enabled, branchId, subsidiaryId, itemId, resetIdleTimer]);
 
 	// ─── Initialize snapshot with current data ───────────────────────────────
 
 	useEffect(() => {
-		if (enabled && branchId && itemId) {
+		if (enabled && (branchId || subsidiaryId) && itemId) {
 			// Take initial snapshot so we don't immediately save unchanged data
 			const currentData = getFormDataRef.current();
 			const payload = buildPayload(currentData, false);
 			lastSnapshotRef.current = JSON.stringify(payload);
 		}
-	}, [enabled, branchId, itemId, buildPayload]);
+	}, [enabled, branchId, subsidiaryId, itemId, buildPayload]);
 
 	// ─── Modal dismiss ───────────────────────────────────────────────────────
 

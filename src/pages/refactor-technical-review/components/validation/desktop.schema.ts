@@ -90,6 +90,8 @@ export const desktopSchema = Yup.object({
 		.oneOf([...ALLOWED_COVER_CONDITIONS], 'Condición de carcasa no válida')
 		.required('La condición de la carcasa es obligatoria'),
 
+	powers_on: Yup.boolean().nullable(),
+
 	// ─── Puertos ─────────────────────────────────────────────────────────────
 	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),

@@ -212,12 +212,15 @@ export interface UpdateItemDetailsPayload {
 	screen_condition?: string;
 	is_touchscreen?: boolean;
 	keyboard_condition?: string;
+	non_functional_keys_count?: number;
 	keyboard_layout?: string;
 	has_numeric_keypad?: boolean;
 	has_backlit_keyboard?: boolean;
 	touchpad_condition?: string;
 	cover_condition?: string;
 	hinge_condition?: string;
+	speakers_condition?: string;
+	powers_on?: boolean;
 	bottom_condition?: string;
 	battery_status?: string; // Estado o porcentaje (p.ej. "85%")
 	operating_system?: string;
@@ -290,6 +293,26 @@ export interface IValidationRule {
 	pattern?: string;
 	description?: string;
 }
+
+export interface ITechnicalReviewSchemaOption {
+	value: string | number;
+	label: string;
+}
+
+/** Metadata publicada por TechnicalReviewValidationSchemaService. */
+export interface ITechnicalReviewSchemaField {
+	type: string;
+	label?: string;
+	group?: string;
+	allowed_values?: Array<string | number>;
+	options?: ITechnicalReviewSchemaOption[];
+	required?: boolean;
+	min?: number;
+	hint?: string;
+	warning?: string;
+}
+
+export type ITechnicalReviewSchema = Record<string, ITechnicalReviewSchemaField>;
 
 /**
  * Esquema de validación completo (común + por tipo)
