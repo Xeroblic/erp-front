@@ -21,7 +21,6 @@ describe('catalog RBAC schema v1', () => {
 		expect(catalog.contextual_roles).toHaveLength(5);
 		expect(knownPermissions).toEqual(catalog.permissions.map((permission) => permission.name));
 	});
-
 	it('preserva permisos con punto y los huérfanos falabella sin normalizarlos', () => {
 		const names = rbacCatalog.permissions.map((permission) => permission.name);
 		const falabella = rbacCatalog.permissions.filter((permission) =>
@@ -51,6 +50,50 @@ describe('catalog RBAC schema v1', () => {
 	it('rechaza snapshots que no cumplen el schema v1', () => {
 		expect(() => validateRbacCatalogV1({ schema_version: 2 })).toThrow(
 			'catalog.schema_version debe ser 1.',
+		);
+	});
+
+	it('rechaza referencias de grupo que no existen entre los permisos', () => {
+		const invalidCatalog = structuredClone(rawCatalog);
+		invalidCatalog.groups.admin.push('permission-inexistente');
+
+		expect(() => validateRbacCatalogV1(invalidCatalog)).toThrow(
+			'catalog.groups.admin contiene un permiso inexistente: permission-inexistente.',
+		);
+	});
+
+	it('rechaza permisos duplicados', () => {
+		const invalidCatalog = structuredClone(rawCatalog);
+		invalidCatalog.permissions.push(structuredClone(invalidCatalog.permissions[0]));
+
+		expect(() => validateRbacCatalogV1(invalidCatalog)).toThrow(
+			'catalog.permissions contiene valores duplicados.',
+		);
+	});
+
+	it('rechaza desajustes en ambas direcciones entre groups y permissions', () => {
+		const invalidCatalog = structuredClone(rawCatalog);
+		const permission = invalidCatalog.permissions.find((item) => item.group === 'admin');
+
+		if (!permission) throw new Error('El fixture debe contener un permiso del grupo admin.');
+		permission.group = null;
+
+		expect(() => validateRbacCatalogV1(invalidCatalog)).toThrow(
+			`catalog.groups.admin no coincide con catalog.permissions ${permission.name}.`,
+		);
+
+		const invalidReverseCatalog = structuredClone(rawCatalog);
+		const reversePermission = invalidReverseCatalog.permissions.find(
+			(item) => item.group === 'admin',
+		);
+
+		if (!reversePermission) {
+			throw new Error('El fixture debe contener un permiso del grupo admin.');
+		}
+		reversePermission.group = 'brand';
+
+		expect(() => validateRbacCatalogV1(invalidReverseCatalog)).toThrow(
+			`catalog.permissions ${reversePermission.name} no coincide con catalog.groups.brand.`,
 		);
 	});
 });

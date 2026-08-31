@@ -10,19 +10,28 @@ const outputPath = resolve(
 	'src/authorization/rbac/catalogPermissions.generated.ts',
 );
 
-const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
+const escapeTypeScriptSingleQuotedString = (value) =>
+	value.replaceAll('\\', '\\\\').replaceAll("'", "\\'");
 
-if (
-	!Array.isArray(catalog.permissions) ||
-	!catalog.permissions.every(({ name }) => typeof name === 'string')
-) {
-	throw new Error('resources/rbac/catalog.json no contiene permissions[].name válidos.');
+const generate = async () => {
+	const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
+
+	if (
+		!Array.isArray(catalog.permissions) ||
+		!catalog.permissions.every(({ name }) => typeof name === 'string')
+	) {
+		throw new Error('resources/rbac/catalog.json no contiene permissions[].name válidos.');
+	}
+
+	const permissionNames = catalog.permissions.map(({ name }) => name);
+	const formattedPermissions = permissionNames
+		.map((name) => `\t'${escapeTypeScriptSingleQuotedString(name)}',`)
+		.join('\n');
+	const output = `/** Archivo generado por scripts/generateRbacCatalogTypes.mjs. No editar manualmente. */\nexport const knownPermissions = [\n${formattedPermissions}\n] as const;\n\nexport type KnownPermission = (typeof knownPermissions)[number];\n`;
+
+	await writeFile(outputPath, output, 'utf8');
+};
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+	await generate();
 }
-
-const permissionNames = catalog.permissions.map(({ name }) => name);
-const formattedPermissions = permissionNames
-	.map((name) => `\t'${name.replaceAll("'", "\\\\'")}',`)
-	.join('\n');
-const output = `/** Archivo generado por scripts/generateRbacCatalogTypes.mjs. No editar manualmente. */\nexport const knownPermissions = [\n${formattedPermissions}\n] as const;\n\nexport type KnownPermission = (typeof knownPermissions)[number];\n`;
-
-await writeFile(outputPath, output, 'utf8');

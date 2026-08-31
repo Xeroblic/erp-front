@@ -118,6 +118,9 @@ export const validateRbacCatalogV1 = (value: unknown): RbacCatalogV1 => {
 	const permissionNames = parsedPermissions.map((permission) => permission.name);
 	ensureUnique(permissionNames, 'catalog.permissions');
 	const permissionNameSet = new Set(permissionNames);
+	const permissionsByName = new Map(
+		parsedPermissions.map((permission) => [permission.name, permission]),
+	);
 
 	Object.entries(groups).forEach(([group, groupPermissions]) => {
 		ensureUnique(groupPermissions, `catalog.groups.${group}`);
@@ -135,6 +138,17 @@ export const validateRbacCatalogV1 = (value: unknown): RbacCatalogV1 => {
 		if (!groups[group]?.includes(name)) {
 			throw new Error(`catalog.permissions ${name} no coincide con catalog.groups.${group}.`);
 		}
+	});
+
+	Object.entries(groups).forEach(([group, groupPermissions]) => {
+		groupPermissions.forEach((name) => {
+			const permission = permissionsByName.get(name);
+			if (permission?.group !== group) {
+				throw new Error(
+					`catalog.groups.${group} no coincide con catalog.permissions ${name}.`,
+				);
+			}
+		});
 	});
 
 	if (!Array.isArray(record.roles)) throw new Error('catalog.roles debe ser un arreglo.');

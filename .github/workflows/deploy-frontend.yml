@@ -6,6 +6,7 @@ on:
         # or drop this block; if you keep it, align with real paths
         paths:
             - 'src/**'
+            - 'resources/**'
             - 'package.json'
             - 'pnpm-lock.yaml'
             - 'vite.config.ts'
