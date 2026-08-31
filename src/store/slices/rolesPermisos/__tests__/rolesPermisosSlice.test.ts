@@ -108,6 +108,8 @@ describe('fetchUsuariosConRolesPerms', () => {
 		await store.dispatch(fetchUsuariosConRolesPerms({ page: 1, per_page: 10 }));
 
 		expect(store.getState().users.error).toBe('No tienes permiso para ver usuarios');
+		expect(store.getState().users.data).toEqual([]);
+		expect(store.getState().users.meta).toBeNull();
 		fetchData.mockRestore();
 	});
 });

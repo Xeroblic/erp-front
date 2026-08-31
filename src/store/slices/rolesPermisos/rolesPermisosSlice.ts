@@ -38,6 +38,8 @@ export interface UsersPaginationMeta {
 	total: number;
 }
 
+export const USERS_DEFAULT_PAGE_SIZE = 10;
+
 export interface FetchUsuariosConRolesPermsParams {
 	page?: number;
 	per_page?: number;
@@ -79,7 +81,7 @@ export const fetchUsuariosConRolesPerms = createAsyncThunk<
 	FetchUsuariosConRolesPermsParams | void,
 	{ rejectValue: string }
 >('rolesPermisos/fetchAll', async (params, { rejectWithValue }) => {
-	const { page = 1, per_page: perPage = 15, search } = params ?? {};
+	const { page = 1, per_page: perPage = USERS_DEFAULT_PAGE_SIZE, search } = params ?? {};
 	try {
 		const res = await ApiService.fetchData<UsersListResponse>({
 			url: '/users',
@@ -405,6 +407,8 @@ const rolesPermisosSlice = createSlice({
 
 				state.users.loading = false;
 				state.users.activeRequestId = null;
+				state.users.data = [];
+				state.users.meta = null;
 				state.users.error =
 					typeof action.payload === 'string' ? action.payload : 'Error desconocido';
 			})

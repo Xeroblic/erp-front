@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { PaginationState } from '@tanstack/react-table';
 import { useDebounce } from 'use-debounce';
-import type { FetchUsuariosConRolesPermsParams } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
+import {
+	USERS_DEFAULT_PAGE_SIZE,
+	type FetchUsuariosConRolesPermsParams,
+} from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 
-const DEFAULT_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 400;
 
 interface UseRolesPermisosPaginationOptions {
@@ -18,7 +20,7 @@ const useRolesPermisosPagination = ({ onFetch }: UseRolesPermisosPaginationOptio
 	const [debouncedSearchInput] = useDebounce(searchInput, SEARCH_DEBOUNCE_MS);
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
-		pageSize: DEFAULT_PAGE_SIZE,
+		pageSize: USERS_DEFAULT_PAGE_SIZE,
 	});
 
 	useEffect(() => {

@@ -21,7 +21,6 @@ type UserRow = UserWithDetails & {
 	uniqueRoles: string[];
 	directPermissionsCount: number;
 	totalPermissionsCount: number;
-	searchText: string;
 };
 
 const RolesPermisos: React.FC = () => {
@@ -61,16 +60,6 @@ const RolesPermisos: React.FC = () => {
 			const directPermissionsCount = user.direct_permissions?.length ?? 0;
 			const totalPermissionsCount = user.all_permissions?.length ?? 0;
 
-			const searchText = [
-				displayName,
-				user.email ?? '',
-				cargoResolved,
-				companyResolved,
-				uniqueRoles.join(' '),
-			]
-				.join(' ')
-				.toLowerCase();
-
 			return {
 				...user,
 				displayName,
@@ -79,7 +68,6 @@ const RolesPermisos: React.FC = () => {
 				uniqueRoles,
 				directPermissionsCount,
 				totalPermissionsCount,
-				searchText,
 			};
 		});
 	}, [usuarios]);

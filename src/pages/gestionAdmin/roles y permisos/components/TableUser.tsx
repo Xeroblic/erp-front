@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -15,9 +15,9 @@ import ApiService from '@/services/ApiService';
 import { toggleUserStatus, type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { usePermissionLabels } from '@/hooks/usePermissionLabels';
 import { useAppDispatch, useAppSelector } from '@/store';
+import { USERS_DEFAULT_PAGE_SIZE } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import Tooltip from '@/components/ui/Tooltip';
-import { zinc } from 'tailwindcss/colors';
 
 type UserRow = UserWithDetails & {
 	displayName: string;
@@ -26,7 +26,6 @@ type UserRow = UserWithDetails & {
 	uniqueRoles: string[];
 	directPermissionsCount: number;
 	totalPermissionsCount: number;
-	searchText: string;
 };
 
 const columnHelper = createColumnHelper<UserRow>();
@@ -69,25 +68,35 @@ const TableUser: React.FC<Props> = ({
 		return roles.includes('admin') || roles.includes('super-admin');
 	}, [currentUser]);
 
-	const handleManageUser = (userId: number) => {
-		navigate(`/gestion/roles-permisos/${userId}`);
-	};
+	const handleManageUser = useCallback(
+		(userId: number) => {
+			navigate(`/gestion/roles-permisos/${userId}`);
+		},
+		[navigate],
+	);
 
-	const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
-		try {
-			const response = await dispatch(
-				toggleUserStatus({ userId: userId, status: currentStatus }),
-			);
-			if (response.meta.requestStatus === 'fulfilled') {
-				onRefresh();
-				toast.success('Estado del usuario cambiado exitosamente');
-			} else {
-				toast.error(error ?? 'No se ha podido actualizar el estado del usuario');
+	const handleToggleStatus = useCallback(
+		async (userId: number, currentStatus: boolean) => {
+			try {
+				const response = await dispatch(
+					toggleUserStatus({ userId, status: currentStatus }),
+				);
+				if (toggleUserStatus.fulfilled.match(response)) {
+					onRefresh();
+					toast.success('Estado del usuario cambiado exitosamente');
+				} else {
+					toast.error(
+						typeof response.payload === 'string'
+							? response.payload
+							: 'No se ha podido actualizar el estado del usuario',
+					);
+				}
+			} catch (err) {
+				console.error('Error al cambiar el estado del usuario:', err);
 			}
-		} catch (err) {
-			console.error('Error al cambiar el estado del usuario:', err);
-		}
-	};
+		},
+		[dispatch, onRefresh],
+	);
 
 	const columns = useMemo(
 		() =>
@@ -202,6 +211,7 @@ const TableUser: React.FC<Props> = ({
 				}),
 				columnHelper.accessor('is_active', {
 					header: 'Estado',
+					enableSorting: false,
 					cell: (info) => (
 						<Badge
 							color={info.getValue() ? 'emerald' : 'red'}
@@ -285,7 +295,7 @@ const TableUser: React.FC<Props> = ({
 			].filter(Boolean) as ColumnDef<UserRow, unknown>[],
 		// getRoleLabel entra como dependencia para que las etiquetas se
 		// recalculen cuando termine de cargar el catálogo de roles.
-		[navigate, isAdmin, getRoleLabel],
+		[isAdmin, getRoleLabel, handleManageUser, handleToggleStatus],
 	);
 
 	return (
@@ -301,7 +311,7 @@ const TableUser: React.FC<Props> = ({
 			searchPlaceholder='Buscar usuario por nombre, correo o RUT...'
 			searchValue={globalFilter}
 			onSearchChange={setGlobalFilter}
-			pageSize={10}
+			pageSize={USERS_DEFAULT_PAGE_SIZE}
 			manualPagination
 			paginationState={pagination}
 			onPaginationChange={onPaginationChange}
