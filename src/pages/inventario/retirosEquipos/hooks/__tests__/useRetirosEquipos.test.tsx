@@ -45,9 +45,13 @@ const initialWithdrawalsState: ITestWithdrawalsState = {
 	ownerContext: null,
 };
 
+const withdrawalsTestReducer = (
+	state: ITestWithdrawalsState = initialWithdrawalsState,
+): ITestWithdrawalsState => state;
+
 const createHook = (initialEntry: string) => {
 	const store = configureStore({
-		reducer: { equipmentWithdrawals: (state = initialWithdrawalsState) => state },
+		reducer: { equipmentWithdrawals: withdrawalsTestReducer },
 	});
 	const Wrapper = ({ children }: PropsWithChildren) => (
 		<MemoryRouter

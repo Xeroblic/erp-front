@@ -1,4 +1,3 @@
-export { default } from './slice/equipmentWithdrawalsSlice';
 export {
 	fetchWithdrawals,
 	selectWithdrawals,

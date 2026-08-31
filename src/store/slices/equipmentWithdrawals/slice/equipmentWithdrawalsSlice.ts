@@ -12,6 +12,7 @@ import {
 	resolveWithdrawalsContext,
 	type WithdrawalsEndpointMode,
 } from '../withdrawalsApi';
+import getWithdrawalsErrorMessage from '../errors';
 import { fetchWithdrawalsMock } from '../mocks/mockWithdrawals';
 
 export interface IWithdrawalsListMeta {
@@ -67,11 +68,6 @@ const toMeta = (
 	};
 };
 
-const getErrorMessage = (error: unknown): string => {
-	if (error instanceof Error && error.message.trim()) return error.message;
-	return 'No se pudieron cargar los retiros';
-};
-
 export const fetchWithdrawals = createAsyncThunk<
 	IFetchWithdrawalsResult,
 	IFetchWithdrawalsArgs,
@@ -105,7 +101,7 @@ export const fetchWithdrawals = createAsyncThunk<
 				ownerContext,
 			};
 		} catch (error) {
-			return rejectWithValue(getErrorMessage(error));
+			return rejectWithValue(getWithdrawalsErrorMessage(error));
 		}
 	},
 );

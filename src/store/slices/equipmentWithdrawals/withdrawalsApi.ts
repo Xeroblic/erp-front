@@ -50,22 +50,23 @@ const toValidNumber = (value: unknown): number | null => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === 'object' && value !== null;
 
+const toUnknownList = (value: unknown): unknown[] =>
+	Array.isArray(value) ? value.map((entry): unknown => entry) : [value];
+
 const readNestedId = (source: unknown, ...keys: string[]): number | null => {
 	if (!isRecord(source)) return null;
-	for (const key of keys) {
-		const candidate = toValidNumber(source[key]);
-		if (candidate) return candidate;
-	}
-	return null;
+	return (
+		keys
+			.map((key) => toValidNumber(source[key]))
+			.find((candidate): candidate is number => candidate !== null) ?? null
+	);
 };
 
 const readRecordPath = (root: unknown, ...path: string[]): unknown => {
-	let current: unknown = root;
-	for (const key of path) {
-		if (!isRecord(current)) return undefined;
-		current = current[key];
-	}
-	return current;
+	return path.reduce<unknown>(
+		(current, key) => (isRecord(current) ? current[key] : undefined),
+		root,
+	);
 };
 
 const resolveUserBranchId = (user: unknown): number | null => {
@@ -77,7 +78,7 @@ const resolveUserBranchId = (user: unknown): number | null => {
 const resolveSubsidiaryFromBranch = (state: RootState, branchId: number | null): number | null => {
 	if (!branchId) return null;
 
-	const user: unknown = state.auth.user;
+	const { user } = state.auth;
 	const directSources: unknown[] = isRecord(user)
 		? [
 				user.branch,
@@ -87,30 +88,25 @@ const resolveSubsidiaryFromBranch = (state: RootState, branchId: number | null):
 			]
 		: [];
 
-	for (const source of directSources) {
-		const branches = Array.isArray(source) ? source : [source];
-		for (const branch of branches) {
-			const candidateId = readNestedId(branch, 'id', 'branch_id', 'branchId', 'sucursal_id');
-			if (candidateId !== branchId) continue;
+	const branch = directSources
+		.flatMap(toUnknownList)
+		.find(
+			(candidate) =>
+				readNestedId(candidate, 'id', 'branch_id', 'branchId', 'sucursal_id') === branchId,
+		);
+	if (!isRecord(branch)) return null;
 
-			const subsidiarySource = isRecord(branch)
-				? (branch.subsidiary ??
-					branch.subsidiary_info ??
-					branch.subsidiary_id ??
-					branch.subsidiaryId)
-				: undefined;
-			if (isRecord(subsidiarySource)) {
-				const nestedId =
-					toValidNumber(subsidiarySource.id) ??
-					toValidNumber(subsidiarySource.subsidiary_id);
-				if (nestedId) return nestedId;
-			}
-			const directId = toValidNumber(subsidiarySource);
-			if (directId) return directId;
-		}
+	const {
+		subsidiary,
+		subsidiary_info: subsidiaryInfo,
+		subsidiary_id: subsidiaryId,
+		subsidiaryId: nestedSubsidiaryId,
+	} = branch;
+	const subsidiarySource = subsidiary ?? subsidiaryInfo ?? subsidiaryId ?? nestedSubsidiaryId;
+	if (isRecord(subsidiarySource)) {
+		return toValidNumber(subsidiarySource.id) ?? toValidNumber(subsidiarySource.subsidiary_id);
 	}
-
-	return null;
+	return toValidNumber(subsidiarySource);
 };
 
 export const resolveWithdrawalsContext = (

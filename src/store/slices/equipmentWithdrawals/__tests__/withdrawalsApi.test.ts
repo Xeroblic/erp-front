@@ -6,9 +6,19 @@ import {
 	resolveWithdrawalsContext,
 	withdrawalsFiltersFromSearchParams,
 } from '../withdrawalsApi';
+import getWithdrawalsErrorMessage from '../errors';
 
 it('mantiene los mocks desactivados si el entorno no los habilita explícitamente', () => {
 	expect(WITHDRAWALS_USE_MOCKS).toBe(false);
+});
+
+it('prioriza el mensaje del backend ante un error Axios', () => {
+	expect(
+		getWithdrawalsErrorMessage({
+			message: 'Request failed with status code 403',
+			response: { data: { message: 'No tienes permisos para ver los retiros' } },
+		}),
+	).toBe('No tienes permisos para ver los retiros');
 });
 
 const buildState = (
