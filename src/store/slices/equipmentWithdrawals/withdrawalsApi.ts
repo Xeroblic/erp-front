@@ -1,5 +1,6 @@
 import type { RootState } from '@/store/rootReducer';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import { resolveSubsidiaryFromBranch, type ContextUser } from '@/utils/orgContext.util';
 
 import type {
 	IFetchWithdrawalsParams,
@@ -50,9 +51,6 @@ const toValidNumber = (value: unknown): number | null => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === 'object' && value !== null;
 
-const toUnknownList = (value: unknown): unknown[] =>
-	Array.isArray(value) ? value.map((entry): unknown => entry) : [value];
-
 const readNestedId = (source: unknown, ...keys: string[]): number | null => {
 	if (!isRecord(source)) return null;
 	return (
@@ -74,41 +72,6 @@ const resolveUserBranchId = (user: unknown): number | null => {
 	return readNestedId(user.branch, 'id') ?? toValidNumber(user.branch_id);
 };
 
-/** Deriva la subsidiaria desde las sucursales visibles del usuario. */
-const resolveSubsidiaryFromBranch = (state: RootState, branchId: number | null): number | null => {
-	if (!branchId) return null;
-
-	const { user } = state.auth;
-	const directSources: unknown[] = isRecord(user)
-		? [
-				user.branch,
-				user.branches,
-				readRecordPath(user, 'access', 'branches'),
-				readRecordPath(user, 'visible', 'branches'),
-			]
-		: [];
-
-	const branch = directSources
-		.flatMap(toUnknownList)
-		.find(
-			(candidate) =>
-				readNestedId(candidate, 'id', 'branch_id', 'branchId', 'sucursal_id') === branchId,
-		);
-	if (!isRecord(branch)) return null;
-
-	const {
-		subsidiary,
-		subsidiary_info: subsidiaryInfo,
-		subsidiary_id: subsidiaryId,
-		subsidiaryId: nestedSubsidiaryId,
-	} = branch;
-	const subsidiarySource = subsidiary ?? subsidiaryInfo ?? subsidiaryId ?? nestedSubsidiaryId;
-	if (isRecord(subsidiarySource)) {
-		return toValidNumber(subsidiarySource.id) ?? toValidNumber(subsidiarySource.subsidiary_id);
-	}
-	return toValidNumber(subsidiarySource);
-};
-
 export const resolveWithdrawalsContext = (
 	state: RootState,
 	input: IWithdrawalsRequestContextInput = {},
@@ -126,7 +89,7 @@ export const resolveWithdrawalsContext = (
 	const subsidiaryId =
 		toValidNumber(input.subsidiaryId) ??
 		toValidNumber(effectiveSubsidiaryId) ??
-		resolveSubsidiaryFromBranch(state, branchId);
+		resolveSubsidiaryFromBranch(branchId, state.auth.user as ContextUser | null | undefined);
 
 	// Priorizamos el modo 'branches': evita 403 en usuarios que pertenecen a una
 	// subsidiaria pero no tienen acceso global a ella.

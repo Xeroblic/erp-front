@@ -24,11 +24,11 @@ it('prioriza el mensaje del backend ante un error Axios', () => {
 const buildState = (
 	options: {
 		sucursalPrincipal?: number;
-		userBranch?: { id: number; subsidiary?: { id: number } };
+		user?: unknown;
 	} = {},
 ): RootState =>
 	({
-		auth: { user: options.userBranch ?? null },
+		auth: { user: options.user ?? null },
 		personalizacion: options.sucursalPrincipal
 			? { personalizacionUsuario: { sucursal_principal: options.sucursalPrincipal } }
 			: undefined,
@@ -76,11 +76,30 @@ describe('resolveWithdrawalsContext', () => {
 
 	it('deriva la subsidiaria desde las sucursales del usuario', () => {
 		const state = buildState({
-			userBranch: { id: 12, subsidiary: { id: 7 } },
+			user: { branch: { id: 12, subsidiary: { id: 7 } } },
 		});
 		const context = resolveWithdrawalsContext(state, { branchId: 12 });
 
 		expect(context.subsidiaryId).toBe(7);
+	});
+
+	it('continúa buscando si la branch principal no trae subsidiaria', () => {
+		const state = buildState({
+			user: {
+				branch: { id: 12 },
+				branches: [{ id: 12, subsidiary: { id: 7 } }],
+			},
+		});
+
+		expect(resolveWithdrawalsContext(state, { branchId: 12 }).subsidiaryId).toBe(7);
+	});
+
+	it('preserva subsidiary_info escalar al derivar la subsidiaria', () => {
+		const state = buildState({
+			user: { branches: [{ sucursal_id: 12, subsidiary_info: 7 }] },
+		});
+
+		expect(resolveWithdrawalsContext(state, { branchId: 12 }).subsidiaryId).toBe(7);
 	});
 
 	it('falla si no puede resolver ningún contexto', () => {
