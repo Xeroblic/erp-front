@@ -129,7 +129,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 											value={nonFunctionalKeysCount}
 											min={1}
 											onChange={(value) =>
-												!readOnly && setValue('non_functional_keys_count', value)
+												!readOnly &&
+												setValue('non_functional_keys_count', value)
 											}
 										/>
 									)}
