@@ -17,6 +17,7 @@
 		"quality:style": "pnpm run check:eol && pnpm run prettier:check && pnpm run lint:imports",
 		"prettier:check": "prettier --check .",
 		"prettier:fix": "prettier --write .",
+		"rbac:generate-types": "node scripts/generateRbacCatalogTypes.mjs",
 		"icon": "svgr SvgIcons -d src/components/icon/svg-icons --typescript --no-prettier"
 	},
 	"engines": {
