@@ -66,6 +66,24 @@ const textoDeArchivosReferenciados = (comando, raiz) => {
 	return partes.join('\n');
 };
 
+/**
+ * El cuerpo de un heredoc es dato, no comando: `cat > nota.md <<'MD' … MD` no ejecuta
+ * nada de lo que contiene. Escribir documentación que *menciona* una publicación o la
+ * sustitución de autoría hacía que el comando se clasificara como publicación y que las
+ * guardas de línea de comandos se aplicaran al texto citado. Para decidir qué operación
+ * es y qué banderas lleva se usa el comando sin heredocs; el contenido se sigue
+ * inspeccionando entero, porque ahí es donde viaja un mensaje de commit real.
+ */
+const sinHeredocs = (comando) => {
+	const delimitado = comando.replace(
+		/<<-?\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\1[\s\S]*?^\s*\2\s*$/gm,
+		'<<HEREDOC',
+	);
+	// Heredoc sin terminador (comando truncado): se descarta desde su apertura.
+	const abierto = delimitado.search(/<<-?\s*['"]?[A-Za-z_][A-Za-z0-9_]*['"]?\s*$/m);
+	return abierto === -1 ? delimitado : delimitado.slice(0, abierto);
+};
+
 const entrada = await leerEntrada();
 if (!entrada || entrada.tool_name !== 'Bash') permitir();
 
@@ -73,13 +91,19 @@ const comando = String(entrada.tool_input?.command ?? '');
 if (!comando.trim()) permitir();
 
 const raiz = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
-// Texto completo a inspeccionar: el comando más el contenido de los archivos que referencia.
-const texto = `${comando}\n${textoDeArchivosReferenciados(comando, raiz)}`;
+// Lo que realmente se ejecuta: decide la operación y las banderas de identidad.
+const comandoEjecutable = sinHeredocs(comando);
+// Texto completo: comando, heredocs y archivos referenciados. Ahí viaja el mensaje real.
+const texto = `${comando}\n${textoDeArchivosReferenciados(comandoEjecutable, raiz)}`;
 
+// Las opciones globales de git pueden venir en dos tokens (`git -c user.email=x commit`),
+// así que el prefijo admite tanto banderas como pares `clave=valor`. Sin esto la guarda de
+// sustitución de identidad no llegaba a evaluarse en la forma que más importa.
+const opcionesGit = String.raw`(-\S+\s+|\S+=\S+\s+)*`;
 const esPublicacion =
-	/\bgit\s+(-\S+\s+)*push\b/.test(comando) ||
-	/\bgh\s+(pr|release|issue|api|workflow)\b/.test(comando);
-const esCommit = /\bgit\s+(-\S+\s+)*commit\b/.test(comando);
+	new RegExp(String.raw`\bgit\s+${opcionesGit}push\b`).test(comandoEjecutable) ||
+	/\bgh\s+(pr|release|issue|api|workflow)\b/.test(comandoEjecutable);
+const esCommit = new RegExp(String.raw`\bgit\s+${opcionesGit}commit\b`).test(comandoEjecutable);
 
 if (!esPublicacion && !esCommit) permitir();
 
@@ -93,14 +117,15 @@ if (esPublicacion && tokenDeEntorno.length > 0) {
 	);
 }
 
-// 2. Sustitución explícita de la identidad de git.
-if (/--author[=\s]/.test(comando) || /--committer[=\s]/.test(comando)) {
+// 2. Sustitución explícita de la identidad de git. Se mira sólo la parte ejecutable:
+// una bandera citada dentro de un heredoc es texto, no un override que vaya a correr.
+if (/--author[=\s]/.test(comandoEjecutable) || /--committer[=\s]/.test(comandoEjecutable)) {
 	denegar(
 		'El comando sustituye el autor del commit con --author/--committer. La autoría debe ser la de ' +
 			'`git config user.name` / `user.email` del usuario. Quita el override.',
 	);
 }
-if (/-c\s+user\.(name|email)=/.test(comando)) {
+if (/-c\s+user\.(name|email)=/.test(comandoEjecutable)) {
 	denegar(
 		'El comando redefine user.name o user.email con `git -c`. La identidad debe ser la configurada ' +
 			'en el repositorio, no una pasada por línea de comandos.',
