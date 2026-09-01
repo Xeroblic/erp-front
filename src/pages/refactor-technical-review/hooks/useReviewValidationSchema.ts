@@ -36,7 +36,14 @@ const useReviewValidationSchema = ({
 	useEffect(() => {
 		if (!SUPPORTED_EQUIPMENT_TYPES.has(normalizedType) || (!branchId && !subsidiaryId)) {
 			setSchema(null);
-			setError(null);
+			// Sin sucursal ni subsidiaría no hay a quién pedirle el schema. El formulario
+			// sigue siendo usable con el respaldo local, pero el técnico debe saber que
+			// los campos que dependen del backend no van a aparecer, en vez de no ver nada.
+			setError(
+				SUPPORTED_EQUIPMENT_TYPES.has(normalizedType) && !branchId && !subsidiaryId
+					? 'Sin sucursal o subsidiaría activa no se pueden cargar los campos publicados por el backend. Se muestran las opciones locales.'
+					: null,
+			);
 			setIsLoading(false);
 			return () => undefined;
 		}

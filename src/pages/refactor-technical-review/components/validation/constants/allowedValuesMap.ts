@@ -1,3 +1,5 @@
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
+
 /**
  * allowedValuesMap.ts
  * Centralized map of constrained field values per equipment type.
@@ -128,8 +130,15 @@ export const getAllowedValuesMap = (equipmentType: string): AllowedValuesMap => 
 export const sanitizeByAllowedValues = (
 	data: Record<string, unknown>,
 	equipmentType: string,
+	remoteAllowedValues?: AllowedValuesMap,
 ): Record<string, unknown> => {
-	const allowedMap = getAllowedValuesMap(equipmentType);
+	// Los campos que el backend publica con `allowed_values` mandan sobre el mapa
+	// local: ZF-48 abrió teclado, bisagras y touchpad a valores dinámicos, y filtrarlos
+	// contra las constantes locales descartaría en silencio una opción legítima.
+	const allowedMap: AllowedValuesMap = {
+		...getAllowedValuesMap(equipmentType),
+		...(remoteAllowedValues ?? {}),
+	};
 
 	// No constraints for this equipment type → return as-is
 	if (Object.keys(allowedMap).length === 0) return data;
@@ -147,4 +156,23 @@ export const sanitizeByAllowedValues = (
 	}
 
 	return result;
+};
+
+/**
+ * Traduce el schema remoto a un mapa de valores permitidos utilizable por
+ * `sanitizeByAllowedValues`. Sólo se incluyen los campos que realmente publican
+ * `allowed_values`; el resto sigue gobernado por las constantes locales.
+ */
+export const buildRemoteAllowedValuesMap = (
+	schema: ITechnicalReviewSchema | null | undefined,
+): AllowedValuesMap | undefined => {
+	if (!schema) return undefined;
+
+	const entries = Object.entries(schema).flatMap(([field, definition]) => {
+		const allowedValues = definition?.allowed_values;
+		if (!allowedValues || allowedValues.length === 0) return [];
+		return [[field, allowedValues.map((value) => String(value))] as const];
+	});
+
+	return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 };

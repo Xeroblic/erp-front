@@ -11,7 +11,10 @@ import { ReviewPhotosProvider } from '../../../components/forms/shared/gallery/R
 import useAutoSave from '../../../hooks/useAutoSave';
 import AutoSaveConfirmModal from '../../../components/modals/AutoSaveConfirmModal';
 import PrefillReviewModal from '../../../components/modals/PrefillReviewModal';
-import { sanitizeByAllowedValues } from '../../../components/validation/constants/allowedValuesMap';
+import {
+	buildRemoteAllowedValuesMap,
+	sanitizeByAllowedValues,
+} from '../../../components/validation/constants/allowedValuesMap';
 import Icon from '@/components/icon/Icon';
 import useReviewValidationSchema from '../../../hooks/useReviewValidationSchema';
 import {
@@ -72,7 +75,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 			equipmentType.toLowerCase() === 'notebook' ? ZF48_NOTEBOOK_FIELDS : ZF48_DESKTOP_FIELDS;
 		const missingFields = expectedFields.filter((field) => !schemaFields?.[field]);
 		return missingFields.length > 0
-			? 'El backend activo aún no publica los campos requeridos para esta revisión. Actualiza ZB-89 y reintenta.'
+			? 'El backend activo aún no publica los campos requeridos para esta revisión. Contacta a soporte técnico.'
 			: null;
 	}, [equipmentType, reviewSchema.schema, schemaFields]);
 	// const { isSuperAdmin, hasRole } = useAuthorization();
@@ -113,11 +116,16 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	// Dynamic transformer: strips any constrained field value that is not
 	// in the backend's allowed_values list for the current equipment type.
 	// Works for ALL equipment types (notebook, desktop, aio, docking, monitor).
+	const remoteAllowedValues = React.useMemo(
+		() => buildRemoteAllowedValuesMap(reviewSchema.schema),
+		[reviewSchema.schema],
+	);
+
 	const transformData = useCallback(
 		(data: Record<string, unknown>) => {
-			return sanitizeByAllowedValues(data, equipmentType);
+			return sanitizeByAllowedValues(data, equipmentType, remoteAllowedValues);
 		},
-		[equipmentType],
+		[equipmentType, remoteAllowedValues],
 	);
 
 	const { saveNow, isSaving, lastSavedAt, showIdleSaveModal, dismissIdleSaveModal } = useAutoSave(
@@ -186,7 +194,10 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 
 	// ─── Final Submit (original behavior) ────────────────────────────────────
 	const handleFormSubmit = async (data: any) => {
-		if (!branchId || !initialData?.id) {
+		// La guarda debe coincidir con la del autosave: un usuario con subsidiaría y sin
+		// sucursal activa puede guardar borradores, así que también debe poder cerrar la
+		// revisión. El thunk resuelve el contexto a partir de cualquiera de los dos.
+		if ((!branchId && !subsidiaryId) || !initialData?.id) {
 			toast.error('No se pudo identificar el item para guardar');
 			return;
 		}
@@ -195,7 +206,8 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		try {
 			await dispatch(
 				updateItemDetails({
-					branchId,
+					branchId: branchId ?? null,
+					subsidiaryId: subsidiaryId ?? null,
 					itemId: initialData.id,
 					data,
 					equipmentType, // Provide equipmentType to avoid SQL errors

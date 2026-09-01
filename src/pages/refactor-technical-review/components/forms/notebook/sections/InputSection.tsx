@@ -10,8 +10,14 @@ import {
 	COVER_CONDITION_OPTIONS,
 	KEYBOARD_LAYOUT_OPTIONS,
 	BOTTOM_CONDITION_OPTIONS,
+	KEYBOARD_CONDITION_OPTIONS,
+	TOUCHPAD_CONDITION_OPTIONS,
+	HINGE_CONDITION_OPTIONS,
 } from '../../../constants/notebook/notebook.options';
-import { getSchemaFieldOptions } from '../../../validation/technicalReviewSchema';
+import {
+	getSchemaFieldOptions,
+	resolveSchemaField,
+} from '../../../validation/technicalReviewSchema';
 
 const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	errors,
@@ -20,10 +26,25 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	setValue,
 	schemaFields,
 }) => {
-	const keyboardField = schemaFields?.keyboard_condition;
+	// Los tres campos que ZF-48 pasó a opciones dinámicas conservan su respaldo local:
+	// sin schema remoto seguían siendo obligatorios pero quedaban sin opciones y sin
+	// título, dejando la revisión imposible de completar.
+	const keyboard = resolveSchemaField(schemaFields?.keyboard_condition, {
+		label: 'Teclado',
+		options: KEYBOARD_CONDITION_OPTIONS,
+	});
+	const touchpad = resolveSchemaField(schemaFields?.touchpad_condition, {
+		label: 'Touchpad',
+		options: TOUCHPAD_CONDITION_OPTIONS,
+	});
+	const hinge = resolveSchemaField(schemaFields?.hinge_condition, {
+		label: 'Bisagras',
+		options: HINGE_CONDITION_OPTIONS,
+	});
 	const keysCountField = schemaFields?.non_functional_keys_count;
-	const touchpadField = schemaFields?.touchpad_condition;
-	const hingeField = schemaFields?.hinge_condition;
+	// `speakers_condition` nace con ZF-48: no hay constante local con sus valores, e
+	// inventarlos produciría un 422. Se muestra sólo cuando el backend lo publica, que
+	// es el comportamiento de `develop`, donde el campo no existe.
 	const speakersField = schemaFields?.speakers_condition;
 	const nonFunctionalKeysCount = watch('non_functional_keys_count') ?? 0;
 	return (
@@ -39,7 +60,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</div>
 							<div>
 								<h3 className='text-lg font-bold text-zinc-900 dark:text-zinc-100'>
-									{keyboardField?.label}
+									{keyboard.label}
 								</h3>
 								<p className='text-xs text-zinc-500'>
 									Estado funcional y distribución física
@@ -52,10 +73,10 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						{/* Condition */}
 						<div>
 							<p className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
-								{keyboardField?.label} <span className='text-red-500'>*</span>
+								{keyboard.label} <span className='text-red-500'>*</span>
 							</p>
 							<div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
-								{getSchemaFieldOptions(keyboardField).map((opt) => (
+								{keyboard.options.map((opt) => (
 									<SelectionCard
 										key={opt.value}
 										label={opt.label}
@@ -73,8 +94,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									{errors.keyboard_condition.message}
 								</p>
 							)}
-							{keyboardField?.hint && (
-								<p className='mt-2 text-xs text-zinc-500'>{keyboardField.hint}</p>
+							{keyboard.hint && (
+								<p className='mt-2 text-xs text-zinc-500'>{keyboard.hint}</p>
 							)}
 						</div>
 
@@ -239,12 +260,12 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							<Icon icon='HeroHandRaised' className='h-6 w-6' />
 						</div>
 						<h3 className='text-lg font-bold text-zinc-900 dark:text-zinc-100'>
-							{touchpadField?.label}
+							{touchpad.label}
 						</h3>
 					</div>
 
 					<div className='mt-10 grid grid-cols-2 gap-3'>
-						{getSchemaFieldOptions(touchpadField).map((opt) => (
+						{touchpad.options.map((opt) => (
 							<SelectionCard
 								key={opt.value}
 								label={opt.label}
@@ -257,9 +278,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							/>
 						))}
 					</div>
-					{touchpadField?.hint && (
-						<p className='mt-3 text-xs text-zinc-500'>{touchpadField.hint}</p>
-					)}
+					{touchpad.hint && <p className='mt-3 text-xs text-zinc-500'>{touchpad.hint}</p>}
 				</div>
 
 				{speakersField && (
@@ -288,10 +307,11 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								/>
 							))}
 						</div>
-						<p className='mt-3 text-xs text-zinc-600 dark:text-zinc-400'>
-							Sin audio, reventados o distorsionados son el mismo caso: limitan a
-							Grado C.
-						</p>
+						{(speakersField.hint ?? speakersField.warning) && (
+							<p className='mt-3 text-xs text-zinc-600 dark:text-zinc-400'>
+								{speakersField.hint ?? speakersField.warning}
+							</p>
+						)}
 					</div>
 				)}
 			</div>
@@ -345,10 +365,10 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						{/* Hinge */}
 						<div>
 							<p className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
-								{hingeField?.label}
+								{hinge.label}
 							</p>
 							<div className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'>
-								{getSchemaFieldOptions(hingeField).map((opt) => (
+								{hinge.options.map((opt) => (
 									<SelectionCard
 										key={opt.value}
 										label={opt.label}
@@ -361,8 +381,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									/>
 								))}
 							</div>
-							{hingeField?.hint && (
-								<p className='mt-2 text-xs text-zinc-500'>{hingeField.hint}</p>
+							{hinge.hint && (
+								<p className='mt-2 text-xs text-zinc-500'>{hinge.hint}</p>
 							)}
 						</div>
 

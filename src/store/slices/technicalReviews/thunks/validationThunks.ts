@@ -89,6 +89,10 @@ export const fetchValidationRulesByType = createAsyncThunk<
 			const response = await ApiService.fetchData<{ data?: any }>({
 				url: buildTechnicalReviewsEndpoint(context, `/validation/rules/${equipmentType}`),
 				method: 'get',
+				// El schema es prácticamente estático y el hook se monta con cada ítem:
+				// revisar un lote de 40 equipos disparaba 40 peticiones idénticas.
+				cacheTTLms: 5 * 60_000,
+				dedupe: true,
 			});
 
 			return normalizeSchema(response.data);
