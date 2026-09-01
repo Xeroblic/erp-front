@@ -98,13 +98,27 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 								label={opt.label}
 								value={opt.value}
 								isSelected={screenCondition === opt.value}
-								onClick={() =>
-									!readOnly &&
-									setValue(
-										'screen_condition',
-										opt.value as AioFormData['screen_condition'],
-									)
-								}
+								onClick={() => {
+									if (readOnly) return;
+
+									const nextScreenCondition =
+										opt.value as AioFormData['screen_condition'];
+									let nextDeadPixelsCount = 0;
+									if (nextScreenCondition === 'dead_pixels') {
+										nextDeadPixelsCount =
+											typeof deadPixelsCount === 'number' &&
+											deadPixelsCount >= 1
+												? deadPixelsCount
+												: 1;
+									}
+
+									setValue('screen_condition', nextScreenCondition, {
+										shouldValidate: true,
+									});
+									setValue('dead_pixels_count', nextDeadPixelsCount, {
+										shouldValidate: true,
+									});
+								}}
 							/>
 						))}
 					</div>
@@ -114,17 +128,20 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 						</p>
 					)}
 					{screenCondition === 'dead_pixels' && (
-						<div className='mt-5 w-full max-w-[220px]'>
+						<div
+							className='mt-5 w-full max-w-[220px]'
+							role='group'
+							aria-label={getAioLabel('dead_pixels_count')}>
 							<label className='mb-2 block text-xs font-bold text-purple-900 dark:text-purple-100'>
 								{getAioLabel('dead_pixels_count')}
 							</label>
 							<StepperInput
-								value={typeof deadPixelsCount === 'number' ? deadPixelsCount : 0}
+								value={typeof deadPixelsCount === 'number' ? deadPixelsCount : 1}
 								onChange={(value) => {
 									if (readOnly) return;
 									setValue('dead_pixels_count', value, { shouldValidate: true });
 								}}
-								min={0}
+								min={1}
 								max={50}
 								disabled={readOnly}
 							/>

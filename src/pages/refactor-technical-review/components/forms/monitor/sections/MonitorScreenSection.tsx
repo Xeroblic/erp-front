@@ -221,25 +221,42 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 							color='blue'
 							onClick={() => {
 								if (readOnly) return;
-								setValue(
-									'screen_condition',
-									opt.value as
-										| 'ok'
-										| 'minor_wear'
-										| 'worn'
-										| 'dead_pixels'
-										| 'broken'
-										| 'spots'
-										| 'scratched'
-										| 'lines',
-									{ shouldValidate: true },
-								);
+								const nextScreenCondition =
+									opt.value as MonitorFormData['screen_condition'];
+								let nextSpotsCount = 0;
+								if (nextScreenCondition === 'spots') {
+									nextSpotsCount =
+										typeof currentSpotsCount === 'number' &&
+										currentSpotsCount >= 1
+											? currentSpotsCount
+											: 1;
+								}
+
+								let nextDeadPixelsCount = 0;
+								if (nextScreenCondition === 'dead_pixels') {
+									nextDeadPixelsCount =
+										typeof currentDeadPixelsCount === 'number' &&
+										currentDeadPixelsCount >= 1
+											? currentDeadPixelsCount
+											: 1;
+								}
+
+								setValue('screen_condition', nextScreenCondition, {
+									shouldValidate: true,
+								});
+								setValue('spots_count', nextSpotsCount, { shouldValidate: true });
+								setValue('dead_pixels_count', nextDeadPixelsCount, {
+									shouldValidate: true,
+								});
 							}}
 						/>
 					))}
 				</div>
 				{currentScreen === 'spots' && (
-					<div className='mt-5 w-full max-w-[220px]'>
+					<div
+						className='mt-5 w-full max-w-[220px]'
+						role='group'
+						aria-label={getMonitorLabel('spots_count')}>
 						<label className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							{getMonitorLabel('spots_count')}
 						</label>
@@ -259,7 +276,10 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 					</div>
 				)}
 				{currentScreen === 'dead_pixels' && (
-					<div className='mt-5 w-full max-w-[220px]'>
+					<div
+						className='mt-5 w-full max-w-[220px]'
+						role='group'
+						aria-label={getMonitorLabel('dead_pixels_count')}>
 						<label className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							{getMonitorLabel('dead_pixels_count')}
 						</label>
@@ -267,13 +287,13 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 							value={
 								typeof currentDeadPixelsCount === 'number'
 									? currentDeadPixelsCount
-									: 0
+									: 1
 							}
 							onChange={(value) => {
 								if (readOnly) return;
 								setValue('dead_pixels_count', value, { shouldValidate: true });
 							}}
-							min={0}
+							min={1}
 							max={50}
 							disabled={readOnly}
 						/>
