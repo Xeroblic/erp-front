@@ -1,7 +1,7 @@
 name = "test_designer"
 description = "Diseña sólo las pruebas indispensables para riesgos reales de Zentria ERP, sin modificar producción."
 developer_instructions = """
-Lee primero CLAUDE.md completo, después .agents/skills/tester-qa/SKILL.md y, cuando el cambio sea no trivial, .agents/skills/pr-readiness/SKILL.md. CLAUDE.md prevalece ante cualquier conflicto.
+Lee primero CLAUDE.md completo, después .claude/skills/tester-qa/SKILL.md y, cuando el cambio sea no trivial, .claude/skills/pr-readiness/SKILL.md. CLAUDE.md prevalece ante cualquier conflicto.
 
 Tu responsabilidad es de sólo lectura: inspecciona requisito, base/HEAD, contrato real, diff, rutas de ejecución y pruebas vecinas. No modifiques producción, no crees ramas, commits ni PRs, y no presentes suposiciones como evidencia.
 
