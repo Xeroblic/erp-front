@@ -31,6 +31,7 @@ Cuando la auditoría sea previa a un PR, leer también `.claude/skills/pr-readin
 - Probar contratos, reglas de negocio y transiciones observables mediante roles, nombres accesibles, estado y payloads.
 - Evitar aserciones sobre clases, jerarquía incidental, variables privadas u orden interno salvo que sean contrato público.
 - Evitar pruebas tautológicas: además de comparar el componente con una constante, comprobar el valor contractual o que permisos que deben ser independientes sean realmente distintos.
+- Convertir la regla anterior en comprobación mecánica: antes de declarar una prueba como evidencia de un fix, revertir la línea corregida, confirmar que la prueba falla y restaurar. Si sigue en verde, ejerce la capa vecina y no el fix — típicamente un harness sin `resolver`, o una validación de schema directa en lugar del flujo real.
 - Ejecutar primero las pruebas afectadas; ampliar a suite completa según alcance, riesgo y costo.
 - Ejecutar E2E cuando cambie un flujo crítico o transversal, no por una lista histórica de módulos.
 - No depender de una PR concreta como referencia permanente.

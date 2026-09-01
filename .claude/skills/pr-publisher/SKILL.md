@@ -21,6 +21,14 @@ validaciones o exista evidencia concreta de obsolescencia.
 - Preservar cambios ajenos y preparar commits sólo cuando estén autorizados, incluyendo únicamente archivos del alcance aprobado.
 - Antes de push o PR, revisar estado, diff completo contra la base real y `git diff --check`.
 - Generar el cuerpo en español con el formato obligatorio de este skill y métricas verificadas, sin convertir pruebas focalizadas en una pasada global.
+- Publicar sólo cifras que provengan de un comando ejecutado, nombrando el comando y el alcance
+  (archivos del diff o suite). Una cifra heredada de un handoff se reutiliza únicamente si el
+  contenido no cambió desde que se midió; si no se puede sostener, se declara no verificada en vez
+  de estimarla. Un conteo de warnings o de pruebas que no coincide con la realidad cuesta una ronda
+  completa de revisión, aunque el código esté bien.
+- El workflow `Calidad de PR` ya ejecuta `typecheck` y `test:run` en cada PR: citar la corrida
+  (`gh run view`) en lugar de repetir esas pasadas localmente, y no declarar el PR listo con esa
+  corrida en rojo o desconocida.
 - En PowerShell, publicar el cuerpo como UTF-8 sin BOM y verificar el texto remoto mediante `gh api`.
 - Al crear o actualizar el PR, añadir `needs-review`, quitar `changes-requested` si existe y conservar los demás labels.
 - Verificar remotamente número/URL, base, `headRefOid`, cuerpo, labels, `mergeStateStatus` y `mergeable`. Si GitHub aún está calculando, reconsultar de forma acotada; no declarar éxito con estado desconocido.

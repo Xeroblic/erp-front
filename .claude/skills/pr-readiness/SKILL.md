@@ -41,6 +41,46 @@ Usar como requisito autoritativo la card o comentario editado más reciente. Con
 
 No presentar estos apuntes como diseño definitivo si falta evidencia. Primero verificarla.
 
+## Defectos recurrentes de este repositorio
+
+Cada entrada nació de un PR rechazado. Comprobar la condición observable, no el principio.
+
+1. **Limpiar un campo no lo limpia en el backend.** `filterTechnicalReviewPayload`
+   (`src/utils/technicalReviewHardware.ts`) elimina del PATCH todo campo con `''`, `null` o
+   `undefined` que no esté en la lista de nulables: el valor anterior sobrevive en el servidor. Si
+   el cambio permite que un campo quede vacío, la evidencia es el payload real — _limpiar X → el
+   PATCH contiene `X: null`_. Añadir X a `NULLABLE_FIELDS` (`reviewThunks.ts`) y al filtro de
+   `useAutoSave.ts`, o declarar por escrito que el backend lo limpia. (#173 RAM/disco, #185
+   `dead_pixels_count`: el mismo defecto dos veces.)
+
+2. **Una revisión técnica tiene cuatro rutas de escritura.** Submit final
+   (`Step2FullReview.handleFormSubmit`), autosave por inactividad y por navegación de sección
+   (`useAutoSave`) y `onDirectSubmit` del flujo «No enciende». Normalizan distinto, y el autosave
+   lee `getValues` crudo **sin pasar por Yup**: un fix escrito como `transform()` en el schema, o
+   como guarda dentro del submit, no llega por las demás. Recorrer las cuatro y declarar en cuáles
+   se verificó. (#184 B2, #185 B2.1.)
+
+3. **El `authority` de `pages.config.ts` lo leen dos guards con semántica opuesta.**
+   `AuthorityCheck` (rutas) evalúa con `requireAll: true`; el aside usa OR. Añadir un permiso al
+   arreglo para mostrar un ítem de menú **le quita la ruta** a quien no tenga ambos permisos.
+   Verificar el efecto sobre la ruta, no sólo sobre el menú. (#175 B1.)
+
+4. **La prueba debe fallar al revertir el fix.** Que exista y pase no la convierte en evidencia:
+   revertir la línea corregida, confirmar que la prueba se pone en rojo, restaurar. Si sigue verde,
+   cubre la capa vecina y no el fix — típicamente un harness sin `resolver`, o un `validateAt`
+   directo en lugar del flujo real. Nombrar cada prueba por lo que ejerce. (#174 hallazgos 1 y 2,
+   #185 B2.2.)
+
+5. **Banderas de datos ficticios, fail-closed.** Una constante literal `true` llega a producción.
+   Leer de `import.meta.env.VITE_*` con valor por omisión `false`, declararla en `.env.example`,
+   encenderla sólo en `.env.development` y mostrar un aviso visible en pantalla mientras esté
+   activa. (#175 B2.)
+
+6. **Cifra publicada = comando ejecutado.** Los conteos de lint, pruebas y `tsc` del cuerpo del PR
+   salen de una corrida de esta sesión sobre los archivos del diff, con base y HEAD nombrados. Una
+   cifra heredada o estimada se marca como no verificada. Un desajuste aquí convierte la revisión
+   técnica en una auditoría de credibilidad y cuesta la ronda entera. (#174, #175 B3.)
+
 ## Categorías de riesgo
 
 ### Contrato remoto

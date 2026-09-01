@@ -1,4 +1,4 @@
-name: Style Quality
+name: Calidad de PR
 
 on:
     pull_request:
@@ -42,3 +42,11 @@ jobs:
             - name: Check import extensions
               if: ${{ !cancelled() }}
               run: pnpm run lint:imports
+
+            - name: Typecheck
+              if: ${{ !cancelled() }}
+              run: pnpm run typecheck
+
+            - name: Tests
+              if: ${{ !cancelled() }}
+              run: pnpm run test:run

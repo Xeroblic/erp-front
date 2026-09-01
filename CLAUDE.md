@@ -128,6 +128,11 @@ Para acciones de escritura usa normalmente `scope="access"`. Si el usuario no ti
 sucursales/subsidiarias listadas (set vacío), las funciones `canAccess*`/`canView*`
 devuelven `true` (no bloquean).
 
+**Trampa del `authority`:** el arreglo declarado en `pages.config.ts` lo consumen dos guards con
+semántica opuesta — `AuthorityCheck` (rutas) exige **todos** los permisos (`requireAll: true`), el
+aside evalúa OR. Ampliarlo para mostrar un ítem de menú le **quita la ruta** a quien no tenga
+ambos. Resolver la visibilidad del menú por separado.
+
 Ejemplo declarativo:
 
 ```tsx
@@ -291,6 +296,15 @@ contrato/API, archivos, permisos, estado remoto, contexto organizacional, formul
 mutación, componente compartido o accesibilidad. La activación depende del riesgo del diff, no de
 que se mencione un PR. El skill define el preflight observable, la matriz `riesgo → evidencia`,
 la auditoría independiente y el cierre.
+
+El skill abre con **«Defectos recurrentes de este repositorio»**: seis trampas concretas, cada una
+nacida de un PR rechazado, con su condición observable de cierre. Recorrerlas es obligatorio cuando
+el diff las toca — son la causa de la mayoría de las correcciones, y ninguna se detecta razonando
+en abstracto.
+
+**CI:** el workflow `Calidad de PR` ejecuta `check:eol`, `prettier:check`, `lint:imports`,
+`typecheck` y `test:run` en cada pull request. No abras ni actualices un PR con esa corrida en
+rojo: es la verificación que el revisor va a mirar primero.
 
 **Vía rápida:** un cambio literal y determinista de hasta 3 archivos de configuración,
 documentación o copy, con el resultado completamente especificado y sin tocar lógica, API,
