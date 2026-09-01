@@ -8,6 +8,7 @@ import Input from '@/components/form/Input';
 import Checkbox from '@/components/form/Checkbox';
 import { getAioLabel } from '../../../translations/aio.labels';
 import { AIO_HINTS, AIO_PLACEHOLDERS } from '../../../constants/aio/aio.hints';
+import { SCREEN_COUNTER_MIN, resolveScreenCounter } from '../../../utils/screenCounters';
 import {
 	SCREEN_CONDITION_OPTIONS,
 	STAND_CONDITION_OPTIONS,
@@ -103,21 +104,18 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 
 									const nextScreenCondition =
 										opt.value as AioFormData['screen_condition'];
-									let nextDeadPixelsCount = 0;
-									if (nextScreenCondition === 'dead_pixels') {
-										nextDeadPixelsCount =
-											typeof deadPixelsCount === 'number' &&
-											deadPixelsCount >= 1
-												? deadPixelsCount
-												: 1;
-									}
 
 									setValue('screen_condition', nextScreenCondition, {
 										shouldValidate: true,
 									});
-									setValue('dead_pixels_count', nextDeadPixelsCount, {
-										shouldValidate: true,
-									});
+									setValue(
+										'dead_pixels_count',
+										resolveScreenCounter(
+											nextScreenCondition === 'dead_pixels',
+											deadPixelsCount,
+										),
+										{ shouldValidate: true },
+									);
 								}}
 							/>
 						))}
@@ -136,12 +134,12 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 								{getAioLabel('dead_pixels_count')}
 							</label>
 							<StepperInput
-								value={typeof deadPixelsCount === 'number' ? deadPixelsCount : 1}
+								value={resolveScreenCounter(true, deadPixelsCount)}
 								onChange={(value) => {
 									if (readOnly) return;
 									setValue('dead_pixels_count', value, { shouldValidate: true });
 								}}
-								min={1}
+								min={SCREEN_COUNTER_MIN}
 								max={50}
 								disabled={readOnly}
 							/>

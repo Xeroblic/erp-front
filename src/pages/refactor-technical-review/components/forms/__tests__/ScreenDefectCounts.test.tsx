@@ -13,6 +13,7 @@ const formShellState = vi.hoisted(() => ({
 	onValidateStep: undefined as
 		| undefined
 		| ((sectionKey: string) => Promise<{ isValid: boolean; message?: string }>),
+	getValues: undefined as undefined | (() => Record<string, unknown>),
 }));
 
 vi.mock('@/components/icon/Icon', () => ({
@@ -38,18 +39,25 @@ vi.mock('@/components/form/SelectReact', () => ({
 vi.mock('@/pages/refactor-technical-review/components/forms/shared/FormShell', () => ({
 	default: ({
 		onValidateStep,
+		sectionProps,
 	}: {
 		onValidateStep?: (sectionKey: string) => Promise<{ isValid: boolean; message?: string }>;
+		sectionProps?: { getValues?: () => Record<string, unknown> };
 	}) => {
 		formShellState.onValidateStep = onValidateStep;
+		formShellState.getValues = sectionProps?.getValues;
 		return null;
 	},
 }));
 
 interface ScreenHarnessProps {
 	readOnly?: boolean;
-	initialScreenCondition?: 'ok' | 'dead_pixels' | 'spots';
+	initialScreenCondition?: 'ok' | 'dead_pixels';
 	initialDeadPixelsCount?: number;
+}
+
+interface MonitorScreenHarnessProps extends Omit<ScreenHarnessProps, 'initialScreenCondition'> {
+	initialScreenCondition?: 'ok' | 'dead_pixels' | 'spots';
 	initialSpotsCount?: number;
 }
 
@@ -91,7 +99,7 @@ const MonitorScreenHarness = ({
 	initialScreenCondition = 'ok',
 	initialDeadPixelsCount,
 	initialSpotsCount,
-}: ScreenHarnessProps) => {
+}: MonitorScreenHarnessProps) => {
 	const {
 		control,
 		formState: { errors },
@@ -254,6 +262,10 @@ describe.each([
 	['AIO', AioForm, VALID_AIO_SCREEN_VALUES],
 	['monitor', MonitorForm, VALID_MONITOR_SCREEN_VALUES],
 ])('%s form screen validation', (_equipmentType, Form, defaultValues) => {
+	// `readOnly` desactiva la normalización al cargar, dejando observable el estado
+	// inválido: así la prueba sigue ejerciendo el registro de `dead_pixels_count` en
+	// los campos de la sección Pantalla y el `min(1)` del schema, que son la línea
+	// que evita el 422.
 	it('blocks the screen step when dead pixels has no counter', async () => {
 		formShellState.onValidateStep = undefined;
 		render(
@@ -261,6 +273,7 @@ describe.each([
 				defaultValues={defaultValues}
 				onSubmit={() => Promise.resolve()}
 				onBack={() => undefined}
+				readOnly
 			/>,
 		);
 
@@ -273,5 +286,79 @@ describe.each([
 			isValid: false,
 			message: 'Indica la cantidad de píxeles muertos',
 		});
+	});
+});
+
+// ─── Normalización de contadores al cargar un borrador existente ──────────────
+// El autosave y el bypass «No enciende» leen los valores crudos de RHF: un par
+// incoherente que llega del backend debe corregirse al montar, no sólo cuando el
+// técnico vuelve a tocar la tarjeta de condición.
+describe.each([
+	['AIO', AioForm],
+	['monitor', MonitorForm],
+])('%s form counter normalization on load', (_equipmentType, Form) => {
+	const renderForm = async (defaultValues: Record<string, unknown>) => {
+		formShellState.getValues = undefined;
+		formShellState.onValidateStep = undefined;
+		render(
+			<Form
+				defaultValues={defaultValues}
+				onSubmit={() => Promise.resolve()}
+				onBack={() => undefined}
+			/>,
+		);
+		await act(async () => {
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
+		});
+	};
+
+	it('seeds the minimum count for a draft saved with dead pixels and no counter', async () => {
+		await renderForm({ screen_condition: 'dead_pixels' });
+
+		expect(formShellState.getValues?.().dead_pixels_count).toBe(1);
+	});
+
+	it('clears a stale counter for a draft whose condition is no longer dead pixels', async () => {
+		await renderForm({ screen_condition: 'ok', dead_pixels_count: 5 });
+
+		expect(formShellState.getValues?.().dead_pixels_count).toBe(0);
+	});
+
+	it('keeps a valid counter untouched', async () => {
+		await renderForm({ screen_condition: 'dead_pixels', dead_pixels_count: 4 });
+
+		expect(formShellState.getValues?.().dead_pixels_count).toBe(4);
+	});
+});
+
+describe('monitor form spots normalization on load', () => {
+	const renderMonitor = async (defaultValues: Record<string, unknown>) => {
+		formShellState.getValues = undefined;
+		render(
+			<MonitorForm
+				defaultValues={defaultValues}
+				onSubmit={() => Promise.resolve()}
+				onBack={() => undefined}
+			/>,
+		);
+		await act(async () => {
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
+		});
+	};
+
+	it('clears a stale spots counter for a draft whose condition is no longer spots', async () => {
+		await renderMonitor({ screen_condition: 'ok', spots_count: 3 });
+
+		expect(formShellState.getValues?.().spots_count).toBe(0);
+	});
+
+	it('seeds the minimum spots counter for a draft saved with spots and no counter', async () => {
+		await renderMonitor({ screen_condition: 'spots' });
+
+		expect(formShellState.getValues?.().spots_count).toBe(1);
 	});
 });

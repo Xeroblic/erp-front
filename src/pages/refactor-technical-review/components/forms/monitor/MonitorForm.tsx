@@ -20,6 +20,7 @@ import MonitorPortsSection from './sections/MonitorPortsSection';
 import MonitorAccessoriesSection from './sections/MonitorAccessoriesSection';
 import Observations from './sections/Observations';
 import GallerySection from '../shared/gallery/GallerySection';
+import { needsScreenCounterNormalization, resolveScreenCounter } from '../../utils/screenCounters';
 
 // ─── Section Order ─────────────────────────
 const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
@@ -167,6 +168,35 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			}
 		}
 	}, [normalizedDefaultValues, reset]);
+
+	// Normaliza los contadores de pantalla de un borrador ya guardado: el autosave y
+	// el bypass «No enciende» leen los valores crudos de RHF, así que un par
+	// incoherente cargado desde el backend debe corregirse al llegar y no sólo cuando
+	// el técnico vuelve a tocar la condición de pantalla.
+	const loadedScreenCondition = watch('screen_condition');
+	const loadedSpotsCount = watch('spots_count');
+	const loadedDeadPixelsCount = watch('dead_pixels_count');
+	useEffect(() => {
+		if (readOnly) return;
+
+		const isSpots = loadedScreenCondition === 'spots';
+		if (needsScreenCounterNormalization(isSpots, loadedSpotsCount)) {
+			setValue('spots_count', resolveScreenCounter(isSpots, loadedSpotsCount), {
+				shouldValidate: true,
+			});
+		}
+
+		const isDeadPixels = loadedScreenCondition === 'dead_pixels';
+		if (needsScreenCounterNormalization(isDeadPixels, loadedDeadPixelsCount)) {
+			setValue(
+				'dead_pixels_count',
+				resolveScreenCounter(isDeadPixels, loadedDeadPixelsCount),
+				{
+					shouldValidate: true,
+				},
+			);
+		}
+	}, [readOnly, loadedScreenCondition, loadedSpotsCount, loadedDeadPixelsCount, setValue]);
 
 	const sectionProps = {
 		control,

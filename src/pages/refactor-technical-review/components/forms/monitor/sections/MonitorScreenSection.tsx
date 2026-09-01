@@ -16,6 +16,7 @@ import {
 	FRAME_CONDITION_OPTIONS,
 } from '../../../constants/monitor/monitor.options';
 import { getMonitorLabel } from '../../../translations/monitor.labels';
+import { SCREEN_COUNTER_MIN, resolveScreenCounter } from '../../../utils/screenCounters';
 import Icon from '@/components/icon/Icon';
 import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
 
@@ -54,6 +55,7 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 								is_touchscreen: false,
 								screen_condition: 'broken',
 								spots_count: 0,
+								dead_pixels_count: 0,
 								stand_condition: 'broken',
 								frame_condition: 'broken',
 								has_usb_hub: false,
@@ -223,31 +225,26 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 								if (readOnly) return;
 								const nextScreenCondition =
 									opt.value as MonitorFormData['screen_condition'];
-								let nextSpotsCount = 0;
-								if (nextScreenCondition === 'spots') {
-									nextSpotsCount =
-										typeof currentSpotsCount === 'number' &&
-										currentSpotsCount >= 1
-											? currentSpotsCount
-											: 1;
-								}
-
-								let nextDeadPixelsCount = 0;
-								if (nextScreenCondition === 'dead_pixels') {
-									nextDeadPixelsCount =
-										typeof currentDeadPixelsCount === 'number' &&
-										currentDeadPixelsCount >= 1
-											? currentDeadPixelsCount
-											: 1;
-								}
 
 								setValue('screen_condition', nextScreenCondition, {
 									shouldValidate: true,
 								});
-								setValue('spots_count', nextSpotsCount, { shouldValidate: true });
-								setValue('dead_pixels_count', nextDeadPixelsCount, {
-									shouldValidate: true,
-								});
+								setValue(
+									'spots_count',
+									resolveScreenCounter(
+										nextScreenCondition === 'spots',
+										currentSpotsCount,
+									),
+									{ shouldValidate: true },
+								);
+								setValue(
+									'dead_pixels_count',
+									resolveScreenCounter(
+										nextScreenCondition === 'dead_pixels',
+										currentDeadPixelsCount,
+									),
+									{ shouldValidate: true },
+								);
 							}}
 						/>
 					))}
@@ -261,12 +258,14 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 							{getMonitorLabel('spots_count')}
 						</label>
 						<StepperInput
-							value={typeof currentSpotsCount === 'number' ? currentSpotsCount : 0}
+							value={resolveScreenCounter(true, currentSpotsCount)}
 							onChange={(val) => {
 								if (readOnly) return;
 								setValue('spots_count', val, { shouldValidate: true });
 							}}
+							min={SCREEN_COUNTER_MIN}
 							max={50}
+							disabled={readOnly}
 						/>
 						{errors.spots_count && (
 							<p className='mt-2 text-xs text-red-500'>
@@ -284,16 +283,12 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 							{getMonitorLabel('dead_pixels_count')}
 						</label>
 						<StepperInput
-							value={
-								typeof currentDeadPixelsCount === 'number'
-									? currentDeadPixelsCount
-									: 1
-							}
+							value={resolveScreenCounter(true, currentDeadPixelsCount)}
 							onChange={(value) => {
 								if (readOnly) return;
 								setValue('dead_pixels_count', value, { shouldValidate: true });
 							}}
-							min={1}
+							min={SCREEN_COUNTER_MIN}
 							max={50}
 							disabled={readOnly}
 						/>
