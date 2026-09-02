@@ -314,13 +314,19 @@ const DefaultAsideTemplate = () => {
 					 * INVENTARIO
 					 * ====================== */}
 					<AuthorityCheckNav
-						authority={Pages.inventory.authority}
+						authority={[
+							...Pages.inventory.authority,
+							...Pages.inventory.subPages.retirosEquipos.authority,
+						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
 						<NavTitle>Inventario</NavTitle>
 					</AuthorityCheckNav>
 					<AuthorityCheckNav
-						authority={Pages.inventory.authority}
+						authority={[
+							...Pages.inventory.authority,
+							...Pages.inventory.subPages.retirosEquipos.authority,
+						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
 						<NavCollapse
@@ -391,6 +397,21 @@ const DefaultAsideTemplate = () => {
 									id={Pages.inventory.subPages.ingresoStock.id}
 									onClick={() =>
 										navigate(Pages.inventory.subPages.ingresoStock.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.retirosEquipos.authority}
+								userAuthority={userAuthority}
+								requireAll={Pages.inventory.subPages.retirosEquipos.requireAll}>
+								<NavItem
+									text={Pages.inventory.subPages.retirosEquipos.text}
+									to={Pages.inventory.subPages.retirosEquipos.to}
+									icon={Pages.inventory.subPages.retirosEquipos.icon}
+									id={Pages.inventory.subPages.retirosEquipos.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.retirosEquipos.to)
 									}
 								/>
 							</AuthorityCheckNav>
