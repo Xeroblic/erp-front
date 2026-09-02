@@ -191,15 +191,17 @@ export interface UpdateItemDetailsPayload {
 	includes_power_adapter?: boolean;
 	power_cable_status?: string | null;
 
-	// Puertos (común para la mayoría)
+	// Puertos: los nueve contadores del catálogo, iguales en los cinco tipos de equipo.
+	// El orden es el que publica el schema.
 	vga_ports?: number;
 	hdmi_ports?: number;
 	displayport_ports?: number;
+	dvi_ports?: number;
 	usb_a_ports?: number;
-	type_c_ports?: number;
 	usb_c_ports?: number;
 	sd_readers?: number;
 	rj45_ports?: number;
+	charging_ports?: number;
 	has_wifi?: boolean;
 	has_bluetooth?: boolean;
 	all_ports_functional?: boolean;
@@ -246,10 +248,8 @@ export interface UpdateItemDetailsPayload {
 	includes_stand?: boolean;
 	other_includes?: string | null;
 	has_usb_hub?: boolean;
-	usb_hub_ports?: number;
 	resolution?: string;
 	frame_condition?: string;
-	dvi_ports?: number;
 	defective_ports_critical_count?: number;
 
 	// Atributos extra dinámicos

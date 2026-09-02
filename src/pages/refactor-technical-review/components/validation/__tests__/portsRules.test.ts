@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	filterPortOptions,
-	MAX_PORT_TYPE_COUNT,
+	MAX_PORT_COUNT,
 	normalizePortTypeCounts,
 	setPortTypeCount,
 	sumPortTypeCounts,
@@ -29,17 +29,28 @@ describe('normalizePortTypeCounts', () => {
 		expect(normalizePortTypeCounts({ hdmi: 1, inventado: 3 })).toEqual({ hdmi: 1 });
 	});
 
-	it('drops a type the catalog stopped handling', () => {
-		expect(normalizePortTypeCounts({ hdmi: 1, dvi: 2 })).toEqual({ hdmi: 1 });
+	/** DVI volvió al catálogo: los cinco tipos de equipo lo cuentan con el mismo nombre. */
+	it('keeps DVI, which the catalog counts again', () => {
+		expect(normalizePortTypeCounts({ hdmi: 1, dvi: 2 })).toEqual({ hdmi: 1, dvi: 2 });
 	});
 
-	/** El backend exige cantidades de 1 a 10: un tipo en cero se omite, no se envía en 0. */
+	/** El backend exige cantidades de al menos 1: un tipo en cero se omite, no se envía en 0. */
 	it('drops counts below the minimum instead of sending a zero', () => {
 		expect(normalizePortTypeCounts({ hdmi: 0, usb_c: -2, rj45: 1 })).toEqual({ rj45: 1 });
 	});
 
-	it('caps counts at the maximum', () => {
-		expect(normalizePortTypeCounts({ hdmi: 99 })).toEqual({ hdmi: MAX_PORT_TYPE_COUNT });
+	/**
+	 * El backend retiró el `max:10` que rechazaba una docking con doce USB-A, así que una
+	 * cantidad alta ya no se recorta: sólo se acota lo que la columna no podría guardar.
+	 */
+	it('keeps a count the backend no longer rejects', () => {
+		expect(normalizePortTypeCounts({ usb_a: 12 })).toEqual({ usb_a: 12 });
+	});
+
+	it('caps counts at what the column can hold', () => {
+		expect(normalizePortTypeCounts({ hdmi: MAX_PORT_COUNT + 500 })).toEqual({
+			hdmi: MAX_PORT_COUNT,
+		});
 	});
 
 	it('respects the bounds published by the schema', () => {
@@ -53,11 +64,8 @@ describe('normalizePortTypeCounts', () => {
 });
 
 describe('filterPortOptions', () => {
-	/**
-	 * El backend sigue publicando DVI para otros clientes; esta operación dejó de
-	 * manejarlo y no debe ofrecerlo aunque llegue en el schema.
-	 */
-	it('drops a type the catalog no longer handles', () => {
+	/** Los nueve tipos del catálogo se ofrecen; DVI entre ellos. */
+	it('keeps every type of the catalog', () => {
 		expect(
 			filterPortOptions([
 				{ value: 'hdmi', label: 'HDMI' },
@@ -66,8 +74,19 @@ describe('filterPortOptions', () => {
 			]),
 		).toEqual([
 			{ value: 'hdmi', label: 'HDMI' },
+			{ value: 'dvi', label: 'DVI' },
 			{ value: 'charging', label: 'Puerto de carga' },
 		]);
+	});
+
+	/** Guarda ante un tipo que el backend publique y este formulario no sepa mostrar. */
+	it('drops a type outside the catalog', () => {
+		expect(
+			filterPortOptions([
+				{ value: 'hdmi', label: 'HDMI' },
+				{ value: 'thunderbolt', label: 'Thunderbolt' },
+			]),
+		).toEqual([{ value: 'hdmi', label: 'HDMI' }]);
 	});
 });
 

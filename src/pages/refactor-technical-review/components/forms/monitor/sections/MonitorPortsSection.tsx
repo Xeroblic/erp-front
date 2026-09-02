@@ -7,16 +7,12 @@ import { StepperInput } from '../../../ui/StepperInput';
 import { MONITOR_HINTS } from '../../../constants/monitor/monitor.hints';
 import { getMonitorLabel } from '../../../translations/monitor.labels';
 import { PortConditionFields } from '../../shared/PortConditionFields';
-import { MAX_PORT_TYPE_COUNT, sumPortTypeCounts } from '../../../validation/constants/ports.rules';
-
-const PORTS_CONFIG = [
-	{ key: 'vga_ports', icon: 'Video', color: 'orange' },
-	{ key: 'hdmi_ports', icon: 'DeviceTv', color: 'emerald' },
-	{ key: 'displayport_ports', icon: 'MonitorSpeaker', color: 'indigo' },
-	{ key: 'type_c_ports', icon: 'UsbSymbol', color: 'sky' },
-	{ key: 'rj45_ports', icon: 'Squares2X2', color: 'violet' },
-	{ key: 'usb_hub_ports', icon: 'UsbSymbol', color: 'blue' },
-] as const;
+import {
+	MAX_PORT_COUNT,
+	PORT_COUNTER_FIELDS,
+	sumPortTypeCounts,
+} from '../../../validation/constants/ports.rules';
+import { PORT_COUNTER_VISUALS } from '../../../constants/ports.visuals';
 
 export const MonitorPortsSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 	control,
@@ -41,33 +37,40 @@ export const MonitorPortsSection: React.FC<FormSectionProps<MonitorFormData>> = 
 				</h4>
 
 				<div className='grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5'>
-					{PORTS_CONFIG.map(({ key, icon, color }) => (
-						<div
-							key={key}
-							className={`rounded-xl border hover:cursor-pointer border-${color}-200 bg-${color}-500/10 p-4 transition-colors duration-200 hover:bg-${color}-500/20 dark:border-${color}-800/50 dark:bg-${color}-900/10 dark:hover:bg-${color}-900/20`}>
-							<label
-								className={`mb-3 flex items-center gap-2 text-xs font-bold text-${color}-800 dark:text-${color}-200`}>
-								<Icon icon={icon} className='h-4 w-4' />
-								{getMonitorLabel(key)}
-							</label>
-							<Controller
-								name={key as keyof MonitorFormData}
-								control={control}
-								render={({ field }) => (
-									<div className='w-full'>
-										<StepperInput
-											label={getMonitorLabel(key)}
-											value={
-												typeof field.value === 'number' ? field.value : 0
-											}
-											onChange={(val) => !readOnly && field.onChange(val)}
-											max={MAX_PORT_TYPE_COUNT}
-										/>
-									</div>
-								)}
-							/>
-						</div>
-					))}
+					{PORT_COUNTER_FIELDS.map((port) => {
+						const { icon, color } = PORT_COUNTER_VISUALS[port.type];
+						const key = port.column;
+
+						return (
+							<div
+								key={key}
+								className={`rounded-xl border hover:cursor-pointer border-${color}-200 bg-${color}-500/10 p-4 transition-colors duration-200 hover:bg-${color}-500/20 dark:border-${color}-800/50 dark:bg-${color}-900/10 dark:hover:bg-${color}-900/20`}>
+								<label
+									className={`mb-3 flex items-center gap-2 text-xs font-bold text-${color}-800 dark:text-${color}-200`}>
+									<Icon icon={icon} className='h-4 w-4' />
+									{getMonitorLabel(key)}
+								</label>
+								<Controller
+									name={key as keyof MonitorFormData}
+									control={control}
+									render={({ field }) => (
+										<div className='w-full'>
+											<StepperInput
+												label={getMonitorLabel(key)}
+												value={
+													typeof field.value === 'number'
+														? field.value
+														: 0
+												}
+												onChange={(val) => !readOnly && field.onChange(val)}
+												max={MAX_PORT_COUNT}
+											/>
+										</div>
+									)}
+								/>
+							</div>
+						);
+					})}
 				</div>
 			</div>
 
@@ -109,7 +112,7 @@ export const MonitorPortsSection: React.FC<FormSectionProps<MonitorFormData>> = 
 									<StepperInput
 										value={typeof field.value === 'number' ? field.value : 0}
 										onChange={(value) => !readOnly && field.onChange(value)}
-										max={MAX_PORT_TYPE_COUNT}
+										max={MAX_PORT_COUNT}
 									/>
 								</div>
 							)}

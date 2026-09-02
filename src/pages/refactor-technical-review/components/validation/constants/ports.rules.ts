@@ -15,6 +15,7 @@ export const ALLOWED_PORT_TYPES = [
 	'vga',
 	'hdmi',
 	'displayport',
+	'dvi',
 	'usb_a',
 	'usb_c',
 	'sd_reader',
@@ -31,6 +32,7 @@ export const PORT_TYPE_LABELS: Record<PortTypeValue, string> = {
 	vga: 'VGA',
 	hdmi: 'HDMI',
 	displayport: 'DisplayPort',
+	dvi: 'DVI',
 	usb_a: 'USB-A',
 	usb_c: 'USB-C',
 	sd_reader: 'Lector SD',
@@ -43,27 +45,59 @@ export const PORT_TYPE_OPTIONS: Array<{ value: string; label: string }> = ALLOWE
 );
 
 /**
- * Techo de puertos, el mismo para los buenos y para los malos: la grilla base de
- * cantidad de puertos, el desglose por tipo y el total del desglose. Declarar más
- * puertos buenos de los que después se pueden marcar como malos no tiene sentido.
+ * Contador de puertos «buenos» por cada tipo del catálogo: los cinco tipos de equipo
+ * declaran exactamente los mismos puertos como buenos que como sueltos o defectuosos, con
+ * el mismo nombre de campo. Es el espejo de `PORT_TYPE_COUNTERS` del backend, y las cinco
+ * secciones arman su grilla desde acá para que ambos lados no vuelvan a desincronizarse.
  *
- * A diferencia de las opciones y los rótulos, este tope **no** lo gobierna el schema
- * remoto: el `value_max: 10` que el backend publica hoy está por retirarse y acotar el
- * formulario a diez le impediría al técnico registrar los puertos que el equipo tiene.
- * Mientras esa validación siga viva, un total mayor a diez vuelve con 422 en el
- * autoguardado.
+ * El orden es el del catálogo, que es el que el schema remoto devuelve.
  */
-export const MIN_PORT_TYPE_COUNT = 1;
-export const MAX_PORT_TYPE_COUNT = 20;
+export interface PortCounterField {
+	/** Tipo del catálogo, el mismo que usan `loose_port_types` y `defective_port_types`. */
+	type: PortTypeValue;
+	/** Columna que persiste la cantidad de puertos de ese tipo. */
+	column: string;
+	/** Rótulo largo, el mismo que publica el schema. */
+	label: string;
+	/** Rótulo corto, para las grillas que ponen el tipo encima del contador. */
+	short: string;
+}
 
-/** Tope de la suma del desglose; el backend valida el total, no sólo cada tipo. */
-export const MAX_PORTS_TOTAL = 20;
+export const PORT_COUNTER_FIELDS: readonly PortCounterField[] = [
+	{ type: 'vga', column: 'vga_ports', label: 'Puertos VGA', short: 'VGA' },
+	{ type: 'hdmi', column: 'hdmi_ports', label: 'Puertos HDMI', short: 'HDMI' },
+	{
+		type: 'displayport',
+		column: 'displayport_ports',
+		label: 'Puertos DisplayPort',
+		short: 'DP',
+	},
+	{ type: 'dvi', column: 'dvi_ports', label: 'Puertos DVI', short: 'DVI' },
+	{ type: 'usb_a', column: 'usb_a_ports', label: 'Puertos USB-A', short: 'USB-A' },
+	{ type: 'usb_c', column: 'usb_c_ports', label: 'Puertos USB-C', short: 'USB-C' },
+	{ type: 'sd_reader', column: 'sd_readers', label: 'Lectores SD', short: 'SD' },
+	{ type: 'rj45', column: 'rj45_ports', label: 'Puertos RJ45', short: 'RJ45' },
+	{ type: 'charging', column: 'charging_ports', label: 'Puertos de carga', short: 'Carga' },
+];
+
+export const MIN_PORT_TYPE_COUNT = 1;
 
 /**
- * Las opciones que llegan del schema remoto se filtran contra este catálogo: el backend
- * sigue aceptando tipos que esta operación no maneja (DVI, por ejemplo) y ofrecerlos sólo
- * agrega ruido a la grilla. Contrapartida asumida: un tipo nuevo del backend no aparece
- * hasta agregarlo a `ALLOWED_PORT_TYPES`.
+ * Techo de cordura del formulario, no una regla de negocio.
+ *
+ * El backend dejó de acotar los contadores y el desglose: el `max:10` que rechazaba una
+ * docking con doce USB-A ya no existe, y el schema tampoco publica `value_max`. El único
+ * límite que queda es el de la columna —`smallint` de PostgreSQL—, así que es el que el
+ * formulario respeta: alcanza para cualquier equipo real y evita mandar un valor que la
+ * base rechazaría por desbordamiento.
+ */
+export const MAX_PORT_COUNT = 32_767;
+
+/**
+ * Las opciones que llegan del schema remoto se filtran contra este catálogo, que hoy es el
+ * mismo que publica el backend: el filtro queda como guarda ante un tipo que este
+ * formulario todavía no sabe mostrar. Contrapartida asumida: un tipo nuevo del backend no
+ * aparece hasta agregarlo a `ALLOWED_PORT_TYPES`.
  */
 export const filterPortOptions = (
 	options: Array<{ value: string; label: string }>,
@@ -82,7 +116,7 @@ export const normalizePortTypeCounts = (
 	value: unknown,
 	allowedKeys: readonly string[] = ALLOWED_PORT_TYPES,
 	min: number = MIN_PORT_TYPE_COUNT,
-	max: number = MAX_PORT_TYPE_COUNT,
+	max: number = MAX_PORT_COUNT,
 ): PortTypeCounts => {
 	// Las revisiones guardadas antes de este contrato tienen una lista de tipos
 	// (`['hdmi','usb_c']`), que el backend ahora rechaza con 422. Se convierte contando

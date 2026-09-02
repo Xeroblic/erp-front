@@ -19,8 +19,6 @@ import { PortTypeCounters } from '../../ui/PortTypeCounters';
 import { YesNoSelector } from '../../ui/YesNoSelector';
 import {
 	filterPortOptions,
-	MAX_PORT_TYPE_COUNT,
-	MAX_PORTS_TOTAL,
 	PORT_TYPE_OPTIONS,
 	sumPortTypeCounts,
 	type PortTypeCounts,
@@ -87,14 +85,9 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 		options: PORT_TYPE_OPTIONS,
 	});
 
-	// El tope de puertos lo fija el formulario, no el schema. El `value_max: 10` que el
-	// backend publica hoy queda deliberadamente sin efecto: esa validación está por
-	// retirarse y operaciones necesita registrar hasta veinte. Mientras el backend siga
-	// validando diez, un total mayor vuelve con 422 en el autoguardado.
-	const defectiveMax = MAX_PORT_TYPE_COUNT;
-	const looseMax = MAX_PORT_TYPE_COUNT;
-	const defectiveTotalMax = MAX_PORTS_TOTAL;
-	const looseTotalMax = MAX_PORTS_TOTAL;
+	// Ni el desglose ni el total llevan tope: el backend retiró el `max:10` de las
+	// cantidades y dejó de publicar `value_max`. Doce USB-A defectuosos es una entrada
+	// válida, así que el contador se queda en el techo de cordura de `PortTypeCounters`.
 
 	// `all_ports_functional` sigue siendo el campo que persiste y que lee el motor de
 	// graduación; la pregunta se formula al revés para que ambas se respondan igual: «sí»
@@ -166,8 +159,6 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 							options={filterPortOptions(defectiveTypesField.options)}
 							value={defectivePortTypes ?? {}}
 							onChange={onDefectivePortTypesChange}
-							max={defectiveMax}
-							totalMax={defectiveTotalMax}
 							disabled={readOnly}
 						/>
 
@@ -214,8 +205,6 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 							options={filterPortOptions(looseTypesField.options)}
 							value={loosePortTypes ?? {}}
 							onChange={onLoosePortTypesChange}
-							max={looseMax}
-							totalMax={looseTotalMax}
 							disabled={readOnly}
 						/>
 

@@ -82,9 +82,12 @@ const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
 		'vga_ports',
 		'hdmi_ports',
 		'displayport_ports',
-		'type_c_ports',
+		'dvi_ports',
+		'usb_a_ports',
+		'usb_c_ports',
+		'sd_readers',
 		'rj45_ports',
-		'usb_hub_ports',
+		'charging_ports',
 		'all_ports_functional',
 		'defective_ports_count',
 		'defective_ports_critical_count',
@@ -123,10 +126,18 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		if (!defaultValues) return {} as MonitorFormData;
 
 		const values = { ...defaultValues } as Record<string, unknown>;
-		// Legacy compatibility: some historical records persisted usb_c_ports only.
-		if (values.type_c_ports == null && values.usb_c_ports != null) {
-			values.type_c_ports = values.usb_c_ports;
+		// `usb_hub_ports` y `type_c_ports` se renombraron a `usb_a_ports` y `usb_c_ports`,
+		// y la migración del backend arrastró los datos guardados. La carga sólo cubre lo
+		// que ya estuviera hidratado con los nombres viejos —una respuesta en caché, una
+		// pestaña abierta desde antes del despliegue— para no mostrar el contador en cero.
+		if (values.usb_a_ports == null && values.usb_hub_ports != null) {
+			values.usb_a_ports = values.usb_hub_ports;
 		}
+		if (values.usb_c_ports == null && values.type_c_ports != null) {
+			values.usb_c_ports = values.type_c_ports;
+		}
+		delete values.usb_hub_ports;
+		delete values.type_c_ports;
 
 		return values as unknown as MonitorFormData;
 	}, [defaultValues]);
@@ -209,10 +220,6 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			async (data) => {
 				try {
 					const finalData = { ...data } as Record<string, unknown>;
-					const resolvedTypeCPorts = finalData.type_c_ports ?? finalData.usb_c_ports;
-					finalData.type_c_ports = resolvedTypeCPorts;
-					// Keep alias synced to prevent divergence in intermediate layers.
-					finalData.usb_c_ports = resolvedTypeCPorts;
 					if (
 						!finalData.extra_attributes ||
 						Object.keys(finalData.extra_attributes).length === 0

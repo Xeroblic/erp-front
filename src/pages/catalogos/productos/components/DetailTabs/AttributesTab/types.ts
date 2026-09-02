@@ -51,7 +51,7 @@ export interface ReviewData {
 	sd_readers?: number;
 	rj45_ports?: number;
 	dvi_ports?: number;
-	type_c_ports?: number;
+	charging_ports?: number;
 	has_usb_hub?: boolean;
 	usb_hub_ports?: number;
 	all_ports_functional?: boolean;

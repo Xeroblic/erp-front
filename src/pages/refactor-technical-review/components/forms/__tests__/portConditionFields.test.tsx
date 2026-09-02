@@ -3,7 +3,6 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useForm, type FieldValues, type UseFormReturn } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
-import { MAX_PORT_TYPE_COUNT, MAX_PORTS_TOTAL } from '../../validation/constants/ports.rules';
 import type { FormSectionProps } from '../shared/types';
 import { AioPortsSection } from '../aio/sections/AioPortsSection';
 import DesktopPortsSection from '../desktop/sections/DesktopPortsSection';
@@ -140,6 +139,20 @@ const SECTIONS: Array<[string, AnySection]> = [
 describe('port condition questions', () => {
 	SECTIONS.forEach(([name, Section]) => {
 		describe(name, () => {
+			/**
+			 * Los nueve tipos del catálogo se cuentan en los cinco formularios. El backend
+			 * genera los contadores desde un solo mapa para que el desglose de sueltos y
+			 * defectuosos no vuelva a ofrecer un puerto que el equipo no declara.
+			 */
+			it('counts the nine port types of the catalog', () => {
+				renderSection(Section);
+
+				// Con los dos desgloses cerrados, los únicos contadores son los de la grilla.
+				// El nueve es el del contrato, no `PORT_COUNTER_FIELDS.length`: comparar el
+				// catálogo consigo mismo no detectaría que le falte un tipo.
+				expect(screen.getAllByRole('button', { name: /^Incrementar / })).toHaveLength(9);
+			});
+
 			it('asks separately for defective and loose ports', () => {
 				renderSection(Section);
 
@@ -234,11 +247,11 @@ describe('port condition questions', () => {
 			});
 
 			/**
-			 * El backend todavía publica `value_max: 10` (cuatro en este schema de prueba),
-			 * pero esa validación está por retirarse y el tope lo fija el formulario: si el
-			 * schema mandara, el técnico no podría registrar los puertos que sí tiene.
+			 * El backend dejó de acotar el desglose y ya no publica `value_max`; un schema
+			 * viejo en caché todavía puede traerlo (cuatro en este fixture) y el formulario
+			 * lo ignora: si mandara, el técnico no podría registrar los puertos que sí tiene.
 			 */
-			it('keeps its own ceiling over the lower one the schema still publishes', () => {
+			it('ignores the ceiling an outdated schema still publishes', () => {
 				const getForm = renderSection(Section, {
 					defaultValues: { loose_port_types: { hdmi: 4 } },
 				});
@@ -248,14 +261,22 @@ describe('port condition questions', () => {
 				expect(getForm().getValues('loose_port_types')).toEqual({ hdmi: 5 });
 			});
 
-			it('caps each type at the ceiling the form defines', () => {
-				renderSection(Section, {
-					defaultValues: { loose_port_types: { hdmi: MAX_PORT_TYPE_COUNT } },
+			/**
+			 * El `max:10` del backend rechazaba una docking con doce USB-A. Ya no existe, y
+			 * el formulario tampoco puede reponerlo por su cuenta.
+			 */
+			it('records more ports than the ceiling the backend used to impose', () => {
+				const getForm = renderSection(Section, {
+					defaultValues: { loose_port_types: { hdmi: 12 } },
 				});
 
-				expect(
-					within(looseBreakdown()).getByRole('button', { name: 'Incrementar HDMI' }),
-				).toBeDisabled();
+				const incrementHdmi = within(looseBreakdown()).getByRole('button', {
+					name: 'Incrementar HDMI',
+				});
+				expect(incrementHdmi).toBeEnabled();
+
+				fireEvent.click(incrementHdmi);
+				expect(getForm().getValues('loose_port_types')).toEqual({ hdmi: 13 });
 			});
 
 			it('derives the defective total from its breakdown', () => {
@@ -301,37 +322,41 @@ describe('port condition questions', () => {
 				[looseBreakdown(), defectiveBreakdown()].forEach((group) => {
 					expect(
 						within(group).getAllByRole('button', { name: /^Incrementar / }),
-					).toHaveLength(8);
+					).toHaveLength(9);
 					expect(
 						within(group).getByRole('button', { name: 'Incrementar Puerto de carga' }),
+					).toBeVisible();
+					expect(
+						within(group).getByRole('button', { name: 'Incrementar DVI' }),
 					).toBeVisible();
 				});
 			});
 
 			/**
-			 * El backend sigue publicando DVI en `options` para otros clientes, pero esta
-			 * operación dejó de manejar ese tipo de puerto: ofrecerlo sólo agrega ruido a
-			 * una grilla que ya tiene ocho contadores por desglose.
+			 * El catálogo del formulario es hoy el mismo que publica el backend, pero el
+			 * filtro sigue siendo la guarda ante un tipo que esta pantalla no sabe mostrar.
 			 */
-			it('does not offer a port type the catalog no longer handles', () => {
-				const withDvi: ITechnicalReviewSchema = {
+			it('does not offer a port type outside the catalog', () => {
+				const withUnknownType: ITechnicalReviewSchema = {
 					...REMOTE_SCHEMA,
 					loose_port_types: {
 						...REMOTE_SCHEMA.loose_port_types,
 						options: [
 							{ value: 'hdmi', label: 'HDMI' },
-							{ value: 'dvi', label: 'DVI' },
+							{ value: 'thunderbolt', label: 'Thunderbolt' },
 						],
 					},
 				};
 
 				renderSection(Section, {
-					schemaFields: withDvi,
+					schemaFields: withUnknownType,
 					defaultValues: { loose_port_types: { hdmi: 1 } },
 				});
 
 				expect(
-					within(looseBreakdown()).queryByRole('button', { name: 'Incrementar DVI' }),
+					within(looseBreakdown()).queryByRole('button', {
+						name: 'Incrementar Thunderbolt',
+					}),
 				).toBeNull();
 				expect(
 					within(looseBreakdown()).getByRole('button', { name: 'Incrementar HDMI' }),
@@ -339,65 +364,33 @@ describe('port condition questions', () => {
 			});
 
 			/**
-			 * El schema acota cada tipo pero no la suma, y el backend valida
-			 * `defective_ports_count` con `max:10`: un desglose de once puertos hacía
-			 * fallar el autoguardado con 422 sin que ningún contador se viera fuera de rango.
+			 * La grilla base y el desglose tienen que aceptar lo mismo: declarar puertos
+			 * buenos que después no se pueden marcar como malos era la contradicción que
+			 * dejaba el techo de diez del backend, ya retirado.
 			 */
-			it('keeps the breakdown within the total the backend accepts', () => {
+			it('offers no ceiling for working nor for faulty ports', () => {
 				const getForm = renderSection(Section, {
 					schemaFields: undefined,
 					defaultValues: {
 						all_ports_functional: false,
-						defective_port_types: { hdmi: MAX_PORTS_TOTAL - 1, usb_c: 1 },
+						hdmi_ports: 12,
+						defective_port_types: { hdmi: 12 },
 					},
 				});
 
 				const breakdown = defectiveBreakdown();
-				expect(
-					within(breakdown).getByRole('button', { name: 'Incrementar USB-A' }),
-				).toBeDisabled();
-
-				increment(breakdown, 'USB-A');
-				expect(getForm().getValues('defective_port_types')).toEqual({
-					hdmi: MAX_PORTS_TOTAL - 1,
-					usb_c: 1,
-				});
-
-				// Bajar un puerto libera el presupuesto: el tope es del total, no del tipo.
-				fireEvent.click(
-					within(breakdown).getByRole('button', { name: 'Decrementar HDMI' }),
-				);
-				expect(
-					within(defectiveBreakdown()).getByRole('button', { name: 'Incrementar USB-A' }),
-				).toBeEnabled();
-			});
-
-			/**
-			 * La grilla base llegaba a doce (dieciséis en aio, docking y monitor) y el
-			 * desglose sólo a diez: se podían declarar más puertos buenos de los que
-			 * después se podían marcar como malos. El techo lo fija el backend
-			 * (`defective_ports_count` con `max:10`), así que ambos comparten ese número.
-			 */
-			it('offers the same ceiling for working and faulty ports', () => {
-				renderSection(Section, {
-					schemaFields: undefined,
-					defaultValues: {
-						all_ports_functional: false,
-						hdmi_ports: MAX_PORT_TYPE_COUNT,
-						defective_port_types: { hdmi: MAX_PORT_TYPE_COUNT },
-					},
-				});
-
-				expect(
-					within(defectiveBreakdown()).getByRole('button', { name: 'Incrementar HDMI' }),
-				).toBeDisabled();
+				increment(breakdown, 'HDMI');
+				expect(getForm().getValues('defective_port_types')).toEqual({ hdmi: 13 });
 
 				const baseCounter = screen
 					.getAllByRole('button', { name: /^Incrementar (HDMI|Puertos HDMI)$/ })
 					.filter((button) => !defectiveBreakdown().contains(button));
 
 				expect(baseCounter).toHaveLength(1);
-				expect(baseCounter[0]).toBeDisabled();
+				expect(baseCounter[0]).toBeEnabled();
+
+				fireEvent.click(baseCounter[0]);
+				expect(getForm().getValues('hdmi_ports')).toBe(13);
 			});
 
 			it('does not change anything in read-only mode', () => {
@@ -425,6 +418,35 @@ describe('port condition questions', () => {
 		});
 
 		expect(screen.getByText(/Con 2 o más puertos sueltos/)).toBeVisible();
+	});
+
+	/**
+	 * `usb_hub_ports` y `type_c_ports` pasaron a llamarse `usb_a_ports` y `usb_c_ports`. La
+	 * API ignora los nombres viejos en silencio —responde 200 y deja el contador en cero—,
+	 * así que el técnico creería estar registrando puertos que no se guardan.
+	 */
+	it('writes the renamed monitor counters', () => {
+		const getForm = renderSection(asSection(MonitorPortsSection), {
+			schemaFields: MONITOR_SCHEMA,
+		});
+
+		fireEvent.click(screen.getByRole('button', { name: 'Incrementar Puertos USB-A' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Incrementar Puertos USB-C' }));
+
+		expect(getForm().getValues('usb_a_ports')).toBe(1);
+		expect(getForm().getValues('usb_c_ports')).toBe(1);
+		expect(screen.queryByRole('button', { name: /Tipo C|USB Hub/ })).toBeNull();
+	});
+
+	/** Los dos contadores que el catálogo agregó: carga en los cinco tipos, DVI en cuatro. */
+	it('writes the counters the catalog added', () => {
+		const getForm = renderSection(asSection(PortsSection));
+
+		fireEvent.click(screen.getByRole('button', { name: 'Incrementar DVI' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Incrementar Carga' }));
+
+		expect(getForm().getValues('dvi_ports')).toBe(1);
+		expect(getForm().getValues('charging_ports')).toBe(1);
 	});
 
 	it('does not announce a grade ceiling on monitor', () => {

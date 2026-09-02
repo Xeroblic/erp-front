@@ -131,6 +131,12 @@ export const AIO_FIELDS_METADATA = {
 		group: 'Puertos',
 		min: 0,
 	},
+	dvi_ports: {
+		type: 'integer',
+		label: 'Puertos DVI',
+		group: 'Puertos',
+		min: 0,
+	},
 	usb_c_ports: {
 		type: 'integer',
 		label: 'Puertos USB-C',
@@ -146,6 +152,12 @@ export const AIO_FIELDS_METADATA = {
 	rj45_ports: {
 		type: 'integer',
 		label: 'Puertos RJ45',
+		group: 'Puertos',
+		min: 0,
+	},
+	charging_ports: {
+		type: 'integer',
+		label: 'Puertos de carga',
 		group: 'Puertos',
 		min: 0,
 	},

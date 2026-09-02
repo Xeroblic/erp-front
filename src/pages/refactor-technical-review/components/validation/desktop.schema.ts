@@ -97,10 +97,12 @@ export const desktopSchema = Yup.object({
 	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	displayport_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	dvi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	usb_c_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	usb_a_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	sd_readers: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	charging_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 
 	all_ports_functional: Yup.boolean().nullable(),
 

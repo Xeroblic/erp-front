@@ -35,6 +35,7 @@ import { EQUIPMENT_TYPE_OPTIONS } from '@/pages/refactor-technical-review/compon
 import { COMMERCIAL_STATUS_CONFIG } from '@/pages/refactor-technical-review/components/constants/statuses.constant';
 import {
 	ALLOWED_PORT_TYPES,
+	PORT_COUNTER_FIELDS,
 	PORT_TYPE_LABELS,
 } from '../../../../components/validation/constants/ports.rules';
 
@@ -235,15 +236,10 @@ export const generateConnectivityText = (
 	const allPortsOk = extractValue(item.details.all_ports_functional);
 	if (allPortsOk === 'true' || allPortsOk === 'Sí') return '';
 
-	const portFields: Record<string, string> = {
-		usb_a_ports: 'USB-A',
-		usb_c_ports: 'USB-C',
-		hdmi_ports: 'HDMI',
-		displayport_ports: 'DisplayPort',
-		vga_ports: 'VGA',
-		rj45_ports: 'RJ45',
-		sd_readers: 'Lector SD',
-	};
+	// Los nueve contadores del catálogo, con el rótulo corto del tipo de puerto.
+	const portFields: Record<string, string> = Object.fromEntries(
+		PORT_COUNTER_FIELDS.map((port) => [port.column, PORT_TYPE_LABELS[port.type]]),
+	);
 
 	const activePorts: string[] = [];
 

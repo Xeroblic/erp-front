@@ -7,17 +7,12 @@ import { StepperInput } from '../../../ui/StepperInput';
 import { AIO_HINTS } from '../../../constants/aio/aio.hints';
 import { getAioLabel } from '../../../translations/aio.labels';
 import { PortConditionFields } from '../../shared/PortConditionFields';
-import { MAX_PORT_TYPE_COUNT, sumPortTypeCounts } from '../../../validation/constants/ports.rules';
-
-const PORTS_CONFIG = [
-	{ key: 'usb_a_ports', icon: 'UsbSymbol', color: 'blue' },
-	{ key: 'usb_c_ports', icon: 'UsbCable', color: 'fuchsia' },
-	{ key: 'hdmi_ports', icon: 'DeviceTv', color: 'emerald' },
-	{ key: 'displayport_ports', icon: 'MonitorSpeaker', color: 'indigo' },
-	{ key: 'vga_ports', icon: 'Video', color: 'orange' },
-	{ key: 'rj45_ports', icon: 'Router', color: 'cyan' },
-	{ key: 'sd_readers', icon: 'SdCard', color: 'zinc' },
-] as const;
+import {
+	MAX_PORT_COUNT,
+	PORT_COUNTER_FIELDS,
+	sumPortTypeCounts,
+} from '../../../validation/constants/ports.rules';
+import { PORT_COUNTER_VISUALS } from '../../../constants/ports.visuals';
 
 export const AioPortsSection: React.FC<FormSectionProps<AioFormData>> = ({
 	control,
@@ -42,33 +37,40 @@ export const AioPortsSection: React.FC<FormSectionProps<AioFormData>> = ({
 				</h4>
 
 				<div className='grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4'>
-					{PORTS_CONFIG.map(({ key, icon, color }) => (
-						<div
-							key={key}
-							className={`rounded-xl border hover:cursor-pointer border-${color}-200 bg-${color}-500/10 p-4 transition-colors duration-200 hover:bg-${color}-500/20 dark:border-${color}-800/50 dark:bg-${color}-900/10 dark:hover:bg-${color}-900/20`}>
-							<label
-								className={`mb-3 flex items-center gap-2 text-xs font-bold text-${color}-800 dark:text-${color}-200`}>
-								<Icon icon={icon} className='h-4 w-4' />
-								{getAioLabel(key)}
-							</label>
-							<Controller
-								name={key as keyof AioFormData}
-								control={control}
-								render={({ field }) => (
-									<div className='w-full'>
-										<StepperInput
-											label={getAioLabel(key)}
-											value={
-												typeof field.value === 'number' ? field.value : 0
-											}
-											onChange={(val) => !readOnly && field.onChange(val)}
-											max={MAX_PORT_TYPE_COUNT}
-										/>
-									</div>
-								)}
-							/>
-						</div>
-					))}
+					{PORT_COUNTER_FIELDS.map((port) => {
+						const { icon, color } = PORT_COUNTER_VISUALS[port.type];
+						const key = port.column;
+
+						return (
+							<div
+								key={key}
+								className={`rounded-xl border hover:cursor-pointer border-${color}-200 bg-${color}-500/10 p-4 transition-colors duration-200 hover:bg-${color}-500/20 dark:border-${color}-800/50 dark:bg-${color}-900/10 dark:hover:bg-${color}-900/20`}>
+								<label
+									className={`mb-3 flex items-center gap-2 text-xs font-bold text-${color}-800 dark:text-${color}-200`}>
+									<Icon icon={icon} className='h-4 w-4' />
+									{getAioLabel(key)}
+								</label>
+								<Controller
+									name={key as keyof AioFormData}
+									control={control}
+									render={({ field }) => (
+										<div className='w-full'>
+											<StepperInput
+												label={getAioLabel(key)}
+												value={
+													typeof field.value === 'number'
+														? field.value
+														: 0
+												}
+												onChange={(val) => !readOnly && field.onChange(val)}
+												max={MAX_PORT_COUNT}
+											/>
+										</div>
+									)}
+								/>
+							</div>
+						);
+					})}
 				</div>
 			</div>
 

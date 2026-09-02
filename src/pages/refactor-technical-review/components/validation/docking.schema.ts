@@ -20,10 +20,12 @@ export const dockingSchema = Yup.object({
 	vga_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 	hdmi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 	displayport_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
+	dvi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 	usb_c_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 	sd_readers: Yup.number().nullable().min(0, 'No puede ser negativo'),
 	rj45_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 	usb_a_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
+	charging_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 
 	// Estado funcionales de puertos
 	all_ports_functional: Yup.boolean().nullable(),

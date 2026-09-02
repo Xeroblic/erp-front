@@ -4,17 +4,11 @@ import type { DesktopFormData } from '../../../validation/desktop.schema';
 import { DESKTOP_WARNINGS } from '../../../constants/desktop/desktop.hints';
 import { StepperInput } from '../../../ui/StepperInput';
 import { PortConditionFields } from '../../shared/PortConditionFields';
-import { MAX_PORT_TYPE_COUNT, sumPortTypeCounts } from '../../../validation/constants/ports.rules';
-
-const PORTS = [
-	{ label: 'USB-A', name: 'usb_a_ports' as const },
-	{ label: 'USB-C', name: 'usb_c_ports' as const },
-	{ label: 'HDMI', name: 'hdmi_ports' as const },
-	{ label: 'DP', name: 'displayport_ports' as const },
-	{ label: 'VGA', name: 'vga_ports' as const },
-	{ label: 'RJ45', name: 'rj45_ports' as const },
-	{ label: 'SD', name: 'sd_readers' as const },
-];
+import {
+	MAX_PORT_COUNT,
+	PORT_COUNTER_FIELDS,
+	sumPortTypeCounts,
+} from '../../../validation/constants/ports.rules';
 
 const DesktopPortsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	readOnly,
@@ -43,21 +37,27 @@ const DesktopPortsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 			<div className='flex w-full flex-col items-start gap-8 rounded-2xl border border-zinc-800/50 bg-zinc-900/20 p-6 lg:flex-row'>
 				<div className='w-full flex-[2]'>
 					<div className='grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4'>
-						{PORTS.map((port) => (
-							<div key={port.name} className='flex flex-col items-center gap-3 p-2'>
-								<label className='text-[10px] font-bold uppercase tracking-widest text-zinc-500'>
-									{port.label}
-								</label>
-								<div className='w-full max-w-[140px]'>
-									<StepperInput
-										label={port.label}
-										value={getNumericValue(port.name)}
-										onChange={(val) => handlePortChange(port.name, val)}
-										max={MAX_PORT_TYPE_COUNT}
-									/>
+						{PORT_COUNTER_FIELDS.map((port) => {
+							const name = port.column as keyof DesktopFormData;
+
+							return (
+								<div
+									key={port.column}
+									className='flex flex-col items-center gap-3 p-2'>
+									<label className='text-[10px] font-bold uppercase tracking-widest text-zinc-500'>
+										{port.short}
+									</label>
+									<div className='w-full max-w-[140px]'>
+										<StepperInput
+											label={port.short}
+											value={getNumericValue(name)}
+											onChange={(val) => handlePortChange(name, val)}
+											max={MAX_PORT_COUNT}
+										/>
+									</div>
 								</div>
-							</div>
-						))}
+							);
+						})}
 					</div>
 				</div>
 			</div>

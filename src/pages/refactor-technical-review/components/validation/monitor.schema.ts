@@ -51,17 +51,19 @@ export const monitorSchema = Yup.object({
 
 	// Puertos
 	has_usb_hub: Yup.boolean().required('Debes indicar si tiene hub USB').default(false),
+	// Los nueve contadores del catálogo, con el mismo nombre en los cinco tipos de equipo.
+	// `usb_hub_ports` y `type_c_ports` pasaron a llamarse `usb_a_ports` y `usb_c_ports`:
+	// el backend ignora los nombres viejos en silencio —responde 200 y guarda cero—, así
+	// que mandarlos sería registrar puertos que no quedan en ninguna parte.
 	vga_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 	hdmi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 	displayport_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	// El formulario ya no ofrece DVI, pero el campo sigue declarado a propósito: las
-	// revisiones que lo tienen guardado lo conservan en el estado y lo devuelven tal
-	// cual, en vez de perderlo en el primer autoguardado.
 	dvi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	type_c_ports: Yup.number().integer().nullable().min(0, 'No puede ser negativo'),
+	usb_a_ports: Yup.number().integer().nullable().min(0, 'No puede ser negativo'),
 	usb_c_ports: Yup.number().integer().nullable().min(0, 'No puede ser negativo'),
+	sd_readers: Yup.number().integer().nullable().min(0, 'No puede ser negativo'),
 	rj45_ports: Yup.number().integer().nullable().min(0, 'No puede ser negativo'),
-	usb_hub_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
+	charging_ports: Yup.number().integer().nullable().min(0, 'No puede ser negativo'),
 
 	// Estado funcionales de puertos
 	all_ports_functional: Yup.boolean().nullable(),
