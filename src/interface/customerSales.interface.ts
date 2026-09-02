@@ -1,3 +1,5 @@
+export type CustomerSaleType = 'natural' | 'company';
+
 export interface ICustomerSale {
 	id: number;
 	subsidiary_id: number;
@@ -5,7 +7,7 @@ export interface ICustomerSale {
 	name: string;
 	document_type: string;
 	document_number: string;
-	type: string;
+	type?: CustomerSaleType | null;
 
 	rut: string;
 
@@ -74,6 +76,7 @@ export interface ICustomerSaleOverview {
 	id: number;
 	name: string;
 	rut: string;
+	type?: CustomerSaleType | null;
 	contact: {
 		name?: string;
 		email?: string;

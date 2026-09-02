@@ -76,6 +76,9 @@ const renderModal = ({
 };
 
 const fillValidForm = () => {
+	fireEvent.change(screen.getByLabelText('Tipo de cliente'), {
+		target: { value: 'company' },
+	});
 	fireEvent.change(screen.getByPlaceholderText('12345678-9'), {
 		target: { value: '20761872-1' },
 	});
@@ -108,6 +111,44 @@ describe('CreateCustomerSaleModal', () => {
 		const portalRoot = document.createElement('div');
 		portalRoot.id = 'portal-root';
 		document.body.appendChild(portalRoot);
+	});
+
+	it('exige elegir el tipo de cliente antes de crear', async () => {
+		renderModal();
+		const typeSelect = screen.getByLabelText('Tipo de cliente');
+		expect(typeSelect).toBeRequired();
+		fireEvent.change(screen.getByPlaceholderText('12345678-9'), {
+			target: { value: '20761872-1' },
+		});
+		fireEvent.change(screen.getByPlaceholderText('Empresa S.A.'), {
+			target: { value: 'pruebaa' },
+		});
+		fireEvent.change(screen.getByPlaceholderText('correo@example.cl'), {
+			target: { value: 'nicolas.munoz@prueboide.com' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+		await waitFor(() => expect(typeSelect.className).toContain('!border-red-500'));
+		const typeError = screen.getByRole('alert');
+		expect(typeError).toHaveTextContent('Selecciona el tipo de cliente');
+		expect(typeSelect).toHaveAttribute('aria-invalid', 'true');
+		expect(typeSelect).toHaveAttribute('aria-describedby', typeError.id);
+		expect(apiSpies.fetchNormalized).not.toHaveBeenCalled();
+	});
+
+	it('envía el tipo elegido al crear', async () => {
+		apiSpies.fetchNormalized.mockResolvedValue({
+			id: 9,
+			type: 'company',
+			rut: '20761872-1',
+			is_active: true,
+		});
+		renderModal({ refreshStoreOnSuccess: false });
+		fillValidForm();
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+		await waitFor(() => expect(apiSpies.fetchNormalized).toHaveBeenCalledTimes(1));
+		expect(getSubmittedPayload().type).toBe('company');
 	});
 
 	it('muestra el mensaje del backend y marca el campo en un 422 de RUT duplicado', async () => {
@@ -239,6 +280,7 @@ describe('CreateCustomerSaleModal', () => {
 	describe('edición', () => {
 		const initialData: Partial<ICustomerSale> = {
 			id: 42,
+			type: 'company',
 			document_number: '20761872-1',
 			billing_company: 'pruebaa',
 			email: 'nicolas.munoz@prueboide.com',
@@ -256,6 +298,69 @@ describe('CreateCustomerSaleModal', () => {
 			expect(payload.document_number).toBe('20761872-1');
 			// `rut` salta la comprobación de duplicado por subsidiaria en el update.
 			expect(payload).not.toHaveProperty('rut');
+		});
+
+		it('inicializa el tipo persistido y envía el cambio al editar', async () => {
+			apiSpies.fetchNormalized.mockResolvedValue({
+				...initialData,
+				type: 'natural',
+				is_active: true,
+			});
+			const onSuccess = vi.fn();
+			renderModal({ refreshStoreOnSuccess: false, onSuccess, isEdit: true, initialData });
+
+			expect(screen.getByLabelText('Tipo de cliente')).toHaveValue('company');
+			fireEvent.change(screen.getByLabelText('Tipo de cliente'), {
+				target: { value: 'natural' },
+			});
+			fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
+
+			await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+			expect(getSubmittedPayload().type).toBe('natural');
+		});
+
+		it('permite editar un cliente histórico sin tipo y omite el campo del payload', async () => {
+			const initialDataWithoutType = { ...initialData, type: undefined };
+			apiSpies.fetchNormalized.mockResolvedValue({
+				...initialDataWithoutType,
+				phone: '+56987654321',
+				is_active: true,
+			});
+			const onSuccess = vi.fn();
+			renderModal({
+				refreshStoreOnSuccess: false,
+				onSuccess,
+				isEdit: true,
+				initialData: initialDataWithoutType,
+			});
+
+			const typeSelect = screen.getByLabelText('Tipo de cliente');
+			expect(typeSelect).not.toBeRequired();
+			expect(typeSelect).toHaveValue('');
+			fireEvent.change(screen.getByPlaceholderText('+56 9 1234 5678'), {
+				target: { value: '+56987654321' },
+			});
+			fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
+
+			await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+			const payload = getSubmittedPayload();
+			expect(payload.phone).toBe('+56987654321');
+			expect(payload).not.toHaveProperty('type');
+		});
+
+		it('mantiene obligatorio el tipo si el cliente editado ya lo tenía', async () => {
+			renderModal({ refreshStoreOnSuccess: false, isEdit: true, initialData });
+			const typeSelect = screen.getByLabelText('Tipo de cliente');
+			expect(typeSelect).toBeRequired();
+			fireEvent.change(typeSelect, { target: { value: '' } });
+			fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
+
+			await waitFor(() =>
+				expect(screen.getByRole('alert')).toHaveTextContent(
+					'Selecciona el tipo de cliente',
+				),
+			);
+			expect(apiSpies.fetchNormalized).not.toHaveBeenCalled();
 		});
 
 		it('marca el campo y mantiene el modal abierto ante un 422 de RUT duplicado', async () => {

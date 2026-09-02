@@ -8,7 +8,8 @@ import {
 	updateCustomerThunk,
 } from '@/store/slices/customerSales/customerSalesSlice';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
-import { ClientesVentasDetalleSchema, IClientesVentasDetalleForm } from '../types';
+import { isCustomerSaleType } from '../../customerSaleType';
+import { createClientesVentasDetalleSchema, IClientesVentasDetalleForm } from '../types';
 
 export const useClientesVentasDetalle = () => {
 	const { clienteId } = useParams();
@@ -42,6 +43,7 @@ export const useClientesVentasDetalle = () => {
 
 	const initialFormValues: IClientesVentasDetalleForm = useMemo(
 		() => ({
+			type: isCustomerSaleType(detalle?.type) ? detalle.type : '',
 			document_number: detalle?.document_number || detalle?.rut || '',
 			billing_company: detalle?.billing_company || '',
 			contact_name: contacto.name || '',
@@ -60,16 +62,22 @@ export const useClientesVentasDetalle = () => {
 		}),
 		[detalle, contacto],
 	);
+	const validationSchema = useMemo(
+		() => createClientesVentasDetalleSchema(isCustomerSaleType(detalle?.type)),
+		[detalle?.type],
+	);
 
 	const formik = useFormik<IClientesVentasDetalleForm>({
 		enableReinitialize: true,
 		initialValues: initialFormValues,
-		validationSchema: ClientesVentasDetalleSchema,
+		validationSchema,
 		onSubmit: async (values, { setSubmitting }) => {
 			if (!detalle) return;
 			try {
+				const { type, ...valuesWithoutType } = values;
 				const payload = {
-					...values,
+					...valuesWithoutType,
+					...(isCustomerSaleType(type) ? { type } : {}),
 					rut: values.document_number,
 					document_number: values.document_number,
 					contact_name: values.contact_name,

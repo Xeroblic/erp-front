@@ -61,4 +61,22 @@ describe('campos editables en modo lectura', () => {
 
 		expect(screen.getByText('Seleccionar')).toBeInTheDocument();
 	});
+
+	it('permite aplicar un formatter autoritativo en modo lectura', () => {
+		const formik = formikWith({ field: '', select: 'legacy' });
+
+		render(
+			<EditableSelect
+				formik={formik}
+				name='select'
+				label='Tipo de cliente'
+				isEditable={false}
+				options={[]}
+				displayValueFormatter={() => 'Sin información'}
+			/>,
+		);
+
+		expect(screen.getByText('Sin información')).toBeInTheDocument();
+		expect(screen.queryByText('legacy')).not.toBeInTheDocument();
+	});
 });

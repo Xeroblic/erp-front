@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
+import type { TSelectOptions } from '@/components/form/SelectReact';
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Card, { CardBody } from '@/components/ui/Card';
@@ -10,9 +11,9 @@ import EditableField from '../components/parts/EditableField';
 import EditableSelect from '../components/parts/EditableSelect';
 import CustomerCreditProfileCard from './components/CustomerCreditProfileCard';
 import { formatRut } from '../../../../utils/validateRut';
-import { TSelectOptions } from '@/components/form/SelectReact';
 import { useClientesVentasDetalle } from './hooks/useClientesVentasDetalle';
 import { getCustomerDetailPageTitle, hasMatchingShippingAddress } from './utils';
+import { CUSTOMER_SALE_TYPE_OPTIONS, getCustomerSaleTypeLabel } from '../customerSaleType';
 
 const DetailSkeleton = () => (
 	<Container className='animate-pulse space-y-8 py-8'>
@@ -111,6 +112,7 @@ const ClientesVentasDetalleView = () => {
 		],
 		[],
 	);
+	const customerTypeOptions: TSelectOptions = useMemo(() => CUSTOMER_SALE_TYPE_OPTIONS, []);
 
 	const paymentMethodOptions: TSelectOptions = useMemo(
 		() => [
@@ -207,6 +209,17 @@ const ClientesVentasDetalleView = () => {
 											) : null
 										}>
 										<div className='grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2'>
+											<div className='detail-content-item'>
+												<EditableSelect
+													formik={formik}
+													name='type'
+													label='Tipo de cliente'
+													isEditable={isEditable}
+													options={customerTypeOptions}
+													placeholder='Selecciona el tipo de cliente'
+													displayValueFormatter={getCustomerSaleTypeLabel}
+												/>
+											</div>
 											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}

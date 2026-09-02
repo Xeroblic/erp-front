@@ -5,6 +5,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import type { ICustomerSale } from '@/interface/customerSales.interface';
 import classNames from 'classnames';
+import { getCustomerSaleTypeLabel } from '../../customerSaleType';
 
 interface ClientDetailHeaderProps {
 	client: ICustomerSale;
@@ -67,7 +68,7 @@ const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
 								ID Cliente: {client.id}
 							</Badge>
 							<Badge className={classNames('px-2')} variant='outline' color='blue'>
-								{client.type === 'company' ? 'Empresa' : 'Persona Natural'}
+								{getCustomerSaleTypeLabel(client.type)}
 							</Badge>
 							<Badge
 								className='px-2'

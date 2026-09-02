@@ -1,6 +1,6 @@
 import React from 'react';
 import { Provider } from 'react-redux';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import store from '@/store';
 import type { ICustomerSale } from '@/interface/customerSales.interface';
@@ -24,7 +24,7 @@ vi.mock('gsap', () => ({
 vi.mock('../hooks/useClientesVentasDetalle', () => ({
 	useClientesVentasDetalle: () => ({
 		formik: {
-			values: { is_active: true },
+			values: { is_active: true, type: detailState.current?.type },
 			isSubmitting: false,
 			submitForm: vi.fn().mockResolvedValue(undefined),
 			setFieldValue: vi.fn(),
@@ -46,7 +46,20 @@ vi.mock('../../components/parts/DetailSection', () => ({
 	default: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
 }));
 vi.mock('../../components/parts/EditableField', () => ({ default: () => null }));
-vi.mock('../../components/parts/EditableSelect', () => ({ default: () => null }));
+vi.mock('../../components/parts/EditableSelect', () => ({
+	default: ({
+		formik,
+		name,
+		displayValueFormatter,
+	}: {
+		formik: { values: Record<string, unknown> };
+		name: string;
+		displayValueFormatter?: (value: unknown) => string;
+	}) =>
+		name === 'type' && displayValueFormatter ? (
+			<span>{displayValueFormatter(formik.values[name])}</span>
+		) : null,
+}));
 
 const customerWithoutIdentity: ICustomerSale = {
 	id: 1,
@@ -89,5 +102,19 @@ describe('ClientesVentasDetalleView', () => {
 
 		expect(document.title).toBe('Detalle de cliente | ERP');
 		expect(document.title).not.toContain('Error |');
+	});
+
+	it.each([undefined, 'legacy'])('muestra el fallback neutral para el tipo %s', (type) => {
+		detailState.current = { ...customerWithoutIdentity, type } as unknown as ICustomerSale;
+
+		render(
+			<Provider store={store}>
+				<ClientesVentasDetalleView />
+			</Provider>,
+		);
+
+		expect(screen.getByText('Sin información')).toBeInTheDocument();
+		expect(screen.queryByText('Sin información registrada.')).not.toBeInTheDocument();
+		expect(screen.queryByText('legacy')).not.toBeInTheDocument();
 	});
 });
