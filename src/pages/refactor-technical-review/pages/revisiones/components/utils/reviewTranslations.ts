@@ -14,6 +14,10 @@ import {
 	KEYBOARD_CONDITION_LABELS,
 	KEYBOARD_LAYOUT_LABELS,
 	HINGE_CONDITION_LABELS,
+	KEYBOARD_COVER_CONDITION_LABELS,
+	TOUCHPAD_CONDITION_LABELS,
+	BOTTOM_CONDITION_LABELS,
+	BATTERY_STATUS_LABELS,
 } from '@/pages/refactor-technical-review/components/translations/notebook.labels';
 import {
 	getDesktopLabel,
@@ -121,6 +125,30 @@ const VALUE_TRANSLATIONS: Record<string, string> = {
 };
 
 /**
+ * Rótulos por campo, para los valores que varios campos comparten.
+ *
+ * `VALUE_TRANSLATIONS` es un mapa plano: `ok`, `worn` y `broken` existen en casi todas las
+ * condiciones y la última fusión gana, así que un solo rótulo terminaba describiendo la
+ * bisagra, la tapa, el teclado y el touchpad a la vez, y con el género de uno solo de
+ * ellos. Cuando el campo se conoce manda su propio mapa; el plano queda de respaldo para
+ * los valores que no dependen del campo (booleanos, grados, estados de la revisión).
+ */
+const FIELD_VALUE_TRANSLATIONS: Record<string, Record<string, string>> = {
+	general_condition: GENERAL_CONDITION_LABELS,
+	storage_technology: STORAGE_TECHNOLOGY_LABELS,
+	charger_status: CHARGER_STATUS_LABELS,
+	screen_condition: SCREEN_CONDITION_LABELS,
+	cover_condition: COVER_CONDITION_LABELS,
+	keyboard_condition: KEYBOARD_CONDITION_LABELS,
+	keyboard_layout: KEYBOARD_LAYOUT_LABELS,
+	hinge_condition: HINGE_CONDITION_LABELS,
+	keyboard_cover_condition: KEYBOARD_COVER_CONDITION_LABELS,
+	touchpad_condition: TOUCHPAD_CONDITION_LABELS,
+	bottom_condition: BOTTOM_CONDITION_LABELS,
+	battery_status: BATTERY_STATUS_LABELS,
+};
+
+/**
  * Retorna el set de campos válidos para un tipo de equipo.
  * Usado para filtrar qué detalles mostrar en el resumen lateral.
  */
@@ -165,8 +193,14 @@ const isPortTypeCounts = (value: unknown): value is Record<string, number> =>
 	);
 
 /** Traduce un valor (string, objeto o booleano) a su representación legible */
-export const translateValue = (value: unknown): string => {
+export const translateValue = (value: unknown, field?: string): string => {
 	if (value === null || value === undefined) return '-';
+
+	// El mapa del campo manda sobre el plano: `broken` es «Rota» en la bisagra y «Roto» en
+	// el teclado, y con un solo mapa uno de los dos quedaba mal escrito.
+	const fieldLabels = field ? FIELD_VALUE_TRANSLATIONS[field] : undefined;
+	const translate = (raw: string): string | undefined =>
+		fieldLabels?.[raw] ?? VALUE_TRANSLATIONS[raw];
 
 	// El desglose de puertos es un mapa `{tipo: cantidad}`. Sin este caso caía en la rama
 	// genérica de objeto y el resumen mostraba «-» sobre un campo que el técnico llenó.
@@ -183,13 +217,13 @@ export const translateValue = (value: unknown): string => {
 		const obj = value as Record<string, unknown>;
 		const extractedValue = (obj.value || obj.label || obj.description) as string | undefined;
 		if (extractedValue) {
-			return VALUE_TRANSLATIONS[extractedValue.toLowerCase()] || extractedValue;
+			return translate(extractedValue.toLowerCase()) || extractedValue;
 		}
 		return '-';
 	}
 
 	const strValue = String(value).toLowerCase();
-	return VALUE_TRANSLATIONS[strValue] || String(value);
+	return translate(strValue) || String(value);
 };
 
 /** Extrae el valor primitivo de un campo que puede ser un objeto */

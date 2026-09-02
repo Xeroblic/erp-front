@@ -84,6 +84,41 @@ describe('useAutoSave', () => {
 		expect(toastError).not.toHaveBeenCalled();
 	});
 
+	/**
+	 * El reintento saneado guardaba su propio snapshot, pero la guarda de `saveNow` compara
+	 * contra el crudo, que conserva el campo rechazado: los dos nunca coincidían y cada
+	 * ciclo de inactividad repetía los dos PATCH y el aviso, indefinidamente, hasta que el
+	 * técnico cambiara el valor. El aviso dejaba de ser señal y pasaba a ser ruido.
+	 */
+	it('no repite el aviso ni los PATCH mientras el dato rechazado no cambie', async () => {
+		dispatch
+			.mockReturnValueOnce({ unwrap: () => Promise.reject(new Error('422')) })
+			.mockReturnValue({ unwrap: () => Promise.resolve({}) });
+
+		let currentData: Record<string, unknown> = { brand: 'Inicial' };
+		const { result } = renderHook(() =>
+			useAutoSave({
+				branchId: 7,
+				itemId: 99,
+				equipmentType: 'notebook',
+				getFormData: () => currentData,
+				idleTimeoutMs: 60_000,
+				transformData: ({ hinge_condition: _dropped, ...rest }) => rest,
+			}),
+		);
+
+		currentData = { brand: 'Actualizada', hinge_condition: 'missing_pieces' };
+		await act(async () => {
+			await result.current.saveNow(true);
+			await result.current.saveNow(true);
+			await result.current.saveNow(true);
+		});
+
+		// El PATCH que falla y su reintento saneado, una sola vez entre los tres ciclos.
+		expect(dispatch).toHaveBeenCalledTimes(2);
+		expect(toastWarning).toHaveBeenCalledTimes(1);
+	});
+
 	it('no avisa nada cuando el reintento envía los mismos campos', async () => {
 		dispatch
 			.mockReturnValueOnce({ unwrap: () => Promise.reject(new Error('500')) })

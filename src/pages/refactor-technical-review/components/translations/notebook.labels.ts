@@ -4,6 +4,8 @@
  * Etiquetas capitalizadas según convención del sistema.
  */
 
+import { HINGE_CONDITION_OPTIONS } from '../constants/notebook/notebook.options';
+
 export const NOTEBOOK_LABELS: Record<string, string> = {
 	// ─── Identificación ────────────────────────────────────────────────────────
 	brand: 'Marca',
@@ -49,10 +51,12 @@ export const NOTEBOOK_LABELS: Record<string, string> = {
 	vga_ports: 'Puertos VGA',
 	hdmi_ports: 'Puertos HDMI',
 	displayport_ports: 'Puertos DisplayPort',
+	dvi_ports: 'Puertos DVI',
 	usb_c_ports: 'Puertos USB-C',
 	usb_a_ports: 'Puertos USB-A',
 	sd_readers: 'Lectores SD',
 	rj45_ports: 'Puertos RJ45',
+	charging_ports: 'Puertos de carga',
 	all_ports_functional: 'Todos Los Puertos Funcionales',
 	defective_ports_count: 'Puertos Defectuosos',
 
@@ -144,11 +148,25 @@ export const KEYBOARD_LAYOUT_LABELS: Record<string, string> = {
 	latam: 'Latinoamericano',
 };
 
-export const HINGE_CONDITION_LABELS: Record<string, string> = {
-	ok: 'Funciona Sin Problemas',
-	worn: 'Desgastado',
-	missing_pieces: 'Faltan Piezas',
-	broken: 'Roto',
+/**
+ * Se deriva de las opciones que el técnico ve en la tarjeta, no se escribe aparte: el
+ * contrato de bisagras cambió a `ok, worn, cracked, loose, broken` y este mapa quedó en el
+ * anterior, así que «Trizada» y «Suelta» salían en crudo en el resumen y `worn`/`broken`
+ * se leían distinto según dónde se mirara.
+ */
+export const HINGE_CONDITION_LABELS: Record<string, string> = Object.fromEntries(
+	HINGE_CONDITION_OPTIONS.map(({ value, label }) => [value, label]),
+);
+
+/**
+ * La cubierta del teclado sí escribe sus rótulos: sus opciones anuncian el techo de grado
+ * («Trizada — Máximo Grado B»), que es información para elegir, no para leer en el resumen.
+ */
+export const KEYBOARD_COVER_CONDITION_LABELS: Record<string, string> = {
+	ok: 'Sin Daños',
+	worn: 'Con Desgaste',
+	cracked: 'Trizada',
+	broken: 'Rota',
 };
 
 export const BATTERY_STATUS_LABELS: Record<string, string> = {

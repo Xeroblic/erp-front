@@ -215,7 +215,6 @@ export const useAutoSave = ({
 
 				try {
 					const transformedPayload = buildPayload(rawData, true);
-					const transformedSnapshot = JSON.stringify(transformedPayload);
 
 					await dispatch(
 						updateItemDetails({
@@ -227,7 +226,14 @@ export const useAutoSave = ({
 						}),
 					).unwrap();
 
-					lastSnapshotRef.current = transformedSnapshot;
+					// El snapshot que queda es el **crudo**, no el saneado: `hasPendingChanges`
+					// y la guarda de `saveNow` comparan siempre contra el payload crudo, que
+					// conserva el campo rechazado. Guardar el saneado dejaba los dos siempre
+					// distintos, así que cada ciclo de inactividad repetía los dos PATCH
+					// —el que falla y el reintento— y volvía a avisar, indefinidamente. Con
+					// el crudo, el ciclo se detiene hasta que el técnico cambie el dato, que
+					// es exactamente cuando vuelve a tener sentido reintentar.
+					lastSnapshotRef.current = rawSnapshot;
 					setLastSavedAt(new Date());
 
 					const droppedFields = getDroppedFields(rawPayload, transformedPayload);
