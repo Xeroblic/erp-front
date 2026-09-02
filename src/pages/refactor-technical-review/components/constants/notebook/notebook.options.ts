@@ -107,11 +107,14 @@ export const KEYBOARD_LAYOUT_OPTIONS: TypedOption<KeyboardLayoutValue>[] = [
 
 // ─── Condición de Bisagras ────────────────────────────────────────────────────
 
+// Rótulos alineados con los que publica el backend para `hinge_condition`, para que
+// el respaldo local y el schema remoto describan el mismo estado.
 export const HINGE_CONDITION_OPTIONS: TypedOption<HingeConditionValue>[] = [
 	{ value: 'ok', label: 'Funciona Sin Problemas' },
-	{ value: 'worn', label: 'Desgastado' },
-	{ value: 'missing_pieces', label: 'Faltan Piezas' },
-	{ value: 'broken', label: 'Roto' },
+	{ value: 'worn', label: 'Con Desgaste' },
+	{ value: 'cracked', label: 'Trizada' },
+	{ value: 'loose', label: 'Suelta' },
+	{ value: 'broken', label: 'Rota' },
 ];
 
 // ─── Estado de Batería ────────────────────────────────────────────────────────

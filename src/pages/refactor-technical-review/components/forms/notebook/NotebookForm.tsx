@@ -92,6 +92,17 @@ const NOTEBOOK_SECTIONS: SectionConfig<NotebookFormData>[] = [
 	},
 ];
 
+/**
+ * Campos de la sección «Entrada» que InputSection sólo puede renderizar con el schema
+ * remoto: sus opciones (o su rótulo, en el contador de teclas) nacen en el backend y no
+ * hay constante local que las reemplace. Validar por ellos sin schema dejaría al técnico
+ * frente a un error sin campo en pantalla que corregir.
+ */
+const NOTEBOOK_REMOTE_ONLY_FIELDS: FieldPath<NotebookFormData>[] = [
+	'non_functional_keys_count',
+	'speakers_condition',
+];
+
 const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 	'basic-info': ['brand', 'model', 'line'],
 	hardware: [
@@ -242,9 +253,21 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		}
 	}, [normalizedDefaultValues, reset]);
 
+	// Los campos que dependen del schema remoto sólo se validan si están en pantalla.
+	const sectionFields = useMemo<Record<string, FieldPath<NotebookFormData>[]>>(
+		() => ({
+			...NOTEBOOK_SECTION_FIELDS,
+			input: NOTEBOOK_SECTION_FIELDS.input.filter(
+				(field) =>
+					!NOTEBOOK_REMOTE_ONLY_FIELDS.includes(field) || Boolean(schemaFields?.[field]),
+			),
+		}),
+		[schemaFields],
+	);
+
 	// Handle finish
 	const validateStep = async (sectionKey: string) => {
-		const stepFields = NOTEBOOK_SECTION_FIELDS[sectionKey] ?? [];
+		const stepFields = sectionFields[sectionKey] ?? [];
 		const currentValues = getValues();
 
 		for (const field of stepFields) {

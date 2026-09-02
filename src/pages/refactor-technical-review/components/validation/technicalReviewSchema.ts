@@ -46,6 +46,8 @@ export const getSchemaFieldOptions = (
 export interface SchemaFieldFallback {
 	label: string;
 	options: Array<{ value: string; label: string }>;
+	/** Obligatoriedad conocida localmente, usada cuando el backend no publica `required`. */
+	required?: boolean;
 }
 
 export interface ResolvedSchemaField {
@@ -53,6 +55,8 @@ export interface ResolvedSchemaField {
 	options: Array<{ value: string; label: string }>;
 	hint?: string;
 	warning?: string;
+	/** Obligatoriedad efectiva: manda el `required` publicado por el backend. */
+	required: boolean;
 	/** `true` cuando la metadata proviene del respaldo local y no del backend. */
 	isFallback: boolean;
 }
@@ -69,6 +73,7 @@ export const resolveSchemaField = (
 		options: hasRemoteOptions ? remoteOptions : fallback.options,
 		hint: field?.hint,
 		warning: field?.warning,
+		required: field?.required ?? fallback.required ?? false,
 		isFallback: !hasRemoteOptions,
 	};
 };

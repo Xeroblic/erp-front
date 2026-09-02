@@ -16,6 +16,7 @@ import {
 	filterTechnicalReviewPayload,
 	HARDWARE_NULLABLE_FIELDS,
 } from '@/utils/technicalReviewHardware';
+import { getEquipmentFieldLabel } from '../components/translations/equipment.labels';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,6 +51,36 @@ export interface UseAutoSaveReturn {
 	/** Dismiss the idle-save modal */
 	dismissIdleSaveModal: () => void;
 }
+
+// ─── Aviso de campos descartados ─────────────────────────────────────────────
+
+const MAX_LISTED_FIELDS = 3;
+
+/**
+ * El reintento saneado quita los valores que el backend no acepta y recién entonces
+ * guarda, así que el badge termina diciendo «Guardado» sobre una revisión a la que le
+ * falta lo que el técnico eligió. Nombrar los campos es la única señal de que quedaron
+ * sin registrar, y por eso el aviso también aparece en los guardados silenciosos: lo
+ * silencioso es el éxito, no la pérdida de un dato.
+ */
+const buildDroppedFieldsMessage = (fields: string[], equipmentType?: string): string => {
+	const labels = fields.map((field) => getEquipmentFieldLabel(field, equipmentType));
+	const listed = labels.slice(0, MAX_LISTED_FIELDS).join(', ');
+	const rest = labels.length - MAX_LISTED_FIELDS;
+	const detail = rest > 0 ? `${listed} y ${rest} más` : listed;
+	const tail =
+		labels.length === 1
+			? 'ese campo quedó sin registrar'
+			: 'esos campos quedaron sin registrar';
+
+	return `Se guardó la revisión, pero el backend no aceptó ${detail}: ${tail}. Revísalo y vuelve a elegir un valor.`;
+};
+
+/** Campos que el payload saneado dejó de enviar respecto del original. */
+const getDroppedFields = (
+	rawPayload: Record<string, unknown>,
+	transformedPayload: Record<string, unknown>,
+): string[] => Object.keys(rawPayload).filter((field) => !(field in transformedPayload));
 
 // ─── Activity events to listen for ───────────────────────────────────────────
 const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
@@ -198,6 +229,12 @@ export const useAutoSave = ({
 
 					lastSnapshotRef.current = transformedSnapshot;
 					setLastSavedAt(new Date());
+
+					const droppedFields = getDroppedFields(rawPayload, transformedPayload);
+					if (droppedFields.length > 0) {
+						toast.warning(buildDroppedFieldsMessage(droppedFields, equipmentType));
+					}
+
 					return true;
 				} catch (transformedError: unknown) {
 					const msg =

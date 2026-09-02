@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
@@ -46,6 +46,7 @@ const NOTEBOOK_SCHEMA: ITechnicalReviewSchema = {
 	hinge_condition: {
 		type: 'string',
 		label: 'Bisagras',
+		required: true,
 		options: [{ value: 'loose', label: 'Suelta' }],
 	},
 	speakers_condition: {
@@ -58,6 +59,12 @@ const NOTEBOOK_SCHEMA: ITechnicalReviewSchema = {
 const DESKTOP_SCHEMA: ITechnicalReviewSchema = {
 	powers_on: { type: 'boolean', label: '¿Enciende?' },
 };
+
+/** Opciones de un campo concreto, no la unión de la sección. */
+const optionValuesOf = (fieldLabel: string): string[] =>
+	within(screen.getByRole('radiogroup', { name: new RegExp(fieldLabel) }))
+		.getAllByRole('radio')
+		.map((option) => option.dataset.value ?? '');
 
 describe('ZF-48 schema fields', () => {
 	it('derives the keyboard checkbox from the persisted count', () => {
@@ -136,13 +143,43 @@ describe('ZF-48 schema fields', () => {
 		expect(screen.getAllByText('Touchpad').length).toBeGreaterThan(0);
 		expect(screen.getAllByText('Bisagras').length).toBeGreaterThan(0);
 
-		// Cada campo obligatorio ofrece sus cuatro opciones locales.
-		const optionValues = screen
-			.getAllByRole('radio')
-			.map((option) => option.dataset.value ?? '');
-		['ok', 'worn', 'missing_pieces', 'broken'].forEach((expected) => {
-			expect(optionValues).toContain(expected);
-		});
+		// Las opciones se comprueban campo por campo: la unión de todos los radios de la
+		// sección daba por buena cualquier opción con tal de que existiera en algún otro
+		// campo, y así fijó en verde un valor que el backend rechaza.
+		expect(optionValuesOf('Teclado')).toEqual(['ok', 'worn', 'missing_pieces', 'broken']);
+		expect(optionValuesOf('Touchpad')).toEqual(['ok', 'worn', 'missing_pieces', 'broken']);
+		// B1-bis: la bisagra tiene su propio contrato (`CONDITION_HINGE`). No admite
+		// `missing_pieces` y sí los dos estados de grado C que ZB-89 separó.
+		expect(optionValuesOf('Bisagras')).toEqual(['ok', 'worn', 'cracked', 'loose', 'broken']);
+	});
+
+	it('marks the required fields from the published schema', () => {
+		const Harness = () => {
+			const form = useForm<NotebookFormData>();
+			return (
+				<InputSection
+					control={form.control}
+					errors={form.formState.errors}
+					readOnly={false}
+					watch={form.watch}
+					setValue={form.setValue}
+					schemaFields={NOTEBOOK_SCHEMA}
+				/>
+			);
+		};
+
+		render(<Harness />);
+
+		// `required` lo publica el backend; sin consumirlo el asterisco quedaba fijo en
+		// el teclado y nunca aparecía en bisagras, que también es obligatorio.
+		expect(screen.getByRole('radiogroup', { name: /Bisagras/ })).toHaveAttribute(
+			'aria-required',
+			'true',
+		);
+		expect(screen.getByRole('radiogroup', { name: /Parlantes/ })).toHaveAttribute(
+			'aria-required',
+			'false',
+		);
 	});
 
 	it('keeps the desktop power question visible without a remote schema', () => {

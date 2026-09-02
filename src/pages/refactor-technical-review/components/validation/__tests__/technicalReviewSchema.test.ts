@@ -54,8 +54,18 @@ describe('technicalReviewSchema', () => {
 			options: fallback.options,
 			hint: undefined,
 			warning: undefined,
+			required: false,
 			isFallback: true,
 		});
+	});
+
+	it('keeps the local requiredness when the backend does not publish it', () => {
+		const resolved = resolveSchemaField(
+			{ type: 'string', label: 'Bisagras', options: [{ value: 'ok', label: 'Sin daño' }] },
+			{ label: 'Bisagras', options: [], required: true },
+		);
+
+		expect(resolved.required).toBe(true);
 	});
 
 	it('prefers the remote metadata when the backend publishes options', () => {
@@ -64,9 +74,10 @@ describe('technicalReviewSchema', () => {
 				type: 'string',
 				label: 'Estado de bisagras',
 				hint: 'Revisa el juego lateral.',
+				required: true,
 				options: [{ value: 'loose', label: 'Suelta' }],
 			},
-			{ label: 'Bisagras', options: [{ value: 'ok', label: 'Sin daño' }] },
+			{ label: 'Bisagras', options: [{ value: 'ok', label: 'Sin daño' }], required: false },
 		);
 
 		expect(resolved).toEqual({
@@ -74,6 +85,7 @@ describe('technicalReviewSchema', () => {
 			options: [{ value: 'loose', label: 'Suelta' }],
 			hint: 'Revisa el juego lateral.',
 			warning: undefined,
+			required: true,
 			isFallback: false,
 		});
 	});

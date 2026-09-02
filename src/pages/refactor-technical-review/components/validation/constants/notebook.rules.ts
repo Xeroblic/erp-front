@@ -195,7 +195,11 @@ export const ALLOWED_KEYBOARD_CONDITIONS = ['ok', 'worn', 'missing_pieces', 'bro
 
 export const ALLOWED_KEYBOARD_LAYOUTS = ['es', 'us', 'latam'] as const;
 
-export const ALLOWED_HINGE_CONDITIONS = ['ok', 'worn', 'missing_pieces', 'broken'] as const;
+// La bisagra no usa el contrato de componente genérico: ZB-89 le dio el suyo
+// (`CONDITION_HINGE`), que reemplaza `missing_pieces` por los dos estados que limitan
+// a grado C, `cracked` y `loose`. Enviar `missing_pieces` produce un rechazo del
+// backend, y omitir los otros dos deja el caso imposible de registrar.
+export const ALLOWED_HINGE_CONDITIONS = ['ok', 'worn', 'cracked', 'loose', 'broken'] as const;
 
 export const ALLOWED_BATTERY_STATUSES = [
 	'excellent',

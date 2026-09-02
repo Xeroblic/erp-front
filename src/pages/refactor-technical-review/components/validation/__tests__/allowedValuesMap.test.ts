@@ -23,6 +23,11 @@ const REMOTE_SCHEMA: ITechnicalReviewSchema = {
 		label: 'Parlantes',
 		allowed_values: ['ok', 'broken'],
 	},
+	touchpad_condition: {
+		type: 'string',
+		label: 'Touchpad',
+		allowed_values: ['ok', 'worn', 'missing_pieces', 'scratched', 'broken'],
+	},
 	powers_on: { type: 'boolean', label: '¿Enciende?' },
 };
 
@@ -31,6 +36,7 @@ describe('buildRemoteAllowedValuesMap', () => {
 		expect(buildRemoteAllowedValuesMap(REMOTE_SCHEMA)).toEqual({
 			hinge_condition: ['ok', 'loose', 'broken'],
 			speakers_condition: ['ok', 'broken'],
+			touchpad_condition: ['ok', 'worn', 'missing_pieces', 'scratched', 'broken'],
 		});
 	});
 
@@ -48,19 +54,36 @@ describe('buildRemoteAllowedValuesMap', () => {
 
 describe('sanitizeByAllowedValues', () => {
 	it('drops a dynamic value when only the local map is available', () => {
-		const result = sanitizeByAllowedValues({ hinge_condition: 'loose' }, 'notebook');
+		const result = sanitizeByAllowedValues({ touchpad_condition: 'scratched' }, 'notebook');
 
-		expect(result).not.toHaveProperty('hinge_condition');
+		expect(result).not.toHaveProperty('touchpad_condition');
 	});
 
 	it('keeps a dynamic value published by the backend', () => {
 		const result = sanitizeByAllowedValues(
-			{ hinge_condition: 'loose' },
+			{ touchpad_condition: 'scratched' },
 			'notebook',
 			buildRemoteAllowedValuesMap(REMOTE_SCHEMA),
 		);
 
-		expect(result.hinge_condition).toBe('loose');
+		expect(result.touchpad_condition).toBe('scratched');
+	});
+
+	/**
+	 * B1-bis: el respaldo local de bisagras estaba congelado en el contrato de
+	 * componente genérico. Ofrecía `missing_pieces`, que `CONDITION_HINGE` rechaza, y
+	 * escondía los dos estados que limitan a grado C.
+	 */
+	it('matches the hinge contract of the backend without a remote schema', () => {
+		expect(sanitizeByAllowedValues({ hinge_condition: 'cracked' }, 'notebook')).toEqual({
+			hinge_condition: 'cracked',
+		});
+		expect(sanitizeByAllowedValues({ hinge_condition: 'loose' }, 'notebook')).toEqual({
+			hinge_condition: 'loose',
+		});
+		expect(
+			sanitizeByAllowedValues({ hinge_condition: 'missing_pieces' }, 'notebook'),
+		).not.toHaveProperty('hinge_condition');
 	});
 
 	it('still strips a value the backend does not accept', () => {

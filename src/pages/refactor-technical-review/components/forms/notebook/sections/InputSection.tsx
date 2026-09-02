@@ -29,17 +29,22 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	// Los tres campos que ZF-48 pasó a opciones dinámicas conservan su respaldo local:
 	// sin schema remoto seguían siendo obligatorios pero quedaban sin opciones y sin
 	// título, dejando la revisión imposible de completar.
+	// `required` del respaldo replica lo que exige `notebookSchema`; si el backend
+	// publica el suyo, manda el remoto.
 	const keyboard = resolveSchemaField(schemaFields?.keyboard_condition, {
 		label: 'Teclado',
 		options: KEYBOARD_CONDITION_OPTIONS,
+		required: true,
 	});
 	const touchpad = resolveSchemaField(schemaFields?.touchpad_condition, {
 		label: 'Touchpad',
 		options: TOUCHPAD_CONDITION_OPTIONS,
+		required: true,
 	});
 	const hinge = resolveSchemaField(schemaFields?.hinge_condition, {
 		label: 'Bisagras',
 		options: HINGE_CONDITION_OPTIONS,
+		required: true,
 	});
 	const keysCountField = schemaFields?.non_functional_keys_count;
 	// `speakers_condition` nace con ZF-48: no hay constante local con sus valores, e
@@ -72,10 +77,17 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 						{/* Condition */}
 						<div>
-							<p className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
-								{keyboard.label} <span className='text-red-500'>*</span>
+							<p
+								className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'
+								id='keyboard-condition-label'>
+								{keyboard.label}
+								{keyboard.required && <span className='text-red-500'> *</span>}
 							</p>
-							<div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
+							<div
+								role='radiogroup'
+								aria-labelledby='keyboard-condition-label'
+								aria-required={keyboard.required}
+								className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
 								{keyboard.options.map((opt) => (
 									<SelectionCard
 										key={opt.value}
@@ -259,12 +271,19 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'>
 							<Icon icon='HeroHandRaised' className='h-6 w-6' />
 						</div>
-						<h3 className='text-lg font-bold text-zinc-900 dark:text-zinc-100'>
+						<h3
+							className='text-lg font-bold text-zinc-900 dark:text-zinc-100'
+							id='touchpad-condition-label'>
 							{touchpad.label}
+							{touchpad.required && <span className='text-red-500'> *</span>}
 						</h3>
 					</div>
 
-					<div className='mt-10 grid grid-cols-2 gap-3'>
+					<div
+						role='radiogroup'
+						aria-labelledby='touchpad-condition-label'
+						aria-required={touchpad.required}
+						className='mt-10 grid grid-cols-2 gap-3'>
 						{touchpad.options.map((opt) => (
 							<SelectionCard
 								key={opt.value}
@@ -288,12 +307,21 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								<Icon icon='HeroSpeakerWave' className='h-6 w-6' />
 							</div>
 							<div>
-								<h3 className='text-lg font-bold text-zinc-900 dark:text-zinc-100'>
+								<h3
+									className='text-lg font-bold text-zinc-900 dark:text-zinc-100'
+									id='speakers-condition-label'>
 									{speakersField.label}
+									{speakersField.required && (
+										<span className='text-red-500'> *</span>
+									)}
 								</h3>
 							</div>
 						</div>
-						<div className='mt-10 grid grid-cols-1 gap-2 sm:grid-cols-2'>
+						<div
+							role='radiogroup'
+							aria-labelledby='speakers-condition-label'
+							aria-required={speakersField.required ?? false}
+							className='mt-10 grid grid-cols-1 gap-2 sm:grid-cols-2'>
 							{getSchemaFieldOptions(speakersField).map((opt) => (
 								<SelectionCard
 									key={opt.value}
@@ -364,10 +392,17 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 						{/* Hinge */}
 						<div>
-							<p className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
+							<p
+								className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'
+								id='hinge-condition-label'>
 								{hinge.label}
+								{hinge.required && <span className='text-red-500'> *</span>}
 							</p>
-							<div className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'>
+							<div
+								role='radiogroup'
+								aria-labelledby='hinge-condition-label'
+								aria-required={hinge.required}
+								className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'>
 								{hinge.options.map((opt) => (
 									<SelectionCard
 										key={opt.value}

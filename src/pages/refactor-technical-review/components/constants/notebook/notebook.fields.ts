@@ -139,8 +139,8 @@ export const NOTEBOOK_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Bisagras',
 		group: 'Carcasa',
-		allowed_values: ['ok', 'worn', 'missing_pieces', 'broken'],
-		hint: 'Estado de las bisagras de apertura/cierre',
+		allowed_values: ['ok', 'worn', 'cracked', 'loose', 'broken'],
+		hint: 'Estado de las bisagras de apertura/cierre. Trizada y suelta limitan a grado C; rota es grado M',
 	},
 	battery_health: {
 		type: 'string',
