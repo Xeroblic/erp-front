@@ -59,7 +59,6 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 								vga_ports: 0,
 								hdmi_ports: 0,
 								displayport_ports: 0,
-								dvi_ports: 0,
 								type_c_ports: 0,
 								usb_c_ports: 0,
 								rj45_ports: 0,

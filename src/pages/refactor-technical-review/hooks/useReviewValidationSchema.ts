@@ -2,8 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EquipmentType, ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { useAppDispatch } from '@/store';
 import { fetchValidationRulesByType } from '@/store/slices/technicalReviews';
+import { normalizeEquipmentType } from '../components/validation/technicalReviewSchema';
 
-const SUPPORTED_EQUIPMENT_TYPES = new Set<EquipmentType>(['notebook', 'desktop']);
+// ZF-98 sumó campos de puertos a los cinco tipos, así que el schema ya no es cosa sólo de
+// notebook y desktop. El thunk cachea por TTL y deduplica, de modo que abrir tres tipos más
+// no multiplica las peticiones al revisar un lote.
+const SUPPORTED_EQUIPMENT_TYPES = new Set<EquipmentType>([
+	'notebook',
+	'desktop',
+	'aio',
+	'docking',
+	'monitor',
+]);
 
 interface UseReviewValidationSchemaParams {
 	equipmentType: string;
@@ -29,7 +39,7 @@ const useReviewValidationSchema = ({
 	const [error, setError] = useState<string | null>(null);
 	const [retryVersion, setRetryVersion] = useState(0);
 	const requestIdRef = useRef(0);
-	const normalizedType = equipmentType.toLowerCase() as EquipmentType;
+	const normalizedType = normalizeEquipmentType(equipmentType) as EquipmentType;
 
 	const retry = useCallback(() => setRetryVersion((version) => version + 1), []);
 

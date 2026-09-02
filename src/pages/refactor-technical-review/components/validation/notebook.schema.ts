@@ -17,6 +17,7 @@ import {
 	BATTERY_PERCENTAGE_MIN,
 	BATTERY_PERCENTAGE_MAX,
 } from './constants/notebook.rules';
+import type { PortTypeCounts } from './constants/ports.rules';
 
 const isDellBrand = (brand: unknown): boolean =>
 	typeof brand === 'string' && brand.toLowerCase().includes('dell');
@@ -96,9 +97,10 @@ export const notebookSchema = Yup.object({
 		}),
 
 	// ─── Pantalla ────────────────────────────────────────────────────────────
-	screen_condition: Yup.string()
-		.oneOf([...ALLOWED_SCREEN_CONDITIONS], 'Condición de pantalla no válida')
-		.required('La condición de pantalla es obligatoria'),
+	// ZF-98 pasó las opciones de pantalla al schema remoto (ahí nace `keyboard_marks`).
+	// Mantener acá el `oneOf` local dejaría dos fuentes de verdad y rechazaría un valor
+	// que el backend sí publica; el filtro por catálogo lo hace `sanitizeByAllowedValues`.
+	screen_condition: Yup.string().required('La condición de pantalla es obligatoria'),
 
 	screen_defects_count: Yup.number().nullable().strip(), // Deprecated/Internal only if needed, but we should use specific fields now
 	dead_pixels_count: Yup.number()
@@ -155,6 +157,10 @@ export const notebookSchema = Yup.object({
 		.required('La distribución del teclado es obligatoria'),
 
 	hinge_condition: Yup.string().required('La condición de bisagras es obligatoria'),
+
+	// ZF-98. La cubierta del teclado (palmrest) es nullable en el backend y no figura en
+	// `COMPLETION_REQUIREMENTS`: no se exige para cerrar la revisión.
+	keyboard_cover_condition: Yup.string().nullable(),
 
 	touchpad_condition: Yup.string().required('La condición del touchpad es obligatoria'),
 
@@ -237,6 +243,22 @@ export const notebookSchema = Yup.object({
 	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 
 	all_ports_functional: Yup.boolean().nullable(),
+
+	// ─── Puertos sueltos y detalle de puertos (ZF-98) ────────────────────────
+	// El backend los declara nullable y no los exige al cerrar la revisión
+	// (`COMPLETION_REQUIREMENTS` no los incluye), así que acá tampoco son obligatorios:
+	// exigirlos bloquearía revisiones que el backend sí acepta.
+	// Total derivado del desglose: el servidor lo calcula y el formulario sólo lo
+	// muestra, así que no lleva reglas propias.
+	loose_ports_count: Yup.number().nullable(),
+
+	// Desglose `{tipo: cantidad}`. El catálogo y los límites por tipo los publica el
+	// schema del backend; repetirlos acá crearía una segunda fuente de verdad que
+	// rechazaría cualquier tipo nuevo. El formulario ya no puede producir un valor
+	// fuera de rango: cada contador está acotado por la metadata del schema.
+	loose_port_types: Yup.mixed<PortTypeCounts>().nullable(),
+
+	defective_port_types: Yup.mixed<PortTypeCounts>().nullable(),
 
 	defective_ports_count: Yup.number()
 		.typeError('Debe ser un número')

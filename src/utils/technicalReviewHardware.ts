@@ -25,6 +25,15 @@ export const applyHardwareAbsenceToPayload = (
 		: {}),
 });
 
+/**
+ * Campos que el servidor calcula a partir de otros y que el formulario sólo muestra.
+ *
+ * `loose_ports_count` deriva del desglose `loose_port_types`; el schema lo publica con
+ * `derived_from` y su hint pide explícitamente no enviarlo. Sigue viviendo en el estado del
+ * formulario porque se hidrata desde la respuesta, así que hay que quitarlo del payload.
+ */
+export const DERIVED_TECHNICAL_REVIEW_FIELDS = ['loose_ports_count'] as const;
+
 export const filterTechnicalReviewPayload = (
 	data: Record<string, unknown>,
 	nullableFields: readonly string[],
@@ -33,6 +42,7 @@ export const filterTechnicalReviewPayload = (
 
 	return Object.fromEntries(
 		Object.entries(normalizedData).filter(([key, value]) => {
+			if (DERIVED_TECHNICAL_REVIEW_FIELDS.includes(key as 'loose_ports_count')) return false;
 			if (nullableFields.includes(key)) return value !== undefined && value !== '';
 			return value !== null && value !== undefined && value !== '';
 		}),

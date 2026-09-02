@@ -33,6 +33,10 @@ import {
 } from '@/pages/refactor-technical-review/components/translations/docking.labels';
 import { EQUIPMENT_TYPE_OPTIONS } from '@/pages/refactor-technical-review/components/constants/technicalReview.constants';
 import { COMMERCIAL_STATUS_CONFIG } from '@/pages/refactor-technical-review/components/constants/statuses.constant';
+import {
+	ALLOWED_PORT_TYPES,
+	PORT_TYPE_LABELS,
+} from '../../../../components/validation/constants/ports.rules';
 
 /** Mapa de funciones de label por tipo de equipo */
 const LABEL_GETTERS: Record<EquipmentType, (field: string) => string> = {
@@ -103,6 +107,10 @@ const VALUE_TRANSLATIONS: Record<string, string> = {
 	false: 'No',
 	null: '-',
 
+	// Tipos de puerto y valores nuevos de ZF-98
+	...PORT_TYPE_LABELS,
+	keyboard_marks: 'Marcas del teclado',
+
 	// Tecnologías
 	m2: 'M.2',
 	ssd: 'SSD',
@@ -139,9 +147,35 @@ export type TranslatableValue =
 	| undefined
 	| { value?: string; label?: string; description?: string };
 
+/**
+ * Un desglose `{tipo: cantidad}`.
+ *
+ * Se exige que las claves sean del catálogo de puertos, no sólo que los valores sean
+ * números: `translateValue` es genérico y un objeto cualquiera con un número adentro
+ * —`{ value: 1 }`, por ejemplo— caería acá y se mostraría como si fuera un desglose.
+ */
+const isPortTypeCounts = (value: unknown): value is Record<string, number> =>
+	typeof value === 'object' &&
+	value !== null &&
+	!Array.isArray(value) &&
+	Object.entries(value).every(
+		([type, count]) =>
+			(ALLOWED_PORT_TYPES as readonly string[]).includes(type) && typeof count === 'number',
+	);
+
 /** Traduce un valor (string, objeto o booleano) a su representación legible */
 export const translateValue = (value: unknown): string => {
 	if (value === null || value === undefined) return '-';
+
+	// El desglose de puertos es un mapa `{tipo: cantidad}`. Sin este caso caía en la rama
+	// genérica de objeto y el resumen mostraba «-» sobre un campo que el técnico llenó.
+	if (isPortTypeCounts(value)) {
+		const entries = Object.entries(value);
+		if (entries.length === 0) return 'Ninguno';
+		return entries
+			.map(([type, count]) => `${VALUE_TRANSLATIONS[type] ?? type} (${count})`)
+			.join(', ');
+	}
 
 	// Si es un objeto con propiedades conocidas, extraer el valor
 	if (typeof value === 'object' && value !== null) {

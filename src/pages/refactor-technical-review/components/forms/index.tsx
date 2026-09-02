@@ -63,22 +63,23 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 		schemaFields,
 	};
 
-	const schemaStatus = (type === 'notebook' || type === 'desktop') &&
-		(schemaLoading || schemaError) && (
-			<div
-				className='mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900'
-				role='status'>
-				{schemaLoading && 'Cargando las reglas actuales del formulario…'}
-				{schemaError && (
-					<div className='flex items-center justify-between gap-3'>
-						<span>{schemaError}</span>
-						<button type='button' className='underline' onClick={onRetrySchema}>
-							Reintentar
-						</button>
-					</div>
-				)}
-			</div>
-		);
+	// ZF-98 llevó los campos del schema a los cinco tipos, así que el aviso de carga y el
+	// reintento dejan de ser exclusivos de notebook y desktop.
+	const schemaStatus = (schemaLoading || schemaError) && (
+		<div
+			className='mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900'
+			role='status'>
+			{schemaLoading && 'Cargando las reglas actuales del formulario…'}
+			{schemaError && (
+				<div className='flex items-center justify-between gap-3'>
+					<span>{schemaError}</span>
+					<button type='button' className='underline' onClick={onRetrySchema}>
+						Reintentar
+					</button>
+				</div>
+			)}
+		</div>
+	);
 
 	switch (type) {
 		case 'notebook':
@@ -99,13 +100,28 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 
 		case 'aio':
 		case 'all-in-one':
-			return <AioForm {...formProps} />;
+			return (
+				<>
+					{schemaStatus}
+					<AioForm {...formProps} />
+				</>
+			);
 
 		case 'docking':
-			return <DockingForm {...formProps} />;
+			return (
+				<>
+					{schemaStatus}
+					<DockingForm {...formProps} />
+				</>
+			);
 
 		case 'monitor':
-			return <MonitorForm {...formProps} />;
+			return (
+				<>
+					{schemaStatus}
+					<MonitorForm {...formProps} />
+				</>
+			);
 
 		default:
 			return (

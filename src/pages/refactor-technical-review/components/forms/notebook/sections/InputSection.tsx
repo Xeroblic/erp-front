@@ -13,6 +13,7 @@ import {
 	KEYBOARD_CONDITION_OPTIONS,
 	TOUCHPAD_CONDITION_OPTIONS,
 	HINGE_CONDITION_OPTIONS,
+	KEYBOARD_COVER_CONDITION_OPTIONS,
 } from '../../../constants/notebook/notebook.options';
 import {
 	getSchemaFieldOptions,
@@ -45,6 +46,14 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 		label: 'Bisagras',
 		options: HINGE_CONDITION_OPTIONS,
 		required: true,
+	});
+	// ZF-98. La cubierta del teclado (palmrest) no es la tapa superior ni la bisagra: es su
+	// propio contrato, con su propio orden de gravedad — acá `cracked` es más leve que
+	// `broken`, al revés que en la bisagra. El backend la declara nullable y no la exige
+	// al cerrar la revisión, así que el respaldo local tampoco la marca obligatoria.
+	const keyboardCover = resolveSchemaField(schemaFields?.keyboard_cover_condition, {
+		label: 'Cubierta del teclado',
+		options: KEYBOARD_COVER_CONDITION_OPTIONS,
 	});
 	const keysCountField = schemaFields?.non_functional_keys_count;
 	// `speakers_condition` nace con ZF-48: no hay constante local con sus valores, e
@@ -418,6 +427,43 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</div>
 							{hinge.hint && (
 								<p className='mt-2 text-xs text-zinc-500'>{hinge.hint}</p>
+							)}
+						</div>
+
+						{/* Keyboard cover / palmrest (ZF-98) */}
+						<div>
+							<p
+								className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'
+								id='keyboard-cover-condition-label'>
+								{keyboardCover.label}
+								{keyboardCover.required && <span className='text-red-500'> *</span>}
+							</p>
+							<div
+								role='radiogroup'
+								aria-labelledby='keyboard-cover-condition-label'
+								aria-required={keyboardCover.required}
+								className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'>
+								{keyboardCover.options.map((opt) => (
+									<SelectionCard
+										key={opt.value}
+										label={opt.label}
+										value={opt.value}
+										isSelected={watch('keyboard_cover_condition') === opt.value}
+										onClick={() =>
+											!readOnly &&
+											setValue('keyboard_cover_condition', opt.value)
+										}
+										variant='compact'
+									/>
+								))}
+							</div>
+							{errors.keyboard_cover_condition && (
+								<p className='mt-2 text-xs text-red-500'>
+									{errors.keyboard_cover_condition.message}
+								</p>
+							)}
+							{keyboardCover.hint && (
+								<p className='mt-2 text-xs text-zinc-500'>{keyboardCover.hint}</p>
 							)}
 						</div>
 

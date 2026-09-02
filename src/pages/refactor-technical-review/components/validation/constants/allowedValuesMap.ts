@@ -23,6 +23,7 @@ import {
 	ALLOWED_TOUCHPAD_CONDITIONS as NB_TOUCHPAD,
 	ALLOWED_BOTTOM_CONDITIONS as NB_BOTTOM,
 	ALLOWED_KEYBOARD_LAYOUTS as NB_KB_LAYOUT,
+	ALLOWED_KEYBOARD_COVER_CONDITIONS as NB_KB_COVER,
 } from './notebook.rules';
 
 import {
@@ -72,6 +73,7 @@ const NOTEBOOK_ALLOWED: AllowedValuesMap = {
 	second_battery_status: NB_BATTERY,
 	touchpad_condition: NB_TOUCHPAD,
 	bottom_condition: NB_BOTTOM,
+	keyboard_cover_condition: NB_KB_COVER,
 };
 
 const DESKTOP_ALLOWED: AllowedValuesMap = {

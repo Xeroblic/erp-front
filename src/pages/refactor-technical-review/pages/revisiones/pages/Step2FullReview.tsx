@@ -17,10 +17,12 @@ import {
 } from '../../../components/validation/constants/allowedValuesMap';
 import Icon from '@/components/icon/Icon';
 import useReviewValidationSchema from '../../../hooks/useReviewValidationSchema';
+import { normalizePortTypeCounts } from '../../../components/validation/constants/ports.rules';
 import {
+	EXPECTED_SCHEMA_FIELDS_BY_TYPE,
+	normalizeEquipmentType,
+	REQUIRED_SCHEMA_FIELDS_BY_TYPE,
 	selectTechnicalReviewSchemaFields,
-	ZF48_DESKTOP_FIELDS,
-	ZF48_NOTEBOOK_FIELDS,
 } from '../../../components/validation/technicalReviewSchema';
 
 interface Step2FullReviewProps {
@@ -45,6 +47,9 @@ const EQUIPMENT_LABEL_MAP: Record<string, string> = {
 	monitor: 'Monitor',
 };
 
+/** Campos cuyo valor es un desglose `{tipo: cantidad}`. */
+const PORT_BREAKDOWN_FIELDS = ['loose_port_types', 'defective_port_types'] as const;
+
 const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	equipmentType,
 	serialNumber,
@@ -63,21 +68,23 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		branchId: branchId ?? null,
 		subsidiaryId: subsidiaryId ?? null,
 	});
+	const normalizedEquipmentType = normalizeEquipmentType(equipmentType);
 	const schemaFields = React.useMemo(() => {
 		if (!reviewSchema.schema) return undefined;
-		const fields =
-			equipmentType.toLowerCase() === 'notebook' ? ZF48_NOTEBOOK_FIELDS : ZF48_DESKTOP_FIELDS;
+		const fields = EXPECTED_SCHEMA_FIELDS_BY_TYPE[normalizedEquipmentType] ?? [];
 		return selectTechnicalReviewSchemaFields(reviewSchema.schema, fields);
-	}, [equipmentType, reviewSchema.schema]);
+	}, [normalizedEquipmentType, reviewSchema.schema]);
 	const schemaContractError = React.useMemo(() => {
 		if (!reviewSchema.schema) return null;
-		const expectedFields =
-			equipmentType.toLowerCase() === 'notebook' ? ZF48_NOTEBOOK_FIELDS : ZF48_DESKTOP_FIELDS;
-		const missingFields = expectedFields.filter((field) => !schemaFields?.[field]);
+		// Sólo los campos sin respaldo local rompen el contrato. Los de ZF-98 degradan a las
+		// constantes locales, así que un backend sin la fase F3 desplegada no debe pintar un
+		// error que el técnico no puede resolver.
+		const requiredFields = REQUIRED_SCHEMA_FIELDS_BY_TYPE[normalizedEquipmentType] ?? [];
+		const missingFields = requiredFields.filter((field) => !schemaFields?.[field]);
 		return missingFields.length > 0
 			? 'El backend activo aún no publica los campos requeridos para esta revisión. Contacta a soporte técnico.'
 			: null;
-	}, [equipmentType, reviewSchema.schema, schemaFields]);
+	}, [normalizedEquipmentType, reviewSchema.schema, schemaFields]);
 	// const { isSuperAdmin, hasRole } = useAuthorization();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [showSavingBadge, setShowSavingBadge] = useState(false);
@@ -189,7 +196,18 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 			}
 		}
 
-		return { ...result, ...prefillMergeValues };
+		const merged: Record<string, unknown> = { ...result, ...prefillMergeValues };
+
+		// Las revisiones guardadas antes del contrato de mapa traen el desglose como lista
+		// de tipos (`['hdmi','usb_c']`), que el backend ahora rechaza con 422. Se normaliza
+		// al hidratar para que el formulario nunca sostenga la forma vieja.
+		const normalizedBreakdowns = Object.fromEntries(
+			PORT_BREAKDOWN_FIELDS.filter(
+				(field) => merged[field] !== undefined && merged[field] !== null,
+			).map((field) => [field, normalizePortTypeCounts(merged[field])] as const),
+		);
+
+		return { ...merged, ...normalizedBreakdowns };
 	}, [initialData, prefillMergeValues]);
 
 	// ─── Final Submit (original behavior) ────────────────────────────────────

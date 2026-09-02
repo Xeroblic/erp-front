@@ -78,3 +78,32 @@ describe('applyHardwareAbsenceToPayload', () => {
 		).toEqual({ powers_on: false, non_functional_keys_count: 0 });
 	});
 });
+
+describe('filterTechnicalReviewPayload (campos derivados)', () => {
+	/**
+	 * `loose_ports_count` lo calcula el servidor a partir del desglose y su hint pide
+	 * explícitamente no enviarlo. Sigue en el estado del formulario porque se hidrata desde
+	 * la respuesta, así que sin este filtro viajaría en cada guardado.
+	 */
+	it('never sends the total the server derives from the breakdown', () => {
+		const payload = filterTechnicalReviewPayload(
+			{ loose_ports_count: 3, loose_port_types: { hdmi: 2, usb_c: 1 }, brand: 'Dell' },
+			HARDWARE_NULLABLE_FIELDS,
+		);
+
+		expect(payload).not.toHaveProperty('loose_ports_count');
+		expect(payload.loose_port_types).toEqual({ hdmi: 2, usb_c: 1 });
+		expect(payload.brand).toBe('Dell');
+	});
+
+	/** `{}` es «se midió, ninguno»; omitir el campo sería «no se midió». */
+	it('keeps an empty breakdown so the measurement is recorded', () => {
+		const payload = filterTechnicalReviewPayload(
+			{ loose_port_types: {}, defective_port_types: {} },
+			HARDWARE_NULLABLE_FIELDS,
+		);
+
+		expect(payload.loose_port_types).toEqual({});
+		expect(payload.defective_port_types).toEqual({});
+	});
+});

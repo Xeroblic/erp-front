@@ -12,6 +12,7 @@ import {
 	ALLOWED_KEYBOARD_CONDITIONS,
 	ALLOWED_KEYBOARD_LAYOUTS,
 	ALLOWED_HINGE_CONDITIONS,
+	ALLOWED_KEYBOARD_COVER_CONDITIONS,
 	ALLOWED_BATTERY_STATUSES,
 	ALLOWED_TOUCHPAD_CONDITIONS,
 	ALLOWED_BOTTOM_CONDITIONS,
@@ -31,6 +32,7 @@ export type CoverConditionValue = (typeof ALLOWED_COVER_CONDITIONS)[number];
 export type KeyboardConditionValue = (typeof ALLOWED_KEYBOARD_CONDITIONS)[number];
 export type KeyboardLayoutValue = (typeof ALLOWED_KEYBOARD_LAYOUTS)[number];
 export type HingeConditionValue = (typeof ALLOWED_HINGE_CONDITIONS)[number];
+export type KeyboardCoverConditionValue = (typeof ALLOWED_KEYBOARD_COVER_CONDITIONS)[number];
 export type BatteryStatusValue = (typeof ALLOWED_BATTERY_STATUSES)[number];
 export type TouchpadConditionValue = (typeof ALLOWED_TOUCHPAD_CONDITIONS)[number];
 export type BottomConditionValue = (typeof ALLOWED_BOTTOM_CONDITIONS)[number];
@@ -115,6 +117,15 @@ export const HINGE_CONDITION_OPTIONS: TypedOption<HingeConditionValue>[] = [
 	{ value: 'cracked', label: 'Trizada' },
 	{ value: 'loose', label: 'Suelta' },
 	{ value: 'broken', label: 'Rota' },
+];
+
+// ─── Cubierta del Teclado (palmrest) ──────────────────────────────────────────
+
+export const KEYBOARD_COVER_CONDITION_OPTIONS: TypedOption<KeyboardCoverConditionValue>[] = [
+	{ value: 'ok', label: 'Sin Daños' },
+	{ value: 'worn', label: 'Con Desgaste — Máximo Grado B' },
+	{ value: 'cracked', label: 'Trizada — Máximo Grado B' },
+	{ value: 'broken', label: 'Rota — Máximo Grado C' },
 ];
 
 // ─── Estado de Batería ────────────────────────────────────────────────────────

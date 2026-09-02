@@ -58,6 +58,9 @@ const DOCKING_SECTION_FIELDS: Record<string, FieldPath<DockingFormData>[]> = {
 		'usb_a_ports',
 		'all_ports_functional',
 		'defective_ports_count',
+		'loose_ports_count',
+		'loose_port_types',
+		'defective_port_types',
 	],
 	extras: ['has_wifi', 'includes_power_adapter', 'cover_condition', 'observations'],
 };

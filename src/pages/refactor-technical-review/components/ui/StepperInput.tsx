@@ -17,6 +17,15 @@ interface StepperInputProps {
 	min?: number;
 	/** Valor máximo permitido. Default: 99 */
 	max?: number;
+	/**
+	 * Qué se está contando, para nombrar los botones y el valor.
+	 *
+	 * Una grilla de contadores repite «Incrementar» tantas veces como tipos tenga, y
+	 * quien navega con lector de pantalla no puede saber cuál es cuál.
+	 */
+	label?: string;
+	/** Bloquea los dos botones en modo lectura. */
+	disabled?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -26,13 +35,17 @@ export const StepperInput: React.FC<StepperInputProps> = ({
 	onChange,
 	min = 0,
 	max = 99,
+	label,
+	disabled = false,
 }) => {
+	const describe = (action: string) => (label ? `${action} ${label}` : action);
+
 	const handleDecrement = () => {
-		if (value > min) onChange(value - 1);
+		if (!disabled && value > min) onChange(value - 1);
 	};
 
 	const handleIncrement = () => {
-		if (value < max) onChange(value + 1);
+		if (!disabled && value < max) onChange(value + 1);
 	};
 
 	return (
@@ -40,8 +53,8 @@ export const StepperInput: React.FC<StepperInputProps> = ({
 			<button
 				type='button'
 				onClick={handleDecrement}
-				disabled={value <= min}
-				aria-label='Decrementar'
+				disabled={disabled || value <= min}
+				aria-label={describe('Decrementar')}
 				className='flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-bold text-gray-700 shadow-sm transition hover:bg-gray-100 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-200'>
 				−
 			</button>
@@ -53,8 +66,8 @@ export const StepperInput: React.FC<StepperInputProps> = ({
 			<button
 				type='button'
 				onClick={handleIncrement}
-				disabled={value >= max}
-				aria-label='Incrementar'
+				disabled={disabled || value >= max}
+				aria-label={describe('Incrementar')}
 				className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50'>
 				+
 			</button>

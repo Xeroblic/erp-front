@@ -204,6 +204,13 @@ export interface UpdateItemDetailsPayload {
 	has_bluetooth?: boolean;
 	all_ports_functional?: boolean;
 	defective_ports_count?: number;
+	/** Desglose `{tipo: cantidad}` de los puertos que no funcionan. */
+	defective_port_types?: Record<string, number>;
+	/**
+	 * Desglose `{tipo: cantidad}` de los puertos que se mueven pero funcionan.
+	 * El total (`loose_ports_count`) lo deriva el servidor: no se envía.
+	 */
+	loose_port_types?: Record<string, number>;
 
 	// Notebook específicos
 	includes_charger?: boolean;
@@ -219,6 +226,8 @@ export interface UpdateItemDetailsPayload {
 	touchpad_condition?: string;
 	cover_condition?: string;
 	hinge_condition?: string;
+	/** ZF-98: palmrest del notebook, distinto de `cover_condition` y de `hinge_condition`. */
+	keyboard_cover_condition?: string;
 	speakers_condition?: string;
 	powers_on?: boolean;
 	bottom_condition?: string;
@@ -305,9 +314,17 @@ export interface ITechnicalReviewSchemaField {
 	label?: string;
 	group?: string;
 	allowed_values?: Array<string | number>;
+	/** Campos de tipo objeto (`{tipo: cantidad}`): claves aceptadas, en vez de valores. */
+	allowed_keys?: string[];
+	value_type?: string;
+	value_min?: number;
+	value_max?: number;
 	options?: ITechnicalReviewSchemaOption[];
 	required?: boolean;
 	min?: number;
+	max?: number;
+	/** Presente cuando el servidor calcula el campo: es de sólo lectura y no se envía. */
+	derived_from?: string;
 	hint?: string;
 	warning?: string;
 }

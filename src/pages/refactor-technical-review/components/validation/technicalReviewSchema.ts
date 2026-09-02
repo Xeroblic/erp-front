@@ -13,6 +13,47 @@ export const ZF48_NOTEBOOK_FIELDS = [
 
 export const ZF48_DESKTOP_FIELDS = ['powers_on'] as const;
 
+/**
+ * ZF-98. Los tres campos de puertos existen en los cinco tipos de equipo; la cubierta del
+ * teclado y el valor `keyboard_marks` de `screen_condition`, sólo en notebook.
+ */
+export const ZF98_PORT_FIELDS = [
+	'loose_ports_count',
+	'loose_port_types',
+	'defective_port_types',
+] as const;
+
+export const ZF98_NOTEBOOK_FIELDS = ['keyboard_cover_condition', 'screen_condition'] as const;
+
+/**
+ * Campos que cada tipo de equipo espera del schema remoto.
+ *
+ * Se separan de `REQUIRED_SCHEMA_FIELDS_BY_TYPE` a propósito: los de ZF-98 degradan a
+ * respaldo local sin romper nada, así que su ausencia no debe pintar el error de contrato
+ * contra un backend que todavía no desplegó la fase F3.
+ */
+export const EXPECTED_SCHEMA_FIELDS_BY_TYPE: Record<string, readonly string[]> = {
+	notebook: [...ZF48_NOTEBOOK_FIELDS, ...ZF98_PORT_FIELDS, ...ZF98_NOTEBOOK_FIELDS],
+	desktop: [...ZF48_DESKTOP_FIELDS, ...ZF98_PORT_FIELDS],
+	aio: ZF98_PORT_FIELDS,
+	docking: ZF98_PORT_FIELDS,
+	monitor: ZF98_PORT_FIELDS,
+};
+
+/** Campos sin respaldo local: si el backend no los publica, el formulario está incompleto. */
+export const REQUIRED_SCHEMA_FIELDS_BY_TYPE: Record<string, readonly string[]> = {
+	notebook: ZF48_NOTEBOOK_FIELDS,
+	desktop: ZF48_DESKTOP_FIELDS,
+};
+
+const AIO_ALIAS = 'all-in-one';
+
+/** Normaliza el alias `all-in-one` que acepta el router de formularios. */
+export const normalizeEquipmentType = (equipmentType: string): string => {
+	const normalized = equipmentType.toLowerCase();
+	return normalized === AIO_ALIAS ? 'aio' : normalized;
+};
+
 export const selectTechnicalReviewSchemaFields = (
 	schema: ITechnicalReviewSchema,
 	fieldNames: readonly string[],

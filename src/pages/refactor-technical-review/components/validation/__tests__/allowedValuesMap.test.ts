@@ -96,6 +96,15 @@ describe('sanitizeByAllowedValues', () => {
 		expect(result).not.toHaveProperty('hinge_condition');
 	});
 
+	it('keeps the notebook keyboard cover contract without a remote schema', () => {
+		expect(
+			sanitizeByAllowedValues({ keyboard_cover_condition: 'cracked' }, 'notebook'),
+		).toEqual({ keyboard_cover_condition: 'cracked' });
+		expect(
+			sanitizeByAllowedValues({ keyboard_cover_condition: 'missing_pieces' }, 'notebook'),
+		).not.toHaveProperty('keyboard_cover_condition');
+	});
+
 	it('leaves fields governed by the local map untouched', () => {
 		const result = sanitizeByAllowedValues(
 			{ keyboard_layout: 'es', hinge_condition: 'loose' },

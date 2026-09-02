@@ -137,6 +137,9 @@ const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 		'rj45_ports',
 		'all_ports_functional',
 		'defective_ports_count',
+		'loose_ports_count',
+		'loose_port_types',
+		'defective_port_types',
 	],
 	screen: [
 		'screen_inches',
@@ -153,6 +156,7 @@ const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 		'has_backlit_keyboard',
 		'touchpad_condition',
 		'hinge_condition',
+		'keyboard_cover_condition',
 		'speakers_condition',
 	],
 	aesthetics: ['general_condition', 'cover_condition', 'bottom_condition'],
