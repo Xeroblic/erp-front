@@ -198,7 +198,40 @@ describe('port condition questions', () => {
 				increment(looseBreakdown(), 'HDMI');
 
 				expect(getForm().getValues('loose_port_types')).toEqual({ hdmi: 1 });
-				expect(getForm().getValues('all_ports_functional')).toBeUndefined();
+				// Sigue en el «No» con que arranca la otra pregunta, no pasa a `false`.
+				expect(getForm().getValues('all_ports_functional')).toBe(true);
+			});
+
+			/**
+			 * Las dos preguntas arrancan en «No», y respondidas de verdad: sin valor en el
+			 * formulario los campos no viajan en el PATCH, el servidor conserva lo que
+			 * tuviera y el técnico se lleva la impresión contraria a lo que ve en pantalla.
+			 */
+			it('starts both questions answered as no', () => {
+				const getForm = renderSection(Section);
+
+				[/¿Hay puertos defectuosos\?/, /¿Hay puertos sueltos\?/].forEach((asked) => {
+					expect(
+						within(question(asked)).getByRole('radio', { name: 'No' }),
+					).toHaveAttribute('aria-checked', 'true');
+				});
+
+				expect(getForm().getValues('all_ports_functional')).toBe(true);
+				expect(getForm().getValues('loose_port_types')).toEqual({});
+			});
+
+			/** Una revisión ya respondida conserva lo suyo: el arranque no la pisa. */
+			it('does not overwrite an answer the review already has', () => {
+				const getForm = renderSection(Section, {
+					defaultValues: {
+						all_ports_functional: false,
+						defective_port_types: { hdmi: 1 },
+						loose_port_types: { usb_c: 2 },
+					},
+				});
+
+				expect(getForm().getValues('all_ports_functional')).toBe(false);
+				expect(getForm().getValues('loose_port_types')).toEqual({ usb_c: 2 });
 			});
 
 			/** Un `{}` ya guardado es «se midió, ninguno»: la respuesta es «no» y no se abre. */

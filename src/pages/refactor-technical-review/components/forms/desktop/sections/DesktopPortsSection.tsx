@@ -36,7 +36,7 @@ const DesktopPortsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 		<div className='space-y-6'>
 			<div className='flex w-full flex-col items-start gap-8 rounded-2xl border border-zinc-800/50 bg-zinc-900/20 p-6 lg:flex-row'>
 				<div className='w-full flex-[2]'>
-					<div className='grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4'>
+					<div className='grid grid-cols-2 gap-6 md:grid-cols-3'>
 						{PORT_COUNTER_FIELDS.map((port) => {
 							const name = port.column as keyof DesktopFormData;
 

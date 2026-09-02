@@ -110,6 +110,28 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 		if (sumPortTypeCounts(loosePortTypes) > 0) setLooseOpen(true);
 	}, [loosePortTypes]);
 
+	// Las dos preguntas arrancan respondidas en «No», que es el caso normal, y el valor se
+	// escribe de verdad en el formulario en vez de quedarse en la pantalla: sin responder,
+	// `all_ports_functional` y `loose_port_types` no viajan en el PATCH, así que el
+	// servidor conserva lo que tuviera y el técnico se lleva la impresión contraria.
+	// Sólo cubre lo que llega sin medir; una revisión guardada mantiene su respuesta, y en
+	// modo lectura no se escribe nada.
+	React.useEffect(() => {
+		if (readOnly) return;
+		if (allPortsFunctional === null || allPortsFunctional === undefined) {
+			onAllPortsFunctionalChange(true);
+		}
+		if (!isMeasured(loosePortTypes)) {
+			onLoosePortTypesChange({});
+		}
+	}, [
+		readOnly,
+		allPortsFunctional,
+		loosePortTypes,
+		onAllPortsFunctionalChange,
+		onLoosePortTypesChange,
+	]);
+
 	const resolveLooseAnswer = (): boolean | undefined => {
 		if (looseOpen) return true;
 		return isMeasured(loosePortTypes) ? false : undefined;

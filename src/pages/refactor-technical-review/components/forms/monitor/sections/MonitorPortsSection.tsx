@@ -36,7 +36,7 @@ export const MonitorPortsSection: React.FC<FormSectionProps<MonitorFormData>> = 
 					Cantidad de Puertos
 				</h4>
 
-				<div className='grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5'>
+				<div className='grid grid-cols-2 gap-4 md:grid-cols-3'>
 					{PORT_COUNTER_FIELDS.map((port) => {
 						const { icon, color } = PORT_COUNTER_VISUALS[port.type];
 						const key = port.column;
