@@ -1,7 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
+import {
+	createColumnHelper,
+	type ColumnDef,
+	type OnChangeFn,
+	type PaginationState,
+} from '@tanstack/react-table';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
@@ -10,10 +15,9 @@ import ApiService from '@/services/ApiService';
 import { toggleUserStatus, type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { usePermissionLabels } from '@/hooks/usePermissionLabels';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchUsuariosConRolesPerms } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
+import { USERS_DEFAULT_PAGE_SIZE } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import Tooltip from '@/components/ui/Tooltip';
-import { zinc } from 'tailwindcss/colors';
 
 type UserRow = UserWithDetails & {
 	displayName: string;
@@ -22,7 +26,6 @@ type UserRow = UserWithDetails & {
 	uniqueRoles: string[];
 	directPermissionsCount: number;
 	totalPermissionsCount: number;
-	searchText: string;
 };
 
 const columnHelper = createColumnHelper<UserRow>();
@@ -33,6 +36,11 @@ type Props = {
 	error?: string | null;
 	globalFilter: string;
 	setGlobalFilter: (v: string) => void;
+	pagination: PaginationState;
+	onPaginationChange: OnChangeFn<PaginationState>;
+	pageCount: number;
+	totalResults: number;
+	onRefresh: () => void;
 };
 
 const TableUser: React.FC<Props> = ({
@@ -41,6 +49,11 @@ const TableUser: React.FC<Props> = ({
 	error,
 	globalFilter,
 	setGlobalFilter,
+	pagination,
+	onPaginationChange,
+	pageCount,
+	totalResults,
+	onRefresh,
 }) => {
 	const navigate = useNavigate();
 	const currentUser = useAppSelector((s) => s.auth.user);
@@ -55,26 +68,29 @@ const TableUser: React.FC<Props> = ({
 		return roles.includes('admin') || roles.includes('super-admin');
 	}, [currentUser]);
 
-	const handleManageUser = (userId: number) => {
-		navigate(`/gestion/roles-permisos/${userId}`);
-	};
+	const handleManageUser = useCallback(
+		(userId: number) => {
+			navigate(`/gestion/roles-permisos/${userId}`);
+		},
+		[navigate],
+	);
 
-	const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
-		try {
-			const response = await dispatch(
-				toggleUserStatus({ userId: userId, status: currentStatus }),
-			);
-			if (response.meta.requestStatus === 'fulfilled') {
-				const data = await dispatch(fetchUsuariosConRolesPerms());
-				console.log(data);
+	const handleToggleStatus = useCallback(
+		async (userId: number, currentStatus: boolean) => {
+			const response = await dispatch(toggleUserStatus({ userId, status: currentStatus }));
+			if (toggleUserStatus.fulfilled.match(response)) {
+				onRefresh();
+				toast.success('Estado del usuario cambiado exitosamente');
 			} else {
-				toast.error(error + ' ' + 'No se ha podido obtener los datos de la tabla');
+				toast.error(
+					typeof response.payload === 'string'
+						? response.payload
+						: 'No se ha podido actualizar el estado del usuario',
+				);
 			}
-			toast.success('Estado del usuario cambiado exitosamente');
-		} catch (err) {
-			console.error('Error al cambiar el estado del usuario:', err);
-		}
-	};
+		},
+		[dispatch, onRefresh],
+	);
 
 	const columns = useMemo(
 		() =>
@@ -189,6 +205,7 @@ const TableUser: React.FC<Props> = ({
 				}),
 				columnHelper.accessor('is_active', {
 					header: 'Estado',
+					enableSorting: false,
 					cell: (info) => (
 						<Badge
 							color={info.getValue() ? 'emerald' : 'red'}
@@ -272,7 +289,7 @@ const TableUser: React.FC<Props> = ({
 			].filter(Boolean) as ColumnDef<UserRow, unknown>[],
 		// getRoleLabel entra como dependencia para que las etiquetas se
 		// recalculen cuando termine de cargar el catálogo de roles.
-		[navigate, isAdmin, getRoleLabel],
+		[isAdmin, getRoleLabel, handleManageUser, handleToggleStatus],
 	);
 
 	return (
@@ -285,10 +302,15 @@ const TableUser: React.FC<Props> = ({
 					? `Error: ${error ?? 'Error desconocido'}`
 					: 'No se encontraron usuarios'
 			}
-			searchPlaceholder='Buscar usuario por nombre, email, cargo...'
+			searchPlaceholder='Buscar usuario por nombre, correo o RUT...'
 			searchValue={globalFilter}
 			onSearchChange={setGlobalFilter}
-			pageSize={10}
+			pageSize={USERS_DEFAULT_PAGE_SIZE}
+			manualPagination
+			paginationState={pagination}
+			onPaginationChange={onPaginationChange}
+			pageCount={pageCount}
+			totalResults={totalResults}
 		/>
 	);
 };
