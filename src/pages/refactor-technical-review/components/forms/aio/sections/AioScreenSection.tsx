@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
 import { AioFormData } from '../../../validation/aio.schema';
 import { SelectionCard } from '../../../ui/SelectionCard';
+import { StepperInput } from '../../../ui/StepperInput';
 import Input from '@/components/form/Input';
 import Checkbox from '@/components/form/Checkbox';
 import { getAioLabel } from '../../../translations/aio.labels';
 import { AIO_HINTS, AIO_PLACEHOLDERS } from '../../../constants/aio/aio.hints';
+import {
+	getScreenCounterValue,
+	SCREEN_COUNTER_MIN,
+	resolveScreenCounterOnSelection,
+} from '../../../utils/screenCounters';
 import {
 	SCREEN_CONDITION_OPTIONS,
 	STAND_CONDITION_OPTIONS,
@@ -21,7 +27,9 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 	watch,
 	setValue,
 }) => {
+	const deadPixelsLabelId = useId();
 	const screenCondition = watch('screen_condition');
+	const deadPixelsCount = watch('dead_pixels_count');
 	const standCondition = watch('stand_condition');
 	const coverCondition = watch('cover_condition');
 
@@ -96,13 +104,26 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 								label={opt.label}
 								value={opt.value}
 								isSelected={screenCondition === opt.value}
-								onClick={() =>
-									!readOnly &&
+								onClick={() => {
+									if (readOnly) return;
+
+									const nextScreenCondition =
+										opt.value as AioFormData['screen_condition'];
+
+									setValue('screen_condition', nextScreenCondition, {
+										shouldValidate: true,
+									});
 									setValue(
-										'screen_condition',
-										opt.value as AioFormData['screen_condition'],
-									)
-								}
+										'dead_pixels_count',
+										resolveScreenCounterOnSelection(
+											screenCondition,
+											nextScreenCondition,
+											'dead_pixels',
+											deadPixelsCount,
+										),
+										{ shouldValidate: true },
+									);
+								}}
 							/>
 						))}
 					</div>
@@ -110,6 +131,33 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 						<p className='mt-3 text-center text-xs text-red-500'>
 							{errors.screen_condition.message}
 						</p>
+					)}
+					{screenCondition === 'dead_pixels' && (
+						<div
+							className='mt-5 w-full max-w-[220px]'
+							role='group'
+							aria-labelledby={deadPixelsLabelId}>
+							<p
+								id={deadPixelsLabelId}
+								className='mb-2 block text-xs font-bold text-purple-900 dark:text-purple-100'>
+								{getAioLabel('dead_pixels_count')}
+							</p>
+							<StepperInput
+								value={getScreenCounterValue(deadPixelsCount)}
+								onChange={(value) => {
+									if (readOnly) return;
+									setValue('dead_pixels_count', value, { shouldValidate: true });
+								}}
+								min={SCREEN_COUNTER_MIN}
+								max={50}
+								disabled={readOnly}
+							/>
+							{errors.dead_pixels_count && (
+								<p className='mt-2 text-xs text-red-500'>
+									{errors.dead_pixels_count.message}
+								</p>
+							)}
+						</div>
 					)}
 				</div>
 

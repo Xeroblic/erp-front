@@ -22,6 +22,10 @@ import AioPortsSection from './sections/AioPortsSection';
 import AioAccessoriesSection from './sections/AioAccessoriesSection';
 import AioObservationsSection from './sections/AioObservationsSection';
 import GallerySection from '../shared/gallery/GallerySection';
+import {
+	isScreenCounterBelowMinimum,
+	needsScreenCounterNormalization,
+} from '../../utils/screenCounters';
 
 const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 	{
@@ -84,6 +88,7 @@ const AIO_SECTION_FIELDS: Record<string, FieldPath<AioFormData>[]> = {
 		'screen_inches',
 		'is_touchscreen',
 		'screen_condition',
+		'dead_pixels_count',
 		'stand_condition',
 		'cover_condition',
 	],
@@ -221,6 +226,29 @@ const AioForm: React.FC<AioFormProps> = ({
 			});
 		}
 	}, [watch, setValue]);
+
+	// Reconcilia el contador con su condición. Corre en el montaje y en cada cambio de
+	// las dos variables observadas (no sólo al cargar): si la condición está inactiva
+	// limpia el contador, y si está activa conserva el valor recibido —incluido el 0 de
+	// un borrador— pero lo valida de inmediato para que el error se vea sin tener que
+	// intentar avanzar de paso. `mode: 'onChange'` no valida un campo que nadie tocó.
+	const screenCondition = watch('screen_condition');
+	const deadPixelsCount = watch('dead_pixels_count');
+	useEffect(() => {
+		if (readOnly) return;
+
+		const isDeadPixels = screenCondition === 'dead_pixels';
+		if (needsScreenCounterNormalization(isDeadPixels, deadPixelsCount)) {
+			setValue('dead_pixels_count', 0, {
+				shouldValidate: true,
+			});
+			return;
+		}
+
+		if (isDeadPixels && isScreenCounterBelowMinimum(deadPixelsCount)) {
+			void trigger('dead_pixels_count');
+		}
+	}, [readOnly, screenCondition, deadPixelsCount, setValue, trigger]);
 
 	const sectionProps = {
 		control,

@@ -42,6 +42,19 @@ export const monitorSchema = Yup.object({
 					.typeError('Debes ingresar un número'),
 			otherwise: (schema) => schema.nullable().transform(() => 0),
 		}),
+	dead_pixels_count: Yup.number()
+		.integer('Debe ser un número entero')
+		.min(0, 'No puede ser negativo')
+		.nullable()
+		.when('screen_condition', {
+			is: 'dead_pixels',
+			then: (schema) =>
+				schema
+					.required('Indica la cantidad de píxeles muertos')
+					.min(1, 'Debe ser al menos 1')
+					.typeError('Debes ingresar un número'),
+			otherwise: (schema) => schema.nullable().transform(() => 0),
+		}),
 	stand_condition: Yup.string()
 		.required('Condición de base es requerida')
 		.oneOf(ALLOWED_STAND_CONDITIONS, 'Condición selecta no válida'),

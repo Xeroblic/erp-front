@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { toast } from 'react-toastify';
 import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
@@ -16,15 +16,23 @@ import {
 	FRAME_CONDITION_OPTIONS,
 } from '../../../constants/monitor/monitor.options';
 import { getMonitorLabel } from '../../../translations/monitor.labels';
+import {
+	getScreenCounterValue,
+	SCREEN_COUNTER_MIN,
+	resolveScreenCounterOnSelection,
+} from '../../../utils/screenCounters';
 import Icon from '@/components/icon/Icon';
 import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
 
 const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (sectionProps) => {
 	const { control, errors, readOnly, watch, setValue } = sectionProps;
+	const spotsLabelId = useId();
+	const deadPixelsLabelId = useId();
 	const currentScreen = watch('screen_condition');
 	const currentStand = watch('stand_condition');
 	const currentFrame = watch('frame_condition');
 	const currentSpotsCount = watch('spots_count');
+	const currentDeadPixelsCount = watch('dead_pixels_count');
 	const currentScreenResolution = watch('screen_resolution');
 
 	return (
@@ -53,6 +61,7 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 								is_touchscreen: false,
 								screen_condition: 'broken',
 								spots_count: 0,
+								dead_pixels_count: 0,
 								stand_condition: 'broken',
 								frame_condition: 'broken',
 								has_usb_hub: false,
@@ -221,17 +230,30 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 							color='blue'
 							onClick={() => {
 								if (readOnly) return;
+								const nextScreenCondition =
+									opt.value as MonitorFormData['screen_condition'];
+
+								setValue('screen_condition', nextScreenCondition, {
+									shouldValidate: true,
+								});
 								setValue(
-									'screen_condition',
-									opt.value as
-										| 'ok'
-										| 'minor_wear'
-										| 'worn'
-										| 'dead_pixels'
-										| 'broken'
-										| 'spots'
-										| 'scratched'
-										| 'lines',
+									'spots_count',
+									resolveScreenCounterOnSelection(
+										currentScreen,
+										nextScreenCondition,
+										'spots',
+										currentSpotsCount,
+									),
+									{ shouldValidate: true },
+								);
+								setValue(
+									'dead_pixels_count',
+									resolveScreenCounterOnSelection(
+										currentScreen,
+										nextScreenCondition,
+										'dead_pixels',
+										currentDeadPixelsCount,
+									),
 									{ shouldValidate: true },
 								);
 							}}
@@ -239,21 +261,55 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 					))}
 				</div>
 				{currentScreen === 'spots' && (
-					<div className='mt-5 w-full max-w-[220px]'>
-						<label className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+					<div
+						className='mt-5 w-full max-w-[220px]'
+						role='group'
+						aria-labelledby={spotsLabelId}>
+						<p
+							id={spotsLabelId}
+							className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							{getMonitorLabel('spots_count')}
-						</label>
+						</p>
 						<StepperInput
-							value={typeof currentSpotsCount === 'number' ? currentSpotsCount : 0}
+							value={getScreenCounterValue(currentSpotsCount)}
 							onChange={(val) => {
 								if (readOnly) return;
 								setValue('spots_count', val, { shouldValidate: true });
 							}}
+							min={SCREEN_COUNTER_MIN}
 							max={50}
+							disabled={readOnly}
 						/>
 						{errors.spots_count && (
 							<p className='mt-2 text-xs text-red-500'>
 								{errors.spots_count.message}
+							</p>
+						)}
+					</div>
+				)}
+				{currentScreen === 'dead_pixels' && (
+					<div
+						className='mt-5 w-full max-w-[220px]'
+						role='group'
+						aria-labelledby={deadPixelsLabelId}>
+						<p
+							id={deadPixelsLabelId}
+							className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+							{getMonitorLabel('dead_pixels_count')}
+						</p>
+						<StepperInput
+							value={getScreenCounterValue(currentDeadPixelsCount)}
+							onChange={(value) => {
+								if (readOnly) return;
+								setValue('dead_pixels_count', value, { shouldValidate: true });
+							}}
+							min={SCREEN_COUNTER_MIN}
+							max={50}
+							disabled={readOnly}
+						/>
+						{errors.dead_pixels_count && (
+							<p className='mt-2 text-xs text-red-500'>
+								{errors.dead_pixels_count.message}
 							</p>
 						)}
 					</div>

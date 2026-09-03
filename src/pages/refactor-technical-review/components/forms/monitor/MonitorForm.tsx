@@ -21,6 +21,10 @@ import MonitorPortsSection from './sections/MonitorPortsSection';
 import MonitorAccessoriesSection from './sections/MonitorAccessoriesSection';
 import Observations from './sections/Observations';
 import GallerySection from '../shared/gallery/GallerySection';
+import {
+	isScreenCounterBelowMinimum,
+	needsScreenCounterNormalization,
+} from '../../utils/screenCounters';
 
 // ─── Section Order ─────────────────────────
 const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
@@ -75,6 +79,7 @@ const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
 		'is_touchscreen',
 		'screen_condition',
 		'spots_count',
+		'dead_pixels_count',
 		'stand_condition',
 		'frame_condition',
 	],
@@ -183,6 +188,37 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			}
 		}
 	}, [normalizedDefaultValues, reset]);
+
+	// Reconcilia los contadores con su condición. Corre en el montaje y en cada cambio
+	// de las tres variables observadas (no sólo al cargar): si la condición está
+	// inactiva limpia el contador, y si está activa conserva el valor recibido
+	// —incluido el 0 de un borrador— pero lo valida de inmediato para que el error se
+	// vea sin tener que intentar avanzar de paso. `mode: 'onChange'` no valida un campo
+	// que nadie tocó.
+	const screenCondition = watch('screen_condition');
+	const spotsCount = watch('spots_count');
+	const deadPixelsCount = watch('dead_pixels_count');
+	useEffect(() => {
+		if (readOnly) return;
+
+		const isSpots = screenCondition === 'spots';
+		if (needsScreenCounterNormalization(isSpots, spotsCount)) {
+			setValue('spots_count', 0, {
+				shouldValidate: true,
+			});
+		} else if (isSpots && isScreenCounterBelowMinimum(spotsCount)) {
+			void trigger('spots_count');
+		}
+
+		const isDeadPixels = screenCondition === 'dead_pixels';
+		if (needsScreenCounterNormalization(isDeadPixels, deadPixelsCount)) {
+			setValue('dead_pixels_count', 0, {
+				shouldValidate: true,
+			});
+		} else if (isDeadPixels && isScreenCounterBelowMinimum(deadPixelsCount)) {
+			void trigger('dead_pixels_count');
+		}
+	}, [readOnly, screenCondition, spotsCount, deadPixelsCount, setValue, trigger]);
 
 	const sectionProps = {
 		control,

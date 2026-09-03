@@ -35,6 +35,7 @@ export const AIO_LABELS: Record<string, string> = {
 	has_cd_drive: 'Unidad óptica',
 	screen_inches: 'Pulgadas pantalla',
 	screen_condition: 'Condición de pantalla',
+	dead_pixels_count: 'Cantidad de píxeles muertos',
 	stand_condition: 'Condición de base',
 	is_touchscreen: 'Pantalla táctil',
 	cover_condition: 'Carcasa',
