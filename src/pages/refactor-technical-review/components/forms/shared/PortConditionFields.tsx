@@ -40,6 +40,13 @@ export interface PortConditionFieldsProps {
 	/** Desglose `{tipo: cantidad}`. `undefined` = no se midió; `{}` = se midió, ninguno. */
 	defectivePortTypes: PortTypeCounts | null | undefined;
 	loosePortTypes: PortTypeCounts | null | undefined;
+	/**
+	 * `defective_ports_count` tal como lo persiste el backend. Es la única fuente del
+	 * total mientras el desglose no exista: la migración que agregó `defective_port_types`
+	 * no rellenó las revisiones anteriores, y `TechnicalReviewItemResource` publica la
+	 * relación tal cual, sin sintetizar el mapa a partir del conteo.
+	 */
+	defectivePortsCount?: number | null;
 
 	onAllPortsFunctionalChange: (value: boolean) => void;
 	onDefectivePortTypesChange: (value: PortTypeCounts) => void;
@@ -60,6 +67,7 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 	allPortsFunctional,
 	defectivePortTypes,
 	loosePortTypes,
+	defectivePortsCount,
 	onAllPortsFunctionalChange,
 	onDefectivePortTypesChange,
 	onLoosePortTypesChange,
@@ -99,7 +107,20 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 	const showDefective = allPortsFunctional === false;
 
 	const looseTotal = sumPortTypeCounts(loosePortTypes);
-	const defectiveTotal = sumPortTypeCounts(defectivePortTypes);
+
+	// El total de defectuosos tiene dos fuentes, y cuál manda depende de si el desglose
+	// existe. Una revisión anterior a ZF-98 llega con `defective_port_types: null` y su
+	// `defective_ports_count` intacto: derivarlo del mapa vacío mostraría «0» sobre una
+	// revisión que el endpoint entregó con tres puertos defectuosos. Cuando el mapa ya
+	// existe manda su suma, que es la que el técnico acaba de marcar.
+	const hasDefectiveBreakdown = isMeasured(defectivePortTypes);
+	const storedDefectiveTotal = Math.max(0, Math.trunc(Number(defectivePortsCount) || 0));
+	const defectiveTotal = hasDefectiveBreakdown
+		? sumPortTypeCounts(defectivePortTypes)
+		: storedDefectiveTotal;
+	// El desglose que falta no se puede repartir por tipo, así que se avisa: en cuanto el
+	// técnico marque el primer puerto, el total pasa a derivarse de lo que marcó.
+	const showsHistoricDefectiveTotal = !hasDefectiveBreakdown && storedDefectiveTotal > 0;
 
 	// «Sí» y «no» empiezan iguales en el dato persistido: los dos son `{}`, porque
 	// abrir el desglose no puede inventar un puerto. La diferencia es sólo de pantalla,
@@ -187,6 +208,12 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 						<p className='text-center text-sm font-bold text-red-800 dark:text-red-200'>
 							{defectiveCountField.label}: {defectiveTotal}
 						</p>
+						{showsHistoricDefectiveTotal && (
+							<p className='text-center text-xs text-red-800 dark:text-red-200'>
+								Esta revisión guardó el total sin el desglose por tipo. Si marcas
+								los puertos, el total pasa a ser el de lo que marques.
+							</p>
+						)}
 						{defectiveCountError && (
 							<p className='text-center text-xs text-red-500'>
 								{defectiveCountError}

@@ -20,6 +20,8 @@ const DesktopPortsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	const allPortsFunctional = watch('all_ports_functional');
 	const loosePortTypes = watch('loose_port_types');
 	const defectivePortTypes = watch('defective_port_types');
+	// El total persistido: es el único que existe mientras el desglose no se haya medido.
+	const defectivePortsCount = watch('defective_ports_count');
 
 	const getNumericValue = (field: keyof DesktopFormData): number => {
 		const val = watch(field);
@@ -68,6 +70,7 @@ const DesktopPortsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 				allPortsFunctional={allPortsFunctional}
 				defectivePortTypes={defectivePortTypes}
 				loosePortTypes={loosePortTypes}
+				defectivePortsCount={defectivePortsCount}
 				onAllPortsFunctionalChange={(value) => setValue('all_ports_functional', value)}
 				onDefectivePortTypesChange={(value) => {
 					setValue('defective_port_types', value);

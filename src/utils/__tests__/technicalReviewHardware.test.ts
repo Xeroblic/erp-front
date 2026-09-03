@@ -96,6 +96,28 @@ describe('filterTechnicalReviewPayload (campos derivados)', () => {
 		expect(payload.brand).toBe('Dell');
 	});
 
+	/**
+	 * Las revisiones anteriores a ZF-98 llegan con `defective_ports_count > 0` y el mapa en
+	 * `null`, porque la migración del 01-09 no las rellenó. Las cuatro rutas de escritura
+	 * —submit final, los dos autoguardados y `onDirectSubmit`— terminan en
+	 * `updateItemDetails`, que filtra con esta función: el conteo histórico tiene que
+	 * viajar intacto y el mapa nulo no debe enviarse.
+	 */
+	it('keeps the historic defective count and drops the breakdown that was never recorded', () => {
+		const payload = filterTechnicalReviewPayload(
+			{
+				all_ports_functional: false,
+				defective_ports_count: 3,
+				defective_port_types: null,
+			},
+			HARDWARE_NULLABLE_FIELDS,
+		);
+
+		expect(payload.defective_ports_count).toBe(3);
+		expect(payload).not.toHaveProperty('defective_port_types');
+		expect(payload.all_ports_functional).toBe(false);
+	});
+
 	/** `{}` es «se midió, ninguno»; omitir el campo sería «no se midió». */
 	it('keeps an empty breakdown so the measurement is recorded', () => {
 		const payload = filterTechnicalReviewPayload(

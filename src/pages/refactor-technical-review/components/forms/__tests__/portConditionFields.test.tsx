@@ -325,6 +325,72 @@ describe('port condition questions', () => {
 				expect(getForm().getValues('defective_ports_count')).toBe(3);
 			});
 
+			/**
+			 * La migración que agregó `defective_port_types` no rellenó las revisiones
+			 * anteriores: en producción hay 587 revisiones con `defective_ports_count > 0`
+			 * y el mapa en `null`, y `TechnicalReviewItemResource` las publica tal cual,
+			 * sin sintetizar el desglose. Derivar el total del mapa vacío ponía «0» al
+			 * lado del «Sí» de la misma pregunta.
+			 */
+			it('shows the persisted total while the breakdown does not exist', () => {
+				const getForm = renderSection(Section, {
+					defaultValues: {
+						all_ports_functional: false,
+						defective_ports_count: 3,
+						defective_port_types: null,
+					},
+				});
+
+				expect(screen.getByText(/Puertos defectuosos: 3/, { selector: 'p' })).toBeVisible();
+				// Abrir la revisión no puede reescribir el conteo que trajo el endpoint.
+				expect(getForm().getValues('defective_ports_count')).toBe(3);
+			});
+
+			/** El desglose que falta no se puede repartir por tipo: se avisa, no se inventa. */
+			it('says the historic review stored no breakdown', () => {
+				renderSection(Section, {
+					defaultValues: {
+						all_ports_functional: false,
+						defective_ports_count: 3,
+						defective_port_types: null,
+					},
+				});
+
+				expect(screen.getByText(/guardó el total sin el desglose por tipo/)).toBeVisible();
+			});
+
+			/** Con el mapa ya medido manda su suma, que es lo que el técnico marcó. */
+			it('derives the total from the breakdown once it exists', () => {
+				renderSection(Section, {
+					defaultValues: {
+						all_ports_functional: false,
+						defective_ports_count: 3,
+						defective_port_types: { hdmi: 1 },
+					},
+				});
+
+				expect(screen.getByText(/Puertos defectuosos: 1/, { selector: 'p' })).toBeVisible();
+				expect(
+					screen.queryByText(/guardó el total sin el desglose por tipo/),
+				).not.toBeInTheDocument();
+			});
+
+			/** Un `{}` guardado es «se midió, ninguno»: cero de verdad, y sin el aviso. */
+			it('reads a stored empty defective breakdown as a real zero', () => {
+				renderSection(Section, {
+					defaultValues: {
+						all_ports_functional: false,
+						defective_ports_count: 0,
+						defective_port_types: {},
+					},
+				});
+
+				expect(screen.getByText(/Puertos defectuosos: 0/, { selector: 'p' })).toBeVisible();
+				expect(
+					screen.queryByText(/guardó el total sin el desglose por tipo/),
+				).not.toBeInTheDocument();
+			});
+
 			it('clears the breakdown when the answer goes back to no', () => {
 				const getForm = renderSection(Section, {
 					defaultValues: {
