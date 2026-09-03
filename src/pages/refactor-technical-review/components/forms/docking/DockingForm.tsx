@@ -8,6 +8,7 @@ import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { dockingSchema, type DockingFormData } from '../../validation/docking.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
@@ -80,6 +81,8 @@ interface DockingFormProps {
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
 	initialSectionKey?: string;
+	/** Metadata publicada por el endpoint de reglas para este tipo de equipo. */
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 const DockingForm: React.FC<DockingFormProps> = ({
@@ -92,6 +95,7 @@ const DockingForm: React.FC<DockingFormProps> = ({
 	registerGetFormValues,
 	isSaving = false,
 	initialSectionKey,
+	schemaFields,
 }) => {
 	const {
 		control,
@@ -116,8 +120,9 @@ const DockingForm: React.FC<DockingFormProps> = ({
 			readOnly,
 			watch,
 			setValue,
+			schemaFields,
 		}),
-		[control, errors, readOnly, watch, setValue],
+		[control, errors, readOnly, watch, setValue, schemaFields],
 	);
 
 	// Expose getFormValues to parent for auto-save

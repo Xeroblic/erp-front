@@ -3,6 +3,7 @@ import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { monitorSchema, type MonitorFormData } from '../../validation/monitor.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
@@ -109,6 +110,8 @@ export interface MonitorFormProps {
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
 	initialSectionKey?: string;
+	/** Metadata publicada por el endpoint de reglas para este tipo de equipo. */
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 const MonitorForm: React.FC<MonitorFormProps> = ({
@@ -121,6 +124,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 	registerGetFormValues,
 	isSaving,
 	initialSectionKey,
+	schemaFields,
 }) => {
 	const normalizedDefaultValues = useMemo(() => {
 		if (!defaultValues) return {} as MonitorFormData;
@@ -187,6 +191,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		watch,
 		setValue,
 		getValues,
+		schemaFields,
 		onDirectSubmit: (partialData: Partial<MonitorFormData>) => {
 			const currentData = getValues();
 			const payload = { ...currentData, ...partialData } as MonitorFormData;

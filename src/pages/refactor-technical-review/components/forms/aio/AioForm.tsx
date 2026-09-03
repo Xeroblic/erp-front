@@ -3,6 +3,7 @@ import { useForm, type FieldPath } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { aioSchema, AioFormData } from '../../validation/aio.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
@@ -115,6 +116,8 @@ interface AioFormProps {
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
 	initialSectionKey?: string;
+	/** Metadata publicada por el endpoint de reglas para este tipo de equipo. */
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 const AioForm: React.FC<AioFormProps> = ({
@@ -127,6 +130,7 @@ const AioForm: React.FC<AioFormProps> = ({
 	registerGetFormValues,
 	isSaving,
 	initialSectionKey,
+	schemaFields,
 }) => {
 	const {
 		control,
@@ -225,6 +229,7 @@ const AioForm: React.FC<AioFormProps> = ({
 		watch,
 		setValue,
 		getValues,
+		schemaFields,
 		onDirectSubmit: (partialData: Partial<AioFormData>) => {
 			const currentData = getValues();
 			const payload = { ...currentData, ...partialData } as AioFormData;
