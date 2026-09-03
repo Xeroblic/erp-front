@@ -150,12 +150,12 @@ describe.each(hardwareForms)('Hardware sections: $name', ({ Harness }) => {
 			expect(screen.getByDisplayValue('8GB')).toBeInTheDocument();
 			expect(screen.getByDisplayValue('2')).toBeInTheDocument();
 			expect(screen.getByDisplayValue('512GB')).toBeInTheDocument();
-			expect(screen.getByRole('radio', { name: 'DDR4' })).toHaveAttribute(
-				'aria-checked',
+			expect(screen.getByRole('button', { name: 'DDR4' })).toHaveAttribute(
+				'aria-pressed',
 				'true',
 			);
-			expect(screen.getByRole('radio', { name: /SSD/ })).toHaveAttribute(
-				'aria-checked',
+			expect(screen.getByRole('button', { name: /SSD/ })).toHaveAttribute(
+				'aria-pressed',
 				'true',
 			);
 		});

@@ -78,9 +78,8 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				)}
 
 				<div
-					role='radiogroup'
+					role='group'
 					aria-label={screen.label}
-					aria-required={screen.required}
 					className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 					{screen.options.map((opt) => (
 						<SelectionCard

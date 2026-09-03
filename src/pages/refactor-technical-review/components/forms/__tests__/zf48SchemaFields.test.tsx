@@ -62,9 +62,21 @@ const DESKTOP_SCHEMA: ITechnicalReviewSchema = {
 
 /** Opciones de un campo concreto, no la unión de la sección. */
 const optionValuesOf = (fieldLabel: string): string[] =>
-	within(screen.getByRole('radiogroup', { name: new RegExp(fieldLabel) }))
-		.getAllByRole('radio')
+	within(screen.getByRole('group', { name: new RegExp(fieldLabel) }))
+		.getAllByRole('button')
 		.map((option) => option.dataset.value ?? '');
+
+/**
+ * El grupo ya no expone `aria-required`: no es un atributo válido en `role='group'`, y el
+ * `role='radiogroup'` que lo admitía prometía una navegación por flechas que el módulo
+ * nunca implementó. El `required` que publica el schema viaja ahora sólo en el asterisco
+ * del rótulo, que es el elemento al que apunta `aria-labelledby`.
+ */
+const isMarkedRequired = (fieldLabel: RegExp): boolean => {
+	const labelId = screen.getByRole('group', { name: fieldLabel }).getAttribute('aria-labelledby');
+	const label = labelId ? document.getElementById(labelId) : null;
+	return label?.textContent?.includes('*') ?? false;
+};
 
 describe('ZF-48 schema fields', () => {
 	it('derives the keyboard checkbox from the persisted count', () => {
@@ -114,7 +126,7 @@ describe('ZF-48 schema fields', () => {
 		};
 
 		render(<Harness />);
-		fireEvent.click(screen.getByRole('radio', { name: 'No' }));
+		fireEvent.click(screen.getByRole('button', { name: 'No' }));
 		expect(getValues?.().powers_on).toBe(false);
 	});
 
@@ -172,14 +184,8 @@ describe('ZF-48 schema fields', () => {
 
 		// `required` lo publica el backend; sin consumirlo el asterisco quedaba fijo en
 		// el teclado y nunca aparecía en bisagras, que también es obligatorio.
-		expect(screen.getByRole('radiogroup', { name: /Bisagras/ })).toHaveAttribute(
-			'aria-required',
-			'true',
-		);
-		expect(screen.getByRole('radiogroup', { name: /Parlantes/ })).toHaveAttribute(
-			'aria-required',
-			'false',
-		);
+		expect(isMarkedRequired(/Bisagras/)).toBe(true);
+		expect(isMarkedRequired(/Parlantes/)).toBe(false);
 	});
 
 	it('keeps the desktop power question visible without a remote schema', () => {
@@ -202,7 +208,7 @@ describe('ZF-48 schema fields', () => {
 
 		render(<Harness />);
 		expect(screen.getByText('¿El equipo enciende?')).toBeInTheDocument();
-		fireEvent.click(screen.getByRole('radio', { name: 'No' }));
+		fireEvent.click(screen.getByRole('button', { name: 'No' }));
 		expect(getValues?.().powers_on).toBe(false);
 	});
 });
