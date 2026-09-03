@@ -129,12 +129,19 @@ export const useReviewAttributes = () => {
 
 		// Los dos desgloses no se copian en crudo: una revisión anterior al contrato de
 		// mapa los guardó como lista de tipos (`['hdmi','usb_c']`), y el editor sólo sabe
-		// mostrar el mapa `{tipo: cantidad}`. `null` es «no se midió» y se omite; `{}` es
-		// «se midió, ninguno» y sí se conserva, así que el filtro mira nulidad, no vacío.
+		// mostrar el mapa `{tipo: cantidad}`.
+		//
+		// El mapa vacío se omite en vez de conservarse: el spec del producto no puede
+		// sostener la distinción entre «se midió, ninguno» y «no se midió», porque
+		// `prepareAttributesForSubmit` poda todo objeto sin claves al guardar y el `{}`
+		// vuelve como ausente en la siguiente carga. Conservarlo sólo movía el cambio de
+		// comportamiento —el total deja de ofrecerse a mano— al recargar la ficha.
 		BREAKDOWN_FIELDS.forEach((field) => {
 			const raw = details[field];
 			if (raw === undefined || raw === null) return;
-			mapped[field] = normalizePortTypeCounts(raw);
+			const counts = normalizePortTypeCounts(raw);
+			if (Object.keys(counts).length === 0) return;
+			mapped[field] = counts;
 		});
 
 		setReviewData(mapped);

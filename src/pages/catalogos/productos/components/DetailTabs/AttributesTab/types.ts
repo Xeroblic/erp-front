@@ -59,9 +59,13 @@ export interface ReviewData {
 	defective_ports_count?: number;
 	defective_ports_critical_count?: number;
 	/**
-	 * Desglose `{tipo: cantidad}` de ZF-98. Un tipo sin puertos se omite del mapa; `{}` es
-	 * «se midió, ninguno» y ausente es «no se midió», la misma semántica que en la
-	 * revisión técnica de la que se importan.
+	 * Desglose `{tipo: cantidad}` de ZF-98. Un tipo sin puertos se omite del mapa.
+	 *
+	 * A diferencia de la revisión técnica, acá un mapa vacío **no** significa «se midió,
+	 * ninguno»: `prepareAttributesForSubmit` poda todo objeto sin claves antes de enviar el
+	 * producto, así que un `{}` guardado vuelve como ausente en la siguiente carga. El spec
+	 * del producto sólo distingue «hay desglose» de «no hay», y el editor se comporta igual
+	 * en los dos casos desde el arranque en vez de cambiar al recargar.
 	 */
 	defective_port_types?: Record<string, number>;
 	loose_ports_count?: number;

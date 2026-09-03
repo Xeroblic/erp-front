@@ -65,20 +65,27 @@ describe('importFromReview', () => {
 		});
 	});
 
-	/** `{}` es «se midió, ninguno»: se conserva. `null` es «no se midió»: se omite. */
-	it('distingue un desglose medido y vacío de uno que nunca se midió', async () => {
+	/**
+	 * El spec del producto no puede sostener la distinción entre «se midió, ninguno» y «no
+	 * se midió» que sí tiene la revisión técnica: `prepareAttributesForSubmit` poda todo
+	 * objeto sin claves al guardar, así que un `{}` conservado acá vuelve como ausente en la
+	 * siguiente carga y el total volvía a ofrecerse a mano al recargar la ficha.
+	 */
+	it('omite el desglose vacío igual que el que nunca se midió', async () => {
 		const { result } = renderHook(() => useReviewAttributes(), { wrapper });
 
 		act(() => {
 			result.current.importFromReview({
+				all_ports_functional: false,
 				loose_port_types: {},
 				defective_port_types: null,
 			});
 		});
 
 		await waitFor(() => {
-			expect(result.current.reviewData.loose_port_types).toEqual({});
+			expect(result.current.reviewData.all_ports_functional).toBe(false);
 		});
+		expect(result.current.reviewData).not.toHaveProperty('loose_port_types');
 		expect(result.current.reviewData).not.toHaveProperty('defective_port_types');
 	});
 });
