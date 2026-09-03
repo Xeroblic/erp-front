@@ -22,6 +22,20 @@ export const DOCKING_LABELS: Record<string, string> = {
 	loose_port_types: 'Qué puertos están sueltos',
 	has_wifi: 'Tiene Wi-Fi',
 	cover_condition: 'Condición de Carcasa',
+	lock_area_condition: 'Estado del Candado',
+};
+
+/**
+ * ZF-99. Rótulos de los cuatro estados del sector del candado, para el resumen de la
+ * revisión. Las etiquetas del formulario vienen del schema del backend —que las cambia
+ * según si las reglas v2 están activas—; éstas son la versión corta y estable que
+ * necesita el resumen, donde no hay schema a mano.
+ */
+export const LOCK_AREA_CONDITION_LABELS: Record<string, string> = {
+	ok: 'Sin observaciones',
+	missing_key: 'Sin llave',
+	worn: 'Sector con desgaste',
+	locked: 'Candado puesto',
 };
 
 export const getDockingLabel = (key: string): string => {

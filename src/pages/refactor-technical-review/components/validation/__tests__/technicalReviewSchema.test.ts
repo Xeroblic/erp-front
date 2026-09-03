@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import {
+	EXPECTED_SCHEMA_FIELDS_BY_TYPE,
 	getSchemaFieldOptions,
 	resolveSchemaField,
 	selectTechnicalReviewSchemaFields,
@@ -23,6 +24,29 @@ describe('technicalReviewSchema', () => {
 		expect(selectTechnicalReviewSchemaFields(schema, ['speakers_condition'])).toEqual({
 			speakers_condition: schema.speakers_condition,
 		});
+	});
+
+	/**
+	 * ZF-99. `Step2FullReview` recorta el schema remoto con `EXPECTED_SCHEMA_FIELDS_BY_TYPE`
+	 * antes de pasarlo al formulario: un campo que no esté en esa lista se descarta en
+	 * silencio aunque el backend lo publique, y la sección nunca llega a verlo.
+	 */
+	it('keeps the docking lock area field when trimming the remote schema', () => {
+		const dockingSchema: ITechnicalReviewSchema = {
+			lock_area_condition: {
+				type: 'string',
+				label: 'Estado del candado',
+				options: [{ value: 'locked', label: 'Candado puesto, equipo bloqueado' }],
+			},
+			cover_condition: { type: 'string', label: 'Carcasa' },
+		};
+
+		const selected = selectTechnicalReviewSchemaFields(
+			dockingSchema,
+			EXPECTED_SCHEMA_FIELDS_BY_TYPE.docking,
+		);
+
+		expect(selected.lock_area_condition).toEqual(dockingSchema.lock_area_condition);
 	});
 
 	it('uses the options and labels returned by the schema', () => {
