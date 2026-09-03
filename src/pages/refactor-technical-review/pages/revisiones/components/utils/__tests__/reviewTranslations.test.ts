@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HINGE_CONDITION_OPTIONS } from '@/pages/refactor-technical-review/components/constants/notebook/notebook.options';
-import { translateValue } from '../reviewTranslations';
+import type { EquipmentType } from '@/interface/technicalReviews.interface';
+import { getFieldsForType, translateField, translateValue } from '../reviewTranslations';
 
 describe('translateValue', () => {
 	/**
@@ -36,5 +37,42 @@ describe('translateValue', () => {
 		expect(translateValue('cracked')).toBe('Trizada');
 		expect(translateValue(true)).toBe('Sí');
 		expect(translateValue('keyboard_marks', 'screen_condition')).toBe('Marcas del teclado');
+	});
+});
+
+/**
+ * El resumen lateral filtra los detalles con `getFieldsForType`: un campo que no está en
+ * el mapa de rótulos de su tipo de equipo no se muestra ni entra en «Copiar Información»,
+ * aunque el backend lo haya guardado. Los campos de ZF-98 quedaron fuera de los cinco.
+ */
+describe('campos del resumen por tipo de equipo', () => {
+	const EQUIPMENT_TYPES: EquipmentType[] = ['notebook', 'desktop', 'aio', 'monitor', 'docking'];
+	const PORT_FIELDS = ['loose_ports_count', 'loose_port_types', 'defective_port_types'];
+
+	EQUIPMENT_TYPES.forEach((equipmentType) => {
+		it(`incluye el desglose de puertos en ${equipmentType}`, () => {
+			const fields = getFieldsForType(equipmentType);
+
+			PORT_FIELDS.forEach((field) => {
+				expect(fields?.has(field)).toBe(true);
+				expect(translateField(field, equipmentType)).not.toBe(field);
+			});
+		});
+	});
+
+	/** La cubierta del teclado sólo existe en notebook, y también quedó sin rótulo. */
+	it('incluye la condición del cobertor del teclado en notebook', () => {
+		expect(getFieldsForType('notebook')?.has('keyboard_cover_condition')).toBe(true);
+		expect(translateField('keyboard_cover_condition', 'notebook')).not.toBe(
+			'keyboard_cover_condition',
+		);
+	});
+
+	/** El mapa tiene que leerse como puertos y cantidades, no como «[object Object]». */
+	it('muestra el desglose por tipo de puerto', () => {
+		expect(translateValue({ hdmi: 2, usb_c: 1 }, 'defective_port_types')).toBe(
+			'HDMI (2), USB-C (1)',
+		);
+		expect(translateValue({}, 'loose_port_types')).toBe('Ninguno');
 	});
 });

@@ -28,6 +28,9 @@ export const MONITOR_LABELS: Record<string, string> = {
 	all_ports_functional: 'Todos los puertos funcionales',
 	defective_ports_count: 'Puertos defectuosos',
 	defective_ports_critical_count: 'Puertos críticos defectuosos',
+	defective_port_types: 'Qué puertos están defectuosos',
+	loose_ports_count: 'Puertos sueltos',
+	loose_port_types: 'Qué puertos están sueltos',
 };
 
 export const getMonitorLabel = (key: string): string => {

@@ -31,6 +31,7 @@ export const NOTEBOOK_LABELS: Record<string, string> = {
 	// ─── Carcasa ───────────────────────────────────────────────────────────────
 	cover_condition: 'Tapa Superior',
 	keyboard_condition: 'Teclado',
+	keyboard_cover_condition: 'Cubierta Del Teclado',
 	keyboard_layout: 'Distribución Teclado',
 	hinge_condition: 'Bisagras',
 	touchpad_condition: 'Touchpad',
@@ -59,6 +60,9 @@ export const NOTEBOOK_LABELS: Record<string, string> = {
 	charging_ports: 'Puertos de carga',
 	all_ports_functional: 'Todos Los Puertos Funcionales',
 	defective_ports_count: 'Puertos Defectuosos',
+	defective_port_types: 'Qué Puertos Están Defectuosos',
+	loose_ports_count: 'Puertos Sueltos',
+	loose_port_types: 'Qué Puertos Están Sueltos',
 
 	// ─── Accesorios ────────────────────────────────────────────────────────────
 	includes_charger: 'Incluye Cargador',
