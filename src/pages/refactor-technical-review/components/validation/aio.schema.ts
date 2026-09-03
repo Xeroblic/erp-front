@@ -12,6 +12,7 @@ import {
 	ALLOWED_SCREEN_CONDITIONS,
 	ALLOWED_STAND_CONDITIONS,
 } from '../constants/aio/aio.rules';
+import type { PortTypeCounts } from './constants/ports.rules';
 
 // ─── Schema Principal ─────────────────────────────────────────────────────────
 
@@ -123,12 +124,30 @@ export const aioSchema = Yup.object({
 	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	displayport_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	dvi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	usb_c_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	usb_a_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	sd_readers: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	charging_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 
 	all_ports_functional: Yup.boolean().nullable(),
+
+	// ─── Puertos sueltos y detalle de puertos (ZF-98) ────────────────────────
+	// El backend los declara nullable y no los exige al cerrar la revisión
+	// (`COMPLETION_REQUIREMENTS` no los incluye), así que acá tampoco son obligatorios:
+	// exigirlos bloquearía revisiones que el backend sí acepta.
+	// Total derivado del desglose: el servidor lo calcula y el formulario sólo lo
+	// muestra, así que no lleva reglas propias.
+	loose_ports_count: Yup.number().nullable(),
+
+	// Desglose `{tipo: cantidad}`. El catálogo y los límites por tipo los publica el
+	// schema del backend; repetirlos acá crearía una segunda fuente de verdad que
+	// rechazaría cualquier tipo nuevo. El formulario ya no puede producir un valor
+	// fuera de rango: cada contador está acotado por la metadata del schema.
+	loose_port_types: Yup.mixed<PortTypeCounts>().nullable(),
+
+	defective_port_types: Yup.mixed<PortTypeCounts>().nullable(),
 
 	defective_ports_count: Yup.number()
 		.typeError('Debe ser un número')

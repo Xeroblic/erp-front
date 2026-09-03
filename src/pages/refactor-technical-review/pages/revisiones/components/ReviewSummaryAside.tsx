@@ -93,7 +93,8 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 			'',
 			'DETALLES:',
 			...detailEntries.map(
-				([key, value]) => `${translateField(key, equipmentType)}: ${translateValue(value)}`,
+				([key, value]) =>
+					`${translateField(key, equipmentType)}: ${translateValue(value, key)}`,
 			),
 			'',
 			generateConnectivityText(item) || null,
@@ -255,7 +256,7 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 											{translateField(key, equipmentType)}
 										</span>
 										<span className='whitespace-normal break-words text-right text-sm font-bold text-white'>
-											{translateValue(value) || '-'}
+											{translateValue(value, key) || '-'}
 										</span>
 									</div>
 								))}

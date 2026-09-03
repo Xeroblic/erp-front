@@ -139,8 +139,8 @@ export const NOTEBOOK_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Bisagras',
 		group: 'Carcasa',
-		allowed_values: ['ok', 'worn', 'missing_pieces', 'broken'],
-		hint: 'Estado de las bisagras de apertura/cierre',
+		allowed_values: ['ok', 'worn', 'cracked', 'loose', 'broken'],
+		hint: 'Estado de las bisagras de apertura/cierre. Trizada y suelta limitan a grado C; rota es grado M',
 	},
 	battery_health: {
 		type: 'string',
@@ -199,6 +199,12 @@ export const NOTEBOOK_FIELDS_METADATA = {
 		group: 'Puertos',
 		min: 0,
 	},
+	dvi_ports: {
+		type: 'integer',
+		label: 'Puertos DVI',
+		group: 'Puertos',
+		min: 0,
+	},
 	usb_c_ports: {
 		type: 'integer',
 		label: 'Puertos USB-C',
@@ -214,6 +220,12 @@ export const NOTEBOOK_FIELDS_METADATA = {
 	rj45_ports: {
 		type: 'integer',
 		label: 'Puertos RJ45',
+		group: 'Puertos',
+		min: 0,
+	},
+	charging_ports: {
+		type: 'integer',
+		label: 'Puertos de carga',
 		group: 'Puertos',
 		min: 0,
 	},

@@ -3,6 +3,7 @@ import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { monitorSchema, type MonitorFormData } from '../../validation/monitor.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
@@ -88,12 +89,17 @@ const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
 		'hdmi_ports',
 		'displayport_ports',
 		'dvi_ports',
-		'type_c_ports',
+		'usb_a_ports',
+		'usb_c_ports',
+		'sd_readers',
 		'rj45_ports',
-		'usb_hub_ports',
+		'charging_ports',
 		'all_ports_functional',
 		'defective_ports_count',
 		'defective_ports_critical_count',
+		'loose_ports_count',
+		'loose_port_types',
+		'defective_port_types',
 	],
 	accessories: ['includes_power_cable', 'includes_video_cable', 'includes_stand'],
 };
@@ -109,6 +115,8 @@ export interface MonitorFormProps {
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
 	initialSectionKey?: string;
+	/** Metadata publicada por el endpoint de reglas para este tipo de equipo. */
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 const MonitorForm: React.FC<MonitorFormProps> = ({
@@ -121,15 +129,24 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 	registerGetFormValues,
 	isSaving,
 	initialSectionKey,
+	schemaFields,
 }) => {
 	const normalizedDefaultValues = useMemo(() => {
 		if (!defaultValues) return {} as MonitorFormData;
 
 		const values = { ...defaultValues } as Record<string, unknown>;
-		// Legacy compatibility: some historical records persisted usb_c_ports only.
-		if (values.type_c_ports == null && values.usb_c_ports != null) {
-			values.type_c_ports = values.usb_c_ports;
+		// `usb_hub_ports` y `type_c_ports` se renombraron a `usb_a_ports` y `usb_c_ports`,
+		// y la migración del backend arrastró los datos guardados. La carga sólo cubre lo
+		// que ya estuviera hidratado con los nombres viejos —una respuesta en caché, una
+		// pestaña abierta desde antes del despliegue— para no mostrar el contador en cero.
+		if (values.usb_a_ports == null && values.usb_hub_ports != null) {
+			values.usb_a_ports = values.usb_hub_ports;
 		}
+		if (values.usb_c_ports == null && values.type_c_ports != null) {
+			values.usb_c_ports = values.type_c_ports;
+		}
+		delete values.usb_hub_ports;
+		delete values.type_c_ports;
 
 		return values as unknown as MonitorFormData;
 	}, [defaultValues]);
@@ -210,6 +227,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		watch,
 		setValue,
 		getValues,
+		schemaFields,
 		onDirectSubmit: (partialData: Partial<MonitorFormData>) => {
 			const currentData = getValues();
 			const payload = { ...currentData, ...partialData } as MonitorFormData;
@@ -243,10 +261,6 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			async (data) => {
 				try {
 					const finalData = { ...data } as Record<string, unknown>;
-					const resolvedTypeCPorts = finalData.type_c_ports ?? finalData.usb_c_ports;
-					finalData.type_c_ports = resolvedTypeCPorts;
-					// Keep alias synced to prevent divergence in intermediate layers.
-					finalData.usb_c_ports = resolvedTypeCPorts;
 					if (
 						!finalData.extra_attributes ||
 						Object.keys(finalData.extra_attributes).length === 0

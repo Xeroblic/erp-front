@@ -172,6 +172,9 @@ export const ALLOWED_CHARGER_STATUSES = [
 	'broken_port',
 ] as const;
 
+// `keyboard_marks` (ZF-98) es un valor más de este enum, no un campo aparte: la pantalla
+// marcada por el teclado limita a grado B. Sólo el notebook lo admite; el backend lo
+// rechaza en el resto de los tipos.
 export const ALLOWED_SCREEN_CONDITIONS = [
 	'ok',
 	'minor_wear',
@@ -180,6 +183,7 @@ export const ALLOWED_SCREEN_CONDITIONS = [
 	'dead_pixels',
 	'broken',
 	'spots',
+	'keyboard_marks',
 ] as const;
 
 export const ALLOWED_COVER_CONDITIONS = [
@@ -195,7 +199,16 @@ export const ALLOWED_KEYBOARD_CONDITIONS = ['ok', 'worn', 'missing_pieces', 'bro
 
 export const ALLOWED_KEYBOARD_LAYOUTS = ['es', 'us', 'latam'] as const;
 
-export const ALLOWED_HINGE_CONDITIONS = ['ok', 'worn', 'missing_pieces', 'broken'] as const;
+// La bisagra no usa el contrato de componente genérico: ZB-89 le dio el suyo
+// (`CONDITION_HINGE`), que reemplaza `missing_pieces` por los dos estados que limitan
+// a grado C, `cracked` y `loose`. Enviar `missing_pieces` produce un rechazo del
+// backend, y omitir los otros dos deja el caso imposible de registrar.
+export const ALLOWED_HINGE_CONDITIONS = ['ok', 'worn', 'cracked', 'loose', 'broken'] as const;
+
+// La cubierta del teclado (palmrest) es un contrato propio, distinto del de la tapa
+// superior y del de las bisagras. Ojo con el orden de gravedad: acá `cracked` (trizada)
+// es más leve que `broken` (rota), al revés que en la bisagra. Lo confirmó el técnico.
+export const ALLOWED_KEYBOARD_COVER_CONDITIONS = ['ok', 'worn', 'cracked', 'broken'] as const;
 
 export const ALLOWED_BATTERY_STATUSES = [
 	'excellent',

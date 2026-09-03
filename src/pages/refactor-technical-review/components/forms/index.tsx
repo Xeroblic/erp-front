@@ -4,6 +4,7 @@
  * Each form is completely isolated with its own sections, constants, and validation.
  */
 import React from 'react';
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import NotebookForm from './notebook/NotebookForm';
 import DesktopForm from './desktop/DesktopForm';
 import AioForm from './aio/AioForm';
@@ -25,6 +26,10 @@ interface EquipmentFormRouterProps {
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount (e.g. 'gallery' shortcut) */
 	initialSectionKey?: string;
+	schemaFields?: ITechnicalReviewSchema;
+	schemaLoading?: boolean;
+	schemaError?: string | null;
+	onRetrySchema?: () => void;
 }
 
 const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
@@ -38,6 +43,10 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 	registerGetFormValues,
 	isSaving,
 	initialSectionKey,
+	schemaFields,
+	schemaLoading = false,
+	schemaError,
+	onRetrySchema,
 }) => {
 	const type = equipmentType.toLowerCase();
 
@@ -51,24 +60,68 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 		registerGetFormValues,
 		isSaving,
 		initialSectionKey,
+		schemaFields,
 	};
+
+	// ZF-98 llevó los campos del schema a los cinco tipos, así que el aviso de carga y el
+	// reintento dejan de ser exclusivos de notebook y desktop.
+	const schemaStatus = (schemaLoading || schemaError) && (
+		<div
+			className='mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900'
+			role='status'>
+			{schemaLoading && 'Cargando las reglas actuales del formulario…'}
+			{schemaError && (
+				<div className='flex items-center justify-between gap-3'>
+					<span>{schemaError}</span>
+					<button type='button' className='underline' onClick={onRetrySchema}>
+						Reintentar
+					</button>
+				</div>
+			)}
+		</div>
+	);
 
 	switch (type) {
 		case 'notebook':
-			return <NotebookForm {...formProps} />;
+			return (
+				<>
+					{schemaStatus}
+					<NotebookForm {...formProps} />
+				</>
+			);
 
 		case 'desktop':
-			return <DesktopForm {...formProps} />;
+			return (
+				<>
+					{schemaStatus}
+					<DesktopForm {...formProps} />
+				</>
+			);
 
 		case 'aio':
 		case 'all-in-one':
-			return <AioForm {...formProps} />;
+			return (
+				<>
+					{schemaStatus}
+					<AioForm {...formProps} />
+				</>
+			);
 
 		case 'docking':
-			return <DockingForm {...formProps} />;
+			return (
+				<>
+					{schemaStatus}
+					<DockingForm {...formProps} />
+				</>
+			);
 
 		case 'monitor':
-			return <MonitorForm {...formProps} />;
+			return (
+				<>
+					{schemaStatus}
+					<MonitorForm {...formProps} />
+				</>
+			);
 
 		default:
 			return (

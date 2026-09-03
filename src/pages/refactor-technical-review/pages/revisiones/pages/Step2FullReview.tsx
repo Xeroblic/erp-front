@@ -11,8 +11,19 @@ import { ReviewPhotosProvider } from '../../../components/forms/shared/gallery/R
 import useAutoSave from '../../../hooks/useAutoSave';
 import AutoSaveConfirmModal from '../../../components/modals/AutoSaveConfirmModal';
 import PrefillReviewModal from '../../../components/modals/PrefillReviewModal';
-import { sanitizeByAllowedValues } from '../../../components/validation/constants/allowedValuesMap';
+import {
+	buildRemoteAllowedValuesMap,
+	sanitizeByAllowedValues,
+} from '../../../components/validation/constants/allowedValuesMap';
 import Icon from '@/components/icon/Icon';
+import useReviewValidationSchema from '../../../hooks/useReviewValidationSchema';
+import { normalizePortTypeCounts } from '../../../components/validation/constants/ports.rules';
+import {
+	EXPECTED_SCHEMA_FIELDS_BY_TYPE,
+	normalizeEquipmentType,
+	REQUIRED_SCHEMA_FIELDS_BY_TYPE,
+	selectTechnicalReviewSchemaFields,
+} from '../../../components/validation/technicalReviewSchema';
 
 interface Step2FullReviewProps {
 	equipmentType: string;
@@ -36,6 +47,9 @@ const EQUIPMENT_LABEL_MAP: Record<string, string> = {
 	monitor: 'Monitor',
 };
 
+/** Campos cuyo valor es un desglose `{tipo: cantidad}`. */
+const PORT_BREAKDOWN_FIELDS = ['loose_port_types', 'defective_port_types'] as const;
+
 const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	equipmentType,
 	serialNumber,
@@ -49,6 +63,28 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 }) => {
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
+	const reviewSchema = useReviewValidationSchema({
+		equipmentType,
+		branchId: branchId ?? null,
+		subsidiaryId: subsidiaryId ?? null,
+	});
+	const normalizedEquipmentType = normalizeEquipmentType(equipmentType);
+	const schemaFields = React.useMemo(() => {
+		if (!reviewSchema.schema) return undefined;
+		const fields = EXPECTED_SCHEMA_FIELDS_BY_TYPE[normalizedEquipmentType] ?? [];
+		return selectTechnicalReviewSchemaFields(reviewSchema.schema, fields);
+	}, [normalizedEquipmentType, reviewSchema.schema]);
+	const schemaContractError = React.useMemo(() => {
+		if (!reviewSchema.schema) return null;
+		// Sólo los campos sin respaldo local rompen el contrato. Los de ZF-98 degradan a las
+		// constantes locales, así que un backend sin la fase F3 desplegada no debe pintar un
+		// error que el técnico no puede resolver.
+		const requiredFields = REQUIRED_SCHEMA_FIELDS_BY_TYPE[normalizedEquipmentType] ?? [];
+		const missingFields = requiredFields.filter((field) => !schemaFields?.[field]);
+		return missingFields.length > 0
+			? 'El backend activo aún no publica los campos requeridos para esta revisión. Contacta a soporte técnico.'
+			: null;
+	}, [normalizedEquipmentType, reviewSchema.schema, schemaFields]);
 	// const { isSuperAdmin, hasRole } = useAuthorization();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [showSavingBadge, setShowSavingBadge] = useState(false);
@@ -87,19 +123,25 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	// Dynamic transformer: strips any constrained field value that is not
 	// in the backend's allowed_values list for the current equipment type.
 	// Works for ALL equipment types (notebook, desktop, aio, docking, monitor).
+	const remoteAllowedValues = React.useMemo(
+		() => buildRemoteAllowedValuesMap(reviewSchema.schema),
+		[reviewSchema.schema],
+	);
+
 	const transformData = useCallback(
 		(data: Record<string, unknown>) => {
-			return sanitizeByAllowedValues(data, equipmentType);
+			return sanitizeByAllowedValues(data, equipmentType, remoteAllowedValues);
 		},
-		[equipmentType],
+		[equipmentType, remoteAllowedValues],
 	);
 
 	const { saveNow, isSaving, lastSavedAt, showIdleSaveModal, dismissIdleSaveModal } = useAutoSave(
 		{
 			branchId: branchId ?? null,
+			subsidiaryId: subsidiaryId ?? null,
 			itemId: initialData?.id ?? null,
 			getFormData,
-			enabled: !readOnly && !!initialData?.id && !!branchId,
+			enabled: !readOnly && !!initialData?.id && (!!branchId || !!subsidiaryId),
 			idleTimeoutMs: 20_000,
 			equipmentType,
 			transformData,
@@ -154,12 +196,26 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 			}
 		}
 
-		return { ...result, ...prefillMergeValues };
+		const merged: Record<string, unknown> = { ...result, ...prefillMergeValues };
+
+		// Las revisiones guardadas antes del contrato de mapa traen el desglose como lista
+		// de tipos (`['hdmi','usb_c']`), que el backend ahora rechaza con 422. Se normaliza
+		// al hidratar para que el formulario nunca sostenga la forma vieja.
+		const normalizedBreakdowns = Object.fromEntries(
+			PORT_BREAKDOWN_FIELDS.filter(
+				(field) => merged[field] !== undefined && merged[field] !== null,
+			).map((field) => [field, normalizePortTypeCounts(merged[field])] as const),
+		);
+
+		return { ...merged, ...normalizedBreakdowns };
 	}, [initialData, prefillMergeValues]);
 
 	// ─── Final Submit (original behavior) ────────────────────────────────────
 	const handleFormSubmit = async (data: any) => {
-		if (!branchId || !initialData?.id) {
+		// La guarda debe coincidir con la del autosave: un usuario con subsidiaría y sin
+		// sucursal activa puede guardar borradores, así que también debe poder cerrar la
+		// revisión. El thunk resuelve el contexto a partir de cualquiera de los dos.
+		if ((!branchId && !subsidiaryId) || !initialData?.id) {
 			toast.error('No se pudo identificar el item para guardar');
 			return;
 		}
@@ -168,7 +224,8 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		try {
 			await dispatch(
 				updateItemDetails({
-					branchId,
+					branchId: branchId ?? null,
+					subsidiaryId: subsidiaryId ?? null,
 					itemId: initialData.id,
 					data,
 					equipmentType, // Provide equipmentType to avoid SQL errors
@@ -176,9 +233,15 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 			).unwrap();
 
 			await onComplete();
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error(error);
-			toast.error(error?.message || 'Error al guardar la revisión');
+			const message =
+				typeof error === 'string'
+					? error
+					: error instanceof Error
+						? error.message
+						: 'Error al guardar la revisión';
+			toast.error(message);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -270,6 +333,10 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					registerGetFormValues={registerGetFormValues}
 					isSaving={isSaving}
 					initialSectionKey={initialSectionKey}
+					schemaFields={schemaFields}
+					schemaLoading={reviewSchema.isLoading}
+					schemaError={reviewSchema.error ?? schemaContractError}
+					onRetrySchema={reviewSchema.retry}
 				/>
 			</ReviewPhotosProvider>
 

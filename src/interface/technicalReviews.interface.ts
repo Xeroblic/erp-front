@@ -191,19 +191,28 @@ export interface UpdateItemDetailsPayload {
 	includes_power_adapter?: boolean;
 	power_cable_status?: string | null;
 
-	// Puertos (común para la mayoría)
+	// Puertos: los nueve contadores del catálogo, iguales en los cinco tipos de equipo.
+	// El orden es el que publica el schema.
 	vga_ports?: number;
 	hdmi_ports?: number;
 	displayport_ports?: number;
+	dvi_ports?: number;
 	usb_a_ports?: number;
-	type_c_ports?: number;
 	usb_c_ports?: number;
 	sd_readers?: number;
 	rj45_ports?: number;
+	charging_ports?: number;
 	has_wifi?: boolean;
 	has_bluetooth?: boolean;
 	all_ports_functional?: boolean;
 	defective_ports_count?: number;
+	/** Desglose `{tipo: cantidad}` de los puertos que no funcionan. */
+	defective_port_types?: Record<string, number>;
+	/**
+	 * Desglose `{tipo: cantidad}` de los puertos que se mueven pero funcionan.
+	 * El total (`loose_ports_count`) lo deriva el servidor: no se envía.
+	 */
+	loose_port_types?: Record<string, number>;
 
 	// Notebook específicos
 	includes_charger?: boolean;
@@ -212,12 +221,17 @@ export interface UpdateItemDetailsPayload {
 	screen_condition?: string;
 	is_touchscreen?: boolean;
 	keyboard_condition?: string;
+	non_functional_keys_count?: number;
 	keyboard_layout?: string;
 	has_numeric_keypad?: boolean;
 	has_backlit_keyboard?: boolean;
 	touchpad_condition?: string;
 	cover_condition?: string;
 	hinge_condition?: string;
+	/** ZF-98: palmrest del notebook, distinto de `cover_condition` y de `hinge_condition`. */
+	keyboard_cover_condition?: string;
+	speakers_condition?: string;
+	powers_on?: boolean;
 	bottom_condition?: string;
 	battery_status?: string; // Estado o porcentaje (p.ej. "85%")
 	operating_system?: string;
@@ -234,10 +248,8 @@ export interface UpdateItemDetailsPayload {
 	includes_stand?: boolean;
 	other_includes?: string | null;
 	has_usb_hub?: boolean;
-	usb_hub_ports?: number;
 	resolution?: string;
 	frame_condition?: string;
-	dvi_ports?: number;
 	defective_ports_critical_count?: number;
 
 	// Atributos extra dinámicos
@@ -290,6 +302,34 @@ export interface IValidationRule {
 	pattern?: string;
 	description?: string;
 }
+
+export interface ITechnicalReviewSchemaOption {
+	value: string | number;
+	label: string;
+}
+
+/** Metadata publicada por TechnicalReviewValidationSchemaService. */
+export interface ITechnicalReviewSchemaField {
+	type: string;
+	label?: string;
+	group?: string;
+	allowed_values?: Array<string | number>;
+	/** Campos de tipo objeto (`{tipo: cantidad}`): claves aceptadas, en vez de valores. */
+	allowed_keys?: string[];
+	value_type?: string;
+	value_min?: number;
+	value_max?: number;
+	options?: ITechnicalReviewSchemaOption[];
+	required?: boolean;
+	min?: number;
+	max?: number;
+	/** Presente cuando el servidor calcula el campo: es de sólo lectura y no se envía. */
+	derived_from?: string;
+	hint?: string;
+	warning?: string;
+}
+
+export type ITechnicalReviewSchema = Record<string, ITechnicalReviewSchemaField>;
 
 /**
  * Esquema de validación completo (común + por tipo)

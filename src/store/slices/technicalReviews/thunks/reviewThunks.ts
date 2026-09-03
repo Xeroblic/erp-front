@@ -22,6 +22,25 @@ import { setTechnicalReviewsContext } from '../slice/technicalReviewsSlice';
 
 const normalizeObject = (payload: any): any => payload?.data ?? payload ?? null;
 
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+	typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+
+/**
+ * La ruta de sucursal (`/branches/{branch}/...`) responde 200 aunque haya descartado
+ * campos: valida con `Arr::only`, persiste lo que pasó y deja lo rechazado en la clave
+ * `warnings`. Ignorarla convertía cualquier valor inválido en pérdida silenciosa con el
+ * badge en «Guardado». Tratarla como fallo deja que el autosave reintente con el payload
+ * saneado y, si tampoco pasa, que el técnico vea el error.
+ */
+const extractValidationWarning = (payload: unknown): string | null => {
+	const warnings = asRecord(asRecord(payload)?.warnings);
+	if (!warnings) return null;
+
+	return typeof warnings.message === 'string' && warnings.message.length > 0
+		? warnings.message
+		: 'El backend no aceptó algunos campos de la revisión';
+};
+
 /**
  * Paso 1: Iniciar revisión técnica
  * POST /api/branches/{branch}/technical-reviews/items/{item}/start-review
@@ -147,11 +166,16 @@ export const updateItemDetails = createAsyncThunk<
 
 			const cleanData = filterTechnicalReviewPayload({ ...filteredData }, NULLABLE_FIELDS);
 
-			const response = await ApiService.fetchData<{ data?: any }>({
+			const response = await ApiService.fetchData<{ data?: any; warnings?: unknown }>({
 				url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}/details`),
 				method: 'patch',
 				data: cleanData,
 			});
+
+			const warning = extractValidationWarning(response.data);
+			if (warning) {
+				return rejectWithValue(warning);
+			}
 
 			return normalizeObject(response.data) as IItem;
 		} catch (error: any) {
