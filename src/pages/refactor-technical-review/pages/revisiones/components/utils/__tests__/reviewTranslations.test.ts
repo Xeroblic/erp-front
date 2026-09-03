@@ -32,6 +32,18 @@ describe('translateValue', () => {
 		expect(translateValue('cracked', 'keyboard_cover_condition')).toBe('Trizada');
 	});
 
+	/**
+	 * ZF-99. `missing_key` y `locked` sólo existen en el candado del docking: no están en el
+	 * mapa plano, así que sin rótulo propio el resumen los mostraba en inglés. Y `ok` y
+	 * `worn` sí están, pero describiendo otra cosa.
+	 */
+	it('traduce los cuatro estados del candado del docking', () => {
+		expect(translateValue('ok', 'lock_area_condition')).toBe('Sin observaciones');
+		expect(translateValue('missing_key', 'lock_area_condition')).toBe('Sin llave');
+		expect(translateValue('worn', 'lock_area_condition')).toBe('Sector con desgaste');
+		expect(translateValue('locked', 'lock_area_condition')).toBe('Candado puesto');
+	});
+
 	/** Sin campo, o con uno sin mapa propio, sigue mandando el mapa plano. */
 	it('cae al mapa común cuando el valor no depende del campo', () => {
 		expect(translateValue('cracked')).toBe('Trizada');
@@ -66,6 +78,12 @@ describe('campos del resumen por tipo de equipo', () => {
 		expect(translateField('keyboard_cover_condition', 'notebook')).not.toBe(
 			'keyboard_cover_condition',
 		);
+	});
+
+	/** El sector del candado sólo existe en docking, y sin rótulo no llega al resumen. */
+	it('incluye el estado del candado en docking', () => {
+		expect(getFieldsForType('docking')?.has('lock_area_condition')).toBe(true);
+		expect(translateField('lock_area_condition', 'docking')).not.toBe('lock_area_condition');
 	});
 
 	/** El mapa tiene que leerse como puertos y cantidades, no como «[object Object]». */

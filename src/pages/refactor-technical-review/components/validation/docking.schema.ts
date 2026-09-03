@@ -66,6 +66,14 @@ export const dockingSchema = Yup.object({
 		.required('La condición de carcasa es requerida')
 		.oneOf(ALLOWED_COVER_CONDITIONS, 'Condición de carcasa selecta no válida'),
 
+	// ─── Sector del candado (ZF-99) ──────────────────────────────────────────
+	// Los valores los publica el schema del backend (`CONDITION_LOCK_AREA`); repetirlos
+	// acá crearía una segunda fuente de verdad que rechazaría cualquier valor nuevo. El
+	// backend lo declara nullable y `COMPLETION_REQUIREMENTS` no tiene entrada `docking`,
+	// así que tampoco se exige al cerrar la revisión: marcarlo obligatorio bloquearía
+	// cierres que el backend sí acepta.
+	lock_area_condition: Yup.string().nullable(),
+
 	// Notas
 	observations: Yup.string()
 		.transform((v, o) => (o === '' ? null : v))

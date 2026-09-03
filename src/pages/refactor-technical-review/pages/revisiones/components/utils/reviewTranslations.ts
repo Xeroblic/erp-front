@@ -34,6 +34,7 @@ import {
 import {
 	getDockingLabel,
 	DOCKING_LABELS,
+	LOCK_AREA_CONDITION_LABELS,
 } from '@/pages/refactor-technical-review/components/translations/docking.labels';
 import { EQUIPMENT_TYPE_OPTIONS } from '@/pages/refactor-technical-review/components/constants/technicalReview.constants';
 import { COMMERCIAL_STATUS_CONFIG } from '@/pages/refactor-technical-review/components/constants/statuses.constant';
@@ -146,6 +147,7 @@ const FIELD_VALUE_TRANSLATIONS: Record<string, Record<string, string>> = {
 	touchpad_condition: TOUCHPAD_CONDITION_LABELS,
 	bottom_condition: BOTTOM_CONDITION_LABELS,
 	battery_status: BATTERY_STATUS_LABELS,
+	lock_area_condition: LOCK_AREA_CONDITION_LABELS,
 };
 
 /**
