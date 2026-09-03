@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { toast } from 'react-toastify';
 import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
@@ -26,6 +26,8 @@ import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
 
 const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (sectionProps) => {
 	const { control, errors, readOnly, watch, setValue } = sectionProps;
+	const spotsLabelId = useId();
+	const deadPixelsLabelId = useId();
 	const currentScreen = watch('screen_condition');
 	const currentStand = watch('stand_condition');
 	const currentFrame = watch('frame_condition');
@@ -67,10 +69,11 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 								hdmi_ports: 0,
 								displayport_ports: 0,
 								dvi_ports: 0,
-								type_c_ports: 0,
+								usb_a_ports: 0,
 								usb_c_ports: 0,
+								sd_readers: 0,
 								rj45_ports: 0,
-								usb_hub_ports: 0,
+								charging_ports: 0,
 								all_ports_functional: false,
 								defective_ports_count: 5,
 								defective_ports_critical_count: 5,
@@ -261,10 +264,12 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 					<div
 						className='mt-5 w-full max-w-[220px]'
 						role='group'
-						aria-label={getMonitorLabel('spots_count')}>
-						<label className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						aria-labelledby={spotsLabelId}>
+						<p
+							id={spotsLabelId}
+							className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							{getMonitorLabel('spots_count')}
-						</label>
+						</p>
 						<StepperInput
 							value={getScreenCounterValue(currentSpotsCount)}
 							onChange={(val) => {
@@ -286,10 +291,12 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 					<div
 						className='mt-5 w-full max-w-[220px]'
 						role='group'
-						aria-label={getMonitorLabel('dead_pixels_count')}>
-						<label className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						aria-labelledby={deadPixelsLabelId}>
+						<p
+							id={deadPixelsLabelId}
+							className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							{getMonitorLabel('dead_pixels_count')}
-						</label>
+						</p>
 						<StepperInput
 							value={getScreenCounterValue(currentDeadPixelsCount)}
 							onChange={(value) => {

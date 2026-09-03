@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
 import { AioFormData } from '../../../validation/aio.schema';
@@ -27,6 +27,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 	watch,
 	setValue,
 }) => {
+	const deadPixelsLabelId = useId();
 	const screenCondition = watch('screen_condition');
 	const deadPixelsCount = watch('dead_pixels_count');
 	const standCondition = watch('stand_condition');
@@ -135,10 +136,12 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 						<div
 							className='mt-5 w-full max-w-[220px]'
 							role='group'
-							aria-label={getAioLabel('dead_pixels_count')}>
-							<label className='mb-2 block text-xs font-bold text-purple-900 dark:text-purple-100'>
+							aria-labelledby={deadPixelsLabelId}>
+							<p
+								id={deadPixelsLabelId}
+								className='mb-2 block text-xs font-bold text-purple-900 dark:text-purple-100'>
 								{getAioLabel('dead_pixels_count')}
-							</label>
+							</p>
 							<StepperInput
 								value={getScreenCounterValue(deadPixelsCount)}
 								onChange={(value) => {
