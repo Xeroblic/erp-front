@@ -1,7 +1,8 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
+import type { AuthorizationScopeMode } from '@/types/authorization';
 import Button, { IButtonProps } from './Button';
 import PermissionGuard from '../authorization/PermissionGuard';
-import type { AuthorizationScopeMode } from '@/types/authorization';
+import Tooltip from './Tooltip';
 
 type TFallbackMode = 'hidden' | 'disabled';
 
@@ -32,6 +33,7 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 		disabledTooltip,
 		...buttonProps
 	} = props;
+	const disabledTooltipId = useId();
 
 	if (
 		!permission &&
@@ -42,6 +44,27 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 	}
 
 	const combinedPermission = permission ?? permissions;
+	const fallbackExplanation =
+		disabledTooltip ?? buttonProps.title ?? 'No tienes autorización para realizar esta acción';
+	const disabledButton = (
+		<Button ref={ref} {...buttonProps} isDisable title={fallbackExplanation} />
+	);
+	let fallback: React.ReactNode = null;
+
+	/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- Trigger enfocable para explicar un botón nativamente deshabilitado. */
+	if (fallbackMode === 'disabled') {
+		fallback = (
+			<Tooltip id={disabledTooltipId} text={fallbackExplanation}>
+				<span
+					tabIndex={0}
+					className='inline-flex !cursor-not-allowed'
+					aria-describedby={disabledTooltipId}>
+					{disabledButton}
+				</span>
+			</Tooltip>
+		);
+	}
+	/* eslint-enable jsx-a11y/no-noninteractive-tabindex */
 
 	return (
 		<PermissionGuard
@@ -51,7 +74,8 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 			branchId={branchId}
 			subsidiaryId={subsidiaryId}
 			companyId={companyId}
-			scope={scope}>
+			scope={scope}
+			fallback={fallback}>
 			<Button ref={ref} {...buttonProps} />
 		</PermissionGuard>
 	);
