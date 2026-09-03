@@ -14,6 +14,10 @@ import {
 	KEYBOARD_CONDITION_LABELS,
 	KEYBOARD_LAYOUT_LABELS,
 	HINGE_CONDITION_LABELS,
+	KEYBOARD_COVER_CONDITION_LABELS,
+	TOUCHPAD_CONDITION_LABELS,
+	BOTTOM_CONDITION_LABELS,
+	BATTERY_STATUS_LABELS,
 } from '@/pages/refactor-technical-review/components/translations/notebook.labels';
 import {
 	getDesktopLabel,
@@ -33,6 +37,11 @@ import {
 } from '@/pages/refactor-technical-review/components/translations/docking.labels';
 import { EQUIPMENT_TYPE_OPTIONS } from '@/pages/refactor-technical-review/components/constants/technicalReview.constants';
 import { COMMERCIAL_STATUS_CONFIG } from '@/pages/refactor-technical-review/components/constants/statuses.constant';
+import {
+	ALLOWED_PORT_TYPES,
+	PORT_COUNTER_FIELDS,
+	PORT_TYPE_LABELS,
+} from '../../../../components/validation/constants/ports.rules';
 
 /** Mapa de funciones de label por tipo de equipo */
 const LABEL_GETTERS: Record<EquipmentType, (field: string) => string> = {
@@ -103,12 +112,40 @@ const VALUE_TRANSLATIONS: Record<string, string> = {
 	false: 'No',
 	null: '-',
 
+	// Tipos de puerto y valores nuevos de ZF-98
+	...PORT_TYPE_LABELS,
+	keyboard_marks: 'Marcas del teclado',
+
 	// Tecnologías
 	m2: 'M.2',
 	ssd: 'SSD',
 	hdd: 'HDD',
 	ddr4: 'DDR4',
 	ddr5: 'DDR5',
+};
+
+/**
+ * Rótulos por campo, para los valores que varios campos comparten.
+ *
+ * `VALUE_TRANSLATIONS` es un mapa plano: `ok`, `worn` y `broken` existen en casi todas las
+ * condiciones y la última fusión gana, así que un solo rótulo terminaba describiendo la
+ * bisagra, la tapa, el teclado y el touchpad a la vez, y con el género de uno solo de
+ * ellos. Cuando el campo se conoce manda su propio mapa; el plano queda de respaldo para
+ * los valores que no dependen del campo (booleanos, grados, estados de la revisión).
+ */
+const FIELD_VALUE_TRANSLATIONS: Record<string, Record<string, string>> = {
+	general_condition: GENERAL_CONDITION_LABELS,
+	storage_technology: STORAGE_TECHNOLOGY_LABELS,
+	charger_status: CHARGER_STATUS_LABELS,
+	screen_condition: SCREEN_CONDITION_LABELS,
+	cover_condition: COVER_CONDITION_LABELS,
+	keyboard_condition: KEYBOARD_CONDITION_LABELS,
+	keyboard_layout: KEYBOARD_LAYOUT_LABELS,
+	hinge_condition: HINGE_CONDITION_LABELS,
+	keyboard_cover_condition: KEYBOARD_COVER_CONDITION_LABELS,
+	touchpad_condition: TOUCHPAD_CONDITION_LABELS,
+	bottom_condition: BOTTOM_CONDITION_LABELS,
+	battery_status: BATTERY_STATUS_LABELS,
 };
 
 /**
@@ -139,22 +176,54 @@ export type TranslatableValue =
 	| undefined
 	| { value?: string; label?: string; description?: string };
 
+/**
+ * Un desglose `{tipo: cantidad}`.
+ *
+ * Se exige que las claves sean del catálogo de puertos, no sólo que los valores sean
+ * números: `translateValue` es genérico y un objeto cualquiera con un número adentro
+ * —`{ value: 1 }`, por ejemplo— caería acá y se mostraría como si fuera un desglose.
+ */
+const isPortTypeCounts = (value: unknown): value is Record<string, number> =>
+	typeof value === 'object' &&
+	value !== null &&
+	!Array.isArray(value) &&
+	Object.entries(value).every(
+		([type, count]) =>
+			(ALLOWED_PORT_TYPES as readonly string[]).includes(type) && typeof count === 'number',
+	);
+
 /** Traduce un valor (string, objeto o booleano) a su representación legible */
-export const translateValue = (value: unknown): string => {
+export const translateValue = (value: unknown, field?: string): string => {
 	if (value === null || value === undefined) return '-';
+
+	// El mapa del campo manda sobre el plano: `broken` es «Rota» en la bisagra y «Roto» en
+	// el teclado, y con un solo mapa uno de los dos quedaba mal escrito.
+	const fieldLabels = field ? FIELD_VALUE_TRANSLATIONS[field] : undefined;
+	const translate = (raw: string): string | undefined =>
+		fieldLabels?.[raw] ?? VALUE_TRANSLATIONS[raw];
+
+	// El desglose de puertos es un mapa `{tipo: cantidad}`. Sin este caso caía en la rama
+	// genérica de objeto y el resumen mostraba «-» sobre un campo que el técnico llenó.
+	if (isPortTypeCounts(value)) {
+		const entries = Object.entries(value);
+		if (entries.length === 0) return 'Ninguno';
+		return entries
+			.map(([type, count]) => `${VALUE_TRANSLATIONS[type] ?? type} (${count})`)
+			.join(', ');
+	}
 
 	// Si es un objeto con propiedades conocidas, extraer el valor
 	if (typeof value === 'object' && value !== null) {
 		const obj = value as Record<string, unknown>;
 		const extractedValue = (obj.value || obj.label || obj.description) as string | undefined;
 		if (extractedValue) {
-			return VALUE_TRANSLATIONS[extractedValue.toLowerCase()] || extractedValue;
+			return translate(extractedValue.toLowerCase()) || extractedValue;
 		}
 		return '-';
 	}
 
 	const strValue = String(value).toLowerCase();
-	return VALUE_TRANSLATIONS[strValue] || String(value);
+	return translate(strValue) || String(value);
 };
 
 /** Extrae el valor primitivo de un campo que puede ser un objeto */
@@ -201,15 +270,10 @@ export const generateConnectivityText = (
 	const allPortsOk = extractValue(item.details.all_ports_functional);
 	if (allPortsOk === 'true' || allPortsOk === 'Sí') return '';
 
-	const portFields: Record<string, string> = {
-		usb_a_ports: 'USB-A',
-		usb_c_ports: 'USB-C',
-		hdmi_ports: 'HDMI',
-		displayport_ports: 'DisplayPort',
-		vga_ports: 'VGA',
-		rj45_ports: 'RJ45',
-		sd_readers: 'Lector SD',
-	};
+	// Los nueve contadores del catálogo, con el rótulo corto del tipo de puerto.
+	const portFields: Record<string, string> = Object.fromEntries(
+		PORT_COUNTER_FIELDS.map((port) => [port.column, PORT_TYPE_LABELS[port.type]]),
+	);
 
 	const activePorts: string[] = [];
 

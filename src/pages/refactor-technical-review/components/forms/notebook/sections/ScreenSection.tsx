@@ -12,6 +12,7 @@ import {
 import { SelectionCard } from '../../../ui/SelectionCard';
 import { YesNoSelector } from '../../../ui/YesNoSelector';
 import { SCREEN_CONDITION_OPTIONS } from '../../../constants/notebook/notebook.options';
+import { resolveSchemaField } from '../../../validation/technicalReviewSchema';
 import Icon from '@/components/icon/Icon';
 
 const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
@@ -20,7 +21,16 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	readOnly,
 	watch,
 	setValue,
+	schemaFields,
 }) => {
+	// ZF-98 sumó `keyboard_marks` como valor de este enum. Las opciones pasan a salir del
+	// schema, con las constantes locales de respaldo: contra un backend sin la fase F3 la
+	// opción no se ofrece, en vez de dejar que el técnico elija un valor que da 422.
+	const screen = resolveSchemaField(schemaFields?.screen_condition, {
+		label: getNotebookLabel('screen_condition'),
+		options: SCREEN_CONDITION_OPTIONS,
+		required: true,
+	});
 	const screenCondition = watch('screen_condition');
 	const isTouchscreen = watch('is_touchscreen');
 	const showDefectsCount = screenCondition === 'dead_pixels' || screenCondition === 'spots';
@@ -52,7 +62,8 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			<div className='rounded-xl border border-purple-200 bg-purple-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-purple-500/30 dark:border-purple-800 dark:bg-purple-900/10 dark:hover:bg-purple-900/30'>
 				<label className='mb-3 flex items-center justify-center gap-2 text-center text-sm font-bold text-purple-800 dark:text-purple-200'>
 					<Icon icon='HeroSparkles' className='h-4 w-4' />
-					{getNotebookLabel('screen_condition')} <span className='text-red-500'>*</span>
+					{screen.label}
+					{screen.required && <span className='text-red-500'> *</span>}
 				</label>
 
 				{/* Warning */}
@@ -66,8 +77,12 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					</div>
 				)}
 
-				<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
-					{SCREEN_CONDITION_OPTIONS.map((opt) => (
+				<div
+					role='radiogroup'
+					aria-label={screen.label}
+					aria-required={screen.required}
+					className='grid grid-cols-2 gap-2 md:grid-cols-3'>
+					{screen.options.map((opt) => (
 						<SelectionCard
 							key={opt.value}
 							label={opt.label}

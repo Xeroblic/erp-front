@@ -1,6 +1,12 @@
 import React from 'react';
 import Input from '@/components/form/Input';
 import Checkbox from '@/components/form/Checkbox';
+import { PortTypeCounters } from '@/pages/refactor-technical-review/components/ui/PortTypeCounters';
+import {
+	PORT_TYPE_OPTIONS,
+	sumPortTypeCounts,
+	type PortTypeCounts,
+} from '@/pages/refactor-technical-review/components/validation/constants/ports.rules';
 import type { ReviewSectionProps } from '../types';
 
 const portField = (
@@ -9,11 +15,16 @@ const portField = (
 	value: number | undefined,
 	onChange: (v: number) => void,
 ) => (
+	// El rótulo se ata al input: sin `htmlFor`/`id` el contador queda sin nombre accesible
+	// y un lector de pantalla sólo anuncia «campo numérico».
 	<div className='space-y-1' key={name}>
-		<label className='text-sm font-medium text-neutral-700 dark:text-neutral-300'>
+		<label
+			className='text-sm font-medium text-neutral-700 dark:text-neutral-300'
+			htmlFor={name}>
 			{label}
 		</label>
 		<Input
+			id={name}
 			name={name}
 			type='number'
 			placeholder='0'
@@ -23,9 +34,27 @@ const portField = (
 	</div>
 );
 
+/** `undefined` = no se midió; `{}` = se midió y no hay ninguno. */
+const isMeasured = (counts: PortTypeCounts | undefined): counts is PortTypeCounts =>
+	counts !== undefined && counts !== null;
+
 const PortsSection: React.FC<ReviewSectionProps> = ({ data, updateField, productKind }) => {
 	const showDvi = productKind === 'monitor';
 	const showUsbHub = productKind === 'monitor';
+
+	// El total y el desglose no pueden contradecirse: mientras el desglose no exista manda
+	// el total guardado —una revisión importada de antes de ZF-98 sólo tiene eso—, y en
+	// cuanto el desglose existe el total pasa a derivarse de él.
+	const hasDefectiveBreakdown = isMeasured(data.defective_port_types);
+	const defectiveTotal = hasDefectiveBreakdown
+		? sumPortTypeCounts(data.defective_port_types)
+		: (data.defective_ports_count ?? 0);
+	const looseTotal = sumPortTypeCounts(data.loose_port_types);
+
+	const changeBreakdown = (field: string, totalField: string) => (next: PortTypeCounts) => {
+		updateField(field, next);
+		updateField(totalField, sumPortTypeCounts(next));
+	};
 
 	return (
 		<div className='space-y-4'>
@@ -93,12 +122,47 @@ const PortsSection: React.FC<ReviewSectionProps> = ({ data, updateField, product
 					</div>
 
 					{!data.all_ports_functional &&
+						!hasDefectiveBreakdown &&
 						portField(
 							'Puertos defectuosos',
 							'review_defective_ports_count',
 							data.defective_ports_count,
 							(v) => updateField('defective_ports_count', v),
 						)}
+				</div>
+
+				{!data.all_ports_functional && (
+					<div className='mt-4 space-y-3'>
+						<PortTypeCounters
+							label='Qué puertos están defectuosos'
+							options={PORT_TYPE_OPTIONS}
+							value={data.defective_port_types ?? {}}
+							onChange={changeBreakdown(
+								'defective_port_types',
+								'defective_ports_count',
+							)}
+						/>
+						<p className='text-sm font-semibold text-neutral-700 dark:text-neutral-300'>
+							Puertos defectuosos: {defectiveTotal}
+						</p>
+					</div>
+				)}
+			</div>
+
+			<div className='border-t border-neutral-200 pt-4 dark:border-neutral-700'>
+				<div className='space-y-3'>
+					<PortTypeCounters
+						label='Qué puertos están sueltos'
+						options={PORT_TYPE_OPTIONS}
+						value={data.loose_port_types ?? {}}
+						onChange={changeBreakdown('loose_port_types', 'loose_ports_count')}
+					/>
+					<p className='text-sm text-neutral-500 dark:text-neutral-400'>
+						Un puerto suelto se mueve pero funciona; uno defectuoso no funciona.
+					</p>
+					<p className='text-sm font-semibold text-neutral-700 dark:text-neutral-300'>
+						Puertos sueltos: {looseTotal}
+					</p>
 				</div>
 			</div>
 		</div>

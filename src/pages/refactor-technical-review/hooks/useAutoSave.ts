@@ -16,12 +16,15 @@ import {
 	filterTechnicalReviewPayload,
 	HARDWARE_NULLABLE_FIELDS,
 } from '@/utils/technicalReviewHardware';
+import { getEquipmentFieldLabel } from '../components/translations/equipment.labels';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface UseAutoSaveOptions {
 	/** Branch ID from useCurrentBranch */
 	branchId: number | null;
+	/** Subsidiary ID from useCurrentBranch when the review uses subsidiary scope */
+	subsidiaryId?: number | null;
 	/** Item ID being reviewed */
 	itemId: number | null;
 	/** Function that returns the current form data snapshot */
@@ -49,6 +52,36 @@ export interface UseAutoSaveReturn {
 	dismissIdleSaveModal: () => void;
 }
 
+// ─── Aviso de campos descartados ─────────────────────────────────────────────
+
+const MAX_LISTED_FIELDS = 3;
+
+/**
+ * El reintento saneado quita los valores que el backend no acepta y recién entonces
+ * guarda, así que el badge termina diciendo «Guardado» sobre una revisión a la que le
+ * falta lo que el técnico eligió. Nombrar los campos es la única señal de que quedaron
+ * sin registrar, y por eso el aviso también aparece en los guardados silenciosos: lo
+ * silencioso es el éxito, no la pérdida de un dato.
+ */
+const buildDroppedFieldsMessage = (fields: string[], equipmentType?: string): string => {
+	const labels = fields.map((field) => getEquipmentFieldLabel(field, equipmentType));
+	const listed = labels.slice(0, MAX_LISTED_FIELDS).join(', ');
+	const rest = labels.length - MAX_LISTED_FIELDS;
+	const detail = rest > 0 ? `${listed} y ${rest} más` : listed;
+	const tail =
+		labels.length === 1
+			? 'ese campo quedó sin registrar'
+			: 'esos campos quedaron sin registrar';
+
+	return `Se guardó la revisión, pero el backend no aceptó ${detail}: ${tail}. Revísalo y vuelve a elegir un valor.`;
+};
+
+/** Campos que el payload saneado dejó de enviar respecto del original. */
+const getDroppedFields = (
+	rawPayload: Record<string, unknown>,
+	transformedPayload: Record<string, unknown>,
+): string[] => Object.keys(rawPayload).filter((field) => !(field in transformedPayload));
+
 // ─── Activity events to listen for ───────────────────────────────────────────
 const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
 	'mousemove',
@@ -62,6 +95,7 @@ const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
 
 export const useAutoSave = ({
 	branchId,
+	subsidiaryId = null,
 	itemId,
 	getFormData,
 	enabled = true,
@@ -137,7 +171,7 @@ export const useAutoSave = ({
 	const saveNow = useCallback(
 		async (silent = false): Promise<boolean> => {
 			// Guards
-			if (!branchId || !itemId) return false;
+			if ((!branchId && !subsidiaryId) || !itemId) return false;
 			if (!enabledRef.current) return false;
 			if (isSavingRef.current) return false;
 
@@ -157,6 +191,7 @@ export const useAutoSave = ({
 				await dispatch(
 					updateItemDetails({
 						branchId,
+						subsidiaryId,
 						itemId,
 						data: rawPayload,
 						equipmentType,
@@ -180,19 +215,32 @@ export const useAutoSave = ({
 
 				try {
 					const transformedPayload = buildPayload(rawData, true);
-					const transformedSnapshot = JSON.stringify(transformedPayload);
 
 					await dispatch(
 						updateItemDetails({
 							branchId,
+							subsidiaryId,
 							itemId,
 							data: transformedPayload,
 							equipmentType,
 						}),
 					).unwrap();
 
-					lastSnapshotRef.current = transformedSnapshot;
+					// El snapshot que queda es el **crudo**, no el saneado: `hasPendingChanges`
+					// y la guarda de `saveNow` comparan siempre contra el payload crudo, que
+					// conserva el campo rechazado. Guardar el saneado dejaba los dos siempre
+					// distintos, así que cada ciclo de inactividad repetía los dos PATCH
+					// —el que falla y el reintento— y volvía a avisar, indefinidamente. Con
+					// el crudo, el ciclo se detiene hasta que el técnico cambie el dato, que
+					// es exactamente cuando vuelve a tener sentido reintentar.
+					lastSnapshotRef.current = rawSnapshot;
 					setLastSavedAt(new Date());
+
+					const droppedFields = getDroppedFields(rawPayload, transformedPayload);
+					if (droppedFields.length > 0) {
+						toast.warning(buildDroppedFieldsMessage(droppedFields, equipmentType));
+					}
+
 					return true;
 				} catch (transformedError: unknown) {
 					const msg =
@@ -207,7 +255,7 @@ export const useAutoSave = ({
 				setIsSaving(false);
 			}
 		},
-		[branchId, itemId, equipmentType, dispatch, buildPayload],
+		[branchId, subsidiaryId, itemId, equipmentType, dispatch, buildPayload],
 	);
 
 	// ─── Idle Detection ──────────────────────────────────────────────────────
@@ -231,7 +279,7 @@ export const useAutoSave = ({
 
 	// Set up activity listeners
 	useEffect(() => {
-		if (!enabled || !branchId || !itemId) return;
+		if (!enabled || (!branchId && !subsidiaryId) || !itemId) return;
 
 		// Start initial idle timer
 		resetIdleTimer();
@@ -251,18 +299,18 @@ export const useAutoSave = ({
 				window.removeEventListener(event, handler);
 			});
 		};
-	}, [enabled, branchId, itemId, resetIdleTimer]);
+	}, [enabled, branchId, subsidiaryId, itemId, resetIdleTimer]);
 
 	// ─── Initialize snapshot with current data ───────────────────────────────
 
 	useEffect(() => {
-		if (enabled && branchId && itemId) {
+		if (enabled && (branchId || subsidiaryId) && itemId) {
 			// Take initial snapshot so we don't immediately save unchanged data
 			const currentData = getFormDataRef.current();
 			const payload = buildPayload(currentData, false);
 			lastSnapshotRef.current = JSON.stringify(payload);
 		}
-	}, [enabled, branchId, itemId, buildPayload]);
+	}, [enabled, branchId, subsidiaryId, itemId, buildPayload]);
 
 	// ─── Modal dismiss ───────────────────────────────────────────────────────
 
