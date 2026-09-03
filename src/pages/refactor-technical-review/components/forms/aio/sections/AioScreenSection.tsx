@@ -11,7 +11,7 @@ import { AIO_HINTS, AIO_PLACEHOLDERS } from '../../../constants/aio/aio.hints';
 import {
 	getScreenCounterValue,
 	SCREEN_COUNTER_MIN,
-	resolveScreenCounter,
+	resolveScreenCounterOnSelection,
 } from '../../../utils/screenCounters';
 import {
 	SCREEN_CONDITION_OPTIONS,
@@ -114,8 +114,10 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 									});
 									setValue(
 										'dead_pixels_count',
-										resolveScreenCounter(
-											nextScreenCondition === 'dead_pixels',
+										resolveScreenCounterOnSelection(
+											screenCondition,
+											nextScreenCondition,
+											'dead_pixels',
 											deadPixelsCount,
 										),
 										{ shouldValidate: true },

@@ -14,6 +14,7 @@ const formShellState = vi.hoisted(() => ({
 		| undefined
 		| ((sectionKey: string) => Promise<{ isValid: boolean; message?: string }>),
 	getValues: undefined as undefined | (() => Record<string, unknown>),
+	errors: undefined as undefined | Record<string, { message?: string } | undefined>,
 }));
 
 vi.mock('@/components/icon/Icon', () => ({
@@ -42,10 +43,14 @@ vi.mock('@/pages/refactor-technical-review/components/forms/shared/FormShell', (
 		sectionProps,
 	}: {
 		onValidateStep?: (sectionKey: string) => Promise<{ isValid: boolean; message?: string }>;
-		sectionProps?: { getValues?: () => Record<string, unknown> };
+		sectionProps?: {
+			getValues?: () => Record<string, unknown>;
+			errors?: Record<string, { message?: string } | undefined>;
+		};
 	}) => {
 		formShellState.onValidateStep = onValidateStep;
 		formShellState.getValues = sectionProps?.getValues;
+		formShellState.errors = sectionProps?.errors;
 		return null;
 	},
 }));
@@ -209,6 +214,23 @@ describe.each([
 		expect(screen.getByTestId('dead-pixels-count')).toHaveTextContent('0');
 	});
 
+	// Volver a pulsar la tarjeta ya resaltada no es una medición: si sembrara el mínimo,
+	// un borrador con 0 quedaría afirmando un píxel muerto que nadie contó.
+	it('keeps the measured zero when the already-selected condition is clicked again', async () => {
+		render(<Harness initialScreenCondition='dead_pixels' initialDeadPixelsCount={0} />);
+
+		expect(screen.getByTestId('dead-pixels-count')).toHaveTextContent('0');
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('radio', { name: 'Píxeles muertos' }));
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
+		});
+
+		expect(screen.getByTestId('dead-pixels-count')).toHaveTextContent('0');
+	});
+
 	it('shows the stored zero and disables the dead-pixel counter in read-only mode', () => {
 		render(
 			<Harness readOnly initialScreenCondition='dead_pixels' initialDeadPixelsCount={0} />,
@@ -231,6 +253,34 @@ describe('monitor screen section spots counter', () => {
 		expect(screen.getByRole('group', { name: 'Cantidad de manchas' })).toHaveTextContent('0');
 		expect(screen.getByRole('button', { name: 'Decrementar' })).toBeDisabled();
 		expect(screen.getByRole('button', { name: 'Incrementar' })).toBeDisabled();
+	});
+
+	it('keeps the measured zero when the already-selected spots condition is clicked again', async () => {
+		render(<MonitorScreenHarness initialScreenCondition='spots' initialSpotsCount={0} />);
+
+		expect(screen.getByTestId('spots-count')).toHaveTextContent('0');
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('radio', { name: 'Manchas' }));
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
+		});
+
+		expect(screen.getByTestId('spots-count')).toHaveTextContent('0');
+	});
+
+	it('seeds the minimum when the spots condition is actually selected', async () => {
+		render(<MonitorScreenHarness initialScreenCondition='ok' />);
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('radio', { name: 'Manchas' }));
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
+		});
+
+		expect(screen.getByTestId('spots-count')).toHaveTextContent('1');
 	});
 
 	it('clears the spots counter when the screen condition changes', async () => {
@@ -337,6 +387,67 @@ describe.each([
 		await renderForm({ screen_condition: 'dead_pixels', dead_pixels_count: 4 });
 
 		expect(formShellState.getValues?.().dead_pixels_count).toBe(4);
+	});
+});
+
+// ─── Validación del contador activo al cargar ─────────────────────────────────
+// El 0 conservado debe mostrar su error en el primer render: `mode: 'onChange'` no
+// valida un campo que nadie tocó, así que el técnico sólo lo descubriría al pulsar
+// «Siguiente».
+describe.each([
+	['AIO', AioForm],
+	['monitor', MonitorForm],
+])('%s form counter validation on load', (_equipmentType, Form) => {
+	const renderForm = async (defaultValues: Record<string, unknown>) => {
+		formShellState.errors = undefined;
+		render(
+			<Form
+				defaultValues={defaultValues}
+				onSubmit={() => Promise.resolve()}
+				onBack={() => undefined}
+			/>,
+		);
+		await act(async () => {
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
+		});
+	};
+
+	it('surfaces the minimum error for a preserved zero without a step advance', async () => {
+		await renderForm({ screen_condition: 'dead_pixels', dead_pixels_count: 0 });
+
+		expect(formShellState.errors?.dead_pixels_count?.message).toBe('Debe ser al menos 1');
+	});
+
+	it('leaves a valid counter without error', async () => {
+		await renderForm({ screen_condition: 'dead_pixels', dead_pixels_count: 4 });
+
+		expect(formShellState.errors?.dead_pixels_count).toBeUndefined();
+	});
+});
+
+describe('monitor form spots validation on load', () => {
+	const renderMonitor = async (defaultValues: Record<string, unknown>) => {
+		formShellState.errors = undefined;
+		render(
+			<MonitorForm
+				defaultValues={defaultValues}
+				onSubmit={() => Promise.resolve()}
+				onBack={() => undefined}
+			/>,
+		);
+		await act(async () => {
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
+		});
+	};
+
+	it('surfaces the minimum error for a preserved zero without a step advance', async () => {
+		await renderMonitor({ screen_condition: 'spots', spots_count: 0 });
+
+		expect(formShellState.errors?.spots_count?.message).toBe('Debe ser al menos 1');
 	});
 });
 

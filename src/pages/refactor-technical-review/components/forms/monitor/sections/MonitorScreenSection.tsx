@@ -19,7 +19,7 @@ import { getMonitorLabel } from '../../../translations/monitor.labels';
 import {
 	getScreenCounterValue,
 	SCREEN_COUNTER_MIN,
-	resolveScreenCounter,
+	resolveScreenCounterOnSelection,
 } from '../../../utils/screenCounters';
 import Icon from '@/components/icon/Icon';
 import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
@@ -235,16 +235,20 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 								});
 								setValue(
 									'spots_count',
-									resolveScreenCounter(
-										nextScreenCondition === 'spots',
+									resolveScreenCounterOnSelection(
+										currentScreen,
+										nextScreenCondition,
+										'spots',
 										currentSpotsCount,
 									),
 									{ shouldValidate: true },
 								);
 								setValue(
 									'dead_pixels_count',
-									resolveScreenCounter(
-										nextScreenCondition === 'dead_pixels',
+									resolveScreenCounterOnSelection(
+										currentScreen,
+										nextScreenCondition,
+										'dead_pixels',
 										currentDeadPixelsCount,
 									),
 									{ shouldValidate: true },
