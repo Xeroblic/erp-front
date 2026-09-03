@@ -209,17 +209,30 @@ describe.each([
 		expect(screen.getByTestId('dead-pixels-count')).toHaveTextContent('0');
 	});
 
-	it('disables the dead-pixel counter in read-only mode', () => {
+	it('shows the stored zero and disables the dead-pixel counter in read-only mode', () => {
 		render(
-			<Harness readOnly initialScreenCondition='dead_pixels' initialDeadPixelsCount={1} />,
+			<Harness readOnly initialScreenCondition='dead_pixels' initialDeadPixelsCount={0} />,
 		);
 
+		expect(
+			screen.getByRole('group', { name: 'Cantidad de píxeles muertos' }),
+		).toHaveTextContent('0');
 		expect(screen.getByRole('button', { name: 'Decrementar' })).toBeDisabled();
 		expect(screen.getByRole('button', { name: 'Incrementar' })).toBeDisabled();
 	});
 });
 
 describe('monitor screen section spots counter', () => {
+	it('shows the stored zero and disables the spots counter in read-only mode', () => {
+		render(
+			<MonitorScreenHarness readOnly initialScreenCondition='spots' initialSpotsCount={0} />,
+		);
+
+		expect(screen.getByRole('group', { name: 'Cantidad de manchas' })).toHaveTextContent('0');
+		expect(screen.getByRole('button', { name: 'Decrementar' })).toBeDisabled();
+		expect(screen.getByRole('button', { name: 'Incrementar' })).toBeDisabled();
+	});
+
 	it('clears the spots counter when the screen condition changes', async () => {
 		render(<MonitorScreenHarness initialScreenCondition='spots' initialSpotsCount={3} />);
 
@@ -262,10 +275,6 @@ describe.each([
 	['AIO', AioForm, VALID_AIO_SCREEN_VALUES],
 	['monitor', MonitorForm, VALID_MONITOR_SCREEN_VALUES],
 ])('%s form screen validation', (_equipmentType, Form, defaultValues) => {
-	// `readOnly` desactiva la normalización al cargar, dejando observable el estado
-	// inválido: así la prueba sigue ejerciendo el registro de `dead_pixels_count` en
-	// los campos de la sección Pantalla y el `min(1)` del schema, que son la línea
-	// que evita el 422.
 	it('blocks the screen step when dead pixels has no counter', async () => {
 		formShellState.onValidateStep = undefined;
 		render(
@@ -273,7 +282,6 @@ describe.each([
 				defaultValues={defaultValues}
 				onSubmit={() => Promise.resolve()}
 				onBack={() => undefined}
-				readOnly
 			/>,
 		);
 
@@ -290,9 +298,8 @@ describe.each([
 });
 
 // ─── Normalización de contadores al cargar un borrador existente ──────────────
-// El autosave y el bypass «No enciende» leen los valores crudos de RHF: un par
-// incoherente que llega del backend debe corregirse al montar, no sólo cuando el
-// técnico vuelve a tocar la tarjeta de condición.
+// Sólo se limpia la dirección inactiva. Un contador activo se conserva para que
+// la validación exija la medición real en vez de inventar el mínimo.
 describe.each([
 	['AIO', AioForm],
 	['monitor', MonitorForm],
@@ -314,10 +321,10 @@ describe.each([
 		});
 	};
 
-	it('seeds the minimum count for a draft saved with dead pixels and no counter', async () => {
-		await renderForm({ screen_condition: 'dead_pixels' });
+	it('keeps zero for a draft saved with dead pixels and no measured counter', async () => {
+		await renderForm({ screen_condition: 'dead_pixels', dead_pixels_count: 0 });
 
-		expect(formShellState.getValues?.().dead_pixels_count).toBe(1);
+		expect(formShellState.getValues?.().dead_pixels_count).toBe(0);
 	});
 
 	it('clears a stale counter for a draft whose condition is no longer dead pixels', async () => {
@@ -356,9 +363,9 @@ describe('monitor form spots normalization on load', () => {
 		expect(formShellState.getValues?.().spots_count).toBe(0);
 	});
 
-	it('seeds the minimum spots counter for a draft saved with spots and no counter', async () => {
-		await renderMonitor({ screen_condition: 'spots' });
+	it('keeps zero for a draft saved with spots and no measured counter', async () => {
+		await renderMonitor({ screen_condition: 'spots', spots_count: 0 });
 
-		expect(formShellState.getValues?.().spots_count).toBe(1);
+		expect(formShellState.getValues?.().spots_count).toBe(0);
 	});
 });

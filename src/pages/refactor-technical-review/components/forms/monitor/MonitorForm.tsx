@@ -20,7 +20,7 @@ import MonitorPortsSection from './sections/MonitorPortsSection';
 import MonitorAccessoriesSection from './sections/MonitorAccessoriesSection';
 import Observations from './sections/Observations';
 import GallerySection from '../shared/gallery/GallerySection';
-import { needsScreenCounterNormalization, resolveScreenCounter } from '../../utils/screenCounters';
+import { needsScreenCounterNormalization } from '../../utils/screenCounters';
 
 // ─── Section Order ─────────────────────────
 const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
@@ -169,10 +169,9 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		}
 	}, [normalizedDefaultValues, reset]);
 
-	// Normaliza los contadores de pantalla de un borrador ya guardado: el autosave y
-	// el bypass «No enciende» leen los valores crudos de RHF, así que un par
-	// incoherente cargado desde el backend debe corregirse al llegar y no sólo cuando
-	// el técnico vuelve a tocar la condición de pantalla.
+	// Al cargar sólo limpia los contadores cuyas condiciones están inactivas. Los
+	// valores activos se conservan (incluido 0) para que la validación solicite al
+	// técnico la medición real.
 	const loadedScreenCondition = watch('screen_condition');
 	const loadedSpotsCount = watch('spots_count');
 	const loadedDeadPixelsCount = watch('dead_pixels_count');
@@ -181,20 +180,16 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 
 		const isSpots = loadedScreenCondition === 'spots';
 		if (needsScreenCounterNormalization(isSpots, loadedSpotsCount)) {
-			setValue('spots_count', resolveScreenCounter(isSpots, loadedSpotsCount), {
+			setValue('spots_count', 0, {
 				shouldValidate: true,
 			});
 		}
 
 		const isDeadPixels = loadedScreenCondition === 'dead_pixels';
 		if (needsScreenCounterNormalization(isDeadPixels, loadedDeadPixelsCount)) {
-			setValue(
-				'dead_pixels_count',
-				resolveScreenCounter(isDeadPixels, loadedDeadPixelsCount),
-				{
-					shouldValidate: true,
-				},
-			);
+			setValue('dead_pixels_count', 0, {
+				shouldValidate: true,
+			});
 		}
 	}, [readOnly, loadedScreenCondition, loadedSpotsCount, loadedDeadPixelsCount, setValue]);
 

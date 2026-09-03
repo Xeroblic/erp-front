@@ -16,7 +16,11 @@ import {
 	FRAME_CONDITION_OPTIONS,
 } from '../../../constants/monitor/monitor.options';
 import { getMonitorLabel } from '../../../translations/monitor.labels';
-import { SCREEN_COUNTER_MIN, resolveScreenCounter } from '../../../utils/screenCounters';
+import {
+	getScreenCounterValue,
+	SCREEN_COUNTER_MIN,
+	resolveScreenCounter,
+} from '../../../utils/screenCounters';
 import Icon from '@/components/icon/Icon';
 import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
 
@@ -258,7 +262,7 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 							{getMonitorLabel('spots_count')}
 						</label>
 						<StepperInput
-							value={resolveScreenCounter(true, currentSpotsCount)}
+							value={getScreenCounterValue(currentSpotsCount)}
 							onChange={(val) => {
 								if (readOnly) return;
 								setValue('spots_count', val, { shouldValidate: true });
@@ -283,7 +287,7 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 							{getMonitorLabel('dead_pixels_count')}
 						</label>
 						<StepperInput
-							value={resolveScreenCounter(true, currentDeadPixelsCount)}
+							value={getScreenCounterValue(currentDeadPixelsCount)}
 							onChange={(value) => {
 								if (readOnly) return;
 								setValue('dead_pixels_count', value, { shouldValidate: true });

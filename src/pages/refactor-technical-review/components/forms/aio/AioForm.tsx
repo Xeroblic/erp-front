@@ -21,7 +21,7 @@ import AioPortsSection from './sections/AioPortsSection';
 import AioAccessoriesSection from './sections/AioAccessoriesSection';
 import AioObservationsSection from './sections/AioObservationsSection';
 import GallerySection from '../shared/gallery/GallerySection';
-import { needsScreenCounterNormalization, resolveScreenCounter } from '../../utils/screenCounters';
+import { needsScreenCounterNormalization } from '../../utils/screenCounters';
 
 const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 	{
@@ -217,10 +217,9 @@ const AioForm: React.FC<AioFormProps> = ({
 		}
 	}, [watch, setValue]);
 
-	// Normaliza el contador de píxeles muertos de un borrador ya guardado: el
-	// autosave y el bypass «No enciende» leen los valores crudos de RHF, así que un
-	// par incoherente cargado desde el backend debe corregirse al llegar y no sólo
-	// cuando el técnico vuelve a tocar la condición de pantalla.
+	// Al cargar sólo limpia el contador cuando su condición está inactiva. Si la
+	// condición está activa conserva el valor recibido (incluido 0) para que la
+	// validación solicite al técnico la medición real.
 	const loadedScreenCondition = watch('screen_condition');
 	const loadedDeadPixelsCount = watch('dead_pixels_count');
 	useEffect(() => {
@@ -229,7 +228,7 @@ const AioForm: React.FC<AioFormProps> = ({
 		const isDeadPixels = loadedScreenCondition === 'dead_pixels';
 		if (!needsScreenCounterNormalization(isDeadPixels, loadedDeadPixelsCount)) return;
 
-		setValue('dead_pixels_count', resolveScreenCounter(isDeadPixels, loadedDeadPixelsCount), {
+		setValue('dead_pixels_count', 0, {
 			shouldValidate: true,
 		});
 	}, [readOnly, loadedScreenCondition, loadedDeadPixelsCount, setValue]);
