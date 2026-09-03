@@ -72,6 +72,17 @@ export const dockingSchema = Yup.object({
 	// backend lo declara nullable y `COMPLETION_REQUIREMENTS` no tiene entrada `docking`,
 	// así que tampoco se exige al cerrar la revisión: marcarlo obligatorio bloquearía
 	// cierres que el backend sí acepta.
+	//
+	// Esta regla es ESTÁTICA y está desacoplada del `required` que publique el schema
+	// remoto: el resolver de `DockingForm` es `yupResolver(dockingSchema)` fijo. El
+	// asterisco y el `aria-required` de `DockingExtrasSection` sí se derivan del schema,
+	// de modo que si el backend llegara a publicar `required: true` el campo se vería
+	// obligatorio pero no bloquearía ni el avance de sección ni el cierre. Alinearlos
+	// exige un cambio de frontend (resolver derivado del schema), no llega solo. Es el
+	// mismo desacople que ZF-98 dejó en `notebook.schema.ts` para
+	// `keyboard_cover_condition`, y se mantiene a propósito: `required` del schema y
+	// `COMPLETION_REQUIREMENTS` son dos conceptos distintos del backend, y derivar el
+	// bloqueo del primero podría frenar cierres que el backend sí acepta.
 	lock_area_condition: Yup.string().nullable(),
 
 	// Notas
