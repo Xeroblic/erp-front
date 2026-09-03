@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormikContext } from 'formik';
 import type { ProductDetailForm } from '@/pages/catalogos/productos/types/products.types';
+import { normalizePortTypeCounts } from '@/pages/refactor-technical-review/components/validation/constants/ports.rules';
 import type { ReviewData, ProductKind } from '../types';
 import { getVisibleTabs } from '../constants/tabs.config';
 
 const VALID_KINDS: ProductKind[] = ['desktop_pc', 'notebook', 'aio', 'monitor', 'docking'];
+
+/** Campos cuyo valor es un desglose `{tipo: cantidad}` y no un escalar. */
+const BREAKDOWN_FIELDS = ['loose_port_types', 'defective_port_types'] as const;
 
 const asRecord = (v: unknown): Record<string, unknown> | null =>
 	v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -73,6 +77,7 @@ export const useReviewAttributes = () => {
 			'stand_condition',
 			'frame_condition',
 			'keyboard_condition',
+			'keyboard_cover_condition',
 			'keyboard_layout',
 			'has_numeric_keypad',
 			'has_backlit_keyboard',
@@ -101,6 +106,7 @@ export const useReviewAttributes = () => {
 			'all_ports_functional',
 			'defective_ports_count',
 			'defective_ports_critical_count',
+			'loose_ports_count',
 			'includes_charger',
 			'charger_watts',
 			'charger_status',
@@ -120,6 +126,17 @@ export const useReviewAttributes = () => {
 				(mapped as Record<string, unknown>)[f] = details[f];
 			}
 		}
+
+		// Los dos desgloses no se copian en crudo: una revisión anterior al contrato de
+		// mapa los guardó como lista de tipos (`['hdmi','usb_c']`), y el editor sólo sabe
+		// mostrar el mapa `{tipo: cantidad}`. `null` es «no se midió» y se omite; `{}` es
+		// «se midió, ninguno» y sí se conserva, así que el filtro mira nulidad, no vacío.
+		BREAKDOWN_FIELDS.forEach((field) => {
+			const raw = details[field];
+			if (raw === undefined || raw === null) return;
+			mapped[field] = normalizePortTypeCounts(raw);
+		});
+
 		setReviewData(mapped);
 	}, []);
 

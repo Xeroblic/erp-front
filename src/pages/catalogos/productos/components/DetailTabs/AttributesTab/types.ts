@@ -22,6 +22,7 @@ export interface ReviewData {
 
 	// Teclado
 	keyboard_condition?: string;
+	keyboard_cover_condition?: string;
 	keyboard_layout?: string;
 	has_numeric_keypad?: boolean;
 	has_backlit_keyboard?: boolean;
@@ -57,6 +58,14 @@ export interface ReviewData {
 	all_ports_functional?: boolean;
 	defective_ports_count?: number;
 	defective_ports_critical_count?: number;
+	/**
+	 * Desglose `{tipo: cantidad}` de ZF-98. Un tipo sin puertos se omite del mapa; `{}` es
+	 * «se midió, ninguno» y ausente es «no se midió», la misma semántica que en la
+	 * revisión técnica de la que se importan.
+	 */
+	defective_port_types?: Record<string, number>;
+	loose_ports_count?: number;
+	loose_port_types?: Record<string, number>;
 
 	// Accesorios
 	includes_charger?: boolean;
