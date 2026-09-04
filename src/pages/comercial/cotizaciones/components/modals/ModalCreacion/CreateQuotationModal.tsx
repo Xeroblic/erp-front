@@ -321,12 +321,17 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 									productOptions={productOptions}
 									saleableProductsMap={saleableProductsMap}
 								/>
-								<PaymentInfoCard values={values} setFieldValue={setFieldValue} />
-								<TotalsCard
-									values={values}
-									setFieldValue={setFieldValue}
-									IVA_RATE={IVA_RATE}
-								/>
+								<div className='grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1.1fr] xl:items-start'>
+									<PaymentInfoCard
+										values={values}
+										setFieldValue={setFieldValue}
+									/>
+									<TotalsCard
+										values={values}
+										setFieldValue={setFieldValue}
+										IVA_RATE={IVA_RATE}
+									/>
+								</div>
 							</ModalBody>
 							<ModalFooter className='shrink-0 border-t border-zinc-200 bg-white pt-4 dark:border-zinc-700 dark:bg-zinc-950'>
 								<ModalFooterChild>

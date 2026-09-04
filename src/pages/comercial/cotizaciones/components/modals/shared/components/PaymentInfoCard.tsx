@@ -29,7 +29,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({ values, setFieldValue
 						placeholder='Observaciones adicionales...'
 						value={values.notes ?? ''}
 						onChange={(e) => setFieldValue('notes', e.target.value)}
-						rows={4}
+						rows={6}
 						isValid={isValid}
 						isTouched={isTouched}
 						invalidFeedback={error}

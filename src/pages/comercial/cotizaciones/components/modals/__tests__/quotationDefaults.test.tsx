@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import customerSalesReducer from '@/store/slices/customerSales/customerSalesSlice';
 import authReducer from '@/store/slices/auth/authSlice';
 import type { IQuote } from '@/interface';
-import { mapItemToFormItem } from '../shared/helpers';
+import { calculateQuotationGrossUnitPrice, mapItemToFormItem } from '../shared/helpers';
 import CreateQuotationModal from '../ModalCreacion/CreateQuotationModal';
 import EditQuotationModal from '../ModalEditar/EditQuotationModal';
 
@@ -42,8 +42,8 @@ const createTestStore = () =>
 const renderWithStore = (ui: React.ReactElement) =>
 	render(<Provider store={createTestStore()}>{ui}</Provider>);
 
-/** Todas las casillas «Con IVA» visibles, una por ítem del formulario. */
-const ivaCheckboxes = () => screen.getAllByRole('checkbox', { name: 'Con IVA' });
+/** Todas las casillas «Calcular IVA» visibles, una por ítem del formulario. */
+const ivaCheckboxes = () => screen.getAllByRole('checkbox', { name: 'Calcular IVA' });
 
 describe('Valores por defecto de la cotización', () => {
 	beforeEach(() => {
@@ -63,12 +63,12 @@ describe('Valores por defecto de la cotización', () => {
 
 		await waitFor(() => expect(ivaCheckboxes()).toHaveLength(1));
 		expect(ivaCheckboxes()[0]).toBeChecked();
-		expect(screen.getByRole('checkbox', { name: 'IVA por ítem (19%)' })).toBeChecked();
+		expect(screen.getByRole('checkbox', { name: 'Calcula IVA por ítem (19%)' })).toBeChecked();
 		expect(screen.getByText('Efectivo')).toBeInTheDocument();
 		expect(screen.queryByText('Recargo por Método de Pago %')).not.toBeInTheDocument();
 	});
 
-	it('crea cada ítem nuevo, de catálogo o libre, con «Con IVA» marcado', async () => {
+	it('crea cada ítem nuevo, de catálogo o libre, con «Calcular IVA» marcado', async () => {
 		renderWithStore(<CreateQuotationModal isOpen onClose={vi.fn()} onSubmit={vi.fn()} />);
 
 		await waitFor(() => expect(ivaCheckboxes()).toHaveLength(1));
@@ -77,6 +77,30 @@ describe('Valores por defecto de la cotización', () => {
 
 		await waitFor(() => expect(ivaCheckboxes()).toHaveLength(3));
 		ivaCheckboxes().forEach((checkbox) => expect(checkbox).toBeChecked());
+	});
+
+	it('rotula el precio según el IVA y muestra el bruto calculado', async () => {
+		renderWithStore(<CreateQuotationModal isOpen onClose={vi.fn()} onSubmit={vi.fn()} />);
+
+		await waitFor(() => expect(ivaCheckboxes()).toHaveLength(1));
+		fireEvent.change(screen.getByLabelText('Precio neto'), { target: { value: '1000' } });
+
+		const hint = await screen.findByText(/Bruto calculado/);
+		expect(hint.textContent?.replace(/\s/g, '')).toContain('1.190');
+
+		fireEvent.click(ivaCheckboxes()[0]);
+
+		expect(await screen.findByLabelText('Precio bruto c/ IVA')).toBeInTheDocument();
+		expect(screen.queryByText(/Bruto calculado/)).not.toBeInTheDocument();
+	});
+
+	it('calcula el precio bruto con el mismo criterio que pagos diferidos', () => {
+		expect(calculateQuotationGrossUnitPrice(1000, true)).toBe(1190);
+		expect(calculateQuotationGrossUnitPrice(1000, false)).toBe(1000);
+		// Se redondea el unitario a dos decimales, no el total de la fila.
+		expect(calculateQuotationGrossUnitPrice(33.33, true)).toBe(39.66);
+		expect(calculateQuotationGrossUnitPrice('', true)).toBeNull();
+		expect(calculateQuotationGrossUnitPrice(-1, true)).toBeNull();
 	});
 
 	it('respeta el IVA guardado de cada ítem al mapear una cotización existente', () => {

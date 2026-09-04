@@ -8,8 +8,8 @@ import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/Se
 import Textarea from '@/components/form/Textarea';
 import SoftHoldsBadge from '@/components/ui/SoftHoldsBadge';
 import { FormQuotationValues, SaleableProduct } from '../types';
-import { EMPTY_CUSTOM_ITEM, EMPTY_PRODUCT_ITEM, IVA_RATE } from '../constants';
-import { formatCurrency } from '../helpers';
+import { EMPTY_CUSTOM_ITEM, EMPTY_PRODUCT_ITEM } from '../constants';
+import { calculateQuotationGrossUnitPrice, formatCurrency } from '../helpers';
 import {
 	QUOTATION_CARD_CLASSNAME,
 	QUOTATION_ITEM_CLASSNAME,
@@ -113,11 +113,12 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 								: undefined;
 							const maxQuantity = getAvailableStock(productInfo);
 							const isCustomItem = item.type === 'custom';
-							const rowNetTotal =
-								(Number(item.quantity) || 0) * (Number(item.unit_price) || 0);
-							const rowGrossTotal = item.includes_tax
-								? rowNetTotal * (1 + IVA_RATE / 100)
-								: rowNetTotal;
+							const calculatesVat = Boolean(item.includes_tax);
+							/** Igual que en Pagos Diferidos: se redondea el unitario, no el total. */
+							const grossUnitPrice =
+								calculateQuotationGrossUnitPrice(item.unit_price, calculatesVat) ??
+								0;
+							const rowGrossTotal = (Number(item.quantity) || 0) * grossUnitPrice;
 
 							return (
 								<div
@@ -336,7 +337,11 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 
 										<QuotationField
 											name={`items.${index}.unit_price`}
-											label='Precio unitario'>
+											label={
+												calculatesVat
+													? 'Precio neto'
+													: 'Precio bruto c/ IVA'
+											}>
 											{({ error, isTouched, isValid }) => (
 												<div className='space-y-2'>
 													<Input
@@ -359,16 +364,26 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 														isTouched={isTouched}
 														invalidFeedback={error}
 													/>
+													{calculatesVat &&
+														item.unit_price !== '' &&
+														item.unit_price !== null && (
+															<p
+																className={`text-xs ${QUOTATION_MUTED_TEXT_CLASSNAME}`}>
+																Bruto calculado:{' '}
+																{formatCurrency(grossUnitPrice)}
+															</p>
+														)}
 													<Checkbox
+														id={`items.${index}.includes_tax`}
 														name={`items.${index}.includes_tax`}
-														checked={Boolean(item.includes_tax)}
+														checked={calculatesVat}
 														onChange={(e) =>
 															setFieldValue(
 																`items.${index}.includes_tax`,
 																e.target.checked,
 															)
 														}
-														label='Con IVA'
+														label='Calcular IVA'
 														dimension='sm'
 													/>
 												</div>

@@ -97,7 +97,7 @@ const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE
 					</p>
 				</div>
 			</CardHeader>
-			<CardBody className='grid grid-cols-1 gap-x-4 gap-y-3 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]'>
+			<CardBody className='grid grid-cols-1 gap-x-4 gap-y-3 2xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)]'>
 				<div className='space-y-3'>
 					<QuotationField name='discount_percentage' label='Descuento global (%)'>
 						{() => (
@@ -121,12 +121,12 @@ const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE
 							name='tax_percentage_toggle'
 							checked={values.tax_percentage === IVA_RATE}
 							onChange={() => undefined}
-							label={`IVA por ítem (${IVA_RATE}%)`}
+							label={`Calcula IVA por ítem (${IVA_RATE}%)`}
 							dimension='sm'
 							disabled
 						/>
 						<p className={`mt-1 text-xs ${QUOTATION_MUTED_TEXT_CLASSNAME}`}>
-							El IVA se calcula sólo sobre los ítems marcados con «Con IVA». El
+							El IVA se calcula sólo sobre los ítems con «Calcular IVA» marcado. El
 							reajuste global se sigue aplicando sobre el neto total.
 						</p>
 					</div>

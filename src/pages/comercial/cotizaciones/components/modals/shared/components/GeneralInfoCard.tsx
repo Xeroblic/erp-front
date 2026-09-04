@@ -17,13 +17,19 @@ import {
 import type { ICustomerSale, ICustomerSalePayload } from '@/interface/customerSales.interface';
 import { QuoteStatus } from '@/interface';
 import { FormQuotationValues } from '../types';
-import { QUOTATION_CARD_CLASSNAME, QUOTATION_SUBTITLE_CLASSNAME } from '../styles';
+import {
+	QUOTATION_CARD_CLASSNAME,
+	QUOTATION_MUTED_TEXT_CLASSNAME,
+	QUOTATION_SUBTITLE_CLASSNAME,
+} from '../styles';
 import QuotationField from './QuotationField';
 
 const DOCUMENT_TYPE_OPTIONS: TSelectOptions = [
 	{ value: 'factura', label: 'Factura' },
 	{ value: 'boleta', label: 'Boleta' },
 ];
+
+const SECTION_TITLE_CLASSNAME = 'text-sm font-semibold text-zinc-900 dark:text-white';
 
 /** Campos de la cotización que se autocompletan con el detalle del cliente. */
 const toCustomerAutofill = (customer: ICustomerSale) => ({
@@ -172,318 +178,341 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 	};
 
 	return (
-		<>
-			<Card className={QUOTATION_CARD_CLASSNAME}>
-				<CardHeader className='pb-2'>
-					<div>
-						<CardTitle className='text-lg'>Datos del cliente</CardTitle>
-						<p className={QUOTATION_SUBTITLE_CLASSNAME}>
+		<Card className={QUOTATION_CARD_CLASSNAME}>
+			<CardHeader className='pb-2'>
+				<div>
+					<CardTitle className='text-lg'>Información general</CardTitle>
+					<p className={QUOTATION_SUBTITLE_CLASSNAME}>
+						Define los datos del cliente y la vigencia de la cotización.
+					</p>
+				</div>
+			</CardHeader>
+			<CardBody className='grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_1fr]'>
+				<section>
+					<div className='mb-3'>
+						<h3 className={SECTION_TITLE_CLASSNAME}>Datos del cliente</h3>
+						<p className={`text-xs ${QUOTATION_MUTED_TEXT_CLASSNAME}`}>
 							{isLoadingCustomerDetail
 								? 'Cargando el detalle del cliente…'
-								: 'Al elegir un cliente se completan RUT, giro, direcciones, contacto y correo.'}
+								: 'Se completan solos al elegir un cliente. Editalos acá y usá «Guardar datos» para llevarlos a su ficha.'}
 						</p>
 					</div>
-				</CardHeader>
-				<CardBody className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 lg:grid-cols-3'>
-					<CustomerSaleSelect
-						name='customer_id'
-						inputId='customer_id'
-						subsidiaryId={subsidiaryId}
-						isActive={isActive}
-						value={customerId}
-						fallbackOption={fallbackCustomerOption}
-						isClearable
-						isValid={!errors.customer_id}
-						isTouched={touched.customer_id}
-						invalidFeedback={errors.customer_id}
-						onChange={(customer) => setFieldValue('customer_id', customer?.id ?? 0)}
-						onCustomerCreated={(customer) => {
-							setFieldValue('customer_id', customer.id);
-							applyCustomerDetail(customer, true);
-						}}
-						onCustomerUpdated={(customer) => applyCustomerDetail(customer, true)}>
-						{({ select, createButton, editButton }) => (
-							<QuotationField
-								name='customer_id'
-								label='Cliente'
-								labelAction={
-									<>
-										{customerId !== null && (
-											<ProtectedButton
-												permission={ERP_PERMISSIONS.CUSTOMER_SALES.UPDATE}
-												subsidiaryId={subsidiaryId}
-												scope='access'
-												type='button'
-												variant='outline'
-												size='xs'
-												icon='HeroCheck'
-												className='whitespace-nowrap'
-												isLoading={isSavingCustomer}
-												onClick={handleSaveCustomerData}>
-												Guardar datos
-											</ProtectedButton>
-										)}
-										{editButton}
-										{createButton}
-									</>
-								}
-								className='md:col-span-2 lg:col-span-3'>
-								{() => select}
-							</QuotationField>
-						)}
-					</CustomerSaleSelect>
+					<div className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2'>
+						<CustomerSaleSelect
+							name='customer_id'
+							inputId='customer_id'
+							subsidiaryId={subsidiaryId}
+							isActive={isActive}
+							value={customerId}
+							fallbackOption={fallbackCustomerOption}
+							isClearable
+							isValid={!errors.customer_id}
+							isTouched={touched.customer_id}
+							invalidFeedback={errors.customer_id}
+							onChange={(customer) => setFieldValue('customer_id', customer?.id ?? 0)}
+							onCustomerCreated={(customer) => {
+								setFieldValue('customer_id', customer.id);
+								applyCustomerDetail(customer, true);
+							}}
+							onCustomerUpdated={(customer) => applyCustomerDetail(customer, true)}>
+							{/*
+							 * Sin `editButton`: los campos del cliente se editan aquí mismo y se
+							 * guardan en su ficha con «Guardar datos», así que abrir un modal
+							 * aparte para editar lo mismo sólo duplicaría el camino.
+							 */}
+							{({ select, createButton }) => (
+								<QuotationField
+									name='customer_id'
+									label='Cliente'
+									labelAction={
+										<>
+											{customerId !== null && (
+												<ProtectedButton
+													permission={
+														ERP_PERMISSIONS.CUSTOMER_SALES.UPDATE
+													}
+													subsidiaryId={subsidiaryId}
+													scope='access'
+													type='button'
+													variant='outline'
+													size='xs'
+													icon='HeroCheck'
+													className='whitespace-nowrap'
+													isLoading={isSavingCustomer}
+													onClick={handleSaveCustomerData}>
+													Guardar datos
+												</ProtectedButton>
+											)}
+											{createButton}
+										</>
+									}
+									className='md:col-span-2'>
+									{() => select}
+								</QuotationField>
+							)}
+						</CustomerSaleSelect>
 
-					<QuotationField name='customer_rut' label='RUT'>
-						{({ error, isTouched, isValid }) => (
-							<Input
-								id='customer_rut'
-								name='customer_rut'
-								placeholder='76.123.456-7'
-								value={values.customer_rut ?? ''}
-								onChange={(e) => setFieldValue('customer_rut', e.target.value)}
-								isValid={isValid}
-								isTouched={isTouched}
-								invalidFeedback={error}
-							/>
-						)}
-					</QuotationField>
+						<QuotationField name='customer_rut' label='RUT'>
+							{({ error, isTouched, isValid }) => (
+								<Input
+									id='customer_rut'
+									name='customer_rut'
+									placeholder='76.123.456-7'
+									value={values.customer_rut ?? ''}
+									onChange={(e) => setFieldValue('customer_rut', e.target.value)}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
 
-					<QuotationField name='customer_giro' label='Giro'>
-						{() => (
-							<Input
-								id='customer_giro'
-								name='customer_giro'
-								placeholder='Actividad comercial'
-								value={values.customer_giro ?? ''}
-								onChange={(e) => setFieldValue('customer_giro', e.target.value)}
-							/>
-						)}
-					</QuotationField>
+						<QuotationField name='customer_giro' label='Giro'>
+							{() => (
+								<Input
+									id='customer_giro'
+									name='customer_giro'
+									placeholder='Actividad comercial'
+									value={values.customer_giro ?? ''}
+									onChange={(e) => setFieldValue('customer_giro', e.target.value)}
+								/>
+							)}
+						</QuotationField>
 
-					<QuotationField name='customer_contact_name' label='Contacto'>
-						{() => (
-							<Input
-								id='customer_contact_name'
-								name='customer_contact_name'
-								placeholder='Nombre de contacto'
-								value={values.customer_contact_name ?? ''}
-								onChange={(e) =>
-									setFieldValue('customer_contact_name', e.target.value)
-								}
-							/>
-						)}
-					</QuotationField>
+						<QuotationField name='customer_contact_name' label='Contacto'>
+							{() => (
+								<Input
+									id='customer_contact_name'
+									name='customer_contact_name'
+									placeholder='Nombre de contacto'
+									value={values.customer_contact_name ?? ''}
+									onChange={(e) =>
+										setFieldValue('customer_contact_name', e.target.value)
+									}
+								/>
+							)}
+						</QuotationField>
 
-					<QuotationField name='customer_email' label='Correo'>
-						{() => (
-							<Input
-								id='customer_email'
-								name='customer_email'
-								type='email'
-								placeholder='contacto@empresa.cl'
-								value={values.customer_email ?? ''}
-								onChange={(e) => setFieldValue('customer_email', e.target.value)}
-							/>
-						)}
-					</QuotationField>
+						<QuotationField name='customer_email' label='Correo'>
+							{() => (
+								<Input
+									id='customer_email'
+									name='customer_email'
+									type='email'
+									placeholder='contacto@empresa.cl'
+									value={values.customer_email ?? ''}
+									onChange={(e) =>
+										setFieldValue('customer_email', e.target.value)
+									}
+								/>
+							)}
+						</QuotationField>
 
-					<QuotationField name='customer_shipping_address' label='Dirección de envío'>
-						{() => (
-							<Input
-								id='customer_shipping_address'
-								name='customer_shipping_address'
-								placeholder='Calle, número, comuna'
-								value={values.customer_shipping_address ?? ''}
-								onChange={(e) =>
-									setFieldValue('customer_shipping_address', e.target.value)
-								}
-							/>
-						)}
-					</QuotationField>
+						<QuotationField name='customer_shipping_address' label='Dirección de envío'>
+							{() => (
+								<Input
+									id='customer_shipping_address'
+									name='customer_shipping_address'
+									placeholder='Calle, número, comuna'
+									value={values.customer_shipping_address ?? ''}
+									onChange={(e) =>
+										setFieldValue('customer_shipping_address', e.target.value)
+									}
+								/>
+							)}
+						</QuotationField>
 
-					<QuotationField
-						name='customer_billing_address'
-						label='Dirección de facturación'>
-						{() => (
-							<Input
-								id='customer_billing_address'
-								name='customer_billing_address'
-								placeholder='Calle, número, comuna'
-								value={values.customer_billing_address ?? ''}
-								onChange={(e) =>
-									setFieldValue('customer_billing_address', e.target.value)
-								}
-							/>
-						)}
-					</QuotationField>
-				</CardBody>
-			</Card>
+						<QuotationField
+							name='customer_billing_address'
+							label='Dirección de facturación'>
+							{() => (
+								<Input
+									id='customer_billing_address'
+									name='customer_billing_address'
+									placeholder='Calle, número, comuna'
+									value={values.customer_billing_address ?? ''}
+									onChange={(e) =>
+										setFieldValue('customer_billing_address', e.target.value)
+									}
+								/>
+							)}
+						</QuotationField>
+					</div>
+				</section>
 
-			<Card className={QUOTATION_CARD_CLASSNAME}>
-				<CardHeader className='pb-2'>
-					<div>
-						<CardTitle className='text-lg'>Datos de la cotización</CardTitle>
-						<p className={QUOTATION_SUBTITLE_CLASSNAME}>
-							Define la vigencia, el documento y las condiciones de pago.
+				<section className='border-t border-zinc-200 pt-6 dark:border-zinc-700 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0'>
+					<div className='mb-3'>
+						<h3 className={SECTION_TITLE_CLASSNAME}>Datos de la cotización</h3>
+						<p className={`text-xs ${QUOTATION_MUTED_TEXT_CLASSNAME}`}>
+							Vigencia, documento y condiciones de pago.
 						</p>
 					</div>
-				</CardHeader>
-				<CardBody className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 lg:grid-cols-3'>
-					<QuotationField name='quote_date' label='Fecha de cotización'>
-						{({ error, isTouched, isValid }) => (
-							<Input
-								id='quote_date'
-								name='quote_date'
-								type='date'
-								value={values.quote_date}
-								onChange={(e) => setFieldValue('quote_date', e.target.value)}
-								isValid={isValid}
-								isTouched={isTouched}
-								invalidFeedback={error}
-							/>
-						)}
-					</QuotationField>
+					<div className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2'>
+						<QuotationField name='quote_date' label='Fecha de cotización'>
+							{({ error, isTouched, isValid }) => (
+								<Input
+									id='quote_date'
+									name='quote_date'
+									type='date'
+									value={values.quote_date}
+									onChange={(e) => setFieldValue('quote_date', e.target.value)}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
 
-					<QuotationField name='expiry_date' label='Válida hasta'>
-						{({ error, isTouched, isValid }) => (
-							<Input
-								id='expiry_date'
-								name='expiry_date'
-								type='date'
-								value={values.expiry_date ?? ''}
-								onChange={(e) => setFieldValue('expiry_date', e.target.value)}
-								isValid={isValid}
-								isTouched={isTouched}
-								invalidFeedback={error}
-							/>
-						)}
-					</QuotationField>
+						<QuotationField name='expiry_date' label='Válida hasta'>
+							{({ error, isTouched, isValid }) => (
+								<Input
+									id='expiry_date'
+									name='expiry_date'
+									type='date'
+									value={values.expiry_date ?? ''}
+									onChange={(e) => setFieldValue('expiry_date', e.target.value)}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
 
-					<QuotationField name='purchase_order' label='N° orden de compra'>
-						{({ error, isTouched, isValid }) => (
-							<Input
-								id='purchase_order'
-								name='purchase_order'
-								placeholder='OC-2024-001'
-								value={values.purchase_order ?? ''}
-								onChange={(e) => setFieldValue('purchase_order', e.target.value)}
-								isValid={isValid}
-								isTouched={isTouched}
-								invalidFeedback={error}
-							/>
-						)}
-					</QuotationField>
-
-					<QuotationField name='payment_method' label='Método de pago'>
-						{({ error, isTouched, isValid }) => (
-							<SelectReact
-								name='payment_method'
-								inputId='payment_method'
-								options={paymentMethodOptions}
-								placeholder='Seleccionar método...'
-								value={
-									values.payment_method
-										? (paymentMethodOptions.find(
-												(opt) =>
-													opt.value === String(values.payment_method),
-											) ?? null)
-										: null
-								}
-								onChange={(option) => {
-									const selectedOption = option as TSelectOption;
-									if (selectedOption && !Array.isArray(selectedOption)) {
-										setFieldValue(
-											'payment_method',
-											selectedOption.value || null,
-										);
+						<QuotationField
+							name='purchase_order'
+							label='N° orden de compra'
+							className='md:col-span-2'>
+							{({ error, isTouched, isValid }) => (
+								<Input
+									id='purchase_order'
+									name='purchase_order'
+									placeholder='OC-2024-001'
+									value={values.purchase_order ?? ''}
+									onChange={(e) =>
+										setFieldValue('purchase_order', e.target.value)
 									}
-								}}
-								isValid={isValid}
-								isTouched={isTouched}
-								invalidFeedback={error}
-							/>
-						)}
-					</QuotationField>
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
 
-					<QuotationField name='payment_terms' label='Términos de pago'>
-						{({ error, isTouched, isValid }) => (
-							<SelectReact
-								name='payment_terms'
-								inputId='payment_terms'
-								options={paymentTermsOptions}
-								placeholder='Seleccionar términos...'
-								value={paymentTermsOptions.find(
-									(opt) => opt.value === String(values.payment_terms),
-								)}
-								onChange={(option) => {
-									const selectedOption = option as TSelectOption;
-									if (selectedOption && !Array.isArray(selectedOption)) {
-										setFieldValue(
-											'payment_terms',
-											Number(selectedOption.value) || 0,
-										);
+						<QuotationField name='payment_method' label='Método de pago'>
+							{({ error, isTouched, isValid }) => (
+								<SelectReact
+									name='payment_method'
+									inputId='payment_method'
+									options={paymentMethodOptions}
+									placeholder='Seleccionar método...'
+									value={
+										values.payment_method
+											? (paymentMethodOptions.find(
+													(opt) =>
+														opt.value === String(values.payment_method),
+												) ?? null)
+											: null
 									}
-								}}
-								isValid={isValid}
-								isTouched={isTouched}
-								invalidFeedback={error}
-							/>
-						)}
-					</QuotationField>
+									onChange={(option) => {
+										const selectedOption = option as TSelectOption;
+										if (selectedOption && !Array.isArray(selectedOption)) {
+											setFieldValue(
+												'payment_method',
+												selectedOption.value || null,
+											);
+										}
+									}}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
 
-					<QuotationField name='document_type' label='Tipo de documento'>
-						{({ error, isTouched, isValid }) => (
-							<SelectReact
-								name='document_type'
-								inputId='document_type'
-								options={DOCUMENT_TYPE_OPTIONS}
-								placeholder='Seleccionar documento...'
-								value={
-									values.document_type
-										? (DOCUMENT_TYPE_OPTIONS.find(
-												(opt) => opt.value === String(values.document_type),
-											) ?? null)
-										: null
-								}
-								onChange={(option) => {
-									const selectedOption = option as TSelectOption;
-									if (selectedOption && !Array.isArray(selectedOption)) {
-										setFieldValue('document_type', selectedOption.value || '');
-									}
-								}}
-								isValid={isValid}
-								isTouched={isTouched}
-								invalidFeedback={error}
-							/>
-						)}
-					</QuotationField>
+						<QuotationField name='payment_terms' label='Términos de pago'>
+							{({ error, isTouched, isValid }) => (
+								<SelectReact
+									name='payment_terms'
+									inputId='payment_terms'
+									options={paymentTermsOptions}
+									placeholder='Seleccionar términos...'
+									value={paymentTermsOptions.find(
+										(opt) => opt.value === String(values.payment_terms),
+									)}
+									onChange={(option) => {
+										const selectedOption = option as TSelectOption;
+										if (selectedOption && !Array.isArray(selectedOption)) {
+											setFieldValue(
+												'payment_terms',
+												Number(selectedOption.value) || 0,
+											);
+										}
+									}}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
 
-					<QuotationField name='status' label='Estado'>
-						{({ error, isTouched, isValid }) => (
-							<SelectReact
-								name='status'
-								inputId='status'
-								options={statusOptions}
-								placeholder='Seleccionar estado...'
-								value={statusOptions.find((opt) => opt.value === values.status)}
-								onChange={(option) => {
-									const selectedOption = option as TSelectOption;
-									if (selectedOption && !Array.isArray(selectedOption)) {
-										setFieldValue(
-											'status',
-											selectedOption.value as QuoteStatus,
-										);
+						<QuotationField name='document_type' label='Tipo de documento'>
+							{({ error, isTouched, isValid }) => (
+								<SelectReact
+									name='document_type'
+									inputId='document_type'
+									options={DOCUMENT_TYPE_OPTIONS}
+									placeholder='Seleccionar documento...'
+									value={
+										values.document_type
+											? (DOCUMENT_TYPE_OPTIONS.find(
+													(opt) =>
+														opt.value === String(values.document_type),
+												) ?? null)
+											: null
 									}
-								}}
-								isValid={isValid}
-								isTouched={isTouched}
-								invalidFeedback={error}
-							/>
-						)}
-					</QuotationField>
-				</CardBody>
-			</Card>
-		</>
+									onChange={(option) => {
+										const selectedOption = option as TSelectOption;
+										if (selectedOption && !Array.isArray(selectedOption)) {
+											setFieldValue(
+												'document_type',
+												selectedOption.value || '',
+											);
+										}
+									}}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
+
+						<QuotationField name='status' label='Estado'>
+							{({ error, isTouched, isValid }) => (
+								<SelectReact
+									name='status'
+									inputId='status'
+									options={statusOptions}
+									placeholder='Seleccionar estado...'
+									value={statusOptions.find((opt) => opt.value === values.status)}
+									onChange={(option) => {
+										const selectedOption = option as TSelectOption;
+										if (selectedOption && !Array.isArray(selectedOption)) {
+											setFieldValue(
+												'status',
+												selectedOption.value as QuoteStatus,
+											);
+										}
+									}}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
+					</div>
+				</section>
+			</CardBody>
+		</Card>
 	);
 };
 
