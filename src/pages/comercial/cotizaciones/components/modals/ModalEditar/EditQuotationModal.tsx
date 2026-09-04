@@ -5,7 +5,6 @@
 import React, { useEffect } from 'react';
 import { Formik, Form } from 'formik';
 import { IQuote, QuoteStatus } from '../../../../../../interface';
-import { toast } from 'react-toastify';
 import Modal, {
 	ModalHeader,
 	ModalBody,
@@ -15,15 +14,21 @@ import Modal, {
 import Button from '../../../../../../components/ui/Button';
 import { TSelectOptions } from '../../../../../../components/form/SelectReact';
 import { normalizeQuoteStatusValue } from '../../../constants/quoteStatuses';
-import { selectPersonalizacionUsuario, useAppSelector } from '@/store';
+import { useAppSelector } from '@/store';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import ApiService from '@/services/ApiService';
-import Badge from '@/components/ui/Badge';
+import {
+	formatCustomerLabel,
+	type CustomerSaleOption,
+} from '@/components/customers/CustomerSaleSelect';
 
 // Shared imports
 import { FormQuotationValues, SaleableProduct } from '../shared/types';
 import {
 	quotationSchema,
 	IVA_RATE,
+	DEFAULT_PAYMENT_METHOD,
+	EXEMPT_PAYMENT_METHODS,
 	paymentMethodOptions,
 	paymentTermsOptions,
 	statusOptions,
@@ -33,6 +38,21 @@ import GeneralInfoCard from '../shared/components/GeneralInfoCard';
 import PaymentInfoCard from '../shared/components/PaymentInfoCard';
 import ItemsListCard from '../shared/components/ItemsListCard';
 import TotalsCard from '../shared/components/TotalsCard';
+
+/**
+ * `IQuote['customer']` admite dos formas (`QuoteCustomerSummary` o `ICustomer`), así que
+ * los campos se leen por nombre sin asumir cuál llegó.
+ */
+const asCustomerRecord = (value: unknown): Record<string, unknown> | undefined =>
+	value !== null && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: undefined;
+
+const readCustomerString = (
+	customer: Record<string, unknown> | undefined,
+	key: string,
+): string | undefined =>
+	typeof customer?.[key] === 'string' ? (customer[key] as string) : undefined;
 
 interface EditQuotationModalProps {
 	isOpen: boolean;
@@ -54,8 +74,8 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 		IQuote,
 		'id' | 'created_at' | 'updated_at'
 	> | null>(null);
-	const personalizacion = useAppSelector(selectPersonalizacionUsuario);
 	const user = useAppSelector((state) => state.auth.user);
+	const { branchId, subsidiaryId: currentSubsidiaryId } = useCurrentBranch();
 
 	React.useEffect(() => {
 		if (!isOpen) {
@@ -64,15 +84,25 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 		}
 	}, [isOpen]);
 
-	const subsidiaryId = personalizacion?.subsidiary_id || quotation.subsidiary_id || 1;
-	const branchId =
-		personalizacion?.sucursal_principal ||
-		user?.branch?.id ||
-		user?.personalizacion?.sucursal_principal ||
-		0;
+	const subsidiaryId = currentSubsidiaryId ?? quotation.subsidiary_id ?? null;
 
-	const [customerOptions, setCustomerOptions] = React.useState<TSelectOptions>([]);
-	const [customersData, setCustomersData] = React.useState<any[]>([]);
+	/** El cliente ya guardado debe seguir visible aunque la búsqueda no lo devuelva. */
+	const savedCustomerOption = React.useMemo<CustomerSaleOption | null>(() => {
+		const customer = asCustomerRecord(quotation.customer);
+		if (!quotation.customer_id) return null;
+		return {
+			id: quotation.customer_id,
+			label:
+				formatCustomerLabel(
+					readCustomerString(customer, 'billing_company'),
+					readCustomerString(customer, 'contact_name'),
+					readCustomerString(customer, 'name'),
+					readCustomerString(customer, 'rut'),
+				) || 'Cliente seleccionado',
+			isActive: true,
+		};
+	}, [quotation.customer, quotation.customer_id]);
+
 	const [productOptions, setProductOptions] = React.useState<TSelectOptions>([]);
 	const [saleableProductsMap, setSaleableProductsMap] = React.useState<
 		Record<number, SaleableProduct>
@@ -96,43 +126,6 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 			},
 		];
 	};
-
-	useEffect(() => {
-		const fetchClientes = async () => {
-			try {
-				const clientes = await ApiService.fetchNormalized({
-					url: `/subsidiaries/${subsidiaryId}/customer-sales/overview?per_page=1000`,
-					method: 'GET',
-				});
-
-				const payload = Array.isArray(clientes?.data)
-					? clientes.data
-					: Array.isArray(clientes)
-						? clientes
-						: [];
-
-				let options: TSelectOptions = payload.map((c: any) => ({
-					value: String(c.id),
-					label: c.name || c.contact?.name || 'Cliente sin nombre',
-				}));
-
-				if (quotation?.customer_id) {
-					options = ensureOptionExists(
-						options,
-						quotation.customer_id,
-						(quotation.customer as any)?.name || 'Cliente seleccionado',
-					);
-				}
-
-				setCustomersData(payload);
-				setCustomerOptions(options);
-			} catch (error) {
-				console.error('Error cargando clientes:', error);
-			}
-		};
-
-		if (isOpen) fetchClientes();
-	}, [subsidiaryId, isOpen, quotation]);
 
 	useEffect(() => {
 		const fetchProductos = async () => {
@@ -209,9 +202,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 
 			if (!method) return;
 
-			// Exclude surcharge for 'efectivo' and 'transferencia'
-			const EXEMPT_METHODS = ['efectivo', 'transferencia'];
-			const shouldApplySurcharge = !EXEMPT_METHODS.includes(method.toLowerCase());
+			const shouldApplySurcharge = !EXEMPT_PAYMENT_METHODS.includes(method.toLowerCase());
 
 			if (shouldApplySurcharge) {
 				// Set default 3% only if it was 0 or undefined, AND we are not loading an existing non-zero value
@@ -246,14 +237,17 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 			.toISOString()
 			.split('T')[0];
 
+		const savedCustomer = asCustomerRecord(quotation.customer);
 		const numericDiscountPct = Number(
 			quotation.discount_percentage ?? quotation.discount_rate ?? 0,
 		);
 		const numericTaxPct = Number(quotation.tax_percentage ?? quotation.tax_rate ?? 0);
 
-		const normalizedPaymentMethod = Array.isArray(quotation.payment_method)
+		// Se respeta lo guardado; sólo una cotización sin medio de pago cae al default.
+		const savedPaymentMethod = Array.isArray(quotation.payment_method)
 			? (quotation.payment_method[0] ?? null)
 			: (quotation.payment_method ?? null);
+		const normalizedPaymentMethod = savedPaymentMethod || DEFAULT_PAYMENT_METHOD;
 
 		// Filter out surcharge items to prevent duplication/display in items list
 		const filteredItems = (quotation.items || []).filter(
@@ -261,32 +255,29 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 		);
 
 		return {
-			subsidiary_id: quotation.subsidiary_id ?? personalizacion?.subsidiary_id ?? 1,
+			subsidiary_id: quotation.subsidiary_id ?? currentSubsidiaryId ?? 1,
 			customer_id: quotation.customer_id ?? 0,
 			customer_rut:
-				(quotation.customer as any)?.rut ??
-				(quotation.customer as any)?.document_number ??
+				readCustomerString(savedCustomer, 'rut') ??
+				readCustomerString(savedCustomer, 'document_number') ??
 				'',
 			customer_giro:
-				(quotation.customer as any)?.giro ??
-				(quotation.customer as any)?.trade_activity ??
+				readCustomerString(savedCustomer, 'giro') ??
+				readCustomerString(savedCustomer, 'trade_activity') ??
 				'',
 			customer_shipping_address:
-				(quotation.customer as any)?.shipping_address_1 ??
-				(quotation.customer as any)?.address ??
+				readCustomerString(savedCustomer, 'shipping_address_1') ??
+				readCustomerString(savedCustomer, 'address') ??
 				'',
 			customer_billing_address:
-				(quotation.customer as any)?.billing_address_1 ??
-				(quotation.customer as any)?.address ??
+				readCustomerString(savedCustomer, 'billing_address_1') ??
+				readCustomerString(savedCustomer, 'address') ??
 				'',
 			customer_contact_name:
-				(quotation.customer as any)?.contact_name ??
-				(quotation.customer as any)?.name ??
+				readCustomerString(savedCustomer, 'contact_name') ??
+				readCustomerString(savedCustomer, 'name') ??
 				'',
-			customer_email:
-				(quotation.customer as any)?.email ??
-				(quotation.customer as any)?.primary_contact?.email ??
-				'',
+			customer_email: readCustomerString(savedCustomer, 'email') ?? '',
 			quote_date: quotation.quote_date ?? today,
 			expiry_date: quotation.expiry_date ?? quotation.valid_until ?? expiryDate,
 			status: normalizeQuoteStatusValue(quotation.status) as QuoteStatus,
@@ -318,102 +309,74 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 
 	if (!isOpen) return null;
 
-	const handleCustomerCreated = async (
-		customerId: number,
-		customerName: string,
-		customerData?: any,
-	) => {
-		const newOption = {
-			value: String(customerId),
-			label: customerName,
-		};
-		if (customerData) {
-			setCustomersData((prev) => {
-				const exists = prev.some((customer) => Number(customer.id) === Number(customerId));
-				if (exists) {
-					return prev.map((customer) =>
-						Number(customer.id) === Number(customerId)
-							? { ...customer, ...customerData }
-							: customer,
-					);
-				}
-				return [...prev, customerData];
-			});
-		}
-		setCustomerOptions((prev) => {
-			// Verificar si ya existe para evitar duplicados
-			const exists = prev.find((opt) => opt.value === String(customerId));
-			if (exists) return prev;
-			return [...prev, newOption];
-		});
-
-		// Mostrar mensaje de éxito
-		toast.success(`Cliente "${customerName}" creado y disponible`);
-	};
-
 	return (
 		<>
 			<Modal
 				isOpen={isOpen}
 				setIsOpen={onClose}
 				size='2xl'
+				isScrollable
 				isStaticBackdrop
 				isStaticBackdropAnimation
 				isAnimation={false}>
-				<ModalHeader>
+				<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
 					<div>
-						<Badge className='text-xl font-semibold'>Editar Cotización</Badge>
-						<p className='text-sm'>Modifica los datos de la cotización seleccionada.</p>
+						<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+							Editar cotización
+						</h2>
+						<p className='text-sm font-normal text-zinc-600 dark:text-zinc-400'>
+							Modifica los datos de la cotización seleccionada.
+						</p>
 					</div>
 				</ModalHeader>
+				<Formik<FormQuotationValues>
+					initialValues={getInitialValues()}
+					validationSchema={quotationSchema}
+					onSubmit={(values, { setSubmitting }) => {
+						const sanitizedItems = sanitizeItemsForSubmit(values.items);
 
-				<ModalBody>
-					<Formik<FormQuotationValues>
-						initialValues={getInitialValues()}
-						validationSchema={quotationSchema}
-						onSubmit={(values, { setSubmitting }) => {
-							const sanitizedItems = sanitizeItemsForSubmit(values.items);
+						if (Number(values.payment_surcharge_amount) > 0) {
+							sanitizedItems.push({
+								product_id: null,
+								customer_name: 'Reajuste valor normal sin descuento transferencia',
+								quantity: 1,
+								unit_price: Number(values.payment_surcharge_amount),
+								description: 'Reajuste por medio de pago seleccionado',
+								customer_sku: 'RECARGO',
+							} as any);
+						}
 
-							if (Number(values.payment_surcharge_amount) > 0) {
-								sanitizedItems.push({
-									product_id: null,
-									customer_name:
-										'Reajuste valor normal sin descuento transferencia',
-									quantity: 1,
-									unit_price: Number(values.payment_surcharge_amount),
-									description: 'Reajuste por medio de pago seleccionado',
-									customer_sku: 'RECARGO',
-								} as any);
-							}
+						const normalizedPayment = Array.isArray(values.payment_method)
+							? (values.payment_method[0] ?? null)
+							: values.payment_method && String(values.payment_method).length > 0
+								? values.payment_method
+								: null;
 
-							const normalizedPayment = Array.isArray(values.payment_method)
-								? (values.payment_method[0] ?? null)
-								: values.payment_method && String(values.payment_method).length > 0
-									? values.payment_method
-									: null;
+						const normalizedDocument =
+							values.document_type && String(values.document_type).length > 0
+								? values.document_type
+								: null;
 
-							const normalizedDocument =
-								values.document_type && String(values.document_type).length > 0
-									? values.document_type
-									: null;
+						const payload = {
+							...values,
+							payment_method: normalizedPayment,
+							document_type: normalizedDocument,
+							items: sanitizedItems as any,
+							tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
+							payment_surcharge_percentage: values.payment_surcharge_percentage,
+							payment_surcharge_amount: values.payment_surcharge_amount,
+						};
 
-							const payload = {
-								...values,
-								payment_method: normalizedPayment,
-								document_type: normalizedDocument,
-								items: sanitizedItems as any,
-								tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
-								payment_surcharge_percentage: values.payment_surcharge_percentage,
-								payment_surcharge_amount: values.payment_surcharge_amount,
-							};
-
-							setPendingPayload(payload);
-							setIsConfirmModalOpen(true);
-							setSubmitting(false);
-						}}
-						enableReinitialize>
-						{({ values, setFieldValue, errors, touched, handleSubmit }) => (
-							<Form id='quotation-form' className='space-y-6' onSubmit={handleSubmit}>
+						setPendingPayload(payload);
+						setIsConfirmModalOpen(true);
+						setSubmitting(false);
+					}}
+					enableReinitialize>
+					{({ values, setFieldValue, errors, touched, handleSubmit }) => (
+						<Form
+							className='flex min-h-0 flex-1 flex-col overflow-hidden'
+							onSubmit={handleSubmit}>
+							<ModalBody className='min-h-0 flex-1 space-y-5 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
 								<PaymentMethodSurchargeHandler
 									values={values}
 									setFieldValue={setFieldValue}
@@ -423,76 +386,51 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 									setFieldValue={setFieldValue}
 									errors={errors}
 									touched={touched}
-									customerOptions={customerOptions}
 									subsidiaryId={subsidiaryId}
-									customersData={customersData}
+									isActive={isOpen}
+									fallbackCustomerOption={savedCustomerOption}
 									paymentMethodOptions={paymentMethodOptions}
 									paymentTermsOptions={paymentTermsOptions}
 									statusOptions={statusOptions}
-									onCustomerUpdated={(customerId, customerData) => {
-										setCustomersData((prev) =>
-											prev.map((customer) =>
-												Number(customer.id) === Number(customerId)
-													? { ...customer, ...customerData }
-													: customer,
-											),
-										);
-									}}
-									onCustomerCreated={(customerId, customerName) => {
-										handleCustomerCreated(customerId, customerName);
-										// Usar setTimeout para asegurar que el DOM se actualice
-										setTimeout(() => {
-											setFieldValue('customer_id', customerId);
-										}, 100);
-									}}
 								/>
-
 								<ItemsListCard
 									values={values}
 									setFieldValue={setFieldValue}
-									errors={errors}
-									touched={touched}
 									productOptions={productOptions}
 									saleableProductsMap={saleableProductsMap}
 								/>
-
-								<div className='grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr] xl:items-start'>
-									<PaymentInfoCard
-										values={values}
-										setFieldValue={setFieldValue}
-										errors={errors}
-										touched={touched}
-									/>
-
-									<TotalsCard
-										values={values}
-										setFieldValue={setFieldValue}
-										IVA_RATE={IVA_RATE}
-									/>
-								</div>
-							</Form>
-						)}
-					</Formik>
-				</ModalBody>
-
-				<ModalFooter>
-					<ModalFooterChild>
-						<Button variant='outline' onClick={onClose} isDisable={loading}>
-							Cancelar
-						</Button>
-						<Button
-							onClick={() =>
-								document
-									.getElementById('quotation-form')
-									?.dispatchEvent(
-										new Event('submit', { bubbles: true, cancelable: true }),
-									)
-							}
-							isLoading={loading}>
-							Actualizar Cotización
-						</Button>
-					</ModalFooterChild>
-				</ModalFooter>
+								<PaymentInfoCard values={values} setFieldValue={setFieldValue} />
+								<TotalsCard
+									values={values}
+									setFieldValue={setFieldValue}
+									IVA_RATE={IVA_RATE}
+								/>
+							</ModalBody>
+							<ModalFooter className='shrink-0 border-t border-zinc-200 bg-white pt-4 dark:border-zinc-700 dark:bg-zinc-950'>
+								<ModalFooterChild>
+									<Button
+										type='button'
+										variant='outline'
+										isDisable={loading}
+										onClick={onClose}>
+										Cancelar
+									</Button>
+								</ModalFooterChild>
+								<ModalFooterChild>
+									<Button
+										type='submit'
+										variant='solid'
+										color='blue'
+										icon='HeroCheck'
+										isLoading={loading}
+										isDisable={loading}>
+										Guardar cambios
+									</Button>
+								</ModalFooterChild>
+							</ModalFooter>
+						</Form>
+					)}
+				</Formik>
 			</Modal>
 
 			<Modal
@@ -501,30 +439,34 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 				size='sm'
 				isStaticBackdrop
 				isStaticBackdropAnimation>
-				<ModalHeader>
-					<h3 className='text-lg font-semibold'>Confirmar actualización</h3>
+				<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+					<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+						Confirmar actualización
+					</h2>
 				</ModalHeader>
 				<ModalBody>
-					<p className='text-sm text-gray-600 dark:text-gray-200'>
+					<p className='text-sm text-zinc-600 dark:text-zinc-400'>
 						¿Deseas actualizar esta cotización con los cambios realizados?
 					</p>
 				</ModalBody>
-				<ModalFooter>
+				<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 					<ModalFooterChild>
 						<Button
+							type='button'
 							variant='outline'
-							color='red'
-							className='bg-red-400/20'
 							onClick={() => {
 								setPendingPayload(null);
 								setIsConfirmModalOpen(false);
 							}}>
 							Cancelar
 						</Button>
+					</ModalFooterChild>
+					<ModalFooterChild>
 						<Button
-							variant='outline'
-							color='green'
-							className='bg-green-400/20'
+							type='button'
+							variant='solid'
+							color='blue'
+							icon='HeroCheck'
 							onClick={() => {
 								if (!pendingPayload) return;
 								onSubmit(pendingPayload);

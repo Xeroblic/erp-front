@@ -85,39 +85,3 @@ export const sanitizeItemsForSubmit = (items: FormQuoteItem[]) =>
 			};
 		})
 		.filter(Boolean);
-
-const computeRutVerificationDigit = (number: number): string => {
-	let m = 0;
-	let s = 1;
-	while (number > 0) {
-		s = (s + (number % 10) * (9 - (m++ % 6))) % 11;
-		number = Math.floor(number / 10);
-	}
-	return s ? String(s - 1) : 'K';
-};
-
-export const generateCustomerCreationPayload = (name: string, subsidiaryId: number) => {
-	const trimmed = name.trim();
-	const rutNumber = Math.floor(1000000 + Math.random() * 9000000);
-	const dv = computeRutVerificationDigit(rutNumber);
-	const rutFormatted = `${rutNumber}-${dv}`;
-	const documentNumber = `${rutFormatted} (RUT)`;
-	const customerEmail = `cliente.${rutNumber}@example.com`;
-
-	return {
-		payload: {
-			name: trimmed,
-			document_type: 'rut',
-			document_number: documentNumber,
-			type: 'natural',
-			email: customerEmail,
-			rut: rutFormatted,
-			subsidiary_id: subsidiaryId,
-			is_active: true,
-			billing_company: trimmed,
-			contact_name: trimmed,
-			phone: '',
-		},
-		rutFormatted,
-	};
-};

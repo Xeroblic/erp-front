@@ -10,16 +10,18 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { TSelectOptions } from '@/components/form/SelectReact';
-import { selectPersonalizacionUsuario, useAppSelector } from '@/store';
+import { useAppSelector } from '@/store';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import ApiService from '@/services/ApiService';
-import Badge from '@/components/ui/Badge';
 
 // Shared imports
 import { FormQuotationValues, SaleableProduct } from '../shared/types';
 import {
 	quotationSchema,
 	IVA_RATE,
+	DEFAULT_PAYMENT_METHOD,
 	EMPTY_PRODUCT_ITEM,
+	EXEMPT_PAYMENT_METHODS,
 	paymentMethodOptions,
 	paymentTermsOptions,
 	statusOptions,
@@ -48,8 +50,8 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		IQuote,
 		'id' | 'created_at' | 'updated_at'
 	> | null>(null);
-	const personalizacion = useAppSelector(selectPersonalizacionUsuario);
 	const user = useAppSelector((state) => state.auth.user);
+	const { branchId, subsidiaryId } = useCurrentBranch();
 
 	React.useEffect(() => {
 		if (!isOpen) {
@@ -58,48 +60,10 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		}
 	}, [isOpen]);
 
-	const subsidiaryId = personalizacion?.subsidiary_id || 1;
-	const branchId =
-		personalizacion?.sucursal_principal ||
-		user?.branch?.id ||
-		user?.personalizacion?.sucursal_principal ||
-		0;
-
-	const [customerOptions, setCustomerOptions] = React.useState<TSelectOptions>([]);
-	const [customersData, setCustomersData] = React.useState<any[]>([]);
 	const [productOptions, setProductOptions] = React.useState<TSelectOptions>([]);
 	const [saleableProductsMap, setSaleableProductsMap] = React.useState<
 		Record<number, SaleableProduct>
 	>({});
-
-	useEffect(() => {
-		const fetchClientes = async () => {
-			try {
-				const clientes = await ApiService.fetchNormalized({
-					url: `/subsidiaries/${subsidiaryId}/customer-sales/overview?per_page=200`,
-					method: 'GET',
-				});
-
-				const payload = Array.isArray(clientes?.data)
-					? clientes.data
-					: Array.isArray(clientes)
-						? clientes
-						: [];
-
-				const options: TSelectOptions = payload.map((c: any) => ({
-					value: String(c.id),
-					label: c.name || c.contact?.name || 'Cliente sin nombre',
-				}));
-
-				setCustomersData(payload);
-				setCustomerOptions(options);
-			} catch (error) {
-				console.error('Error cargando clientes:', error);
-			}
-		};
-
-		if (isOpen) fetchClientes();
-	}, [subsidiaryId, isOpen]);
 
 	useEffect(() => {
 		const fetchProductos = async () => {
@@ -154,9 +118,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 
 			if (!method) return;
 
-			// Exclude surcharge for 'efectivo' and 'transferencia'
-			const EXEMPT_METHODS = ['efectivo', 'transferencia'];
-			const shouldApplySurcharge = !EXEMPT_METHODS.includes(method.toLowerCase());
+			const shouldApplySurcharge = !EXEMPT_PAYMENT_METHODS.includes(method.toLowerCase());
 
 			if (shouldApplySurcharge) {
 				// Set default 3% if currently 0 (or undefined)
@@ -181,13 +143,14 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 			.split('T')[0];
 
 		return {
-			subsidiary_id: personalizacion?.subsidiary_id || 1,
+			subsidiary_id: subsidiaryId ?? 1,
 			customer_id: 0,
 			quote_date: today,
 			expiry_date: expiryDate,
 			tax_rate: 0,
 			status: 'draft' as QuoteStatus,
-			payment_method: null,
+			// `efectivo` está en `EXEMPT_METHODS`, así que el default no genera recargo.
+			payment_method: DEFAULT_PAYMENT_METHOD,
 			document_type: 'boleta',
 			purchase_order: '',
 			payment_terms: 0,
@@ -220,264 +183,176 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 				isOpen={isOpen}
 				setIsOpen={onClose}
 				size='2xl'
+				isScrollable
 				isStaticBackdrop
 				isStaticBackdropAnimation>
-				<ModalHeader>
+				<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
 					<div>
-						<Badge className='text-xl font-semibold'>Nueva Cotización</Badge>
-						<p className='text-sm text-gray-600'>
-							Completa la información para crear una nueva cotización.
+						<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+							Nueva cotización
+						</h2>
+						<p className='text-sm font-normal text-zinc-600 dark:text-zinc-400'>
+							Completa los datos del cliente, los ítems y las condiciones de pago.
 						</p>
 					</div>
 				</ModalHeader>
-
-				<ModalBody>
-					<Formik<FormQuotationValues>
-						initialValues={getInitialValues()}
-						validationSchema={quotationSchema}
-						onSubmit={(values, { setSubmitting }) => {
-							console.log('Iniciando validacion de cotizacion...', values);
-
-							// Validacion manual adicional
-							if (!values.customer_id || values.customer_id === 0) {
-								toast.error(
-									'VALIDACION: Debe seleccionar un cliente antes de continuar',
-								);
-								setSubmitting(false);
-								return;
-							}
-
-							if (!values.payment_method) {
-								toast.error('VALIDACION: Debe seleccionar un metodo de pago');
-								setSubmitting(false);
-								return;
-							}
-
-							if (!values.document_type) {
-								toast.error('VALIDACION: Debe seleccionar un tipo de documento');
-								setSubmitting(false);
-								return;
-							}
-
-							if (!values.items || values.items.length === 0) {
-								toast.error('VALIDACION: Debe agregar al menos un producto');
-								setSubmitting(false);
-								return;
-							}
-
-							// Validar que todos los items tengan producto o nombre
-							const invalidItems = values.items.filter((item: any) => {
-								if (item.type === 'product') {
-									return !item.product_id || item.product_id === 0;
-								}
-								return !item.customer_name || item.customer_name.trim() === '';
-							});
-
-							if (invalidItems.length > 0) {
-								toast.error(
-									'VALIDACION: Todos los items deben tener un producto o nombre valido',
-								);
-								setSubmitting(false);
-								return;
-							}
-
-							if (Number(values.total_amount) <= 0) {
-								toast.error(
-									'VALIDACION: El total de la cotizacion debe ser mayor a 0',
-								);
-								setSubmitting(false);
-								return;
-							}
-
-							console.log('Validaciones manuales pasadas, sanitizando items...');
-
-							const sanitizedItems = sanitizeItemsForSubmit(values.items);
-
-							if (Number(values.payment_surcharge_amount) > 0) {
-								sanitizedItems.push({
-									product_id: null,
-									customer_name:
-										'Reajuste valor normal sin descuento transferencia',
-									quantity: 1,
-									unit_price: Number(values.payment_surcharge_amount),
-									description: 'Reajuste por medio de pago seleccionado',
-									customer_sku: 'RECARGO',
-								} as any);
-							}
-
-							console.log('Items sanitizados:', sanitizedItems);
-
-							const normalizedPayment = Array.isArray(values.payment_method)
-								? (values.payment_method[0] ?? null)
-								: values.payment_method && String(values.payment_method).length > 0
-									? values.payment_method
-									: null;
-
-							if (!normalizedPayment) {
-								toast.error('NORMALIZACION: Error al procesar el metodo de pago');
-								setSubmitting(false);
-								return;
-							}
-
-							const normalizedDocument =
-								values.document_type && String(values.document_type).length > 0
-									? values.document_type
-									: null;
-
-							if (!normalizedDocument) {
-								toast.error(
-									'NORMALIZACION: Error al procesar el tipo de documento',
-								);
-								setSubmitting(false);
-								return;
-							}
-
-							const payload = {
-								...values,
-								payment_method: normalizedPayment,
-								document_type: normalizedDocument,
-								items: sanitizedItems as any,
-								tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
-								payment_surcharge_percentage: values.payment_surcharge_percentage,
-								payment_surcharge_amount: values.payment_surcharge_amount,
-							};
-
-							console.log('Payload preparado para envio:', payload);
-							toast.info(
-								'VALIDACION: Todos los campos son validos. Confirmando creacion...',
-							);
-
-							setPendingPayload(payload);
-							setIsConfirmModalOpen(true);
+				<Formik<FormQuotationValues>
+					initialValues={getInitialValues()}
+					validationSchema={quotationSchema}
+					onSubmit={(values, { setSubmitting }) => {
+						if (!values.customer_id || values.customer_id === 0) {
+							toast.error('Debes seleccionar un cliente antes de continuar');
 							setSubmitting(false);
-						}}
-						enableReinitialize>
-						{({ values, setFieldValue, errors, touched, handleSubmit }) => {
-							const handleCustomerCreated = async (
-								customerId: number,
-								customerName: string,
-								customerData?: any,
-							) => {
-								const newOption = {
-									value: String(customerId),
-									label: customerName,
-								};
+							return;
+						}
 
-								// Primero actualizar las opciones
-								setCustomerOptions((prev) => [...prev, newOption]);
-								if (customerData) {
-									setCustomersData((prev) => {
-										const exists = prev.some(
-											(customer) =>
-												Number(customer.id) === Number(customerId),
-										);
-										if (exists) {
-											return prev.map((customer) =>
-												Number(customer.id) === Number(customerId)
-													? { ...customer, ...customerData }
-													: customer,
-											);
-										}
-										return [...prev, customerData];
-									});
-								}
+						if (!values.payment_method) {
+							toast.error('Debes seleccionar un método de pago');
+							setSubmitting(false);
+							return;
+						}
 
-								// Usar setTimeout para asegurar que el DOM se actualice
-								setTimeout(() => {
-									setFieldValue('customer_id', customerId);
-									toast.success(
-										`Cliente "${customerName}" creado y seleccionado`,
-									);
-								}, 100);
-							};
+						if (!values.document_type) {
+							toast.error('Debes seleccionar un tipo de documento');
+							setSubmitting(false);
+							return;
+						}
 
-							return (
-								<Form
-									id='quotation-form'
-									className='space-y-6'
-									onSubmit={handleSubmit}>
-									<PaymentMethodSurchargeHandler
-										values={values}
-										setFieldValue={setFieldValue}
-									/>
-									<GeneralInfoCard
-										values={values}
-										setFieldValue={setFieldValue}
-										errors={errors}
-										touched={touched}
-										customerOptions={customerOptions}
-										onCustomerCreated={handleCustomerCreated}
-										subsidiaryId={subsidiaryId}
-										customersData={customersData}
-										paymentMethodOptions={paymentMethodOptions}
-										paymentTermsOptions={paymentTermsOptions}
-										statusOptions={statusOptions}
-										onCustomerUpdated={(customerId, customerData) => {
-											setCustomersData((prev) =>
-												prev.map((customer) =>
-													Number(customer.id) === Number(customerId)
-														? { ...customer, ...customerData }
-														: customer,
-												),
-											);
-										}}
-									/>
+						if (!values.items || values.items.length === 0) {
+							toast.error('Debes agregar al menos un producto');
+							setSubmitting(false);
+							return;
+						}
 
-									<ItemsListCard
-										values={values}
-										setFieldValue={setFieldValue}
-										errors={errors}
-										touched={touched}
-										productOptions={productOptions}
-										saleableProductsMap={saleableProductsMap}
-									/>
-
-									<div className='grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr] xl:items-start'>
-										<PaymentInfoCard
-											values={values}
-											setFieldValue={setFieldValue}
-											errors={errors}
-											touched={touched}
-										/>
-
-										<TotalsCard
-											values={values}
-											setFieldValue={setFieldValue}
-											IVA_RATE={IVA_RATE}
-										/>
-									</div>
-								</Form>
-							);
-						}}
-					</Formik>
-				</ModalBody>
-
-				<ModalFooter>
-					<ModalFooterChild className='flex gap-2'>
-						<Button
-							variant='solid'
-							color='red'
-							className='bg-red-400/20'
-							onClick={onClose}
-							isDisable={loading}>
-							Cancelar
-						</Button>
-						<Button
-							variant='solid'
-							color='emerald'
-							className='bg-emerald-400/30'
-							onClick={() =>
-								document
-									.getElementById('quotation-form')
-									?.dispatchEvent(
-										new Event('submit', { bubbles: true, cancelable: true }),
-									)
+						// Validar que todos los items tengan producto o nombre
+						const invalidItems = values.items.filter((item: any) => {
+							if (item.type === 'product') {
+								return !item.product_id || item.product_id === 0;
 							}
-							isLoading={loading}>
-							Crear Cotización
-						</Button>
-					</ModalFooterChild>
-				</ModalFooter>
+							return !item.customer_name || item.customer_name.trim() === '';
+						});
+
+						if (invalidItems.length > 0) {
+							toast.error('Todos los ítems deben tener un producto o un nombre');
+							setSubmitting(false);
+							return;
+						}
+
+						if (Number(values.total_amount) <= 0) {
+							toast.error('El total de la cotización debe ser mayor a 0');
+							setSubmitting(false);
+							return;
+						}
+
+						const sanitizedItems = sanitizeItemsForSubmit(values.items);
+
+						if (Number(values.payment_surcharge_amount) > 0) {
+							sanitizedItems.push({
+								product_id: null,
+								customer_name: 'Reajuste valor normal sin descuento transferencia',
+								quantity: 1,
+								unit_price: Number(values.payment_surcharge_amount),
+								description: 'Reajuste por medio de pago seleccionado',
+								customer_sku: 'RECARGO',
+							} as any);
+						}
+
+						const normalizedPayment = Array.isArray(values.payment_method)
+							? (values.payment_method[0] ?? null)
+							: values.payment_method && String(values.payment_method).length > 0
+								? values.payment_method
+								: null;
+
+						if (!normalizedPayment) {
+							toast.error('No se pudo procesar el método de pago');
+							setSubmitting(false);
+							return;
+						}
+
+						const normalizedDocument =
+							values.document_type && String(values.document_type).length > 0
+								? values.document_type
+								: null;
+
+						if (!normalizedDocument) {
+							toast.error('No se pudo procesar el tipo de documento');
+							setSubmitting(false);
+							return;
+						}
+
+						const payload = {
+							...values,
+							payment_method: normalizedPayment,
+							document_type: normalizedDocument,
+							items: sanitizedItems as any,
+							tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
+							payment_surcharge_percentage: values.payment_surcharge_percentage,
+							payment_surcharge_amount: values.payment_surcharge_amount,
+						};
+
+						setPendingPayload(payload);
+						setIsConfirmModalOpen(true);
+						setSubmitting(false);
+					}}
+					enableReinitialize>
+					{({ values, setFieldValue, errors, touched, handleSubmit }) => (
+						<Form
+							className='flex min-h-0 flex-1 flex-col overflow-hidden'
+							onSubmit={handleSubmit}>
+							<ModalBody className='min-h-0 flex-1 space-y-5 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
+								<PaymentMethodSurchargeHandler
+									values={values}
+									setFieldValue={setFieldValue}
+								/>
+								<GeneralInfoCard
+									values={values}
+									setFieldValue={setFieldValue}
+									errors={errors}
+									touched={touched}
+									subsidiaryId={subsidiaryId}
+									isActive={isOpen}
+									paymentMethodOptions={paymentMethodOptions}
+									paymentTermsOptions={paymentTermsOptions}
+									statusOptions={statusOptions}
+								/>
+								<ItemsListCard
+									values={values}
+									setFieldValue={setFieldValue}
+									productOptions={productOptions}
+									saleableProductsMap={saleableProductsMap}
+								/>
+								<PaymentInfoCard values={values} setFieldValue={setFieldValue} />
+								<TotalsCard
+									values={values}
+									setFieldValue={setFieldValue}
+									IVA_RATE={IVA_RATE}
+								/>
+							</ModalBody>
+							<ModalFooter className='shrink-0 border-t border-zinc-200 bg-white pt-4 dark:border-zinc-700 dark:bg-zinc-950'>
+								<ModalFooterChild>
+									<Button
+										type='button'
+										variant='outline'
+										isDisable={loading}
+										onClick={onClose}>
+										Cancelar
+									</Button>
+								</ModalFooterChild>
+								<ModalFooterChild>
+									<Button
+										type='submit'
+										variant='solid'
+										color='blue'
+										icon='HeroCheck'
+										isLoading={loading}
+										isDisable={loading}>
+										Crear cotización
+									</Button>
+								</ModalFooterChild>
+							</ModalFooter>
+						</Form>
+					)}
+				</Formik>
 			</Modal>
 
 			<Modal
@@ -486,38 +361,39 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 				size='sm'
 				isStaticBackdrop
 				isStaticBackdropAnimation>
-				<ModalHeader>
-					<h3 className='text-lg font-semibold'>Confirmar creación</h3>
+				<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+					<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+						Confirmar creación
+					</h2>
 				</ModalHeader>
 				<ModalBody>
-					<p className='text-sm text-gray-600 dark:text-gray-200'>
+					<p className='text-sm text-zinc-600 dark:text-zinc-400'>
 						¿Deseas crear esta cotización con los datos ingresados?
 					</p>
 				</ModalBody>
-				<ModalFooter>
+				<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 					<ModalFooterChild>
 						<Button
+							type='button'
 							variant='outline'
-							color='red'
-							className='bg-red-400/20'
 							onClick={() => {
 								setPendingPayload(null);
 								setIsConfirmModalOpen(false);
 							}}>
 							Cancelar
 						</Button>
+					</ModalFooterChild>
+					<ModalFooterChild>
 						<Button
-							variant='outline'
-							color='green'
-							className='bg-green-400/20'
+							type='button'
+							variant='solid'
+							color='blue'
+							icon='HeroCheck'
 							onClick={() => {
 								if (!pendingPayload) {
-									toast.error('ERROR: No hay datos para crear la cotización');
-									console.error('pendingPayload is null');
+									toast.error('No hay datos para crear la cotización');
 									return;
 								}
-								console.log('Enviando cotización al backend...', pendingPayload);
-								toast.info('ENVIANDO: Creando cotización en el servidor...');
 								onSubmit(pendingPayload);
 								setPendingPayload(null);
 								setIsConfirmModalOpen(false);
