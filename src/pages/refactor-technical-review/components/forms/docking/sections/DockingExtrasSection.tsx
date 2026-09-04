@@ -127,10 +127,17 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 						{lockAreaField.required && <span className='text-red-500'> *</span>}
 					</p>
 
+					{/*
+					 * `role='group'`, no `radiogroup`: `SelectionCard` es un botón de
+					 * alternancia, y un `radiogroup` sin hijos `role='radio'` es ARIA
+					 * inválido. Es el mismo criterio que se aplicó a los grupos de
+					 * `InputSection` y `ScreenSection`. Sin `aria-required`, que no es
+					 * válido en `role='group'`: el `required` del schema remoto se sigue
+					 * viendo en el asterisco del rótulo al que apunta `aria-labelledby`.
+					 */}
 					<div
-						role='radiogroup'
+						role='group'
 						aria-labelledby='lock-area-condition-label'
-						aria-required={lockAreaField.required ?? false}
 						className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
 						{getSchemaFieldOptions(lockAreaField).map((opt) => (
 							<SelectionCard

@@ -77,7 +77,22 @@ const renderExtras = (schemaFields?: ITechnicalReviewSchema) => {
 	return values;
 };
 
-const lockAreaGroup = () => screen.getByRole('radiogroup', { name: /Estado del candado/ });
+const lockAreaGroup = () => screen.getByRole('group', { name: /Estado del candado/ });
+
+/**
+ * El grupo ya no expone `aria-required`: no es válido en `role='group'`. El `required` del
+ * schema viaja en el asterisco del rótulo al que apunta `aria-labelledby`.
+ *
+ * Las opciones se consultan con `role='radio'` porque es el rol que expone hoy
+ * `SelectionCard`. Cuando el refactor de roles ARIA la convierta en botón de alternancia
+ * (`<button aria-pressed>`), estas consultas pasan a `role='button'`, igual que las de las
+ * otras secciones del módulo. El contenedor y el asterisco de acá no cambian.
+ */
+const isMarkedRequired = (): boolean => {
+	const labelId = lockAreaGroup().getAttribute('aria-labelledby');
+	const label = labelId ? document.getElementById(labelId) : null;
+	return label?.textContent?.includes('*') ?? false;
+};
 
 describe('ZF-99 — estado del candado en docking', () => {
 	/**
@@ -121,7 +136,7 @@ describe('ZF-99 — estado del candado en docking', () => {
 	it('no se muestra cuando el backend no lo publica', () => {
 		renderExtras();
 
-		expect(screen.queryByRole('radiogroup', { name: /Estado del candado/ })).toBeNull();
+		expect(screen.queryByRole('group', { name: /Estado del candado/ })).toBeNull();
 		expect(screen.getByText('Condición de Carcasa')).toBeInTheDocument();
 	});
 
@@ -129,7 +144,7 @@ describe('ZF-99 — estado del candado en docking', () => {
 	it('no lo marca obligatorio mientras el backend no lo exija', () => {
 		renderExtras(DOCKING_SCHEMA);
 
-		expect(lockAreaGroup()).toHaveAttribute('aria-required', 'false');
+		expect(isMarkedRequired()).toBe(false);
 	});
 });
 
@@ -180,7 +195,7 @@ describe('ZF-99 — el candado en el flujo real del formulario de docking', () =
 		renderDockingForm();
 
 		expect(
-			await screen.findByRole('radiogroup', { name: /Estado del candado/ }),
+			await screen.findByRole('group', { name: /Estado del candado/ }),
 		).toBeInTheDocument();
 	});
 
@@ -193,7 +208,7 @@ describe('ZF-99 — el candado en el flujo real del formulario de docking', () =
 	it('deja el valor elegido en el payload que envía el autoguardado', async () => {
 		const getters = renderDockingForm();
 
-		const group = await screen.findByRole('radiogroup', { name: /Estado del candado/ });
+		const group = await screen.findByRole('group', { name: /Estado del candado/ });
 		fireEvent.click(
 			within(group).getByRole('radio', {
 				name: 'Sector del candado con desgaste (Limita a: Máximo Grado C)',
