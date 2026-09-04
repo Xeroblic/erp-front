@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { describe, expect, it, vi } from 'vitest';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
-import { notebookSchema, type NotebookFormData } from '../../validation/notebook.schema';
+import { resolveNotebookSchema, type NotebookFormData } from '../../validation/notebook.schema';
 import { aioSchema, type AioFormData } from '../../validation/aio.schema';
 import { desktopSchema, type DesktopFormData } from '../../validation/desktop.schema';
 import AestheticsSection from '../notebook/sections/AestheticsSection';
@@ -15,6 +15,9 @@ import NotebookForm from '../notebook/NotebookForm';
 import DesktopAestheticsSection from '../desktop/sections/DesktopAestheticsSection';
 
 vi.mock('@/components/icon/Icon', () => ({ default: () => <span /> }));
+
+/** La galería no participa del formulario y arrastra el store y el contexto de fotos. */
+vi.mock('../shared/gallery/GallerySection', () => ({ default: () => <div /> }));
 
 vi.mock('@/components/form/Input', () => ({
 	default: React.forwardRef<
@@ -74,6 +77,7 @@ const NOTEBOOK_SCHEMA_FIELDS: ITechnicalReviewSchema = {
 	speakers_condition: {
 		type: 'string',
 		label: 'Parlantes',
+		required: true,
 		options: [
 			{ value: 'ok', label: 'Funcionan sin problemas' },
 			{ value: 'broken', label: 'Sin audio o audio distorsionado' },
@@ -113,6 +117,8 @@ const COMPLETE_NOTEBOOK: Partial<NotebookFormData> = {
 	has_biometric: false,
 	has_wifi: true,
 	has_bluetooth: true,
+	// El backend exige los parlantes al cerrar: sin ellos «completo» sería un 422.
+	speakers_condition: 'ok',
 };
 
 /** Desktop completo salvo el encendido, que cada caso decide si responde. */
@@ -210,7 +216,7 @@ describe('ZF-102 · cierre de la revisión de notebook', () => {
 
 		const Harness = () => {
 			const form = useForm<NotebookFormData>({
-				resolver: yupResolver(notebookSchema) as never,
+				resolver: yupResolver(resolveNotebookSchema(true)) as never,
 				defaultValues: COMPLETE_NOTEBOOK as NotebookFormData,
 			});
 			submit = form.handleSubmit(onValid) as unknown as () => Promise<void>;
@@ -234,7 +240,7 @@ describe('ZF-102 · cierre de la revisión de notebook', () => {
 
 		const Harness = () => {
 			const form = useForm<NotebookFormData>({
-				resolver: yupResolver(notebookSchema) as never,
+				resolver: yupResolver(resolveNotebookSchema(true)) as never,
 				defaultValues: { ...COMPLETE_NOTEBOOK, powers_on: false } as NotebookFormData,
 			});
 			submit = form.handleSubmit(onValid) as unknown as () => Promise<void>;
@@ -590,5 +596,188 @@ describe('ZF-102 · AIO', () => {
 	it('avanza cuando la línea está escrita', async () => {
 		const conLinea = renderAioBasicInfo({ line: 'OptiPlex' });
 		expect(await conLinea.validateLine()).toBe(true);
+	});
+});
+
+describe('ZF-102 · el error del encendido se borra al responderlo', () => {
+	/**
+	 * `setValue` sin `shouldValidate` no revalida: el mensaje rojo seguía en pantalla
+	 * después de responder, hasta que el técnico volvía a pulsar Finalizar.
+	 */
+	it('limpia el mensaje del notebook en cuanto se responde', async () => {
+		let submit: (() => Promise<void>) | undefined;
+
+		const Harness = () => {
+			const form = useForm<NotebookFormData>({
+				resolver: yupResolver(resolveNotebookSchema(true)) as never,
+				defaultValues: COMPLETE_NOTEBOOK as NotebookFormData,
+			});
+			submit = form.handleSubmit(vi.fn()) as unknown as () => Promise<void>;
+			return (
+				<AestheticsSection
+					control={form.control}
+					errors={form.formState.errors}
+					readOnly={false}
+					watch={form.watch}
+					setValue={form.setValue}
+					schemaFields={NOTEBOOK_SCHEMA_FIELDS}
+				/>
+			);
+		};
+
+		render(<Harness />);
+		await act(async () => {
+			await submit?.();
+		});
+		await waitFor(() =>
+			expect(screen.getByText('Debes indicar si el equipo enciende')).toBeInTheDocument(),
+		);
+
+		fireEvent.click(within(powersOnGroup()).getByRole('radio', { name: 'Sí' }));
+
+		await waitFor(() =>
+			expect(
+				screen.queryByText('Debes indicar si el equipo enciende'),
+			).not.toBeInTheDocument(),
+		);
+	});
+
+	it('limpia el mensaje del desktop en cuanto se responde', async () => {
+		let submit: (() => Promise<void>) | undefined;
+
+		const Harness = () => {
+			const form = useForm<DesktopFormData>({
+				resolver: yupResolver(desktopSchema) as never,
+				defaultValues: COMPLETE_DESKTOP as DesktopFormData,
+			});
+			submit = form.handleSubmit(vi.fn()) as unknown as () => Promise<void>;
+			return (
+				<DesktopAestheticsSection
+					control={form.control}
+					errors={form.formState.errors}
+					readOnly={false}
+					watch={form.watch}
+					setValue={form.setValue}
+				/>
+			);
+		};
+
+		render(<Harness />);
+		await act(async () => {
+			await submit?.();
+		});
+		await waitFor(() =>
+			expect(screen.getByText('Debes indicar si el equipo enciende')).toBeInTheDocument(),
+		);
+
+		const group = screen.getByRole('radiogroup', { name: /El equipo enciende/i });
+		fireEvent.click(within(group).getByRole('radio', { name: 'Sí' }));
+
+		await waitFor(() =>
+			expect(
+				screen.queryByText('Debes indicar si el equipo enciende'),
+			).not.toBeInTheDocument(),
+		);
+	});
+});
+
+describe('ZF-102 · estado de los parlantes', () => {
+	const SPEAKERS_ERROR = 'El estado de los parlantes es obligatorio';
+
+	/** Notebook cerrable salvo por los parlantes, que cada caso decide si responde. */
+	const NOTEBOOK_SIN_PARLANTES: Partial<NotebookFormData> = {
+		...COMPLETE_NOTEBOOK,
+		powers_on: true,
+		speakers_condition: undefined,
+	};
+
+	const renderNotebookForm = (
+		defaultValues: Partial<NotebookFormData>,
+		schemaFields: ITechnicalReviewSchema | undefined,
+		onSubmit: (data: NotebookFormData) => Promise<void>,
+		initialSectionKey = 'gallery',
+	) =>
+		render(
+			<NotebookForm
+				defaultValues={defaultValues}
+				onSubmit={onSubmit}
+				onBack={vi.fn()}
+				schemaFields={schemaFields}
+				initialSectionKey={initialSectionKey}
+			/>,
+		);
+
+	/**
+	 * El camino real de «Finalizar Revisión», con el resolver que arma `NotebookForm`.
+	 * Antes el submit pasaba y el 422 llegaba desde `complete-review` sin campo señalado.
+	 */
+	it('no cierra el notebook cuando el backend publica el campo y nadie lo respondió', async () => {
+		const onSubmit = vi.fn().mockResolvedValue(undefined);
+		renderNotebookForm(NOTEBOOK_SIN_PARLANTES, NOTEBOOK_SCHEMA_FIELDS, onSubmit);
+
+		await act(async () => {
+			fireEvent.click(await screen.findByText('Finalizar Revisión'));
+		});
+
+		expect(onSubmit).not.toHaveBeenCalled();
+	});
+
+	it('cierra el notebook cuando los parlantes están respondidos', async () => {
+		const onSubmit = vi.fn().mockResolvedValue(undefined);
+		renderNotebookForm(
+			{ ...NOTEBOOK_SIN_PARLANTES, speakers_condition: 'ok' },
+			NOTEBOOK_SCHEMA_FIELDS,
+			onSubmit,
+		);
+
+		await act(async () => {
+			fireEvent.click(await screen.findByText('Finalizar Revisión'));
+		});
+
+		await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+		expect(onSubmit.mock.calls[0][0]).toMatchObject({ speakers_condition: 'ok' });
+	});
+
+	/**
+	 * Sin schema remoto la tarjeta no se renderiza: exigirlo dejaría la revisión
+	 * incerrable, con un error que el técnico no tiene dónde corregir.
+	 */
+	it('no lo exige cuando el backend no publica el campo', async () => {
+		const onSubmit = vi.fn().mockResolvedValue(undefined);
+		renderNotebookForm(NOTEBOOK_SIN_PARLANTES, undefined, onSubmit);
+
+		await act(async () => {
+			fireEvent.click(await screen.findByText('Finalizar Revisión'));
+		});
+
+		await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+	});
+
+	/** El síntoma que describe ZF-102: saltarse la tarjeta en «Entrada» y avanzar igual. */
+	it('bloquea el avance de «Entrada» y muestra el error junto a la tarjeta', async () => {
+		renderNotebookForm(NOTEBOOK_SIN_PARLANTES, NOTEBOOK_SCHEMA_FIELDS, vi.fn(), 'input');
+
+		await act(async () => {
+			fireEvent.click(await screen.findByText('Siguiente'));
+		});
+
+		await waitFor(() => expect(screen.getByText(SPEAKERS_ERROR)).toBeInTheDocument());
+		// Sigue en «Entrada»: el paso no avanzó y la tarjeta con el error está a la vista.
+		expect(screen.getByRole('radiogroup', { name: /Parlantes/i })).toBeInTheDocument();
+	});
+
+	it('deja avanzar de «Entrada» con los parlantes respondidos', async () => {
+		renderNotebookForm(
+			{ ...NOTEBOOK_SIN_PARLANTES, speakers_condition: 'ok' },
+			NOTEBOOK_SCHEMA_FIELDS,
+			vi.fn(),
+			'input',
+		);
+
+		await act(async () => {
+			fireEvent.click(await screen.findByText('Siguiente'));
+		});
+
+		await waitFor(() => expect(screen.queryByText(SPEAKERS_ERROR)).not.toBeInTheDocument());
 	});
 });

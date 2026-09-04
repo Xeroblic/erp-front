@@ -94,7 +94,9 @@ const DesktopAestheticsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					required={powersOnField?.required ?? true}
 					disabled={readOnly}
 					value={watch('powers_on')}
-					onChange={(value) => !readOnly && setValue('powers_on', value)}
+					onChange={(value) =>
+						!readOnly && setValue('powers_on', value, { shouldValidate: true })
+					}
 				/>
 				{errors.powers_on && (
 					<p className='mt-2 text-center text-xs text-red-500'>

@@ -55,7 +55,9 @@ const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					required={powersOnField?.required ?? true}
 					disabled={readOnly}
 					value={watch('powers_on')}
-					onChange={(val) => !readOnly && setValue('powers_on', val)}
+					onChange={(val) =>
+						!readOnly && setValue('powers_on', val, { shouldValidate: true })
+					}
 				/>
 				{errors.powers_on && (
 					<p className='mt-2 text-center text-xs text-red-500'>

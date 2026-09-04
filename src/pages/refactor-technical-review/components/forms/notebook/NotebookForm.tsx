@@ -6,12 +6,12 @@
  * ✏️ To reorder sections → just reorder NOTEBOOK_SECTIONS below.
  * ✏️ To add a section → create a new component in sections/ and add it here.
  */
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useCallback, useRef } from 'react';
 import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
-import { notebookSchema, type NotebookFormData } from '../../validation/notebook.schema';
+import { resolveNotebookSchema, type NotebookFormData } from '../../validation/notebook.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
@@ -214,6 +214,34 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		[defaultValues],
 	);
 
+	/**
+	 * ZF-102. `speakers_condition` se exige cuando el schema remoto lo publica como
+	 * obligatorio, que es cuando `InputSection` renderiza la tarjeta con su asterisco: la
+	 * misma fuente que ya consume la sección desde ZF-48, y el mismo criterio de
+	 * `NOTEBOOK_REMOTE_ONLY_FIELDS`. Sin esto, saltarse la tarjeta dejaba pasar el
+	 * formulario y el 422 de `complete-review` llegaba sin campo señalado.
+	 */
+	const effectiveSchema = useMemo(
+		() => resolveNotebookSchema(schemaFields?.speakers_condition?.required === true),
+		[schemaFields],
+	);
+
+	// El schema cambia cuando llega el fetch del schema remoto, pero `useForm` fija sus
+	// opciones al montar: el resolver se mantiene estable y lee el schema vigente desde la
+	// ref, para que la validación no quede congelada en la variante sin parlantes.
+	const effectiveSchemaRef = useRef(effectiveSchema);
+	effectiveSchemaRef.current = effectiveSchema;
+
+	const resolver = useCallback<Resolver<NotebookFormData>>(
+		(values, context, options) =>
+			(yupResolver(effectiveSchemaRef.current) as unknown as Resolver<NotebookFormData>)(
+				values,
+				context,
+				options,
+			),
+		[],
+	);
+
 	const {
 		control,
 		handleSubmit,
@@ -225,7 +253,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		reset,
 		formState: { errors },
 	} = useForm<NotebookFormData>({
-		resolver: yupResolver(notebookSchema) as unknown as Resolver<NotebookFormData>,
+		resolver,
 		defaultValues: normalizedDefaultValues,
 		mode: 'onBlur',
 	});
@@ -286,7 +314,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 
 		for (const field of stepFields) {
 			try {
-				await notebookSchema.validateAt(field, currentValues);
+				await effectiveSchema.validateAt(field, currentValues);
 			} catch (error) {
 				await trigger(stepFields, { shouldFocus: true });
 				if (error instanceof Error) {
