@@ -1,6 +1,15 @@
 /**
  * SelectionCard — Tarjeta de selección reutilizable para opciones de formulario.
  *
+ * Es un **botón de alternancia** (`<button aria-pressed>`), no un radio. Expuso
+ * `role='radio'` hasta que se detectó que prometía un contrato de teclado que nadie
+ * implementaba: un `radio` obliga a navegar el grupo con flechas y a entrar y salir con
+ * un solo `Tab` (roving tabindex), y acá cada tarjeta era una parada de tabulación más.
+ * Peor aún, de los 18 archivos que la usan sólo 2 declaraban el `role='radiogroup'`
+ * padre, así que en los 16 restantes el `radio` quedaba huérfano, que es ARIA inválido.
+ * `aria-pressed` describe lo que el componente realmente hace y vale por sí solo, sin
+ * exigir un contenedor con rol.
+ *
  * Uso:
  *   <SelectionCard
  *     label="Buen Estado"
@@ -119,8 +128,7 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
 	return (
 		<button
 			type='button'
-			role='radio'
-			aria-checked={isSelected}
+			aria-pressed={isSelected}
 			data-value={value}
 			onClick={onClick}
 			disabled={disabled}

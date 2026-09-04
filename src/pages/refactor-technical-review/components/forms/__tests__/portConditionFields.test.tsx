@@ -105,7 +105,7 @@ const renderSection = (Section: AnySection, options: RenderOptions = {}) => {
 const question = (name: RegExp) => screen.getByText(name).parentElement as HTMLElement;
 
 const answer = (name: RegExp, value: 'Sí' | 'No') => {
-	fireEvent.click(within(question(name)).getByRole('radio', { name: value }));
+	fireEvent.click(within(question(name)).getByRole('button', { name: value }));
 };
 
 const looseBreakdown = () => screen.getByRole('group', { name: /Qué puertos están sueltos/ });
@@ -212,8 +212,8 @@ describe('port condition questions', () => {
 
 				[/¿Hay puertos defectuosos\?/, /¿Hay puertos sueltos\?/].forEach((asked) => {
 					expect(
-						within(question(asked)).getByRole('radio', { name: 'No' }),
-					).toHaveAttribute('aria-checked', 'true');
+						within(question(asked)).getByRole('button', { name: 'No' }),
+					).toHaveAttribute('aria-pressed', 'true');
 				});
 
 				expect(getForm().getValues('all_ports_functional')).toBe(true);
@@ -239,8 +239,8 @@ describe('port condition questions', () => {
 				renderSection(Section, { defaultValues: { loose_port_types: {} } });
 
 				expect(
-					within(question(/¿Hay puertos sueltos\?/)).getByRole('radio', { name: 'No' }),
-				).toHaveAttribute('aria-checked', 'true');
+					within(question(/¿Hay puertos sueltos\?/)).getByRole('button', { name: 'No' }),
+				).toHaveAttribute('aria-pressed', 'true');
 				expect(
 					screen.queryByRole('group', { name: /Qué puertos están sueltos/ }),
 				).not.toBeInTheDocument();

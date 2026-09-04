@@ -179,7 +179,7 @@ describe.each([
 		expect(screen.queryByText('Cantidad de píxeles muertos')).not.toBeInTheDocument();
 
 		await act(async () => {
-			fireEvent.click(screen.getByRole('radio', { name: 'Píxeles muertos' }));
+			fireEvent.click(screen.getByRole('button', { name: 'Píxeles muertos' }));
 			await new Promise<void>((resolve) => {
 				setTimeout(resolve, 0);
 			});
@@ -199,7 +199,7 @@ describe.each([
 		expect(screen.getByTestId('dead-pixels-count')).toHaveTextContent('2');
 
 		const okScreenCondition = screen
-			.getAllByRole('radio')
+			.getAllByRole('button')
 			.find((option) => option.dataset.value === 'ok');
 		if (!okScreenCondition) {
 			throw new Error('No se encontró la condición de pantalla OK');
@@ -222,7 +222,7 @@ describe.each([
 		expect(screen.getByTestId('dead-pixels-count')).toHaveTextContent('0');
 
 		await act(async () => {
-			fireEvent.click(screen.getByRole('radio', { name: 'Píxeles muertos' }));
+			fireEvent.click(screen.getByRole('button', { name: 'Píxeles muertos' }));
 			await new Promise<void>((resolve) => {
 				setTimeout(resolve, 0);
 			});
@@ -261,7 +261,7 @@ describe('monitor screen section spots counter', () => {
 		expect(screen.getByTestId('spots-count')).toHaveTextContent('0');
 
 		await act(async () => {
-			fireEvent.click(screen.getByRole('radio', { name: 'Manchas' }));
+			fireEvent.click(screen.getByRole('button', { name: 'Manchas' }));
 			await new Promise<void>((resolve) => {
 				setTimeout(resolve, 0);
 			});
@@ -274,7 +274,7 @@ describe('monitor screen section spots counter', () => {
 		render(<MonitorScreenHarness initialScreenCondition='ok' />);
 
 		await act(async () => {
-			fireEvent.click(screen.getByRole('radio', { name: 'Manchas' }));
+			fireEvent.click(screen.getByRole('button', { name: 'Manchas' }));
 			await new Promise<void>((resolve) => {
 				setTimeout(resolve, 0);
 			});
@@ -287,7 +287,7 @@ describe('monitor screen section spots counter', () => {
 		render(<MonitorScreenHarness initialScreenCondition='spots' initialSpotsCount={3} />);
 
 		const okScreenCondition = screen
-			.getAllByRole('radio')
+			.getAllByRole('button')
 			.find((option) => option.dataset.value === 'ok');
 		if (!okScreenCondition) {
 			throw new Error('No se encontró la condición de pantalla OK');

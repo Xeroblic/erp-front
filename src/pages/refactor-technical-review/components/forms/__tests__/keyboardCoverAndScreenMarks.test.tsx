@@ -103,15 +103,33 @@ const renderScreenSection = (schemaFields?: ITechnicalReviewSchema) => {
 };
 
 const optionsOf = (fieldLabel: RegExp): string[] =>
-	within(screen.getByRole('radiogroup', { name: fieldLabel }))
-		.getAllByRole('radio')
+	within(screen.getByRole('group', { name: fieldLabel }))
+		.getAllByRole('button')
 		.map((option) => option.dataset.value ?? '');
+
+/**
+ * El grupo ya no expone `aria-required`: no es válido en `role='group'`. El `required` del
+ * schema viaja en el asterisco del rótulo al que apunta `aria-labelledby`.
+ */
+const isMarkedRequired = (fieldLabel: RegExp): boolean => {
+	const labelId = screen.getByRole('group', { name: fieldLabel }).getAttribute('aria-labelledby');
+	if (!labelId) {
+		throw new Error(
+			`El grupo ${fieldLabel} no declara aria-labelledby: sin rótulo asociado no hay dónde leer el asterisco, y devolver \`false\` afirmaría que el campo es opcional.`,
+		);
+	}
+	const label = document.getElementById(labelId);
+	if (!label) {
+		throw new Error(`aria-labelledby='${labelId}' no apunta a ningún elemento del documento.`);
+	}
+	return label.textContent?.includes('*') ?? false;
+};
 
 describe('keyboard cover condition', () => {
 	it('is its own control, not the top cover nor the hinge', () => {
 		renderInputSection(KEYBOARD_COVER_SCHEMA);
 
-		expect(screen.getByRole('radiogroup', { name: /Cubierta del teclado/ })).toBeVisible();
+		expect(screen.getByRole('group', { name: /Cubierta del teclado/ })).toBeVisible();
 		expect(optionsOf(/Cubierta del teclado/)).toEqual(['ok', 'cracked']);
 	});
 
@@ -122,9 +140,7 @@ describe('keyboard cover condition', () => {
 	it('is not marked as required', () => {
 		renderInputSection(KEYBOARD_COVER_SCHEMA);
 
-		expect(
-			screen.getByRole('radiogroup', { name: /Cubierta del teclado/ }),
-		).not.toHaveAttribute('aria-required', 'true');
+		expect(isMarkedRequired(/Cubierta del teclado/)).toBe(false);
 	});
 
 	it('falls back to the local options when the backend publishes no schema', () => {
@@ -132,8 +148,8 @@ describe('keyboard cover condition', () => {
 
 		expect(optionsOf(/Cubierta del teclado/)).toEqual(['ok', 'worn', 'cracked', 'broken']);
 
-		const group = screen.getByRole('radiogroup', { name: /Cubierta del teclado/ });
-		fireEvent.click(within(group).getByRole('radio', { name: /Trizada/ }));
+		const group = screen.getByRole('group', { name: /Cubierta del teclado/ });
+		fireEvent.click(within(group).getByRole('button', { name: /Trizada/ }));
 		expect(getValues()?.keyboard_cover_condition).toBe('cracked');
 	});
 });
@@ -154,8 +170,26 @@ describe('keyboard marks on the screen', () => {
 
 		expect(optionsOf(/Condición [Dd]e [Pp]antalla/)).toContain('keyboard_marks');
 
-		const group = screen.getByRole('radiogroup', { name: /Condición [Dd]e [Pp]antalla/ });
-		fireEvent.click(within(group).getByRole('radio', { name: /Marcas del teclado/ }));
+		const group = screen.getByRole('group', { name: /Condición [Dd]e [Pp]antalla/ });
+		fireEvent.click(within(group).getByRole('button', { name: /Marcas del teclado/ }));
 		expect(getValues()?.screen_condition).toBe('keyboard_marks');
+	});
+
+	/**
+	 * `resolveSchemaField` deja `required: true` con schema remoto y sin él, así que este
+	 * campo nunca es opcional. Al retirar `aria-required` el asterisco del rótulo quedó como
+	 * única señal de obligatorio, y sólo llega al lector de pantalla si el grupo se nombra
+	 * con `aria-labelledby` apuntando a ese rótulo: con `aria-label` la señal se perdía.
+	 */
+	it('keeps the required mark inside the accessible name of the group', () => {
+		renderScreenSection(SCREEN_SCHEMA);
+
+		expect(isMarkedRequired(/Condición [Dd]e [Pp]antalla/)).toBe(true);
+	});
+
+	it('keeps the required mark when the backend publishes no schema', () => {
+		renderScreenSection(undefined);
+
+		expect(isMarkedRequired(/Condición [Dd]e [Pp]antalla/)).toBe(true);
 	});
 });
