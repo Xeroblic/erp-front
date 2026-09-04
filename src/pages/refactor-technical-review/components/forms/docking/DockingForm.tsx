@@ -63,7 +63,13 @@ const DOCKING_SECTION_FIELDS: Record<string, FieldPath<DockingFormData>[]> = {
 		'loose_port_types',
 		'defective_port_types',
 	],
-	extras: ['has_wifi', 'includes_power_adapter', 'cover_condition', 'observations'],
+	extras: [
+		'has_wifi',
+		'includes_power_adapter',
+		'cover_condition',
+		'lock_area_condition',
+		'observations',
+	],
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────

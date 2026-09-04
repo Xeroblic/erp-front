@@ -26,6 +26,13 @@ export const ZF98_PORT_FIELDS = [
 export const ZF98_NOTEBOOK_FIELDS = ['keyboard_cover_condition', 'screen_condition'] as const;
 
 /**
+ * ZF-99. El sector del candado sólo existe en docking. Como `speakers_condition`, nace con
+ * la card y no tiene constante local que replique sus valores: si el backend no lo publica,
+ * el campo no se muestra.
+ */
+export const ZF99_DOCKING_FIELDS = ['lock_area_condition'] as const;
+
+/**
  * Campos que cada tipo de equipo espera del schema remoto.
  *
  * Se separan de `REQUIRED_SCHEMA_FIELDS_BY_TYPE` a propósito: los de ZF-98 degradan a
@@ -36,7 +43,7 @@ export const EXPECTED_SCHEMA_FIELDS_BY_TYPE: Record<string, readonly string[]> =
 	notebook: [...ZF48_NOTEBOOK_FIELDS, ...ZF98_PORT_FIELDS, ...ZF98_NOTEBOOK_FIELDS],
 	desktop: [...ZF48_DESKTOP_FIELDS, ...ZF98_PORT_FIELDS],
 	aio: ZF98_PORT_FIELDS,
-	docking: ZF98_PORT_FIELDS,
+	docking: [...ZF98_PORT_FIELDS, ...ZF99_DOCKING_FIELDS],
 	monitor: ZF98_PORT_FIELDS,
 };
 
