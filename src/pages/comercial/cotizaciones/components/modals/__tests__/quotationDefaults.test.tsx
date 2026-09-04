@@ -186,6 +186,22 @@ describe('Edición de cotización', () => {
 		expect(screen.getByText('Transferencia')).toBeInTheDocument();
 	});
 
+	it('ofrece editar la ficha del cliente y no permite guardarla desde la cotización', async () => {
+		renderWithStore(
+			<EditQuotationModal
+				isOpen
+				onClose={vi.fn()}
+				onSubmit={vi.fn()}
+				quotation={buildQuotation()}
+			/>,
+		);
+
+		expect(await screen.findByRole('button', { name: 'Editar cliente' })).toBeInTheDocument();
+		expect(screen.queryByRole('button', { name: /Guardar datos/ })).not.toBeInTheDocument();
+		// Los campos siguen siendo editables: pertenecen a esta cotización.
+		expect(screen.getByLabelText('Giro')).toBeEnabled();
+	});
+
 	it('cae a efectivo sólo cuando la cotización no tiene medio de pago', async () => {
 		renderWithStore(
 			<EditQuotationModal

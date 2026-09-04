@@ -13,6 +13,7 @@ import SelectReact, {
 	type TSelectOptions,
 } from '@/components/form/SelectReact';
 import ProtectedButton from '@/components/ui/ProtectedButton';
+import useAuthorization from '@/hooks/useAuthorization';
 import CreateCustomerSaleModal from '@/pages/comercial/clientesVentas/components/modals/CreateCustomerSaleModal';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -62,6 +63,12 @@ interface CustomerSaleSelectProps {
 	 * guardado del documento en edición). Memoizala en el consumidor.
 	 */
 	fallbackOption?: CustomerSaleOption | null;
+	/**
+	 * Al cambiar de subsidiaria, suelta el cliente elegido además de las opciones. Pagos
+	 * Diferidos lo deja en `false` a propósito: ahí se conserva el deudor y se recarga su
+	 * perfil de crédito en la subsidiaria nueva.
+	 */
+	releasesOnSubsidiaryChange?: boolean;
 	onCustomerCreated?: (customer: ICustomerSale) => void;
 	onCustomerUpdated?: (customer: ICustomerSale) => void;
 	/**
@@ -129,14 +136,26 @@ const CustomerSaleSelect: React.FC<CustomerSaleSelectProps> = ({
 	isTouched,
 	invalidFeedback,
 	fallbackOption = null,
+	releasesOnSubsidiaryChange = false,
 	onCustomerCreated,
 	onCustomerUpdated,
 	onModalOpenChange,
 	children,
 }) => {
 	const dispatch = useAppDispatch();
+	const { authorize } = useAuthorization();
+	/**
+	 * Buscar y abrir el detalle pegan a rutas con `view-customer-sale`. Sin el permiso el
+	 * backend responde 403: conviene decirlo antes de que el usuario escriba en vano.
+	 */
+	const canViewCustomers = authorize({
+		permission: ERP_PERMISSIONS.CUSTOMER_SALES.VIEW,
+		subsidiaryId,
+		scope: 'access',
+	});
 	const storedCustomers = useAppSelector((state) => state.customerSales.overview);
 	const storedCustomersLoading = useAppSelector((state) => state.customerSales.overviewLoading);
+	const storedCustomersError = useAppSelector((state) => state.customerSales.overviewError);
 	const overviewSubsidiaryId = useAppSelector(
 		(state) => state.customerSales.overviewSubsidiaryId,
 	);
@@ -153,10 +172,13 @@ const CustomerSaleSelect: React.FC<CustomerSaleSelectProps> = ({
 	const latestSubsidiaryIdRef = useRef(subsidiaryId);
 	const latestValueRef = useRef(value);
 	const latestIsActiveRef = useRef(isActive);
+	/** `onChange` puede no estar memoizada; el efecto la lee sin depender de su identidad. */
+	const onChangeRef = useRef(onChange);
 	const modalSubsidiaryIdRef = useRef<number | null>(modalSubsidiaryId);
 	latestSubsidiaryIdRef.current = subsidiaryId;
 	latestValueRef.current = value;
 	latestIsActiveRef.current = isActive;
+	onChangeRef.current = onChange;
 	modalSubsidiaryIdRef.current = modalSubsidiaryId;
 
 	/**
@@ -172,6 +194,8 @@ const CustomerSaleSelect: React.FC<CustomerSaleSelectProps> = ({
 		[isOverviewContextCurrent, storedCustomers],
 	);
 	const isSearching = isOverviewContextCurrent ? storedCustomersLoading : false;
+	/** Una búsqueda que falla (403 sin `view-customer-sale`, red caída) no puede quedar muda. */
+	const searchError = isOverviewContextCurrent ? storedCustomersError : undefined;
 	const isModalContextCurrent = modalSubsidiaryId !== null && modalSubsidiaryId === subsidiaryId;
 	const isCurrentCreateOpen = isCreateOpen && isModalContextCurrent;
 	const isCurrentEditOpen = isEditOpen && editingCustomer !== null && isModalContextCurrent;
@@ -213,10 +237,21 @@ const CustomerSaleSelect: React.FC<CustomerSaleSelectProps> = ({
 		previousSubsidiaryIdRef.current = subsidiaryId;
 		if (previousSubsidiaryId === subsidiaryId) return;
 		resetModals();
-	}, [resetModals, subsidiaryId]);
+		/**
+		 * El cliente elegido pertenece a la subsidiaria anterior, así que se suelta junto
+		 * con las opciones. Se exige que ambas sean conocidas: la primera resolución de
+		 * `null` al id real es la hidratación del contexto, no un cambio de subsidiaria,
+		 * y soltar ahí borraría el cliente de un documento recién abierto.
+		 */
+		if (!releasesOnSubsidiaryChange || previousSubsidiaryId === null || subsidiaryId === null)
+			return;
+		setSelectedOption(null);
+		setSearch('');
+		if (latestValueRef.current !== null) onChangeRef.current(null);
+	}, [releasesOnSubsidiaryChange, resetModals, subsidiaryId]);
 
 	useEffect(() => {
-		if (!isActive || subsidiaryId === null) return undefined;
+		if (!isActive || subsidiaryId === null || !canViewCustomers) return undefined;
 		const query = debouncedSearch.trim();
 		if (!query) return undefined;
 		const request = dispatch(
@@ -227,7 +262,7 @@ const CustomerSaleSelect: React.FC<CustomerSaleSelectProps> = ({
 			}),
 		);
 		return () => request.abort();
-	}, [debouncedSearch, dispatch, isActive, subsidiaryId]);
+	}, [canViewCustomers, debouncedSearch, dispatch, isActive, subsidiaryId]);
 
 	const customerData = useMemo<CustomerSaleOption[]>(() => {
 		const remoteCustomers = debouncedSearch.trim()
@@ -345,7 +380,13 @@ const CustomerSaleSelect: React.FC<CustomerSaleSelectProps> = ({
 		onCustomerUpdated?.(customer);
 	};
 
-	const select = (
+	const select = !canViewCustomers ? (
+		<p
+			id={inputId}
+			className='rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400'>
+			No tienes permiso para consultar clientes.
+		</p>
+	) : (
 		<SelectReact
 			name={name}
 			inputId={inputId}
@@ -356,7 +397,7 @@ const CustomerSaleSelect: React.FC<CustomerSaleSelectProps> = ({
 			isDisabled={isDisabled}
 			isClearable={isClearable}
 			placeholder={placeholder}
-			noOptionsMessage={() => 'Sin resultados'}
+			noOptionsMessage={() => searchError ?? 'Sin resultados'}
 			onInputChange={(inputValue: string, actionMeta?: InputActionMeta) => {
 				if (actionMeta?.action === 'input-change') setSearch(inputValue);
 			}}
@@ -384,7 +425,7 @@ const CustomerSaleSelect: React.FC<CustomerSaleSelectProps> = ({
 	);
 
 	const editButton =
-		value === null ? null : (
+		value === null || !canViewCustomers ? null : (
 			<ProtectedButton
 				permission={ERP_PERMISSIONS.CUSTOMER_SALES.UPDATE}
 				subsidiaryId={subsidiaryId}

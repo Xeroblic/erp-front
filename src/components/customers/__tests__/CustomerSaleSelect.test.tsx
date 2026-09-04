@@ -16,10 +16,21 @@ const apiSpies = vi.hoisted(() => ({
 const authorizationSpies = vi.hoisted(() => ({ authorize: vi.fn(() => true) }));
 
 vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
+/**
+ * El modal real envía con su propio `<form>`. Se replica aquí porque el selector vive
+ * dentro del formulario anfitrión y React propaga los eventos por el árbol de
+ * componentes, aunque el modal se pinte en un portal.
+ */
 vi.mock('@/pages/comercial/clientesVentas/components/modals/CreateCustomerSaleModal', () => ({
 	default: ({ isOpen, isEdit = false }: { isOpen: boolean; isEdit?: boolean }) =>
 		isOpen ? (
-			<div role='dialog' aria-label={isEdit ? 'Editar Cliente' : 'Crear Cliente'} />
+			<div role='dialog' aria-label={isEdit ? 'Editar Cliente' : 'Crear Cliente'}>
+				<form
+					aria-label={isEdit ? 'Formulario editar cliente' : 'Formulario crear cliente'}
+					onSubmit={(event) => event.preventDefault()}>
+					<button type='submit'>Guardar cliente</button>
+				</form>
+			</div>
 		) : null,
 }));
 vi.mock('react-i18next', () => ({
@@ -177,12 +188,131 @@ describe('CustomerSaleSelect', () => {
 		expect(screen.queryByText(CUSTOMER_LABEL)).not.toBeInTheDocument();
 	});
 
+	it('muestra el error de la búsqueda en vez de decir que no hay resultados', async () => {
+		apiSpies.fetchData.mockRejectedValue({
+			response: { status: 403, data: { message: 'No tienes acceso a esta subsidiaria' } },
+		});
+		renderSelect();
+
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'Zeta' } });
+
+		expect(await screen.findByText('No tienes acceso a esta subsidiaria')).toBeInTheDocument();
+		expect(screen.queryByText('Sin resultados')).not.toBeInTheDocument();
+	});
+
 	it('no consulta al backend mientras el anfitrión está inactivo', async () => {
 		renderSelect({ isActive: false });
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'Zeta' } });
 
 		await waitFor(() => expect(apiSpies.fetchData).not.toHaveBeenCalled());
+	});
+
+	it('no envía el formulario anfitrión al guardar desde el alta rápida', async () => {
+		const hostSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
+		render(
+			<Provider store={createTestStore()}>
+				<form aria-label='Formulario anfitrión' onSubmit={hostSubmit}>
+					<CustomerSaleSelect
+						subsidiaryId={1}
+						value={null}
+						inputId='customer_sale_id'
+						onChange={vi.fn()}
+					/>
+				</form>
+			</Provider>,
+		);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Crear cliente' }));
+		await screen.findByRole('dialog', { name: 'Crear Cliente' });
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar cliente' }));
+
+		expect(hostSubmit).not.toHaveBeenCalled();
+	});
+
+	it('avisa y no consulta cuando falta el permiso de ver clientes', async () => {
+		authorizationSpies.authorize.mockImplementation(
+			(options?: { permission?: string }) => options?.permission !== 'view-customer-sale',
+		);
+		renderSelect({ value: CUSTOMER.id });
+
+		expect(screen.getByText('No tienes permiso para consultar clientes.')).toBeInTheDocument();
+		// Editar necesita el GET de detalle, así que no se ofrece; crear tiene su propio permiso.
+		expect(screen.queryByRole('button', { name: 'Editar cliente' })).not.toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Crear cliente' })).toBeInTheDocument();
+		await waitFor(() => expect(apiSpies.fetchData).not.toHaveBeenCalled());
+	});
+
+	it('suelta el cliente elegido al cambiar de subsidiaria', async () => {
+		apiSpies.fetchData.mockResolvedValue({
+			data: { ...emptyPagination, data: [CUSTOMER], total: 1 },
+		});
+		const onChange = vi.fn();
+		const store = createTestStore();
+		const { rerender } = renderSelect({ onChange, releasesOnSubsidiaryChange: true }, store);
+
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'Zeta' } });
+		fireEvent.click(await screen.findByText(CUSTOMER_LABEL));
+		expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ id: CUSTOMER.id }));
+
+		rerender(
+			<Provider store={store}>
+				<CustomerSaleSelect
+					subsidiaryId={2}
+					value={CUSTOMER.id}
+					inputId='customer_sale_id'
+					releasesOnSubsidiaryChange
+					onChange={onChange}
+				/>
+				{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+				<label htmlFor='customer_sale_id'>Cliente</label>
+			</Provider>,
+		);
+
+		// El componente suelta el cliente; el anfitrión es quien baja el valor a null.
+		await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(null));
+
+		rerender(
+			<Provider store={store}>
+				<CustomerSaleSelect
+					subsidiaryId={2}
+					value={null}
+					inputId='customer_sale_id'
+					releasesOnSubsidiaryChange
+					onChange={onChange}
+				/>
+				{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+				<label htmlFor='customer_sale_id'>Cliente</label>
+			</Provider>,
+		);
+
+		expect(screen.queryByText(CUSTOMER_LABEL)).not.toBeInTheDocument();
+		expect(screen.getByText('Busca por razón social o RUT')).toBeInTheDocument();
+	});
+
+	it('conserva el cliente mientras el contexto sólo se está hidratando', async () => {
+		apiSpies.fetchData.mockResolvedValue({
+			data: { ...emptyPagination, data: [CUSTOMER], total: 1 },
+		});
+		const onChange = vi.fn();
+		const store = createTestStore();
+		const { rerender } = renderSelect({ onChange, subsidiaryId: null }, store);
+
+		rerender(
+			<Provider store={store}>
+				<CustomerSaleSelect
+					subsidiaryId={1}
+					value={CUSTOMER.id}
+					inputId='customer_sale_id'
+					onChange={onChange}
+				/>
+				{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+				<label htmlFor='customer_sale_id'>Cliente</label>
+			</Provider>,
+		);
+
+		await waitFor(() => expect(apiSpies.fetchData).not.toHaveBeenCalled());
+		expect(onChange).not.toHaveBeenCalled();
 	});
 
 	it('oculta crear y editar cliente sin los permisos correspondientes', () => {

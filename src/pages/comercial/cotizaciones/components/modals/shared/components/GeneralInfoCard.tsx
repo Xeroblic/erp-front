@@ -1,20 +1,14 @@
 import React from 'react';
 import { FormikErrors, FormikTouched } from 'formik';
-import { toast } from 'react-toastify';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
 import Input from '@/components/form/Input';
-import ProtectedButton from '@/components/ui/ProtectedButton';
 import CustomerSaleSelect, {
 	type CustomerSaleOption,
 } from '@/components/customers/CustomerSaleSelect';
-import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import { useAppDispatch } from '@/store';
-import {
-	fetchCustomerDetailThunk,
-	updateCustomerThunk,
-} from '@/store/slices/customerSales/customerSalesSlice';
-import type { ICustomerSale, ICustomerSalePayload } from '@/interface/customerSales.interface';
+import { fetchCustomerDetailThunk } from '@/store/slices/customerSales/customerSalesSlice';
+import type { ICustomerSale } from '@/interface/customerSales.interface';
 import { QuoteStatus } from '@/interface';
 import { FormQuotationValues } from '../types';
 import {
@@ -50,11 +44,6 @@ const EMPTY_CUSTOMER_AUTOFILL = {
 	customer_email: '',
 };
 
-const getMutationErrorMessage = (error: unknown, fallback: string): string => {
-	const message = (error as { message?: unknown } | null)?.message;
-	return typeof message === 'string' && message.trim() ? message : fallback;
-};
-
 interface GeneralInfoCardProps {
 	values: FormQuotationValues;
 	setFieldValue: (field: string, value: unknown, shouldValidate?: boolean) => void;
@@ -83,9 +72,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 	statusOptions,
 }) => {
 	const dispatch = useAppDispatch();
-	const [customerDetail, setCustomerDetail] = React.useState<ICustomerSale | null>(null);
 	const [isLoadingCustomerDetail, setIsLoadingCustomerDetail] = React.useState(false);
-	const [isSavingCustomer, setIsSavingCustomer] = React.useState(false);
 	/** Último cliente cuyo detalle ya se volcó al formulario, para no pisar ediciones. */
 	const autofilledCustomerIdRef = React.useRef<number | null>(null);
 	const detailRequestIdRef = React.useRef(0);
@@ -93,7 +80,6 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 
 	const applyCustomerDetail = React.useCallback(
 		(customer: ICustomerSale, force = false) => {
-			setCustomerDetail(customer);
 			if (!force && autofilledCustomerIdRef.current === customer.id) return;
 			autofilledCustomerIdRef.current = customer.id;
 			Object.entries(toCustomerAutofill(customer)).forEach(([field, value]) => {
@@ -128,54 +114,11 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 		if (customerId !== null || autofilledCustomerIdRef.current === null) return;
 		detailRequestIdRef.current += 1;
 		autofilledCustomerIdRef.current = null;
-		setCustomerDetail(null);
 		setIsLoadingCustomerDetail(false);
 		Object.entries(EMPTY_CUSTOMER_AUTOFILL).forEach(([field, value]) => {
 			setFieldValue(field, value, false);
 		});
 	}, [customerId, setFieldValue]);
-
-	const handleSaveCustomerData = async () => {
-		if (customerId === null) {
-			toast.error('Debes seleccionar un cliente antes de guardar sus datos');
-			return;
-		}
-		if (subsidiaryId === null) {
-			toast.error('No se pudo determinar la subsidiaria activa');
-			return;
-		}
-
-		setIsSavingCustomer(true);
-		try {
-			const payload: ICustomerSalePayload = {
-				document_type: 'rut',
-				document_number: values.customer_rut?.trim() || '',
-				rut: values.customer_rut?.trim() || '',
-				email: values.customer_email?.trim() || '',
-				contact_name: values.customer_contact_name?.trim() || '',
-				billing_company:
-					customerDetail?.billing_company ||
-					customerDetail?.name ||
-					values.customer_contact_name,
-				giro: values.customer_giro?.trim() || '',
-				trade_activity: values.customer_giro?.trim() || '',
-				billing_address_1: values.customer_billing_address?.trim() || '',
-				shipping_address_1: values.customer_shipping_address?.trim() || '',
-			};
-
-			const updatedCustomer = await dispatch(
-				updateCustomerThunk({ subsidiary: subsidiaryId, id: customerId, payload }),
-			).unwrap();
-			setCustomerDetail(updatedCustomer);
-			toast.success('Datos del cliente actualizados');
-		} catch (error: unknown) {
-			toast.error(
-				getMutationErrorMessage(error, 'No se pudieron guardar los datos del cliente'),
-			);
-		} finally {
-			setIsSavingCustomer(false);
-		}
-	};
 
 	return (
 		<Card className={QUOTATION_CARD_CLASSNAME}>
@@ -194,7 +137,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 						<p className={`text-xs ${QUOTATION_MUTED_TEXT_CLASSNAME}`}>
 							{isLoadingCustomerDetail
 								? 'Cargando el detalle del cliente…'
-								: 'Se completan solos al elegir un cliente. Editalos acá y usá «Guardar datos» para llevarlos a su ficha.'}
+								: 'Se completan al elegir un cliente y quedan en esta cotización. Para cambiar su ficha, usá el botón de editar.'}
 						</p>
 					</div>
 					<div className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2'>
@@ -205,6 +148,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 							isActive={isActive}
 							value={customerId}
 							fallbackOption={fallbackCustomerOption}
+							releasesOnSubsidiaryChange
 							isClearable
 							isValid={!errors.customer_id}
 							isTouched={touched.customer_id}
@@ -215,34 +159,13 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 								applyCustomerDetail(customer, true);
 							}}
 							onCustomerUpdated={(customer) => applyCustomerDetail(customer, true)}>
-							{/*
-							 * Sin `editButton`: los campos del cliente se editan aquí mismo y se
-							 * guardan en su ficha con «Guardar datos», así que abrir un modal
-							 * aparte para editar lo mismo sólo duplicaría el camino.
-							 */}
-							{({ select, createButton }) => (
+							{({ select, createButton, editButton }) => (
 								<QuotationField
 									name='customer_id'
 									label='Cliente'
 									labelAction={
 										<>
-											{customerId !== null && (
-												<ProtectedButton
-													permission={
-														ERP_PERMISSIONS.CUSTOMER_SALES.UPDATE
-													}
-													subsidiaryId={subsidiaryId}
-													scope='access'
-													type='button'
-													variant='outline'
-													size='xs'
-													icon='HeroCheck'
-													className='whitespace-nowrap'
-													isLoading={isSavingCustomer}
-													onClick={handleSaveCustomerData}>
-													Guardar datos
-												</ProtectedButton>
-											)}
+											{editButton}
 											{createButton}
 										</>
 									}
