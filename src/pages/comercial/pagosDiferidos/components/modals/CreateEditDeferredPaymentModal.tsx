@@ -34,13 +34,13 @@ import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { formatCLP } from '@/utils/format.utils';
 import getDeferredPaymentErrorMessage from '@/utils/deferredPaymentsError.utils';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
+import CustomerCreditProfileCard from '@/pages/comercial/clientesVentas/ClientesVentasDetalle/components/CustomerCreditProfileCard';
+import type { ICustomerSale } from '@/interface/customerSales.interface';
 import DeferredPaymentField from '../parts/DeferredPaymentField';
 import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
 import DeferredPaymentAttachmentsEditor from '../parts/DeferredPaymentAttachmentsEditor';
 import AttachmentsDropOverlay from '../parts/AttachmentsDropOverlay';
 import useAttachmentsFileDrop from '../../hooks/useAttachmentsFileDrop';
-import CustomerCreditProfileCard from '@/pages/comercial/clientesVentas/ClientesVentasDetalle/components/CustomerCreditProfileCard';
-import type { ICustomerSale } from '@/interface/customerSales.interface';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
 import { useDeferredPaymentAttachments } from '../../hooks/useDeferredPaymentAttachments';
 import {

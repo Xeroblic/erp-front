@@ -4,6 +4,13 @@
  */
 import React, { useEffect } from 'react';
 import { Formik, Form } from 'formik';
+import { useAppSelector } from '@/store';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import ApiService from '@/services/ApiService';
+import {
+	formatCustomerLabel,
+	type CustomerSaleOption,
+} from '@/components/customers/CustomerSaleSelect';
 import { IQuote, QuoteStatus } from '../../../../../../interface';
 import Modal, {
 	ModalHeader,
@@ -14,13 +21,6 @@ import Modal, {
 import Button from '../../../../../../components/ui/Button';
 import { TSelectOptions } from '../../../../../../components/form/SelectReact';
 import { normalizeQuoteStatusValue } from '../../../constants/quoteStatuses';
-import { useAppSelector } from '@/store';
-import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import ApiService from '@/services/ApiService';
-import {
-	formatCustomerLabel,
-	type CustomerSaleOption,
-} from '@/components/customers/CustomerSaleSelect';
 
 // Shared imports
 import { FormQuotationValues, SaleableProduct } from '../shared/types';
