@@ -74,8 +74,16 @@ const optionValuesOf = (fieldLabel: string): string[] =>
  */
 const isMarkedRequired = (fieldLabel: RegExp): boolean => {
 	const labelId = screen.getByRole('group', { name: fieldLabel }).getAttribute('aria-labelledby');
-	const label = labelId ? document.getElementById(labelId) : null;
-	return label?.textContent?.includes('*') ?? false;
+	if (!labelId) {
+		throw new Error(
+			`El grupo ${fieldLabel} no declara aria-labelledby: sin rótulo asociado no hay dónde leer el asterisco, y devolver \`false\` afirmaría que el campo es opcional.`,
+		);
+	}
+	const label = document.getElementById(labelId);
+	if (!label) {
+		throw new Error(`aria-labelledby='${labelId}' no apunta a ningún elemento del documento.`);
+	}
+	return label.textContent?.includes('*') ?? false;
 };
 
 describe('ZF-48 schema fields', () => {

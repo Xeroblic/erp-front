@@ -113,8 +113,16 @@ const optionsOf = (fieldLabel: RegExp): string[] =>
  */
 const isMarkedRequired = (fieldLabel: RegExp): boolean => {
 	const labelId = screen.getByRole('group', { name: fieldLabel }).getAttribute('aria-labelledby');
-	const label = labelId ? document.getElementById(labelId) : null;
-	return label?.textContent?.includes('*') ?? false;
+	if (!labelId) {
+		throw new Error(
+			`El grupo ${fieldLabel} no declara aria-labelledby: sin rótulo asociado no hay dónde leer el asterisco, y devolver \`false\` afirmaría que el campo es opcional.`,
+		);
+	}
+	const label = document.getElementById(labelId);
+	if (!label) {
+		throw new Error(`aria-labelledby='${labelId}' no apunta a ningún elemento del documento.`);
+	}
+	return label.textContent?.includes('*') ?? false;
 };
 
 describe('keyboard cover condition', () => {
@@ -165,5 +173,23 @@ describe('keyboard marks on the screen', () => {
 		const group = screen.getByRole('group', { name: /Condición [Dd]e [Pp]antalla/ });
 		fireEvent.click(within(group).getByRole('button', { name: /Marcas del teclado/ }));
 		expect(getValues()?.screen_condition).toBe('keyboard_marks');
+	});
+
+	/**
+	 * `resolveSchemaField` deja `required: true` con schema remoto y sin él, así que este
+	 * campo nunca es opcional. Al retirar `aria-required` el asterisco del rótulo quedó como
+	 * única señal de obligatorio, y sólo llega al lector de pantalla si el grupo se nombra
+	 * con `aria-labelledby` apuntando a ese rótulo: con `aria-label` la señal se perdía.
+	 */
+	it('keeps the required mark inside the accessible name of the group', () => {
+		renderScreenSection(SCREEN_SCHEMA);
+
+		expect(isMarkedRequired(/Condición [Dd]e [Pp]antalla/)).toBe(true);
+	});
+
+	it('keeps the required mark when the backend publishes no schema', () => {
+		renderScreenSection(undefined);
+
+		expect(isMarkedRequired(/Condición [Dd]e [Pp]antalla/)).toBe(true);
 	});
 });

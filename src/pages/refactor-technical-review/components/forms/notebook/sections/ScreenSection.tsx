@@ -60,7 +60,9 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 			{/* Screen Condition */}
 			<div className='rounded-xl border border-purple-200 bg-purple-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-purple-500/30 dark:border-purple-800 dark:bg-purple-900/10 dark:hover:bg-purple-900/30'>
-				<label className='mb-3 flex items-center justify-center gap-2 text-center text-sm font-bold text-purple-800 dark:text-purple-200'>
+				<label
+					id='screen-condition-label'
+					className='mb-3 flex items-center justify-center gap-2 text-center text-sm font-bold text-purple-800 dark:text-purple-200'>
 					<Icon icon='HeroSparkles' className='h-4 w-4' />
 					{screen.label}
 					{screen.required && <span className='text-red-500'> *</span>}
@@ -79,7 +81,7 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 				<div
 					role='group'
-					aria-label={screen.label}
+					aria-labelledby='screen-condition-label'
 					className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 					{screen.options.map((opt) => (
 						<SelectionCard
