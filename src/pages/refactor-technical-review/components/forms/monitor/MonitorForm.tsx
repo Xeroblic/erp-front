@@ -111,6 +111,8 @@ export interface MonitorFormProps {
 	isSubmitting?: boolean;
 	readOnly?: boolean;
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Guarda el borrador aunque la validación bloquee el avance de sección (ZF-102). */
+	onPersistDraft?: () => Promise<void> | void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
@@ -126,6 +128,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 	isSubmitting,
 	readOnly,
 	onStepChange,
+	onPersistDraft,
 	registerGetFormValues,
 	isSaving,
 	initialSectionKey,
@@ -297,6 +300,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onPersistDraft={onPersistDraft}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
 			initialSectionKey={initialSectionKey}

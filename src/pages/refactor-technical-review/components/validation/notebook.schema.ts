@@ -43,6 +43,11 @@ export const notebookSchema = Yup.object({
 		.oneOf([...ALLOWED_GENERAL_CONDITIONS], 'Condición general no válida')
 		.required('La condición general es obligatoria'),
 
+	// ZF-102. El backend exige `powers_on` para cerrar la revisión de un notebook, así que
+	// se pide acá y no en el 422: `false` es una respuesta válida y completa (el equipo no
+	// enciende → grado M); lo que bloquea el cierre es no haber respondido nunca.
+	powers_on: Yup.boolean().required('Debes indicar si el equipo enciende'),
+
 	// ─── Hardware ────────────────────────────────────────────────────────────
 	processor: Yup.string()
 		.trim()

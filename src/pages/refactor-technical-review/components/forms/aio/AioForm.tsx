@@ -73,7 +73,7 @@ const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 ];
 
 const AIO_SECTION_FIELDS: Record<string, FieldPath<AioFormData>[]> = {
-	'basic-info': ['brand', 'model', 'general_condition'],
+	'basic-info': ['brand', 'model', 'line', 'general_condition'],
 	hardware: [
 		'processor',
 		'has_no_ram',
@@ -117,6 +117,8 @@ interface AioFormProps {
 	isSubmitting?: boolean;
 	readOnly?: boolean;
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Guarda el borrador aunque la validación bloquee el avance de sección (ZF-102). */
+	onPersistDraft?: () => Promise<void> | void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
@@ -132,6 +134,7 @@ const AioForm: React.FC<AioFormProps> = ({
 	isSubmitting,
 	readOnly,
 	onStepChange,
+	onPersistDraft,
 	registerGetFormValues,
 	isSaving,
 	initialSectionKey,
@@ -322,6 +325,7 @@ const AioForm: React.FC<AioFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onPersistDraft={onPersistDraft}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
 			initialSectionKey={initialSectionKey}
