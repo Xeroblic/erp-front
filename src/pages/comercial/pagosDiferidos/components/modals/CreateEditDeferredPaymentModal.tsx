@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FieldArray, Form, FormikProvider } from 'formik';
-import type { InputActionMeta } from 'react-select';
-import { useDebounce } from 'use-debounce';
 import { toast } from 'react-toastify';
 import type {
 	IDeferredPaymentCreditProfile,
@@ -26,23 +24,23 @@ import Checkbox from '@/components/form/Checkbox';
 import Input from '@/components/form/Input';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
+import CustomerSaleSelect, {
+	formatCustomerLabel,
+	toCustomerSaleOption,
+	type CustomerSaleOption,
+} from '@/components/customers/CustomerSaleSelect';
 import { useAppDispatch, useAppSelector } from '@/store';
-import {
-	fetchCustomerDetailThunk,
-	fetchCustomersOverviewThunk,
-} from '@/store/slices/customerSales/customerSalesSlice';
 import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { formatCLP } from '@/utils/format.utils';
 import getDeferredPaymentErrorMessage from '@/utils/deferredPaymentsError.utils';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
+import CustomerCreditProfileCard from '@/pages/comercial/clientesVentas/ClientesVentasDetalle/components/CustomerCreditProfileCard';
+import type { ICustomerSale } from '@/interface/customerSales.interface';
 import DeferredPaymentField from '../parts/DeferredPaymentField';
 import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
 import DeferredPaymentAttachmentsEditor from '../parts/DeferredPaymentAttachmentsEditor';
 import AttachmentsDropOverlay from '../parts/AttachmentsDropOverlay';
 import useAttachmentsFileDrop from '../../hooks/useAttachmentsFileDrop';
-import CustomerCreditProfileCard from '@/pages/comercial/clientesVentas/ClientesVentasDetalle/components/CustomerCreditProfileCard';
-import CreateCustomerSaleModal from '@/pages/comercial/clientesVentas/components/modals/CreateCustomerSaleModal';
-import type { ICustomerSale, ICustomerSaleOverview } from '@/interface/customerSales.interface';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
 import { useDeferredPaymentAttachments } from '../../hooks/useDeferredPaymentAttachments';
 import {
@@ -63,12 +61,6 @@ interface CreateEditDeferredPaymentModalProps {
 	onClose: () => void;
 	deferredPaymentDocument?: IDeferredPaymentDocument | null;
 	onSaved?: (document: IDeferredPaymentDocument) => void;
-}
-
-interface CustomerOptionData {
-	id: number;
-	label: string;
-	isActive: boolean;
 }
 
 interface PendingUploadRecovery {
@@ -174,28 +166,6 @@ const asMultiOptions = (value: unknown): TSelectOption[] => {
 	return candidates.filter(isSelectOption);
 };
 
-const formatCustomerLabel = (...values: Array<string | null | undefined>): string => {
-	const labelParts: string[] = [];
-	values.forEach((value) => {
-		const normalizedValue = value?.trim();
-		if (
-			normalizedValue &&
-			!labelParts.some(
-				(labelPart) =>
-					labelPart.toLocaleLowerCase() === normalizedValue.toLocaleLowerCase(),
-			)
-		)
-			labelParts.push(normalizedValue);
-	});
-	return labelParts.join(' · ');
-};
-
-const toOverviewCustomerOption = (customer: ICustomerSaleOverview): CustomerOptionData => ({
-	id: customer.id,
-	label: formatCustomerLabel(customer.name, customer.contact?.name, customer.rut),
-	isActive: customer.is_active,
-});
-
 const getCreditProfileEmptyMessage = (
 	isCreditProfileLoading: boolean,
 	hasSelectedCustomer: boolean,
@@ -212,30 +182,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	onSaved,
 }) => {
 	const dispatch = useAppDispatch();
-	const storedCustomers = useAppSelector((state) => state.customerSales.overview);
-	const storedCustomersLoading = useAppSelector((state) => state.customerSales.overviewLoading);
-	const customersSubsidiaryId = useAppSelector(
-		(state) => state.customerSales.overviewSubsidiaryId,
-	);
 	const users = useAppSelector((state) => state.usersAdmin.users);
 	const usersLoading = useAppSelector((state) => state.usersAdmin.loading.users);
 	const currentUser = useAppSelector((state) => state.auth?.user);
 	const { branchId, subsidiaryId } = useCurrentBranch();
-	const isCustomersContextCurrent =
-		subsidiaryId !== null &&
-		customersSubsidiaryId !== null &&
-		Number(customersSubsidiaryId) === subsidiaryId;
-	const customers = useMemo(
-		() => (isCustomersContextCurrent ? storedCustomers : []),
-		[isCustomersContextCurrent, storedCustomers],
-	);
-	const customersLoading = isCustomersContextCurrent ? storedCustomersLoading : false;
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
-	const [customerSearch, setCustomerSearch] = useState('');
-	const [debouncedCustomerSearch] = useDebounce(customerSearch, 300);
-	const [selectedCustomerOption, setSelectedCustomerOption] = useState<CustomerOptionData | null>(
-		null,
-	);
+	const [selectedCustomer, setSelectedCustomer] = useState<CustomerSaleOption | null>(null);
+	const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 	const [creditProfile, setCreditProfile] = useState<IDeferredPaymentCreditProfile | null>(null);
 	const [outstandingAmount, setOutstandingAmount] = useState<number | null>(null);
 	const [isCreditProfileLoading, setIsCreditProfileLoading] = useState(false);
@@ -243,29 +196,14 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const [hasCreditProfileLoaded, setHasCreditProfileLoaded] = useState(false);
 	const [isCreditProfileCreatorOpen, setIsCreditProfileCreatorOpen] = useState(false);
 	const [isCreditProfileCreatorSaving, setIsCreditProfileCreatorSaving] = useState(false);
-	const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
-	const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
-	const [customerModalSubsidiaryId, setCustomerModalSubsidiaryId] = useState<number | null>(null);
-	const [editingCustomer, setEditingCustomer] = useState<ICustomerSale | null>(null);
-	const [isLoadingCustomerDetail, setIsLoadingCustomerDetail] = useState(false);
 	const [pendingUploadRecovery, setPendingUploadRecovery] =
 		useState<PendingUploadRecovery | null>(null);
 	const creditProfileRequestIdRef = useRef(0);
 	const creditProfileAbortRef = useRef<AbortController | null>(null);
-	const customerDetailRequestIdRef = useRef(0);
-	const customerDetailAbortRef = useRef<(() => void) | null>(null);
-	/** Subsidiaria vigente cuando se abrió el alta/edición rápida de clientes. */
-	const customerModalSubsidiaryIdRef = useRef<number | null>(null);
 	const latestSubsidiaryIdRef = useRef(subsidiaryId);
 	const recoveryRequestIdRef = useRef(0);
 	const savedDocumentIdRef = useRef<number | null>(null);
 	latestSubsidiaryIdRef.current = subsidiaryId;
-	customerModalSubsidiaryIdRef.current = customerModalSubsidiaryId;
-	const isCustomerModalContextCurrent =
-		customerModalSubsidiaryId !== null && customerModalSubsidiaryId === subsidiaryId;
-	const isCurrentCreateCustomerOpen = isCreateCustomerOpen && isCustomerModalContextCurrent;
-	const isCurrentEditCustomerOpen =
-		isEditCustomerOpen && editingCustomer !== null && isCustomerModalContextCurrent;
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
 	const attachmentActions = useDeferredPaymentAttachments({
 		isOpen,
@@ -330,15 +268,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		!isSubmitting &&
 		!isAttachmentOperationActive &&
 		currentPendingUploadRecovery === null &&
-		!isCreateCustomerOpen &&
-		!isEditCustomerOpen &&
+		!isCustomerModalOpen &&
 		!isCreditProfileCreatorOpen;
 	const showAttachmentDragAndDropHint =
 		canUploadAttachments &&
 		!isPaidEdit &&
 		currentPendingUploadRecovery === null &&
-		!isCreateCustomerOpen &&
-		!isEditCustomerOpen &&
+		!isCustomerModalOpen &&
 		!isCreditProfileCreatorOpen;
 	const { isDraggingFile } = useAttachmentsFileDrop({
 		isActive: isOpen,
@@ -461,23 +397,10 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		[mode, subsidiaryId],
 	);
 
-	const resetCustomerModals = useCallback(() => {
-		customerDetailAbortRef.current?.();
-		customerDetailAbortRef.current = null;
-		customerDetailRequestIdRef.current += 1;
-		setCustomerModalSubsidiaryId(null);
-		setIsLoadingCustomerDetail(false);
-		setEditingCustomer(null);
-		setIsEditCustomerOpen(false);
-		setIsCreateCustomerOpen(false);
-	}, []);
-
 	useEffect(
 		() => () => {
 			creditProfileAbortRef.current?.abort();
 			creditProfileRequestIdRef.current += 1;
-			customerDetailAbortRef.current?.();
-			customerDetailRequestIdRef.current += 1;
 		},
 		[],
 	);
@@ -489,15 +412,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			setPendingUploadRecovery(null);
 			setIsCreditProfileCreatorOpen(false);
 			setIsCreditProfileCreatorSaving(false);
-			resetCustomerModals();
 		}
 		if (!isOpen && mode === 'create') {
-			setSelectedCustomerOption(null);
-			setCustomerSearch('');
+			setSelectedCustomer(null);
 			setPaymentTermDays(30);
 			resetForm();
 		}
-	}, [clearCreditProfile, isOpen, mode, resetCustomerModals, resetForm]);
+	}, [clearCreditProfile, isOpen, mode, resetForm]);
 
 	const previousSubsidiaryIdRef = useRef(subsidiaryId);
 	useEffect(() => {
@@ -508,7 +429,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		clearCreditProfile();
 		setIsCreditProfileCreatorOpen(false);
 		setIsCreditProfileCreatorSaving(false);
-		resetCustomerModals();
 		if (mode === 'create' && subsidiaryId !== null && formik.values.customer_sale_id !== null)
 			loadCreditProfile(formik.values.customer_sale_id).catch(() => undefined);
 	}, [
@@ -517,7 +437,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		isOpen,
 		loadCreditProfile,
 		mode,
-		resetCustomerModals,
 		subsidiaryId,
 	]);
 
@@ -528,31 +447,15 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 
 	useEffect(() => {
 		if (!isOpen || subsidiaryId === null) return undefined;
-		const query = debouncedCustomerSearch.trim();
-		if (!query) return undefined;
-		const customerRequest = dispatch(
-			fetchCustomersOverviewThunk({
-				subsidiary: subsidiaryId,
-				per_page: 100,
-				params: { q: query },
-			}),
-		);
-		return () => customerRequest.abort();
-	}, [debouncedCustomerSearch, dispatch, isOpen, subsidiaryId]);
-
-	useEffect(() => {
-		if (!isOpen || subsidiaryId === null) return undefined;
 		const usersRequest = dispatch(
 			fetchUsers({ subsidiary_id: subsidiaryId, status: 'active', per_page: 100 }),
 		);
 		return () => usersRequest.abort();
 	}, [dispatch, isOpen, subsidiaryId]);
 
-	const customerData = useMemo<CustomerOptionData[]>(() => {
-		const remoteCustomers = debouncedCustomerSearch.trim()
-			? customers.map(toOverviewCustomerOption)
-			: [];
-		const editedCustomer =
+	/** El cliente ya guardado debe seguir visible aunque la búsqueda no lo devuelva. */
+	const editedCustomerOption = useMemo<CustomerSaleOption | null>(
+		() =>
 			mode === 'edit' && deferredPaymentDocument
 				? {
 						id: deferredPaymentDocument.customer.id,
@@ -563,20 +466,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 						),
 						isActive: true,
 					}
-				: null;
-		return Array.from(
-			new Map(
-				[
-					...(editedCustomer ? [editedCustomer] : []),
-					...remoteCustomers,
-					...(selectedCustomerOption ? [selectedCustomerOption] : []),
-				].map((customer) => [customer.id, customer]),
-			).values(),
-		);
-	}, [customers, debouncedCustomerSearch, deferredPaymentDocument, mode, selectedCustomerOption]);
-	const customerOptions = useMemo<TSelectOption[]>(
-		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
-		[customerData],
+				: null,
+		[deferredPaymentDocument, mode],
 	);
 	const handleEnteredUnitPriceChange = (index: number, value: string) => {
 		const enteredUnitPriceField = `items.${index}.entered_unit_price`;
@@ -648,12 +539,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			).values(),
 		);
 	}, [currentUser, deferredPaymentDocument, mode, users]);
-	const selectedCustomer = customerData.find(
-		(customer) => customer.id === formik.values.customer_sale_id,
-	);
-	const customerValue = customerOptions.find(
-		(option) => option.value === String(formik.values.customer_sale_id ?? ''),
-	);
 	const assigneeValue = assigneeOptions.filter((option) =>
 		formik.values.assignee_ids.includes(Number(option.value)),
 	);
@@ -668,6 +553,15 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		Math.abs(estimatedTotal - documentTotal) >= 1;
 	const vatBreakdown = calculateDeferredPaymentVatBreakdown(documentTotal);
 	const hasSelectedCustomer = formik.values.customer_sale_id !== null;
+	/**
+	 * El selector vive fuera de `DeferredPaymentField` (necesita aportar los botones al
+	 * rótulo), así que su estado de validación se resuelve aquí con el mismo criterio.
+	 */
+	const customerFieldTouched = Boolean(formik.touched.customer_sale_id);
+	const customerFieldError =
+		customerFieldTouched && typeof formik.errors.customer_sale_id === 'string'
+			? formik.errors.customer_sale_id
+			: undefined;
 	const hasCreatedCreditProfile = creditProfile !== null && creditProfile.id !== null;
 	const shouldShowCreditProfileEmptyState =
 		!hasCreatedCreditProfile &&
@@ -728,7 +622,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			clearCreditProfile();
 			setIsCreditProfileCreatorOpen(false);
 			setIsCreditProfileCreatorSaving(false);
-			resetCustomerModals();
 			onClose();
 		}
 	};
@@ -743,33 +636,28 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		if (customerSaleId !== null)
 			loadCreditProfile(customerSaleId, mode === 'edit').catch(() => undefined);
 	};
-	const toCustomerOption = (customer: ICustomerSale): CustomerOptionData => ({
-		id: customer.id,
-		label: formatCustomerLabel(
-			customer.billing_company,
-			customer.contact_name,
-			customer.name,
-			customer.rut,
-		),
-		isActive: customer.is_active,
-	});
-	/**
-	 * El alta rápida puede resolver después de que el usuario cambió de subsidiaria o
-	 * cerró este modal: adoptar ese cliente seleccionaría un deudor de otra subsidiaria
-	 * y consultaría su perfil de crédito con el contexto equivocado.
-	 */
-	const isCustomerModalStillCurrent = () =>
-		latestIsOpenRef.current &&
-		customerModalSubsidiaryIdRef.current === latestSubsidiaryIdRef.current;
-	const handleCustomerCreated = (customer: ICustomerSale) => {
-		if (!isCustomerModalStillCurrent()) {
-			resetCustomerModals();
-			return;
+	/** Cambio de cliente: el perfil de crédito y el plazo pasan a ser los del nuevo. */
+	const adoptCustomer = (customer: CustomerSaleOption | null) => {
+		const customerChanged = customer?.id !== formik.values.customer_sale_id;
+		setSelectedCustomer(customer);
+		if (customerChanged) {
+			latestCustomerSaleIdRef.current = customer?.id ?? null;
+			setIsCreditProfileCreatorOpen(false);
+			setIsCreditProfileCreatorSaving(false);
+			clearCreditProfile();
 		}
-		resetCustomerModals();
+		if (mode === 'create' && customerChanged) {
+			actions.resetDueDateManualOverride(30).catch(() => undefined);
+			setPaymentTermDays(30);
+		}
+		if (customer && customerChanged)
+			loadCreditProfile(customer.id, true).catch(() => undefined);
+		formik.setFieldValue('customer_sale_id', customer?.id ?? null).catch(() => undefined);
+	};
+	const handleCustomerCreated = (customer: ICustomerSale) => {
 		clearCreditProfile();
 		latestCustomerSaleIdRef.current = customer.id;
-		setSelectedCustomerOption(toCustomerOption(customer));
+		setSelectedCustomer(toCustomerSaleOption(customer));
 		formik.setFieldValue('customer_sale_id', customer.id).catch(() => undefined);
 		if (mode === 'create') {
 			actions.resetDueDateManualOverride(30).catch(() => undefined);
@@ -778,75 +666,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		loadCreditProfile(customer.id, true).catch(() => undefined);
 	};
 	const handleCustomerUpdated = (customer: ICustomerSale) => {
-		if (!isCustomerModalStillCurrent()) {
-			resetCustomerModals();
-			return;
-		}
 		if (formik.values.customer_sale_id === customer.id)
-			setSelectedCustomerOption(toCustomerOption(customer));
-		setEditingCustomer(null);
-	};
-	const handleOpenEditCustomer = () => {
-		const customerSaleId = formik.values.customer_sale_id;
-		if (customerSaleId === null) return;
-		if (subsidiaryId === null) {
-			toast.error('No se pudo determinar la subsidiaria activa');
-			return;
-		}
-		customerDetailAbortRef.current?.();
-		const requestId = customerDetailRequestIdRef.current + 1;
-		customerDetailRequestIdRef.current = requestId;
-		const requestSubsidiaryId = subsidiaryId;
-		setCustomerModalSubsidiaryId(requestSubsidiaryId);
-		const requestCustomerSaleId = customerSaleId;
-		setEditingCustomer(null);
-		setIsEditCustomerOpen(false);
-		setIsLoadingCustomerDetail(true);
-		const customerRequest = dispatch(
-			fetchCustomerDetailThunk({
-				subsidiary: requestSubsidiaryId,
-				id: requestCustomerSaleId,
-			}),
-		);
-		customerDetailAbortRef.current = () => customerRequest.abort();
-		customerRequest
-			.unwrap()
-			.then((customer) => {
-				if (
-					requestId !== customerDetailRequestIdRef.current ||
-					latestSubsidiaryIdRef.current !== requestSubsidiaryId ||
-					latestCustomerSaleIdRef.current !== requestCustomerSaleId ||
-					!latestIsOpenRef.current
-				)
-					return;
-				setEditingCustomer(customer);
-				setIsEditCustomerOpen(true);
-			})
-			.catch((error: unknown) => {
-				if (
-					requestId === customerDetailRequestIdRef.current &&
-					latestSubsidiaryIdRef.current === requestSubsidiaryId &&
-					latestCustomerSaleIdRef.current === requestCustomerSaleId &&
-					latestIsOpenRef.current
-				)
-					toast.error(
-						getDeferredPaymentErrorMessage(error, 'No se pudo cargar el cliente'),
-					);
-			})
-			.finally(() => {
-				if (requestId === customerDetailRequestIdRef.current) {
-					customerDetailAbortRef.current = null;
-					setIsLoadingCustomerDetail(false);
-				}
-			});
-	};
-	const handleOpenCreateCustomer = () => {
-		if (subsidiaryId === null) {
-			toast.error('No se pudo determinar la subsidiaria activa');
-			return;
-		}
-		setCustomerModalSubsidiaryId(subsidiaryId);
-		setIsCreateCustomerOpen(true);
+			setSelectedCustomer(toCustomerSaleOption(customer));
 	};
 	const focusFirstInvalidDeferredPaymentField = (errors: unknown) => {
 		const fieldId = getFirstInvalidDeferredPaymentFieldId(errors);
@@ -911,101 +732,35 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								<CardTitle className='text-lg'>Datos del documento</CardTitle>
 							</CardHeader>
 							<CardBody className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 lg:grid-cols-3'>
-								<DeferredPaymentField
-									name='customer_sale_id'
-									label='Cliente'
-									labelAction={
-										<>
-											{hasSelectedCustomer && (
-												<ProtectedButton
-													permission={
-														ERP_PERMISSIONS.CUSTOMER_SALES.UPDATE
-													}
-													subsidiaryId={subsidiaryId}
-													scope='access'
-													type='button'
-													variant='outline'
-													size='xs'
-													icon='HeroPencilSquare'
-													isLoading={isLoadingCustomerDetail}
-													isDisable={isPaidEdit}
-													aria-label='Editar cliente'
-													onClick={handleOpenEditCustomer}
-												/>
-											)}
-											<ProtectedButton
-												permission={ERP_PERMISSIONS.CUSTOMER_SALES.CREATE}
-												subsidiaryId={subsidiaryId}
-												scope='access'
-												type='button'
-												variant='outline'
-												size='xs'
-												icon='HeroPlus'
-												className='whitespace-nowrap'
-												isDisable={isPaidEdit}
-												onClick={handleOpenCreateCustomer}>
-												Crear cliente
-											</ProtectedButton>
-										</>
-									}
-									className='md:col-span-2 lg:col-span-1'>
-									{({ error, isTouched, isValid }) => (
-										<SelectReact
+								<CustomerSaleSelect
+									subsidiaryId={subsidiaryId}
+									isActive={isOpen}
+									value={formik.values.customer_sale_id}
+									onChange={adoptCustomer}
+									inputId='customer_sale_id'
+									isDisabled={isPaidEdit}
+									isValid={customerFieldError === undefined}
+									isTouched={customerFieldTouched}
+									invalidFeedback={customerFieldError}
+									fallbackOption={editedCustomerOption}
+									onCustomerCreated={handleCustomerCreated}
+									onCustomerUpdated={handleCustomerUpdated}
+									onModalOpenChange={setIsCustomerModalOpen}>
+									{({ select, createButton, editButton }) => (
+										<DeferredPaymentField
 											name='customer_sale_id'
-											inputId='customer_sale_id'
-											options={customerOptions}
-											value={customerValue ?? null}
-											filterOption={null}
-											isLoading={customersLoading}
-											isDisabled={isPaidEdit}
-											placeholder='Busca por razón social o RUT'
-											noOptionsMessage={() => 'Sin resultados'}
-											onInputChange={(
-												value: string,
-												actionMeta?: InputActionMeta,
-											) => {
-												if (actionMeta?.action === 'input-change')
-													setCustomerSearch(value);
-											}}
-											isValid={isValid}
-											isTouched={isTouched}
-											invalidFeedback={error}
-											onChange={(value) => {
-												const option = isSelectOption(value) ? value : null;
-												const customer = customerData.find(
-													(entry) => entry.id === Number(option?.value),
-												);
-												const customerChanged =
-													customer?.id !== formik.values.customer_sale_id;
-												setSelectedCustomerOption(customer ?? null);
-												if (customerChanged) {
-													latestCustomerSaleIdRef.current =
-														customer?.id ?? null;
-													resetCustomerModals();
-													setIsCreditProfileCreatorOpen(false);
-													setIsCreditProfileCreatorSaving(false);
-													clearCreditProfile();
-												}
-												if (mode === 'create' && customerChanged) {
-													actions
-														.resetDueDateManualOverride(30)
-														.catch(() => undefined);
-													setPaymentTermDays(30);
-												}
-												if (customer && customerChanged)
-													loadCreditProfile(customer.id, true).catch(
-														() => undefined,
-													);
-												formik
-													.setFieldValue(
-														'customer_sale_id',
-														customer?.id ?? null,
-													)
-													.catch(() => undefined);
-											}}
-										/>
+											label='Cliente'
+											labelAction={
+												<>
+													{editButton}
+													{createButton}
+												</>
+											}
+											className='md:col-span-2 lg:col-span-1'>
+											{() => select}
+										</DeferredPaymentField>
 									)}
-								</DeferredPaymentField>
+								</CustomerSaleSelect>
 								<DeferredPaymentField name='document_type' label='Tipo'>
 									{({ error, isTouched, isValid }) => (
 										<SelectReact
@@ -1634,31 +1389,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 					)}
 				</ModalBody>
 			</Modal>
-			{/*
-			 * `refreshStoreOnSuccess={false}`: el overview lo administra la búsqueda de
-			 * este modal (per_page 100 + q). Un refetch con los parámetros por defecto
-			 * la reduciría a los 5 clientes más recientes y vaciaría el select.
-			 */}
-			<CreateCustomerSaleModal
-				isOpen={isCurrentCreateCustomerOpen}
-				setIsOpen={(nextIsOpen) => {
-					if (!nextIsOpen) resetCustomerModals();
-				}}
-				subsidiaryId={customerModalSubsidiaryId}
-				refreshStoreOnSuccess={false}
-				onSuccess={handleCustomerCreated}
-			/>
-			<CreateCustomerSaleModal
-				isOpen={isCurrentEditCustomerOpen}
-				setIsOpen={(nextIsOpen) => {
-					if (!nextIsOpen) resetCustomerModals();
-				}}
-				subsidiaryId={customerModalSubsidiaryId}
-				isEdit
-				initialData={editingCustomer}
-				refreshStoreOnSuccess={false}
-				onSuccess={handleCustomerUpdated}
-			/>
 		</Modal>
 	);
 };

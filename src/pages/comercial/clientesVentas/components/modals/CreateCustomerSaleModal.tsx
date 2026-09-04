@@ -158,7 +158,12 @@ const CreateCustomerSaleModal = ({
 				.required('RUT requerido')
 				.test('rut-valid', 'RUT inválido', (value) => validateRut(value || '')),
 			email: Yup.string().email('Email inválido').required('Email requerido'),
-			billing_company: Yup.string().required('Empresa/Persona requerida'),
+			/**
+			 * El backend acepta `billing_company` nula al crear y al editar
+			 * (`sometimes|nullable`), así que exigirla aquí bloqueaba editar cualquier
+			 * cliente que se haya guardado sin empresa.
+			 */
+			billing_company: Yup.string().max(255, 'Máximo 255 caracteres'),
 		}),
 		onSubmit: async (values, { setSubmitting, setFieldError }) => {
 			if (!subsidiaryId) {
@@ -304,7 +309,7 @@ const CreateCustomerSaleModal = ({
 
 					<div className='grid grid-cols-2 gap-4'>
 						<div className='space-y-1'>
-							<Label htmlFor={companyId}>Empresa</Label>
+							<Label htmlFor={companyId}>Empresa (opcional)</Label>
 							<Input
 								id={companyId}
 								name='billing_company'

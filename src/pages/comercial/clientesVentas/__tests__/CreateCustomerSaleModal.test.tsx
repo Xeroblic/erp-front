@@ -148,6 +148,24 @@ describe('CreateCustomerSaleModal', () => {
 		expect(toastSpies.error.mock.calls[0][0]).toContain('no tienes acceso a esta subsidiaria');
 	});
 
+	it('guarda un cliente sin empresa, que el backend acepta como nula', async () => {
+		apiSpies.fetchNormalized.mockResolvedValue({ id: 12, rut: '20761872-1', is_active: true });
+		const onSuccess = vi.fn();
+		renderModal({ onSuccess });
+
+		fireEvent.change(screen.getByPlaceholderText('12345678-9'), {
+			target: { value: '20761872-1' },
+		});
+		fireEvent.change(screen.getByPlaceholderText('correo@example.cl'), {
+			target: { value: 'sin.empresa@prueboide.com' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+		await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+		expect(screen.queryByText('Empresa/Persona requerida')).not.toBeInTheDocument();
+		expect(getSubmittedPayload()).toMatchObject({ billing_company: '' });
+	});
+
 	it('no refresca el overview cuando refreshStoreOnSuccess es false', async () => {
 		apiSpies.fetchNormalized.mockResolvedValue({ id: 9, rut: '20761872-1', is_active: true });
 		const onSuccess = vi.fn();
