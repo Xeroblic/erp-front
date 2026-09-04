@@ -91,9 +91,16 @@ const DesktopAestheticsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 			<div className='rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-900/30 dark:bg-blue-900/10'>
 				<YesNoSelector
 					label={powersOnField?.label ?? '¿El equipo enciende?'}
+					required={powersOnField?.required ?? true}
+					disabled={readOnly}
 					value={watch('powers_on')}
 					onChange={(value) => !readOnly && setValue('powers_on', value)}
 				/>
+				{errors.powers_on && (
+					<p className='mt-2 text-center text-xs text-red-500'>
+						{errors.powers_on.message}
+					</p>
+				)}
 				{powersOnField?.hint && (
 					<p className='mt-2 text-center text-xs text-zinc-500'>{powersOnField.hint}</p>
 				)}

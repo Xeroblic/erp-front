@@ -12,7 +12,14 @@ const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	readOnly,
 	watch,
 	setValue,
+	schemaFields,
 }) => {
+	// ZF-102. `powers_on` es booleano: no depende de `allowed_values`, así que —como en
+	// desktop— se muestra siempre y del schema remoto sólo sale su rotulado. El selector
+	// de tres estados distingue «no respondido» de «no enciende»: `false` es una respuesta
+	// completa que lleva el equipo a grado M.
+	const powersOnField = schemaFields?.powers_on;
+
 	return (
 		<div className='space-y-6 hover:cursor-pointer'>
 			{/* General Condition */}
@@ -39,6 +46,30 @@ const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				<p className='mt-2 text-center text-xs text-zinc-500'>
 					{NOTEBOOK_HINTS.general_condition}
 				</p>
+			</div>
+
+			{/* Powers On (ZF-102) */}
+			<div className='rounded-xl border border-blue-200 bg-blue-500/10 p-4 dark:border-blue-800 dark:bg-blue-900/10'>
+				<YesNoSelector
+					label={powersOnField?.label ?? '¿El equipo enciende?'}
+					required={powersOnField?.required ?? true}
+					disabled={readOnly}
+					value={watch('powers_on')}
+					onChange={(val) => !readOnly && setValue('powers_on', val)}
+				/>
+				{errors.powers_on && (
+					<p className='mt-2 text-center text-xs text-red-500'>
+						{errors.powers_on.message}
+					</p>
+				)}
+				{powersOnField?.hint && (
+					<p className='mt-2 text-center text-xs text-zinc-500'>{powersOnField.hint}</p>
+				)}
+				{powersOnField?.warning && (
+					<p className='mt-2 text-center text-xs text-blue-800 dark:text-blue-300'>
+						{powersOnField.warning}
+					</p>
+				)}
 			</div>
 
 			{/* Connectivity Booleans */}

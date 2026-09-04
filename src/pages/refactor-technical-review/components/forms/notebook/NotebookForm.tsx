@@ -159,7 +159,7 @@ const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 		'keyboard_cover_condition',
 		'speakers_condition',
 	],
-	aesthetics: ['general_condition', 'cover_condition', 'bottom_condition'],
+	aesthetics: ['general_condition', 'powers_on', 'cover_condition', 'bottom_condition'],
 	software: ['operating_system', 'has_biometric', 'has_wifi', 'has_bluetooth'],
 	observations: ['observations'],
 };
@@ -173,6 +173,8 @@ interface NotebookFormProps {
 	readOnly?: boolean;
 	/** Called when user navigates between form sections */
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Guarda el borrador aunque la validación bloquee el avance de sección (ZF-102). */
+	onPersistDraft?: () => Promise<void> | void;
 	/** Registers a getter for current form values (used by auto-save) */
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	/** Whether auto-save is in progress */
@@ -189,6 +191,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	isSubmitting = false,
 	readOnly = false,
 	onStepChange,
+	onPersistDraft,
 	registerGetFormValues,
 	isSaving = false,
 	initialSectionKey,
@@ -197,6 +200,13 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	const normalizedDefaultValues = useMemo<Partial<NotebookFormData>>(
 		() => ({
 			...(defaultValues || {}),
+			// ZF-102. La casilla desmarcada significa «cero teclas malas», pero el valor
+			// sólo se escribía al tocarla: con el teclado sano el campo viajaba como
+			// `undefined`, el filtro del payload lo descartaba y la columna quedaba NULL,
+			// que para el backend es «sin medir» y bloquea el cierre. El 0 nace acá, en el
+			// estado del formulario, para que lo vean las cuatro rutas de escritura
+			// (submit final, los dos autoguardados y el atajo «no enciende»).
+			non_functional_keys_count: defaultValues?.non_functional_keys_count ?? 0,
 			has_numeric_keypad: defaultValues?.has_numeric_keypad ?? false,
 			has_backlit_keyboard: defaultValues?.has_backlit_keyboard ?? false,
 			has_second_battery: defaultValues?.has_second_battery ?? false,
@@ -346,6 +356,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onPersistDraft={onPersistDraft}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
 			initialSectionKey={initialSectionKey}

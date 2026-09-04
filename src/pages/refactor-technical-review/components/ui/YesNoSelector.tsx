@@ -8,7 +8,7 @@
  *     onChange={(val) => setValue('includes_charger', val)}
  *   />
  */
-import React from 'react';
+import React, { useId } from 'react';
 import { SelectionCard } from './SelectionCard';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,6 +22,10 @@ interface YesNoSelectorProps {
 	onChange: (val: boolean) => void;
 	/** Clases CSS adicionales para el contenedor */
 	className?: string;
+	/** Marca el campo como obligatorio (asterisco visible y `aria-required`). */
+	required?: boolean;
+	/** Impide la interacción cuando el formulario está en modo lectura. */
+	disabled?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -31,18 +35,30 @@ export const YesNoSelector: React.FC<YesNoSelectorProps> = ({
 	value,
 	onChange,
 	className,
+	required = false,
+	disabled = false,
 }) => {
+	// Las dos tarjetas son `role="radio"`: sin un `radiogroup` que las agrupe quedan
+	// huérfanas para el lector de pantalla y pierden el nombre del campo.
+	const labelId = useId();
+
 	return (
 		<div className={`flex flex-col gap-2 ${className ?? ''}`}>
-			<label className='block text-center text-sm font-bold dark:text-gray-300'>
+			<p className='block text-center text-sm font-bold dark:text-gray-300' id={labelId}>
 				{label}
-			</label>
-			<div className='grid grid-cols-2 gap-4'>
+				{required && <span className='text-red-500'> *</span>}
+			</p>
+			<div
+				role='radiogroup'
+				aria-labelledby={labelId}
+				aria-required={required}
+				className='grid grid-cols-2 gap-4'>
 				<SelectionCard
 					label='Sí'
 					value='yes'
 					isSelected={value === true}
 					onClick={() => onChange(true)}
+					disabled={disabled}
 					color='green'
 					icon='HeroCheck'
 					className='h-16 min-h-[60px]'
@@ -52,6 +68,7 @@ export const YesNoSelector: React.FC<YesNoSelectorProps> = ({
 					value='no'
 					isSelected={value === false}
 					onClick={() => onChange(false)}
+					disabled={disabled}
 					color='red'
 					icon='HeroXMark'
 					className='h-16 min-h-[60px]'
