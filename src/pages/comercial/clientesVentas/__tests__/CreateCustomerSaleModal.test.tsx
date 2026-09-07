@@ -183,14 +183,22 @@ describe('CreateCustomerSaleModal', () => {
 		// El backend descarta de sus listados a quien no tenga billing_company ni
 		// contact_name (`hasUsableName`): el formulario debe exigir uno de los dos antes
 		// de dejar viajar la petición, o el cliente queda inalcanzable tras crearse.
-		// `Input` no pinta el texto de invalidFeedback, sólo el borde rojo del campo.
+		// El campo Empresa envuelve el Input en `Validation`, que sí pinta el texto del
+		// error (Input por sí solo sólo aplica el borde rojo).
 		await waitFor(() =>
 			expect(screen.getByPlaceholderText('Empresa S.A.').className).toContain(
 				'!border-red-500',
 			),
 		);
+		expect(screen.getByText('Ingresa Empresa o Contacto.')).toBeInTheDocument();
 		expect(apiSpies.fetchNormalized).not.toHaveBeenCalled();
 		expect(onSuccess).not.toHaveBeenCalled();
+	});
+
+	it('el rótulo de Empresa no anuncia un campo opcional que en ausencia de Contacto es obligatorio', () => {
+		renderModal();
+		expect(screen.queryByText('Empresa (opcional)')).not.toBeInTheDocument();
+		expect(screen.getByText('Empresa')).toBeInTheDocument();
 	});
 
 	it('no refresca el overview cuando refreshStoreOnSuccess es false', async () => {

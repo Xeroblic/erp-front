@@ -7,6 +7,7 @@ import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
 import Checkbox from '@/components/form/Checkbox';
 import Label from '@/components/form/Label';
+import Validation from '@/components/form/Validation';
 
 import { useAppDispatch } from '@/store';
 import {
@@ -330,22 +331,24 @@ const CreateCustomerSaleModal = ({
 
 					<div className='grid grid-cols-2 gap-4'>
 						<div className='space-y-1'>
-							<Label htmlFor={companyId}>Empresa (opcional)</Label>
-							<Input
-								id={companyId}
-								name='billing_company'
-								placeholder='Empresa S.A.'
-								value={formik.values.billing_company}
-								onChange={formik.handleChange}
-								onBlur={formik.handleBlur}
-								isTouched={!!formik.touched.billing_company}
+							<Label htmlFor={companyId}>Empresa</Label>
+							<Validation
 								isValid={!formik.errors.billing_company}
+								isTouched={!!formik.touched.billing_company}
 								invalidFeedback={
 									formik.touched.billing_company
 										? formik.errors.billing_company
 										: undefined
-								}
-							/>
+								}>
+								<Input
+									id={companyId}
+									name='billing_company'
+									placeholder='Empresa S.A.'
+									value={formik.values.billing_company}
+									onChange={formik.handleChange}
+									onBlur={formik.handleBlur}
+								/>
+							</Validation>
 						</div>
 						<div className='space-y-1'>
 							<Label htmlFor={contactId}>Contacto</Label>
