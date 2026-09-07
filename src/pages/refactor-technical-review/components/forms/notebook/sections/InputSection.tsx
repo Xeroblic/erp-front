@@ -93,9 +93,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								{keyboard.required && <span className='text-red-500'> *</span>}
 							</p>
 							<div
-								role='radiogroup'
+								role='group'
 								aria-labelledby='keyboard-condition-label'
-								aria-required={keyboard.required}
 								className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
 								{keyboard.options.map((opt) => (
 									<SelectionCard
@@ -289,9 +288,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					</div>
 
 					<div
-						role='radiogroup'
+						role='group'
 						aria-labelledby='touchpad-condition-label'
-						aria-required={touchpad.required}
 						className='mt-10 grid grid-cols-2 gap-3'>
 						{touchpad.options.map((opt) => (
 							<SelectionCard
@@ -327,9 +325,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</div>
 						</div>
 						<div
-							role='radiogroup'
+							role='group'
 							aria-labelledby='speakers-condition-label'
-							aria-required={speakersField.required ?? false}
 							className='mt-10 grid grid-cols-1 gap-2 sm:grid-cols-2'>
 							{getSchemaFieldOptions(speakersField).map((opt) => (
 								<SelectionCard
@@ -408,9 +405,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								{hinge.required && <span className='text-red-500'> *</span>}
 							</p>
 							<div
-								role='radiogroup'
+								role='group'
 								aria-labelledby='hinge-condition-label'
-								aria-required={hinge.required}
 								className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'>
 								{hinge.options.map((opt) => (
 									<SelectionCard
@@ -439,9 +435,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								{keyboardCover.required && <span className='text-red-500'> *</span>}
 							</p>
 							<div
-								role='radiogroup'
+								role='group'
 								aria-labelledby='keyboard-cover-condition-label'
-								aria-required={keyboardCover.required}
 								className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'>
 								{keyboardCover.options.map((opt) => (
 									<SelectionCard

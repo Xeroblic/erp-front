@@ -16,7 +16,7 @@ describe('SelectionCard', () => {
 			/>,
 		);
 
-		const option = screen.getByRole('radio', { name: 'DDR5' });
+		const option = screen.getByRole('button', { name: 'DDR5' });
 		expect(option).toBeDisabled();
 		fireEvent.click(option);
 		expect(onClick).not.toHaveBeenCalled();
