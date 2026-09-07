@@ -73,6 +73,8 @@ const MAX_DATE = new Date(2100, 11, 31);
 const MAX_YEAR = 2100;
 // Una factura no puede emitirse en el futuro (ZF-105); el vencimiento sí puede caer
 // más allá de hoy según el plazo de crédito, por eso conserva MAX_DATE/MAX_YEAR.
+// Esto sólo acota el calendario: `DateInput.handleTypedChange` no consulta `maxDate`,
+// así que quien hace cumplir la regla es el test `issue-date-not-future` del schema.
 const getTodayAsMaxIssueDate = () => new Date();
 const DEFERRED_PAYMENT_MODAL_ICONS = [
 	'HeroArrowPath',
