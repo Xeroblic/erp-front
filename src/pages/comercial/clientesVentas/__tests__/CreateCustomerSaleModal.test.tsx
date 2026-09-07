@@ -148,6 +148,59 @@ describe('CreateCustomerSaleModal', () => {
 		expect(toastSpies.error.mock.calls[0][0]).toContain('no tienes acceso a esta subsidiaria');
 	});
 
+	it('guarda un cliente sin empresa cuando el Contacto cubre el nombre utilizable', async () => {
+		apiSpies.fetchNormalized.mockResolvedValue({ id: 12, rut: '20761872-1', is_active: true });
+		const onSuccess = vi.fn();
+		renderModal({ onSuccess });
+
+		fireEvent.change(screen.getByPlaceholderText('12345678-9'), {
+			target: { value: '20761872-1' },
+		});
+		fireEvent.change(screen.getByPlaceholderText('Juan Pérez'), {
+			target: { value: 'Nicolás Muñoz' },
+		});
+		fireEvent.change(screen.getByPlaceholderText('correo@example.cl'), {
+			target: { value: 'sin.empresa@prueboide.com' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+		await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+		expect(getSubmittedPayload()).toMatchObject({ billing_company: '' });
+	});
+
+	it('bloquea el envío cuando Empresa y Contacto llegan vacíos', async () => {
+		const onSuccess = vi.fn();
+		renderModal({ onSuccess });
+
+		fireEvent.change(screen.getByPlaceholderText('12345678-9'), {
+			target: { value: '20761872-1' },
+		});
+		fireEvent.change(screen.getByPlaceholderText('correo@example.cl'), {
+			target: { value: 'sin.empresa@prueboide.com' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+		// El backend descarta de sus listados a quien no tenga billing_company ni
+		// contact_name (`hasUsableName`): el formulario debe exigir uno de los dos antes
+		// de dejar viajar la petición, o el cliente queda inalcanzable tras crearse.
+		// El campo Empresa envuelve el Input en `Validation`, que sí pinta el texto del
+		// error (Input por sí solo sólo aplica el borde rojo).
+		await waitFor(() =>
+			expect(screen.getByPlaceholderText('Empresa S.A.').className).toContain(
+				'!border-red-500',
+			),
+		);
+		expect(screen.getByText('Ingresa Empresa o Contacto.')).toBeInTheDocument();
+		expect(apiSpies.fetchNormalized).not.toHaveBeenCalled();
+		expect(onSuccess).not.toHaveBeenCalled();
+	});
+
+	it('el rótulo de Empresa no anuncia un campo opcional que en ausencia de Contacto es obligatorio', () => {
+		renderModal();
+		expect(screen.queryByText('Empresa (opcional)')).not.toBeInTheDocument();
+		expect(screen.getByText('Empresa')).toBeInTheDocument();
+	});
+
 	it('no refresca el overview cuando refreshStoreOnSuccess es false', async () => {
 		apiSpies.fetchNormalized.mockResolvedValue({ id: 9, rut: '20761872-1', is_active: true });
 		const onSuccess = vi.fn();
