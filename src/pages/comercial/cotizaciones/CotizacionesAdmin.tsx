@@ -14,7 +14,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import { FiltersSection } from './components/FiltersSection';
@@ -353,11 +352,11 @@ const CotizacionesAdmin: React.FC = () => {
 	};
 
 	return (
-		<PageWrapper name='cotizaciones-admin'>
+		<PageWrapper title='Cotizaciones' name='ERP'>
 			<Subheader className='p-2'>
 				<SubheaderLeft>
 					<div className='start-0'>
-						<Badge className='text-3xl font-semibold'>Cotizaciones</Badge>
+						<h1 className='text-3xl font-semibold'>Cotizaciones</h1>
 						<p className=''>Gestión completa de cotizaciones comerciales</p>
 					</div>
 				</SubheaderLeft>
