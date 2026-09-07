@@ -60,8 +60,9 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	// inventarlos produciría un 422. Se muestra sólo cuando el backend lo publica, que
 	// es el comportamiento de `develop`, donde el campo no existe.
 	const speakersField = schemaFields?.speakers_condition;
-	// ZF-102. El mismo flag que consume `resolveNotebookSchema`, para que el asterisco, el
-	// `aria-required` y la validación no puedan contradecirse.
+	// ZF-102. El mismo flag que consume `resolveNotebookSchema`, para que el asterisco del
+	// rótulo y la validación no puedan contradecirse. Tras #189 el contenedor es `role='group'`
+	// y ya no expone `aria-required`, inválido en ese rol.
 	const speakersRequired = speakersField?.required === true;
 	const nonFunctionalKeysCount = watch('non_functional_keys_count') ?? 0;
 	return (
@@ -96,9 +97,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								{keyboard.required && <span className='text-red-500'> *</span>}
 							</p>
 							<div
-								role='radiogroup'
+								role='group'
 								aria-labelledby='keyboard-condition-label'
-								aria-required={keyboard.required}
 								className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
 								{keyboard.options.map((opt) => (
 									<SelectionCard
@@ -292,9 +292,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					</div>
 
 					<div
-						role='radiogroup'
+						role='group'
 						aria-labelledby='touchpad-condition-label'
-						aria-required={touchpad.required}
 						className='mt-10 grid grid-cols-2 gap-3'>
 						{touchpad.options.map((opt) => (
 							<SelectionCard
@@ -328,9 +327,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</div>
 						</div>
 						<div
-							role='radiogroup'
+							role='group'
 							aria-labelledby='speakers-condition-label'
-							aria-required={speakersRequired}
 							className='mt-10 grid grid-cols-1 gap-2 sm:grid-cols-2'>
 							{getSchemaFieldOptions(speakersField).map((opt) => (
 								<SelectionCard
@@ -414,9 +412,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								{hinge.required && <span className='text-red-500'> *</span>}
 							</p>
 							<div
-								role='radiogroup'
+								role='group'
 								aria-labelledby='hinge-condition-label'
-								aria-required={hinge.required}
 								className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'>
 								{hinge.options.map((opt) => (
 									<SelectionCard
@@ -445,9 +442,8 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								{keyboardCover.required && <span className='text-red-500'> *</span>}
 							</p>
 							<div
-								role='radiogroup'
+								role='group'
 								aria-labelledby='keyboard-cover-condition-label'
-								aria-required={keyboardCover.required}
 								className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'>
 								{keyboardCover.options.map((opt) => (
 									<SelectionCard

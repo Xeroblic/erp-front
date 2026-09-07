@@ -174,17 +174,17 @@ describe('ZF-102 · cierre de la revisión de notebook', () => {
 		// Sin responder, ninguna de las dos tarjetas está marcada: «no respondido» no se
 		// confunde con «no enciende».
 		const group = powersOnGroup();
-		expect(within(group).getByRole('radio', { name: 'Sí' })).toHaveAttribute(
-			'aria-checked',
+		expect(within(group).getByRole('button', { name: 'Sí' })).toHaveAttribute(
+			'aria-pressed',
 			'false',
 		);
-		expect(within(group).getByRole('radio', { name: 'No' })).toHaveAttribute(
-			'aria-checked',
+		expect(within(group).getByRole('button', { name: 'No' })).toHaveAttribute(
+			'aria-pressed',
 			'false',
 		);
 		expect(getValues()?.powers_on).toBeUndefined();
 
-		fireEvent.click(within(group).getByRole('radio', { name: 'No' }));
+		fireEvent.click(within(group).getByRole('button', { name: 'No' }));
 		expect(getValues()?.powers_on).toBe(false);
 	});
 
@@ -435,7 +435,7 @@ describe('ZF-102 · cierre de la revisión de desktop', () => {
 
 		render(<Harness readOnly />);
 		const group = screen.getByRole('radiogroup', { name: /El equipo enciende/i });
-		expect(within(group).getByRole('radio', { name: 'No' })).toBeDisabled();
+		expect(within(group).getByRole('button', { name: 'No' })).toBeDisabled();
 	});
 });
 
@@ -479,17 +479,17 @@ describe('ZF-102 · AIO', () => {
 		const { getValues } = renderAioScreen();
 		const group = screen.getByRole('radiogroup', { name: /Pantalla táctil/i });
 
-		expect(within(group).getByRole('radio', { name: 'Sí' })).toHaveAttribute(
-			'aria-checked',
+		expect(within(group).getByRole('button', { name: 'Sí' })).toHaveAttribute(
+			'aria-pressed',
 			'false',
 		);
-		expect(within(group).getByRole('radio', { name: 'No' })).toHaveAttribute(
-			'aria-checked',
+		expect(within(group).getByRole('button', { name: 'No' })).toHaveAttribute(
+			'aria-pressed',
 			'false',
 		);
 		expect(getValues()?.is_touchscreen).toBeUndefined();
 
-		fireEvent.click(within(group).getByRole('radio', { name: 'No' }));
+		fireEvent.click(within(group).getByRole('button', { name: 'No' }));
 		expect(getValues()?.is_touchscreen).toBe(false);
 	});
 
@@ -567,7 +567,7 @@ describe('ZF-102 · AIO', () => {
 
 		render(<Harness />);
 		const group = screen.getByRole('radiogroup', { name: /Pantalla táctil/i });
-		const no = within(group).getByRole('radio', { name: 'No' });
+		const no = within(group).getByRole('button', { name: 'No' });
 
 		expect(no).toBeDisabled();
 		fireEvent.click(no);
@@ -633,7 +633,7 @@ describe('ZF-102 · el error del encendido se borra al responderlo', () => {
 			expect(screen.getByText('Debes indicar si el equipo enciende')).toBeInTheDocument(),
 		);
 
-		fireEvent.click(within(powersOnGroup()).getByRole('radio', { name: 'Sí' }));
+		fireEvent.click(within(powersOnGroup()).getByRole('button', { name: 'Sí' }));
 
 		await waitFor(() =>
 			expect(
@@ -671,7 +671,7 @@ describe('ZF-102 · el error del encendido se borra al responderlo', () => {
 		);
 
 		const group = screen.getByRole('radiogroup', { name: /El equipo enciende/i });
-		fireEvent.click(within(group).getByRole('radio', { name: 'Sí' }));
+		fireEvent.click(within(group).getByRole('button', { name: 'Sí' }));
 
 		await waitFor(() =>
 			expect(
@@ -763,7 +763,7 @@ describe('ZF-102 · estado de los parlantes', () => {
 
 		await waitFor(() => expect(screen.getByText(SPEAKERS_ERROR)).toBeInTheDocument());
 		// Sigue en «Entrada»: el paso no avanzó y la tarjeta con el error está a la vista.
-		expect(screen.getByRole('radiogroup', { name: /Parlantes/i })).toBeInTheDocument();
+		expect(screen.getByRole('group', { name: /Parlantes/i })).toBeInTheDocument();
 	});
 
 	it('deja avanzar de «Entrada» con los parlantes respondidos', async () => {

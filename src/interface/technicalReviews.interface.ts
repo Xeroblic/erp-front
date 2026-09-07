@@ -239,6 +239,10 @@ export interface UpdateItemDetailsPayload {
 	// Desktop específicos
 	has_cd_drive?: boolean;
 
+	// Docking específicos
+	/** ZF-99: estado del sector del candado. Sólo docking. */
+	lock_area_condition?: string;
+
 	// AIO específicos
 	stand_condition?: string;
 
