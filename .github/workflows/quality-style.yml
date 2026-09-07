@@ -42,3 +42,7 @@ jobs:
             - name: Check import extensions
               if: ${{ !cancelled() }}
               run: pnpm run lint:imports
+
+            - name: Validate RBAC catalog
+              if: ${{ !cancelled() }}
+              run: pnpm vitest run src/authorization/rbac
