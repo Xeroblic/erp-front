@@ -8,6 +8,7 @@ import Checkbox from '@/components/form/Checkbox';
 import { DOCKING_HINTS, DOCKING_PLACEHOLDERS } from '../../../constants/docking/docking.hints';
 import { COVER_CONDITION_OPTIONS } from '../../../constants/docking/docking.options';
 import { getDockingLabel } from '../../../translations/docking.labels';
+import { getSchemaFieldOptions } from '../../../validation/technicalReviewSchema';
 import Icon from '@/components/icon/Icon';
 
 const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
@@ -16,8 +17,13 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 	readOnly,
 	watch,
 	setValue,
+	schemaFields,
 }) => {
 	const currentCover = watch('cover_condition');
+	// ZF-99. El sector del candado nace con esta card: no hay constante local con sus
+	// valores, e inventarlos produciría un 422. Se muestra sólo cuando el backend lo
+	// publica, que es el comportamiento de `develop`, donde el campo no existe.
+	const lockAreaField = schemaFields?.lock_area_condition;
 
 	return (
 		<div className='space-y-8'>
@@ -109,6 +115,63 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 					<p className='mt-3 text-xs text-red-500'>{errors.cover_condition.message}</p>
 				)}
 			</div>
+
+			{/* Sector del candado (ZF-99) */}
+			{lockAreaField && (
+				<div className='rounded-xl border border-amber-200 bg-amber-500/10 p-6 shadow-sm transition-colors duration-200 hover:bg-amber-500/20 dark:border-amber-800/50 dark:bg-amber-900/10 dark:hover:bg-amber-900/20'>
+					<p
+						className='mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200'
+						id='lock-area-condition-label'>
+						<Icon icon='HeroLockClosed' className='h-5 w-5' />
+						{lockAreaField.label ?? getDockingLabel('lock_area_condition')}
+						{lockAreaField.required && <span className='text-red-500'> *</span>}
+					</p>
+
+					{/*
+					 * `role='group'`, no `radiogroup`: desde el refactor de roles ARIA
+					 * (#189, ya en `develop`) `SelectionCard` es un botón de
+					 * alternancia (`<button aria-pressed>`), y un `radiogroup` sin
+					 * hijos `role='radio'` sería ARIA inválido. Es el mismo criterio
+					 * que ese refactor aplicó a los seis grupos de `InputSection` y
+					 * `ScreenSection`.
+					 *
+					 * Sin `aria-required`, que no es válido en `role='group'`: el
+					 * `required` del schema remoto se sigue viendo en el asterisco del
+					 * rótulo al que apunta `aria-labelledby`.
+					 */}
+					<div
+						role='group'
+						aria-labelledby='lock-area-condition-label'
+						className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
+						{getSchemaFieldOptions(lockAreaField).map((opt) => (
+							<SelectionCard
+								key={opt.value}
+								label={opt.label}
+								value={opt.value}
+								isSelected={watch('lock_area_condition') === opt.value}
+								color='yellow'
+								disabled={readOnly}
+								onClick={() => {
+									if (readOnly) return;
+									setValue('lock_area_condition', opt.value, {
+										shouldValidate: true,
+									});
+								}}
+							/>
+						))}
+					</div>
+					{errors.lock_area_condition && (
+						<p className='mt-3 text-xs text-red-500'>
+							{errors.lock_area_condition.message}
+						</p>
+					)}
+					{(lockAreaField.hint ?? lockAreaField.warning) && (
+						<p className='mt-3 text-xs text-amber-800/80 dark:text-amber-200/80'>
+							{lockAreaField.hint ?? lockAreaField.warning}
+						</p>
+					)}
+				</div>
+			)}
 
 			{/* Observations */}
 			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition-colors duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700'>
