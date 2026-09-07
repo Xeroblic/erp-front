@@ -4,6 +4,7 @@
  */
 import React, { useEffect } from 'react';
 import { Formik, Form } from 'formik';
+import { toast } from 'react-toastify';
 import { useAppSelector } from '@/store';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import ApiService from '@/services/ApiService';
@@ -255,7 +256,9 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 		);
 
 		return {
-			subsidiary_id: quotation.subsidiary_id ?? currentSubsidiaryId ?? 1,
+			// Sin fallback a una subsidiaria fija: si falta, `onSubmit` corta con el mismo
+			// aviso que `useQuotationsManager.createQuotation` antes de llegar al backend.
+			subsidiary_id: quotation.subsidiary_id ?? currentSubsidiaryId ?? 0,
 			customer_id: quotation.customer_id ?? 0,
 			customer_rut:
 				readCustomerString(savedCustomer, 'rut') ??
@@ -333,6 +336,12 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 					initialValues={getInitialValues()}
 					validationSchema={quotationSchema}
 					onSubmit={(values, { setSubmitting }) => {
+						if (!values.subsidiary_id) {
+							toast.error('Selecciona una subsidiaria antes de editar cotizaciones');
+							setSubmitting(false);
+							return;
+						}
+
 						const sanitizedItems = sanitizeItemsForSubmit(values.items);
 
 						if (Number(values.payment_surcharge_amount) > 0) {

@@ -50,6 +50,26 @@ const isRequestError = (error: unknown): error is CustomerSaleRequestError =>
 	typeof error === 'object' &&
 	typeof (error as { message?: unknown }).message === 'string';
 
+/**
+ * El backend descarta de sus listados a quien no tenga `billing_company` ni
+ * `contact_name` (`hasUsableName` en `SubsidiaryCustomerSalesController`): sin este
+ * chequeo el cliente se crea pero queda inalcanzable desde la interfaz. Definida fuera
+ * del componente (en vez de inline en el schema) para que `this.createError` no dispare
+ * `react/no-this-in-sfc`: el `this` aquí es el `TestContext` de Yup, no el componente.
+ */
+function hasUsableName(
+	this: Yup.TestContext,
+	values?: { billing_company?: string; contact_name?: string },
+) {
+	const billingCompany = values?.billing_company?.trim() ?? '';
+	const contactName = values?.contact_name?.trim() ?? '';
+	if (billingCompany || contactName) return true;
+	return this.createError({
+		path: 'billing_company',
+		message: 'Ingresa Empresa o Contacto',
+	});
+}
+
 interface PrimaryContactPayload {
 	primary_contact: { name: string; email: string; phone: string };
 	primary_contact_name: string;
@@ -164,7 +184,8 @@ const CreateCustomerSaleModal = ({
 			 * cliente que se haya guardado sin empresa.
 			 */
 			billing_company: Yup.string().max(255, 'Máximo 255 caracteres'),
-		}),
+			contact_name: Yup.string(),
+		}).test('nombre-utilizable', 'Ingresa Empresa o Contacto', hasUsableName),
 		onSubmit: async (values, { setSubmitting, setFieldError }) => {
 			if (!subsidiaryId) {
 				toast.error('No se pudo determinar la subsidiaria activa');

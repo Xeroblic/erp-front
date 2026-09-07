@@ -148,8 +148,27 @@ describe('CreateCustomerSaleModal', () => {
 		expect(toastSpies.error.mock.calls[0][0]).toContain('no tienes acceso a esta subsidiaria');
 	});
 
-	it('guarda un cliente sin empresa, que el backend acepta como nula', async () => {
+	it('guarda un cliente sin empresa cuando el Contacto cubre el nombre utilizable', async () => {
 		apiSpies.fetchNormalized.mockResolvedValue({ id: 12, rut: '20761872-1', is_active: true });
+		const onSuccess = vi.fn();
+		renderModal({ onSuccess });
+
+		fireEvent.change(screen.getByPlaceholderText('12345678-9'), {
+			target: { value: '20761872-1' },
+		});
+		fireEvent.change(screen.getByPlaceholderText('Juan Pérez'), {
+			target: { value: 'Nicolás Muñoz' },
+		});
+		fireEvent.change(screen.getByPlaceholderText('correo@example.cl'), {
+			target: { value: 'sin.empresa@prueboide.com' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+		await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+		expect(getSubmittedPayload()).toMatchObject({ billing_company: '' });
+	});
+
+	it('bloquea el envío cuando Empresa y Contacto llegan vacíos', async () => {
 		const onSuccess = vi.fn();
 		renderModal({ onSuccess });
 
@@ -161,9 +180,17 @@ describe('CreateCustomerSaleModal', () => {
 		});
 		fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
-		await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
-		expect(screen.queryByText('Empresa/Persona requerida')).not.toBeInTheDocument();
-		expect(getSubmittedPayload()).toMatchObject({ billing_company: '' });
+		// El backend descarta de sus listados a quien no tenga billing_company ni
+		// contact_name (`hasUsableName`): el formulario debe exigir uno de los dos antes
+		// de dejar viajar la petición, o el cliente queda inalcanzable tras crearse.
+		// `Input` no pinta el texto de invalidFeedback, sólo el borde rojo del campo.
+		await waitFor(() =>
+			expect(screen.getByPlaceholderText('Empresa S.A.').className).toContain(
+				'!border-red-500',
+			),
+		);
+		expect(apiSpies.fetchNormalized).not.toHaveBeenCalled();
+		expect(onSuccess).not.toHaveBeenCalled();
 	});
 
 	it('no refresca el overview cuando refreshStoreOnSuccess es false', async () => {

@@ -143,7 +143,9 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 			.split('T')[0];
 
 		return {
-			subsidiary_id: subsidiaryId ?? 1,
+			// Sin fallback a una subsidiaria fija: si falta, `onSubmit` corta con el mismo
+			// aviso que `useQuotationsManager.createQuotation` antes de llegar al backend.
+			subsidiary_id: subsidiaryId ?? 0,
 			customer_id: 0,
 			quote_date: today,
 			expiry_date: expiryDate,
@@ -200,6 +202,12 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 					initialValues={getInitialValues()}
 					validationSchema={quotationSchema}
 					onSubmit={(values, { setSubmitting }) => {
+						if (!values.subsidiary_id) {
+							toast.error('Selecciona una subsidiaria antes de crear cotizaciones');
+							setSubmitting(false);
+							return;
+						}
+
 						if (!values.customer_id || values.customer_id === 0) {
 							toast.error('Debes seleccionar un cliente antes de continuar');
 							setSubmitting(false);
