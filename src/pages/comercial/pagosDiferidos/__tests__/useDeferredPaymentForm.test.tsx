@@ -159,6 +159,19 @@ describe('useDeferredPaymentForm', () => {
 		).toEqual([37]);
 	});
 
+	it('arranca sin fecha de emisión precargada y no calcula un vencimiento hasta tener una válida (ZF-105)', async () => {
+		const { hook } = createHook();
+
+		expect(hook.result.current.formik.values.issue_date).toBe('');
+		expect(hook.result.current.formik.values.due_date).toBe('');
+
+		await act(async () => {
+			await hook.result.current.formik.setFieldValue('issue_date', '2026-08-01');
+		});
+
+		expect(hook.result.current.formik.values.due_date).toBe('2026-08-16');
+	});
+
 	it('recalcula el vencimiento sin sustituir el total oficial al editar ítems', async () => {
 		const { hook } = createHook();
 
@@ -182,6 +195,9 @@ describe('useDeferredPaymentForm', () => {
 
 	it('restablece un vencimiento manual al adoptar el plazo de un cliente distinto', async () => {
 		const { hook } = createHook();
+		await act(async () => {
+			await hook.result.current.formik.setFieldValue('issue_date', '2026-01-15');
+		});
 		const issueDate = hook.result.current.formik.values.issue_date;
 		await act(async () => {
 			await hook.result.current.actions.setDueDateManually('2026-12-31');
@@ -205,6 +221,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-HOOK-001',
+				issue_date: '2026-01-15',
 				total_amount: 2500000,
 				items: [
 					{
@@ -264,6 +281,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-CONTEXT-CHANGE',
+				issue_date: '2026-01-15',
 				total_amount: 1000,
 				items: [
 					{
@@ -317,6 +335,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-SIN-PERFIL',
+				issue_date: '2026-01-15',
 				total_amount: 1000,
 				items: [
 					{
@@ -399,6 +418,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-DUPLICADO',
+				issue_date: '2026-01-15',
 				total_amount: 1000,
 				items: [
 					{

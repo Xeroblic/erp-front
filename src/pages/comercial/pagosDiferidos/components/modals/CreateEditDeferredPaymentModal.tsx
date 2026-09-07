@@ -79,6 +79,9 @@ interface PendingUploadRecovery {
 
 const MAX_DATE = new Date(2100, 11, 31);
 const MAX_YEAR = 2100;
+// Una factura no puede emitirse en el futuro (ZF-105); el vencimiento sí puede caer
+// más allá de hoy según el plazo de crédito, por eso conserva MAX_DATE/MAX_YEAR.
+const getTodayAsMaxIssueDate = () => new Date();
 const DEFERRED_PAYMENT_MODAL_ICONS = [
 	'HeroArrowPath',
 	'HeroInformationCircle',
@@ -288,6 +291,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		},
 		[onSaved],
 	);
+	const maxIssueDate = useMemo(() => getTodayAsMaxIssueDate(), []);
+	const maxIssueYear = maxIssueDate.getFullYear();
 	const { formik, estimatedTotal, documentTotal, isSubmitting, isPaidEdit, actions } =
 		useDeferredPaymentForm({
 			mode,
@@ -1056,8 +1061,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											id='issue_date'
 											name='issue_date'
 											value={formik.values.issue_date}
-											maxDate={MAX_DATE}
-											maxYear={MAX_YEAR}
+											maxDate={maxIssueDate}
+											maxYear={maxIssueYear}
 											disabled={isPaidEdit}
 											isValid={isValid}
 											isTouched={isTouched}
