@@ -83,9 +83,8 @@ const lockAreaGroup = () => screen.getByRole('group', { name: /Estado del candad
  * El grupo ya no expone `aria-required`: no es válido en `role='group'`. El `required` del
  * schema viaja en el asterisco del rótulo al que apunta `aria-labelledby`.
  *
- * Las opciones se consultan con `role='radio'` porque es el rol que expone hoy
- * `SelectionCard`. Cuando el refactor de roles ARIA la convierta en botón de alternancia
- * (`<button aria-pressed>`), estas consultas pasan a `role='button'`, igual que las de las
+ * Las opciones se consultan con `role='button'`: desde el refactor de roles ARIA (#189)
+ * `SelectionCard` es un botón de alternancia (`<button aria-pressed>`), igual que en las
  * otras secciones del módulo. El contenedor y el asterisco de acá no cambian.
  */
 const isMarkedRequired = (): boolean => {
@@ -102,7 +101,7 @@ describe('ZF-99 — estado del candado en docking', () => {
 	it('ofrece los cuatro estados con las etiquetas que publica el backend', () => {
 		renderExtras(DOCKING_SCHEMA);
 
-		const options = within(lockAreaGroup()).getAllByRole('radio');
+		const options = within(lockAreaGroup()).getAllByRole('button');
 
 		expect(options.map((option) => option.dataset.value)).toEqual([
 			'ok',
@@ -111,7 +110,7 @@ describe('ZF-99 — estado del candado en docking', () => {
 			'locked',
 		]);
 		expect(
-			within(lockAreaGroup()).getByRole('radio', { name: 'Sin llave (no afecta el grado)' }),
+			within(lockAreaGroup()).getByRole('button', { name: 'Sin llave (no afecta el grado)' }),
 		).toBeInTheDocument();
 		expect(screen.getByText(/no baja el grado/)).toBeInTheDocument();
 	});
@@ -120,7 +119,7 @@ describe('ZF-99 — estado del candado en docking', () => {
 		const values = renderExtras(DOCKING_SCHEMA);
 
 		fireEvent.click(
-			within(lockAreaGroup()).getByRole('radio', {
+			within(lockAreaGroup()).getByRole('button', {
 				name: 'Candado puesto, equipo bloqueado (Limita a: Grado M)',
 			}),
 		);
@@ -210,7 +209,7 @@ describe('ZF-99 — el candado en el flujo real del formulario de docking', () =
 
 		const group = await screen.findByRole('group', { name: /Estado del candado/ });
 		fireEvent.click(
-			within(group).getByRole('radio', {
+			within(group).getByRole('button', {
 				name: 'Sector del candado con desgaste (Limita a: Máximo Grado C)',
 			}),
 		);

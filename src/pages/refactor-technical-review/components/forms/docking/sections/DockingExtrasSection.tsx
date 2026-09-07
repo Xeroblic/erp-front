@@ -128,18 +128,12 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 					</p>
 
 					{/*
-					 * `role='group'`, no `radiogroup`: el PR #189 convierte
-					 * `SelectionCard` en botón de alternancia, y entonces un
-					 * `radiogroup` sin hijos `role='radio'` sería ARIA inválido.
-					 *
-					 * Ese criterio todavía NO está en `develop`: los grupos de
-					 * `InputSection` y `ScreenSection` siguen siendo `radiogroup`, y
-					 * `SelectionCard` sigue exponiendo `role='radio'`. Hasta que #189
-					 * se fusione, estas tarjetas quedan como `radio` sin `radiogroup`
-					 * padre, que es lo que axe reporta como `aria-required-parent`; por
-					 * eso #189 debe fusionarse antes que este PR. La alternativa
-					 * —declarar `radiogroup` acá— sólo mueve el problema al orden de
-					 * fusión inverso y le agrega a #189 un séptimo grupo que no conoce.
+					 * `role='group'`, no `radiogroup`: desde el refactor de roles ARIA
+					 * (#189, ya en `develop`) `SelectionCard` es un botón de
+					 * alternancia (`<button aria-pressed>`), y un `radiogroup` sin
+					 * hijos `role='radio'` sería ARIA inválido. Es el mismo criterio
+					 * que ese refactor aplicó a los seis grupos de `InputSection` y
+					 * `ScreenSection`.
 					 *
 					 * Sin `aria-required`, que no es válido en `role='group'`: el
 					 * `required` del schema remoto se sigue viendo en el asterisco del
