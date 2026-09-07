@@ -1,6 +1,22 @@
 import { IQuoteItem } from '@/interface';
 import { FormQuoteItem } from './types';
-import { EMPTY_CUSTOM_ITEM, EMPTY_PRODUCT_ITEM } from './constants';
+import { EMPTY_CUSTOM_ITEM, EMPTY_PRODUCT_ITEM, IVA_RATE } from './constants';
+
+/**
+ * Precio unitario bruto de un ítem, con el mismo criterio y redondeo que Pagos Diferidos:
+ * si el ítem calcula IVA, el precio ingresado es neto y el bruto lo agrega; si no, el
+ * precio ingresado ya es el bruto.
+ */
+export const calculateQuotationGrossUnitPrice = (
+	enteredAmount: number | string | null | undefined,
+	calculatesVat: boolean,
+): number | null => {
+	if (enteredAmount === '' || enteredAmount === null || enteredAmount === undefined) return null;
+	const normalizedAmount = Number(enteredAmount);
+	if (!Number.isFinite(normalizedAmount) || normalizedAmount < 0) return null;
+	if (!calculatesVat) return normalizedAmount;
+	return Math.round(normalizedAmount * (1 + IVA_RATE / 100) * 100) / 100;
+};
 
 export const formatCurrency = (value?: number | null) => {
 	const amount = Number(value ?? 0);
@@ -85,39 +101,3 @@ export const sanitizeItemsForSubmit = (items: FormQuoteItem[]) =>
 			};
 		})
 		.filter(Boolean);
-
-const computeRutVerificationDigit = (number: number): string => {
-	let m = 0;
-	let s = 1;
-	while (number > 0) {
-		s = (s + (number % 10) * (9 - (m++ % 6))) % 11;
-		number = Math.floor(number / 10);
-	}
-	return s ? String(s - 1) : 'K';
-};
-
-export const generateCustomerCreationPayload = (name: string, subsidiaryId: number) => {
-	const trimmed = name.trim();
-	const rutNumber = Math.floor(1000000 + Math.random() * 9000000);
-	const dv = computeRutVerificationDigit(rutNumber);
-	const rutFormatted = `${rutNumber}-${dv}`;
-	const documentNumber = `${rutFormatted} (RUT)`;
-	const customerEmail = `cliente.${rutNumber}@example.com`;
-
-	return {
-		payload: {
-			name: trimmed,
-			document_type: 'rut',
-			document_number: documentNumber,
-			type: 'natural',
-			email: customerEmail,
-			rut: rutFormatted,
-			subsidiary_id: subsidiaryId,
-			is_active: true,
-			billing_company: trimmed,
-			contact_name: trimmed,
-			phone: '',
-		},
-		rutFormatted,
-	};
-};
