@@ -6,7 +6,7 @@
  * ✏️ To reorder sections → just reorder NOTEBOOK_SECTIONS below.
  * ✏️ To add a section → create a new component in sections/ and add it here.
  */
-import React, { useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
@@ -226,22 +226,6 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		[schemaFields],
 	);
 
-	// El schema cambia cuando llega el fetch del schema remoto, pero `useForm` fija sus
-	// opciones al montar: el resolver se mantiene estable y lee el schema vigente desde la
-	// ref, para que la validación no quede congelada en la variante sin parlantes.
-	const effectiveSchemaRef = useRef(effectiveSchema);
-	effectiveSchemaRef.current = effectiveSchema;
-
-	const resolver = useCallback<Resolver<NotebookFormData>>(
-		(values, context, options) =>
-			(yupResolver(effectiveSchemaRef.current) as unknown as Resolver<NotebookFormData>)(
-				values,
-				context,
-				options,
-			),
-		[],
-	);
-
 	const {
 		control,
 		handleSubmit,
@@ -253,7 +237,10 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		reset,
 		formState: { errors },
 	} = useForm<NotebookFormData>({
-		resolver,
+		// react-hook-form 7.62 relee `control._options` en cada render: pasar el resolver
+		// directo alcanza para que la validación de "Finalizar" recoja el schema vigente
+		// cuando el fetch remoto llega después del montaje (ZF-102).
+		resolver: yupResolver(effectiveSchema) as unknown as Resolver<NotebookFormData>,
 		defaultValues: normalizedDefaultValues,
 		mode: 'onBlur',
 	});

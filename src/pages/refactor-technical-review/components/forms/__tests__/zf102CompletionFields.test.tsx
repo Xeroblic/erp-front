@@ -780,4 +780,32 @@ describe('ZF-102 · estado de los parlantes', () => {
 
 		await waitFor(() => expect(screen.queryByText(SPEAKERS_ERROR)).not.toBeInTheDocument());
 	});
+
+	/**
+	 * El camino real: `EquipmentFormRouter` monta `NotebookForm` con `schemaFields`
+	 * undefined mientras el fetch está en curso y lo rerenderiza cuando el schema remoto
+	 * llega. Montar directamente con el schema ya presente no prueba esto: un `useMemo`
+	 * con dependencias vacías (o cualquier otra forma de capturar el schema al montar)
+	 * pasaría igual las pruebas que sólo montan con el schema puesto.
+	 */
+	it('exige los parlantes cuando el schema remoto llega después del montaje', async () => {
+		const onSubmit = vi.fn().mockResolvedValue(undefined);
+		const { rerender } = renderNotebookForm(NOTEBOOK_SIN_PARLANTES, undefined, onSubmit);
+
+		rerender(
+			<NotebookForm
+				defaultValues={NOTEBOOK_SIN_PARLANTES}
+				onSubmit={onSubmit}
+				onBack={vi.fn()}
+				schemaFields={NOTEBOOK_SCHEMA_FIELDS}
+				initialSectionKey='gallery'
+			/>,
+		);
+
+		await act(async () => {
+			fireEvent.click(await screen.findByText('Finalizar Revisión'));
+		});
+
+		expect(onSubmit).not.toHaveBeenCalled();
+	});
 });
