@@ -165,7 +165,7 @@ const renderNotebookAesthetics = (schemaFields?: ITechnicalReviewSchema) => {
 	return () => getValues?.();
 };
 
-const powersOnGroup = () => screen.getByRole('radiogroup', { name: /Enciende/i });
+const powersOnGroup = () => screen.getByRole('group', { name: /Enciende/i });
 
 describe('ZF-102 · cierre de la revisión de notebook', () => {
 	it('deja responder el encendido desde la sección de estética', () => {
@@ -191,7 +191,7 @@ describe('ZF-102 · cierre de la revisión de notebook', () => {
 	it('anuncia el encendido como obligatorio', () => {
 		renderNotebookAesthetics(NOTEBOOK_SCHEMA_FIELDS);
 
-		expect(powersOnGroup()).toHaveAttribute('aria-required', 'true');
+		expect(powersOnGroup()).toHaveAccessibleName('¿Enciende? *');
 	});
 
 	it('usa el rótulo y la advertencia que publica el backend', () => {
@@ -203,7 +203,7 @@ describe('ZF-102 · cierre de la revisión de notebook', () => {
 	it('muestra el control aunque el backend no publique el campo', () => {
 		renderNotebookAesthetics(undefined);
 
-		expect(screen.getByRole('radiogroup', { name: /El equipo enciende/i })).toBeInTheDocument();
+		expect(screen.getByRole('group', { name: /El equipo enciende/i })).toBeInTheDocument();
 	});
 
 	/**
@@ -427,14 +427,13 @@ describe('ZF-102 · cierre de la revisión de desktop', () => {
 		};
 
 		const { unmount } = render(<Harness readOnly={false} />);
-		expect(screen.getByRole('radiogroup', { name: /El equipo enciende/i })).toHaveAttribute(
-			'aria-required',
-			'true',
+		expect(screen.getByRole('group', { name: /El equipo enciende/i })).toHaveAccessibleName(
+			'¿El equipo enciende? *',
 		);
 		unmount();
 
 		render(<Harness readOnly />);
-		const group = screen.getByRole('radiogroup', { name: /El equipo enciende/i });
+		const group = screen.getByRole('group', { name: /El equipo enciende/i });
 		expect(within(group).getByRole('button', { name: 'No' })).toBeDisabled();
 	});
 });
@@ -477,7 +476,7 @@ describe('ZF-102 · AIO', () => {
 
 	it('no da por respondida la pantalla táctil que nadie tocó', () => {
 		const { getValues } = renderAioScreen();
-		const group = screen.getByRole('radiogroup', { name: /Pantalla táctil/i });
+		const group = screen.getByRole('group', { name: /Pantalla táctil/i });
 
 		expect(within(group).getByRole('button', { name: 'Sí' })).toHaveAttribute(
 			'aria-pressed',
@@ -566,7 +565,7 @@ describe('ZF-102 · AIO', () => {
 		};
 
 		render(<Harness />);
-		const group = screen.getByRole('radiogroup', { name: /Pantalla táctil/i });
+		const group = screen.getByRole('group', { name: /Pantalla táctil/i });
 		const no = within(group).getByRole('button', { name: 'No' });
 
 		expect(no).toBeDisabled();
@@ -670,7 +669,7 @@ describe('ZF-102 · el error del encendido se borra al responderlo', () => {
 			expect(screen.getByText('Debes indicar si el equipo enciende')).toBeInTheDocument(),
 		);
 
-		const group = screen.getByRole('radiogroup', { name: /El equipo enciende/i });
+		const group = screen.getByRole('group', { name: /El equipo enciende/i });
 		fireEvent.click(within(group).getByRole('button', { name: 'Sí' }));
 
 		await waitFor(() =>

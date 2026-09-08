@@ -22,7 +22,7 @@ interface YesNoSelectorProps {
 	onChange: (val: boolean) => void;
 	/** Clases CSS adicionales para el contenedor */
 	className?: string;
-	/** Marca el campo como obligatorio (asterisco visible y `aria-required`). */
+	/** Marca el campo como obligatorio: asterisco en el rótulo, que es el nombre accesible. */
 	required?: boolean;
 	/** Impide la interacción cuando el formulario está en modo lectura. */
 	disabled?: boolean;
@@ -38,8 +38,8 @@ export const YesNoSelector: React.FC<YesNoSelectorProps> = ({
 	required = false,
 	disabled = false,
 }) => {
-	// Las dos tarjetas son `role="radio"`: sin un `radiogroup` que las agrupe quedan
-	// huérfanas para el lector de pantalla y pierden el nombre del campo.
+	// Sin un contenedor con rol, las dos tarjetas quedan sueltas para el lector de pantalla
+	// y pierden el nombre del campo, que sólo vive en el rótulo de arriba.
 	const labelId = useId();
 
 	return (
@@ -48,11 +48,17 @@ export const YesNoSelector: React.FC<YesNoSelectorProps> = ({
 				{label}
 				{required && <span className='text-red-500'> *</span>}
 			</p>
-			<div
-				role='radiogroup'
-				aria-labelledby={labelId}
-				aria-required={required}
-				className='grid grid-cols-2 gap-4'>
+			{/*
+			 * `role='group'`, no `radiogroup`: desde el refactor de roles ARIA (#189)
+			 * `SelectionCard` es un botón de alternancia (`<button aria-pressed>`), y un
+			 * `radiogroup` sin hijos `role='radio'` sería ARIA inválido. Es el mismo criterio
+			 * que ese refactor aplicó a los grupos de `InputSection` y `ScreenSection`, y que
+			 * `DockingExtrasSection` sigue en el bloque del candado.
+			 *
+			 * Sin `aria-required`, que no es válido en `role='group'`: la obligatoriedad se
+			 * anuncia por el asterisco del rótulo al que apunta `aria-labelledby`.
+			 */}
+			<div role='group' aria-labelledby={labelId} className='grid grid-cols-2 gap-4'>
 				<SelectionCard
 					label='Sí'
 					value='yes'
