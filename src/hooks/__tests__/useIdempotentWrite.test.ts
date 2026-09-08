@@ -1,0 +1,113 @@
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import type { Mock } from 'vitest';
+import useIdempotentWrite from '@/hooks/useIdempotentWrite';
+
+/** Cabeceras con las que se llamó al escritor en la tentativa `index`. */
+const headersOf = (write: Mock, index: number): Record<string, string> =>
+	(write.mock.calls as unknown as Record<string, string>[][])[index][0];
+
+const timeoutError = { isAxiosError: true, code: 'ECONNABORTED', request: {} };
+const validationError = {
+	isAxiosError: true,
+	response: { status: 422, data: { message: 'Falta el costo.', code: 'UNIT_COST_REQUIRED' } },
+};
+
+describe('useIdempotentWrite', () => {
+	it('entrega Idempotency-Key y, con ETag, If-Match', async () => {
+		const write = vi.fn().mockResolvedValue('ok');
+		const { result } = renderHook(() => useIdempotentWrite({ etag: 'W/"7"' }));
+
+		await act(async () => {
+			await result.current.submit(write);
+		});
+
+		expect(write).toHaveBeenCalledWith(expect.objectContaining({ 'If-Match': 'W/"7"' }));
+		expect(headersOf(write, 0)['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/i);
+	});
+
+	it('reusa la misma clave al reintentar un timeout', async () => {
+		// La regla del contrato: no generar otra clave al reintentar por timeout.
+		// Generarla convertiría el reintento en una segunda recepción.
+		const write = vi.fn().mockRejectedValueOnce(timeoutError).mockResolvedValueOnce('ok');
+		const { result } = renderHook(() => useIdempotentWrite());
+
+		await act(async () => {
+			await result.current.submit(write);
+		});
+
+		await waitFor(() => expect(result.current.canRetry).toBe(true));
+
+		await act(async () => {
+			await result.current.submit(write);
+		});
+
+		expect(headersOf(write, 0)['Idempotency-Key']).toBe(headersOf(write, 1)['Idempotency-Key']);
+	});
+
+	it('conserva la clave tras un error definitivo hasta que se corrige el payload', async () => {
+		const write = vi.fn().mockRejectedValue(validationError);
+		const { result } = renderHook(() => useIdempotentWrite());
+
+		await act(async () => {
+			await result.current.submit(write);
+		});
+
+		await waitFor(() => expect(result.current.error?.code).toBe('UNIT_COST_REQUIRED'));
+		expect(result.current.canRetry).toBe(false);
+
+		const keyBefore = result.current.idempotencyKey;
+
+		// Sólo al corregir el payload se pide clave nueva: con la anterior el
+		// backend responde 409 IDEMPOTENCY_KEY_REUSED.
+		act(() => {
+			result.current.renewKey();
+		});
+
+		expect(result.current.idempotencyKey).not.toBe(keyBefore);
+		expect(result.current.error).toBeNull();
+	});
+
+	it('renueva la clave tras una escritura exitosa', async () => {
+		const write = vi.fn().mockResolvedValue('ok');
+		const { result } = renderHook(() => useIdempotentWrite());
+		const keyBefore = result.current.idempotencyKey;
+
+		await act(async () => {
+			await result.current.submit(write);
+		});
+
+		await waitFor(() => expect(result.current.idempotencyKey).not.toBe(keyBefore));
+	});
+
+	it('ignora el segundo submit mientras hay uno en curso', async () => {
+		let release: (value: string) => void = () => undefined;
+		const write = vi.fn(
+			() =>
+				new Promise<string>((resolve) => {
+					release = resolve;
+				}),
+		);
+		const { result } = renderHook(() => useIdempotentWrite());
+
+		let firstCall: Promise<string | undefined> = Promise.resolve(undefined);
+		act(() => {
+			firstCall = result.current.submit(write);
+		});
+
+		await waitFor(() => expect(result.current.isSubmitting).toBe(true));
+
+		await act(async () => {
+			// Doble clic: sería idempotente en el backend, pero devolvería
+			// 409 OPERATION_IN_PROGRESS y mostraría un error que nadie provocó.
+			await result.current.submit(write);
+		});
+
+		expect(write).toHaveBeenCalledTimes(1);
+
+		await act(async () => {
+			release('ok');
+			await firstCall;
+		});
+	});
+});

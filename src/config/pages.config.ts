@@ -223,9 +223,19 @@ export const privatePages = {
 		// allowlist de nombres de rol dejaba fuera a perfiles que sí tienen los
 		// permisos del flujo. Cada permiso abre al menos una subpágina —
 		// `view-warehouse` Bodegas, `edit-product` Ingreso de Stock,
-		// `view-inventory-movements` Trazabilidad, `view-transfer` Transferencias —
-		// así que basta con cualquiera de ellos para mostrar la sección.
-		authority: ['view-warehouse', 'edit-product', 'view-inventory-movements', 'view-transfer'],
+		// `view-inventory-movements` Trazabilidad, `view-transfer` Transferencias,
+		// `view-product` Catálogo del contrato — así que basta con cualquiera de
+		// ellos para mostrar la sección.
+		// Este nodo no gatea ninguna ruta (ver `contentRoutes.tsx`): sólo decide la
+		// visibilidad del menú, que el aside evalúa con OR. Ampliarlo acá no le
+		// quita la ruta a nadie.
+		authority: [
+			'view-warehouse',
+			'edit-product',
+			'view-inventory-movements',
+			'view-transfer',
+			'view-product',
+		],
 		requireAll: false,
 		subPages: {
 			transfers: {
@@ -295,6 +305,18 @@ export const privatePages = {
 				// Antes iba con `authority: []`, lo que dejaba la ruta accesible por
 				// URL directa a cualquier usuario autenticado.
 				authority: ['view-product', 'edit-product'],
+				requireAll: true,
+			},
+			catalogoAbastecimiento: {
+				id: 'catalogoAbastecimiento',
+				to: '/inventario/abastecimiento/catalogo',
+				text: 'Catálogo del contrato',
+				icon: 'HeroCube',
+				// Pantalla de referencia del módulo de abastecimiento (PR #67 del
+				// backend): sólo lee fixtures locales, no escribe ni consulta nada.
+				// `view-product` es el permiso de lectura que el contrato asigna a
+				// stock y recepciones, así que es el mismo que abre esta vista.
+				authority: ['view-product'],
 				requireAll: true,
 			},
 			retirosEquipos: {
