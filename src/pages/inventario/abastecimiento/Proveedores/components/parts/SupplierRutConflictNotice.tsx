@@ -1,6 +1,7 @@
 import React from 'react';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import type { IProcurementSupplierRutConflict } from '@/interface/procurement.interface';
 
 /**
@@ -8,6 +9,12 @@ import type { IProcurementSupplierRutConflict } from '@/interface/procurement.in
  * conflicto y, sólo si está eliminado, ofrece restaurar — como decisión
  * explícita del usuario, nunca como efecto lateral de guardar el formulario
  * (sección 5 del contrato).
+ *
+ * `allowed_actions` no llega acá — el conflicto no trae la ficha completa
+ * del proveedor en conflicto, sólo `{id, display_name, is_active}` — así que
+ * el botón de restaurar pasa igual por `ProtectedButton` con el permiso de
+ * la sección 15: `allowed_actions` no sustituye la autorización, y acá
+ * directamente no está disponible para consultarla.
  */
 
 interface ISupplierRutConflictNoticeProps {
@@ -15,6 +22,8 @@ interface ISupplierRutConflictNoticeProps {
 	isRestoring: boolean;
 	onRestore: () => void;
 	onViewSupplier: (id: number) => void;
+	branchId?: number | null;
+	subsidiaryId?: number | null;
 }
 
 const SupplierRutConflictNotice: React.FC<ISupplierRutConflictNoticeProps> = ({
@@ -22,6 +31,8 @@ const SupplierRutConflictNotice: React.FC<ISupplierRutConflictNoticeProps> = ({
 	isRestoring,
 	onRestore,
 	onViewSupplier,
+	branchId = null,
+	subsidiaryId = null,
 }) => (
 	<Alert
 		color='amber'
@@ -42,7 +53,13 @@ const SupplierRutConflictNotice: React.FC<ISupplierRutConflictNoticeProps> = ({
 					Ver proveedor
 				</Button>
 				{!conflict.is_active && (
-					<Button
+					<ProtectedButton
+						permission='restore-procurement-supplier'
+						branchId={branchId}
+						subsidiaryId={subsidiaryId}
+						scope='access'
+						fallbackMode='disabled'
+						disabledTooltip='No tienes autorización para restaurar proveedores'
 						size='sm'
 						variant='solid'
 						color='blue'
@@ -51,7 +68,7 @@ const SupplierRutConflictNotice: React.FC<ISupplierRutConflictNoticeProps> = ({
 						isDisable={isRestoring}
 						onClick={onRestore}>
 						Restaurar este proveedor
-					</Button>
+					</ProtectedButton>
 				)}
 			</div>
 		</div>

@@ -117,3 +117,44 @@ describe('useProveedorForm — conflicto de RUT', () => {
 		await waitFor(() => expect(result.current.conflict).toBeNull());
 	});
 });
+
+describe('useProveedorForm — renovación de Idempotency-Key tras un error definitivo', () => {
+	/**
+	 * Si la clave no se renueva tras un 409/422, el siguiente envío con datos
+	 * corregidos reutiliza la misma `Idempotency-Key` con un payload distinto:
+	 * el propio mock lo rechazaría con 409 `IDEMPOTENCY_KEY_REUSED`. Que el
+	 * segundo envío tenga éxito es la prueba de que sí se renovó.
+	 */
+	it('corregir el RUT tras un conflicto y reenviar no reusa la clave', async () => {
+		const { result } = renderHook(() => useProveedorForm({ subsidiaryId: 4 }), {
+			wrapper: createWrapper(),
+		});
+
+		await act(async () => {
+			await result.current.formik.setValues({ ...validValues, rut: '76123456-0' });
+		});
+		await act(async () => {
+			await result.current.formik.submitForm();
+		});
+		await waitFor(() => expect(result.current.conflict).not.toBeNull());
+
+		act(() => result.current.handleRutChange('11222333-9'));
+		await waitFor(() => expect(result.current.conflict).toBeNull());
+
+		await act(async () => {
+			await result.current.formik.submitForm();
+		});
+
+		// Sin IDEMPOTENCY_KEY_REUSED: ni conflicto nuevo ni toast de error.
+		await waitFor(() => expect(result.current.isSubmitting).toBe(false));
+		expect(result.current.conflict).toBeNull();
+		expect(toastSpies.error).not.toHaveBeenCalled();
+	});
+
+	// No hay un caso equivalente para el 422 genérico (RUT inválido, nombre
+	// requerido): el schema de Yup del propio formulario valida lo mismo antes
+	// de someter, así que el envío nunca llega al servicio con esos datos. La
+	// renovación de clave para esa rama del efecto es la misma línea de código
+	// que ejercita el caso de conflicto de arriba — no hay una segunda ruta que
+	// probar por separado.
+});

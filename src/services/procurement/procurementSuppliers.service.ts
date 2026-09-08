@@ -23,18 +23,49 @@ import type {
  * sección 16, misma garantía de `Idempotency-Key` — para que reemplazarlo por
  * `ApiService` el día que el backend exista no obligue a tocar un componente.
  *
- * El store es estado de módulo: vive mientras dure la pestaña y se reinicia
- * al recargar. No es persistencia — es la superficie mínima para ejercer
- * alta, edición, desactivación y restauración sin backend.
+ * El store es estado de módulo, **particionado por filial**: el RUT es único
+ * por filial (sección 5), así que dos filiales no pueden ver ni pisar los
+ * proveedores de la otra sólo porque comparten un array en memoria. Vive
+ * mientras dure la pestaña y se reinicia al recargar — no es persistencia,
+ * es la superficie mínima para ejercer alta, edición, desactivación y
+ * restauración sin backend.
  */
 
 const MOCK_LATENCY_MS = 220;
 
-let store: IProcurementSupplier[] = supplierSeed.map((supplier) => ({ ...supplier }));
-let nextId = Math.max(...supplierSeed.map((supplier) => supplier.id)) + 1;
+const seedStore = (): IProcurementSupplier[] => supplierSeed.map((supplier) => ({ ...supplier }));
+const seedNextId = (): number => Math.max(...supplierSeed.map((supplier) => supplier.id)) + 1;
 
-/** Resultado cacheado por `Idempotency-Key`, para simular su replay. */
+const storesBySubsidiary = new Map<number, IProcurementSupplier[]>();
+const nextIdBySubsidiary = new Map<number, number>();
+
+/** Primer acceso de una filial: se siembra con su propia copia del fixture. */
+const getStore = (subsidiaryId: number): IProcurementSupplier[] => {
+	let store = storesBySubsidiary.get(subsidiaryId);
+	if (store === undefined) {
+		store = seedStore();
+		storesBySubsidiary.set(subsidiaryId, store);
+	}
+	return store;
+};
+
+const setStore = (subsidiaryId: number, next: IProcurementSupplier[]): void => {
+	storesBySubsidiary.set(subsidiaryId, next);
+};
+
+const nextIdFor = (subsidiaryId: number): number => {
+	const current = nextIdBySubsidiary.get(subsidiaryId) ?? seedNextId();
+	nextIdBySubsidiary.set(subsidiaryId, current + 1);
+	return current;
+};
+
+/**
+ * Resultado cacheado por `Idempotency-Key`. La clave se delimita "por actor,
+ * contexto y acción/recurso" (sección 1): acá el contexto es la filial, así
+ * que la misma clave usada por error en dos filiales no puede pisarse.
+ */
 const idempotencyLog = new Map<string, { payloadHash: string; result: unknown }>();
+const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subsidiaryId}:${key}`;
 
 const delay = <T>(value: T): Promise<T> =>
 	new Promise((resolve) => {
@@ -61,14 +92,16 @@ const fail = (status: number, data: Record<string, unknown>): Promise<never> =>
  * así que el mismo key puede reintentarse tras corregir el payload.
  */
 async function withIdempotency<T>(
+	subsidiaryId: number,
 	idempotencyKey: string | undefined,
 	payloadForHash: unknown,
 	run: () => Promise<T>,
 ): Promise<T> {
 	if (!idempotencyKey) return run();
 
+	const logKey = idempotencyLogKey(subsidiaryId, idempotencyKey);
 	const payloadHash = JSON.stringify(payloadForHash);
-	const logged = idempotencyLog.get(idempotencyKey);
+	const logged = idempotencyLog.get(logKey);
 	if (logged) {
 		if (logged.payloadHash !== payloadHash) {
 			return fail(409, {
@@ -80,7 +113,7 @@ async function withIdempotency<T>(
 	}
 
 	const result = await run();
-	idempotencyLog.set(idempotencyKey, { payloadHash, result });
+	idempotencyLog.set(logKey, { payloadHash, result });
 	return result;
 }
 
@@ -113,7 +146,11 @@ const searchMatches = (supplier: IProcurementSupplier, search: string): boolean 
 	].some((value) => Boolean(value) && value!.toLocaleLowerCase('es-CL').includes(needle));
 };
 
-const findRutConflict = (rut: string, excludeId?: number): IProcurementSupplier | undefined =>
+const findRutConflict = (
+	store: IProcurementSupplier[],
+	rut: string,
+	excludeId?: number,
+): IProcurementSupplier | undefined =>
 	store.find((supplier) => supplier.rut === rut && supplier.id !== excludeId);
 
 const buildFieldError = (
@@ -205,6 +242,7 @@ const buildSupplierFields = (
  * `purchase_summary`: ese resumen es caro y no va por fila.
  */
 export const listProcurementSuppliers = (
+	subsidiaryId: number,
 	params: IProcurementSupplierListParams = {},
 ): Promise<IApiCollectionEnvelope<IProcurementSupplierListRow>> => {
 	if (params.is_active !== undefined && params.include_inactive !== undefined) {
@@ -217,6 +255,7 @@ export const listProcurementSuppliers = (
 		});
 	}
 
+	const store = getStore(subsidiaryId);
 	let filtered = store;
 	if (params.include_inactive !== 1) {
 		const activeOnly = params.is_active !== 0;
@@ -251,7 +290,7 @@ export const listProcurementSuppliers = (
 			from: total === 0 ? null : start + 1,
 			last_page: lastPage,
 			links: [],
-			path: '/api/subsidiaries/procurement/suppliers',
+			path: `/api/subsidiaries/${subsidiaryId}/procurement/suppliers`,
 			per_page: perPage,
 			to: total === 0 ? null : Math.min(start + perPage, total),
 			total,
@@ -261,9 +300,10 @@ export const listProcurementSuppliers = (
 
 /** `GET /suppliers/{supplier}`: ficha completa con `purchase_summary`. */
 export const getProcurementSupplier = (
+	subsidiaryId: number,
 	id: number,
 ): Promise<IApiResourceEnvelope<IProcurementSupplier>> => {
-	const supplier = store.find((item) => item.id === id);
+	const supplier = getStore(subsidiaryId).find((item) => item.id === id);
 	if (!supplier) {
 		return fail(404, {
 			message: 'El proveedor no existe.',
@@ -276,111 +316,146 @@ export const getProcurementSupplier = (
 
 /** `POST /suppliers`: 201 ficha completa, o 409/422 según la sección 5. */
 export const createProcurementSupplier = (
+	subsidiaryId: number,
 	payload: IProcurementSupplierPayload,
 	headers: IMockWriteHeaders = {},
 ): Promise<IApiResourceEnvelope<IProcurementSupplier>> =>
-	withIdempotency(headers.idempotencyKey, { action: 'create', payload }, async () => {
-		const normalizedRut = formatRut(payload.rut ?? '');
-		const validationError = validateSupplierPayload(normalizedRut, payload);
-		if (validationError) return fail(422, validationError);
+	withIdempotency(
+		subsidiaryId,
+		headers.idempotencyKey,
+		{ action: 'create', payload },
+		async () => {
+			const normalizedRut = formatRut(payload.rut ?? '');
+			const validationError = validateSupplierPayload(normalizedRut, payload);
+			if (validationError) return fail(422, validationError);
 
-		const conflict = findRutConflict(normalizedRut);
-		if (conflict) return rutConflictError(conflict);
+			const store = getStore(subsidiaryId);
+			const conflict = findRutConflict(store, normalizedRut);
+			if (conflict) return rutConflictError(conflict);
 
-		const now = new Date().toISOString();
-		const supplier: IProcurementSupplier = {
-			id: nextId,
-			...buildSupplierFields(normalizedRut, payload),
-			is_active: true,
-			created_at: now,
-			updated_at: now,
-			allowed_actions: ['update', 'deactivate'],
-			purchase_summary: {
-				last_purchase_on: null,
-				received_units: 0,
-				products_supplied_count: 0,
-				receipt_count: 0,
-			},
-		};
-		nextId += 1;
-		store = [...store, supplier];
+			const now = new Date().toISOString();
+			const supplier: IProcurementSupplier = {
+				id: nextIdFor(subsidiaryId),
+				...buildSupplierFields(normalizedRut, payload),
+				is_active: true,
+				created_at: now,
+				updated_at: now,
+				allowed_actions: ['update', 'deactivate'],
+				purchase_summary: {
+					last_purchase_on: null,
+					received_units: 0,
+					products_supplied_count: 0,
+					receipt_count: 0,
+				},
+			};
+			setStore(subsidiaryId, [...store, supplier]);
 
-		return delay({ data: { ...supplier } });
-	});
+			return delay({ data: { ...supplier } });
+		},
+	);
 
 /** `PATCH /suppliers/{supplier}`: 200 ficha completa, o 404/409/422. */
 export const updateProcurementSupplier = (
+	subsidiaryId: number,
 	id: number,
 	payload: IProcurementSupplierPayload,
 	headers: IMockWriteHeaders = {},
 ): Promise<IApiResourceEnvelope<IProcurementSupplier>> =>
-	withIdempotency(headers.idempotencyKey, { action: 'update', id, payload }, async () => {
-		const existing = store.find((supplier) => supplier.id === id);
-		if (!existing) {
-			return fail(404, {
-				message: 'El proveedor no existe.',
-				code: 'PROCUREMENT_SUPPLIER_NOT_FOUND',
-			});
-		}
+	withIdempotency(
+		subsidiaryId,
+		headers.idempotencyKey,
+		{ action: 'update', id, payload },
+		async () => {
+			const store = getStore(subsidiaryId);
+			const existing = store.find((supplier) => supplier.id === id);
+			if (!existing) {
+				return fail(404, {
+					message: 'El proveedor no existe.',
+					code: 'PROCUREMENT_SUPPLIER_NOT_FOUND',
+				});
+			}
 
-		const normalizedRut = formatRut(payload.rut ?? '');
-		const validationError = validateSupplierPayload(normalizedRut, payload);
-		if (validationError) return fail(422, validationError);
+			const normalizedRut = formatRut(payload.rut ?? '');
+			const validationError = validateSupplierPayload(normalizedRut, payload);
+			if (validationError) return fail(422, validationError);
 
-		const conflict = findRutConflict(normalizedRut, id);
-		if (conflict) return rutConflictError(conflict);
+			const conflict = findRutConflict(store, normalizedRut, id);
+			if (conflict) return rutConflictError(conflict);
 
-		const updated: IProcurementSupplier = {
-			...existing,
-			...buildSupplierFields(normalizedRut, payload),
-			updated_at: new Date().toISOString(),
-		};
-		store = store.map((supplier) => (supplier.id === id ? updated : supplier));
+			const updated: IProcurementSupplier = {
+				...existing,
+				...buildSupplierFields(normalizedRut, payload),
+				updated_at: new Date().toISOString(),
+			};
+			setStore(
+				subsidiaryId,
+				store.map((supplier) => (supplier.id === id ? updated : supplier)),
+			);
 
-		return delay({ data: { ...updated } });
-	});
-
-/** `DELETE /suppliers/{supplier}`: soft delete. 204 en el contrato; acá 200 con la ficha. */
-export const deactivateProcurementSupplier = (
-	id: number,
-	headers: IMockWriteHeaders = {},
-): Promise<IApiResourceEnvelope<IProcurementSupplier>> =>
-	withIdempotency(headers.idempotencyKey, { action: 'deactivate', id }, async () => {
-		const existing = store.find((supplier) => supplier.id === id);
-		if (!existing) {
-			return fail(404, {
-				message: 'El proveedor no existe.',
-				code: 'PROCUREMENT_SUPPLIER_NOT_FOUND',
-			});
-		}
-		if (!existing.is_active) {
-			return fail(409, {
-				message: 'El proveedor ya está desactivado.',
-				code: 'PROCUREMENT_SUPPLIER_ALREADY_INACTIVE',
-			});
-		}
-
-		const updated: IProcurementSupplier = {
-			...existing,
-			is_active: false,
-			allowed_actions: ['restore'],
-			updated_at: new Date().toISOString(),
-		};
-		store = store.map((supplier) => (supplier.id === id ? updated : supplier));
-
-		return delay({ data: { ...updated } });
-	});
+			return delay({ data: { ...updated } });
+		},
+	);
 
 /**
- * `POST /suppliers/{supplier}/restore`: restaura la identidad original.
- * Nunca se llama automáticamente — la card la ofrece como decisión explícita
- * del usuario, incluso cuando surge de un conflicto de RUT al guardar.
+ * `DELETE /suppliers/{supplier}`: soft delete. El contrato responde **204,
+ * sin cuerpo** — a diferencia de `restore`, que sí devuelve la ficha. El
+ * mock respeta esa asimetría a propósito: un consumidor que dependiera del
+ * cuerpo de esta respuesta dejaría de funcionar el día que exista el
+ * backend real.
+ */
+export const deactivateProcurementSupplier = (
+	subsidiaryId: number,
+	id: number,
+	headers: IMockWriteHeaders = {},
+): Promise<void> =>
+	withIdempotency(
+		subsidiaryId,
+		headers.idempotencyKey,
+		{ action: 'deactivate', id },
+		async () => {
+			const store = getStore(subsidiaryId);
+			const existing = store.find((supplier) => supplier.id === id);
+			if (!existing) {
+				return fail(404, {
+					message: 'El proveedor no existe.',
+					code: 'PROCUREMENT_SUPPLIER_NOT_FOUND',
+				});
+			}
+			if (!existing.is_active) {
+				return fail(409, {
+					message: 'El proveedor ya está desactivado.',
+					code: 'PROCUREMENT_SUPPLIER_ALREADY_INACTIVE',
+				});
+			}
+
+			const updated: IProcurementSupplier = {
+				...existing,
+				is_active: false,
+				allowed_actions: ['restore'],
+				updated_at: new Date().toISOString(),
+			};
+			setStore(
+				subsidiaryId,
+				store.map((supplier) => (supplier.id === id ? updated : supplier)),
+			);
+
+			return delay(undefined);
+		},
+	);
+
+/**
+ * `POST /suppliers/{supplier}/restore`: 200, restaura la identidad original
+ * — sí devuelve la ficha completa, a diferencia de `deactivate`. Nunca se
+ * llama automáticamente — la card la ofrece como decisión explícita del
+ * usuario, incluso cuando surge de un conflicto de RUT al guardar.
  */
 export const restoreProcurementSupplier = (
+	subsidiaryId: number,
 	id: number,
 	headers: IMockWriteHeaders = {},
 ): Promise<IApiResourceEnvelope<IProcurementSupplier>> =>
-	withIdempotency(headers.idempotencyKey, { action: 'restore', id }, async () => {
+	withIdempotency(subsidiaryId, headers.idempotencyKey, { action: 'restore', id }, async () => {
+		const store = getStore(subsidiaryId);
 		const existing = store.find((supplier) => supplier.id === id);
 		if (!existing) {
 			return fail(404, {
@@ -401,18 +476,22 @@ export const restoreProcurementSupplier = (
 			allowed_actions: ['update', 'deactivate'],
 			updated_at: new Date().toISOString(),
 		};
-		store = store.map((supplier) => (supplier.id === id ? updated : supplier));
+		setStore(
+			subsidiaryId,
+			store.map((supplier) => (supplier.id === id ? updated : supplier)),
+		);
 
 		return delay({ data: { ...updated } });
 	});
 
 /**
- * Reinicia el store en memoria a la semilla de fixtures. Sólo para pruebas:
- * el store es módulo-global y, sin esto, una prueba de escritura ensucia a
- * la siguiente dentro del mismo archivo.
+ * Reinicia el store en memoria a la semilla de fixtures, para todas las
+ * filiales conocidas. Sólo para pruebas: el store es módulo-global y, sin
+ * esto, una prueba de escritura ensucia a la siguiente dentro del mismo
+ * archivo.
  */
 export const resetProcurementSuppliersStoreForTests = (): void => {
-	store = supplierSeed.map((supplier) => ({ ...supplier }));
-	nextId = Math.max(...supplierSeed.map((supplier) => supplier.id)) + 1;
+	storesBySubsidiary.clear();
+	nextIdBySubsidiary.clear();
 	idempotencyLog.clear();
 };

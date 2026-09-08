@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import {
 	createProcurementSupplier,
 	deactivateProcurementSupplier,
@@ -23,10 +23,11 @@ import type {
  * `@/services/procurement/procurementSuppliers.service`: el día que el
  * endpoint exista, sólo ese servicio cambia.
  *
- * `subsidiaryId` viaja en cada thunk porque el contrato ata el RUT único a la
- * filial (`/api/subsidiaries/{subsidiary}/procurement/suppliers`); el mock lo
- * exige por la misma razón que lo exigirá la llamada real, aunque hoy no
- * lo use para filtrar.
+ * `subsidiaryId` viaja en cada thunk y se reenvía al servicio: el contrato
+ * ata el RUT único a la filial
+ * (`/api/subsidiaries/{subsidiary}/procurement/suppliers`), y el mock
+ * particiona su store por filial por la misma razón — dos filiales no ven ni
+ * pisan los proveedores de la otra.
  */
 
 export interface ProcurementSuppliersState {
@@ -34,9 +35,19 @@ export interface ProcurementSuppliersState {
 	meta: IApiPaginationMeta | null;
 	listLoading: boolean;
 	listError: string | null;
+	/** `requestId` de la última petición de listado en curso o resuelta. */
+	listRequestId: string | null;
 	current: IProcurementSupplier | null;
 	currentLoading: boolean;
 	currentError: string | null;
+	/**
+	 * `requestId` de la última petición de ficha en curso o resuelta. Descarta
+	 * una respuesta tardía de una ficha anterior (proveedor previo, filial
+	 * previa) que llega después de que ya se pidió la siguiente: sin esto, un
+	 * `fetch` lento de la ficha A puede resolver después que uno más rápido de
+	 * la ficha B y pisarla con datos de A.
+	 */
+	currentRequestId: string | null;
 	creating: boolean;
 	updating: boolean;
 	deactivating: boolean;
@@ -48,9 +59,11 @@ const initialState: ProcurementSuppliersState = {
 	meta: null,
 	listLoading: false,
 	listError: null,
+	listRequestId: null,
 	current: null,
 	currentLoading: false,
 	currentError: null,
+	currentRequestId: null,
 	creating: false,
 	updating: false,
 	deactivating: false,
@@ -71,7 +84,7 @@ export const fetchProcurementSuppliers = createAsyncThunk(
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
 		try {
-			return await listProcurementSuppliers(args.params);
+			return await listProcurementSuppliers(args.subsidiaryId, args.params);
 		} catch (error) {
 			return rejectWithValue(error);
 		}
@@ -83,7 +96,7 @@ export const fetchProcurementSupplierDetail = createAsyncThunk(
 	async (args: { subsidiaryId: number | null; id: number }, { rejectWithValue }) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
 		try {
-			const { data } = await getProcurementSupplier(args.id);
+			const { data } = await getProcurementSupplier(args.subsidiaryId, args.id);
 			return data;
 		} catch (error) {
 			return rejectWithValue(error);
@@ -103,7 +116,11 @@ export const createProcurementSupplierThunk = createAsyncThunk(
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
 		try {
-			const { data } = await createProcurementSupplier(args.payload, args.headers);
+			const { data } = await createProcurementSupplier(
+				args.subsidiaryId,
+				args.payload,
+				args.headers,
+			);
 			return data;
 		} catch (error) {
 			return rejectWithValue(error);
@@ -124,7 +141,12 @@ export const updateProcurementSupplierThunk = createAsyncThunk(
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
 		try {
-			const { data } = await updateProcurementSupplier(args.id, args.payload, args.headers);
+			const { data } = await updateProcurementSupplier(
+				args.subsidiaryId,
+				args.id,
+				args.payload,
+				args.headers,
+			);
 			return data;
 		} catch (error) {
 			return rejectWithValue(error);
@@ -132,6 +154,12 @@ export const updateProcurementSupplierThunk = createAsyncThunk(
 	},
 );
 
+/**
+ * `DELETE` es 204 sin cuerpo (sección 5): el thunk no tiene ficha que
+ * devolver, así que el resultado interno es sólo el `id` que se desactivó.
+ * El slice no adivina `allowed_actions` a partir de eso — quien necesite la
+ * ficha fresca la vuelve a pedir con `fetchProcurementSupplierDetail`.
+ */
 export const deactivateProcurementSupplierThunk = createAsyncThunk(
 	'procurementSuppliers/deactivate',
 	async (
@@ -140,8 +168,8 @@ export const deactivateProcurementSupplierThunk = createAsyncThunk(
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
 		try {
-			const { data } = await deactivateProcurementSupplier(args.id, args.headers);
-			return data;
+			await deactivateProcurementSupplier(args.subsidiaryId, args.id, args.headers);
+			return { id: args.id };
 		} catch (error) {
 			return rejectWithValue(error);
 		}
@@ -156,7 +184,11 @@ export const restoreProcurementSupplierThunk = createAsyncThunk(
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
 		try {
-			const { data } = await restoreProcurementSupplier(args.id, args.headers);
+			const { data } = await restoreProcurementSupplier(
+				args.subsidiaryId,
+				args.id,
+				args.headers,
+			);
 			return data;
 		} catch (error) {
 			return rejectWithValue(error);
@@ -192,20 +224,29 @@ const procurementSuppliersSlice = createSlice({
 		clearProcurementSupplierCurrent(state) {
 			state.current = null;
 			state.currentError = null;
+			// Sin esto, una respuesta en vuelo de la ficha que se está
+			// abandonando podría seguir llegando y repoblar `current` después
+			// de limpiarlo: la próxima carga necesita su propio `requestId`.
+			state.currentRequestId = null;
 		},
 	},
 	extraReducers: (builder) => {
 		builder
-			.addCase(fetchProcurementSuppliers.pending, (state) => {
+			.addCase(fetchProcurementSuppliers.pending, (state, action) => {
 				state.listLoading = true;
 				state.listError = null;
+				state.listRequestId = action.meta.requestId;
 			})
 			.addCase(fetchProcurementSuppliers.fulfilled, (state, action) => {
+				// Una respuesta que no es la de la última petición pedida es tardía
+				// (filtro/página cambiados mientras viajaba): se descarta.
+				if (action.meta.requestId !== state.listRequestId) return;
 				state.listLoading = false;
 				state.items = action.payload.data;
 				state.meta = action.payload.meta;
 			})
 			.addCase(fetchProcurementSuppliers.rejected, (state, action) => {
+				if (action.meta.requestId !== state.listRequestId) return;
 				state.listLoading = false;
 				state.listError = getProcurementErrorMessage(
 					action.payload,
@@ -213,18 +254,20 @@ const procurementSuppliersSlice = createSlice({
 				);
 			})
 
-			.addCase(fetchProcurementSupplierDetail.pending, (state) => {
+			.addCase(fetchProcurementSupplierDetail.pending, (state, action) => {
 				state.currentLoading = true;
 				state.currentError = null;
+				state.currentRequestId = action.meta.requestId;
 			})
-			.addCase(
-				fetchProcurementSupplierDetail.fulfilled,
-				(state, action: PayloadAction<IProcurementSupplier>) => {
-					state.currentLoading = false;
-					state.current = action.payload;
-				},
-			)
+			.addCase(fetchProcurementSupplierDetail.fulfilled, (state, action) => {
+				// Propiedad de contexto (ZF-12): una ficha anterior que resuelve
+				// tarde no puede pisar la que el usuario está viendo ahora.
+				if (action.meta.requestId !== state.currentRequestId) return;
+				state.currentLoading = false;
+				state.current = action.payload;
+			})
 			.addCase(fetchProcurementSupplierDetail.rejected, (state, action) => {
+				if (action.meta.requestId !== state.currentRequestId) return;
 				state.currentLoading = false;
 				state.currentError = getProcurementErrorMessage(
 					action.payload,
@@ -261,7 +304,15 @@ const procurementSuppliersSlice = createSlice({
 			})
 			.addCase(deactivateProcurementSupplierThunk.fulfilled, (state, action) => {
 				state.deactivating = false;
-				applySupplierMutation(state, action.payload);
+				// Sin ficha que aplicar (204): sólo se sabe con certeza que
+				// `is_active` pasó a `false`. `allowed_actions` no se adivina acá —
+				// lo decide el backend y llega recién con el próximo `fetch`.
+				const { id } = action.payload;
+				state.items = state.items.map((row) =>
+					row.id === id ? { ...row, is_active: false } : row,
+				);
+				if (state.current?.id === id)
+					state.current = { ...state.current, is_active: false };
 			})
 			.addCase(deactivateProcurementSupplierThunk.rejected, (state) => {
 				state.deactivating = false;

@@ -34,6 +34,7 @@ const ProveedoresDetalleView = () => {
 		setIsDeactivateModalOpen,
 		isRestoring,
 		handleAction,
+		handleDeactivated,
 		goToSupplier,
 		goToList,
 		retry,
@@ -200,6 +201,7 @@ const ProveedoresDetalleView = () => {
 					<ProveedorFormModal
 						isOpen={isFormModalOpen}
 						setIsOpen={setIsFormModalOpen}
+						branchId={branchId}
 						subsidiaryId={subsidiaryId}
 						supplier={supplier}
 						onViewSupplier={goToSupplier}
@@ -209,7 +211,7 @@ const ProveedoresDetalleView = () => {
 						setIsOpen={setIsDeactivateModalOpen}
 						supplier={{ id: supplier.id, display_name: supplier.display_name }}
 						subsidiaryId={subsidiaryId}
-						onDeactivated={() => undefined}
+						onDeactivated={handleDeactivated}
 					/>
 				</>
 			)}

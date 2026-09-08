@@ -18,6 +18,7 @@ import SupplierRutConflictNotice from '../parts/SupplierRutConflictNotice';
 interface IProveedorFormModalProps {
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
+	branchId?: number | null;
 	subsidiaryId: number | null;
 	/** `null`: alta. Con proveedor: edición de ese registro. */
 	supplier?: IProcurementSupplier | null;
@@ -29,6 +30,7 @@ interface IProveedorFormModalProps {
 const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 	isOpen,
 	setIsOpen,
+	branchId = null,
 	subsidiaryId,
 	supplier = null,
 	onSuccess,
@@ -69,6 +71,8 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 							isRestoring={isRestoring}
 							onRestore={restoreConflicting}
 							onViewSupplier={onViewSupplier}
+							branchId={branchId}
+							subsidiaryId={subsidiaryId}
 						/>
 					)}
 
@@ -135,6 +139,13 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 							value={formik.values.business_activity}
 							onChange={formik.handleChange}
 							onBlur={formik.handleBlur}
+							isTouched={!!formik.touched.business_activity}
+							isValid={!formik.errors.business_activity}
+							invalidFeedback={
+								formik.touched.business_activity
+									? formik.errors.business_activity
+									: undefined
+							}
 						/>
 					</div>
 
@@ -148,6 +159,11 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 								value={formik.values.phone}
 								onChange={formik.handleChange}
 								onBlur={formik.handleBlur}
+								isTouched={!!formik.touched.phone}
+								isValid={!formik.errors.phone}
+								invalidFeedback={
+									formik.touched.phone ? formik.errors.phone : undefined
+								}
 							/>
 						</div>
 						<div className='space-y-1'>
@@ -180,6 +196,13 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 								value={formik.values.billing_address}
 								onChange={formik.handleChange}
 								onBlur={formik.handleBlur}
+								isTouched={!!formik.touched.billing_address}
+								isValid={!formik.errors.billing_address}
+								invalidFeedback={
+									formik.touched.billing_address
+										? formik.errors.billing_address
+										: undefined
+								}
 							/>
 						</div>
 						<SelectComune
@@ -208,6 +231,13 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 								value={formik.values.shipping_address}
 								onChange={formik.handleChange}
 								onBlur={formik.handleBlur}
+								isTouched={!!formik.touched.shipping_address}
+								isValid={!formik.errors.shipping_address}
+								invalidFeedback={
+									formik.touched.shipping_address
+										? formik.errors.shipping_address
+										: undefined
+								}
 							/>
 						</div>
 						<SelectComune

@@ -57,13 +57,31 @@ const useProveedores = () => {
 
 	useEffect(() => {
 		if (isSearchDebouncing) return;
-		dispatch(fetchProcurementSuppliers({ subsidiaryId, params }));
+		void dispatch(fetchProcurementSuppliers({ subsidiaryId, params }));
 	}, [dispatch, subsidiaryId, params, isSearchDebouncing]);
 
 	const refresh = useCallback(
 		() => dispatch(fetchProcurementSuppliers({ subsidiaryId, params })),
 		[dispatch, subsidiaryId, params],
 	);
+
+	/**
+	 * Tras desactivar o restaurar, la fila afectada puede salir del filtro
+	 * vigente (una desactivación deja de calzar con «Activos», una
+	 * restauración deja de calzar con «Inactivos»). Si era la única fila de
+	 * la página y no es la primera, recargar esa misma página dejaría una
+	 * lista vacía con más páginas atrás: se retrocede una en vez de eso,
+	 * igual que `refreshAfterDeletion` en clientes de ventas.
+	 */
+	const refreshAfterMutation = useCallback(() => {
+		const isLastRowOnLastPage =
+			items.length === 1 && page > 1 && meta !== null && meta.current_page === meta.last_page;
+		if (isLastRowOnLastPage) {
+			setPage((current) => Math.max(1, current - 1));
+			return undefined;
+		}
+		return refresh();
+	}, [items.length, meta, page, refresh]);
 
 	const setSearchValue = useCallback((value: string) => {
 		setSearch(value);
@@ -95,6 +113,7 @@ const useProveedores = () => {
 		setStatusValue,
 		onPaginationChange,
 		refresh,
+		refreshAfterMutation,
 	};
 };
 

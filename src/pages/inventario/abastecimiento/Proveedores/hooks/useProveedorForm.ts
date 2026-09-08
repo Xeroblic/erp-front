@@ -5,16 +5,17 @@ import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch } from '@/store';
 import {
 	createProcurementSupplierThunk,
-	restoreProcurementSupplierThunk,
 	updateProcurementSupplierThunk,
 } from '@/store/slices/procurement/procurementSuppliersSlice';
 import { formatRut } from '@/utils/validateRut';
 import type {
 	IProcurementSupplier,
 	IProcurementSupplierPayload,
+	IProcurementSupplierRutConflict,
 } from '@/interface/procurement.interface';
 import { proveedorFormSchema } from '../types';
 import type { IProveedorFormValues } from '../types';
+import useSupplierRestore from './useSupplierRestore';
 
 /**
  * Formik + `useIdempotentWrite` del alta y edición de proveedor. Un solo
@@ -96,13 +97,26 @@ const useProveedorForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseProv
 			? 'No se pudo actualizar el proveedor.'
 			: 'No se pudo crear el proveedor.',
 	});
-	const [isRestoring, setIsRestoring] = useState(false);
+	/**
+	 * Estado propio, no derivado de `idempotentWrite.error`: `renewKey()`
+	 * limpia ese error como parte de su contrato, y necesitamos poder renovar
+	 * la clave (abajo) sin que eso apague el banner de conflicto que el
+	 * usuario todavía tiene que resolver.
+	 */
+	const [conflict, setConflict] = useState<IProcurementSupplierRutConflict | null>(null);
+	const { restore, isRestoring } = useSupplierRestore({
+		subsidiaryId,
+		onSuccess: (restored) => {
+			setConflict(null);
+			onSuccess?.(restored);
+		},
+	});
 
 	const formik = useFormik<IProveedorFormValues>({
 		initialValues: toFormValues(supplier),
 		enableReinitialize: true,
 		validationSchema: proveedorFormSchema,
-		onSubmit: async (values) => {
+		onSubmit: async (values, { resetForm }) => {
 			const payload = toPayload(values);
 			const result = await idempotentWrite.submit((headers) =>
 				isEdit && supplier
@@ -123,78 +137,83 @@ const useProveedorForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseProv
 						).unwrap(),
 			);
 
-			if (result) onSuccess?.(result);
+			if (result) {
+				// Sólo en alta: en edición el modal cierra y el próximo `enableReinitialize`
+				// parte de la ficha que corresponda. En alta, `initialValues` es
+				// siempre el mismo `EMPTY_VALUES` — sin resetear acá, la próxima
+				// apertura para «Nuevo proveedor» conservaría lo recién enviado,
+				// porque Formik no detecta un cambio en `initialValues` idéntico.
+				if (!isEdit) resetForm({ values: EMPTY_VALUES });
+				onSuccess?.(result);
+			}
 		},
 	});
 
 	/**
-	 * Un 422 con `fieldErrors` se pinta sobre cada input y además se toastea. El
-	 * 409 de RUT duplicado **no** se toastea: lo resuelve el banner de
-	 * conflicto de la propia modal (`conflict`, abajo), no una notificación que
-	 * desaparece sola mientras la decisión de restaurar sigue pendiente.
+	 * Un 422 con `fieldErrors` se pinta sobre cada input y además se toastea.
+	 * El 409 de RUT duplicado **no** se toastea: lo resuelve el banner de
+	 * conflicto de la propia modal (`conflict`, abajo), no una notificación
+	 * que desaparece sola mientras la decisión de restaurar sigue pendiente.
+	 *
+	 * En ambos casos la clave se renueva: el contrato exige clave nueva tras
+	 * un error definitivo y la corrección del payload (sección 1), y ninguno
+	 * de estos dos es `retry_same_key`. Conservarla producía
+	 * `409 IDEMPOTENCY_KEY_REUSED` en el siguiente intento con datos
+	 * corregidos.
 	 */
 	useEffect(() => {
 		const resolved = idempotentWrite.error;
-		if (!resolved || resolved.code === 'SUPPLIER_RUT_ALREADY_EXISTS') return;
+		if (!resolved) return;
 
-		Object.entries(resolved.fieldErrors ?? {}).forEach(([apiField, messages]) => {
-			const formField = FORM_FIELD_BY_API_FIELD[apiField];
-			if (formField && messages[0]) formik.setFieldError(formField, messages[0]);
-		});
-		toast.error(resolved.message);
-		// Sólo reacciona a un error nuevo: `formik` cambia de identidad en cada
-		// render y no es lo que este efecto observa.
+		if (resolved.code === 'SUPPLIER_RUT_ALREADY_EXISTS' && resolved.existingSupplier) {
+			setConflict(resolved.existingSupplier);
+		} else {
+			Object.entries(resolved.fieldErrors ?? {}).forEach(([apiField, messages]) => {
+				const formField = FORM_FIELD_BY_API_FIELD[apiField];
+				if (formField && messages[0]) formik.setFieldError(formField, messages[0]);
+			});
+			toast.error(resolved.message);
+		}
+
+		if (resolved.action !== 'retry_same_key') idempotentWrite.renewKey();
+		// Sólo reacciona a un error nuevo: `formik` e `idempotentWrite` cambian
+		// de identidad en cada render y no son lo que este efecto observa.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [idempotentWrite.error]);
-
-	const conflict =
-		idempotentWrite.error?.code === 'SUPPLIER_RUT_ALREADY_EXISTS'
-			? idempotentWrite.error.existingSupplier
-			: null;
 
 	/**
 	 * El conflicto se limpia al tocar el RUT: seguir mostrando el proveedor en
 	 * conflicto de un RUT que el usuario ya cambió confundiría más de lo que
-	 * ayuda.
+	 * ayuda. La clave ya quedó renovada cuando llegó el 409 (arriba), así que
+	 * acá sólo se oculta el banner.
 	 */
 	const handleRutChange = useCallback(
 		(value: string) => {
-			if (idempotentWrite.error) idempotentWrite.clearError();
+			setConflict(null);
 			formik.setFieldValue('rut', formatRut(value)).catch(() => undefined);
 		},
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[idempotentWrite.error, idempotentWrite.clearError],
+		[],
 	);
 
 	/**
-	 * Restaurar desde el conflicto es una decisión explícita del usuario, nunca
-	 * un efecto lateral de guardar: acción propia, separada del submit, con su
-	 * propio estado de carga. El contrato es explícito en que nunca se
-	 * restaura solo.
+	 * Restaurar desde el conflicto es una decisión explícita del usuario,
+	 * nunca un efecto lateral de guardar: acción propia, separada del submit.
+	 * El contrato es explícito en que nunca se restaura solo. Delegada en
+	 * `useSupplierRestore`, la misma pieza que usan la fila del listado y la
+	 * ficha, para que las tres compartan `Idempotency-Key` y no cada una la
+	 * omita a su manera.
 	 */
 	const restoreConflicting = useCallback(async () => {
 		if (!conflict) return;
-		setIsRestoring(true);
-		try {
-			const restored = await dispatch(
-				restoreProcurementSupplierThunk({ subsidiaryId, id: conflict.id }),
-			).unwrap();
-			toast.success(`${restored.display_name} fue restaurado.`);
-			idempotentWrite.clearError();
-			onSuccess?.(restored);
-		} catch {
-			toast.error('No se pudo restaurar el proveedor.');
-		} finally {
-			setIsRestoring(false);
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [conflict, dispatch, subsidiaryId]);
+		await restore(conflict.id);
+	}, [conflict, restore]);
 
 	const reset = useCallback(() => {
 		formik.resetForm();
-		idempotentWrite.clearError();
+		setConflict(null);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [idempotentWrite.clearError]);
+	}, []);
 
 	return {
 		formik,

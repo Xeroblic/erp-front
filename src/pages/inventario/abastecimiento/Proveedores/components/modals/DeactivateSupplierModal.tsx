@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { toast } from 'react-toastify';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch } from '@/store';
 import { deactivateProcurementSupplierThunk } from '@/store/slices/procurement/procurementSuppliersSlice';
 
 /**
  * Confirmación de `deactivate` (soft delete, sección 5 del contrato): acción
  * destructiva/irreversible desde la UI, así que pide confirmación en vez de
- * dispararse con un solo clic.
+ * dispararse con un solo clic. Es una escritura como cualquier otra, así que
+ * lleva su propia `Idempotency-Key` — omitirla es lo que dejaba un reintento
+ * por timeout capaz de duplicar la operación.
  *
  * `supplier` toma la forma mínima que hace falta (id + display_name): así
  * sirve tanto a la fila resumida del listado como a la ficha completa, sin
@@ -36,22 +39,28 @@ const DeactivateSupplierModal: React.FC<IDeactivateSupplierModalProps> = ({
 	onDeactivated,
 }) => {
 	const dispatch = useAppDispatch();
-	const [isDeactivating, setIsDeactivating] = useState(false);
+	const idempotentWrite = useIdempotentWrite({
+		fallbackMessage: 'No se pudo desactivar el proveedor.',
+	});
 
 	const handleConfirm = async () => {
 		if (!supplier) return;
-		setIsDeactivating(true);
-		try {
-			await dispatch(
-				deactivateProcurementSupplierThunk({ subsidiaryId, id: supplier.id }),
-			).unwrap();
+		const result = await idempotentWrite.submit((headers) =>
+			dispatch(
+				deactivateProcurementSupplierThunk({
+					subsidiaryId,
+					id: supplier.id,
+					headers: { idempotencyKey: headers['Idempotency-Key'] },
+				}),
+			).unwrap(),
+		);
+
+		if (result) {
 			toast.success(`${supplier.display_name} fue desactivado.`);
 			setIsOpen(false);
 			onDeactivated();
-		} catch {
+		} else {
 			toast.error('No se pudo desactivar el proveedor.');
-		} finally {
-			setIsDeactivating(false);
 		}
 	};
 
@@ -59,11 +68,11 @@ const DeactivateSupplierModal: React.FC<IDeactivateSupplierModalProps> = ({
 		<Modal
 			isOpen={isOpen}
 			setIsOpen={() => {
-				if (!isDeactivating) setIsOpen(false);
+				if (!idempotentWrite.isSubmitting) setIsOpen(false);
 			}}
 			size='sm'
 			isCentered
-			isStaticBackdrop={isDeactivating}>
+			isStaticBackdrop={idempotentWrite.isSubmitting}>
 			<ModalHeader>Desactivar proveedor</ModalHeader>
 			<ModalBody>
 				<p className='text-lg'>
@@ -78,15 +87,15 @@ const DeactivateSupplierModal: React.FC<IDeactivateSupplierModalProps> = ({
 				<Button
 					variant='outline'
 					onClick={() => setIsOpen(false)}
-					isDisable={isDeactivating}>
+					isDisable={idempotentWrite.isSubmitting}>
 					Cancelar
 				</Button>
 				<Button
 					variant='outline'
 					color='amber'
 					onClick={handleConfirm}
-					isDisable={isDeactivating}
-					isLoading={isDeactivating}>
+					isDisable={idempotentWrite.isSubmitting}
+					isLoading={idempotentWrite.isSubmitting}>
 					Desactivar
 				</Button>
 			</ModalFooter>

@@ -317,6 +317,7 @@ const DefaultAsideTemplate = () => {
 						authority={[
 							...Pages.inventory.authority,
 							...Pages.inventory.subPages.retirosEquipos.authority,
+							...Pages.inventory.subPages.proveedores.authority,
 						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
@@ -326,6 +327,7 @@ const DefaultAsideTemplate = () => {
 						authority={[
 							...Pages.inventory.authority,
 							...Pages.inventory.subPages.retirosEquipos.authority,
+							...Pages.inventory.subPages.proveedores.authority,
 						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>

@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { listaComunasThunk } from '@/store/slices/core/coreSlice';
 import {
 	clearProcurementSupplierCurrent,
 	fetchProcurementSupplierDetail,
-	restoreProcurementSupplierThunk,
 	selectProcurementSupplierCurrent,
 	selectProcurementSupplierCurrentError,
 	selectProcurementSupplierCurrentLoading,
 } from '@/store/slices/procurement/procurementSuppliersSlice';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
+import useSupplierRestore from '../../hooks/useSupplierRestore';
 
 /**
  * Ficha de proveedor (sección 5 del contrato). A diferencia del listado, acá
@@ -33,7 +32,7 @@ const useProveedoresDetalle = () => {
 	// El contrato sólo entrega el id de comuna: se resuelve a nombre contra el
 	// mismo catálogo que usa `SelectComune` en el formulario.
 	useEffect(() => {
-		dispatch(listaComunasThunk());
+		void dispatch(listaComunasThunk());
 	}, [dispatch]);
 
 	const resolveCommuneName = useCallback(
@@ -52,7 +51,7 @@ const useProveedoresDetalle = () => {
 
 	useEffect(() => {
 		if (id === null) return undefined;
-		dispatch(fetchProcurementSupplierDetail({ subsidiaryId, id }));
+		void dispatch(fetchProcurementSupplierDetail({ subsidiaryId, id }));
 		return () => {
 			dispatch(clearProcurementSupplierCurrent());
 		};
@@ -60,7 +59,6 @@ const useProveedoresDetalle = () => {
 
 	const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 	const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
-	const [isRestoring, setIsRestoring] = useState(false);
 
 	const goToSupplier = useCallback(
 		(supplierId: number) => navigate(`/inventario/abastecimiento/proveedores/${supplierId}`),
@@ -71,20 +69,31 @@ const useProveedoresDetalle = () => {
 		[navigate],
 	);
 
+	const retry = useCallback(() => {
+		if (id === null) return;
+		void dispatch(fetchProcurementSupplierDetail({ subsidiaryId, id }));
+	}, [dispatch, subsidiaryId, id]);
+
+	/**
+	 * `restore` (sección 5) devuelve la ficha completa y ya la refleja en
+	 * `current` vía el propio thunk — a diferencia de `deactivate`, acá no
+	 * hace falta un `retry()` explícito tras el éxito.
+	 */
+	const { restore, isRestoring } = useSupplierRestore({ subsidiaryId });
 	const handleRestore = useCallback(async () => {
 		if (!supplier) return;
-		setIsRestoring(true);
-		try {
-			await dispatch(
-				restoreProcurementSupplierThunk({ subsidiaryId, id: supplier.id }),
-			).unwrap();
-			toast.success(`${supplier.display_name} fue restaurado.`);
-		} catch {
-			toast.error('No se pudo restaurar el proveedor.');
-		} finally {
-			setIsRestoring(false);
-		}
-	}, [dispatch, subsidiaryId, supplier]);
+		await restore(supplier.id);
+	}, [restore, supplier]);
+
+	/**
+	 * `deactivate` es 204 sin cuerpo (sección 5): el store sólo puede marcar
+	 * `is_active` con certeza, no `allowed_actions`. La ficha necesita el
+	 * dato fresco del backend para saber qué ofrece después, así que se
+	 * vuelve a pedir explícitamente.
+	 */
+	const handleDeactivated = useCallback(() => {
+		retry();
+	}, [retry]);
 
 	/** Traduce el click de `AllowedActionsToolbar` a la interacción de esta pantalla. */
 	const handleAction = useCallback(
@@ -95,11 +104,6 @@ const useProveedoresDetalle = () => {
 		},
 		[handleRestore],
 	);
-
-	const retry = useCallback(() => {
-		if (id === null) return;
-		dispatch(fetchProcurementSupplierDetail({ subsidiaryId, id }));
-	}, [dispatch, subsidiaryId, id]);
 
 	return {
 		id,
@@ -114,6 +118,7 @@ const useProveedoresDetalle = () => {
 		setIsDeactivateModalOpen,
 		isRestoring,
 		handleAction,
+		handleDeactivated,
 		goToSupplier,
 		goToList,
 		retry,

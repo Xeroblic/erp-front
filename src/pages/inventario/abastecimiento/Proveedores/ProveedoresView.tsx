@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Container from '@/components/layouts/Container/Container';
@@ -8,10 +7,9 @@ import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import ProtectedButton from '@/components/ui/ProtectedButton';
-import { useAppDispatch } from '@/store';
-import { restoreProcurementSupplierThunk } from '@/store/slices/procurement/procurementSuppliersSlice';
 import type { IProcurementSupplierListRow } from '@/interface/procurement.interface';
 import useProveedores from './hooks/useProveedores';
+import useSupplierRestore from './hooks/useSupplierRestore';
 import ProveedoresFilters from './components/filters/ProveedoresFilters';
 import ProveedoresTable from './components/tables/ProveedoresTable';
 import ProveedorFormModal from './components/modals/ProveedorFormModal';
@@ -29,7 +27,6 @@ import DeactivateSupplierModal from './components/modals/DeactivateSupplierModal
  */
 const ProveedoresView = () => {
 	const navigate = useNavigate();
-	const dispatch = useAppDispatch();
 	const {
 		branchId,
 		subsidiaryId,
@@ -46,28 +43,23 @@ const ProveedoresView = () => {
 		setStatusValue,
 		onPaginationChange,
 		refresh,
+		refreshAfterMutation,
 	} = useProveedores();
 
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [deactivateTarget, setDeactivateTarget] = useState<IProcurementSupplierListRow | null>(
 		null,
 	);
-	const [restoringId, setRestoringId] = useState<number | null>(null);
 
 	const handleView = (id: number) => navigate(`/inventario/abastecimiento/proveedores/${id}`);
 
-	const handleRestore = async (row: IProcurementSupplierListRow) => {
-		setRestoringId(row.id);
-		try {
-			await dispatch(restoreProcurementSupplierThunk({ subsidiaryId, id: row.id })).unwrap();
-			toast.success(`${row.display_name} fue restaurado.`);
-			refresh();
-		} catch {
-			toast.error('No se pudo restaurar el proveedor.');
-		} finally {
-			setRestoringId(null);
-		}
-	};
+	const { restore, isRestoring } = useSupplierRestore({
+		subsidiaryId,
+		onSuccess: () => {
+			void refreshAfterMutation();
+		},
+	});
+	const handleRestore = (row: IProcurementSupplierListRow) => restore(row.id);
 
 	return (
 		<PageWrapper isProtectedRoute title='Proveedores'>
@@ -116,7 +108,7 @@ const ProveedoresView = () => {
 				<ProveedoresTable
 					rows={items}
 					meta={meta}
-					loading={loading || restoringId !== null}
+					loading={loading || isRestoring}
 					hasError={Boolean(error)}
 					hasSearch={hasSearch}
 					onPaginationChange={onPaginationChange}
@@ -131,6 +123,7 @@ const ProveedoresView = () => {
 			<ProveedorFormModal
 				isOpen={isCreateModalOpen}
 				setIsOpen={setIsCreateModalOpen}
+				branchId={branchId}
 				subsidiaryId={subsidiaryId}
 				supplier={null}
 				onSuccess={() => refresh()}
@@ -144,7 +137,7 @@ const ProveedoresView = () => {
 				}}
 				supplier={deactivateTarget}
 				subsidiaryId={subsidiaryId}
-				onDeactivated={refresh}
+				onDeactivated={refreshAfterMutation}
 			/>
 		</PageWrapper>
 	);
