@@ -20,6 +20,8 @@ interface EquipmentFormRouterProps {
 	readOnly?: boolean;
 	/** Called when user navigates between form sections */
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Guarda el borrador aunque la validación bloquee el avance de sección (ZF-102). */
+	onPersistDraft?: () => Promise<void> | void;
 	/** Registers a getter for current form values (used by auto-save) */
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	/** Whether auto-save is in progress */
@@ -40,6 +42,7 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 	isSubmitting,
 	readOnly,
 	onStepChange,
+	onPersistDraft,
 	registerGetFormValues,
 	isSaving,
 	initialSectionKey,
@@ -57,6 +60,7 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 		isSubmitting,
 		readOnly,
 		onStepChange,
+		onPersistDraft,
 		registerGetFormValues,
 		isSaving,
 		initialSectionKey,

@@ -3,12 +3,18 @@ import type {
 	ITechnicalReviewSchemaField,
 } from '@/interface/technicalReviews.interface';
 
+/**
+ * ZF-102. `powers_on` se exige para cerrar en notebook y desktop (`COMPLETION_REQUIREMENTS`
+ * del backend), pero sólo se había implementado en desktop: sin él en esta lista el campo
+ * no llegaba al formulario y ningún notebook podía finalizarse.
+ */
 export const ZF48_NOTEBOOK_FIELDS = [
 	'keyboard_condition',
 	'non_functional_keys_count',
 	'touchpad_condition',
 	'hinge_condition',
 	'speakers_condition',
+	'powers_on',
 ] as const;
 
 export const ZF48_DESKTOP_FIELDS = ['powers_on'] as const;

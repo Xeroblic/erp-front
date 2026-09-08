@@ -5,7 +5,7 @@ import { AioFormData } from '../../../validation/aio.schema';
 import { SelectionCard } from '../../../ui/SelectionCard';
 import { StepperInput } from '../../../ui/StepperInput';
 import Input from '@/components/form/Input';
-import Checkbox from '@/components/form/Checkbox';
+import { YesNoSelector } from '../../../ui/YesNoSelector';
 import { getAioLabel } from '../../../translations/aio.labels';
 import { AIO_HINTS, AIO_PLACEHOLDERS } from '../../../constants/aio/aio.hints';
 import {
@@ -63,30 +63,34 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 					</p>
 				</div>
 
-				{/* Is Touchscreen */}
-				<div className='flex items-center justify-between rounded-xl border border-blue-200 bg-blue-500/20 p-5 transition-colors duration-200 hover:bg-blue-500/30 dark:border-blue-800/50 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 md:col-span-1 lg:col-span-2'>
-					<div>
-						<label className='flex items-center gap-2 text-sm font-bold text-blue-900 dark:text-blue-100'>
-							<Icon icon='HeroHandRaised' className='h-5 w-5' />
-							{getAioLabel('is_touchscreen')}
-						</label>
-						<p className='mt-1 text-xs text-blue-800/70 dark:text-blue-200/70'>
-							¿La pantalla del AIO cuenta con digitalizador táctil nativo?
-						</p>
-					</div>
+				{/* Is Touchscreen (ZF-102) */}
+				{/* El switch pintaba `checked={Boolean(field.value)}`: sin responder se veía
+				    apagado, igual que un «No», y el paso se trababa sin explicar por qué.
+				    El selector de tres estados deja el campo visiblemente vacío hasta que
+				    alguien contesta, y el error se muestra junto al control. */}
+				<div className='rounded-xl border border-blue-200 bg-blue-500/20 p-5 transition-colors duration-200 hover:bg-blue-500/30 dark:border-blue-800/50 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 md:col-span-1 lg:col-span-2'>
+					<p className='mb-3 flex items-center justify-center gap-2 text-xs text-blue-800/70 dark:text-blue-200/70'>
+						<Icon icon='HeroHandRaised' className='h-5 w-5' />
+						¿La pantalla del AIO cuenta con digitalizador táctil nativo?
+					</p>
 					<Controller
 						name='is_touchscreen'
 						control={control}
 						render={({ field }) => (
-							<Checkbox
-								variant='switch'
-								checked={Boolean(field.value)}
-								onChange={() => !readOnly && field.onChange(!field.value)}
+							<YesNoSelector
+								label={getAioLabel('is_touchscreen')}
+								required
 								disabled={readOnly}
-								color='blue'
+								value={field.value}
+								onChange={(value) => !readOnly && field.onChange(value)}
 							/>
 						)}
 					/>
+					{errors.is_touchscreen && (
+						<p className='mt-2 text-center text-xs text-red-500'>
+							{errors.is_touchscreen.message}
+						</p>
+					)}
 				</div>
 			</div>
 
