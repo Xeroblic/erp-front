@@ -531,6 +531,11 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 				}),
 			),
 		);
+		// La fecha de emisión ya no se precarga (ZF-105): se escribe para poder
+		// comprobar que el vencimiento se autocalcula desde ella.
+		fireEvent.change(screen.getByLabelText('Fecha de emisión'), {
+			target: { value: '15-01-2026' },
+		});
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
@@ -757,6 +762,11 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'sin perfil' } });
 		fireEvent.click(await screen.findByText('Cliente sin perfil · Ana Pérez · 76.459.000-1'));
 
+		// La fecha de emisión ya no se precarga (ZF-105): se escribe para poder
+		// comprobar que el vencimiento se autocalcula desde ella.
+		fireEvent.change(screen.getByLabelText('Fecha de emisión'), {
+			target: { value: '15-01-2026' },
+		});
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
@@ -1049,6 +1059,11 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		fireEvent.click(
 			await screen.findByText('Cliente multi subsidiaria · Ana Pérez · 76.470.000-1'),
 		);
+		// La fecha de emisión ya no se precarga (ZF-105): se escribe para poder
+		// comprobar que el vencimiento se autocalcula desde ella.
+		fireEvent.change(screen.getByLabelText('Fecha de emisión'), {
+			target: { value: '15-01-2026' },
+		});
 		await waitFor(() =>
 			expect(apiSpies.fetchData).toHaveBeenCalledWith(
 				expect.objectContaining({

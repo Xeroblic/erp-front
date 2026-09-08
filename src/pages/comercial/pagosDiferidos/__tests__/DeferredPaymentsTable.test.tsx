@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { DEFERRED_PAYMENT_LIST_FIXTURES } from './deferredPaymentsTestData';
 import DeferredPaymentsTable from '../components/tables/DeferredPaymentsTable';
+import { formatDeferredPaymentDate } from '../utils';
 
 describe('DeferredPaymentsTable', () => {
 	it('delegates local sorting to the view owner', () => {
@@ -24,6 +25,35 @@ describe('DeferredPaymentsTable', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Ordenar por N° documento' }));
 
 		expect(onSort).toHaveBeenCalledWith('document_number');
+	});
+
+	it('muestra la fecha de emisión del documento y permite ordenar por ella', () => {
+		const onSort = vi.fn();
+		render(
+			<DeferredPaymentsTable
+				rows={[DEFERRED_PAYMENT_LIST_FIXTURES[0]]}
+				meta={null}
+				loading={false}
+				hasError={false}
+				hasFilters={false}
+				sort={null}
+				onSort={onSort}
+				onPaginationChange={vi.fn()}
+				onRowClick={vi.fn()}
+			/>,
+		);
+
+		expect(
+			screen.getByText(
+				formatDeferredPaymentDate(DEFERRED_PAYMENT_LIST_FIXTURES[0].issue_date),
+			),
+		).toBeInTheDocument();
+
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Ordenar por Fecha emisión documento' }),
+		);
+
+		expect(onSort).toHaveBeenCalledWith('issue_date');
 	});
 
 	it('no afirma que no hay documentos cuando la consulta falló', () => {

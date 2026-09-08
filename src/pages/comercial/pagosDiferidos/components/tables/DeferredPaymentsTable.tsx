@@ -40,6 +40,7 @@ interface DeferredPaymentsPaginationProps {
 
 export type DeferredPaymentsSortKey =
 	| 'document_number'
+	| 'issue_date'
 	| 'company'
 	| 'purchase_order'
 	| 'total_amount'
@@ -59,6 +60,8 @@ const getSortValue = (
 	switch (key) {
 		case 'document_number':
 			return row.document_number;
+		case 'issue_date':
+			return row.issue_date;
 		case 'company':
 			return getCustomerDisplayName(row);
 		case 'purchase_order':
@@ -155,12 +158,18 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 				)}
 			</CardHeader>
 			<CardBody className='overflow-x-auto p-0'>
-				<Table className='min-w-[1150px]'>
+				<Table className='min-w-[1300px]'>
 					<THead>
 						<Tr>
 							<SortableTableHeader
 								label='N° documento'
 								sortKey='document_number'
+								sort={sort}
+								onSort={onSort}
+							/>
+							<SortableTableHeader
+								label='Fecha emisión documento'
+								sortKey='issue_date'
 								sort={sort}
 								onSort={onSort}
 							/>
@@ -215,7 +224,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 					<TBody>
 						{!loading && hasError && (
 							<Tr>
-								<Td colSpan={8} className='py-12 text-center'>
+								<Td colSpan={9} className='py-12 text-center'>
 									<p className='font-medium text-red-700 dark:text-red-300'>
 										No fue posible mostrar los documentos
 									</p>
@@ -229,7 +238,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 						{loading &&
 							Array.from({ length: 5 }, (_, index) => (
 								<Tr key={`skeleton-${index}`}>
-									{Array.from({ length: 8 }, (__, cellIndex) => (
+									{Array.from({ length: 9 }, (__, cellIndex) => (
 										<Td key={`skeleton-${index}-${cellIndex}`}>
 											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
@@ -238,7 +247,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 							))}
 						{!loading && !hasError && rows.length === 0 && (
 							<Tr>
-								<Td colSpan={8} className='py-12 text-center'>
+								<Td colSpan={9} className='py-12 text-center'>
 									<p className='font-medium text-zinc-700 dark:text-zinc-200'>
 										{hasFilters
 											? 'Sin resultados para los filtros aplicados'
@@ -280,6 +289,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 											}
 										</p>
 									</Td>
+									<Td>{formatDeferredPaymentDate(row.issue_date)}</Td>
 									<Td>
 										<p className='font-medium'>
 											{row.customer.billing_company ||
