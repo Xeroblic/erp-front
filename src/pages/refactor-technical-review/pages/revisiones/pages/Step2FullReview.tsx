@@ -181,6 +181,14 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		[saveNow],
 	);
 
+	// ZF-102. El autoguardado por navegación sólo corría cuando la sección pasaba la
+	// validación: si el paso quedaba trabado, todo lo escrito en esa sección se perdía al
+	// salir. El mismo guardado silencioso corre ahora también en el intento bloqueado, que
+	// el backend acepta porque el PATCH de borrador no exige los campos de cierre.
+	const handlePersistDraft = useCallback(async () => {
+		await saveNow(true);
+	}, [saveNow]);
+
 	// Prepare default values by merging empty fields with factory attributes
 	const mergedDefaultValues = React.useMemo(() => {
 		const result = { ...(initialData?.details || {}) };
@@ -330,6 +338,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					isSubmitting={isSubmitting || loading}
 					readOnly={readOnly}
 					onStepChange={handleStepChange}
+					onPersistDraft={handlePersistDraft}
 					registerGetFormValues={registerGetFormValues}
 					isSaving={isSaving}
 					initialSectionKey={initialSectionKey}

@@ -4,6 +4,9 @@ import type { DeferredPaymentDocumentType } from '@/interface/deferredPayments.i
 export const DEFERRED_PAYMENT_TOTAL_ERROR = 'El total del documento debe ser mayor a 0';
 export const DEFERRED_PAYMENT_VAT_RATE = 0.19;
 
+export const DEFERRED_PAYMENT_ISSUE_DATE_FUTURE_ERROR =
+	'La fecha de emisión no puede ser posterior a hoy';
+
 export const DEFERRED_PAYMENT_DOCUMENT_TYPES: readonly DeferredPaymentDocumentType[] = [
 	'electronic_invoice',
 	'invoice',
@@ -42,6 +45,16 @@ const dateOnlySchema = (requiredMessage: string) =>
 	Yup.string()
 		.matches(/^\d{4}-\d{2}-\d{2}$/, 'Ingresa una fecha válida')
 		.required(requiredMessage);
+
+// Se evalúa en cada validación (no al importar el módulo) para que una sesión
+// abierta durante el cambio de día siga comparando contra el día correcto.
+const todayAsDateOnly = (): string => {
+	const now = new Date();
+	const year = now.getFullYear();
+	const month = String(now.getMonth() + 1).padStart(2, '0');
+	const day = String(now.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+};
 
 const optionalTextSchema = (maxLength: number, maxLengthMessage: string) =>
 	Yup.string().trim().max(maxLength, maxLengthMessage).nullable().optional();
@@ -99,7 +112,11 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 		.trim()
 		.max(50, 'El número de documento no puede superar los 50 caracteres')
 		.required('Ingresa el número de documento'),
-	issue_date: dateOnlySchema('Selecciona la fecha de emisión'),
+	issue_date: dateOnlySchema('Selecciona la fecha de emisión').test(
+		'issue-date-not-future',
+		DEFERRED_PAYMENT_ISSUE_DATE_FUTURE_ERROR,
+		(value) => !value || value <= todayAsDateOnly(),
+	),
 	due_date: dateOnlySchema('Selecciona la fecha de vencimiento').test(
 		'due-date-after-issue-date',
 		'La fecha de vencimiento no puede ser anterior a la fecha de emisión',

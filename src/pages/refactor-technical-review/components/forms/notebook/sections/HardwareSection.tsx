@@ -19,6 +19,10 @@ import {
 	getHardwareVisualValidationMessage,
 	useHardwareAbsence,
 } from '../../shared/useHardwareAbsence';
+import { getSchemaFieldOptions } from '../../../validation/technicalReviewSchema';
+
+/** Valor de `speakers_condition` que el backend publica para «sin audio o distorsionado». */
+const NON_FUNCTIONAL_SPEAKERS = 'broken';
 
 const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	control,
@@ -27,7 +31,16 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	watch,
 	setValue,
 	onDirectSubmit,
+	schemaFields,
 }) => {
+	// ZF-102. El atajo cierra la revisión de una sola pasada, así que tiene que responder los
+	// campos que el backend exige al completar: `powers_on` —el motivo mismo del atajo— y el
+	// contador de teclas se fijan siempre; los parlantes dependen del catálogo remoto y sólo
+	// se responden si el backend publica ese valor, porque inventarlo produciría un 422 en el
+	// submit final, que no sanea por `allowed_values`.
+	const speakersBroken = getSchemaFieldOptions(schemaFields?.speakers_condition).some(
+		(option) => option.value === NON_FUNCTIONAL_SPEAKERS,
+	);
 	const ramType = watch('ram_type');
 	const storageTech = watch('storage_technology');
 	const noRam = watch('has_no_ram') === true;
@@ -72,6 +85,11 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								ram_type: watch('ram_type') || undefined,
 								storage_size: watch('storage_size') || undefined,
 								storage_technology: watch('storage_technology') || undefined,
+								powers_on: false,
+								non_functional_keys_count: watch('non_functional_keys_count') ?? 0,
+								...(speakersBroken
+									? { speakers_condition: NON_FUNCTIONAL_SPEAKERS }
+									: {}),
 								general_condition: 'scrap',
 								screen_condition: 'broken',
 								cover_condition: 'broken',
