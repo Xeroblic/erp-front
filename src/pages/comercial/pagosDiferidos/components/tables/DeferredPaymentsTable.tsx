@@ -46,6 +46,7 @@ export type DeferredPaymentsSortKey =
 	| 'total_amount'
 	| 'outstanding_amount'
 	| 'due_date'
+	| 'paid_at'
 	| 'status'
 	| 'days_until_due';
 export type DeferredPaymentsSortState = TableSortState<DeferredPaymentsSortKey>;
@@ -72,6 +73,8 @@ const getSortValue = (
 			return Number(row.outstanding_amount);
 		case 'due_date':
 			return row.due_date;
+		case 'paid_at':
+			return row.paid_at;
 		case 'status':
 			return DEFERRED_PAYMENT_STATUS_LABELS[row.status];
 		case 'days_until_due':
@@ -158,7 +161,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 				)}
 			</CardHeader>
 			<CardBody className='overflow-x-auto p-0'>
-				<Table className='min-w-[1300px]'>
+				<Table className='min-w-[1420px]'>
 					<THead>
 						<Tr>
 							<SortableTableHeader
@@ -206,6 +209,12 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 								onSort={onSort}
 							/>
 							<SortableTableHeader
+								label='Fecha de pago'
+								sortKey='paid_at'
+								sort={sort}
+								onSort={onSort}
+							/>
+							<SortableTableHeader
 								label='Estado del pago'
 								sortKey='status'
 								sort={sort}
@@ -224,7 +233,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 					<TBody>
 						{!loading && hasError && (
 							<Tr>
-								<Td colSpan={9} className='py-12 text-center'>
+								<Td colSpan={10} className='py-12 text-center'>
 									<p className='font-medium text-red-700 dark:text-red-300'>
 										No fue posible mostrar los documentos
 									</p>
@@ -238,7 +247,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 						{loading &&
 							Array.from({ length: 5 }, (_, index) => (
 								<Tr key={`skeleton-${index}`}>
-									{Array.from({ length: 9 }, (__, cellIndex) => (
+									{Array.from({ length: 10 }, (__, cellIndex) => (
 										<Td key={`skeleton-${index}-${cellIndex}`}>
 											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
@@ -247,7 +256,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 							))}
 						{!loading && !hasError && rows.length === 0 && (
 							<Tr>
-								<Td colSpan={9} className='py-12 text-center'>
+								<Td colSpan={10} className='py-12 text-center'>
 									<p className='font-medium text-zinc-700 dark:text-zinc-200'>
 										{hasFilters
 											? 'Sin resultados para los filtros aplicados'
@@ -306,6 +315,11 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 										{formatDeferredPaymentAmount(row.outstanding_amount)}
 									</Td>
 									<Td>{formatDeferredPaymentDate(row.due_date)}</Td>
+									<Td>
+										{row.paid_at === null
+											? '\u2014'
+											: formatDeferredPaymentDate(row.paid_at)}
+									</Td>
 									<Td>
 										<div className='flex justify-center'>
 											<DeferredStatusPill status={row.status} />

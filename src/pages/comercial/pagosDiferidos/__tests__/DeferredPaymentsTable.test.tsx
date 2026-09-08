@@ -183,4 +183,62 @@ describe('DeferredPaymentsTable', () => {
 		expect(screen.getByText('Camila Araya')).toBeInTheDocument();
 		expect(screen.getByText('55.000.001-2')).toBeInTheDocument();
 	});
+	it('muestra la fecha de pago inmediatamente después del vencimiento y ordena por ella', () => {
+		const onSort = vi.fn();
+		const paidRow = {
+			...DEFERRED_PAYMENT_LIST_FIXTURES[0],
+			status: 'paid' as const,
+			paid_at: '2026-03-14T10:30:00-03:00',
+		};
+		render(
+			<DeferredPaymentsTable
+				rows={[paidRow]}
+				meta={null}
+				loading={false}
+				hasError={false}
+				hasFilters={false}
+				sort={null}
+				onSort={onSort}
+				onPaginationChange={vi.fn()}
+				onRowClick={vi.fn()}
+			/>,
+		);
+
+		const headers = screen.getAllByRole('columnheader').map((header) => header.textContent);
+		expect(headers.indexOf('Fecha de pago')).toBe(headers.indexOf('Vencimiento') + 1);
+
+		expect(screen.getByText(formatDeferredPaymentDate(paidRow.paid_at))).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: 'Ordenar por Fecha de pago' }));
+
+		expect(onSort).toHaveBeenCalledWith('paid_at');
+	});
+
+	it('deja la fecha de pago vacía mientras el documento sigue por cobrar', () => {
+		const outstandingRow = {
+			...DEFERRED_PAYMENT_LIST_FIXTURES[0],
+			status: 'pending' as const,
+			purchase_order: 'OC-202601',
+			days_until_due: 5,
+			is_overdue: false,
+			paid_at: null,
+		};
+		render(
+			<DeferredPaymentsTable
+				rows={[outstandingRow]}
+				meta={null}
+				loading={false}
+				hasError={false}
+				hasFilters={false}
+				sort={null}
+				onSort={vi.fn()}
+				onPaginationChange={vi.fn()}
+				onRowClick={vi.fn()}
+			/>,
+		);
+
+		// El único guion de la fila es el de la fecha de pago: la OC trae valor y el
+		// vencimiento muestra su badge de días.
+		expect(screen.getAllByText('—')).toHaveLength(1);
+	});
 });

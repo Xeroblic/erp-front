@@ -37,6 +37,7 @@ const createRow = (
 	days_until_due: status === 'paid' ? null : daysUntilDue,
 	due_date: toIsoDate(daysUntilDue),
 	issue_date: toIsoDate(daysUntilDue - 30),
+	paid_at: status === 'paid' ? `${toIsoDate(daysUntilDue - 1)}T12:00:00.000Z` : null,
 	customer: { id, billing_company: company, contact_name: null, rut },
 });
 

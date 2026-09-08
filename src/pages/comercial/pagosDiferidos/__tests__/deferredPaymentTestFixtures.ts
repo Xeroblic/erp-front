@@ -16,6 +16,7 @@ const createDocument = (
 	days_until_due: status === 'paid' ? null : 15,
 	due_date: '2026-08-15',
 	issue_date: '2026-07-31',
+	paid_at: null,
 	notes: 'Documento de prueba',
 	customer: {
 		id: 1,
