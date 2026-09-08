@@ -74,6 +74,12 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 								ram_type: watch('ram_type') || undefined,
 								storage_size: watch('storage_size') || undefined,
 								storage_technology: watch('storage_technology') || undefined,
+								// ZF-102. `powers_on` es el único campo que el backend exige para
+								// cerrar un desktop (`COMPLETION_REQUIREMENTS`), y vive en la sección
+								// Estética: el atajo cierra la revisión de una sola pasada, así que si
+								// no lo responde acá el técnico nunca llega a responderlo y el cierre
+								// muere con «Debes completar si el equipo enciende».
+								powers_on: false,
 								general_condition: 'scrap',
 								cover_condition: 'broken',
 								vga_ports: 0,
