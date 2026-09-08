@@ -148,7 +148,7 @@ describe('createPurchaseDocument', () => {
 		const { data } = await createPurchaseDocument(SUBSIDIARY_A, basePayload);
 		expect(data.status).toBe('draft');
 		expect(data.supplier).toBeNull();
-		expect(data.allowed_actions).toEqual(['update', 'confirm', 'cancel']);
+		expect(data.allowed_actions).toEqual(['update', 'confirm', 'cancel', 'add_attachment']);
 	});
 
 	it('items vacíos es 422 PURCHASE_DOCUMENT_ITEMS_EMPTY', async () => {
@@ -399,7 +399,7 @@ describe('confirmPurchaseDocument', () => {
 		expect(data.status).toBe('confirmed');
 		expect(data.reception_status).toBe('pending');
 		expect(data.supplier_snapshot).toBeNull();
-		expect(data.allowed_actions).toEqual(['cancel']);
+		expect(data.allowed_actions).toEqual(['cancel', 'add_attachment']);
 	});
 
 	it('confirma una factura con proveedor completo: fija el snapshot histórico', async () => {

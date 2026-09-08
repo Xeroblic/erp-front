@@ -5,6 +5,7 @@ import type {
 	IProcurementProduct,
 	IProcurementSupplier,
 	IPurchaseDocument,
+	IPurchaseDocumentAttachment,
 	IPurchaseDocumentCompact,
 	ISupplierCompact,
 	IWarehouseCompact,
@@ -482,10 +483,10 @@ export const allowedActionsByState: Record<string, TProcurementAllowedAction[]> 
  * stock_receipts: 1`), así que el mock la deja **sin `cancel`** en
  * `allowed_actions`: el contrato prohíbe anular con recepciones posted.
  *
- * `create_receipt` y `add_attachment` se omiten a propósito de todo
- * `allowed_actions` de este fixture: esta card no ofrece esas dos acciones
- * porque las recepciones (card 05) y los adjuntos (card 04) todavía no
- * existen — un botón que no lleva a ninguna parte es peor que no ofrecerlo.
+ * `create_receipt` se omite a propósito: la card 05 (recepciones físicas)
+ * todavía no existe — un botón que no lleva a ninguna parte es peor que no
+ * ofrecerlo. `add_attachment` sí corresponde: el documento está `confirmed`,
+ * no `cancelled`, y la card 04 ya permite adjuntar en ese estado.
  */
 export const pcExpressInvoiceDocument: IPurchaseDocument = {
 	id: 24,
@@ -499,7 +500,7 @@ export const pcExpressInvoiceDocument: IPurchaseDocument = {
 	supplier: pcExpressSupplier,
 	items_count: 1,
 	created_at: '2026-09-03T09:15:00-03:00',
-	allowed_actions: [],
+	allowed_actions: ['add_attachment'],
 	// Ficha histórica al momento de confirmar: si PCExpress cambiara de
 	// nombre o se desactivara después, este snapshot no se mueve.
 	supplier_snapshot: pcExpressSupplierFull,
@@ -520,7 +521,9 @@ export const pcExpressInvoiceDocument: IPurchaseDocument = {
 			received_distribution: [{ branch_id: 4, warehouse: mainWarehouse, quantity: 10 }],
 		},
 	],
-	related_counts: { stock_receipts: 1, initial_stock_allocations: 0, attachments: 0 },
+	// `attachments: 1` — coincide con `pcExpressInvoiceAttachment`, la única
+	// entrada de `purchaseDocumentAttachmentsSeed` para este documento.
+	related_counts: { stock_receipts: 1, initial_stock_allocations: 0, attachments: 1 },
 	confirmed_at: '2026-09-04T11:30:00-03:00',
 	cancelled_at: null,
 	cancellation_reason: null,
@@ -545,7 +548,7 @@ export const draftReceiptDocument: IPurchaseDocument = {
 	supplier: null,
 	items_count: 1,
 	created_at: '2026-09-06T10:00:00-03:00',
-	allowed_actions: ['update', 'confirm', 'cancel'],
+	allowed_actions: ['update', 'confirm', 'cancel', 'add_attachment'],
 	supplier_snapshot: null,
 	notes: null,
 	items: [
@@ -589,7 +592,7 @@ export const draftInvoiceDocument: IPurchaseDocument = {
 	supplier: pcExpressSupplier,
 	items_count: 2,
 	created_at: '2026-09-07T15:20:00-03:00',
-	allowed_actions: ['update', 'confirm', 'cancel'],
+	allowed_actions: ['update', 'confirm', 'cancel', 'add_attachment'],
 	supplier_snapshot: null,
 	notes: 'Reposición de mouse para sucursal centro.',
 	items: [
@@ -678,6 +681,40 @@ export const purchaseDocuments: IPurchaseDocument[] = [
 	draftInvoiceDocument,
 	cancelledInvoiceDocument,
 ];
+
+/* =================================================
+   Adjuntos privados de documentos de compra — sección 6 del contrato
+   ================================================= */
+
+/**
+ * Adjunto de ejemplo del documento confirmado `pcExpressInvoiceDocument`
+ * (id 24): la factura escaneada que respalda la compra. Campos literales de
+ * la subsección «Adjuntos privados» — `{id, file_name, mime_type, size,
+ * created_at}`, **sin URL pública**, tal como exige el contrato.
+ */
+export const pcExpressInvoiceAttachment: IPurchaseDocumentAttachment = {
+	id: 1,
+	file_name: 'factura-1234.pdf',
+	mime_type: 'application/pdf',
+	size: 184_320,
+	created_at: '2026-09-04T11:32:00-03:00',
+};
+
+/**
+ * Semilla de adjuntos por documento, indexada por id de documento de compra.
+ * Un documento sin entrada acá nace **sin adjuntos**: la lista vacía es un
+ * estado válido del mock (sección 6: «los adjuntos no son requisito para
+ * confirmar»), no un hueco. El servicio mock
+ * (`purchaseDocumentAttachments.service`) clona esta semilla a su propio
+ * store en memoria, particionado por filial, igual que el resto del módulo.
+ *
+ * El contenido binario no viaja acá: el contrato no da un ejemplo de bytes,
+ * y el mock sintetiza uno al servir la descarga — ver el comentario de
+ * `buildMockAttachmentContent` en el servicio.
+ */
+export const purchaseDocumentAttachmentsSeed: Record<number, IPurchaseDocumentAttachment[]> = {
+	[pcExpressInvoiceDocument.id]: [pcExpressInvoiceAttachment],
+};
 
 /* =================================================
    Envoltorio y paginación — sección 3 del contrato

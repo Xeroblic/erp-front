@@ -515,6 +515,47 @@ export type IPurchaseDocumentListParams = IPurchaseDocumentListFilters &
 	Partial<IProcurementPageParams>;
 
 /* =================================================
+   Adjuntos privados del documento de compra — sección 6 del contrato
+   ================================================= */
+
+/**
+ * Tipos MIME aceptados para un adjunto (sección 6: «PDF/JPG/PNG»). El backend
+ * los valida por contenido, no por extensión; el cliente los usa para el
+ * `accept` del input y para rechazar antes de subir.
+ */
+export const PURCHASE_DOCUMENT_ATTACHMENT_ALLOWED_MIME_TYPES = [
+	'application/pdf',
+	'image/jpeg',
+	'image/png',
+] as const;
+
+export type TPurchaseDocumentAttachmentMimeType =
+	(typeof PURCHASE_DOCUMENT_ATTACHMENT_ALLOWED_MIME_TYPES)[number];
+
+/** Máximo por archivo (sección 6: «máximo 10 MB por archivo»). */
+export const PURCHASE_DOCUMENT_ATTACHMENT_MAX_SIZE_BYTES = 10 * 1024 * 1024;
+
+/** Cupo por documento (sección 6: «10 archivos por documento»). */
+export const PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT = 10;
+
+/**
+ * Adjunto tal como viaja en la lista y en la respuesta de subida (sección 6).
+ * **Sin URL pública a propósito**: ni acá ni en ningún otro tipo del módulo
+ * hay un campo de URL para este recurso — la vista previa y la descarga se
+ * resuelven con una petición autenticada, nunca con `<img src>` ni un enlace
+ * directo.
+ */
+export interface IPurchaseDocumentAttachment {
+	id: number;
+	file_name: string;
+	mime_type: TPurchaseDocumentAttachmentMimeType;
+	size: number;
+	created_at: TIsoTimestamp;
+}
+
+export type IPurchaseDocumentAttachmentListParams = Partial<IProcurementPageParams>;
+
+/* =================================================
    Paginación de las peticiones
    ================================================= */
 

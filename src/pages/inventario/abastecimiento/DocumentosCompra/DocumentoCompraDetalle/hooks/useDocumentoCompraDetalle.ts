@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -11,6 +11,7 @@ import {
 	selectPurchaseDocumentCurrentLoading,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
+import type { IDocumentAttachmentsCardHandle } from '../components/parts/DocumentAttachmentsCard';
 
 /**
  * Ficha de documento de compra (sección 6 del contrato). A diferencia del
@@ -66,11 +67,19 @@ const useDocumentoCompraDetalle = () => {
 		void dispatch(fetchPurchaseDocumentDetail({ subsidiaryId, id }));
 	}, [dispatch, subsidiaryId, id]);
 
+	/**
+	 * El botón «Adjuntar» de `AllowedActionsToolbar` no abre un modal propio:
+	 * `DocumentAttachmentsCard` ya vive siempre visible en el detalle, así que
+	 * la acción sólo enfoca su selector de archivos vía este ref.
+	 */
+	const attachmentsCardRef = useRef<IDocumentAttachmentsCardHandle>(null);
+
 	/** Traduce el click de `AllowedActionsToolbar` a la interacción de esta pantalla. */
 	const handleAction = useCallback((action: TProcurementAllowedAction) => {
 		if (action === 'update') setIsFormModalOpen(true);
 		else if (action === 'confirm') setIsConfirmModalOpen(true);
 		else if (action === 'cancel') setIsCancelModalOpen(true);
+		else if (action === 'add_attachment') attachmentsCardRef.current?.openFilePicker();
 	}, []);
 
 	return {
@@ -87,6 +96,7 @@ const useDocumentoCompraDetalle = () => {
 		setIsConfirmModalOpen,
 		isCancelModalOpen,
 		setIsCancelModalOpen,
+		attachmentsCardRef,
 		handleAction,
 		goToList,
 		retry,

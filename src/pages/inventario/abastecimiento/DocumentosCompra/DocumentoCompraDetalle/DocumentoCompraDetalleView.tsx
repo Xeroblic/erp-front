@@ -20,6 +20,7 @@ import PurchaseDocumentLinesTable from '../components/parts/PurchaseDocumentLine
 import DocumentoCompraFormModal from '../components/modals/DocumentoCompraFormModal';
 import ConfirmDocumentoCompraModal from '../components/modals/ConfirmDocumentoCompraModal';
 import CancelDocumentoCompraModal from '../components/modals/CancelDocumentoCompraModal';
+import DocumentAttachmentsCard from './components/parts/DocumentAttachmentsCard';
 import RelatedCountsCard from './components/parts/RelatedCountsCard';
 import RelatedListCard from './components/parts/RelatedListCard';
 import useDocumentoCompraDetalle from './hooks/useDocumentoCompraDetalle';
@@ -45,6 +46,7 @@ const DocumentoCompraDetalleView = () => {
 		setIsConfirmModalOpen,
 		isCancelModalOpen,
 		setIsCancelModalOpen,
+		attachmentsCardRef,
 		handleAction,
 		goToList,
 		retry,
@@ -236,6 +238,15 @@ const DocumentoCompraDetalleView = () => {
 						/>
 
 						<RelatedCountsCard relatedCounts={document.related_counts} />
+
+						<DocumentAttachmentsCard
+							ref={attachmentsCardRef}
+							documentId={document.id}
+							documentStatus={document.status}
+							subsidiaryId={subsidiaryId}
+							branchId={branchId}
+							onChanged={retry}
+						/>
 
 						<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
 							<RelatedListCard
