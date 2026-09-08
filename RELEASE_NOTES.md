@@ -4,6 +4,24 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 
 ---
 
+## [v2.4.0] - 2026-09-08
+
+**Enfoque de la versión:** Revisión técnica estructurada según el contrato del backend, unificación del flujo comercial entre Cotizaciones y Pagos Diferidos, primera entrega de Retiros de Equipos y gates de calidad ejecutados en cada pull request.
+
+### Puntos Destacados:
+
+- **Revisiones técnicas:** puertos defectuosos y sueltos como campos independientes con desglose por tipo, cubierta y marcas de teclado, estado del candado en docking y contadores de pantalla normalizados en todas las rutas de escritura.
+- **Cierre de revisiones destrabado:** notebook, AIO y el atajo «Equipo NO ENCIENDE» de desktop responden los campos que el backend exige para finalizar, y el payload deja de enviar campos sin columna que se descartaban en silencio.
+- **Cotizaciones:** selector de clientes compartido con búsqueda server-side, IVA por ítem alineado con Pagos Diferidos, alta rápida con nombre utilizable y encabezado accesible con título de pestaña correcto.
+- **Pagos diferidos:** fecha de emisión editable, obligatoria y no futura, más las columnas de emisión y de fecha de pago en la tabla de cobranza.
+- **Retiros de equipos:** primera card del módulo con listado, slice y contrato de API.
+- **Catálogo, usuarios y autorización:** ancho acotado de la columna Producto, paginación y búsqueda de usuarios contra el servidor y fallback deshabilitado respetado en acciones protegidas.
+- **Calidad:** `typecheck` y la suite completa se ejecutan en CI en cada PR; 123 archivos de prueba y 888 pruebas en verde.
+
+[Ver archivo detallado en Docs/releases/v2.4.0.md](./Docs/releases/v2.4.0.md)
+
+---
+
 ## [v2.3.1] - 2026-08-27
 
 **Enfoque de la versión:** Estabilidad de Revisiones Técnicas, Inventario y Cartera de Crédito, con endurecimiento de contratos visibles, permisos y calidad.
