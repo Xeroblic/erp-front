@@ -217,10 +217,39 @@ const GENERIC_DEFINITION: IProcurementErrorDefinition = define(
 	'fix_input',
 );
 
+/**
+ * Fallo de transporte: la petición salió y no volvió respuesta (timeout, red
+ * caída, petición abortada). **No prueba que la escritura no haya llegado**, así
+ * que la única recuperación segura es reintentar con la misma
+ * `Idempotency-Key`; generar otra convierte el reintento en una segunda
+ * operación.
+ */
+const TRANSPORT_DEFINITION: IProcurementErrorDefinition = define(
+	'TRANSPORT_FAILURE',
+	0,
+	'No pudimos confirmar si la operación llegó al servidor. Reintenta sin cambiar los datos.',
+	'retry_same_key',
+);
+
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
 	value !== null && typeof value === 'object' && !Array.isArray(value)
 		? (value as Record<string, unknown>)
 		: undefined;
+
+/**
+ * Detecta el fallo de transporte. Vive acá, junto al resto de la clasificación,
+ * para que `action` y los helpers de reintento no puedan discrepar: cuando cada
+ * uno decidía por su cuenta, un timeout devolvía `fix_input` («corrige los
+ * datos», que implica clave nueva) y a la vez «reintenta con la misma clave».
+ */
+export const isTransportError = (error: unknown): boolean => {
+	const record = asRecord(error);
+	if (!record) return false;
+
+	if (asRecord(record.response)) return false;
+
+	return record.isAxiosError === true || record.request !== undefined;
+};
 
 const asString = (value: unknown): string | undefined =>
 	typeof value === 'string' && value.trim() ? value.trim() : undefined;
@@ -274,6 +303,20 @@ export const resolveProcurementError = (
 			status: null,
 			message: error.trim(),
 			action: GENERIC_DEFINITION.action,
+			fieldErrors: null,
+			context: null,
+		};
+	}
+
+	// Antes de leer `code`: sin respuesta, el `code` que trae el error es el de
+	// Axios (`ECONNABORTED`, `ERR_NETWORK`), no un código estable del contrato.
+	// Presentarlo como tal haría pasar un fallo de red por un error de negocio.
+	if (isTransportError(error)) {
+		return {
+			code: TRANSPORT_DEFINITION.code,
+			status: null,
+			message: TRANSPORT_DEFINITION.fallbackMessage,
+			action: TRANSPORT_DEFINITION.action,
 			fieldErrors: null,
 			context: null,
 		};

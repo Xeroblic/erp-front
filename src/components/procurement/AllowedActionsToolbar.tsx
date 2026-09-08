@@ -23,8 +23,12 @@ import type { TProcurementAllowedAction } from '@/interface/procurement.interfac
 export interface IAllowedActionDefinition {
 	label: string;
 	icon: TIcons;
-	/** Permiso funcional del contrato (sección 15) que exige el endpoint. */
-	permission: string;
+	/**
+	 * Permisos funcionales del contrato (sección 15) que exige el endpoint. Es
+	 * un array porque algunas acciones cruzan dos entidades y necesitan el
+	 * permiso de ambas: se exigen **todos**, nunca cualquiera.
+	 */
+	permissions: string[];
 	color: TColors;
 	/** Acciones destructivas o irreversibles piden confirmación en la card. */
 	isDestructive?: boolean;
@@ -52,20 +56,20 @@ export const PROCUREMENT_ACTION_DEFINITIONS: Record<
 		update: {
 			label: 'Editar',
 			icon: 'HeroPencilSquare',
-			permission: 'edit-procurement-supplier',
+			permissions: ['edit-procurement-supplier'],
 			color: 'zinc',
 		},
 		deactivate: {
 			label: 'Desactivar',
 			icon: 'HeroNoSymbol',
-			permission: 'delete-procurement-supplier',
+			permissions: ['delete-procurement-supplier'],
 			color: 'amber',
 			isDestructive: true,
 		},
 		restore: {
 			label: 'Restaurar',
 			icon: 'HeroArrowPathRoundedSquare',
-			permission: 'restore-procurement-supplier',
+			permissions: ['restore-procurement-supplier'],
 			color: 'blue',
 		},
 	},
@@ -73,19 +77,19 @@ export const PROCUREMENT_ACTION_DEFINITIONS: Record<
 		update: {
 			label: 'Editar',
 			icon: 'HeroPencilSquare',
-			permission: 'edit-purchase-document',
+			permissions: ['edit-purchase-document'],
 			color: 'zinc',
 		},
 		confirm: {
 			label: 'Confirmar',
 			icon: 'HeroCheckCircle',
-			permission: 'confirm-purchase-document',
+			permissions: ['confirm-purchase-document'],
 			color: 'emerald',
 		},
 		cancel: {
 			label: 'Anular',
 			icon: 'HeroXCircle',
-			permission: 'cancel-purchase-document',
+			permissions: ['cancel-purchase-document'],
 			color: 'red',
 			isDestructive: true,
 		},
@@ -94,13 +98,13 @@ export const PROCUREMENT_ACTION_DEFINITIONS: Record<
 		create_receipt: {
 			label: 'Crear recepción',
 			icon: 'HeroInboxArrowDown',
-			permission: 'edit-product',
+			permissions: ['edit-product'],
 			color: 'blue',
 		},
 		add_attachment: {
 			label: 'Adjuntar',
 			icon: 'HeroPaperClip',
-			permission: 'edit-purchase-document',
+			permissions: ['edit-purchase-document'],
 			color: 'zinc',
 		},
 	},
@@ -108,41 +112,43 @@ export const PROCUREMENT_ACTION_DEFINITIONS: Record<
 		update: {
 			label: 'Editar',
 			icon: 'HeroPencilSquare',
-			permission: 'edit-product',
+			permissions: ['edit-product'],
 			color: 'zinc',
 		},
 		post: {
 			label: 'Contabilizar',
 			icon: 'HeroPaperAirplane',
-			permission: 'edit-product',
+			permissions: ['edit-product'],
 			color: 'emerald',
 		},
 		retry: {
 			label: 'Reintentar',
 			icon: 'HeroArrowPath',
-			permission: 'edit-product',
+			permissions: ['edit-product'],
 			color: 'blue',
 		},
 		cancel: {
 			label: 'Anular',
 			icon: 'HeroXCircle',
-			permission: 'edit-product',
+			permissions: ['edit-product'],
 			color: 'red',
 			isDestructive: true,
 		},
 		reverse: {
 			label: 'Revertir',
 			icon: 'HeroArrowUturnLeft',
-			permission: 'edit-product',
+			permissions: ['edit-product'],
 			color: 'red',
 			isDestructive: true,
 		},
 		// Vincular exige el contexto de ambas entidades: `edit-product` sobre el
-		// stock y `view-purchase-document` sobre el documento que se asocia.
+		// stock y `view-purchase-document` sobre el documento que se asocia. Los
+		// dos se piden acá y no en cada pantalla: la primera card que olvidara el
+		// segundo guard mostraría el botón a quien no puede usarlo.
 		link_purchase_document: {
 			label: 'Vincular documento',
 			icon: 'HeroLink',
-			permission: 'edit-product',
+			permissions: ['edit-product', 'view-purchase-document'],
 			color: 'blue',
 		},
 	},
@@ -211,7 +217,8 @@ const AllowedActionsToolbar: FC<IAllowedActionsToolbarProps> = ({
 				return (
 					<ProtectedButton
 						key={action}
-						permission={definition.permission}
+						permissions={definition.permissions}
+						requireAll
 						branchId={branchId}
 						subsidiaryId={subsidiaryId}
 						scope={scope}

@@ -22,6 +22,29 @@ const DECIMAL_TWO_PLACES = /^\d+([.,]\d{1,2})?$/;
 /** Normaliza la coma decimal que se escribe en es-CL antes de validar/enviar. */
 export const normalizeCostInput = (value: string): string => value.trim().replace(',', '.');
 
+/**
+ * Ausencia tal como llega al schema, que **no** es una sola forma:
+ *
+ * - Formik normaliza `''` a `undefined` antes de validar
+ *   (`prepareDataForValidation`), así que un campo vacío llega como `undefined`.
+ * - Un campo con sólo espacios llega tal cual, porque Formik no lo considera vacío.
+ * - Quien valide el schema directamente (`validate`, `validateAt`, una prueba)
+ *   sí manda `''`.
+ *
+ * Comparar contra una sola de esas formas es lo que hacía que el costo opcional
+ * rechazara el estado que existe precisamente para permitirlo.
+ */
+const isAbsentValue = (value: unknown): boolean =>
+	value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
+
+/**
+ * Convierte la ausencia en `undefined` para que `matches` y `oneOf` la omitan:
+ * Yup 1.x salta esas validaciones ante `undefined`, pero no ante `''` ni ante
+ * una cadena de espacios. Cubre el campo con espacios que Formik deja pasar y el
+ * `''` de quien valide el schema sin Formik.
+ */
+const absentToUndefined = (value: unknown): unknown => (isAbsentValue(value) ? undefined : value);
+
 export const COST_ENTRY_BASIS_OPTIONS: { value: TCostEntryBasis; label: string }[] = [
 	{ value: 'net', label: 'Neto' },
 	{ value: 'gross', label: 'Bruto' },
@@ -51,24 +74,26 @@ export const costEntrySchema = Yup.object({
  * «monto presente exige base y viceversa».
  */
 export const optionalCostEntrySchema = Yup.object({
-	unit_cost: amountRules.test(
-		'monto-exige-base',
-		'Indica el costo unitario o deja ambos campos vacíos.',
-		function validate(value) {
-			const basis = (this.parent as ICostEntryFormValues).unit_cost_basis;
+	unit_cost: amountRules
+		.transform(absentToUndefined)
+		.test(
+			'monto-exige-base',
+			'Indica el costo unitario o deja ambos campos vacíos.',
+			function validate(value) {
+				const { unit_cost_basis: basis } = this.parent as ICostEntryFormValues;
 
-			return !(basis !== '' && (value === undefined || value.trim() === ''));
-		},
-	),
-	unit_cost_basis: basisRules.test(
-		'base-exige-monto',
-		'Indica si el monto es neto o bruto.',
-		function validate(value) {
-			const amount = (this.parent as ICostEntryFormValues).unit_cost;
+				// Ambos ausentes es válido: el costo desconocido es un estado del
+				// contrato. Con base elegida, el monto pasa a ser obligatorio.
+				return isAbsentValue(basis) || !isAbsentValue(value);
+			},
+		),
+	unit_cost_basis: basisRules
+		.transform(absentToUndefined)
+		.test('base-exige-monto', 'Indica si el monto es neto o bruto.', function validate(value) {
+			const { unit_cost: amount } = this.parent as ICostEntryFormValues;
 
-			return !(amount !== undefined && amount.trim() !== '' && !value);
-		},
-	),
+			return isAbsentValue(amount) || !isAbsentValue(value);
+		}),
 });
 
 /**

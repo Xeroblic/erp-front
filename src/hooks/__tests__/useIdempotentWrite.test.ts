@@ -38,6 +38,12 @@ describe('useIdempotentWrite', () => {
 
 		await waitFor(() => expect(result.current.canRetry).toBe(true));
 
+		// El mensaje que ve la pantalla y la decisión de reintento tienen que
+		// coincidir: «reintenta sin cambiar los datos» y `canRetry`, no
+		// «corrige los datos» —que implicaría clave nueva— junto a `canRetry`.
+		expect(result.current.error?.action).toBe('retry_same_key');
+		expect(result.current.error?.code).toBe('TRANSPORT_FAILURE');
+
 		await act(async () => {
 			await result.current.submit(write);
 		});
@@ -54,6 +60,8 @@ describe('useIdempotentWrite', () => {
 		});
 
 		await waitFor(() => expect(result.current.error?.code).toBe('UNIT_COST_REQUIRED'));
+		// Error definitivo: la instrucción es corregir, y por eso no se reintenta.
+		expect(result.current.error?.action).toBe('fix_input');
 		expect(result.current.canRetry).toBe(false);
 
 		const keyBefore = result.current.idempotencyKey;

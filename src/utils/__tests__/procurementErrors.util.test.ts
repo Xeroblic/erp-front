@@ -120,6 +120,22 @@ describe('cabeceras de escritura', () => {
 		expect(readEtagHeader({})).toBeNull();
 	});
 
+	it('clasifica el timeout como reintento con la misma clave, sin contradecirse', () => {
+		// `action` y `shouldRetryWithSameKey` tienen que decir lo mismo. Cuando la
+		// clasificación devolvía `fix_input` para un fallo de transporte, la
+		// pantalla leía «corrige los datos» —que implica clave nueva— mientras el
+		// helper decía «reintenta con la misma»: instrucciones incompatibles para
+		// el caso donde equivocarse duplica una recepción.
+		const timeout = { isAxiosError: true, code: 'ECONNABORTED', request: {} };
+		const resolved = resolveProcurementError(timeout);
+
+		expect(resolved.action).toBe('retry_same_key');
+		expect(shouldRetryWithSameKey(timeout)).toBe(true);
+		// El código de Axios no se presenta como si fuera un código del contrato.
+		expect(resolved.code).not.toBe('ECONNABORTED');
+		expect(resolved.status).toBeNull();
+	});
+
 	it('reusa la clave ante un timeout y ante una operación en curso', () => {
 		// La regla que más fácil se invierte: reintentar un timeout con clave nueva
 		// convierte el reintento en una segunda recepción.

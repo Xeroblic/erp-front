@@ -72,31 +72,23 @@ export const readEtagHeader = (headers: unknown): string | null => {
 	return typeof value === 'string' && value.trim() ? value.trim() : null;
 };
 
-const asRecord = (value: unknown): Record<string, unknown> | undefined =>
-	value !== null && typeof value === 'object' && !Array.isArray(value)
-		? (value as Record<string, unknown>)
-		: undefined;
-
 /**
- * Error de transporte: la petición salió pero no volvió respuesta (timeout, red
- * caída, petición abortada). No prueba que la escritura no haya llegado.
+ * Se reexporta desde la clasificación de errores en vez de duplicar el detector
+ * acá: la decisión de recuperación tiene que salir de un solo lugar.
  */
-export const isTransportError = (error: unknown): boolean => {
-	const record = asRecord(error);
-	if (!record) return false;
-
-	if (asRecord(record.response)) return false;
-
-	return record.isAxiosError === true || record.request !== undefined;
-};
+export { isTransportError } from '@/utils/procurementErrors.util';
 
 /**
  * `true` cuando el reintento debe conservar la misma `Idempotency-Key`: la
- * operación sigue en curso, o nunca supimos si llegó. Reusar la clave es lo
- * único que impide duplicar una recepción por reintentar un timeout.
+ * operación sigue en curso (`OPERATION_IN_PROGRESS`), o nunca supimos si llegó
+ * (fallo de transporte). Reusar la clave es lo único que impide duplicar una
+ * recepción al reintentar un timeout.
+ *
+ * Lee la misma `action` que ve la pantalla, así que el mensaje y el reintento no
+ * pueden dar instrucciones opuestas.
  */
 export const shouldRetryWithSameKey = (error: unknown): boolean =>
-	resolveProcurementError(error).action === 'retry_same_key' || isTransportError(error);
+	resolveProcurementError(error).action === 'retry_same_key';
 
 /** `true` cuando hay que recargar el recurso antes de reintentar la edición. */
 export const requiresResourceReload = (error: unknown): boolean =>

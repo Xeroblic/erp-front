@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { allowedActionsByState } from '@/mocks/db/procurement.db';
 import AllowedActionsToolbar, { PROCUREMENT_ACTION_DEFINITIONS } from '../AllowedActionsToolbar';
@@ -8,7 +8,9 @@ const authorizationCalls = vi.hoisted(
 	() =>
 		[] as {
 			permission?: string | string[];
+			requireAll?: boolean;
 			branchId?: number | null;
+			subsidiaryId?: number | null;
 			scope?: string;
 		}[],
 );
@@ -19,7 +21,9 @@ vi.mock('@/hooks/useAuthorization', () => ({
 	default: () => ({
 		authorize: (input: {
 			permission?: string | string[];
+			requireAll?: boolean;
 			branchId?: number | null;
+			subsidiaryId?: number | null;
 			scope?: string;
 		}) => {
 			authorizationCalls.push(input);
@@ -80,7 +84,7 @@ describe('AllowedActionsToolbar', () => {
 
 		expect(authorizationCalls).toHaveLength(1);
 		expect(authorizationCalls[0]).toMatchObject({
-			permission: 'confirm-purchase-document',
+			permission: ['confirm-purchase-document'],
 			branchId: 4,
 			scope: 'access',
 		});
@@ -90,15 +94,15 @@ describe('AllowedActionsToolbar', () => {
 		// `update` sobre una recepción exige edit-product; sobre un documento,
 		// edit-purchase-document. Un registro global le daría a la recepción el
 		// permiso equivocado y dejaría el botón visible para quien no puede usarlo.
-		expect(PROCUREMENT_ACTION_DEFINITIONS.stock_receipt.update?.permission).toBe(
+		expect(PROCUREMENT_ACTION_DEFINITIONS.stock_receipt.update?.permissions).toEqual([
 			'edit-product',
-		);
-		expect(PROCUREMENT_ACTION_DEFINITIONS.purchase_document.update?.permission).toBe(
+		]);
+		expect(PROCUREMENT_ACTION_DEFINITIONS.purchase_document.update?.permissions).toEqual([
 			'edit-purchase-document',
-		);
-		expect(PROCUREMENT_ACTION_DEFINITIONS.supplier.update?.permission).toBe(
+		]);
+		expect(PROCUREMENT_ACTION_DEFINITIONS.supplier.update?.permissions).toEqual([
 			'edit-procurement-supplier',
-		);
+		]);
 
 		render(
 			<AllowedActionsToolbar
@@ -109,7 +113,7 @@ describe('AllowedActionsToolbar', () => {
 			/>,
 		);
 
-		expect(authorizationCalls[0]).toMatchObject({ permission: 'edit-product' });
+		expect(authorizationCalls[0]).toMatchObject({ permission: ['edit-product'] });
 	});
 
 	it('omite una acción que no corresponde al recurso en vez de adivinar permiso', () => {
@@ -123,6 +127,50 @@ describe('AllowedActionsToolbar', () => {
 
 		expect(screen.getByRole('button', { name: /Contabilizar/ })).toBeInTheDocument();
 		expect(screen.queryByRole('button', { name: /Confirmar/ })).not.toBeInTheDocument();
+	});
+
+	it('exige los dos permisos de vincular documento en el propio componente', () => {
+		// El contrato (sección 15) enlaza «Vincular/documentar» a `edit-product`
+		// **y** `view-purchase-document`, con el contexto de ambas entidades. La
+		// garantía vive acá: si dependiera de que cada pantalla agregue otro guard,
+		// la primera que lo olvide muestra el botón a quien no puede usarlo.
+		render(
+			<AllowedActionsToolbar
+				allowedActions={['link_purchase_document']}
+				resource='stock_receipt'
+				branchId={4}
+				subsidiaryId={2}
+				onAction={vi.fn()}
+			/>,
+		);
+
+		expect(authorizationCalls).toHaveLength(1);
+		expect(authorizationCalls[0]).toMatchObject({
+			permission: ['edit-product', 'view-purchase-document'],
+			requireAll: true,
+			branchId: 4,
+			subsidiaryId: 2,
+		});
+	});
+
+	it('no ejecuta la acción cuando falta uno de los dos permisos', () => {
+		authorizationState.hasAccess = false;
+		const onAction = vi.fn();
+
+		render(
+			<AllowedActionsToolbar
+				allowedActions={['link_purchase_document']}
+				resource='stock_receipt'
+				branchId={4}
+				onAction={onAction}
+			/>,
+		);
+
+		const button = screen.getByRole('button', { name: /Vincular documento/ });
+		fireEvent.click(button);
+
+		expect(button).toBeDisabled();
+		expect(onAction).not.toHaveBeenCalled();
 	});
 
 	it('dice que no hay acciones cuando allowed_actions es []', () => {
