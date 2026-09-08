@@ -160,7 +160,6 @@ export const updateItemDetails = createAsyncThunk<
 			const NULLABLE_FIELDS = [
 				'observations',
 				'extra_attributes',
-				'battery_health',
 				...HARDWARE_NULLABLE_FIELDS,
 			];
 

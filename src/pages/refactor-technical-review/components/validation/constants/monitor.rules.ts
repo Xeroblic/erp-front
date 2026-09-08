@@ -12,11 +12,13 @@ export const ALLOWED_GENERAL_CONDITIONS = [
 	'scrap',
 ] as const;
 
+// `missing_pieces` no es un estado de pantalla de monitor: el backend nunca lo aceptó y el
+// selector tampoco lo ofrece. Estaba de más en esta lista, que es la que usa el saneado
+// para decidir qué valor descartar antes de reintentar un guardado.
 export const ALLOWED_SCREEN_CONDITIONS = [
 	'ok',
 	'minor_wear',
 	'worn',
-	'missing_pieces',
 	'dead_pixels',
 	'broken',
 	'spots',
