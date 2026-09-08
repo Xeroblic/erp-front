@@ -579,7 +579,7 @@ const TraceabilityPage: React.FC = () => {
 								) : (
 									<div className='flex flex-col items-center justify-center py-16 text-gray-400'>
 										<div className='mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800'>
-											<Icon icon='HeroClockSolid' className='h-10 w-10' />
+											<Icon icon='HeroClock' className='h-10 w-10' />
 										</div>
 										<p className='text-lg font-medium'>
 											No hay movimientos registrados

@@ -91,7 +91,7 @@ const MonitorAccessoriesSection: React.FC<FormSectionProps<MonitorFormData>> = (
 				<div className='rounded-xl border border-purple-200 bg-purple-500/10 p-6 transition-colors duration-200 hover:cursor-pointer hover:bg-purple-500/20 dark:border-purple-800/50 dark:bg-purple-900/10 dark:hover:bg-purple-900/20'>
 					<div className='flex items-center justify-between'>
 						<h3 className='flex items-center gap-2 text-sm font-bold text-purple-900 dark:text-purple-100'>
-							<Icon icon='HeroUsbCable' className='h-5 w-5' />
+							<Icon icon='DuoUsb' className='h-5 w-5' />
 							{getMonitorLabel('has_usb_hub')}
 						</h3>
 						<Controller
