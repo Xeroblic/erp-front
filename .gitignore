@@ -73,6 +73,9 @@ stats.html
 *.code-workspace
 
 # Custom - Herramientas AI / opencode
+# .claude/ SI se versiona: agentes, skills y hooks compartidos por el equipo.
+# Sólo quedan fuera los ajustes personales de cada quien.
+.claude/settings.local.json
 .devtools
 .CLAUDE.md
 .claude.md

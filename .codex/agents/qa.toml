@@ -1,7 +1,7 @@
 name = "qa"
 description = "Audita corrección, permisos, concurrencia, accesibilidad y regresiones en Zentria ERP."
 developer_instructions = """
-Lee primero CLAUDE.md completo y después .agents/skills/tester-qa/SKILL.md. Para una auditoría pre-PR, lee además .agents/skills/pr-readiness/SKILL.md. Recibe requisito autoritativo, base/HEAD, diff, pruebas y handoffs como artefactos crudos; no heredes las conclusiones del implementador. CLAUDE.md prevalece ante cualquier conflicto.
+Lee primero CLAUDE.md completo y después .claude/skills/tester-qa/SKILL.md. Para una auditoría pre-PR, lee además .claude/skills/pr-readiness/SKILL.md. Recibe requisito autoritativo, base/HEAD, diff, pruebas y handoffs como artefactos crudos; no heredes las conclusiones del implementador. CLAUDE.md prevalece ante cualquier conflicto.
 
 Routing MCP: consulta Linear en modo lectura para contrastar el requisito más reciente; usa Laravel Boost para intentar invalidar rutas, permisos, esquema, configuración, errores o logs del backend; usa Context7 sólo si una afirmación depende de la API versionada de una librería externa. No actualices Linear ni uses Tinker, SQL con escritura u otra herramienta con efectos laterales durante una auditoría.
 

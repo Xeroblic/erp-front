@@ -28,24 +28,43 @@ export const toContextId = (value: unknown): number | null => {
  * Por eso el id de la sucursal es SIEMPRE `id`, y la subsidiaria llega como objeto
  * (`subsidiary.id`) o, sólo en la principal, como campo plano (`subsidiary_id`).
  */
+interface SubsidiaryLike {
+	id?: number | string | null;
+	subsidiary_id?: number | string | null;
+	name?: string | null; // access/visible
+	subsidiary_name?: string | null; // user.branch
+}
+
+type SubsidiaryReference = SubsidiaryLike | number | string | null;
+
 export interface BranchLike {
 	id?: number | string | null;
+	branch_id?: number | string | null;
+	branchId?: number | string | null;
+	sucursal_id?: number | string | null;
 	name?: string | null; // access/visible branches
 	branch_name?: string | null; // user.branch (principal)
 	subsidiary_id?: number | string | null; // user.branch (plano)
-	subsidiary?: {
-		id?: number | string | null;
-		name?: string | null; // access/visible
-		subsidiary_name?: string | null; // user.branch
-	} | null;
+	subsidiaryId?: number | string | null;
+	subsidiary?: SubsidiaryReference;
+	subsidiary_info?: SubsidiaryReference;
 }
 
 /** Forma estructural mínima del usuario (`/perfil`) que necesita el resolver. */
 export interface ContextUser {
 	branch?: BranchLike | null;
+	branches?: BranchLike[] | null;
 	access?: { branches?: BranchLike[] | null } | null;
 	visible?: { branches?: BranchLike[] | null } | null;
 }
+
+const readSubsidiaryId = (value: SubsidiaryReference | undefined): number | null => {
+	if (typeof value === 'object' && value !== null) {
+		return toContextId(value.id) ?? toContextId(value.subsidiary_id);
+	}
+
+	return toContextId(value);
+};
 
 const inspectBranchForSubsidiary = (
 	branch: BranchLike | null | undefined,
@@ -53,16 +72,27 @@ const inspectBranchForSubsidiary = (
 ): number | null => {
 	if (!branch) return null;
 
-	if (toContextId(branch.id) !== targetBranchId) return null;
+	const branchCandidateId =
+		toContextId(branch.id) ??
+		toContextId(branch.branch_id) ??
+		toContextId(branch.branchId) ??
+		toContextId(branch.sucursal_id);
+	if (branchCandidateId !== targetBranchId) return null;
 
-	// Objeto `subsidiary.id` (access/visible/principal) o plano `subsidiary_id` (principal).
-	return toContextId(branch.subsidiary?.id) ?? toContextId(branch.subsidiary_id);
+	// Objeto `subsidiary.id` (access/visible/principal), alias histórico
+	// `subsidiary_info`, o campos planos de la sucursal principal.
+	return (
+		readSubsidiaryId(branch.subsidiary) ??
+		readSubsidiaryId(branch.subsidiary_info) ??
+		toContextId(branch.subsidiary_id) ??
+		toContextId(branch.subsidiaryId)
+	);
 };
 
 /**
  * Deriva el `subsidiaryId` recorriendo las colecciones de sucursales del usuario
- * (branch principal, `access.branches`, `visible.branches`) hasta encontrar la que
- * coincide con `branchId`.
+ * (branch principal, `user.branches`, `access.branches`, `visible.branches`) hasta
+ * encontrar una que coincide con `branchId` y contiene una subsidiaria válida.
  */
 export const resolveSubsidiaryFromBranch = (
 	branchId: number | null | undefined,
@@ -73,6 +103,7 @@ export const resolveSubsidiaryFromBranch = (
 
 	const candidateBranches: Array<BranchLike | null | undefined> = [
 		user.branch,
+		...(user.branches ?? []),
 		...(user.access?.branches ?? []),
 		...(user.visible?.branches ?? []),
 	];

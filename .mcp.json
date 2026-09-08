@@ -1,0 +1,15 @@
+{
+	"mcpServers": {
+		"laravel-boost": {
+			"command": "docker",
+			"args": [
+				"exec",
+				"-i",
+				"${ZENTRIA_BACKEND_CONTAINER:-erp-app}",
+				"php",
+				"artisan",
+				"boost:mcp"
+			]
+		}
+	}
+}

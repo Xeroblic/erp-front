@@ -45,6 +45,9 @@ import recursosHumanos, { IRHState } from './slices/recursosHumanos/rhSlice';
 import deferredPayments, {
 	DeferredPaymentsState,
 } from './slices/deferredPayments/deferredPaymentsSlice';
+import equipmentWithdrawals, {
+	EquipmentWithdrawalsState,
+} from './slices/equipmentWithdrawals/slice/equipmentWithdrawalsSlice';
 
 export interface RootState {
 	auth: AuthState;
@@ -83,6 +86,7 @@ export interface RootState {
 	customerSales: CustomerSalesState;
 	recursosHumanos: IRHState;
 	deferredPayments: DeferredPaymentsState;
+	equipmentWithdrawals: EquipmentWithdrawalsState;
 	[RtkQueryService.reducerPath]: any;
 }
 
@@ -124,6 +128,7 @@ const staticReducers = {
 	customerSales,
 	recursosHumanos,
 	deferredPayments,
+	equipmentWithdrawals,
 	// personalizacion, // Comentado temporalmente
 	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };

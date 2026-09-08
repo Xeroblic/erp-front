@@ -297,6 +297,16 @@ export const privatePages = {
 				authority: ['view-product', 'edit-product'],
 				requireAll: true,
 			},
+			retirosEquipos: {
+				id: 'retirosEquipos',
+				to: '/inventario/retiros-equipos',
+				text: 'Retiros de equipos',
+				icon: 'HeroArchiveBox',
+				// Gateado solo por permiso (ZB-83): un warehouse-employee arma y
+				// devuelve retiros sin aparecer en un allowlist de nombres de rol.
+				authority: [ERP_PERMISSIONS.WITHDRAWALS.VIEW],
+				requireAll: false,
+			},
 		},
 	},
 

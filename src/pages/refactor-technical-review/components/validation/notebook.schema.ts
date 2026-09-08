@@ -12,13 +12,12 @@ import {
 	ALLOWED_COVER_CONDITIONS,
 	ALLOWED_KEYBOARD_CONDITIONS,
 	ALLOWED_KEYBOARD_LAYOUTS,
-	ALLOWED_HINGE_CONDITIONS,
 	ALLOWED_BATTERY_STATUSES,
-	ALLOWED_TOUCHPAD_CONDITIONS,
 	ALLOWED_BOTTOM_CONDITIONS,
 	BATTERY_PERCENTAGE_MIN,
 	BATTERY_PERCENTAGE_MAX,
 } from './constants/notebook.rules';
+import type { PortTypeCounts } from './constants/ports.rules';
 
 const isDellBrand = (brand: unknown): boolean =>
 	typeof brand === 'string' && brand.toLowerCase().includes('dell');
@@ -43,6 +42,11 @@ export const notebookSchema = Yup.object({
 	general_condition: Yup.string()
 		.oneOf([...ALLOWED_GENERAL_CONDITIONS], 'Condición general no válida')
 		.required('La condición general es obligatoria'),
+
+	// ZF-102. El backend exige `powers_on` para cerrar la revisión de un notebook, así que
+	// se pide acá y no en el 422: `false` es una respuesta válida y completa (el equipo no
+	// enciende → grado M); lo que bloquea el cierre es no haber respondido nunca.
+	powers_on: Yup.boolean().required('Debes indicar si el equipo enciende'),
 
 	// ─── Hardware ────────────────────────────────────────────────────────────
 	processor: Yup.string()
@@ -98,9 +102,10 @@ export const notebookSchema = Yup.object({
 		}),
 
 	// ─── Pantalla ────────────────────────────────────────────────────────────
-	screen_condition: Yup.string()
-		.oneOf([...ALLOWED_SCREEN_CONDITIONS], 'Condición de pantalla no válida')
-		.required('La condición de pantalla es obligatoria'),
+	// ZF-98 pasó las opciones de pantalla al schema remoto (ahí nace `keyboard_marks`).
+	// Mantener acá el `oneOf` local dejaría dos fuentes de verdad y rechazaría un valor
+	// que el backend sí publica; el filtro por catálogo lo hace `sanitizeByAllowedValues`.
+	screen_condition: Yup.string().required('La condición de pantalla es obligatoria'),
 
 	screen_defects_count: Yup.number().nullable().strip(), // Deprecated/Internal only if needed, but we should use specific fields now
 	dead_pixels_count: Yup.number()
@@ -143,21 +148,31 @@ export const notebookSchema = Yup.object({
 		.oneOf([...ALLOWED_COVER_CONDITIONS], 'Condición de tapa no válida')
 		.required('La condición de la tapa es obligatoria'),
 
-	keyboard_condition: Yup.string()
-		.oneOf([...ALLOWED_KEYBOARD_CONDITIONS], 'Condición de teclado no válida')
-		.required('La condición del teclado es obligatoria'),
+	keyboard_condition: Yup.string().required('La condición del teclado es obligatoria'),
+
+	non_functional_keys_count: Yup.number()
+		.integer('Debe ser un número entero')
+		.min(0, 'No puede ser negativo')
+		.nullable(),
+
+	// ZF-102. El backend lo exige para cerrar (`COMPLETION_REQUIREMENTS` de notebook), pero su
+	// catálogo nace en el schema remoto y no hay constante local que lo reemplace: si ese
+	// fetch falla la tarjeta no se renderiza. Exigirlo acá dejaría la revisión incerrable con
+	// un error sin campo en pantalla donde corregirlo, así que la obligatoriedad vive en
+	// `resolveNotebookSchema`, condicionada al `required` que publica el backend.
+	speakers_condition: Yup.string().nullable(),
 
 	keyboard_layout: Yup.string()
 		.oneOf([...ALLOWED_KEYBOARD_LAYOUTS], 'Distribución de teclado no válida')
 		.required('La distribución del teclado es obligatoria'),
 
-	hinge_condition: Yup.string()
-		.oneOf([...ALLOWED_HINGE_CONDITIONS], 'Condición de bisagras no válida')
-		.required('La condición de bisagras es obligatoria'),
+	hinge_condition: Yup.string().required('La condición de bisagras es obligatoria'),
 
-	touchpad_condition: Yup.string()
-		.oneOf([...ALLOWED_TOUCHPAD_CONDITIONS], 'Condición de touchpad no válida')
-		.required('La condición del touchpad es obligatoria'),
+	// ZF-98. La cubierta del teclado (palmrest) es nullable en el backend y no figura en
+	// `COMPLETION_REQUIREMENTS`: no se exige para cerrar la revisión.
+	keyboard_cover_condition: Yup.string().nullable(),
+
+	touchpad_condition: Yup.string().required('La condición del touchpad es obligatoria'),
 
 	bottom_condition: Yup.string()
 		.oneOf([...ALLOWED_BOTTOM_CONDITIONS], 'Condición de tapa inferior no válida')
@@ -232,12 +247,30 @@ export const notebookSchema = Yup.object({
 	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	displayport_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	dvi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	usb_c_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	usb_a_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	sd_readers: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	charging_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 
 	all_ports_functional: Yup.boolean().nullable(),
+
+	// ─── Puertos sueltos y detalle de puertos (ZF-98) ────────────────────────
+	// El backend los declara nullable y no los exige al cerrar la revisión
+	// (`COMPLETION_REQUIREMENTS` no los incluye), así que acá tampoco son obligatorios:
+	// exigirlos bloquearía revisiones que el backend sí acepta.
+	// Total derivado del desglose: el servidor lo calcula y el formulario sólo lo
+	// muestra, así que no lleva reglas propias.
+	loose_ports_count: Yup.number().nullable(),
+
+	// Desglose `{tipo: cantidad}`. El catálogo y los límites por tipo los publica el
+	// schema del backend; repetirlos acá crearía una segunda fuente de verdad que
+	// rechazaría cualquier tipo nuevo. El formulario ya no puede producir un valor
+	// fuera de rango: cada contador está acotado por la metadata del schema.
+	loose_port_types: Yup.mixed<PortTypeCounts>().nullable(),
+
+	defective_port_types: Yup.mixed<PortTypeCounts>().nullable(),
 
 	defective_ports_count: Yup.number()
 		.typeError('Debe ser un número')
@@ -306,6 +339,32 @@ export const notebookSchema = Yup.object({
 // ─── Tipos derivados ──────────────────────────────────────────────────────────
 
 export type NotebookFormData = Yup.InferType<typeof notebookSchema>;
+
+/**
+ * Variante del schema que exige `speakers_condition`, para cuando el backend publica el
+ * campo y la tarjeta está en pantalla.
+ */
+const notebookSchemaWithSpeakers = notebookSchema.shape({
+	speakers_condition: Yup.string().required('El estado de los parlantes es obligatorio'),
+});
+
+/**
+ * Schema efectivo del formulario de notebook.
+ *
+ * ZF-102. `speakers_condition` figura en `COMPLETION_REQUIREMENTS`: sin responderlo el
+ * backend devuelve 422 al finalizar, sin señalar el campo. Se exige con el mismo criterio
+ * que `NOTEBOOK_REMOTE_ONLY_FIELDS` usa para avanzar de sección — sólo cuando el schema
+ * remoto publica el campo como obligatorio, que es cuando la tarjeta está en pantalla con su
+ * asterisco —, de modo que el error siempre tiene dónde corregirse.
+ *
+ * El `as unknown as` acota la única diferencia entre ambas variantes: al pasar a
+ * `required()`, Yup infiere `string` en lugar de `string | null | undefined`, y el
+ * formulario sigue tipado con `NotebookFormData`.
+ */
+export const resolveNotebookSchema = (requiresSpeakers: boolean): typeof notebookSchema =>
+	requiresSpeakers
+		? (notebookSchemaWithSpeakers as unknown as typeof notebookSchema)
+		: notebookSchema;
 
 /**
  * Schema parcial para validación de campos individuales (útil para validación en tiempo real).

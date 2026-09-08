@@ -73,6 +73,7 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 								storage_technology: watch('storage_technology') || undefined,
 								general_condition: 'scrap',
 								screen_condition: 'broken',
+								dead_pixels_count: 0,
 								stand_condition: 'broken',
 								cover_condition: 'broken',
 								vga_ports: 0,

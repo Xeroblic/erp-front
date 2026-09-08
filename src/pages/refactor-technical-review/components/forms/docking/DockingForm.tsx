@@ -8,6 +8,7 @@ import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { dockingSchema, type DockingFormData } from '../../validation/docking.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
@@ -58,8 +59,17 @@ const DOCKING_SECTION_FIELDS: Record<string, FieldPath<DockingFormData>[]> = {
 		'usb_a_ports',
 		'all_ports_functional',
 		'defective_ports_count',
+		'loose_ports_count',
+		'loose_port_types',
+		'defective_port_types',
 	],
-	extras: ['has_wifi', 'includes_power_adapter', 'cover_condition', 'observations'],
+	extras: [
+		'has_wifi',
+		'includes_power_adapter',
+		'cover_condition',
+		'lock_area_condition',
+		'observations',
+	],
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -71,12 +81,16 @@ interface DockingFormProps {
 	readOnly?: boolean;
 	/** Called when user navigates between form sections */
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Guarda el borrador aunque la validación bloquee el avance de sección (ZF-102). */
+	onPersistDraft?: () => Promise<void> | void;
 	/** Registers a getter for current form values (used by auto-save) */
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	/** Whether auto-save is in progress */
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
 	initialSectionKey?: string;
+	/** Metadata publicada por el endpoint de reglas para este tipo de equipo. */
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 const DockingForm: React.FC<DockingFormProps> = ({
@@ -86,9 +100,11 @@ const DockingForm: React.FC<DockingFormProps> = ({
 	isSubmitting = false,
 	readOnly = false,
 	onStepChange,
+	onPersistDraft,
 	registerGetFormValues,
 	isSaving = false,
 	initialSectionKey,
+	schemaFields,
 }) => {
 	const {
 		control,
@@ -113,8 +129,9 @@ const DockingForm: React.FC<DockingFormProps> = ({
 			readOnly,
 			watch,
 			setValue,
+			schemaFields,
 		}),
-		[control, errors, readOnly, watch, setValue],
+		[control, errors, readOnly, watch, setValue, schemaFields],
 	);
 
 	// Expose getFormValues to parent for auto-save
@@ -216,6 +233,7 @@ const DockingForm: React.FC<DockingFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onPersistDraft={onPersistDraft}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
 			initialSectionKey={initialSectionKey}

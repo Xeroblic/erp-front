@@ -3,6 +3,7 @@ import { useForm, type FieldPath } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { aioSchema, AioFormData } from '../../validation/aio.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
@@ -21,6 +22,10 @@ import AioPortsSection from './sections/AioPortsSection';
 import AioAccessoriesSection from './sections/AioAccessoriesSection';
 import AioObservationsSection from './sections/AioObservationsSection';
 import GallerySection from '../shared/gallery/GallerySection';
+import {
+	isScreenCounterBelowMinimum,
+	needsScreenCounterNormalization,
+} from '../../utils/screenCounters';
 
 const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 	{
@@ -68,7 +73,7 @@ const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 ];
 
 const AIO_SECTION_FIELDS: Record<string, FieldPath<AioFormData>[]> = {
-	'basic-info': ['brand', 'model', 'general_condition'],
+	'basic-info': ['brand', 'model', 'line', 'general_condition'],
 	hardware: [
 		'processor',
 		'has_no_ram',
@@ -83,6 +88,7 @@ const AIO_SECTION_FIELDS: Record<string, FieldPath<AioFormData>[]> = {
 		'screen_inches',
 		'is_touchscreen',
 		'screen_condition',
+		'dead_pixels_count',
 		'stand_condition',
 		'cover_condition',
 	],
@@ -96,6 +102,9 @@ const AIO_SECTION_FIELDS: Record<string, FieldPath<AioFormData>[]> = {
 		'rj45_ports',
 		'all_ports_functional',
 		'defective_ports_count',
+		'loose_ports_count',
+		'loose_port_types',
+		'defective_port_types',
 	],
 	accessories: ['includes_power_adapter', 'charger_status'],
 	observations: ['operating_system', 'has_wifi', 'has_bluetooth', 'has_cd_drive', 'observations'],
@@ -108,10 +117,14 @@ interface AioFormProps {
 	isSubmitting?: boolean;
 	readOnly?: boolean;
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Guarda el borrador aunque la validación bloquee el avance de sección (ZF-102). */
+	onPersistDraft?: () => Promise<void> | void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
 	initialSectionKey?: string;
+	/** Metadata publicada por el endpoint de reglas para este tipo de equipo. */
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 const AioForm: React.FC<AioFormProps> = ({
@@ -121,9 +134,11 @@ const AioForm: React.FC<AioFormProps> = ({
 	isSubmitting,
 	readOnly,
 	onStepChange,
+	onPersistDraft,
 	registerGetFormValues,
 	isSaving,
 	initialSectionKey,
+	schemaFields,
 }) => {
 	const {
 		control,
@@ -215,6 +230,29 @@ const AioForm: React.FC<AioFormProps> = ({
 		}
 	}, [watch, setValue]);
 
+	// Reconcilia el contador con su condición. Corre en el montaje y en cada cambio de
+	// las dos variables observadas (no sólo al cargar): si la condición está inactiva
+	// limpia el contador, y si está activa conserva el valor recibido —incluido el 0 de
+	// un borrador— pero lo valida de inmediato para que el error se vea sin tener que
+	// intentar avanzar de paso. `mode: 'onChange'` no valida un campo que nadie tocó.
+	const screenCondition = watch('screen_condition');
+	const deadPixelsCount = watch('dead_pixels_count');
+	useEffect(() => {
+		if (readOnly) return;
+
+		const isDeadPixels = screenCondition === 'dead_pixels';
+		if (needsScreenCounterNormalization(isDeadPixels, deadPixelsCount)) {
+			setValue('dead_pixels_count', 0, {
+				shouldValidate: true,
+			});
+			return;
+		}
+
+		if (isDeadPixels && isScreenCounterBelowMinimum(deadPixelsCount)) {
+			void trigger('dead_pixels_count');
+		}
+	}, [readOnly, screenCondition, deadPixelsCount, setValue, trigger]);
+
 	const sectionProps = {
 		control,
 		errors,
@@ -222,6 +260,7 @@ const AioForm: React.FC<AioFormProps> = ({
 		watch,
 		setValue,
 		getValues,
+		schemaFields,
 		onDirectSubmit: (partialData: Partial<AioFormData>) => {
 			const currentData = getValues();
 			const payload = { ...currentData, ...partialData } as AioFormData;
@@ -286,6 +325,7 @@ const AioForm: React.FC<AioFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onPersistDraft={onPersistDraft}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
 			initialSectionKey={initialSectionKey}

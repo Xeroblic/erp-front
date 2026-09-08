@@ -16,6 +16,12 @@ interface FormShellProps<T extends FieldValues> {
 	onStepChange?: (direction: 'next' | 'prev') => void;
 	/** Validate current step before moving forward */
 	onValidateStep?: (sectionKey: string) => Promise<{ isValid: boolean; message?: string }>;
+	/**
+	 * Guarda el borrador de la sección actual. ZF-102: el autoguardado por navegación sólo
+	 * corría al cambiar de sección, así que una sección trabada por la validación se perdía
+	 * entera. Se llama también cuando el avance queda bloqueado.
+	 */
+	onPersistDraft?: () => Promise<void> | void;
 	/** Whether auto-save is in progress */
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount (e.g. 'gallery' shortcut) */
@@ -30,6 +36,7 @@ function FormShell<T extends FieldValues>({
 	isSubmitting = false,
 	onStepChange,
 	onValidateStep,
+	onPersistDraft,
 	isSaving = false,
 	initialSectionKey,
 }: FormShellProps<T>) {
@@ -59,9 +66,12 @@ function FormShell<T extends FieldValues>({
 		if (onValidateStep && !sectionProps.readOnly) {
 			const validation = await onValidateStep(sections[step].key);
 			if (!validation.isValid) {
+				// El aviso primero: esperar al guardado antes de pintarlo devolvería el
+				// botón mudo que ZF-102 vino a corregir cuando la red va lenta.
 				toast.error(
 					validation.message || 'Completa los campos obligatorios antes de continuar.',
 				);
+				await onPersistDraft?.();
 				return;
 			}
 		}
@@ -103,6 +113,7 @@ function FormShell<T extends FieldValues>({
 						validation.message ||
 							'Completa los campos obligatorios antes de continuar.',
 					);
+					await onPersistDraft?.();
 					return;
 				}
 			}

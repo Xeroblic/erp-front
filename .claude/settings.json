@@ -1,0 +1,129 @@
+{
+	"$schema": "https://json.schemastore.org/claude-code-settings.json",
+	"permissions": {
+		"allow": [
+			"Bash(pnpm run test:run)",
+			"Bash(pnpm run test:related:*)",
+			"Bash(pnpm test:run)",
+			"Bash(pnpm test:related:*)",
+			"Bash(pnpm run test:e2e:*)",
+			"Bash(pnpm vitest:*)",
+			"Bash(pnpm exec vitest:*)",
+			"Bash(pnpm exec tsc:*)",
+			"Bash(pnpm exec prettier:*)",
+			"Bash(pnpm lint:*)",
+			"Bash(pnpm run lint:*)",
+			"Bash(pnpm run prettier:check)",
+			"Bash(pnpm run quality:style)",
+			"Bash(pnpm run check:eol)",
+			"Bash(pnpm build)",
+			"Bash(pnpm run build)",
+			"Bash(pnpm run typecheck)",
+			"Bash(pnpm typecheck)",
+			"Bash(pnpm run lint:changed:*)",
+			"Bash(pnpm lint:changed:*)",
+			"Bash(git status:*)",
+			"Bash(git diff:*)",
+			"Bash(git log:*)",
+			"Bash(git show:*)",
+			"Bash(git branch:*)",
+			"Bash(git blame:*)",
+			"Bash(git merge-base:*)",
+			"Bash(git rev-parse:*)",
+			"Bash(git config user.name)",
+			"Bash(git config user.email)",
+			"Bash(gh auth status:*)",
+			"Bash(gh pr view:*)",
+			"Bash(gh pr list:*)",
+			"Bash(gh pr diff:*)",
+			"Bash(gh issue view:*)",
+			"Bash(gh issue list:*)",
+			"Bash(gh run list:*)",
+			"Bash(gh run view:*)",
+			"mcp__laravel-boost__application-info",
+			"mcp__laravel-boost__list-routes",
+			"mcp__laravel-boost__database-schema",
+			"mcp__laravel-boost__database-connections",
+			"mcp__laravel-boost__get-config",
+			"mcp__laravel-boost__list-available-config-keys",
+			"mcp__laravel-boost__list-available-env-vars",
+			"mcp__laravel-boost__list-artisan-commands",
+			"mcp__laravel-boost__get-absolute-url",
+			"mcp__laravel-boost__last-error",
+			"mcp__laravel-boost__read-log-entries",
+			"mcp__laravel-boost__browser-logs",
+			"mcp__laravel-boost__search-docs"
+		],
+		"ask": [
+			"Bash(git push:*)",
+			"Bash(git commit:*)",
+			"Bash(gh pr create:*)",
+			"Bash(gh pr edit:*)",
+			"Bash(gh pr comment:*)",
+			"Bash(gh pr ready:*)",
+			"Bash(gh pr merge:*)",
+			"Bash(gh release:*)",
+			"Bash(git tag:*)"
+		],
+		"deny": [
+			"Bash(git push --force:*)",
+			"Bash(git push -f:*)",
+			"Bash(git reset --hard:*)",
+			"Bash(git commit --author:*)",
+			"Read(./.env.local)",
+			"Read(./.env.*.local)",
+			"Edit(./dist/**)",
+			"Write(./dist/**)",
+			"Edit(./node_modules/**)",
+			"Write(./node_modules/**)",
+			"Read(./pnpm-lock.yaml)",
+			"Read(./stats.html)",
+			"Read(./public/features.json)",
+			"Read(./dist/**)",
+			"Read(./coverage/**)",
+			"Read(./node_modules/**)",
+			"Read(./.opencode/**)",
+			"Read(./test-results/**)",
+			"Read(./playwright-report/**)",
+			"mcp__laravel-boost__tinker",
+			"mcp__laravel-boost__database-query",
+			"mcp__laravel-boost__report-feedback",
+			"Edit(../zentria-erp-back/**)",
+			"Write(../zentria-erp-back/**)",
+			"Bash(docker exec erp-app php artisan migrate:*)",
+			"Bash(docker exec erp-app php artisan db:*)",
+			"Bash(docker exec erp-app php artisan tinker:*)",
+			"Bash(docker exec erp-app php artisan make:*)"
+		],
+		"additionalDirectories": ["../zentria-erp-back"]
+	},
+	"env": {
+		"MAX_MCP_OUTPUT_TOKENS": "25000"
+	},
+	"enableAllProjectMcpServers": false,
+	"enabledMcpjsonServers": ["laravel-boost"],
+	"hooks": {
+		"PreToolUse": [
+			{
+				"matcher": "Bash",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/identidad-github.mjs\""
+					}
+				]
+			}
+		],
+		"PostToolUse": [
+			{
+				"matcher": "Edit|Write",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/formatear.mjs\""
+					}
+				]
+			}
+		]
+	}
+}

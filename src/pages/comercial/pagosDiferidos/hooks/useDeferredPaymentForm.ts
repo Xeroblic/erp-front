@@ -132,17 +132,15 @@ const useDeferredPaymentForm = ({
 	const effectiveSubsidiaryId = subsidiaryId;
 	const latestSubsidiaryIdRef = useRef(effectiveSubsidiaryId);
 	latestSubsidiaryIdRef.current = effectiveSubsidiaryId;
-	const today = useMemo(() => formatLocalDate(new Date()), []);
-	const initialPaymentTermDays = useRef(paymentTermDays).current;
+	// La fecha de emisión arranca vacía a propósito: precargarla con hoy hacía que
+	// casi nadie la corrigiera, arrastrando el vencimiento (ZF-105). El usuario debe
+	// escribir la fecha real del documento que tiene en la mano.
 	const initialValues = useMemo(
 		() =>
 			mode === 'edit' && deferredPaymentDocument
 				? mapDeferredPaymentDocumentToForm(deferredPaymentDocument)
-				: {
-						...createDeferredPaymentInitialValues(today),
-						due_date: addDaysToDateOnly(today, initialPaymentTermDays),
-					},
-		[deferredPaymentDocument, initialPaymentTermDays, mode, today],
+				: createDeferredPaymentInitialValues(''),
+		[deferredPaymentDocument, mode],
 	);
 	const isPaidEdit = mode === 'edit' && deferredPaymentDocument?.status === 'paid';
 

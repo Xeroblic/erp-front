@@ -124,6 +124,18 @@ export const KEYBOARD_CONDITIONS: SelectOption[] = [
 	{ value: 'broken', label: 'Roto' },
 ];
 
+/**
+ * La cubierta del teclado es distinta de la tapa superior y de las bisagras, y el backend
+ * la acepta con estos cuatro valores. Acá no se anuncia el techo de grado que sí muestra
+ * el formulario de revisión: esto describe al producto, no puntúa a un equipo.
+ */
+export const KEYBOARD_COVER_CONDITIONS: SelectOption[] = [
+	{ value: 'ok', label: 'OK' },
+	{ value: 'worn', label: 'Desgastada' },
+	{ value: 'cracked', label: 'Trizada' },
+	{ value: 'broken', label: 'Rota' },
+];
+
 export const KEYBOARD_LAYOUTS: SelectOption[] = [
 	{ value: 'es', label: 'Español' },
 	{ value: 'us', label: 'Inglés (US)' },

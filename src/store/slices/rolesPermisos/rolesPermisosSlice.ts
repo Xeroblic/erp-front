@@ -6,8 +6,10 @@ import type { UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice'
 export interface RolesPermisosState {
 	users: {
 		data: UserWithDetails[];
+		meta: UsersPaginationMeta | null;
 		loading: boolean;
 		error: string | null;
+		activeRequestId: string | null;
 	};
 	update: {
 		loading: boolean;
@@ -18,8 +20,10 @@ export interface RolesPermisosState {
 const initialState: RolesPermisosState = {
 	users: {
 		data: [],
+		meta: null,
 		loading: false,
 		error: null,
+		activeRequestId: null,
 	},
 	update: {
 		loading: false,
@@ -27,36 +31,76 @@ const initialState: RolesPermisosState = {
 	},
 };
 
+export interface UsersPaginationMeta {
+	current_page: number;
+	last_page: number;
+	per_page: number;
+	total: number;
+}
+
+export const USERS_DEFAULT_PAGE_SIZE = 10;
+
+export interface FetchUsuariosConRolesPermsParams {
+	page?: number;
+	per_page?: number;
+	search?: string;
+}
+
+interface UsersListResponse {
+	success: boolean;
+	data: UserWithDetails[];
+	meta: UsersPaginationMeta;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && value !== null;
+
+const isUsersPaginationMeta = (value: unknown): value is UsersPaginationMeta => {
+	if (!isRecord(value)) return false;
+
+	return ['current_page', 'last_page', 'per_page', 'total'].every(
+		(key) => typeof value[key] === 'number',
+	);
+};
+
+const getErrorMessage = (error: unknown) => {
+	if (isRecord(error)) {
+		const response = isRecord(error.response) ? error.response : null;
+		const responseData = response && isRecord(response.data) ? response.data : null;
+		if (typeof responseData?.message === 'string') return responseData.message;
+		if (typeof error.message === 'string') return error.message;
+	}
+
+	if (error instanceof Error) return error.message;
+
+	return 'Error al obtener usuarios con roles y permisos';
+};
+
 export const fetchUsuariosConRolesPerms = createAsyncThunk<
-	UserWithDetails[],
-	void,
+	{ users: UserWithDetails[]; meta: UsersPaginationMeta },
+	FetchUsuariosConRolesPermsParams | void,
 	{ rejectValue: string }
->('rolesPermisos/fetchAll', async (_, { rejectWithValue }) => {
+>('rolesPermisos/fetchAll', async (params, { rejectWithValue }) => {
+	const { page = 1, per_page: perPage = USERS_DEFAULT_PAGE_SIZE, search } = params ?? {};
 	try {
-		const res = await ApiService.fetchData<{
-			success: boolean;
-			data: UserWithDetails[];
-			meta?: Record<string, unknown>;
-		}>({
+		const res = await ApiService.fetchData<UsersListResponse>({
 			url: '/users',
 			method: 'get',
+			params: {
+				page,
+				per_page: perPage,
+				...(search?.trim() ? { search: search.trim() } : {}),
+			},
 			dedupe: true,
-			dedupeKey: 'users-with-roles-permissions',
 		});
 
-		const payload = Array.isArray(res.data)
-			? res.data
-			: Array.isArray((res.data as any)?.data)
-				? (res.data as any).data
-				: [];
+		if (!Array.isArray(res.data.data) || !isUsersPaginationMeta(res.data.meta)) {
+			return rejectWithValue('La respuesta de usuarios no contiene paginación válida');
+		}
 
-		return payload;
-	} catch (err: any) {
-		const message =
-			err?.response?.data?.message ??
-			err?.message ??
-			'Error al obtener usuarios con roles y permisos';
-		return rejectWithValue(message);
+		return { users: res.data.data, meta: res.data.meta };
+	} catch (error: unknown) {
+		return rejectWithValue(getErrorMessage(error));
 	}
 });
 
@@ -345,17 +389,28 @@ const rolesPermisosSlice = createSlice({
 	reducers: {},
 	extraReducers: (builder) => {
 		builder
-			.addCase(fetchUsuariosConRolesPerms.pending, (state) => {
+			.addCase(fetchUsuariosConRolesPerms.pending, (state, action) => {
 				state.users.loading = true;
 				state.users.error = null;
+				state.users.activeRequestId = action.meta.requestId;
 			})
-			.addCase(fetchUsuariosConRolesPerms.fulfilled, (state, { payload }) => {
+			.addCase(fetchUsuariosConRolesPerms.fulfilled, (state, action) => {
+				if (state.users.activeRequestId !== action.meta.requestId) return;
+
 				state.users.loading = false;
-				state.users.data = payload;
+				state.users.activeRequestId = null;
+				state.users.data = action.payload.users;
+				state.users.meta = action.payload.meta;
 			})
-			.addCase(fetchUsuariosConRolesPerms.rejected, (state, { payload }) => {
+			.addCase(fetchUsuariosConRolesPerms.rejected, (state, action) => {
+				if (state.users.activeRequestId !== action.meta.requestId) return;
+
 				state.users.loading = false;
-				state.users.error = typeof payload === 'string' ? payload : 'Error desconocido';
+				state.users.activeRequestId = null;
+				state.users.data = [];
+				state.users.meta = null;
+				state.users.error =
+					typeof action.payload === 'string' ? action.payload : 'Error desconocido';
 			})
 			.addCase(updateUsuarioRolesPerms.pending, (state) => {
 				state.update.loading = true;

@@ -4,3 +4,4 @@
  */
 
 export * from './notebook.labels';
+export * from './equipment.labels';

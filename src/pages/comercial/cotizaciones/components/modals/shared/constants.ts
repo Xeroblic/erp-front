@@ -5,13 +5,19 @@ import { FormQuoteItem } from './types';
 
 export const IVA_RATE = 19;
 
+/** Medio de pago inicial de una cotización nueva; exento de recargo. */
+export const DEFAULT_PAYMENT_METHOD = 'efectivo';
+
+/** Medios de pago que no generan recargo por medio de pago. */
+export const EXEMPT_PAYMENT_METHODS: readonly string[] = ['efectivo', 'transferencia'];
+
 export const EMPTY_PRODUCT_ITEM: FormQuoteItem = {
 	id: 0,
 	quote_id: 0,
 	product_id: 0,
 	quantity: 1,
 	unit_price: 0,
-	includes_tax: false,
+	includes_tax: true,
 	created_at: '',
 	updated_at: '',
 	type: 'product',
@@ -23,7 +29,7 @@ export const EMPTY_CUSTOM_ITEM: FormQuoteItem = {
 	product_id: null,
 	quantity: 1,
 	unit_price: 0,
-	includes_tax: false,
+	includes_tax: true,
 	customer_name: '',
 	customer_sku: '',
 	description: '',

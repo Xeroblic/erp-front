@@ -3,6 +3,7 @@ import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { monitorSchema, type MonitorFormData } from '../../validation/monitor.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
@@ -20,6 +21,10 @@ import MonitorPortsSection from './sections/MonitorPortsSection';
 import MonitorAccessoriesSection from './sections/MonitorAccessoriesSection';
 import Observations from './sections/Observations';
 import GallerySection from '../shared/gallery/GallerySection';
+import {
+	isScreenCounterBelowMinimum,
+	needsScreenCounterNormalization,
+} from '../../utils/screenCounters';
 
 // ─── Section Order ─────────────────────────
 const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
@@ -74,6 +79,7 @@ const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
 		'is_touchscreen',
 		'screen_condition',
 		'spots_count',
+		'dead_pixels_count',
 		'stand_condition',
 		'frame_condition',
 	],
@@ -83,12 +89,17 @@ const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
 		'hdmi_ports',
 		'displayport_ports',
 		'dvi_ports',
-		'type_c_ports',
+		'usb_a_ports',
+		'usb_c_ports',
+		'sd_readers',
 		'rj45_ports',
-		'usb_hub_ports',
+		'charging_ports',
 		'all_ports_functional',
 		'defective_ports_count',
 		'defective_ports_critical_count',
+		'loose_ports_count',
+		'loose_port_types',
+		'defective_port_types',
 	],
 	accessories: ['includes_power_cable', 'includes_video_cable', 'includes_stand'],
 };
@@ -100,10 +111,14 @@ export interface MonitorFormProps {
 	isSubmitting?: boolean;
 	readOnly?: boolean;
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Guarda el borrador aunque la validación bloquee el avance de sección (ZF-102). */
+	onPersistDraft?: () => Promise<void> | void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
 	initialSectionKey?: string;
+	/** Metadata publicada por el endpoint de reglas para este tipo de equipo. */
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 const MonitorForm: React.FC<MonitorFormProps> = ({
@@ -113,18 +128,28 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 	isSubmitting,
 	readOnly,
 	onStepChange,
+	onPersistDraft,
 	registerGetFormValues,
 	isSaving,
 	initialSectionKey,
+	schemaFields,
 }) => {
 	const normalizedDefaultValues = useMemo(() => {
 		if (!defaultValues) return {} as MonitorFormData;
 
 		const values = { ...defaultValues } as Record<string, unknown>;
-		// Legacy compatibility: some historical records persisted usb_c_ports only.
-		if (values.type_c_ports == null && values.usb_c_ports != null) {
-			values.type_c_ports = values.usb_c_ports;
+		// `usb_hub_ports` y `type_c_ports` se renombraron a `usb_a_ports` y `usb_c_ports`,
+		// y la migración del backend arrastró los datos guardados. La carga sólo cubre lo
+		// que ya estuviera hidratado con los nombres viejos —una respuesta en caché, una
+		// pestaña abierta desde antes del despliegue— para no mostrar el contador en cero.
+		if (values.usb_a_ports == null && values.usb_hub_ports != null) {
+			values.usb_a_ports = values.usb_hub_ports;
 		}
+		if (values.usb_c_ports == null && values.type_c_ports != null) {
+			values.usb_c_ports = values.type_c_ports;
+		}
+		delete values.usb_hub_ports;
+		delete values.type_c_ports;
 
 		return values as unknown as MonitorFormData;
 	}, [defaultValues]);
@@ -167,6 +192,37 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		}
 	}, [normalizedDefaultValues, reset]);
 
+	// Reconcilia los contadores con su condición. Corre en el montaje y en cada cambio
+	// de las tres variables observadas (no sólo al cargar): si la condición está
+	// inactiva limpia el contador, y si está activa conserva el valor recibido
+	// —incluido el 0 de un borrador— pero lo valida de inmediato para que el error se
+	// vea sin tener que intentar avanzar de paso. `mode: 'onChange'` no valida un campo
+	// que nadie tocó.
+	const screenCondition = watch('screen_condition');
+	const spotsCount = watch('spots_count');
+	const deadPixelsCount = watch('dead_pixels_count');
+	useEffect(() => {
+		if (readOnly) return;
+
+		const isSpots = screenCondition === 'spots';
+		if (needsScreenCounterNormalization(isSpots, spotsCount)) {
+			setValue('spots_count', 0, {
+				shouldValidate: true,
+			});
+		} else if (isSpots && isScreenCounterBelowMinimum(spotsCount)) {
+			void trigger('spots_count');
+		}
+
+		const isDeadPixels = screenCondition === 'dead_pixels';
+		if (needsScreenCounterNormalization(isDeadPixels, deadPixelsCount)) {
+			setValue('dead_pixels_count', 0, {
+				shouldValidate: true,
+			});
+		} else if (isDeadPixels && isScreenCounterBelowMinimum(deadPixelsCount)) {
+			void trigger('dead_pixels_count');
+		}
+	}, [readOnly, screenCondition, spotsCount, deadPixelsCount, setValue, trigger]);
+
 	const sectionProps = {
 		control,
 		errors,
@@ -174,6 +230,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		watch,
 		setValue,
 		getValues,
+		schemaFields,
 		onDirectSubmit: (partialData: Partial<MonitorFormData>) => {
 			const currentData = getValues();
 			const payload = { ...currentData, ...partialData } as MonitorFormData;
@@ -207,10 +264,6 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			async (data) => {
 				try {
 					const finalData = { ...data } as Record<string, unknown>;
-					const resolvedTypeCPorts = finalData.type_c_ports ?? finalData.usb_c_ports;
-					finalData.type_c_ports = resolvedTypeCPorts;
-					// Keep alias synced to prevent divergence in intermediate layers.
-					finalData.usb_c_ports = resolvedTypeCPorts;
 					if (
 						!finalData.extra_attributes ||
 						Object.keys(finalData.extra_attributes).length === 0
@@ -247,6 +300,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onPersistDraft={onPersistDraft}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
 			initialSectionKey={initialSectionKey}

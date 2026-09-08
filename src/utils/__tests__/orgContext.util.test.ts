@@ -50,6 +50,24 @@ describe('orgContext.util', () => {
 			expect(resolveSubsidiaryFromBranch(4, user)).toBe(40);
 		});
 
+		it('continúa en fuentes posteriores si una coincidencia no trae subsidiaria', () => {
+			const user: ContextUser = {
+				branch: { id: 12 },
+				branches: [{ id: 12, subsidiary: { id: 7 } }],
+			};
+
+			expect(resolveSubsidiaryFromBranch(12, user)).toBe(7);
+		});
+
+		it('acepta los alias de subsidiaria como IDs escalares', () => {
+			expect(resolveSubsidiaryFromBranch(2, { branch: { id: 2, subsidiary: '20' } })).toBe(
+				20,
+			);
+			expect(resolveSubsidiaryFromBranch(3, { branch: { id: 3, subsidiary_info: 30 } })).toBe(
+				30,
+			);
+		});
+
 		it('resuelve sobre el payload real de /perfil', () => {
 			const user: ContextUser = {
 				branch: {

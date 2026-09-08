@@ -38,39 +38,26 @@ proyecto, sin reinventar layouts, autorización ni manejo de estado.
    obtienen el contexto desde los **hooks de branch** (sección 6), nunca hardcodeado.
 6. **Lógica fuera del JSX.** La lógica vive en un hook `use<Pagina>` dentro de `hooks/`; el
    componente de vista es presentacional.
+7. **El backend es de sólo lectura.** Desde este repo no se modifica nada de
+   `../zentria-erp-back`. Para conocer un contrato real (método, URL, campos, nullabilidad,
+   validación y **permiso efectivo** de la ruta) se consulta el MCP **Laravel Boost**, nunca se
+   deduce de un nombre parecido ni de cómo lo llama el frontend. `tinker`, `database-query` y
+   los artisan que mutan están bloqueados. Detalle en `.claude/README.md`.
 
 ---
 
 ## 3. Estructura de un módulo/página (patrón canónico)
 
-Las páginas viven en `src/pages/<area>/<Modulo>/`. El patrón real (ej.
-`src/pages/comercial/clientesVentas/ClientesVentasDetalle/`) es:
-
-```
-src/pages/<area>/<Modulo>/
-├── index.tsx                 # Entry: importa la View y la renderiza (delgado)
-├── <Modulo>View.tsx          # Componente presentacional (JSX + Design System)
-├── types.ts                  # Interfaces locales + Yup schemas del módulo
-├── hooks/
-│   └── use<Modulo>.ts         # Lógica: datos, Formik, dispatch, estado
-└── components/
-    ├── modals/               # CreateXModal, DeleteXModal, ...
-    ├── tables/               # XTable (TanStack)
-    └── parts/                # piezas reutilizables del módulo
-```
-
-`index.tsx` mínimo:
-
-```tsx
-import React from 'react';
-import ModuloView from './ModuloView';
-
-const Modulo = () => <ModuloView />;
-export default Modulo;
-```
+Las páginas viven en `src/pages/<area>/<Modulo>/` y siguen siempre el mismo patrón:
+`index.tsx` delgado → `<Modulo>View.tsx` presentacional → `types.ts` (interfaces + schemas
+Yup) → `hooks/use<Modulo>.ts` (toda la lógica) → `components/{modals,tables,parts}/`.
+Referencia real: `src/pages/comercial/clientesVentas/ClientesVentasDetalle/`.
 
 Datos de dominio compartidos entre módulos → `src/store/slices/<modulo>/`. Tipos de
 dominio compartidos → `src/interface/*.interface.ts`.
+
+> El árbol completo y el `index.tsx` de ejemplo están en
+> **`.claude/skills/nueva-pagina/SKILL.md`**, junto con la receta de §10.
 
 ---
 
@@ -140,6 +127,11 @@ company). Super-admin (`super-admin` en permisos o roles) siempre pasa.
 Para acciones de escritura usa normalmente `scope="access"`. Si el usuario no tiene
 sucursales/subsidiarias listadas (set vacío), las funciones `canAccess*`/`canView*`
 devuelven `true` (no bloquean).
+
+**Trampa del `authority`:** el arreglo declarado en `pages.config.ts` lo consumen dos guards con
+semántica opuesta — `AuthorityCheck` (rutas) exige **todos** los permisos (`requireAll: true`), el
+aside evalúa OR. Ampliarlo para mostrar un ítem de menú le **quita la ruta** a quien no tenga
+ambos. Resolver la visibilidad del menú por separado.
 
 Ejemplo declarativo:
 
@@ -255,21 +247,12 @@ Para una página nueva: añade el `lazy(() => import('@/pages/...'))`, su entrad
 
 ## 10. Receta: "crea una página X" (haz esto por defecto)
 
-1. **Ubicación:** `src/pages/<area>/<Modulo>/` con la estructura de la sección 3.
-2. **Tipos + validación:** en `types.ts`, interfaces (`IX`, `CreateXPayload`) y `XSchema`
-   de **Yup**. Cero `any`; usa `enum`/uniones para estados.
-3. **Datos:** thunks/selectores en `src/store/slices/<modulo>/` (o reutiliza un slice).
-   Las llamadas pasan por `ApiService`.
-4. **Lógica:** hook `hooks/use<Modulo>.ts` — toma `useCurrentBranch()`, configura
-   **Formik** con `XSchema`, hace `dispatch(...).unwrap()`, expone `{ data, state, form,
-actions }` memoizados.
-5. **Vista:** `<Modulo>View.tsx` presentacional con `PageWrapper > Subheader > Container`
-   y componentes del Design System. Inputs enlazados a Formik.
-6. **Autorización:** ruta con `ProtectedRoute`/`authority`; acciones con
-   `ProtectedButton`/`PermissionGuard` usando `branchId` de `useCurrentBranch` + `scope`.
-7. **Estados:** maneja `isLoading` (skeleton/spinner), `isError` (toast/alert), empty
-   state y doble-submit (deshabilita el botón mientras `isSubmitting`/`creating`).
-8. **Rutas/menú:** registra en `contentRoutes.tsx` + `pages.config.ts`.
+La receta paso a paso (ubicación, tipos + Yup, slice, hook, vista, autorización, estados y
+registro de rutas/menú) vive en **`.claude/skills/nueva-pagina/SKILL.md`**. Invocá ese skill
+al crear una página o módulo nuevo, en vez de improvisar la estructura.
+
+Se mantiene fuera de este archivo a propósito: son ~120 líneas de referencia que sólo se usan
+al crear una página, y `CLAUDE.md` se carga entero en cada sesión.
 
 ---
 
@@ -282,16 +265,51 @@ actions }` memoizados.
 - Feedback al usuario con `react-toastify` (ya usado en slices).
 - Accesibilidad: usa `<button>`/componentes UI, no `div` con `onClick`.
 
-## 12. Agentes de apoyo (`.agents/skills/`)
+## 12. Agentes de apoyo (`.claude/`)
 
-Prompts de roles para diseño asistido: `Architect`, `Full_TS`, `Full_React`, `UI_UX`,
-`Dev_Implementador`, `Tester_QA` y `PR_Readiness`. Úsalos como referencia de criterios, **pero ante
-cualquier conflicto manda este CLAUDE.md** (sobre todo: Formik + Yup, no RHF + Zod).
+La configuración de agentes vive **versionada** en `.claude/`, así que un clon fresco ya la trae:
 
-> **Nota:** `.agents/` es **local-only** (no se versiona). El snapshot canónico de los
-> skills quedó en el historial git del commit `chore: snapshot completo de .agents`.
-> Si clonás el repo fresco, no verás la carpeta — podés recuperarla de ese commit o
-> de tu copia local anterior.
+`.claude/` está versionado: `settings.json` (permisos e hooks), `agents/` (8 subagentes),
+`skills/` (criterios por rol, **copia canónica** que también leen Codex y OpenCode) y
+`hooks/` (guardas ejecutables). El inventario completo, las herramientas de cada agente y la
+política de costo de contexto están en **`.claude/README.md`**.
+
+Los skills son referencia, **pero ante cualquier conflicto manda este CLAUDE.md** (sobre todo:
+Formik + Yup, no RHF + Zod). **Delegá en un subagente sólo si el usuario lo pide** o si una
+instrucción aplicable lo autoriza, y sólo para subtareas independientes.
+
+**Verificación acotada, siempre:**
+
+| En vez de    | Usá                                | Por qué                                                       |
+| ------------ | ---------------------------------- | ------------------------------------------------------------- |
+| `pnpm test`  | `pnpm run test:related <archivos>` | `test` es `vitest` sin `run`: modo watch, no termina nunca.   |
+| `pnpm lint`  | `pnpm run lint:changed`            | El completo son 9.033 líneas y 7.553 hallazgos preexistentes. |
+| `tsc` suelto | `pnpm run typecheck`               | Comando único y ya autorizado.                                |
+
+Usá `test:run` o `lint` completos sólo cuando el alcance realmente lo justifique, y reportá
+por separado los hallazgos nuevos de la deuda preexistente.
+
+### Circuito de calidad antes de un PR
+
+Activá `.claude/skills/pr-readiness/SKILL.md` antes de cualquier cambio **no trivial** que toque
+contrato/API, archivos, permisos, estado remoto, contexto organizacional, formulario, overlay,
+mutación, componente compartido o accesibilidad. La activación depende del riesgo del diff, no de
+que se mencione un PR. El skill define el preflight observable, la matriz `riesgo → evidencia`,
+la auditoría independiente y el cierre.
+
+El skill abre con **«Defectos recurrentes de este repositorio»**: seis trampas concretas, cada una
+nacida de un PR rechazado, con su condición observable de cierre. Recorrerlas es obligatorio cuando
+el diff las toca — son la causa de la mayoría de las correcciones, y ninguna se detecta razonando
+en abstracto.
+
+**CI:** el workflow `Calidad de PR` ejecuta `check:eol`, `prettier:check`, `lint:imports`,
+`typecheck` y `test:run` en cada pull request. No abras ni actualices un PR con esa corrida en
+rojo: es la verificación que el revisor va a mirar primero.
+
+**Vía rápida:** un cambio literal y determinista de hasta 3 archivos de configuración,
+documentación o copy, con el resultado completamente especificado y sin tocar lógica, API,
+permisos, estado, formularios, overlays, componentes compartidos ni accesibilidad, no activa
+el circuito: basta el check directamente relacionado y `git diff --check`.
 
 ## 13. Bitácora de trabajo (`bitacora_trabajo/`)
 
@@ -324,5 +342,24 @@ el usuario lo pida o el cambio sea material.
 - **Commits en español**, formato **Conventional Commits** (`feat:`, `fix:`, `chore:`, `refactor:`, `style:`, `docs:`, `test:`).
 - Cada tarea en una **rama independiente** desde `develop`. El nombre debe estar en español, usando kebab-case y conservando el prefijo técnico (ej. `feat/orden-compra`, `fix/error-precios`). No crear ramas con descripciones en inglés.
 - **Antes de empezar:** `git pull origin develop`, crear rama nueva desde `develop`, trabajar ahí.
-- **No hacer PRs directamente.** Al terminar la tarea, generar el texto del PR para que el usuario lo copie, revise y pegue. Lo mismo con releases: mostrar el texto propuesto, esperar confirmación.
-- El PR siempre apunta a `develop`.
+- **Nada remoto sin autorización explícita.** Commit, push, crear PR, actualizar PR, merge y release son autorizaciones **independientes**: aprobar una no habilita las demás. Por defecto se entrega el texto del PR para que el usuario lo revise; si el usuario autoriza la publicación, el agente la ejecuta y verifica el estado remoto.
+- El PR siempre apunta a `develop`. El formato obligatorio del cuerpo está en `.claude/skills/pr-publisher/SKILL.md`.
+
+### Identidad de publicación
+
+Todo lo que llega a GitHub va **bajo la cuenta del usuario**, nunca bajo una identidad de Claude,
+de un bot o de una GitHub App. En concreto:
+
+- La cuenta activa de `gh` debe ser la del usuario y venir de su credencial local. Si el token
+  activo proviene de `GH_TOKEN` o `GITHUB_TOKEN` del entorno, **detenerse**: puede pertenecer a
+  una app. Verificar con `gh auth status --active`.
+- La autoría del commit es la de `git config user.name` / `user.email`. No usar `--author`,
+  `--committer` ni `git -c user.email=...`.
+- **Sin atribución de herramienta:** ningún commit lleva `Co-Authored-By: Claude` y ningún cuerpo
+  de PR lleva «Generated with Claude Code» ni firma equivalente. Los trailers `Co-authored-by` se
+  reservan para personas reales del equipo.
+
+El hook `.claude/hooks/identidad-github.mjs` bloquea automáticamente los comandos que violen
+cualquiera de estas tres reglas. Para la atribución inspecciona tanto el comando como el
+contenido de los archivos que referencia (`git commit -F`, `gh pr create --body-file`), así que
+tampoco pasa cuando el mensaje va en un archivo.

@@ -11,9 +11,10 @@ import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
-import { notebookSchema, type NotebookFormData } from '../../validation/notebook.schema';
+import { resolveNotebookSchema, type NotebookFormData } from '../../validation/notebook.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 
 // ─── Section Components ──────────────────────────────────────────────────────
 import BasicInfoSection from './sections/BasicInfoSection';
@@ -91,6 +92,17 @@ const NOTEBOOK_SECTIONS: SectionConfig<NotebookFormData>[] = [
 	},
 ];
 
+/**
+ * Campos de la sección «Entrada» que InputSection sólo puede renderizar con el schema
+ * remoto: sus opciones (o su rótulo, en el contador de teclas) nacen en el backend y no
+ * hay constante local que las reemplace. Validar por ellos sin schema dejaría al técnico
+ * frente a un error sin campo en pantalla que corregir.
+ */
+const NOTEBOOK_REMOTE_ONLY_FIELDS: FieldPath<NotebookFormData>[] = [
+	'non_functional_keys_count',
+	'speakers_condition',
+];
+
 const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 	'basic-info': ['brand', 'model', 'line'],
 	hardware: [
@@ -125,6 +137,9 @@ const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 		'rj45_ports',
 		'all_ports_functional',
 		'defective_ports_count',
+		'loose_ports_count',
+		'loose_port_types',
+		'defective_port_types',
 	],
 	screen: [
 		'screen_inches',
@@ -133,14 +148,18 @@ const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 		'dead_pixels_count',
 		'spots_count',
 	],
-	input: ['keyboard_condition', 'keyboard_layout', 'has_numeric_keypad', 'has_backlit_keyboard'],
-	aesthetics: [
-		'general_condition',
-		'cover_condition',
-		'hinge_condition',
+	input: [
+		'keyboard_condition',
+		'non_functional_keys_count',
+		'keyboard_layout',
+		'has_numeric_keypad',
+		'has_backlit_keyboard',
 		'touchpad_condition',
-		'bottom_condition',
+		'hinge_condition',
+		'keyboard_cover_condition',
+		'speakers_condition',
 	],
+	aesthetics: ['general_condition', 'powers_on', 'cover_condition', 'bottom_condition'],
 	software: ['operating_system', 'has_biometric', 'has_wifi', 'has_bluetooth'],
 	observations: ['observations'],
 };
@@ -154,12 +173,15 @@ interface NotebookFormProps {
 	readOnly?: boolean;
 	/** Called when user navigates between form sections */
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Guarda el borrador aunque la validación bloquee el avance de sección (ZF-102). */
+	onPersistDraft?: () => Promise<void> | void;
 	/** Registers a getter for current form values (used by auto-save) */
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	/** Whether auto-save is in progress */
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
 	initialSectionKey?: string;
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 const NotebookForm: React.FC<NotebookFormProps> = ({
@@ -169,18 +191,39 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	isSubmitting = false,
 	readOnly = false,
 	onStepChange,
+	onPersistDraft,
 	registerGetFormValues,
 	isSaving = false,
 	initialSectionKey,
+	schemaFields,
 }) => {
 	const normalizedDefaultValues = useMemo<Partial<NotebookFormData>>(
 		() => ({
 			...(defaultValues || {}),
+			// ZF-102. La casilla desmarcada significa «cero teclas malas», pero el valor
+			// sólo se escribía al tocarla: con el teclado sano el campo viajaba como
+			// `undefined`, el filtro del payload lo descartaba y la columna quedaba NULL,
+			// que para el backend es «sin medir» y bloquea el cierre. El 0 nace acá, en el
+			// estado del formulario, para que lo vean las cuatro rutas de escritura
+			// (submit final, los dos autoguardados y el atajo «no enciende»).
+			non_functional_keys_count: defaultValues?.non_functional_keys_count ?? 0,
 			has_numeric_keypad: defaultValues?.has_numeric_keypad ?? false,
 			has_backlit_keyboard: defaultValues?.has_backlit_keyboard ?? false,
 			has_second_battery: defaultValues?.has_second_battery ?? false,
 		}),
 		[defaultValues],
+	);
+
+	/**
+	 * ZF-102. `speakers_condition` se exige cuando el schema remoto lo publica como
+	 * obligatorio, que es cuando `InputSection` renderiza la tarjeta con su asterisco: la
+	 * misma fuente que ya consume la sección desde ZF-48, y el mismo criterio de
+	 * `NOTEBOOK_REMOTE_ONLY_FIELDS`. Sin esto, saltarse la tarjeta dejaba pasar el
+	 * formulario y el 422 de `complete-review` llegaba sin campo señalado.
+	 */
+	const effectiveSchema = useMemo(
+		() => resolveNotebookSchema(schemaFields?.speakers_condition?.required === true),
+		[schemaFields],
 	);
 
 	const {
@@ -194,7 +237,10 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		reset,
 		formState: { errors },
 	} = useForm<NotebookFormData>({
-		resolver: yupResolver(notebookSchema) as unknown as Resolver<NotebookFormData>,
+		// react-hook-form 7.62 relee `control._options` en cada render: pasar el resolver
+		// directo alcanza para que la validación de "Finalizar" recoja el schema vigente
+		// cuando el fetch remoto llega después del montaje (ZF-102).
+		resolver: yupResolver(effectiveSchema) as unknown as Resolver<NotebookFormData>,
 		defaultValues: normalizedDefaultValues,
 		mode: 'onBlur',
 	});
@@ -207,13 +253,14 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			readOnly,
 			watch,
 			setValue,
+			schemaFields,
 			onDirectSubmit: (partialData) => {
 				const currentData = getValues();
 				const payload = { ...currentData, ...partialData } as NotebookFormData;
 				onSubmit(payload);
 			},
 		}),
-		[control, errors, readOnly, watch, setValue, getValues, onSubmit],
+		[control, errors, readOnly, watch, setValue, getValues, onSubmit, schemaFields],
 	);
 
 	// Expose getFormValues to parent for auto-save
@@ -235,14 +282,26 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		}
 	}, [normalizedDefaultValues, reset]);
 
+	// Los campos que dependen del schema remoto sólo se validan si están en pantalla.
+	const sectionFields = useMemo<Record<string, FieldPath<NotebookFormData>[]>>(
+		() => ({
+			...NOTEBOOK_SECTION_FIELDS,
+			input: NOTEBOOK_SECTION_FIELDS.input.filter(
+				(field) =>
+					!NOTEBOOK_REMOTE_ONLY_FIELDS.includes(field) || Boolean(schemaFields?.[field]),
+			),
+		}),
+		[schemaFields],
+	);
+
 	// Handle finish
 	const validateStep = async (sectionKey: string) => {
-		const stepFields = NOTEBOOK_SECTION_FIELDS[sectionKey] ?? [];
+		const stepFields = sectionFields[sectionKey] ?? [];
 		const currentValues = getValues();
 
 		for (const field of stepFields) {
 			try {
-				await notebookSchema.validateAt(field, currentValues);
+				await effectiveSchema.validateAt(field, currentValues);
 			} catch (error) {
 				await trigger(stepFields, { shouldFocus: true });
 				if (error instanceof Error) {
@@ -312,6 +371,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onPersistDraft={onPersistDraft}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
 			initialSectionKey={initialSectionKey}

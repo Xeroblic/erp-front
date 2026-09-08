@@ -22,6 +22,7 @@ export interface ReviewData {
 
 	// Teclado
 	keyboard_condition?: string;
+	keyboard_cover_condition?: string;
 	keyboard_layout?: string;
 	has_numeric_keypad?: boolean;
 	has_backlit_keyboard?: boolean;
@@ -51,12 +52,24 @@ export interface ReviewData {
 	sd_readers?: number;
 	rj45_ports?: number;
 	dvi_ports?: number;
-	type_c_ports?: number;
+	charging_ports?: number;
 	has_usb_hub?: boolean;
 	usb_hub_ports?: number;
 	all_ports_functional?: boolean;
 	defective_ports_count?: number;
 	defective_ports_critical_count?: number;
+	/**
+	 * Desglose `{tipo: cantidad}` de ZF-98. Un tipo sin puertos se omite del mapa.
+	 *
+	 * A diferencia de la revisión técnica, acá un mapa vacío **no** significa «se midió,
+	 * ninguno»: `prepareAttributesForSubmit` poda todo objeto sin claves antes de enviar el
+	 * producto, así que un `{}` guardado vuelve como ausente en la siguiente carga. El spec
+	 * del producto sólo distingue «hay desglose» de «no hay», y el editor se comporta igual
+	 * en los dos casos desde el arranque en vez de cambiar al recargar.
+	 */
+	defective_port_types?: Record<string, number>;
+	loose_ports_count?: number;
+	loose_port_types?: Record<string, number>;
 
 	// Accesorios
 	includes_charger?: boolean;

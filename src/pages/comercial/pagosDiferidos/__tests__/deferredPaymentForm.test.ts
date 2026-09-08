@@ -5,6 +5,7 @@ import {
 	calculateDeferredPaymentVatBreakdown,
 	createDeferredPaymentInitialValues,
 	DeferredPaymentDocumentSchema,
+	DEFERRED_PAYMENT_ISSUE_DATE_FUTURE_ERROR,
 } from '../types';
 import { formatCLP } from '@/utils/format.utils';
 import { formatDeferredPaymentInputAmount, parseDeferredPaymentAmount } from '../utils';
@@ -30,6 +31,17 @@ const validValues = {
 	],
 };
 
+// Fechas relativas al día real de ejecución: una constante futura fija caducaría
+// y dejaría de probar la regla "la emisión no puede ser posterior a hoy" (ZF-105).
+const shiftLocalDateOnly = (days: number): string => {
+	const date = new Date();
+	date.setDate(date.getDate() + days);
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+};
+
 describe('ZF-7 formulario de pago diferido', () => {
 	it('acepta un documento completo con al menos un ítem', async () => {
 		await expect(DeferredPaymentDocumentSchema.validate(validValues)).resolves.toMatchObject({
@@ -51,6 +63,26 @@ describe('ZF-7 formulario de pago diferido', () => {
 				due_date: '2026-07-27',
 			}),
 		).rejects.toThrow('La fecha de vencimiento no puede ser anterior a la fecha de emisión');
+	});
+
+	it('rechaza una fecha de emisión posterior a hoy', async () => {
+		await expect(
+			DeferredPaymentDocumentSchema.validate({
+				...validValues,
+				issue_date: shiftLocalDateOnly(1),
+				due_date: shiftLocalDateOnly(31),
+			}),
+		).rejects.toThrow(DEFERRED_PAYMENT_ISSUE_DATE_FUTURE_ERROR);
+	});
+
+	it('acepta la fecha de emisión de hoy', async () => {
+		await expect(
+			DeferredPaymentDocumentSchema.validate({
+				...validValues,
+				issue_date: shiftLocalDateOnly(0),
+				due_date: shiftLocalDateOnly(30),
+			}),
+		).resolves.toMatchObject({ issue_date: shiftLocalDateOnly(0) });
 	});
 
 	it('rechaza cantidades no positivas', async () => {

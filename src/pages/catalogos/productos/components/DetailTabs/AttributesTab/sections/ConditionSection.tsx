@@ -11,6 +11,7 @@ import {
 	TOUCHPAD_CONDITIONS,
 	BOTTOM_CONDITIONS,
 	KEYBOARD_CONDITIONS,
+	KEYBOARD_COVER_CONDITIONS,
 	KEYBOARD_LAYOUTS,
 	BATTERY_STATUSES,
 } from '../constants/review-options';
@@ -157,6 +158,27 @@ const ConditionSection: React.FC<ReviewSectionProps> = ({ data, updateField, pro
 								}>
 								<option value=''>Seleccionar</option>
 								{KEYBOARD_CONDITIONS.map((o) => (
+									<option key={o.value} value={o.value}>
+										{o.label}
+									</option>
+								))}
+							</Select>
+						</div>
+						<div className='space-y-1'>
+							<label
+								className='text-sm font-medium text-neutral-700 dark:text-neutral-300'
+								htmlFor='review_keyboard_cover'>
+								Cubierta del teclado
+							</label>
+							<Select
+								id='review_keyboard_cover'
+								name='review_keyboard_cover'
+								value={data.keyboard_cover_condition ?? ''}
+								onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+									updateField('keyboard_cover_condition', e.target.value)
+								}>
+								<option value=''>Seleccionar</option>
+								{KEYBOARD_COVER_CONDITIONS.map((o) => (
 									<option key={o.value} value={o.value}>
 										{o.label}
 									</option>

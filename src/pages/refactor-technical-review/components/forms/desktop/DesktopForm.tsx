@@ -13,6 +13,7 @@ import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
 import { useFormCompleteness } from '../../../hooks/useFormCompleteness';
 import { DESKTOP_FIELDS_METADATA } from '../../constants/desktop/desktop.fields';
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 
 import {
 	ALLOWED_COVER_CONDITIONS,
@@ -113,8 +114,11 @@ const DESKTOP_SECTION_FIELDS: Record<string, FieldPath<DesktopFormData>[]> = {
 		'rj45_ports',
 		'all_ports_functional',
 		'defective_ports_count',
+		'loose_ports_count',
+		'loose_port_types',
+		'defective_port_types',
 	],
-	aesthetics: ['general_condition', 'cover_condition'],
+	aesthetics: ['general_condition', 'cover_condition', 'powers_on'],
 	connectivity: ['has_wifi', 'has_bluetooth', 'has_cd_drive'],
 	accessories: ['includes_charger', 'charger_status'],
 	software: ['operating_system'],
@@ -129,10 +133,13 @@ interface DesktopFormProps {
 	isSubmitting?: boolean;
 	readOnly?: boolean;
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Guarda el borrador aunque la validación bloquee el avance de sección (ZF-102). */
+	onPersistDraft?: () => Promise<void> | void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount */
 	initialSectionKey?: string;
+	schemaFields?: ITechnicalReviewSchema;
 }
 
 const DesktopForm: React.FC<DesktopFormProps> = ({
@@ -142,9 +149,11 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	isSubmitting = false,
 	readOnly = false,
 	onStepChange,
+	onPersistDraft,
 	registerGetFormValues,
 	isSaving = false,
 	initialSectionKey,
+	schemaFields,
 }) => {
 	const {
 		control,
@@ -178,13 +187,14 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			readOnly,
 			watch,
 			setValue,
+			schemaFields,
 			onDirectSubmit: (partialData) => {
 				const currentData = getValues();
 				const payload = { ...currentData, ...partialData } as DesktopFormData;
 				onSubmit(payload);
 			},
 		}),
-		[control, errors, readOnly, watch, setValue, getValues, onSubmit],
+		[control, errors, readOnly, watch, setValue, getValues, onSubmit, schemaFields],
 	);
 
 	// Expose getFormValues to parent for auto-save
@@ -287,6 +297,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onPersistDraft={onPersistDraft}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
 			initialSectionKey={initialSectionKey}

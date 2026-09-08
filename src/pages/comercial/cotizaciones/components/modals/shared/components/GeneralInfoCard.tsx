@@ -1,42 +1,62 @@
 import React from 'react';
-import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
+import { FormikErrors, FormikTouched } from 'formik';
+import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
 import Input from '@/components/form/Input';
-import Button from '@/components/ui/Button';
-import { FormikErrors, FormikTouched } from 'formik';
-import { FormQuotationValues } from '../types';
+import CustomerSaleSelect, {
+	type CustomerSaleOption,
+} from '@/components/customers/CustomerSaleSelect';
+import { useAppDispatch } from '@/store';
+import { fetchCustomerDetailThunk } from '@/store/slices/customerSales/customerSalesSlice';
+import type { ICustomerSale } from '@/interface/customerSales.interface';
 import { QuoteStatus } from '@/interface';
-import Badge from '@/components/ui/Badge';
-import Icon from '@/components/icon/Icon';
-import CreateCustomerModal from './CreateCustomerModal';
-import ApiService from '@/services/ApiService';
-import { toast } from 'react-toastify';
+import { FormQuotationValues } from '../types';
+import {
+	QUOTATION_CARD_CLASSNAME,
+	QUOTATION_MUTED_TEXT_CLASSNAME,
+	QUOTATION_SUBTITLE_CLASSNAME,
+} from '../styles';
+import QuotationField from './QuotationField';
 
-const getCustomerField = (customer: any, keys: string[]) => {
-	for (const key of keys) {
-		const value = key
-			.split('.')
-			.reduce<any>((acc, part) => (acc != null ? acc[part] : undefined), customer);
-		if (value !== undefined && value !== null && String(value).trim() !== '') {
-			return value;
-		}
-	}
-	return '';
+const DOCUMENT_TYPE_OPTIONS: TSelectOptions = [
+	{ value: 'factura', label: 'Factura' },
+	{ value: 'boleta', label: 'Boleta' },
+];
+
+const SECTION_TITLE_CLASSNAME = 'text-sm font-semibold text-zinc-900 dark:text-white';
+
+/** Campos de la cotización que se autocompletan con el detalle del cliente. */
+const toCustomerAutofill = (customer: ICustomerSale) => ({
+	customer_rut: customer.rut ?? customer.document_number ?? '',
+	customer_giro: customer.giro ?? customer.trade_activity ?? '',
+	customer_shipping_address: customer.shipping_address_1 ?? customer.address ?? '',
+	customer_billing_address: customer.billing_address_1 ?? customer.address ?? '',
+	customer_contact_name: customer.contact_name ?? customer.primary_contact?.name ?? customer.name,
+	customer_email: customer.email ?? customer.primary_contact?.email ?? '',
+});
+
+const EMPTY_CUSTOMER_AUTOFILL = {
+	customer_rut: '',
+	customer_giro: '',
+	customer_shipping_address: '',
+	customer_billing_address: '',
+	customer_contact_name: '',
+	customer_email: '',
 };
 
 interface GeneralInfoCardProps {
 	values: FormQuotationValues;
-	setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void;
+	setFieldValue: (field: string, value: unknown, shouldValidate?: boolean) => void;
 	errors: FormikErrors<FormQuotationValues>;
 	touched: FormikTouched<FormQuotationValues>;
-	customerOptions: TSelectOptions;
-	subsidiaryId: number;
-	customersData?: any[];
+	subsidiaryId: number | null;
+	/** Mientras es `false` el modal está cerrado: no se consulta ni se autocompleta. */
+	isActive: boolean;
+	/** Cliente ya guardado de la cotización en edición, para que siga visible. */
+	fallbackCustomerOption?: CustomerSaleOption | null;
 	paymentMethodOptions: TSelectOptions;
 	paymentTermsOptions: TSelectOptions;
 	statusOptions: TSelectOptions;
-	onCustomerCreated: (customerId: number, customerName: string, customerData?: any) => void;
-	onCustomerUpdated?: (customerId: number, customerData: any) => void;
 }
 
 const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
@@ -44,451 +64,268 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 	setFieldValue,
 	errors,
 	touched,
-	customerOptions,
 	subsidiaryId,
-	customersData,
+	isActive,
+	fallbackCustomerOption = null,
 	paymentMethodOptions,
 	paymentTermsOptions,
 	statusOptions,
-	onCustomerCreated,
-	onCustomerUpdated,
 }) => {
-	const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
-	const [isSavingCustomer, setIsSavingCustomer] = React.useState(false);
+	const dispatch = useAppDispatch();
 	const [isLoadingCustomerDetail, setIsLoadingCustomerDetail] = React.useState(false);
+	/** Último cliente cuyo detalle ya se volcó al formulario, para no pisar ediciones. */
+	const autofilledCustomerIdRef = React.useRef<number | null>(null);
+	const detailRequestIdRef = React.useRef(0);
+	const customerId = values.customer_id || null;
 
-	const selectMenuProps = React.useMemo(
-		() => ({
-			menuPortalTarget: typeof document !== 'undefined' ? document.body : null,
-			menuPosition: 'fixed' as const,
-			styles: {
-				menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
-			},
-		}),
-		[],
-	);
-
-	const selectedCustomer = customersData?.find(
-		(c) => Number(c.id) === Number(values.customer_id),
-	);
-	const customerRut = getCustomerField(selectedCustomer, [
-		'tax_number',
-		'rut',
-		'document_number',
-	]);
-	const customerGiro = getCustomerField(selectedCustomer, [
-		'activity',
-		'giro',
-		'business_activity',
-	]);
-	const customerShippingAddress = getCustomerField(selectedCustomer, [
-		'shipping_address',
-		'address',
-		'addresses.0.address',
-	]);
-	const customerBillingAddress = getCustomerField(selectedCustomer, [
-		'billing_address',
-		'billing_company_address',
-		'address',
-	]);
-	const customerContact = getCustomerField(selectedCustomer, [
-		'contact_name',
-		'contact.name',
-		'name',
-	]);
-	const customerEmail = getCustomerField(selectedCustomer, ['email', 'contact.email']);
-	const hasExtendedCustomerData = Boolean(
-		getCustomerField(selectedCustomer, [
-			'giro',
-			'trade_activity',
-			'billing_address_1',
-			'shipping_address_1',
-			'primary_contact.phone',
-		]),
-	);
-
-	React.useEffect(() => {
-		const loadCustomerDetail = async () => {
-			if (!values.customer_id || !selectedCustomer || hasExtendedCustomerData) {
-				return;
-			}
-
-			setIsLoadingCustomerDetail(true);
-			try {
-				const response = await ApiService.fetchData<any>({
-					url: `/subsidiaries/${subsidiaryId}/customer-sales/${values.customer_id}`,
-					method: 'get',
-				});
-
-				const customerDetail = response.data?.data ?? response.data;
-				if (customerDetail) {
-					onCustomerUpdated?.(Number(values.customer_id), customerDetail);
-				}
-			} catch (error) {
-				console.error('Error cargando detalle del cliente:', error);
-			} finally {
-				setIsLoadingCustomerDetail(false);
-			}
-		};
-
-		loadCustomerDetail();
-	}, [
-		values.customer_id,
-		selectedCustomer,
-		hasExtendedCustomerData,
-		subsidiaryId,
-		onCustomerUpdated,
-	]);
-
-	React.useEffect(() => {
-		if (!values.customer_id) {
-			setFieldValue('customer_rut', '', false);
-			setFieldValue('customer_giro', '', false);
-			setFieldValue('customer_shipping_address', '', false);
-			setFieldValue('customer_billing_address', '', false);
-			setFieldValue('customer_contact_name', '', false);
-			setFieldValue('customer_email', '', false);
-			return;
-		}
-
-		if (!selectedCustomer) {
-			return;
-		}
-
-		setFieldValue('customer_rut', customerRut, false);
-		setFieldValue('customer_giro', customerGiro, false);
-		setFieldValue('customer_shipping_address', customerShippingAddress, false);
-		setFieldValue('customer_billing_address', customerBillingAddress, false);
-		setFieldValue('customer_contact_name', customerContact, false);
-		setFieldValue('customer_email', customerEmail, false);
-	}, [
-		values.customer_id,
-		selectedCustomer,
-		customerRut,
-		customerGiro,
-		customerShippingAddress,
-		customerBillingAddress,
-		customerContact,
-		customerEmail,
-		setFieldValue,
-	]);
-
-	const handleSaveCustomerData = async () => {
-		if (!values.customer_id) {
-			toast.error('Debes seleccionar un cliente antes de guardar sus datos');
-			return;
-		}
-
-		setIsSavingCustomer(true);
-		try {
-			const payload = {
-				document_type: 'rut',
-				document_number: values.customer_rut?.trim() || '',
-				rut: values.customer_rut?.trim() || '',
-				email: values.customer_email?.trim() || '',
-				contact_name: values.customer_contact_name?.trim() || '',
-				billing_company:
-					selectedCustomer?.billing_company ||
-					selectedCustomer?.name ||
-					values.customer_contact_name,
-				giro: values.customer_giro?.trim() || '',
-				trade_activity: values.customer_giro?.trim() || '',
-				billing_address_1: values.customer_billing_address?.trim() || '',
-				shipping_address_1: values.customer_shipping_address?.trim() || '',
-			};
-
-			const response = await ApiService.fetchData<any>({
-				url: `/subsidiaries/${subsidiaryId}/customer-sales/${values.customer_id}`,
-				method: 'patch',
-				data: payload,
+	const applyCustomerDetail = React.useCallback(
+		(customer: ICustomerSale, force = false) => {
+			if (!force && autofilledCustomerIdRef.current === customer.id) return;
+			autofilledCustomerIdRef.current = customer.id;
+			Object.entries(toCustomerAutofill(customer)).forEach(([field, value]) => {
+				setFieldValue(field, value, false);
 			});
+		},
+		[setFieldValue],
+	);
 
-			const updatedCustomer = response.data?.data ?? response.data ?? payload;
-			onCustomerUpdated?.(Number(values.customer_id), updatedCustomer);
-			toast.success('Datos del cliente actualizados');
-		} catch (error: any) {
-			toast.error(
-				error?.response?.data?.message || 'No se pudieron guardar los datos del cliente',
-			);
-		} finally {
-			setIsSavingCustomer(false);
-		}
-	};
+	React.useEffect(() => {
+		if (!isActive || customerId === null || subsidiaryId === null) return undefined;
+		if (autofilledCustomerIdRef.current === customerId) return undefined;
+		const requestId = detailRequestIdRef.current + 1;
+		detailRequestIdRef.current = requestId;
+		setIsLoadingCustomerDetail(true);
+		const request = dispatch(
+			fetchCustomerDetailThunk({ subsidiary: subsidiaryId, id: customerId }),
+		);
+		request
+			.unwrap()
+			.then((customer) => {
+				if (requestId === detailRequestIdRef.current) applyCustomerDetail(customer);
+			})
+			.catch(() => undefined)
+			.finally(() => {
+				if (requestId === detailRequestIdRef.current) setIsLoadingCustomerDetail(false);
+			});
+		return () => request.abort();
+	}, [applyCustomerDetail, customerId, dispatch, isActive, subsidiaryId]);
+
+	React.useEffect(() => {
+		if (customerId !== null || autofilledCustomerIdRef.current === null) return;
+		detailRequestIdRef.current += 1;
+		autofilledCustomerIdRef.current = null;
+		setIsLoadingCustomerDetail(false);
+		Object.entries(EMPTY_CUSTOMER_AUTOFILL).forEach(([field, value]) => {
+			setFieldValue(field, value, false);
+		});
+	}, [customerId, setFieldValue]);
 
 	return (
-		<Card
-			rounded='rounded-2xl'
-			className='dark:shadow-lg/10 border border-white/80 bg-white/80 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5'>
+		<Card className={QUOTATION_CARD_CLASSNAME}>
 			<CardHeader className='pb-2'>
-				<CardHeaderChild className='w-full items-center justify-between'>
-					<div>
-						<CardTitle className='flex items-center gap-3 text-lg font-semibold text-gray-900 dark:text-white'>
-							<span className='flex h-9 w-9 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200'>
-								<Icon icon='DuoAddressBook1' className='text-xl' />
-							</span>
-							<span>Información General</span>
-						</CardTitle>
-						<p className='text-xs text-gray-500 dark:text-gray-300'>
-							Define los datos base del cliente y la vigencia de la cotización.
+				<div>
+					<CardTitle className='text-lg'>Información general</CardTitle>
+					<p className={QUOTATION_SUBTITLE_CLASSNAME}>
+						Define los datos del cliente y la vigencia de la cotización.
+					</p>
+				</div>
+			</CardHeader>
+			<CardBody className='grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_1fr]'>
+				<section>
+					<div className='mb-3'>
+						<h3 className={SECTION_TITLE_CLASSNAME}>Datos del cliente</h3>
+						<p className={`text-xs ${QUOTATION_MUTED_TEXT_CLASSNAME}`}>
+							{isLoadingCustomerDetail
+								? 'Cargando el detalle del cliente…'
+								: 'Se completan al elegir un cliente y quedan en esta cotización. Para cambiar su ficha, usá el botón de editar.'}
 						</p>
 					</div>
-					<Badge className='rounded-full bg-amber-50 px-4 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-400/20 dark:text-amber-100'>
-						Paso 1
-					</Badge>
-				</CardHeaderChild>
-			</CardHeader>
-			<CardBody className='pt-2'>
-				<div className='grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_1fr]'>
-					{/* Columna Izquierda: Datos del Cliente */}
-					<div className='space-y-4 rounded-2xl border border-zinc-100 bg-white/50 p-4 dark:border-white/10 dark:bg-zinc-900/50'>
-						<div className='flex items-center justify-between gap-3'>
-							<h4 className='text-sm font-semibold text-gray-800 dark:text-gray-200'>
-								Datos del Cliente
-							</h4>
-							<div className='flex items-center gap-2'>
-								{selectedCustomer ? (
-									<Badge className='rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-400/20 dark:text-emerald-100'>
-										Autocompletado activo
-									</Badge>
-								) : null}
-								{isLoadingCustomerDetail ? (
-									<Badge className='rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700 dark:bg-sky-400/20 dark:text-sky-100'>
-										Cargando detalle...
-									</Badge>
-								) : null}
-								{values.customer_id ? (
-									<Button
-										size='sm'
-										variant='outline'
-										color='emerald'
-										icon='HeroCheck'
-										onClick={handleSaveCustomerData}
-										isLoading={isSavingCustomer}>
-										Guardar cliente
-									</Button>
-								) : null}
-							</div>
-						</div>
-						<div className='flex flex-col gap-3'>
-							{/* Fila: Cliente */}
-							<div className='grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)] md:items-center'>
-								<p className='text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Cliente *
-								</p>
-								<div className='flex w-full gap-2'>
-									<div className='relative z-50 flex-1'>
-										<SelectReact
-											key={`customer-select-${values.customer_id}-${customerOptions.length}`}
-											name='customer_id'
-											options={customerOptions}
-											placeholder='Seleccionar cliente...'
-											value={customerOptions.find(
-												(opt) => opt.value === String(values.customer_id),
-											)}
-											isClearable={true}
-											onChange={(option) => {
-												const selectedOption = option as TSelectOption;
-												if (
-													selectedOption &&
-													!Array.isArray(selectedOption)
-												) {
-													setFieldValue(
-														'customer_id',
-														Number(selectedOption.value) || 0,
-													);
-												} else {
-													setFieldValue('customer_id', 0);
-												}
-											}}
-											isValid={!errors.customer_id}
-											isTouched={touched.customer_id}
-											invalidFeedback={errors.customer_id}
-											{...selectMenuProps}
-										/>
-									</div>
-									<Button
-										variant='solid'
-										color='blue'
-										icon='HeroPlus'
-										onClick={() => setIsCreateModalOpen(true)}
-										className='shrink-0'
-									/>
-								</div>
-							</div>
+					<div className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2'>
+						<CustomerSaleSelect
+							name='customer_id'
+							inputId='customer_id'
+							subsidiaryId={subsidiaryId}
+							isActive={isActive}
+							value={customerId}
+							fallbackOption={fallbackCustomerOption}
+							releasesOnSubsidiaryChange
+							isClearable
+							isValid={!errors.customer_id}
+							isTouched={touched.customer_id}
+							invalidFeedback={errors.customer_id}
+							onChange={(customer) => setFieldValue('customer_id', customer?.id ?? 0)}
+							onCustomerCreated={(customer) => {
+								setFieldValue('customer_id', customer.id);
+								applyCustomerDetail(customer, true);
+							}}
+							onCustomerUpdated={(customer) => applyCustomerDetail(customer, true)}>
+							{({ select, createButton, editButton }) => (
+								<QuotationField
+									name='customer_id'
+									label='Cliente'
+									labelAction={
+										<>
+											{editButton}
+											{createButton}
+										</>
+									}
+									className='md:col-span-2'>
+									{() => select}
+								</QuotationField>
+							)}
+						</CustomerSaleSelect>
 
-							{/* Fila: RUT */}
-							<div className='grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)] md:items-center'>
-								<p className='text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									RUT
-								</p>
-								<div className='w-full'>
-									<Input
-										name='customer_rut'
-										value={values.customer_rut ?? ''}
-										onChange={(e) =>
-											setFieldValue('customer_rut', e.target.value)
-										}
-									/>
-								</div>
-							</div>
-
-							{/* Fila: Giro */}
-							<div className='grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)] md:items-center'>
-								<p className='text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Giro
-								</p>
-								<div className='w-full'>
-									<Input
-										name='customer_giro'
-										value={values.customer_giro ?? ''}
-										onChange={(e) =>
-											setFieldValue('customer_giro', e.target.value)
-										}
-									/>
-								</div>
-							</div>
-
-							{/* Fila: Dir Envío */}
-							<div className='grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)] md:items-center'>
-								<p className='text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Dirección de Envío
-								</p>
-								<div className='w-full'>
-									<Input
-										name='customer_shipping_address'
-										value={values.customer_shipping_address ?? ''}
-										onChange={(e) =>
-											setFieldValue(
-												'customer_shipping_address',
-												e.target.value,
-											)
-										}
-									/>
-								</div>
-							</div>
-
-							{/* Fila: Dir Facturación */}
-							<div className='grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)] md:items-center'>
-								<p className='text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Dirección de Fact.
-								</p>
-								<div className='w-full'>
-									<Input
-										name='customer_billing_address'
-										value={values.customer_billing_address ?? ''}
-										onChange={(e) =>
-											setFieldValue(
-												'customer_billing_address',
-												e.target.value,
-											)
-										}
-									/>
-								</div>
-							</div>
-
-							{/* Fila: Contacto */}
-							<div className='grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)] md:items-center'>
-								<p className='text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Contacto
-								</p>
-								<div className='w-full'>
-									<Input
-										name='customer_contact_name'
-										value={values.customer_contact_name ?? ''}
-										onChange={(e) =>
-											setFieldValue('customer_contact_name', e.target.value)
-										}
-									/>
-								</div>
-							</div>
-
-							{/* Fila: Correo */}
-							<div className='grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)] md:items-center'>
-								<p className='text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Correo
-								</p>
-								<div className='w-full'>
-									<Input
-										name='customer_email'
-										value={values.customer_email ?? ''}
-										onChange={(e) =>
-											setFieldValue('customer_email', e.target.value)
-										}
-									/>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					{/* Columna Derecha: Detalles de la Cotización */}
-					<div className='space-y-4 rounded-2xl border border-zinc-100 bg-white/50 p-4 dark:border-white/10 dark:bg-zinc-900/50'>
-						<h4 className='text-sm font-semibold text-gray-800 dark:text-gray-200'>
-							Detalles de la Cotización
-						</h4>
-						<div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
-							{/* Fecha Cotización */}
-							<div>
-								<p className='mb-1 text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Fecha de Cotización *
-								</p>
-								<div className='w-full'>
-									<Input
-										name='quote_date'
-										type='date'
-										value={values.quote_date}
-										onChange={(e) =>
-											setFieldValue('quote_date', e.target.value)
-										}
-										isValid={!errors.quote_date}
-										isTouched={touched.quote_date}
-										invalidFeedback={errors.quote_date}
-									/>
-								</div>
-							</div>
-
-							{/* Válida Hasta */}
-							<div>
-								<p className='mb-1 text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Válida Hasta *
-								</p>
-								<div className='w-full'>
-									<Input
-										name='expiry_date'
-										type='date'
-										value={values.expiry_date ?? ''}
-										onChange={(e) =>
-											setFieldValue('expiry_date', e.target.value)
-										}
-										isValid={!errors.expiry_date}
-										isTouched={touched.expiry_date}
-										invalidFeedback={errors.expiry_date}
-									/>
-								</div>
-							</div>
-
-							<div className='md:col-span-2'>
-								<p className='mb-1 text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									N° Orden de Compra (OC)
-								</p>
+						<QuotationField name='customer_rut' label='RUT'>
+							{({ error, isTouched, isValid }) => (
 								<Input
+									id='customer_rut'
+									name='customer_rut'
+									placeholder='76.123.456-7'
+									value={values.customer_rut ?? ''}
+									onChange={(e) => setFieldValue('customer_rut', e.target.value)}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
+
+						<QuotationField name='customer_giro' label='Giro'>
+							{() => (
+								<Input
+									id='customer_giro'
+									name='customer_giro'
+									placeholder='Actividad comercial'
+									value={values.customer_giro ?? ''}
+									onChange={(e) => setFieldValue('customer_giro', e.target.value)}
+								/>
+							)}
+						</QuotationField>
+
+						<QuotationField name='customer_contact_name' label='Contacto'>
+							{() => (
+								<Input
+									id='customer_contact_name'
+									name='customer_contact_name'
+									placeholder='Nombre de contacto'
+									value={values.customer_contact_name ?? ''}
+									onChange={(e) =>
+										setFieldValue('customer_contact_name', e.target.value)
+									}
+								/>
+							)}
+						</QuotationField>
+
+						<QuotationField name='customer_email' label='Correo'>
+							{() => (
+								<Input
+									id='customer_email'
+									name='customer_email'
+									type='email'
+									placeholder='contacto@empresa.cl'
+									value={values.customer_email ?? ''}
+									onChange={(e) =>
+										setFieldValue('customer_email', e.target.value)
+									}
+								/>
+							)}
+						</QuotationField>
+
+						<QuotationField name='customer_shipping_address' label='Dirección de envío'>
+							{() => (
+								<Input
+									id='customer_shipping_address'
+									name='customer_shipping_address'
+									placeholder='Calle, número, comuna'
+									value={values.customer_shipping_address ?? ''}
+									onChange={(e) =>
+										setFieldValue('customer_shipping_address', e.target.value)
+									}
+								/>
+							)}
+						</QuotationField>
+
+						<QuotationField
+							name='customer_billing_address'
+							label='Dirección de facturación'>
+							{() => (
+								<Input
+									id='customer_billing_address'
+									name='customer_billing_address'
+									placeholder='Calle, número, comuna'
+									value={values.customer_billing_address ?? ''}
+									onChange={(e) =>
+										setFieldValue('customer_billing_address', e.target.value)
+									}
+								/>
+							)}
+						</QuotationField>
+					</div>
+				</section>
+
+				<section className='border-t border-zinc-200 pt-6 dark:border-zinc-700 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0'>
+					<div className='mb-3'>
+						<h3 className={SECTION_TITLE_CLASSNAME}>Datos de la cotización</h3>
+						<p className={`text-xs ${QUOTATION_MUTED_TEXT_CLASSNAME}`}>
+							Vigencia, documento y condiciones de pago.
+						</p>
+					</div>
+					<div className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2'>
+						<QuotationField name='quote_date' label='Fecha de cotización'>
+							{({ error, isTouched, isValid }) => (
+								<Input
+									id='quote_date'
+									name='quote_date'
+									type='date'
+									value={values.quote_date}
+									onChange={(e) => setFieldValue('quote_date', e.target.value)}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
+
+						<QuotationField name='expiry_date' label='Válida hasta'>
+							{({ error, isTouched, isValid }) => (
+								<Input
+									id='expiry_date'
+									name='expiry_date'
+									type='date'
+									value={values.expiry_date ?? ''}
+									onChange={(e) => setFieldValue('expiry_date', e.target.value)}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
+								/>
+							)}
+						</QuotationField>
+
+						<QuotationField
+							name='purchase_order'
+							label='N° orden de compra'
+							className='md:col-span-2'>
+							{({ error, isTouched, isValid }) => (
+								<Input
+									id='purchase_order'
 									name='purchase_order'
 									placeholder='OC-2024-001'
 									value={values.purchase_order ?? ''}
 									onChange={(e) =>
 										setFieldValue('purchase_order', e.target.value)
 									}
-									isValid={!errors.purchase_order}
-									isTouched={touched.purchase_order}
-									invalidFeedback={errors.purchase_order}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
 								/>
-							</div>
+							)}
+						</QuotationField>
 
-							<div>
-								<p className='mb-1 text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Método de Pago *
-								</p>
+						<QuotationField name='payment_method' label='Método de pago'>
+							{({ error, isTouched, isValid }) => (
 								<SelectReact
 									name='payment_method'
+									inputId='payment_method'
 									options={paymentMethodOptions}
 									placeholder='Seleccionar método...'
 									value={
@@ -508,19 +345,18 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 											);
 										}
 									}}
-									{...selectMenuProps}
-									isValid={!errors.payment_method}
-									isTouched={touched.payment_method}
-									invalidFeedback={errors.payment_method}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
 								/>
-							</div>
+							)}
+						</QuotationField>
 
-							<div>
-								<p className='mb-1 text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Términos de Pago
-								</p>
+						<QuotationField name='payment_terms' label='Términos de pago'>
+							{({ error, isTouched, isValid }) => (
 								<SelectReact
 									name='payment_terms'
+									inputId='payment_terms'
 									options={paymentTermsOptions}
 									placeholder='Seleccionar términos...'
 									value={paymentTermsOptions.find(
@@ -535,30 +371,23 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 											);
 										}
 									}}
-									{...selectMenuProps}
-									isValid={!errors.payment_terms}
-									isTouched={touched.payment_terms}
-									invalidFeedback={errors.payment_terms}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
 								/>
-							</div>
+							)}
+						</QuotationField>
 
-							<div>
-								<p className='mb-1 text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Tipo de Documento
-								</p>
+						<QuotationField name='document_type' label='Tipo de documento'>
+							{({ error, isTouched, isValid }) => (
 								<SelectReact
 									name='document_type'
-									options={[
-										{ value: 'factura', label: 'Factura' },
-										{ value: 'boleta', label: 'Boleta' },
-									]}
+									inputId='document_type'
+									options={DOCUMENT_TYPE_OPTIONS}
 									placeholder='Seleccionar documento...'
 									value={
 										values.document_type
-											? ([
-													{ value: 'factura', label: 'Factura' },
-													{ value: 'boleta', label: 'Boleta' },
-												].find(
+											? (DOCUMENT_TYPE_OPTIONS.find(
 													(opt) =>
 														opt.value === String(values.document_type),
 												) ?? null)
@@ -573,16 +402,18 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 											);
 										}
 									}}
-									{...selectMenuProps}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
 								/>
-							</div>
+							)}
+						</QuotationField>
 
-							<div>
-								<p className='mb-1 text-[11px] font-semibold text-gray-500 dark:text-gray-300'>
-									Estado de la Cotización
-								</p>
+						<QuotationField name='status' label='Estado'>
+							{({ error, isTouched, isValid }) => (
 								<SelectReact
 									name='status'
+									inputId='status'
 									options={statusOptions}
 									placeholder='Seleccionar estado...'
 									value={statusOptions.find((opt) => opt.value === values.status)}
@@ -595,24 +426,15 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 											);
 										}
 									}}
-									{...selectMenuProps}
+									isValid={isValid}
+									isTouched={isTouched}
+									invalidFeedback={error}
 								/>
-							</div>
-							<div className='rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/70 p-4 text-xs text-zinc-500 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 md:col-span-2'>
-								Al seleccionar un cliente, se completan automáticamente RUT, giro,
-								direcciones, contacto y correo según la información disponible.
-							</div>
-						</div>
+							)}
+						</QuotationField>
 					</div>
-				</div>
+				</section>
 			</CardBody>
-
-			<CreateCustomerModal
-				isOpen={isCreateModalOpen}
-				onClose={() => setIsCreateModalOpen(false)}
-				subsidiaryId={subsidiaryId}
-				onCustomerCreated={onCustomerCreated}
-			/>
 		</Card>
 	);
 };

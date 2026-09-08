@@ -40,9 +40,11 @@ const ProductCell: React.FC<{ product: IProduct }> = ({ product }) => {
 			</div>
 
 			{/* Info del producto */}
-			<div className='min-w-0 flex-1'>
+			<div className='min-w-0 max-w-[280px] flex-1'>
 				<div className='flex items-center gap-2'>
-					<span className='truncate font-medium'>{product.name}</span>
+					<span className='line-clamp-2 break-words font-medium' title={product.name}>
+						{product.name}
+					</span>
 				</div>
 
 				<div className='mt-1 flex flex-wrap items-start gap-2'>
@@ -55,10 +57,12 @@ const ProductCell: React.FC<{ product: IProduct }> = ({ product }) => {
 					</Badge>
 				</div>
 
-				<div className='mt-1 flex items-center gap-2 text-xs text-neutral-500'>
-					<span>SKU: {product.sku}</span>
+				<div className='mt-1 flex flex-wrap items-center gap-x-2 text-xs text-neutral-500'>
+					<span className='break-all'>SKU: {product.sku}</span>
 					{product.commercial_sku && (
-						<span className='text-neutral-400'>• {product.commercial_sku}</span>
+						<span className='break-all text-neutral-400'>
+							• {product.commercial_sku}
+						</span>
 					)}
 				</div>
 

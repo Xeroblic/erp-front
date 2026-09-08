@@ -23,10 +23,12 @@ export const DESKTOP_HINTS: Record<string, string> = {
 	vga_ports: 'Cantidad de puertos VGA funcionales',
 	hdmi_ports: 'Cantidad de puertos HDMI funcionales',
 	displayport_ports: 'Cantidad de puertos DisplayPort funcionales',
+	dvi_ports: 'Cantidad de puertos DVI funcionales',
 	usb_c_ports: 'Cantidad de puertos USB-C funcionales',
 	usb_a_ports: 'Cantidad de puertos USB-A funcionales',
 	sd_readers: 'Cantidad de lectores de tarjeta SD',
 	rj45_ports: 'Cantidad de puertos de red RJ45',
+	charging_ports: 'Cantidad de puertos de carga del equipo',
 	all_ports_functional: 'Marca si todos los puertos probados funcionan correctamente',
 	defective_ports_count:
 		'⚠️ Solo 1 puerto dañado = Máximo Grado C. Más de 1 puerto dañado = Grado M automáticamente',

@@ -91,6 +91,7 @@ const ClientesVentasDetalle = lazy(
 );
 
 const IngresoStock = lazy(() => import('@/pages/inventario/ingresoStock'));
+const RetirosEquiposPage = lazy(() => import('@/pages/inventario/retirosEquipos'));
 
 // Páginas de Catálogos
 const ProductosPage = lazy(() => import('@/pages/catalogos/productos/Productos'));
@@ -451,6 +452,12 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: `${cfg.inventory.subPages.ingresoStock.to}`,
 		element: <IngresoStock />,
 		authority: cfg.inventory.subPages.ingresoStock.authority,
+	},
+
+	{
+		path: cfg.inventory.subPages.retirosEquipos.to,
+		element: <RetirosEquiposPage />,
+		authority: cfg.inventory.subPages.retirosEquipos.authority,
 	},
 
 	// Rutas de Catálogos
