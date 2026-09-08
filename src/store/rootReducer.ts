@@ -51,6 +51,9 @@ import equipmentWithdrawals, {
 import procurementSuppliers, {
 	ProcurementSuppliersState,
 } from './slices/procurement/procurementSuppliersSlice';
+import purchaseDocuments, {
+	PurchaseDocumentsState,
+} from './slices/procurement/purchaseDocumentsSlice';
 
 export interface RootState {
 	auth: AuthState;
@@ -91,6 +94,7 @@ export interface RootState {
 	deferredPayments: DeferredPaymentsState;
 	equipmentWithdrawals: EquipmentWithdrawalsState;
 	procurementSuppliers: ProcurementSuppliersState;
+	purchaseDocuments: PurchaseDocumentsState;
 	[RtkQueryService.reducerPath]: any;
 }
 
@@ -134,6 +138,7 @@ const staticReducers = {
 	deferredPayments,
 	equipmentWithdrawals,
 	procurementSuppliers,
+	purchaseDocuments,
 	// personalizacion, // Comentado temporalmente
 	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };

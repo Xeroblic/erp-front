@@ -4,6 +4,7 @@ import type {
 	IProcurementCost,
 	IProcurementProduct,
 	IProcurementSupplier,
+	IPurchaseDocument,
 	IPurchaseDocumentCompact,
 	ISupplierCompact,
 	IWarehouseCompact,
@@ -107,11 +108,45 @@ export const cableProduct: IProcurementProduct = {
 	is_active: false,
 };
 
+/**
+ * Segundo producto no serializado y activo (`cableProduct` ya está inactivo).
+ * La card 03 necesita al menos dos productos elegibles para ejercer «varias
+ * líneas del mismo producto son válidas» junto con líneas de productos
+ * distintos en un mismo documento.
+ */
+export const keyboardProduct: IProcurementProduct = {
+	id: 67,
+	sku: 'KB-001',
+	commercial_sku: null,
+	name: 'Teclado mecánico compacto',
+	short_description: 'Teclado mecánico 60%',
+	serial_tracking: false,
+	grade: null,
+	currency_code: 'CLP',
+	price: '39990.00',
+	offer_price: null,
+	cost: '24000.00',
+	cost_basis: 'net',
+	brand: { id: 14, name: 'Redragon', slug: 'redragon' },
+	categories: [{ id: 9, name: 'Teclados', slug: 'teclados' }],
+	image: null,
+	is_active: true,
+};
+
 export const procurementProducts: IProcurementProduct[] = [
 	mouseProduct,
 	notebookProduct,
 	cableProduct,
+	keyboardProduct,
 ];
+
+/**
+ * Productos elegibles para líneas de documento de compra: no serializados de
+ * la filial (sección 6). `notebookProduct` queda fuera por serializado.
+ */
+export const purchasableProcurementProducts: IProcurementProduct[] = procurementProducts.filter(
+	(product) => !product.serial_tracking,
+);
 
 /* =================================================
    Compactos — sección 2 del contrato
@@ -434,6 +469,215 @@ export const allowedActionsByState: Record<string, TProcurementAllowedAction[]> 
 	/** Proveedor desactivado. */
 	supplierInactive: ['restore'],
 };
+
+/* =================================================
+   Documentos de compra — sección 6 del contrato
+   ================================================= */
+
+/**
+ * Factura confirmada y **parcialmente recibida**, con los mismos IDs y
+ * cantidades del ejemplo de `GET B/inventory-stock/{product}/origins` del
+ * contrato: línea `101`, folio `1234`, «10 documentados por factura #1234»
+ * de los 15 físicos. Ya tiene una recepción posted (`related_counts.
+ * stock_receipts: 1`), así que el mock la deja **sin `cancel`** en
+ * `allowed_actions`: el contrato prohíbe anular con recepciones posted.
+ *
+ * `create_receipt` y `add_attachment` se omiten a propósito de todo
+ * `allowed_actions` de este fixture: esta card no ofrece esas dos acciones
+ * porque las recepciones (card 05) y los adjuntos (card 04) todavía no
+ * existen — un botón que no lleva a ninguna parte es peor que no ofrecerlo.
+ */
+export const pcExpressInvoiceDocument: IPurchaseDocument = {
+	id: 24,
+	document_type: 'invoice',
+	document_number: '1234',
+	issue_date: '2026-09-04',
+	currency_code: 'CLP',
+	total_amount: '57120.00',
+	status: 'confirmed',
+	reception_status: 'partially_received',
+	supplier: pcExpressSupplier,
+	items_count: 1,
+	created_at: '2026-09-03T09:15:00-03:00',
+	allowed_actions: [],
+	// Ficha histórica al momento de confirmar: si PCExpress cambiara de
+	// nombre o se desactivara después, este snapshot no se mueve.
+	supplier_snapshot: pcExpressSupplierFull,
+	notes: null,
+	items: [
+		{
+			id: 101,
+			product: mouseProduct,
+			sku_snapshot: mouseProduct.sku,
+			name_snapshot: mouseProduct.name,
+			quantity: 10,
+			cost: grossEnteredCost,
+			notes: null,
+			received_quantity: 10,
+			initial_stock_allocated_quantity: 0,
+			accounted_quantity: 10,
+			remaining_quantity: 0,
+			received_distribution: [{ branch_id: 4, warehouse: mainWarehouse, quantity: 10 }],
+		},
+	],
+	related_counts: { stock_receipts: 1, initial_stock_allocations: 0, attachments: 0 },
+	confirmed_at: '2026-09-04T11:30:00-03:00',
+	cancelled_at: null,
+	cancellation_reason: null,
+	updated_at: '2026-09-04T11:30:00-03:00',
+};
+
+/**
+ * Boleta en `draft`, **sin proveedor** («la boleta lo permite null») y sin
+ * ninguna cobertura todavía: `reception_status: null`, líneas con
+ * `remaining_quantity` igual a la cantidad completa. Mismo id/folio/fecha
+ * que el compacto `receiptDocument`.
+ */
+export const draftReceiptDocument: IPurchaseDocument = {
+	id: 31,
+	document_type: 'receipt',
+	document_number: '55012',
+	issue_date: '2026-09-06',
+	currency_code: 'CLP',
+	total_amount: '28560.00',
+	status: 'draft',
+	reception_status: null,
+	supplier: null,
+	items_count: 1,
+	created_at: '2026-09-06T10:00:00-03:00',
+	allowed_actions: ['update', 'confirm', 'cancel'],
+	supplier_snapshot: null,
+	notes: null,
+	items: [
+		{
+			id: 201,
+			product: keyboardProduct,
+			sku_snapshot: keyboardProduct.sku,
+			name_snapshot: keyboardProduct.name,
+			quantity: 5,
+			cost: netEnteredCost,
+			notes: null,
+			received_quantity: 0,
+			initial_stock_allocated_quantity: 0,
+			accounted_quantity: 0,
+			remaining_quantity: 5,
+			received_distribution: [],
+		},
+	],
+	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
+	confirmed_at: null,
+	cancelled_at: null,
+	cancellation_reason: null,
+	updated_at: '2026-09-06T10:00:00-03:00',
+};
+
+/**
+ * Factura en `draft` con proveedor y dos líneas del **mismo producto**
+ * (sección 6: «varias líneas del mismo producto válidas»), cada una con su
+ * propio costo — el contrato conserva costos originales por línea, no
+ * pondera dentro de un documento sin recepción.
+ */
+export const draftInvoiceDocument: IPurchaseDocument = {
+	id: 42,
+	document_type: 'invoice',
+	document_number: '4410',
+	issue_date: '2026-09-07',
+	currency_code: 'CLP',
+	total_amount: null,
+	status: 'draft',
+	reception_status: null,
+	supplier: pcExpressSupplier,
+	items_count: 2,
+	created_at: '2026-09-07T15:20:00-03:00',
+	allowed_actions: ['update', 'confirm', 'cancel'],
+	supplier_snapshot: null,
+	notes: 'Reposición de mouse para sucursal centro.',
+	items: [
+		{
+			id: 301,
+			product: mouseProduct,
+			sku_snapshot: mouseProduct.sku,
+			name_snapshot: mouseProduct.name,
+			quantity: 6,
+			cost: grossEnteredCost,
+			notes: null,
+			received_quantity: 0,
+			initial_stock_allocated_quantity: 0,
+			accounted_quantity: 0,
+			remaining_quantity: 6,
+			received_distribution: [],
+		},
+		{
+			id: 302,
+			product: mouseProduct,
+			sku_snapshot: mouseProduct.sku,
+			name_snapshot: mouseProduct.name,
+			quantity: 4,
+			cost: netEnteredCost,
+			notes: 'Lote de reemplazo, costo distinto al anterior.',
+			received_quantity: 0,
+			initial_stock_allocated_quantity: 0,
+			accounted_quantity: 0,
+			remaining_quantity: 4,
+			received_distribution: [],
+		},
+	],
+	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
+	confirmed_at: null,
+	cancelled_at: null,
+	cancellation_reason: null,
+	updated_at: '2026-09-07T15:20:00-03:00',
+};
+
+/**
+ * Factura anulada: motivo obligatorio, sin acciones (no se reabre desde acá).
+ * Folio liberado — un alta nueva puede reutilizar `9981` sin conflicto.
+ */
+export const cancelledInvoiceDocument: IPurchaseDocument = {
+	id: 50,
+	document_type: 'invoice',
+	document_number: '9981',
+	issue_date: '2026-08-20',
+	currency_code: 'CLP',
+	total_amount: '19200.00',
+	status: 'cancelled',
+	reception_status: null,
+	supplier: pcExpressSupplier,
+	items_count: 1,
+	created_at: '2026-08-19T08:40:00-03:00',
+	allowed_actions: [],
+	supplier_snapshot: null,
+	notes: null,
+	items: [
+		{
+			id: 401,
+			product: keyboardProduct,
+			sku_snapshot: keyboardProduct.sku,
+			name_snapshot: keyboardProduct.name,
+			quantity: 4,
+			cost: grossEnteredCost,
+			notes: null,
+			received_quantity: 0,
+			initial_stock_allocated_quantity: 0,
+			accounted_quantity: 0,
+			remaining_quantity: 4,
+			received_distribution: [],
+		},
+	],
+	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
+	confirmed_at: null,
+	cancelled_at: '2026-08-21T09:00:00-03:00',
+	cancellation_reason: 'Folio ingresado por error, se re-emitió con el proveedor.',
+	updated_at: '2026-08-21T09:00:00-03:00',
+};
+
+/** Semilla del listado. El servicio mock la clona a su propio store mutable. */
+export const purchaseDocuments: IPurchaseDocument[] = [
+	pcExpressInvoiceDocument,
+	draftReceiptDocument,
+	draftInvoiceDocument,
+	cancelledInvoiceDocument,
+];
 
 /* =================================================
    Envoltorio y paginación — sección 3 del contrato

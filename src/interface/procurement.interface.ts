@@ -360,6 +360,161 @@ export interface IProcurementSupplierRutConflict {
 }
 
 /* =================================================
+   Documentos de compra — sección 6 del contrato
+   ================================================= */
+
+/** Estados documentales. La cobertura vive aparte, en `reception_status`. */
+export type TPurchaseDocumentStatus = 'draft' | 'confirmed' | 'cancelled';
+
+/**
+ * Cobertura de recepción del documento completo. `null` en `draft`/`cancelled`
+ * (sección 6): un documento sin confirmar no tiene nada que cubrir todavía, y
+ * uno anulado no la conserva. Sólo aparece en `confirmed`.
+ */
+export type TPurchaseDocumentReceptionStatus = 'pending' | 'partially_received' | 'received';
+
+/**
+ * Fila de `received_distribution`: dónde ingresó **originalmente** cada
+ * cantidad cubierta, no el stock actual de esa bodega — vender no la mueve ni
+ * la libera.
+ */
+export interface IPurchaseDocumentReceivedDistributionRow {
+	branch_id: number;
+	warehouse: IWarehouseCompact | null;
+	quantity: number;
+}
+
+/**
+ * Línea de documento con su cobertura. `sku_snapshot`/`name_snapshot` son el
+ * producto tal como se compró, mientras que `product` es la ficha vigente —
+ * pueden divergir si el catálogo cambió después.
+ *
+ * `accounted_quantity = received_quantity + initial_stock_allocated_quantity`
+ * `remaining_quantity = quantity - accounted_quantity`
+ * El backend las calcula; acá sólo se transportan.
+ */
+export interface IPurchaseDocumentLine {
+	id: number;
+	product: IProcurementProduct;
+	sku_snapshot: string;
+	name_snapshot: string;
+	quantity: number;
+	cost: IProcurementCost;
+	notes: string | null;
+	received_quantity: number;
+	initial_stock_allocated_quantity: number;
+	accounted_quantity: number;
+	remaining_quantity: number;
+	received_distribution: IPurchaseDocumentReceivedDistributionRow[];
+}
+
+/** `related_counts` del detalle: listas paginadas aparte, nunca incrustadas. */
+export interface IPurchaseDocumentRelatedCounts {
+	stock_receipts: number;
+	initial_stock_allocations: number;
+	attachments: number;
+}
+
+/**
+ * Fila del listado (sección 6). Sin `items` ni `supplier_snapshot`: esos son
+ * caros y sólo viajan en el detalle, igual que `purchase_summary` en
+ * proveedores no va por fila.
+ */
+export interface IPurchaseDocumentListRow {
+	id: number;
+	document_type: TPurchaseDocumentType;
+	document_number: string;
+	issue_date: TBusinessDate;
+	currency_code: string;
+	total_amount: TDecimalString | null;
+	status: TPurchaseDocumentStatus;
+	reception_status: TPurchaseDocumentReceptionStatus | null;
+	supplier: ISupplierCompact | null;
+	items_count: number;
+	created_at: TIsoTimestamp;
+	allowed_actions: TProcurementAllowedAction[];
+}
+
+/**
+ * Ficha completa. `supplier_snapshot` es la ficha **histórica** del
+ * proveedor al momento de confirmar — no sus datos actuales — y por eso vive
+ * separada de `supplier` (compacto, vigente, heredado de la fila). En
+ * `draft` es siempre `null`: el snapshot se fija recién al confirmar.
+ */
+export interface IPurchaseDocument extends IPurchaseDocumentListRow {
+	supplier_snapshot: IProcurementSupplier | null;
+	notes: string | null;
+	items: IPurchaseDocumentLine[];
+	related_counts: IPurchaseDocumentRelatedCounts;
+	confirmed_at: TIsoTimestamp | null;
+	cancelled_at: TIsoTimestamp | null;
+	cancellation_reason: string | null;
+	updated_at: TIsoTimestamp;
+}
+
+/**
+ * Línea de entrada, igual en alta y en `items` de edición. Sin `id`: crea.
+ * Con `id`: actualiza esa línea. El contrato exige `unit_cost` y
+ * `unit_cost_basis` obligatorios por línea, cantidad positiva.
+ */
+export interface IPurchaseDocumentLineInput {
+	id?: number;
+	product_id: number;
+	quantity: number;
+	unit_cost: TDecimalString;
+	unit_cost_basis: TCostEntryBasis;
+	notes: string | null;
+}
+
+/**
+ * Cuerpo de alta (`POST`). La factura exige `supplier_id`; la boleta lo
+ * permite `null`. `total_amount` es informativo y nullable — no se reemplaza
+ * por la suma de unitarios redondeados.
+ */
+export interface IPurchaseDocumentCreatePayload {
+	document_type: TPurchaseDocumentType;
+	supplier_id: number | null;
+	document_number: string;
+	issue_date: TBusinessDate;
+	currency_code: string;
+	total_amount: TDecimalString | null;
+	notes: string | null;
+	items: IPurchaseDocumentLineInput[];
+}
+
+/**
+ * Cuerpo de `PATCH`, sólo válido en `draft`. Todo opcional: un campo ausente
+ * se conserva. `items` ausente conserva las líneas; presente **reemplaza**
+ * toda la colección (línea con `id` actualiza, sin `id` crea, omitida
+ * elimina). `items: []` es inválido — se valida en el servicio, no acá.
+ */
+export type IPurchaseDocumentUpdatePayload = Partial<
+	Omit<IPurchaseDocumentCreatePayload, 'items'>
+> & { items?: IPurchaseDocumentLineInput[] };
+
+/** Motivo obligatorio de `cancel`. Libera el folio para reutilizarlo. */
+export interface IPurchaseDocumentCancelPayload {
+	reason: string;
+}
+
+/**
+ * Filtros del listado (sección 6): folio/proveedor/RUT vía `search`, más los
+ * cuatro filtros exactos y el rango de emisión.
+ */
+export interface IPurchaseDocumentListFilters {
+	search?: string;
+	document_type?: TPurchaseDocumentType;
+	status?: TPurchaseDocumentStatus;
+	reception_status?: TPurchaseDocumentReceptionStatus;
+	supplier_id?: number;
+	issued_from?: TBusinessDate;
+	issued_to?: TBusinessDate;
+}
+
+export type IPurchaseDocumentListParams = IPurchaseDocumentListFilters &
+	Partial<IProcurementPageParams>;
+
+/* =================================================
    Paginación de las peticiones
    ================================================= */
 
