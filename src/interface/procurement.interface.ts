@@ -250,6 +250,116 @@ export interface IInventoryLocationContext {
 }
 
 /* =================================================
+   Proveedores — sección 5 del contrato
+   ================================================= */
+
+/**
+ * Resumen de compras de la ficha de proveedor. Cuenta recepciones `posted`, no
+ * facturas ni líneas duplicadas. Sin compras: conteos en `0` y
+ * `last_purchase_on: null` — eso se muestra como «sin compras», nunca como un
+ * hueco vacío que parezca roto.
+ */
+export interface IProcurementSupplierPurchaseSummary {
+	last_purchase_on: TBusinessDate | null;
+	received_units: number;
+	products_supplied_count: number;
+	receipt_count: number;
+}
+
+/**
+ * Ficha completa de proveedor comercial de compras.
+ *
+ * No confundir con `ISupplier` de revisión técnica (`@/interface/supplier.interface.ts`
+ * y `@/interface/products.interface.ts`): son entidades distintas de dominios distintos.
+ * El `Supplier` de revisión técnica **no se migra** a este módulo y ningún selector de
+ * proveedor de abastecimiento debe ofrecerlo — de ahí el nombre `IProcurementSupplier`
+ * en vez de `ISupplier`, para que la colisión de nombres no tiente a mezclarlos.
+ */
+export interface IProcurementSupplier {
+	id: number;
+	rut: string;
+	company_name: string | null;
+	contact_name: string | null;
+	business_activity: string | null;
+	billing_address: string | null;
+	billing_commune_id: number | null;
+	shipping_address: string | null;
+	shipping_commune_id: number | null;
+	phone: string | null;
+	email: string | null;
+	/** Calculado por el servidor. No es un campo del formulario. */
+	display_name: string;
+	/** No es un campo del formulario: se cambia con `deactivate`/`restore`. */
+	is_active: boolean;
+	created_at: TIsoTimestamp;
+	updated_at: TIsoTimestamp;
+	allowed_actions: TProcurementAllowedAction[];
+	purchase_summary: IProcurementSupplierPurchaseSummary;
+}
+
+/**
+ * Fila resumida del listado: id, rut, display_name, company_name, contact_name,
+ * business_activity, email, phone, is_active. Sin `purchase_summary` a propósito
+ * — el contrato es explícito en que ese resumen es caro y no va por fila.
+ */
+export interface IProcurementSupplierListRow {
+	id: number;
+	rut: string;
+	display_name: string;
+	company_name: string | null;
+	contact_name: string | null;
+	business_activity: string | null;
+	email: string | null;
+	phone: string | null;
+	is_active: boolean;
+}
+
+/**
+ * Cuerpo de entrada, igual en alta (`POST`) y en los campos editables de
+ * edición (`PATCH`). `display_name` e `is_active` quedan fuera a propósito: ni
+ * se digitan ni se envían.
+ */
+export interface IProcurementSupplierPayload {
+	rut: string;
+	company_name: string | null;
+	contact_name: string | null;
+	business_activity: string | null;
+	billing_address: string | null;
+	billing_commune_id: number | null;
+	shipping_address: string | null;
+	shipping_commune_id: number | null;
+	phone: string | null;
+	email: string | null;
+}
+
+/**
+ * Filtros del listado de proveedores. `is_active` e `include_inactive` son
+ * **excluyentes entre sí** — la UI los modela como una sola elección (activos
+ * por defecto / inactivos / todos), nunca como dos checkboxes independientes
+ * que permitan combinarlos.
+ */
+export interface IProcurementSupplierListFilters {
+	search?: string;
+	is_active?: 0 | 1;
+	include_inactive?: 1;
+}
+
+export type IProcurementSupplierListParams = IProcurementSupplierListFilters &
+	Partial<IProcurementPageParams>;
+
+/**
+ * Proveedor en conflicto tal como llega en el `existing_supplier` del 409 de
+ * RUT duplicado (sección 5 y 16 del contrato). `is_active: false` es la señal
+ * de que el conflicto es sobre un proveedor eliminado y corresponde ofrecer
+ * restaurar como decisión explícita, nunca automática.
+ */
+export interface IProcurementSupplierRutConflict {
+	id: number;
+	display_name: string;
+	is_active: boolean;
+}
+
+/* =================================================
    Paginación de las peticiones
    ================================================= */
 

@@ -3,6 +3,7 @@ import type {
 	IInventoryLocationContext,
 	IProcurementCost,
 	IProcurementProduct,
+	IProcurementSupplier,
 	IPurchaseDocumentCompact,
 	ISupplierCompact,
 	IWarehouseCompact,
@@ -124,11 +125,16 @@ export const pcExpressSupplier: ISupplierCompact = {
 	is_active: true,
 };
 
-/** Proveedor desactivado: se excluye de nuevas selecciones, no del historial. */
+/**
+ * Proveedor desactivado: se excluye de nuevas selecciones, no del historial.
+ * DV recalculado a `-4`: el ejemplo original del contrato traía `-K`, que no
+ * es el dígito verificador real de `77888999` — la card 02 valida RUT contra
+ * el algoritmo, así que el fixture necesita uno que pase.
+ */
 export const inactiveSupplier: ISupplierCompact = {
 	id: 12,
 	display_name: 'Importadora Sur',
-	rut: '77888999-K',
+	rut: '77888999-4',
 	is_active: false,
 };
 
@@ -154,6 +160,141 @@ export const mainWarehouse: IWarehouseCompact = { id: 8, name: 'Bodega Central' 
 export const shelfWarehouse: IWarehouseCompact = { id: 12, name: 'Estante A3' };
 
 export const procurementWarehouses: IWarehouseCompact[] = [mainWarehouse, shelfWarehouse];
+
+/* =================================================
+   Proveedores — sección 5 del contrato
+   ================================================= */
+
+/**
+ * Ficha completa literal del ejemplo de entrada de la sección 5, con el mismo
+ * id/rut/display_name que `pcExpressSupplier` para que el compacto y la ficha
+ * completa sean el mismo proveedor. Activo, giro y ambas direcciones
+ * completos, y con historial de compras.
+ */
+export const pcExpressSupplierFull: IProcurementSupplier = {
+	id: 7,
+	rut: '76123456-0',
+	company_name: 'PCExpress',
+	contact_name: 'Ana Soto',
+	business_activity: 'Venta de insumos informáticos',
+	billing_address: 'Av. Central 1200',
+	billing_commune_id: 13101,
+	shipping_address: 'Camino Industrial 80',
+	shipping_commune_id: 13124,
+	phone: '+56912345678',
+	email: 'ventas@example.test',
+	display_name: 'PCExpress',
+	is_active: true,
+	created_at: '2026-01-15T13:20:00-03:00',
+	updated_at: '2026-08-30T10:05:00-03:00',
+	allowed_actions: ['update', 'deactivate'],
+	purchase_summary: {
+		last_purchase_on: '2026-09-04',
+		received_units: 128,
+		products_supplied_count: 6,
+		receipt_count: 14,
+	},
+};
+
+/**
+ * Proveedor desactivado (soft delete), mismo id/rut que el compacto
+ * `inactiveSupplier`. Sin compras: `receipt_count: 0` y `last_purchase_on:
+ * null`, legible como «sin compras» y no como un hueco vacío. Sólo
+ * `allowed_actions: ["restore"]` — desactivado no admite editar.
+ */
+export const inactiveSupplierFull: IProcurementSupplier = {
+	id: 12,
+	rut: '77888999-4',
+	company_name: 'Importadora Sur',
+	contact_name: null,
+	business_activity: null,
+	billing_address: null,
+	billing_commune_id: null,
+	shipping_address: null,
+	shipping_commune_id: null,
+	phone: null,
+	email: null,
+	display_name: 'Importadora Sur',
+	is_active: false,
+	created_at: '2025-11-02T09:00:00-03:00',
+	updated_at: '2026-06-10T16:40:00-03:00',
+	allowed_actions: ['restore'],
+	purchase_summary: {
+		last_purchase_on: null,
+		received_units: 0,
+		products_supplied_count: 0,
+		receipt_count: 0,
+	},
+};
+
+/**
+ * Proveedor activo dado de alta sólo con `contact_name` (persona natural sin
+ * razón social): cubre «al menos uno de company_name o contact_name». Sin
+ * giro ni direcciones, así que el formulario lo advierte para confirmar
+ * factura sin bloquear el guardado.
+ */
+export const contrerasSupplierFull: IProcurementSupplier = {
+	id: 15,
+	rut: '15987321-8',
+	company_name: null,
+	contact_name: 'Marcelo Contreras',
+	business_activity: null,
+	billing_address: null,
+	billing_commune_id: null,
+	shipping_address: null,
+	shipping_commune_id: null,
+	phone: '+56987654321',
+	email: 'mcontreras@example.test',
+	display_name: 'Marcelo Contreras',
+	is_active: true,
+	created_at: '2026-04-20T11:10:00-03:00',
+	updated_at: '2026-07-02T08:30:00-03:00',
+	allowed_actions: ['update', 'deactivate'],
+	purchase_summary: {
+		last_purchase_on: '2026-07-01',
+		received_units: 30,
+		products_supplied_count: 2,
+		receipt_count: 3,
+	},
+};
+
+/**
+ * Proveedor activo recién dado de alta: completo pero sin compras todavía —
+ * distingue «sin compras porque es nuevo» de «sin compras porque está
+ * desactivado» (`inactiveSupplierFull`).
+ */
+export const nuevaCorpSupplierFull: IProcurementSupplier = {
+	id: 21,
+	rut: '76543210-3',
+	company_name: 'Nueva Corp SpA',
+	contact_name: 'Valentina Rojas',
+	business_activity: 'Distribución de accesorios',
+	billing_address: 'Los Aromos 450',
+	billing_commune_id: 13110,
+	shipping_address: 'Los Aromos 450',
+	shipping_commune_id: 13110,
+	phone: '+56911223344',
+	email: 'contacto@nuevacorp.test',
+	display_name: 'Nueva Corp SpA',
+	is_active: true,
+	created_at: '2026-08-25T15:45:00-03:00',
+	updated_at: '2026-08-25T15:45:00-03:00',
+	allowed_actions: ['update', 'deactivate'],
+	purchase_summary: {
+		last_purchase_on: null,
+		received_units: 0,
+		products_supplied_count: 0,
+		receipt_count: 0,
+	},
+};
+
+/** Semilla del listado. El servicio mock la clona a su propio store mutable. */
+export const procurementSuppliers: IProcurementSupplier[] = [
+	pcExpressSupplierFull,
+	inactiveSupplierFull,
+	contrerasSupplierFull,
+	nuevaCorpSupplierFull,
+];
 
 /* =================================================
    Bloques de costo — sección 2 del contrato

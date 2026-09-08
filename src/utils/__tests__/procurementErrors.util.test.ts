@@ -82,6 +82,30 @@ describe('resolveProcurementError', () => {
 		expect(withContext.action).toBe('reload_selection');
 	});
 
+	it('extrae existing_supplier del 409 de RUT duplicado, la excepción que no usa el envoltorio común', () => {
+		const resolved = resolveProcurementError(
+			axiosError(409, {
+				message: 'Ya existe un proveedor con este RUT en esta filial.',
+				code: 'SUPPLIER_RUT_ALREADY_EXISTS',
+				existing_supplier: { id: 7, display_name: 'PCExpress', is_active: false },
+			}),
+		);
+
+		expect(resolved.existingSupplier).toEqual({
+			id: 7,
+			display_name: 'PCExpress',
+			is_active: false,
+		});
+	});
+
+	it('deja existingSupplier en null fuera del conflicto de RUT', () => {
+		const resolved = resolveProcurementError(
+			axiosError(422, { message: 'RUT inválido.', code: 'INVALID_CHILEAN_RUT' }),
+		);
+
+		expect(resolved.existingSupplier).toBeNull();
+	});
+
 	it('acepta el string plano con el que un thunk rechaza', () => {
 		expect(getProcurementErrorMessage('No pudimos guardar')).toBe('No pudimos guardar');
 	});
