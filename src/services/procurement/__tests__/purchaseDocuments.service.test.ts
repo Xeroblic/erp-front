@@ -226,6 +226,36 @@ describe('createPurchaseDocument', () => {
 		expect(status).toBe(409);
 		expect(data.code).toBe('IDEMPOTENCY_KEY_REUSED');
 	});
+
+	it('dos creaciones concurrentes con la misma clave: una gana, la otra ve OPERATION_IN_PROGRESS', async () => {
+		const headers = { idempotencyKey: 'key-concurrent-create' };
+		const [first, second] = await Promise.allSettled([
+			createPurchaseDocument(SUBSIDIARY_A, basePayload, headers),
+			createPurchaseDocument(SUBSIDIARY_A, basePayload, headers),
+		]);
+
+		const fulfilled = [first, second].filter(
+			(
+				outcome,
+			): outcome is PromiseFulfilledResult<
+				Awaited<ReturnType<typeof createPurchaseDocument>>
+			> => outcome.status === 'fulfilled',
+		);
+		const rejected = [first, second].filter(
+			(outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected',
+		);
+		expect(fulfilled).toHaveLength(1);
+		expect(rejected).toHaveLength(1);
+		const { response } = rejected[0].reason as {
+			response: { status: number; data: Record<string, unknown> };
+		};
+		expect(response.status).toBe(409);
+		expect(response.data.code).toBe('OPERATION_IN_PROGRESS');
+
+		// La concurrencia no duplicó la escritura: sólo un documento se creó.
+		const listed = await listPurchaseDocuments(SUBSIDIARY_A, { search: 'TEST-001' });
+		expect(listed.data).toHaveLength(1);
+	});
 });
 
 describe('updatePurchaseDocument', () => {
@@ -414,6 +444,26 @@ describe('cancelPurchaseDocument', () => {
 		expect(data.cancellation_reason).toBe('folio ingresado por error');
 		expect(data.reception_status).toBeNull();
 		expect(data.allowed_actions).toEqual([]);
+	});
+
+	it('confirmar y anular en paralelo sobre el mismo borrador se encolan: ninguna pisa a la otra', async () => {
+		// `confirmPurchaseDocument` espera a `getProcurementSupplier` antes de
+		// escribir; `cancelPurchaseDocument` no espera nada. Sin encolar por
+		// documento, `cancel` terminaría primero (estado aún `draft`) y
+		// `confirm` la pisaría al resolver después, revirtiendo la anulación en
+		// silencio. Encoladas, `confirm` corre entera primero (llegó primero a
+		// la cola) y `cancel` corre después sobre el documento ya confirmado.
+		const [confirmOutcome, cancelOutcome] = await Promise.allSettled([
+			confirmPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID),
+			cancelPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID, { reason: 'motivo carrera' }),
+		]);
+
+		expect(confirmOutcome.status).toBe('fulfilled');
+		expect(cancelOutcome.status).toBe('fulfilled');
+
+		const { data: finalState } = await getPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID);
+		expect(finalState.status).toBe('cancelled');
+		expect(finalState.cancellation_reason).toBe('motivo carrera');
 	});
 });
 

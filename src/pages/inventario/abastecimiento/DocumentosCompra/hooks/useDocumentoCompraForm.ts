@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
@@ -162,15 +162,36 @@ const useDocumentoCompraForm = ({
 	});
 
 	/**
+	 * `true` mientras el ETag con el que se abrió este formulario quedó
+	 * obsoleto (412). El contrato exige recargar el recurso antes de volver a
+	 * editar: reintentar con la misma clave y el ETag viejo repetiría el
+	 * mismo 412, y renovar sólo la clave no soluciona nada porque el problema
+	 * es la versión, no la idempotencia.
+	 */
+	const [hasVersionConflict, setHasVersionConflict] = useState(false);
+
+	/**
 	 * Igual criterio que `useProveedorForm`: un 422 con `fieldErrors` se pinta
 	 * sobre el input top-level correspondiente cuando existe, y siempre se
 	 * toastea — el mock no indexa los errores de línea (`items.N.campo`), así
 	 * que un error de una línea sólo llega por el toast. La clave se renueva
 	 * salvo que el error admita reintentar con la misma.
+	 *
+	 * `RESOURCE_VERSION_CONFLICT` es la excepción: acá no alcanza con
+	 * renovar la clave, porque lo que quedó obsoleto es el ETag, no la
+	 * `Idempotency-Key`. El formulario se bloquea y `hasVersionConflict`
+	 * le pide al contenedor (el modal) que recargue el documento — ver
+	 * `DocumentoCompraFormModal`.
 	 */
 	useEffect(() => {
 		const resolved = idempotentWrite.error;
 		if (!resolved) return;
+
+		if (resolved.code === 'RESOURCE_VERSION_CONFLICT') {
+			setHasVersionConflict(true);
+			toast.error(resolved.message);
+			return;
+		}
 
 		Object.entries(resolved.fieldErrors ?? {}).forEach(([apiField, messages]) => {
 			const formField = FORM_FIELD_BY_API_FIELD[apiField];
@@ -185,12 +206,14 @@ const useDocumentoCompraForm = ({
 	const reset = () => {
 		formik.resetForm();
 		idempotentWrite.clearError();
+		setHasVersionConflict(false);
 	};
 
 	return {
 		formik,
 		isEdit,
 		isSubmitting: idempotentWrite.isSubmitting,
+		hasVersionConflict,
 		productOptions,
 		productsById,
 		reset,

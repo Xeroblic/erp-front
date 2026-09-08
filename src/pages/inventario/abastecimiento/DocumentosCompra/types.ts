@@ -1,5 +1,6 @@
 import * as Yup from 'yup';
-import { costEntrySchema } from '@/components/procurement';
+import { costEntrySchema, normalizeCostInput } from '@/components/procurement';
+import { parseDecimalString } from '@/utils/procurementDecimal.util';
 import type {
 	TCostEntryBasis,
 	TPurchaseDocumentReceptionStatus,
@@ -148,7 +149,16 @@ export const documentoCompraFormSchema = Yup.object({
 		}),
 	document_number: Yup.string().required('Indica el folio.').max(50, 'Máximo 50 caracteres.'),
 	issue_date: Yup.string().required('Indica la fecha de emisión.'),
-	total_amount: Yup.string().max(20, 'Monto demasiado largo.'),
+	// Informativo y opcional (sección 6), pero si se escribe algo tiene que ser
+	// un decimal real: sin esta prueba, un texto no numérico se serializaba
+	// como `null` en silencio (`toOptionalDecimal` en `useDocumentoCompraForm`)
+	// y el usuario nunca se enteraba de que lo que escribió no se guardó.
+	total_amount: Yup.string()
+		.max(20, 'Monto demasiado largo.')
+		.test('decimal-valido', 'Usa un monto con hasta dos decimales.', (value) => {
+			if (!value || !value.trim()) return true;
+			return parseDecimalString(normalizeCostInput(value)) !== null;
+		}),
 	notes: Yup.string().max(1000, 'Máximo 1000 caracteres.'),
 	items: Yup.array().of(lineSchema).min(1, 'Agrega al menos una línea.'),
 });

@@ -4,8 +4,10 @@ import type { IPurchaseDocumentRelatedCounts } from '@/interface/procurement.int
 
 /**
  * `related_counts` del detalle (sección 6): recepciones, asignaciones de
- * stock inicial y adjuntos. Las listas completas paginan aparte — cards 04
- * y 05 — así que acá sólo se cuenta, nunca se incrusta historia ilimitada.
+ * stock inicial y adjuntos. Resumen numérico rápido; las listas completas
+ * paginadas de recepciones y asignaciones viven en `RelatedListCard`, justo
+ * debajo. Adjuntos no tiene lista propia todavía — subirlos y listarlos es
+ * la card 04.
  */
 
 interface IRelatedCountsCardProps {

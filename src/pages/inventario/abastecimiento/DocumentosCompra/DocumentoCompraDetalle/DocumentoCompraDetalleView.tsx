@@ -9,6 +9,10 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import { AllowedActionsToolbar } from '@/components/procurement';
 import { formatDate } from '@/utils/format.utils';
 import { formatDecimalAmount } from '@/utils/procurementDecimal.util';
+import {
+	listPurchaseDocumentInitialStockAllocations,
+	listPurchaseDocumentStockReceipts,
+} from '@/services/procurement/purchaseDocuments.service';
 import DocumentTypeBadge from '../components/parts/DocumentTypeBadge';
 import DocumentStatusBadge from '../components/parts/DocumentStatusBadge';
 import ReceptionStatusBadge from '../components/parts/ReceptionStatusBadge';
@@ -17,6 +21,7 @@ import DocumentoCompraFormModal from '../components/modals/DocumentoCompraFormMo
 import ConfirmDocumentoCompraModal from '../components/modals/ConfirmDocumentoCompraModal';
 import CancelDocumentoCompraModal from '../components/modals/CancelDocumentoCompraModal';
 import RelatedCountsCard from './components/parts/RelatedCountsCard';
+import RelatedListCard from './components/parts/RelatedListCard';
 import useDocumentoCompraDetalle from './hooks/useDocumentoCompraDetalle';
 
 /**
@@ -231,6 +236,23 @@ const DocumentoCompraDetalleView = () => {
 						/>
 
 						<RelatedCountsCard relatedCounts={document.related_counts} />
+
+						<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+							<RelatedListCard
+								title='Recepciones'
+								emptyLabel='Sin recepciones registradas todavía.'
+								subsidiaryId={subsidiaryId}
+								documentId={document.id}
+								fetcher={listPurchaseDocumentStockReceipts}
+							/>
+							<RelatedListCard
+								title='Asignaciones de stock inicial'
+								emptyLabel='Sin asignaciones de stock inicial todavía.'
+								subsidiaryId={subsidiaryId}
+								documentId={document.id}
+								fetcher={listPurchaseDocumentInitialStockAllocations}
+							/>
+						</div>
 					</>
 				)}
 			</Container>
@@ -243,6 +265,7 @@ const DocumentoCompraDetalleView = () => {
 					document={document}
 					etag={etag}
 					onSuccess={retry}
+					onStaleVersion={retry}
 				/>
 			)}
 

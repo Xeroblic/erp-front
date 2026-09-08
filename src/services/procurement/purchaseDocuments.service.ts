@@ -115,7 +115,13 @@ const bumpVersion = (store: IPurchaseDocumentVersionedStore, documentId: number)
 	return next;
 };
 
-const idempotencyLog = new Map<string, { payloadHash: string; result: unknown }>();
+interface IIdempotencyLogEntry {
+	payloadHash: string;
+	/** `undefined` mientras la operación sigue en curso. */
+	result?: unknown;
+}
+
+const idempotencyLog = new Map<string, IIdempotencyLogEntry>();
 const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subsidiaryId}:${key}`;
 
 const delay = <T>(value: T): Promise<T> =>
@@ -137,6 +143,15 @@ const apiError = (status: number, data: Record<string, unknown>) => ({
 const fail = (status: number, data: Record<string, unknown>): Promise<never> =>
 	Promise.reject(apiError(status, data));
 
+/**
+ * Reserva la clave **antes** del primer `await` (síncrono, dentro del mismo
+ * tick): sin esto, dos llamadas concurrentes con la misma clave llegan las
+ * dos con `idempotencyLog.get(logKey) === undefined` y ejecutan `run()` en
+ * paralelo — el contrato exige `409 OPERATION_IN_PROGRESS` para la segunda
+ * mientras la primera sigue en curso (sección 1). Un fallo definitivo borra
+ * la reserva: sólo una escritura **exitosa** consume la clave, igual que
+ * documenta el comentario original de este servicio.
+ */
 async function withIdempotency<T>(
 	subsidiaryId: number,
 	idempotencyKey: string | undefined,
@@ -155,12 +170,52 @@ async function withIdempotency<T>(
 				code: 'IDEMPOTENCY_KEY_REUSED',
 			});
 		}
+		if (!('result' in logged)) {
+			return fail(409, {
+				message: PROCUREMENT_ERROR_DEFINITIONS.OPERATION_IN_PROGRESS.fallbackMessage,
+				code: 'OPERATION_IN_PROGRESS',
+			});
+		}
 		return logged.result as T;
 	}
 
-	const result = await run();
-	idempotencyLog.set(logKey, { payloadHash, result });
-	return result;
+	idempotencyLog.set(logKey, { payloadHash });
+	try {
+		const result = await run();
+		idempotencyLog.set(logKey, { payloadHash, result });
+		return result;
+	} catch (error) {
+		idempotencyLog.delete(logKey);
+		throw error;
+	}
+}
+
+/**
+ * Serializa las escrituras sobre un mismo documento. El `ETag` protege
+ * contra pisar una edición ajena, pero la validación (estado, `If-Match`,
+ * las esperas a `getProcurementSupplier`) y la escritura final no son un
+ * único paso atómico: dos escrituras concurrentes con claves de idempotencia
+ * **distintas** podían intercalarse entre esa validación y el commit,
+ * perdiendo la de la que resolvió primero. Encolar por documento cierra esa
+ * ventana sin necesitar una base de datos real detrás.
+ */
+const documentLocks = new Map<string, Promise<unknown>>();
+
+function withDocumentLock<T>(
+	subsidiaryId: number,
+	documentId: number,
+	run: () => Promise<T>,
+): Promise<T> {
+	const lockKey = `${subsidiaryId}:${documentId}`;
+	const previous = documentLocks.get(lockKey) ?? Promise.resolve();
+	const next = previous.then(run, run);
+	// La cola sigue viva aunque esta escritura falle: sólo se limpia el
+	// resultado, nunca el turno de la siguiente en espera.
+	documentLocks.set(
+		lockKey,
+		next.catch(() => undefined),
+	);
+	return next;
 }
 
 const buildFieldError = (
@@ -372,6 +427,13 @@ const replaceExistingLines = (
  * confirmar una factura (sección 5). Mismo criterio que
  * `isIncompleteForInvoicing` del formulario de proveedores, aplicado acá
  * sobre la ficha completa en vez de los valores del form.
+ *
+ * Incluye las comunas a propósito, aunque el texto de la sección 5 sólo
+ * nombra «giro y ambas direcciones»: `SupplierCompletenessNotice` (card 02)
+ * ya advierte al usuario con este mismo criterio —comuna incluida— antes de
+ * llegar a confirmar una factura. Que el aviso de proveedores y el bloqueo
+ * de confirmar acá exijan cosas distintas sería peor que ser un poco más
+ * estricto que la frase literal del contrato.
  */
 const isSupplierCompleteForInvoicing = (supplier: IProcurementSupplier): boolean =>
 	Boolean(supplier.business_activity?.trim()) &&
@@ -585,11 +647,8 @@ export const updatePurchaseDocument = (
 	payload: IPurchaseDocumentUpdatePayload,
 	headers: IMockWriteHeaders = {},
 ): Promise<{ data: IPurchaseDocument; headers: { etag: string } }> =>
-	withIdempotency(
-		subsidiaryId,
-		headers.idempotencyKey,
-		{ action: 'update', id, payload },
-		async () => {
+	withIdempotency(subsidiaryId, headers.idempotencyKey, { action: 'update', id, payload }, () =>
+		withDocumentLock(subsidiaryId, id, async () => {
 			const store = getStore(subsidiaryId);
 			const existing = store.documents.find((document) => document.id === id);
 			if (!existing) {
@@ -710,7 +769,7 @@ export const updatePurchaseDocument = (
 				data: cloneDocument(updated),
 				headers: { etag: buildEtag(id, nextVersion) },
 			});
-		},
+		}),
 	);
 
 /**
@@ -723,75 +782,78 @@ export const confirmPurchaseDocument = (
 	id: number,
 	headers: IMockWriteHeaders = {},
 ): Promise<{ data: IPurchaseDocument; headers: { etag: string } }> =>
-	withIdempotency(subsidiaryId, headers.idempotencyKey, { action: 'confirm', id }, async () => {
-		const store = getStore(subsidiaryId);
-		const existing = store.documents.find((document) => document.id === id);
-		if (!existing) {
-			return fail(404, {
-				message: 'El documento de compra no existe.',
-				code: 'PURCHASE_DOCUMENT_NOT_FOUND',
-			});
-		}
-		if (existing.status !== 'draft') {
-			return fail(409, {
-				message: PURCHASE_DOCUMENT_NOT_DRAFT_MESSAGE,
-				code: 'PURCHASE_DOCUMENT_NOT_DRAFT',
-			});
-		}
-
-		let supplierSnapshot: IProcurementSupplier | null = null;
-		if (existing.document_type === 'invoice') {
-			if (!existing.supplier) {
-				return fail(422, {
-					message:
-						PROCUREMENT_ERROR_DEFINITIONS.INVOICE_SUPPLIER_REQUIRED.fallbackMessage,
-					code: 'INVOICE_SUPPLIER_REQUIRED',
+	withIdempotency(subsidiaryId, headers.idempotencyKey, { action: 'confirm', id }, () =>
+		withDocumentLock(subsidiaryId, id, async () => {
+			const store = getStore(subsidiaryId);
+			const existing = store.documents.find((document) => document.id === id);
+			if (!existing) {
+				return fail(404, {
+					message: 'El documento de compra no existe.',
+					code: 'PURCHASE_DOCUMENT_NOT_FOUND',
 				});
 			}
-			const { data: supplier } = await getProcurementSupplier(
-				subsidiaryId,
-				existing.supplier.id,
-			);
-			if (!isSupplierCompleteForInvoicing(supplier)) {
-				return fail(422, {
-					message:
-						PROCUREMENT_ERROR_DEFINITIONS.INVOICE_SUPPLIER_INCOMPLETE.fallbackMessage,
-					code: 'INVOICE_SUPPLIER_INCOMPLETE',
+			if (existing.status !== 'draft') {
+				return fail(409, {
+					message: PURCHASE_DOCUMENT_NOT_DRAFT_MESSAGE,
+					code: 'PURCHASE_DOCUMENT_NOT_DRAFT',
 				});
 			}
-			supplierSnapshot = supplier;
-		} else if (existing.supplier) {
-			const { data: supplier } = await getProcurementSupplier(
-				subsidiaryId,
-				existing.supplier.id,
+
+			let supplierSnapshot: IProcurementSupplier | null = null;
+			if (existing.document_type === 'invoice') {
+				if (!existing.supplier) {
+					return fail(422, {
+						message:
+							PROCUREMENT_ERROR_DEFINITIONS.INVOICE_SUPPLIER_REQUIRED.fallbackMessage,
+						code: 'INVOICE_SUPPLIER_REQUIRED',
+					});
+				}
+				const { data: supplier } = await getProcurementSupplier(
+					subsidiaryId,
+					existing.supplier.id,
+				);
+				if (!isSupplierCompleteForInvoicing(supplier)) {
+					return fail(422, {
+						message:
+							PROCUREMENT_ERROR_DEFINITIONS.INVOICE_SUPPLIER_INCOMPLETE
+								.fallbackMessage,
+						code: 'INVOICE_SUPPLIER_INCOMPLETE',
+					});
+				}
+				supplierSnapshot = supplier;
+			} else if (existing.supplier) {
+				const { data: supplier } = await getProcurementSupplier(
+					subsidiaryId,
+					existing.supplier.id,
+				);
+				supplierSnapshot = supplier;
+			}
+
+			const updated: IPurchaseDocument = {
+				...existing,
+				status: 'confirmed',
+				// Sin recepciones ni asignaciones todavía (cards 04/05): un documento
+				// recién confirmado siempre nace `pending`.
+				reception_status: 'pending',
+				supplier_snapshot: supplierSnapshot,
+				confirmed_at: new Date().toISOString(),
+				// `create_receipt` y `add_attachment` se omiten a propósito: las
+				// cards 04 y 05 todavía no existen para ofrecerlas de verdad.
+				allowed_actions: ['cancel'],
+				updated_at: new Date().toISOString(),
+			};
+
+			store.documents = store.documents.map((document) =>
+				document.id === id ? updated : document,
 			);
-			supplierSnapshot = supplier;
-		}
+			const nextVersion = bumpVersion(store, id);
 
-		const updated: IPurchaseDocument = {
-			...existing,
-			status: 'confirmed',
-			// Sin recepciones ni asignaciones todavía (cards 04/05): un documento
-			// recién confirmado siempre nace `pending`.
-			reception_status: 'pending',
-			supplier_snapshot: supplierSnapshot,
-			confirmed_at: new Date().toISOString(),
-			// `create_receipt` y `add_attachment` se omiten a propósito: las
-			// cards 04 y 05 todavía no existen para ofrecerlas de verdad.
-			allowed_actions: ['cancel'],
-			updated_at: new Date().toISOString(),
-		};
-
-		store.documents = store.documents.map((document) =>
-			document.id === id ? updated : document,
-		);
-		const nextVersion = bumpVersion(store, id);
-
-		return delay({
-			data: cloneDocument(updated),
-			headers: { etag: buildEtag(id, nextVersion) },
-		});
-	});
+			return delay({
+				data: cloneDocument(updated),
+				headers: { etag: buildEtag(id, nextVersion) },
+			});
+		}),
+	);
 
 /**
  * `POST /purchase-documents/{document}/cancel`: 200 `cancelled`, motivo
@@ -803,11 +865,8 @@ export const cancelPurchaseDocument = (
 	payload: IPurchaseDocumentCancelPayload,
 	headers: IMockWriteHeaders = {},
 ): Promise<{ data: IPurchaseDocument; headers: { etag: string } }> =>
-	withIdempotency(
-		subsidiaryId,
-		headers.idempotencyKey,
-		{ action: 'cancel', id, payload },
-		async () => {
+	withIdempotency(subsidiaryId, headers.idempotencyKey, { action: 'cancel', id, payload }, () =>
+		withDocumentLock(subsidiaryId, id, async () => {
 			const store = getStore(subsidiaryId);
 			const existing = store.documents.find((document) => document.id === id);
 			if (!existing) {
@@ -863,7 +922,7 @@ export const cancelPurchaseDocument = (
 				data: cloneDocument(updated),
 				headers: { etag: buildEtag(id, nextVersion) },
 			});
-		},
+		}),
 	);
 
 const emptyRelatedListEnvelope = (

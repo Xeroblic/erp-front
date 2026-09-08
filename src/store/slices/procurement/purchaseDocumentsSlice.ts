@@ -37,12 +37,21 @@ export interface PurchaseDocumentsState {
 	listLoading: boolean;
 	listError: string | null;
 	listRequestId: string | null;
+	/**
+	 * Filial dueña de `items`/`meta` (propiedad de contexto, ZF-12). Los IDs de
+	 * documento **no son únicos entre filiales** — el mock siembra cada una con
+	 * los mismos fixtures — así que una mutación resuelta para la filial
+	 * equivocada no puede parchear una fila que coincide sólo por número.
+	 */
+	listSubsidiaryId: number | null;
 	current: IPurchaseDocument | null;
 	/** `ETag` de `current`, tal como lo devolvió el último GET o escritura. */
 	currentEtag: string | null;
 	currentLoading: boolean;
 	currentError: string | null;
 	currentRequestId: string | null;
+	/** Filial dueña de `current`, mismo criterio que `listSubsidiaryId`. */
+	currentSubsidiaryId: number | null;
 	creating: boolean;
 	updating: boolean;
 	confirming: boolean;
@@ -55,11 +64,13 @@ const initialState: PurchaseDocumentsState = {
 	listLoading: false,
 	listError: null,
 	listRequestId: null,
+	listSubsidiaryId: null,
 	current: null,
 	currentEtag: null,
 	currentLoading: false,
 	currentError: null,
 	currentRequestId: null,
+	currentSubsidiaryId: null,
 	creating: false,
 	updating: false,
 	confirming: false,
@@ -118,7 +129,11 @@ export const createPurchaseDocumentThunk = createAsyncThunk(
 				args.payload,
 				args.headers,
 			);
-			return { data: response.data, etag: readEtagHeader(response.headers) };
+			return {
+				data: response.data,
+				etag: readEtagHeader(response.headers),
+				subsidiaryId: args.subsidiaryId,
+			};
 		} catch (error) {
 			return rejectWithValue(error);
 		}
@@ -144,7 +159,11 @@ export const updatePurchaseDocumentThunk = createAsyncThunk(
 				args.payload,
 				args.headers,
 			);
-			return { data: response.data, etag: readEtagHeader(response.headers) };
+			return {
+				data: response.data,
+				etag: readEtagHeader(response.headers),
+				subsidiaryId: args.subsidiaryId,
+			};
 		} catch (error) {
 			return rejectWithValue(error);
 		}
@@ -164,7 +183,11 @@ export const confirmPurchaseDocumentThunk = createAsyncThunk(
 				args.id,
 				args.headers,
 			);
-			return { data: response.data, etag: readEtagHeader(response.headers) };
+			return {
+				data: response.data,
+				etag: readEtagHeader(response.headers),
+				subsidiaryId: args.subsidiaryId,
+			};
 		} catch (error) {
 			return rejectWithValue(error);
 		}
@@ -190,7 +213,11 @@ export const cancelPurchaseDocumentThunk = createAsyncThunk(
 				args.payload,
 				args.headers,
 			);
-			return { data: response.data, etag: readEtagHeader(response.headers) };
+			return {
+				data: response.data,
+				etag: readEtagHeader(response.headers),
+				subsidiaryId: args.subsidiaryId,
+			};
 		} catch (error) {
 			return rejectWithValue(error);
 		}
@@ -212,14 +239,29 @@ const toListRow = (document: IPurchaseDocument): IPurchaseDocumentListRow => ({
 	allowed_actions: document.allowed_actions,
 });
 
-/** Refleja en `items` y `current` el resultado de una escritura, sin refetch. */
+/**
+ * Refleja en `items` y `current` el resultado de una escritura, sin refetch.
+ * `subsidiaryId` es el de la propia mutación: los IDs de documento se
+ * repiten entre filiales (cada una siembra los mismos fixtures), así que sin
+ * comparar la filial una escritura resuelta para la B podría parchear una
+ * fila o pisar la ficha de la A sólo porque el número de ID coincide.
+ */
 const applyDocumentMutation = (
 	state: PurchaseDocumentsState,
 	document: IPurchaseDocument,
 	etag: string | null,
+	subsidiaryId: number | null,
 ) => {
-	state.items = state.items.map((row) => (row.id === document.id ? toListRow(document) : row));
-	if (state.current?.id === document.id) {
+	if (subsidiaryId !== null && subsidiaryId === state.listSubsidiaryId) {
+		state.items = state.items.map((row) =>
+			row.id === document.id ? toListRow(document) : row,
+		);
+	}
+	if (
+		state.current?.id === document.id &&
+		subsidiaryId !== null &&
+		subsidiaryId === state.currentSubsidiaryId
+	) {
 		state.current = document;
 		state.currentEtag = etag;
 	}
@@ -233,6 +275,7 @@ const purchaseDocumentsSlice = createSlice({
 			state.current = null;
 			state.currentEtag = null;
 			state.currentError = null;
+			state.currentSubsidiaryId = null;
 			// Igual que en proveedores: sin esto, una respuesta en vuelo de la
 			// ficha que se abandona podría llegar tarde y repoblar `current`.
 			state.currentRequestId = null;
@@ -244,6 +287,7 @@ const purchaseDocumentsSlice = createSlice({
 				state.listLoading = true;
 				state.listError = null;
 				state.listRequestId = action.meta.requestId;
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchPurchaseDocuments.fulfilled, (state, action) => {
 				if (action.meta.requestId !== state.listRequestId) return;
@@ -264,6 +308,7 @@ const purchaseDocumentsSlice = createSlice({
 				state.currentLoading = true;
 				state.currentError = null;
 				state.currentRequestId = action.meta.requestId;
+				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchPurchaseDocumentDetail.fulfilled, (state, action) => {
 				// Propiedad de contexto (ZF-12): una ficha anterior que resuelve
@@ -282,6 +327,7 @@ const purchaseDocumentsSlice = createSlice({
 				);
 				state.current = null;
 				state.currentEtag = null;
+				state.currentSubsidiaryId = null;
 			})
 
 			.addCase(createPurchaseDocumentThunk.pending, (state) => {
@@ -300,7 +346,12 @@ const purchaseDocumentsSlice = createSlice({
 			})
 			.addCase(updatePurchaseDocumentThunk.fulfilled, (state, action) => {
 				state.updating = false;
-				applyDocumentMutation(state, action.payload.data, action.payload.etag);
+				applyDocumentMutation(
+					state,
+					action.payload.data,
+					action.payload.etag,
+					action.payload.subsidiaryId,
+				);
 			})
 			.addCase(updatePurchaseDocumentThunk.rejected, (state) => {
 				state.updating = false;
@@ -311,7 +362,12 @@ const purchaseDocumentsSlice = createSlice({
 			})
 			.addCase(confirmPurchaseDocumentThunk.fulfilled, (state, action) => {
 				state.confirming = false;
-				applyDocumentMutation(state, action.payload.data, action.payload.etag);
+				applyDocumentMutation(
+					state,
+					action.payload.data,
+					action.payload.etag,
+					action.payload.subsidiaryId,
+				);
 			})
 			.addCase(confirmPurchaseDocumentThunk.rejected, (state) => {
 				state.confirming = false;
@@ -322,7 +378,12 @@ const purchaseDocumentsSlice = createSlice({
 			})
 			.addCase(cancelPurchaseDocumentThunk.fulfilled, (state, action) => {
 				state.cancelling = false;
-				applyDocumentMutation(state, action.payload.data, action.payload.etag);
+				applyDocumentMutation(
+					state,
+					action.payload.data,
+					action.payload.etag,
+					action.payload.subsidiaryId,
+				);
 			})
 			.addCase(cancelPurchaseDocumentThunk.rejected, (state) => {
 				state.cancelling = false;

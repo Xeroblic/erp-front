@@ -44,6 +44,18 @@ const useDocumentoCompraDetalle = () => {
 	const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 	const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
+	/**
+	 * El router reutiliza esta instancia del componente al navegar de un
+	 * documento a otro (mismo `:documentoId` en la ruta): sin esto, un modal
+	 * abierto para el documento anterior seguiría abierto — y su acción
+	 * seguiría apuntando al documento nuevo que acaba de cargar `current`.
+	 */
+	useEffect(() => {
+		setIsFormModalOpen(false);
+		setIsConfirmModalOpen(false);
+		setIsCancelModalOpen(false);
+	}, [id, subsidiaryId]);
+
 	const goToList = useCallback(
 		() => navigate('/inventario/abastecimiento/documentos-compra'),
 		[navigate],
