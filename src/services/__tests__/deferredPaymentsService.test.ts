@@ -27,6 +27,7 @@ const document: IDeferredPaymentDocument = {
 	days_until_due: 30,
 	issue_date: '2026-07-22',
 	due_date: '2026-08-21',
+	paid_at: null,
 	customer: {
 		id: 4,
 		billing_company: 'Importadora Automarco Spa',
