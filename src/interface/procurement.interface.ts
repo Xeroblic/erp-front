@@ -515,6 +515,196 @@ export type IPurchaseDocumentListParams = IPurchaseDocumentListFilters &
 	Partial<IProcurementPageParams>;
 
 /* =================================================
+   Recepciones físicas — sección 7 del contrato
+   ================================================= */
+
+/**
+ * Persona que solicitó una acción de auditoría (`posted_by` de una recepción,
+ * `actor` de una operación de inventario). El contrato la nombra en prosa sin
+ * darle sección de tipos propia; se factoriza acá porque `posted_by` **no**
+ * representa a un worker anónimo (sección 7) — es quien pidió contabilizar,
+ * no el proceso asíncrono que lo ejecutó.
+ */
+export interface IProcurementActorCompact {
+	id: number;
+	name: string;
+}
+
+/**
+ * Ciclo de estados de una recepción (sección 7): `draft` editable sin stock →
+ * `queued` procesando → `posted` o `failed`; más `cancelled` (sin efecto
+ * físico) y `reversed` (compensada, con historia conservada).
+ */
+export type TStockReceiptStatus =
+	| 'draft'
+	| 'queued'
+	| 'posted'
+	| 'failed'
+	| 'reversed'
+	| 'cancelled';
+
+/**
+ * Bloque `processing` de una recepción `queued`/`failed`. `next_retry_at` es
+ * del worker, no de un reintento manual: el contrato prohíbe reencolar a
+ * mano una recepción en `queued`.
+ */
+export interface IStockReceiptProcessing {
+	attempt_count: number;
+	last_attempt_at: TIsoTimestamp | null;
+	next_retry_at: TIsoTimestamp | null;
+}
+
+/**
+ * Línea de recepción. `purchase_document_line_id` es `null` en el alta sin
+ * documento; `cost` se deriva del documento (`source: "document"`) o se
+ * declara sin él (`source: "declared"`/`"unknown"`) — nunca se sobrescribe
+ * cuando viene de un documento.
+ */
+export interface IStockReceiptItem {
+	id: number;
+	product: IProcurementProduct;
+	sku_snapshot: string;
+	name_snapshot: string;
+	purchase_document_line_id: number | null;
+	quantity: number;
+	cost: IProcurementCost;
+}
+
+/**
+ * Fila del listado (sección 7): id, subsidiary_id, branch_id, status,
+ * warehouse compacto, supplier compacto, purchase_document compacto,
+ * received_on, items_count, total_quantity, created_at, posted_at,
+ * allowed_actions.
+ */
+export interface IStockReceiptListRow {
+	id: number;
+	subsidiary_id: number;
+	branch_id: number;
+	status: TStockReceiptStatus;
+	warehouse: IWarehouseCompact;
+	supplier: ISupplierCompact | null;
+	purchase_document: IPurchaseDocumentCompact | null;
+	received_on: TBusinessDate;
+	items_count: number;
+	total_quantity: number;
+	created_at: TIsoTimestamp;
+	posted_at: TIsoTimestamp | null;
+	allowed_actions: TProcurementAllowedAction[];
+}
+
+/**
+ * Ficha completa. El detalle agrega `reason`, `notes`, `items`,
+ * `inventory_operation_id`, `reversal_operation_id`, `queued_at`,
+ * `failed_at`, `reversed_at`, `cancellation_reason`, `reversal_reason`,
+ * `failure_code`, `failure_message`, `processing`, `updated_at` (sección 7).
+ * `posted_by` no está en esa enumeración literal del contrato, pero la misma
+ * sección lo exige en prosa («posted_by no representa a un worker anónimo»)
+ * y los criterios de aceptación de la card lo verifican — se incluye acá
+ * como el resto de los campos derivados de una regla escrita sin ejemplo
+ * literal (mismo criterio que `unknownCost` en el fixture).
+ */
+export interface IStockReceipt extends IStockReceiptListRow {
+	reason: string | null;
+	notes: string | null;
+	items: IStockReceiptItem[];
+	inventory_operation_id: string | null;
+	reversal_operation_id: string | null;
+	queued_at: TIsoTimestamp | null;
+	failed_at: TIsoTimestamp | null;
+	reversed_at: TIsoTimestamp | null;
+	cancellation_reason: string | null;
+	reversal_reason: string | null;
+	failure_code: string | null;
+	failure_message: string | null;
+	processing: IStockReceiptProcessing;
+	posted_by: IProcurementActorCompact | null;
+	updated_at: TIsoTimestamp;
+}
+
+/** Línea de entrada del alta **con documento**: sólo línea y cantidad. */
+export interface IStockReceiptLineWithDocumentInput {
+	/** Presente sólo al reemplazar una línea existente en `PATCH`. */
+	id?: number;
+	purchase_document_line_id: number;
+	quantity: number;
+}
+
+/**
+ * Línea de entrada del alta **sin documento**. `unit_cost`/`unit_cost_basis`
+ * son obligatorios cuando la recepción tiene proveedor conocido; ausentes
+ * cuando no — «monto presente exige base y viceversa» se valida en el
+ * servicio, no en el tipo.
+ */
+export interface IStockReceiptLineManualInput {
+	id?: number;
+	product_id: number;
+	quantity: number;
+	unit_cost?: TDecimalString | null;
+	unit_cost_basis?: TCostEntryBasis | null;
+}
+
+/** Alta con documento confirmado: producto/proveedor/costo se derivan de él. */
+export interface IStockReceiptCreateWithDocumentPayload {
+	purchase_document_id: number;
+	warehouse_id: number;
+	received_on: TBusinessDate;
+	notes: string | null;
+	items: IStockReceiptLineWithDocumentInput[];
+}
+
+/** Alta sin documento: `reason` obligatorio. */
+export interface IStockReceiptCreateWithoutDocumentPayload {
+	purchase_document_id: null;
+	supplier_id: number | null;
+	warehouse_id: number;
+	received_on: TBusinessDate;
+	reason: string;
+	notes: string | null;
+	items: IStockReceiptLineManualInput[];
+}
+
+export type IStockReceiptCreatePayload =
+	| IStockReceiptCreateWithDocumentPayload
+	| IStockReceiptCreateWithoutDocumentPayload;
+
+/**
+ * `PATCH`: sólo `draft`, y también corrige `failed` (vuelve a `draft` y
+ * limpia el error visible). Campos ausentes se conservan; `items` presente
+ * reemplaza la colección completa, mismo patrón que documentos de compra.
+ */
+export interface IStockReceiptUpdatePayload {
+	warehouse_id?: number;
+	received_on?: TBusinessDate;
+	notes?: string | null;
+	reason?: string | null;
+	supplier_id?: number | null;
+	items?: (IStockReceiptLineWithDocumentInput | IStockReceiptLineManualInput)[];
+}
+
+/** Motivo obligatorio de `cancel` (desde `draft`/`failed`). */
+export interface IStockReceiptCancelPayload {
+	reason: string;
+}
+
+/** Motivo obligatorio de `reverse` (desde `posted`). */
+export interface IStockReceiptReversePayload {
+	reason: string;
+}
+
+export interface IStockReceiptListFilters {
+	search?: string;
+	status?: TStockReceiptStatus;
+	supplier_id?: number;
+	purchase_document_id?: number;
+	branch_id?: number;
+	warehouse_id?: number;
+	received_from?: TBusinessDate;
+	received_to?: TBusinessDate;
+}
+
+export type IStockReceiptListParams = IStockReceiptListFilters & Partial<IProcurementPageParams>;
+
+/* =================================================
    Adjuntos privados del documento de compra — sección 6 del contrato
    ================================================= */
 

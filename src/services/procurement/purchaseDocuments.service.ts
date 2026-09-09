@@ -26,6 +26,7 @@ import type {
 	IPurchaseDocumentListRow,
 	IPurchaseDocumentUpdatePayload,
 	ISupplierCompact,
+	IWarehouseCompact,
 	TCostEntryBasis,
 	TPurchaseDocumentType,
 } from '@/interface/procurement.interface';
@@ -840,15 +841,16 @@ export const confirmPurchaseDocument = (
 			const updated: IPurchaseDocument = {
 				...existing,
 				status: 'confirmed',
-				// Sin recepciones ni asignaciones todavía (card 05): un documento
-				// recién confirmado siempre nace `pending`.
+				// Sin recepciones ni asignaciones todavía: un documento recién
+				// confirmado siempre nace `pending`.
 				reception_status: 'pending',
 				supplier_snapshot: supplierSnapshot,
 				confirmed_at: new Date().toISOString(),
-				// `create_receipt` se omite a propósito: la card 05 (recepciones
-				// físicas) todavía no existe para ofrecerla de verdad. `add_attachment`
-				// sí corresponde — la card 04 ya permite adjuntar en `confirmed`.
-				allowed_actions: ['cancel', 'add_attachment'],
+				// `create_receipt` (card 05, sección 7 del contrato): un documento
+				// confirmado siempre la ofrece, aunque su capacidad restante sea baja
+				// — el mock no la oculta por capacidad, la escritura valida y
+				// responde `RECEIPT_EXCEEDS_DOCUMENT` si corresponde.
+				allowed_actions: ['create_receipt', 'cancel', 'add_attachment'],
 				updated_at: new Date().toISOString(),
 			};
 
@@ -1034,6 +1036,139 @@ export const setPurchaseDocumentAttachmentsCount = (
 			: document,
 	);
 	bumpVersion(store, id);
+};
+
+/**
+ * Sólo para el servicio de recepciones (card 05, sección 7): lee el
+ * documento vigente completo, sin la latencia artificial del mock ni el
+ * envoltorio HTTP. Dar de alta o publicar una recepción «con documento»
+ * necesita el `status` (debe estar `confirmed`) y las líneas (para derivar
+ * producto/costo y validar `remaining_quantity`) — mismo criterio que
+ * `findPurchaseDocumentForAttachments`, pero con la ficha completa en vez de
+ * sólo `id`/`status`.
+ */
+export const findPurchaseDocumentForReceipts = (
+	subsidiaryId: number,
+	id: number,
+): IPurchaseDocument | undefined => {
+	const store = getStore(subsidiaryId);
+	const document = store.documents.find((item) => item.id === id);
+	return document ? cloneDocument(document) : undefined;
+};
+
+/**
+ * `reception_status` del documento completo (sección 6): `received` cuando
+ * ninguna línea tiene saldo pendiente, `pending` cuando ninguna tiene
+ * cobertura todavía, `partially_received` en el resto.
+ */
+const computeReceptionStatus = (
+	items: IPurchaseDocumentLine[],
+): IPurchaseDocument['reception_status'] => {
+	if (items.every((line) => line.remaining_quantity === 0)) return 'received';
+	if (items.some((line) => line.accounted_quantity > 0)) return 'partially_received';
+	return 'pending';
+};
+
+/**
+ * Aplica el efecto de publicar o revertir una recepción sobre la cobertura
+ * del documento vinculado (sección 6/7): `received_quantity`,
+ * `accounted_quantity`, `remaining_quantity` y `received_distribution` por
+ * línea, y `reception_status` del documento completo.
+ *
+ * `quantityDelta` es positivo al publicar (`post`/`retry` exitoso) y
+ * negativo al revertir (`reverse`) — una sola función para las dos
+ * direcciones evita que publicar y revertir apliquen la aritmética de
+ * cobertura de formas distintas y terminen divergiendo.
+ *
+ * Puramente síncrona a propósito: no hay `await` en el cuerpo, así que no
+ * necesita `withDocumentLock` — el single-thread de JS ya la hace atómica
+ * frente a cualquier otra escritura de este módulo. Sólo las escrituras que
+ * cruzan un `await` (una llamada a `getProcurementSupplier`, por ejemplo)
+ * necesitan esa cola.
+ */
+export const applyStockReceiptCoverageDelta = (
+	subsidiaryId: number,
+	documentId: number,
+	branchId: number,
+	warehouse: IWarehouseCompact,
+	allocations: { lineId: number; quantityDelta: number }[],
+): void => {
+	const store = getStore(subsidiaryId);
+	const existing = store.documents.find((document) => document.id === documentId);
+	if (!existing) return;
+
+	const items = existing.items.map((line) => {
+		const allocation = allocations.find((item) => item.lineId === line.id);
+		if (!allocation || allocation.quantityDelta === 0) return line;
+
+		const receivedQuantity = line.received_quantity + allocation.quantityDelta;
+		const accountedQuantity = receivedQuantity + line.initial_stock_allocated_quantity;
+		const distribution = line.received_distribution
+			.map((row) =>
+				row.branch_id === branchId && row.warehouse?.id === warehouse.id
+					? { ...row, quantity: row.quantity + allocation.quantityDelta }
+					: row,
+			)
+			.filter((row) => row.quantity > 0);
+		const hasRow = distribution.some(
+			(row) => row.branch_id === branchId && row.warehouse?.id === warehouse.id,
+		);
+		if (!hasRow && allocation.quantityDelta > 0) {
+			distribution.push({
+				branch_id: branchId,
+				warehouse: { ...warehouse },
+				quantity: allocation.quantityDelta,
+			});
+		}
+
+		return {
+			...line,
+			received_quantity: receivedQuantity,
+			accounted_quantity: accountedQuantity,
+			remaining_quantity: line.quantity - accountedQuantity,
+			received_distribution: distribution,
+		};
+	});
+
+	const receptionStatus = computeReceptionStatus(items);
+
+	const updated: IPurchaseDocument = {
+		...existing,
+		items,
+		reception_status: receptionStatus,
+		updated_at: new Date().toISOString(),
+	};
+	store.documents = store.documents.map((document) =>
+		document.id === documentId ? updated : document,
+	);
+	bumpVersion(store, documentId);
+};
+
+/**
+ * Ajusta `related_counts.stock_receipts` al dar de alta (`+1`) o anular
+ * (`-1`) una recepción vinculada — mismo criterio de conteo «relacionadas,
+ * no sólo posted» que ya usa `related_counts.attachments`. No usa
+ * `withDocumentLock`: es una escritura síncrona de un solo campo, igual que
+ * `setPurchaseDocumentAttachmentsCount`.
+ */
+export const bumpPurchaseDocumentStockReceiptsCount = (
+	subsidiaryId: number,
+	documentId: number,
+	delta: number,
+): void => {
+	const store = getStore(subsidiaryId);
+	store.documents = store.documents.map((document) =>
+		document.id === documentId
+			? {
+					...document,
+					related_counts: {
+						...document.related_counts,
+						stock_receipts: Math.max(0, document.related_counts.stock_receipts + delta),
+					},
+				}
+			: document,
+	);
+	bumpVersion(store, documentId);
 };
 
 /** Sólo para pruebas: reinicia el store en memoria a la semilla de fixtures. */
