@@ -340,6 +340,27 @@ export const privatePages = {
 				authority: ['view-procurement-supplier'],
 				requireAll: true,
 			},
+			documentosCompra: {
+				id: 'documentosCompra',
+				to: '/inventario/abastecimiento/documentos-compra',
+				text: 'Documentos de compra',
+				icon: 'HeroDocumentText',
+				// Card 03 del módulo de abastecimiento (mock, PR #67 del backend):
+				// documentos de compra (boleta/factura). Permiso propio de la sección
+				// 15 del contrato — bloqueada por la card 02 (proveedores).
+				authority: ['view-purchase-document'],
+				requireAll: true,
+			},
+			documentosCompraDetalle: {
+				id: 'documentosCompraDetalle',
+				to: '/inventario/abastecimiento/documentos-compra/:documentoId',
+				text: 'Ficha de documento de compra',
+				icon: 'HeroDocumentText',
+				// Mismo permiso que el listado: la ficha es sólo lectura salvo por las
+				// acciones de `allowed_actions`, que llevan su propio guard.
+				authority: ['view-purchase-document'],
+				requireAll: true,
+			},
 			retirosEquipos: {
 				id: 'retirosEquipos',
 				to: '/inventario/retiros-equipos',

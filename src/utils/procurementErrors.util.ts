@@ -199,6 +199,17 @@ export const PROCUREMENT_ERROR_DEFINITIONS: Record<string, IProcurementErrorDefi
 	),
 };
 
+// Códigos propios del mock de documentos de compra (card 03), sin código
+// estable en la sección 16 del contrato — misma licencia que
+// `PROCUREMENT_SUPPLIER_NOT_FOUND` en la card 02: se usan directamente en el
+// `fail(...)` del servicio, nunca acá, para que este mapa siga copiando
+// exactamente la tabla de la sección 16 (la prueba de
+// `procurementErrors.util.test.ts` verifica ese conteo).
+export const PURCHASE_DOCUMENT_ITEMS_EMPTY_MESSAGE = 'El documento necesita al menos una línea.';
+export const PURCHASE_DOCUMENT_HAS_ACTIVE_RECEIPTS_MESSAGE =
+	'No se puede anular: el documento ya tiene recepciones o asignaciones de stock inicial.';
+export const PURCHASE_DOCUMENT_NOT_DRAFT_MESSAGE = 'El documento ya no está en borrador.';
+
 /**
  * `428` no trae código estable: el contrato lo emite cuando falta la precondición
  * `If-Match`. Se trata como recarga porque el ETag vigente es lo que falta.

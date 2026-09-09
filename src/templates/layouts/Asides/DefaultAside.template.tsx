@@ -318,6 +318,7 @@ const DefaultAsideTemplate = () => {
 							...Pages.inventory.authority,
 							...Pages.inventory.subPages.retirosEquipos.authority,
 							...Pages.inventory.subPages.proveedores.authority,
+							...Pages.inventory.subPages.documentosCompra.authority,
 						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
@@ -328,6 +329,7 @@ const DefaultAsideTemplate = () => {
 							...Pages.inventory.authority,
 							...Pages.inventory.subPages.retirosEquipos.authority,
 							...Pages.inventory.subPages.proveedores.authority,
+							...Pages.inventory.subPages.documentosCompra.authority,
 						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
@@ -435,6 +437,22 @@ const DefaultAsideTemplate = () => {
 									id={Pages.inventory.subPages.proveedores.id}
 									onClick={() =>
 										navigate(Pages.inventory.subPages.proveedores.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Documentos de compra (mock, PR #67, card 03) */}
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.documentosCompra.authority}
+								requireAll={Pages.inventory.subPages.documentosCompra.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.documentosCompra.text}
+									to={Pages.inventory.subPages.documentosCompra.to}
+									icon={Pages.inventory.subPages.documentosCompra.icon}
+									id={Pages.inventory.subPages.documentosCompra.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.documentosCompra.to)
 									}
 								/>
 							</AuthorityCheckNav>
