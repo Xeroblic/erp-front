@@ -7,6 +7,7 @@ import type {
 	IProcurementProduct,
 } from '@/interface/procurement.interface';
 import {
+	cableProduct,
 	invoiceDocument,
 	keyboardProduct,
 	mainWarehouse,
@@ -68,7 +69,24 @@ const paginatedProducts: IProcurementProduct[] = Array.from({ length: 16 }, (_, 
 	sku: `TEST-${String(index + 1).padStart(2, '0')}`,
 	name: `Accesorio de demostración ${String(index + 1).padStart(2, '0')}`,
 }));
-const products = [mouseProduct, keyboardProduct, notebookProduct, ...paginatedProducts];
+const products = [
+	mouseProduct,
+	keyboardProduct,
+	notebookProduct,
+	cableProduct,
+	...paginatedProducts,
+];
+
+/**
+ * Resuelve un producto por id contra el mismo catálogo que arma
+ * `inventoryStockRows` (card 07, ZF-112): `inventoryStock.service` lo
+ * necesita para reconstruir filas agregadas dinámicamente desde el store
+ * mutable de procedencias (`origins`), que sólo guarda `product_id` — nunca
+ * el producto completo — igual criterio que el resto del mock: el fixture es
+ * la única fuente del catálogo, ningún servicio lo duplica.
+ */
+export const resolveInventoryProduct = (productId: number): IProcurementProduct | undefined =>
+	products.find((product) => product.id === productId);
 
 export const inventoryOrigins: IInventorySeedOrigin[] = [
 	unknownOrigin,
@@ -132,6 +150,30 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 			fifo_at: 30 + index,
 		}),
 	),
+	/**
+	 * Caso canónico de la card 07 (ZF-112, sección 8): 100 físicos sin
+	 * documento, en una ubicación/producto que ningún otro fixture toca
+	 * (`cableProduct` no aparece en ningún otro origin) para no perturbar los
+	 * agregados ya cerrados de mouse/teclado que ejercen otras pruebas.
+	 * Respaldar documentalmente una porción parcial (10) tiene que dejar
+	 * «100 físicos = 10 documentados + 90 sin documento», demostrable
+	 * navegando `StockPorUbicacion` sin tocar más fixtures.
+	 */
+	{
+		origin_id: 220,
+		origin_type: 'initial_stock',
+		stock_receipt_id: null,
+		received_on: null,
+		supplier: null,
+		purchase_document: null,
+		physical_quantity: 100,
+		fit_quantity: 100,
+		unfit_quantity: 0,
+		branch_id: 4,
+		product_id: cableProduct.id,
+		warehouse_id: mainWarehouse.id,
+		fifo_at: 600,
+	},
 ];
 
 /** One source of truth for current balances; the canonical unlocated mouse stays 15/13/2/10/5. */

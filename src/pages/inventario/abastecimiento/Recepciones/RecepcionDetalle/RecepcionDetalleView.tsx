@@ -12,6 +12,7 @@ import StockReceiptProcessingCard from './components/parts/StockReceiptProcessin
 import StockReceiptItemsTable from './components/parts/StockReceiptItemsTable';
 import CancelStockReceiptModal from './components/modals/CancelStockReceiptModal';
 import ReverseStockReceiptModal from './components/modals/ReverseStockReceiptModal';
+import LinkPurchaseDocumentModal from './components/modals/LinkPurchaseDocumentModal';
 import RecepcionFormModal from '../components/modals/RecepcionFormModal';
 
 /**
@@ -35,6 +36,8 @@ const RecepcionDetalleView = () => {
 		setIsCancelModalOpen,
 		isReverseModalOpen,
 		setIsReverseModalOpen,
+		isLinkDocumentModalOpen,
+		setIsLinkDocumentModalOpen,
 		handleAction,
 		goToList,
 		retry,
@@ -131,6 +134,13 @@ const RecepcionDetalleView = () => {
 				receipt={receipt}
 				subsidiaryId={subsidiaryId}
 				onReversed={() => undefined}
+			/>
+			<LinkPurchaseDocumentModal
+				isOpen={isLinkDocumentModalOpen}
+				setIsOpen={setIsLinkDocumentModalOpen}
+				receipt={receipt}
+				subsidiaryId={subsidiaryId}
+				onLinked={() => undefined}
 			/>
 		</PageWrapper>
 	);

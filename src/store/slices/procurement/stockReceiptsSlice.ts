@@ -3,6 +3,7 @@ import {
 	cancelStockReceipt,
 	createStockReceipt,
 	getStockReceipt,
+	linkStockReceiptPurchaseDocument,
 	listStockReceipts,
 	postStockReceipt,
 	retryStockReceipt,
@@ -18,6 +19,7 @@ import type {
 	IStockReceipt,
 	IStockReceiptCancelPayload,
 	IStockReceiptCreatePayload,
+	IStockReceiptLinkPurchaseDocumentPayload,
 	IStockReceiptListParams,
 	IStockReceiptListRow,
 	IStockReceiptReversePayload,
@@ -59,6 +61,7 @@ export interface StockReceiptsState {
 	posting: boolean;
 	retrying: boolean;
 	reversing: boolean;
+	linkingPurchaseDocument: boolean;
 }
 
 const initialState: StockReceiptsState = {
@@ -80,6 +83,7 @@ const initialState: StockReceiptsState = {
 	posting: false,
 	retrying: false,
 	reversing: false,
+	linkingPurchaseDocument: false,
 };
 
 interface IWriteHeaders {
@@ -306,6 +310,37 @@ export const reverseStockReceiptThunk = createAsyncThunk(
 	},
 );
 
+/** `PUT .../purchase-document` (card 07, sección 8): vinculación posterior. */
+export const linkStockReceiptPurchaseDocumentThunk = createAsyncThunk(
+	'stockReceipts/linkPurchaseDocument',
+	async (
+		args: {
+			subsidiaryId: number | null;
+			id: number;
+			payload: IStockReceiptLinkPurchaseDocumentPayload;
+			headers?: IWriteHeaders;
+		},
+		{ rejectWithValue },
+	) => {
+		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
+		try {
+			const response = await linkStockReceiptPurchaseDocument(
+				args.subsidiaryId,
+				args.id,
+				args.payload,
+				args.headers,
+			);
+			return {
+				data: response.data,
+				etag: readEtagHeader(response.headers),
+				subsidiaryId: args.subsidiaryId,
+			};
+		} catch (error) {
+			return rejectWithValue(error);
+		}
+	},
+);
+
 const toListRow = (receipt: IStockReceipt): IStockReceiptListRow => ({
 	id: receipt.id,
 	subsidiary_id: receipt.subsidiary_id,
@@ -508,6 +543,22 @@ const stockReceiptsSlice = createSlice({
 			})
 			.addCase(reverseStockReceiptThunk.rejected, (state) => {
 				state.reversing = false;
+			})
+
+			.addCase(linkStockReceiptPurchaseDocumentThunk.pending, (state) => {
+				state.linkingPurchaseDocument = true;
+			})
+			.addCase(linkStockReceiptPurchaseDocumentThunk.fulfilled, (state, action) => {
+				state.linkingPurchaseDocument = false;
+				applyReceiptMutation(
+					state,
+					action.payload.data,
+					action.payload.etag,
+					action.payload.subsidiaryId,
+				);
+			})
+			.addCase(linkStockReceiptPurchaseDocumentThunk.rejected, (state) => {
+				state.linkingPurchaseDocument = false;
 			});
 	},
 });
@@ -531,5 +582,7 @@ export const selectStockReceiptPosting = (state: RootState) => state.stockReceip
 export const selectStockReceiptRetrying = (state: RootState) => state.stockReceipts.retrying;
 export const selectStockReceiptCancelling = (state: RootState) => state.stockReceipts.cancelling;
 export const selectStockReceiptReversing = (state: RootState) => state.stockReceipts.reversing;
+export const selectStockReceiptLinkingPurchaseDocument = (state: RootState) =>
+	state.stockReceipts.linkingPurchaseDocument;
 
 export default stockReceiptsSlice.reducer;

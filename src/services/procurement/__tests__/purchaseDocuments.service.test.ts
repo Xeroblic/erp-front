@@ -4,7 +4,6 @@ import {
 	confirmPurchaseDocument,
 	createPurchaseDocument,
 	getPurchaseDocument,
-	listPurchaseDocumentInitialStockAllocations,
 	listPurchaseDocuments,
 	resetPurchaseDocumentsStoreForTests,
 	updatePurchaseDocument,
@@ -69,14 +68,18 @@ afterEach(() => {
 // capacidad parcial, para que las recepciones «con documento» tengan un
 // destino real sin consumir de inmediato `CONFIRMED_WITH_RECEIPT_ID`.
 const CONFIRMED_PARTIAL_ID = 61; // pcExpressKeyboardInvoiceDocument
+// Documento agregado por la card 07 (documentar después, sección 8):
+// confirmado, sin proveedor, con capacidad sin consumir para `cableProduct`.
+const CONFIRMED_INITIAL_STOCK_ID = 90; // cableProductInitialStockDocument
 
 describe('listPurchaseDocuments', () => {
-	it('lista los cinco documentos semilla ordenados por emisión DESC', async () => {
+	it('lista los seis documentos semilla ordenados por emisión DESC', async () => {
 		const result = await listPurchaseDocuments(SUBSIDIARY_A);
 		expect(result.data.map((row) => row.id)).toEqual([
 			DRAFT_INVOICE_ID,
 			DRAFT_RECEIPT_NO_SUPPLIER_ID,
 			CONFIRMED_WITH_RECEIPT_ID,
+			CONFIRMED_INITIAL_STOCK_ID,
 			CONFIRMED_PARTIAL_ID,
 			CANCELLED_ID,
 		]);
@@ -482,22 +485,10 @@ describe('cancelPurchaseDocument', () => {
 	});
 });
 
-describe('listas relacionadas', () => {
-	it('asignaciones de stock inicial: paginan vacías y 404 si el documento no existe', async () => {
-		const allocations = await listPurchaseDocumentInitialStockAllocations(
-			SUBSIDIARY_A,
-			DRAFT_INVOICE_ID,
-		);
-		expect(allocations.data).toEqual([]);
-		expect(allocations.meta.total).toBe(0);
-
-		const { status } = await readErrorData(
-			listPurchaseDocumentInitialStockAllocations(SUBSIDIARY_A, 9999),
-		);
-		expect(status).toBe(404);
-	});
-
-	// Las recepciones vinculadas se cubren en
-	// `stockReceipts.service.test.ts` (`listStockReceiptsForPurchaseDocument`,
-	// hallazgo 9): ese store es la fuente real, no un stub de este servicio.
-});
+// «listas relacionadas»: ni las recepciones vinculadas
+// (`listStockReceiptsForPurchaseDocument`, hallazgo 9) ni las asignaciones de
+// stock inicial (`listInitialStockAllocationsForPurchaseDocument`, card 07,
+// ZF-112) viven en este servicio — ambas se cubren en
+// `stockReceipts.service.test.ts` e `inventoryStock.service.test.ts`
+// respectivamente: esos stores son la fuente real, no un stub de este
+// archivo.

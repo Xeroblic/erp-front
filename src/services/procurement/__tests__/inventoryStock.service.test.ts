@@ -1,16 +1,40 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
+	createInventoryDocumentAllocation,
 	getInventoryOriginFilterOptions,
 	getInventoryWarehouses,
+	listInitialStockAllocationsForPurchaseDocument,
 	listInventoryOrigins,
 	listInventoryStock,
+	resetInventoryStockStoreForTests,
+	simulateInventoryStockReloadForTests,
 } from '@/services/procurement/inventoryStock.service';
+import {
+	confirmPurchaseDocument,
+	createPurchaseDocument,
+	findPurchaseDocumentForReceipts,
+	resetPurchaseDocumentsStoreForTests,
+} from '@/services/procurement/purchaseDocuments.service';
 import { notebookProduct, inventoryStockEnvelope } from '@/mocks/db/procurement.db';
 import { inventoryOrigins } from '@/mocks/db/inventoryStock.db';
 import type { IInventoryStockListParams } from '@/interface/procurement.interface';
 
 const BRANCH_ID = 4;
 const MOUSE_ID = 31;
+
+// IDs literales de `procurement.db.ts`/`inventoryStock.db.ts` (card 07, sección 8).
+const SUBSIDIARY_ID = 2; // STOCK_RECEIPT_SUBSIDIARY_ID
+const SOUTH_BRANCH_ID = 6; // STOCK_RECEIPT_SOUTH_BRANCH_ID
+const CABLE_PRODUCT_ID = 58;
+const KEYBOARD_PRODUCT_ID = 67;
+const CANONICAL_ORIGIN_ID = 220; // 100 físicos, cableProduct, mainWarehouse, sin documento
+const MAIN_WAREHOUSE_ID = 8;
+const MIXED_CONDITION_ORIGIN_ID = 54; // keyboardProduct, southBranchWarehouse, fit 5 / unfit 1
+const SOUTH_BRANCH_WAREHOUSE_ID = 15;
+const CABLE_DOCUMENT_ID = 90; // cableProductInitialStockDocument, confirmado, línea 950, remaining 40
+const CABLE_DOCUMENT_LINE_ID = 950;
+const KEYBOARD_DOCUMENT_LINE_ID = 601; // pcExpressKeyboardInvoiceDocument (61), confirmado, remaining 12
+const DRAFT_DOCUMENT_LINE_ID = 201; // draftReceiptDocument, sin confirmar
 
 const readError = async (promise: Promise<unknown>) => {
 	try {
@@ -20,6 +44,11 @@ const readError = async (promise: Promise<unknown>) => {
 		return (error as { response: { status: number; data: { code: string } } }).response;
 	}
 };
+
+afterEach(() => {
+	resetInventoryStockStoreForTests();
+	resetPurchaseDocumentsStoreForTests();
+});
 
 describe('inventoryStock mock', () => {
 	it('mantiene el ejemplo literal sin ubicación y los desgloses independientes', async () => {
@@ -239,5 +268,311 @@ describe('inventoryStock mock', () => {
 				inventoryOrigins[first],
 			];
 		}
+	});
+});
+
+/**
+ * `POST B/inventory-stock/{product}/document-allocations` (card 07, sección
+ * 8, ZF-112): respalda documentalmente stock inicial sin documento.
+ * `CANONICAL_ORIGIN_ID` (220, `cableProduct`, `mainWarehouse`) es el caso
+ * canónico del issue: 100 físicos sin documento, respaldable contra
+ * `CABLE_DOCUMENT_ID` (90, línea 950, capacidad 40).
+ */
+describe('createInventoryDocumentAllocation', () => {
+	it('respaldo parcial: caso canónico 100 físicos = 10 documentados + 90 sin documento, delta físico 0', async () => {
+		const { data: allocation } = await createInventoryDocumentAllocation(
+			SUBSIDIARY_ID,
+			BRANCH_ID,
+			CABLE_PRODUCT_ID,
+			{
+				origin_id: CANONICAL_ORIGIN_ID,
+				warehouse_id: MAIN_WAREHOUSE_ID,
+				purchase_document_line_id: CABLE_DOCUMENT_LINE_ID,
+				quantity: 10,
+				reason: 'Respaldo parcial del conteo inicial',
+			},
+		);
+
+		expect(allocation.physical_stock_delta).toBe(0);
+		expect(allocation.remaining_undocumented_quantity).toBe(90);
+		expect(allocation.original_origin_id).toBe(CANONICAL_ORIGIN_ID);
+		expect(allocation.quantity).toBe(10);
+		expect(allocation.purchase_document.id).toBe(CABLE_DOCUMENT_ID);
+
+		// El caso canónico tiene que quedar legible en una sola pantalla: el
+		// stock sigue mostrando 100 físicos, ahora 10 documentados + 90 sin
+		// documento — el total no cambia.
+		// `per_page: 100`: la bodega principal ya tiene 17 productos distintos
+		// sembrados (paginación de otras cards); sin esto, `cableProduct` cae
+		// en la página 2 por orden alfabético y el `find` de abajo no lo ve.
+		const stock = await listInventoryStock(BRANCH_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			per_page: 100,
+		});
+		const cableRow = stock.data.find((row) => row.product.id === CABLE_PRODUCT_ID)!;
+		expect(cableRow).toMatchObject({
+			physical_quantity: 100,
+			documented_quantity: 10,
+			undocumented_quantity: 90,
+		});
+
+		const origins = await listInventoryOrigins(BRANCH_ID, CABLE_PRODUCT_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+		});
+		expect(origins.data).toHaveLength(2);
+		const documented = origins.data.find((origin) => origin.purchase_document !== null)!;
+		const undocumented = origins.data.find((origin) => origin.purchase_document === null)!;
+		expect(documented.physical_quantity).toBe(10);
+		expect(undocumented.physical_quantity).toBe(90);
+
+		// El documento refleja la cobertura como si la asignación hubiese
+		// existido desde que se confirmó: no crea recepción ni suma
+		// `received_quantity` (sección 6/8).
+		const document = findPurchaseDocumentForReceipts(SUBSIDIARY_ID, CABLE_DOCUMENT_ID)!;
+		const line = document.items.find((item) => item.id === CABLE_DOCUMENT_LINE_ID)!;
+		expect(line.initial_stock_allocated_quantity).toBe(10);
+		expect(line.received_quantity).toBe(0);
+		expect(line.remaining_quantity).toBe(30);
+		expect(document.related_counts.initial_stock_allocations).toBe(1);
+	});
+
+	it('respaldo total con condiciones mezcladas: divide fit antes que unfit y el origin sin documento desaparece', async () => {
+		const { data: allocation } = await createInventoryDocumentAllocation(
+			SUBSIDIARY_ID,
+			SOUTH_BRANCH_ID,
+			KEYBOARD_PRODUCT_ID,
+			{
+				origin_id: MIXED_CONDITION_ORIGIN_ID,
+				warehouse_id: SOUTH_BRANCH_WAREHOUSE_ID,
+				purchase_document_line_id: KEYBOARD_DOCUMENT_LINE_ID,
+				quantity: 6,
+				reason: 'Respaldo total del conteo inicial',
+			},
+		);
+
+		expect(allocation.remaining_undocumented_quantity).toBe(0);
+		expect(allocation.physical_stock_delta).toBe(0);
+
+		const origins = await listInventoryOrigins(SOUTH_BRANCH_ID, KEYBOARD_PRODUCT_ID, {
+			warehouse_id: SOUTH_BRANCH_WAREHOUSE_ID,
+		});
+		// El origin original (sin documento) se agota por completo: no queda
+		// una fila fantasma en saldo cero.
+		expect(origins.data.some((origin) => origin.origin_id === MIXED_CONDITION_ORIGIN_ID)).toBe(
+			false,
+		);
+		const documented = origins.data.find((origin) => origin.purchase_document !== null)!;
+		// Split determinista fit-antes-de-unfit: 5 fit + 1 unfit, sin
+		// reclasificar unidades entre condiciones.
+		expect(documented).toMatchObject({
+			physical_quantity: 6,
+			fit_quantity: 5,
+			unfit_quantity: 1,
+		});
+	});
+
+	it('rechaza cantidad mayor al saldo sin documentar', async () => {
+		const response = await readError(
+			createInventoryDocumentAllocation(SUBSIDIARY_ID, BRANCH_ID, CABLE_PRODUCT_ID, {
+				origin_id: CANONICAL_ORIGIN_ID,
+				warehouse_id: MAIN_WAREHOUSE_ID,
+				purchase_document_line_id: CABLE_DOCUMENT_LINE_ID,
+				quantity: 101,
+				reason: 'Excede el saldo sin documento',
+			}),
+		);
+		expect(response.status).toBe(409);
+		expect(response.data.code).toBe('INSUFFICIENT_UNDOCUMENTED_STOCK');
+	});
+
+	it('rechaza un origin inexistente en esa ubicación con el mismo código de saldo insuficiente', async () => {
+		const response = await readError(
+			createInventoryDocumentAllocation(SUBSIDIARY_ID, BRANCH_ID, CABLE_PRODUCT_ID, {
+				origin_id: 999999,
+				warehouse_id: MAIN_WAREHOUSE_ID,
+				purchase_document_line_id: CABLE_DOCUMENT_LINE_ID,
+				quantity: 1,
+				reason: 'Origin inexistente',
+			}),
+		);
+		expect(response.status).toBe(409);
+		expect(response.data.code).toBe('INSUFFICIENT_UNDOCUMENTED_STOCK');
+	});
+
+	it('rechaza cantidad mayor a la capacidad de la línea del documento', async () => {
+		const response = await readError(
+			createInventoryDocumentAllocation(SUBSIDIARY_ID, BRANCH_ID, CABLE_PRODUCT_ID, {
+				origin_id: CANONICAL_ORIGIN_ID,
+				warehouse_id: MAIN_WAREHOUSE_ID,
+				purchase_document_line_id: CABLE_DOCUMENT_LINE_ID,
+				quantity: 50, // cabe en el saldo (100) pero excede la capacidad (40)
+				reason: 'Excede la capacidad de la línea',
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('RECEIPT_EXCEEDS_DOCUMENT');
+	});
+
+	it('rechaza un documento en draft', async () => {
+		const response = await readError(
+			createInventoryDocumentAllocation(SUBSIDIARY_ID, BRANCH_ID, CABLE_PRODUCT_ID, {
+				origin_id: CANONICAL_ORIGIN_ID,
+				warehouse_id: MAIN_WAREHOUSE_ID,
+				purchase_document_line_id: DRAFT_DOCUMENT_LINE_ID,
+				quantity: 1,
+				reason: 'Documento sin confirmar',
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('DOCUMENT_NOT_CONFIRMED');
+	});
+
+	it('rechaza una línea que no corresponde al producto del origin', async () => {
+		const response = await readError(
+			createInventoryDocumentAllocation(SUBSIDIARY_ID, BRANCH_ID, CABLE_PRODUCT_ID, {
+				origin_id: CANONICAL_ORIGIN_ID,
+				warehouse_id: MAIN_WAREHOUSE_ID,
+				purchase_document_line_id: KEYBOARD_DOCUMENT_LINE_ID,
+				quantity: 1,
+				reason: 'Línea de otro producto',
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('DOCUMENT_LINE_MISMATCH');
+	});
+
+	it('rechaza motivo vacío y cantidad no entera positiva', async () => {
+		const missingReason = await readError(
+			createInventoryDocumentAllocation(SUBSIDIARY_ID, BRANCH_ID, CABLE_PRODUCT_ID, {
+				origin_id: CANONICAL_ORIGIN_ID,
+				warehouse_id: MAIN_WAREHOUSE_ID,
+				purchase_document_line_id: CABLE_DOCUMENT_LINE_ID,
+				quantity: 10,
+				reason: '   ',
+			}),
+		);
+		expect(missingReason.status).toBe(422);
+		expect(missingReason.data.code).toBe('ALLOCATION_REASON_REQUIRED');
+
+		const invalidQuantity = await readError(
+			createInventoryDocumentAllocation(SUBSIDIARY_ID, BRANCH_ID, CABLE_PRODUCT_ID, {
+				origin_id: CANONICAL_ORIGIN_ID,
+				warehouse_id: MAIN_WAREHOUSE_ID,
+				purchase_document_line_id: CABLE_DOCUMENT_LINE_ID,
+				quantity: 0,
+				reason: 'Cantidad inválida',
+			}),
+		);
+		expect(invalidQuantity.status).toBe(422);
+		expect(invalidQuantity.data.code).toBe('ALLOCATION_QUANTITY_INVALID');
+	});
+
+	it('misma Idempotency-Key repite el resultado; con otro payload responde 409 IDEMPOTENCY_KEY_REUSED', async () => {
+		const payload = {
+			origin_id: CANONICAL_ORIGIN_ID,
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			purchase_document_line_id: CABLE_DOCUMENT_LINE_ID,
+			quantity: 10,
+			reason: 'Respaldo parcial',
+		};
+		const headers = { idempotencyKey: 'idem-allocation-1' };
+		const first = await createInventoryDocumentAllocation(
+			SUBSIDIARY_ID,
+			BRANCH_ID,
+			CABLE_PRODUCT_ID,
+			payload,
+			headers,
+		);
+		const replay = await createInventoryDocumentAllocation(
+			SUBSIDIARY_ID,
+			BRANCH_ID,
+			CABLE_PRODUCT_ID,
+			payload,
+			headers,
+		);
+		expect(replay.data.id).toBe(first.data.id);
+
+		const response = await readError(
+			createInventoryDocumentAllocation(
+				SUBSIDIARY_ID,
+				BRANCH_ID,
+				CABLE_PRODUCT_ID,
+				{ ...payload, quantity: 5 },
+				headers,
+			),
+		);
+		expect(response.status).toBe(409);
+		expect(response.data.code).toBe('IDEMPOTENCY_KEY_REUSED');
+	});
+
+	it('persiste tras «recargar»: no reaparece el origin sin documentar original', async () => {
+		await createInventoryDocumentAllocation(SUBSIDIARY_ID, BRANCH_ID, CABLE_PRODUCT_ID, {
+			origin_id: CANONICAL_ORIGIN_ID,
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			purchase_document_line_id: CABLE_DOCUMENT_LINE_ID,
+			quantity: 10,
+			reason: 'Respaldo parcial',
+		});
+
+		simulateInventoryStockReloadForTests();
+
+		const origins = await listInventoryOrigins(BRANCH_ID, CABLE_PRODUCT_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+		});
+		expect(origins.data.map((origin) => origin.physical_quantity).sort()).toEqual([10, 90]);
+	});
+});
+
+describe('listInitialStockAllocationsForPurchaseDocument', () => {
+	it('lista las asignaciones confirmadas del documento y 404 si el documento no existe', async () => {
+		await createInventoryDocumentAllocation(SUBSIDIARY_ID, BRANCH_ID, CABLE_PRODUCT_ID, {
+			origin_id: CANONICAL_ORIGIN_ID,
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			purchase_document_line_id: CABLE_DOCUMENT_LINE_ID,
+			quantity: 10,
+			reason: 'Respaldo parcial',
+		});
+
+		const allocations = await listInitialStockAllocationsForPurchaseDocument(
+			SUBSIDIARY_ID,
+			CABLE_DOCUMENT_ID,
+		);
+		expect(allocations.data).toHaveLength(1);
+		expect(allocations.data[0]).toMatchObject({ quantity: 10, product_id: CABLE_PRODUCT_ID });
+		expect(allocations.meta.total).toBe(1);
+
+		const missing = await readError(
+			listInitialStockAllocationsForPurchaseDocument(SUBSIDIARY_ID, 9999),
+		);
+		expect(missing.status).toBe(404);
+	});
+
+	it('paginan vacías para un documento sin asignaciones todavía', async () => {
+		const document = await createPurchaseDocument(SUBSIDIARY_ID, {
+			document_type: 'receipt',
+			supplier_id: null,
+			document_number: `TEST-ALLOC-${Math.random().toString(36).slice(2, 8)}`,
+			issue_date: '2026-09-08',
+			currency_code: 'CLP',
+			total_amount: null,
+			notes: null,
+			items: [
+				{
+					product_id: CABLE_PRODUCT_ID,
+					quantity: 5,
+					unit_cost: '1000.00',
+					unit_cost_basis: 'net',
+					notes: null,
+				},
+			],
+		});
+		const { data: confirmed } = await confirmPurchaseDocument(SUBSIDIARY_ID, document.data.id);
+
+		const allocations = await listInitialStockAllocationsForPurchaseDocument(
+			SUBSIDIARY_ID,
+			confirmed.id,
+		);
+		expect(allocations.data).toEqual([]);
+		expect(allocations.meta.total).toBe(0);
 	});
 });

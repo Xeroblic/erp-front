@@ -12,9 +12,13 @@ import PermissionGuard from '@/components/authorization/PermissionGuard';
 import { AllowedActionsToolbar } from '@/components/procurement';
 import { formatDate } from '@/utils/format.utils';
 import { formatDecimalAmount } from '@/utils/procurementDecimal.util';
-import { listPurchaseDocumentInitialStockAllocations } from '@/services/procurement/purchaseDocuments.service';
+import { listInitialStockAllocationsForPurchaseDocument } from '@/services/procurement/inventoryStock.service';
 import { listStockReceiptsForPurchaseDocument } from '@/services/procurement/stockReceipts.service';
-import type { IStockReceiptListRow, TStockReceiptStatus } from '@/interface/procurement.interface';
+import type {
+	IInventoryDocumentAllocation,
+	IStockReceiptListRow,
+	TStockReceiptStatus,
+} from '@/interface/procurement.interface';
 import type { TColors } from '@/types/colors.type';
 import DocumentTypeBadge from '../components/parts/DocumentTypeBadge';
 import DocumentStatusBadge from '../components/parts/DocumentStatusBadge';
@@ -108,6 +112,29 @@ const DocumentoCompraDetalleView = () => {
 					Ver recepción #{row.id}
 				</Link>
 			</PermissionGuard>
+		</div>
+	);
+
+	/**
+	 * Fila de asignación de stock inicial (card 07, sección 8): documental,
+	 * `physical_stock_delta` siempre `0` — el texto lo dice explícitamente para
+	 * que esta lista nunca se confunda con «ingresó mercadería».
+	 */
+	const renderInitialStockAllocationRow = (
+		row: IInventoryDocumentAllocation,
+	): React.ReactNode => (
+		<div className='flex flex-wrap items-center justify-between gap-2 text-sm'>
+			<div className='flex items-center gap-2'>
+				<Badge color='blue' variant='solid'>
+					Sin movimiento físico
+				</Badge>
+				<span>{row.quantity} u. documentadas</span>
+				<span className='text-zinc-500'>· {formatDate(row.created_at)}</span>
+			</div>
+			<span className='text-xs text-zinc-500'>
+				Origin #{row.original_origin_id} → #{row.documented_origin_id} · quedan{' '}
+				{row.remaining_undocumented_quantity} sin documento
+			</span>
 		</div>
 	);
 
@@ -327,13 +354,13 @@ const DocumentoCompraDetalleView = () => {
 								fetcher={listStockReceiptsForPurchaseDocument}
 								renderRow={renderStockReceiptRow}
 							/>
-							<RelatedListCard<never>
+							<RelatedListCard<IInventoryDocumentAllocation>
 								title='Asignaciones de stock inicial'
 								emptyLabel='Sin asignaciones de stock inicial todavía.'
 								subsidiaryId={subsidiaryId}
 								documentId={document.id}
-								fetcher={listPurchaseDocumentInitialStockAllocations}
-								renderRow={() => null}
+								fetcher={listInitialStockAllocationsForPurchaseDocument}
+								renderRow={renderInitialStockAllocationRow}
 							/>
 						</div>
 					</>

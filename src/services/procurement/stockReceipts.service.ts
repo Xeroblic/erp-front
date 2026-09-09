@@ -18,7 +18,10 @@ import {
 	loadPersistedMockState,
 	savePersistedMockState,
 } from '@/services/procurement/procurementMockPersistence.util';
-import { PROCUREMENT_ERROR_DEFINITIONS } from '@/utils/procurementErrors.util';
+import {
+	PROCUREMENT_ERROR_DEFINITIONS,
+	RECEIPT_DOCUMENT_SUPPLIER_MISMATCH_MESSAGE,
+} from '@/utils/procurementErrors.util';
 import { formatDecimalCents, parseDecimalString } from '@/utils/procurementDecimal.util';
 import { previewCostBreakdown } from '@/utils/procurementCost.util';
 import { normalizePageParams } from '@/utils/procurementPagination.util';
@@ -33,6 +36,7 @@ import type {
 	IStockReceiptItem,
 	IStockReceiptLineManualInput,
 	IStockReceiptLineWithDocumentInput,
+	IStockReceiptLinkPurchaseDocumentPayload,
 	IStockReceiptListParams,
 	IStockReceiptListRow,
 	IStockReceiptReversePayload,
@@ -320,19 +324,35 @@ function withReceiptLock<T>(
 
 /**
  * `allowed_actions` por estado (sección 7 y `allowedActionsByState` del
- * fixture). `link_purchase_document` se omite a propósito en `posted`: la
- * card 07 (documentar después, sección 8) todavía no existe — un botón que
- * no lleva a ninguna parte es peor que no ofrecerlo, mismo criterio que
- * `create_receipt` en `purchaseDocuments.service` antes de que esta card
- * existiera.
+ * fixture). `posted` es la única entrada que **no** es una tabla estática:
+ * `link_purchase_document` (card 07, sección 8) sólo corresponde ofrecerlo
+ * mientras la recepción `posted` **no** tenga ya un documento vinculado — el
+ * vínculo es único y no sustituible, así que una vez hecho no se vuelve a
+ * ofrecer. `computeAllowedActionsForStatus` es la única función que decide
+ * `posted`; todo punto del archivo que transiciona a `posted` (el worker) o
+ * que cambia `purchase_document` en `posted` (`linkStockReceiptPurchaseDocument`)
+ * pasa por ella en vez de leer la tabla estática directamente.
  */
-const ALLOWED_ACTIONS_BY_STATUS: Record<TStockReceiptStatus, TProcurementAllowedAction[]> = {
+const ALLOWED_ACTIONS_BY_STATUS: Record<
+	Exclude<TStockReceiptStatus, 'posted'>,
+	TProcurementAllowedAction[]
+> = {
 	draft: ['update', 'post', 'cancel'],
 	queued: [],
-	posted: ['reverse'],
 	failed: ['update', 'retry', 'cancel'],
 	cancelled: [],
 	reversed: [],
+};
+
+/** Ver el comentario de `ALLOWED_ACTIONS_BY_STATUS`. */
+const computeAllowedActionsForStatus = (
+	status: TStockReceiptStatus,
+	hasPurchaseDocument: boolean,
+): TProcurementAllowedAction[] => {
+	if (status === 'posted') {
+		return hasPurchaseDocument ? ['reverse'] : ['reverse', 'link_purchase_document'];
+	}
+	return ALLOWED_ACTIONS_BY_STATUS[status];
 };
 
 /** Agrupa cantidades por línea de documento, por si dos ítems comparten línea. */
@@ -506,7 +526,10 @@ function resolveStockReceiptWorker(subsidiaryId: number, receiptId: number): voi
 			...receipt,
 			status: 'posted',
 			posted_at: now,
-			allowed_actions: ALLOWED_ACTIONS_BY_STATUS.posted,
+			allowed_actions: computeAllowedActionsForStatus(
+				'posted',
+				Boolean(receipt.purchase_document),
+			),
 			inventory_operation_id: crypto.randomUUID(),
 			posted_by: requestedBy,
 			processing: { ...receipt.processing, last_attempt_at: now, next_retry_at: null },
@@ -1386,6 +1409,10 @@ export const updateStockReceipt = (
 				// error visible, conservando `processing` como historia de
 				// intentos (sección 7). Reintentar directo (`retry`) la conserva.
 				status: isCorrection ? 'draft' : existing.status,
+				// `existing.status` sólo puede ser `draft`/`failed` acá: la
+				// validación de estado de arriba ya rechazó cualquier otro valor
+				// (incluido `posted`, que no tiene entrada en esta tabla estática) —
+				// TS ya lo tiene narrowed, sin necesitar una aserción.
 				allowed_actions:
 					ALLOWED_ACTIONS_BY_STATUS[isCorrection ? 'draft' : existing.status],
 				failure_code: isCorrection ? null : existing.failure_code,
@@ -1666,6 +1693,240 @@ export const reverseStockReceipt = (
 				headers: { etag: buildEtag(id, nextVersion) },
 			});
 		}),
+	);
+
+/** Agrega una línea de auditoría a `notes`, conservando lo que ya hubiera. */
+const appendAuditNote = (existingNotes: string | null, note: string): string =>
+	existingNotes ? `${existingNotes}\n${note}` : note;
+
+/**
+ * `PUT /stock-receipts/{receipt}/purchase-document` (card 07, sección 8):
+ * vincula un documento `confirmed` a una recepción `posted` que se creó sin
+ * uno. Mapea **todas** las líneas de la recepción al mismo documento,
+ * validando producto/cantidad/capacidad — reutiliza exactamente
+ * `validateDocumentLineCapacity`/`groupDocumentLineQuantities`, el mismo
+ * criterio agregado (hallazgo 2) que ya usa el alta con documento.
+ *
+ * Decisiones no especificadas literalmente en el contrato (sección 8):
+ * - **Recepción no `posted`**: el contrato no da un código específico para
+ *   este caso — se reutiliza `RECEIPT_NOT_POSTED` (sección 16), que ya
+ *   significa exactamente eso («la recepción todavía no está contabilizada»)
+ *   para la reversión; inventar uno paralelo duplicaría el mismo significado.
+ * - **Proveedor no coincide**: tampoco hay código estable. Se define
+ *   `RECEIPT_DOCUMENT_SUPPLIER_MISMATCH` como código propio del mock (ver
+ *   `RECEIPT_DOCUMENT_SUPPLIER_MISMATCH_MESSAGE` en `procurementErrors.util`),
+ *   misma licencia que los códigos propios de documentos de compra.
+ * - **Capacidad excedida**: se reutiliza `RECEIPT_EXCEEDS_DOCUMENT` — el
+ *   contrato usa ese código para «la recepción supera lo pendiente del
+ *   documento» al crear con documento; acá es la misma comprobación, sólo que
+ *   retroactiva.
+ * - **Auditoría del motivo**: el contrato exige `reason` obligatorio pero no
+ *   declara un campo propio para conservarlo en `IStockReceipt` (a diferencia
+ *   de `reversal_reason`/`cancellation_reason`, que sí son campos explícitos
+ *   de la sección 7). Se audita agregando una línea a `notes`, igual criterio
+ *   que el resto de este archivo usa para no inventar un campo de contrato
+ *   que no existe.
+ *
+ * No cambia `received_on`, no genera movimiento físico, no reencola el
+ * worker y no altera `status` — sólo refleja, sobre el documento, la
+ * cobertura que esta recepción nunca aplicó por no tener documento al
+ * publicarse (`applyStockReceiptCoverageDelta`, la misma función que usa
+ * publicar/revertir).
+ */
+export const linkStockReceiptPurchaseDocument = (
+	subsidiaryId: number,
+	id: number,
+	payload: IStockReceiptLinkPurchaseDocumentPayload,
+	headers: IMockWriteHeaders = {},
+): Promise<{ data: IStockReceipt; headers: { etag: string } }> =>
+	withIdempotency(
+		subsidiaryId,
+		headers.idempotencyKey,
+		{ action: 'link_purchase_document', id, payload },
+		() =>
+			withReceiptLock(subsidiaryId, id, async () => {
+				const store = getStore(subsidiaryId);
+				const existing = store.receipts.find((receipt) => receipt.id === id);
+				if (!existing) {
+					return fail(404, {
+						message: 'La recepción no existe.',
+						code: 'STOCK_RECEIPT_NOT_FOUND',
+					});
+				}
+				if (existing.status !== 'posted') {
+					return fail(409, {
+						message: PROCUREMENT_ERROR_DEFINITIONS.RECEIPT_NOT_POSTED.fallbackMessage,
+						code: 'RECEIPT_NOT_POSTED',
+					});
+				}
+				// Vínculo único, no sustituible (sección 8): una vez hecho, no se
+				// cambia.
+				if (existing.purchase_document) {
+					return fail(409, {
+						message:
+							PROCUREMENT_ERROR_DEFINITIONS.RECEIPT_DOCUMENT_ALREADY_LINKED
+								.fallbackMessage,
+						code: 'RECEIPT_DOCUMENT_ALREADY_LINKED',
+					});
+				}
+				if (!payload.reason?.trim()) {
+					return fail(
+						422,
+						buildFieldError(
+							'LINK_REASON_REQUIRED',
+							'Indica el motivo del vínculo posterior.',
+							'reason',
+						),
+					);
+				}
+
+				// Sección 8: «mapear todas las líneas al mismo documento» — ninguna
+				// línea de la recepción puede quedar sin mapear, y no se aceptan
+				// líneas ajenas a esta recepción.
+				const receiptLineIds = new Set(existing.items.map((item) => item.id));
+				const mappedLineIds = new Set(
+					(payload.items ?? []).map((item) => item.stock_receipt_line_id),
+				);
+				const coversAllReceiptLines =
+					Array.isArray(payload.items) &&
+					payload.items.length === existing.items.length &&
+					mappedLineIds.size === existing.items.length &&
+					existing.items.every((item) => mappedLineIds.has(item.id)) &&
+					payload.items.every((item) => receiptLineIds.has(item.stock_receipt_line_id));
+				if (!coversAllReceiptLines) {
+					return fail(422, {
+						message:
+							PROCUREMENT_ERROR_DEFINITIONS.DOCUMENT_LINE_MISMATCH.fallbackMessage,
+						code: 'DOCUMENT_LINE_MISMATCH',
+					});
+				}
+
+				const document = findPurchaseDocumentForReceipts(
+					subsidiaryId,
+					payload.purchase_document_id,
+				);
+				if (!document) {
+					return fail(
+						422,
+						buildFieldError(
+							'PURCHASE_DOCUMENT_NOT_FOUND',
+							'El documento de compra no existe.',
+							'purchase_document_id',
+						),
+					);
+				}
+				if (document.status !== 'confirmed') {
+					return fail(422, {
+						message:
+							PROCUREMENT_ERROR_DEFINITIONS.DOCUMENT_NOT_CONFIRMED.fallbackMessage,
+						code: 'DOCUMENT_NOT_CONFIRMED',
+					});
+				}
+
+				const documentLineById = new Map(document.items.map((line) => [line.id, line]));
+				const receiptLineById = new Map(existing.items.map((item) => [item.id, item]));
+
+				// Producto compatible: cada línea de recepción debe corresponder al
+				// mismo producto que la línea de documento a la que se mapea.
+				const mismatchedProduct = payload.items.some((mapping) => {
+					const documentLine = documentLineById.get(mapping.purchase_document_line_id);
+					const receiptLine = receiptLineById.get(mapping.stock_receipt_line_id);
+					return (
+						!documentLine ||
+						!receiptLine ||
+						documentLine.product.id !== receiptLine.product.id
+					);
+				});
+				if (mismatchedProduct) {
+					return fail(422, {
+						message:
+							PROCUREMENT_ERROR_DEFINITIONS.DOCUMENT_LINE_MISMATCH.fallbackMessage,
+						code: 'DOCUMENT_LINE_MISMATCH',
+					});
+				}
+
+				// Capacidad agregada y vigente (hallazgo 2): el documento todavía no
+				// tiene cobertura de esta recepción — se posteó sin documento — así
+				// que `remaining_quantity` vigente es la capacidad real disponible.
+				const groupedQuantities = new Map<number, number>();
+				payload.items.forEach((mapping) => {
+					const receiptLine = receiptLineById.get(mapping.stock_receipt_line_id)!;
+					groupedQuantities.set(
+						mapping.purchase_document_line_id,
+						(groupedQuantities.get(mapping.purchase_document_line_id) ?? 0) +
+							receiptLine.quantity,
+					);
+				});
+				const capacityError = validateDocumentLineCapacity(document, groupedQuantities);
+				if (capacityError) return fail(422, capacityError);
+
+				// Proveedor: si la recepción ya tenía uno conocido, debe coincidir;
+				// si no, se completa desde el documento (sección 8).
+				if (existing.supplier && existing.supplier.id !== document.supplier?.id) {
+					return fail(422, {
+						message: RECEIPT_DOCUMENT_SUPPLIER_MISMATCH_MESSAGE,
+						code: 'RECEIPT_DOCUMENT_SUPPLIER_MISMATCH',
+					});
+				}
+
+				const now = new Date().toISOString();
+				const items = existing.items.map((item) => {
+					const mapping = payload.items.find(
+						(entry) => entry.stock_receipt_line_id === item.id,
+					)!;
+					const documentLine = documentLineById.get(mapping.purchase_document_line_id)!;
+					return {
+						...item,
+						purchase_document_line_id: documentLine.id,
+						// El costo documental prevalece sobre el declarado y su cambio
+						// queda auditado (sección 8): `source: "document"` reemplaza
+						// cualquier costo declarado que la línea tuviera.
+						cost: documentLine.cost,
+					};
+				});
+
+				const updated: IStockReceipt = {
+					...existing,
+					supplier: existing.supplier ?? document.supplier,
+					purchase_document: {
+						id: document.id,
+						document_type: document.document_type,
+						document_number: document.document_number,
+						issue_date: document.issue_date,
+					},
+					items,
+					allowed_actions: computeAllowedActionsForStatus('posted', true),
+					notes: appendAuditNote(
+						existing.notes,
+						`Documento #${document.document_number} vinculado después de contabilizar: ${payload.reason.trim()}`,
+					),
+					updated_at: now,
+				};
+				store.receipts = store.receipts.map((receipt) =>
+					receipt.id === id ? updated : receipt,
+				);
+				const nextVersion = bumpVersion(store, id);
+
+				// Refleja la cobertura como si la recepción se hubiese creado con
+				// este documento desde el principio (sección 8) — no cambia
+				// `received_on`, no genera movimiento físico ni reencola el worker.
+				applyStockReceiptCoverageDelta(
+					subsidiaryId,
+					document.id,
+					existing.branch_id,
+					existing.warehouse,
+					Array.from(groupedQuantities.entries()).map(([lineId, quantityDelta]) => ({
+						lineId,
+						quantityDelta,
+					})),
+				);
+				bumpPurchaseDocumentStockReceiptsCount(subsidiaryId, document.id, 1);
+
+				return delay({
+					data: cloneReceipt(updated),
+					headers: { etag: buildEtag(id, nextVersion) },
+				});
+			}),
 	);
 
 /**

@@ -31,6 +31,44 @@ vi.mock('@/store', async () => {
 vi.mock('@/components/layouts/PageWrapper/PageWrapper', () => ({
 	default: ({ children }: { children: ReactNode }) => <main>{children}</main>,
 }));
+/**
+ * `react-select` no expone sus opciones como controles nativos accesibles por
+ * teclado en jsdom sin `pointer capture`; el resto de la suite del repo
+ * (`ScreenDefectCounts.test.tsx`, etc.) resuelve esto sustituyendo
+ * `SelectReact` por un `<select>` nativo cableado a las mismas props
+ * (`options`/`value`/`onChange`) que usa `DocumentInitialStockModal`.
+ */
+vi.mock('@/components/form/SelectReact', () => ({
+	default: ({
+		inputId,
+		options,
+		value,
+		onChange,
+		placeholder,
+	}: {
+		inputId?: string;
+		options?: { value: string; label: string }[];
+		value?: { value: string; label: string } | null;
+		onChange?: (option: { value: string; label: string } | null) => void;
+		placeholder?: string;
+	}) => (
+		<select
+			id={inputId}
+			value={value?.value ?? ''}
+			onChange={(event) => {
+				const selected =
+					options?.find((option) => option.value === event.target.value) ?? null;
+				onChange?.(selected);
+			}}>
+			<option value=''>{placeholder}</option>
+			{options?.map((option) => (
+				<option key={option.value} value={option.value}>
+					{option.label}
+				</option>
+			))}
+		</select>
+	),
+}));
 
 const auth = createSlice({
 	name: 'auth',
@@ -83,8 +121,17 @@ beforeEach(() => {
 	context.branchId = 4;
 	context.subsidiaryId = 2;
 	context.enabled = true;
+	// `DocumentInitialStockModal` (sección 8) renderiza vía `Portal`, que
+	// busca `#portal-root` en el DOM (`Portal.tsx`) — sin él el modal se monta
+	// como `null` en silencio, igual criterio que `Modal.test.tsx`.
+	const portalRoot = document.createElement('div');
+	portalRoot.id = 'portal-root';
+	document.body.appendChild(portalRoot);
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+	document.getElementById('portal-root')?.remove();
+	vi.restoreAllMocks();
+});
 
 describe('Stock por ubicación — integración de vista, hooks, slice y servicio', () => {
 	it('muestra los dos desgloses del mismo físico y expande 10 documentados + 5 sin respaldo', async () => {
@@ -303,5 +350,71 @@ describe('Stock por ubicación — integración de vista, hooks, slice y servici
 		page.update();
 		expect(screen.getByText('Consulta no habilitada')).toBeInTheDocument();
 		expect(spy).not.toHaveBeenCalled();
+	});
+
+	it('documentar 10 de 100 refresca la fila agregada y el panel de procedencias en el mismo render (hallazgo QA bloqueante)', async () => {
+		renderPage();
+		fireEvent.change(screen.getByLabelText('Ubicación'), { target: { value: 'warehouse:8' } });
+		fireEvent.change(screen.getByLabelText('Buscar por nombre o SKU'), {
+			target: { value: 'CBL-HDMI-2' },
+		});
+		const trigger = await screen.findByRole('button', {
+			name: /Procedencias de Cable HDMI 2 m/,
+		});
+		const table = screen.getByRole('table', { name: 'Stock físico por ubicación' });
+		const initialRow = within(table).getAllByRole('row')[2];
+		expect(
+			within(initialRow)
+				.getAllByRole('cell')
+				.slice(1, 6)
+				.map((cell) => cell.textContent),
+		).toEqual(['100', '100', '0', '0', '100']);
+
+		fireEvent.click(trigger);
+		await screen.findByText('100 sin respaldo');
+
+		fireEvent.click(screen.getByRole('button', { name: 'Documentar' }));
+		const dialog = await screen.findByRole('dialog', { name: 'Documentar stock inicial' });
+		// El picker carga los documentos confirmados de forma asíncrona
+		// (`usePurchaseDocumentPicker`): hay que esperar a que la opción exista
+		// antes de disparar el `change`, o el `<select>` no tiene nada que
+		// seleccionar todavía.
+		await within(dialog).findByRole('option', { name: '7788 · Sin proveedor' });
+		fireEvent.change(within(dialog).getByLabelText('Documento confirmado'), {
+			target: { value: '90' },
+		});
+		await within(dialog).findByLabelText('Línea del documento');
+		fireEvent.change(within(dialog).getByLabelText('Línea del documento'), {
+			target: { value: '950' },
+		});
+		fireEvent.change(within(dialog).getByLabelText('Cantidad a documentar'), {
+			target: { value: '10' },
+		});
+		fireEvent.change(within(dialog).getByLabelText('Motivo'), {
+			target: { value: 'Factura llegó con retraso, respaldo parcial del conteo inicial.' },
+		});
+		fireEvent.click(within(dialog).getByRole('button', { name: 'Documentar' }));
+
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+		// Hallazgo QA bloqueante: la fila agregada (arriba) tiene que reflejar
+		// 10 documentados / 90 sin documento en el MISMO render que el panel de
+		// procedencias expandido — no sólo tras cambiar filtros o navegar.
+		await waitFor(() => {
+			const updatedRow = within(
+				screen.getByRole('table', { name: 'Stock físico por ubicación' }),
+			).getAllByRole('row')[2];
+			expect(
+				within(updatedRow)
+					.getAllByRole('cell')
+					.slice(1, 6)
+					.map((cell) => cell.textContent),
+			).toEqual(['100', '100', '0', '10', '90']);
+		});
+		// El panel de procedencias refresca por su cuenta (`useInventoryOrigins`,
+		// misma llamada async que el resto de la suite) — se espera por
+		// separado, no en el mismo `waitFor` que la fila agregada.
+		await screen.findByText('90 sin respaldo');
+		await screen.findByText('10 documentados por boleta #7788');
 	});
 });
