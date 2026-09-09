@@ -373,6 +373,14 @@ export const privatePages = {
 				authority: ['view-product'],
 				requireAll: true,
 			},
+			stockPorUbicacion: {
+				id: 'stockPorUbicacion',
+				to: '/inventario/abastecimiento/stock',
+				text: 'Stock por ubicación',
+				icon: 'HeroCube',
+				authority: ['view-product'],
+				requireAll: true,
+			},
 			recepcionDetalle: {
 				id: 'recepcionDetalle',
 				to: '/inventario/abastecimiento/recepciones/:recepcionId',

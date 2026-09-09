@@ -249,6 +249,77 @@ export interface IInventoryLocationContext {
 	warehouse: IWarehouseCompact | null;
 }
 
+/** Fila agregada de stock físico actual por producto y ubicación. */
+export interface IInventoryStockRow {
+	product: IProcurementProduct;
+	physical_quantity: number;
+	fit_quantity: number;
+	unfit_quantity: number;
+	documented_quantity: number;
+	undocumented_quantity: number;
+}
+
+export type TInventoryOriginType = 'stock_receipt' | 'initial_stock' | 'inventory_adjustment';
+
+/** Procedencia contable actual; no identifica unidades físicas sin serie. */
+export interface IInventoryStockOriginRow {
+	origin_id: number;
+	origin_type: TInventoryOriginType;
+	stock_receipt_id: number | null;
+	received_on: TBusinessDate | null;
+	supplier: ISupplierCompact | null;
+	purchase_document: IPurchaseDocumentCompact | null;
+	physical_quantity: number;
+	fit_quantity: number;
+	unfit_quantity: number;
+}
+
+type IInventoryBranchLocationParams = {
+	warehouse_id?: never;
+	unlocated?: never;
+};
+
+type IInventoryWarehouseLocationParams = {
+	warehouse_id: number;
+	unlocated?: never;
+};
+
+type IInventoryUnlocatedLocationParams = {
+	warehouse_id?: never;
+	unlocated: 1;
+};
+
+/** Los filtros de ubicación son mutuamente excluyentes por contrato. */
+export type IInventoryLocationParams =
+	| IInventoryBranchLocationParams
+	| IInventoryWarehouseLocationParams
+	| IInventoryUnlocatedLocationParams;
+
+export type IInventoryStockListParams = IInventoryLocationParams &
+	Partial<IProcurementPageParams> & {
+		search?: string;
+	};
+
+export type IInventoryOriginsParams = IInventoryLocationParams &
+	Partial<IProcurementPageParams> & {
+		purchase_document_id?: number;
+		supplier_id?: number;
+	};
+
+export type IInventoryStockResponse = IApiCollectionEnvelope<
+	IInventoryStockRow,
+	IInventoryLocationContext
+> & { context: IInventoryLocationContext };
+
+export interface IInventoryOriginsContext extends IInventoryLocationContext {
+	product: IProcurementProduct;
+}
+
+export type IInventoryOriginsResponse = IApiCollectionEnvelope<
+	IInventoryStockOriginRow,
+	IInventoryOriginsContext
+> & { context: IInventoryOriginsContext };
+
 /* =================================================
    Proveedores — sección 5 del contrato
    ================================================= */
