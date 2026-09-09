@@ -1,12 +1,16 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
+import type { RootState } from '@/store';
 import type {
+	IInventoryDocumentAllocation,
+	IInventoryDocumentAllocationPayload,
 	IInventoryStockListParams,
 	IInventoryOriginsParams,
 	IInventoryStockResponse,
 	IInventoryOriginsResponse,
 } from '@/interface/procurement.interface';
 import {
+	createInventoryDocumentAllocation,
 	listInventoryStock,
 	listInventoryOrigins,
 } from '@/services/procurement/inventoryStock.service';
@@ -63,6 +67,47 @@ export const fetchInventoryOrigins = createAsyncThunk<
 	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
 
+interface IWriteHeaders {
+	idempotencyKey?: string;
+}
+
+/**
+ * `POST .../document-allocations` (card 07, sección 8): respalda
+ * documentalmente stock inicial sin documento. No toca `list`/`origins` del
+ * store — el llamador refresca con `refresh()` tras confirmar, mismo
+ * criterio que `onReversed`/`onCancelled` en Recepciones.
+ */
+export const createInventoryDocumentAllocationThunk = createAsyncThunk<
+	IInventoryDocumentAllocation,
+	{
+		subsidiaryId: number | null;
+		branchId: number;
+		productId: number;
+		payload: IInventoryDocumentAllocationPayload;
+		headers?: IWriteHeaders;
+	},
+	{ rejectValue: unknown }
+>(
+	'inventoryStock/createDocumentAllocation',
+	async ({ subsidiaryId, branchId, productId, payload, headers }, { rejectWithValue }) => {
+		if (subsidiaryId === null)
+			return rejectWithValue('No se pudo determinar la filial activa.');
+		try {
+			const response = await createInventoryDocumentAllocation(
+				subsidiaryId,
+				branchId,
+				productId,
+				payload,
+				headers,
+			);
+			return response.data;
+		} catch (error: unknown) {
+			return rejectWithValue(error);
+		}
+	},
+	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
+);
+
 interface QueryState<T> {
 	ownerContext: string | null;
 	requestId: string | null;
@@ -80,8 +125,14 @@ const emptyQuery = <T>(): QueryState<T> => ({
 export interface InventoryStockState {
 	list: QueryState<IInventoryStockResponse>;
 	origins: QueryState<IInventoryOriginsResponse>;
+	/** `document-allocations` (card 07) es puntual, no una consulta con `ownerContext` — sólo necesita saber si hay un envío en curso. */
+	creatingAllocation: boolean;
 }
-const initialState: InventoryStockState = { list: emptyQuery(), origins: emptyQuery() };
+const initialState: InventoryStockState = {
+	list: emptyQuery(),
+	origins: emptyQuery(),
+	creatingAllocation: false,
+};
 const inventoryStockSlice = createSlice({
 	name: 'inventoryStock',
 	initialState,
@@ -129,7 +180,20 @@ const inventoryStockSlice = createSlice({
 				state.origins.error = action.meta.aborted
 					? null
 					: (action.payload ?? 'No pudimos cargar las procedencias.');
+			})
+			.addCase(createInventoryDocumentAllocationThunk.pending, (state) => {
+				state.creatingAllocation = true;
+			})
+			.addCase(createInventoryDocumentAllocationThunk.fulfilled, (state) => {
+				state.creatingAllocation = false;
+			})
+			.addCase(createInventoryDocumentAllocationThunk.rejected, (state) => {
+				state.creatingAllocation = false;
 			});
 	},
 });
+
+export const selectInventoryStockCreatingAllocation = (state: RootState) =>
+	state.inventoryStock.creatingAllocation;
+
 export default inventoryStockSlice.reducer;

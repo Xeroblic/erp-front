@@ -321,6 +321,63 @@ export type IInventoryOriginsResponse = IApiCollectionEnvelope<
 > & { context: IInventoryOriginsContext };
 
 /* =================================================
+   Documentar después sin volver a ingresar stock — sección 8 del contrato
+   ================================================= */
+
+/**
+ * `PUT P/stock-receipts/{receipt}/purchase-document` (card 07): mapea
+ * **todas** las líneas de una recepción `posted` sin documento a líneas de un
+ * mismo documento `confirmed`. Vínculo único, no sustituible.
+ */
+export interface IStockReceiptLinkPurchaseDocumentItemInput {
+	stock_receipt_line_id: number;
+	purchase_document_line_id: number;
+}
+
+export interface IStockReceiptLinkPurchaseDocumentPayload {
+	purchase_document_id: number;
+	reason: string;
+	items: IStockReceiptLinkPurchaseDocumentItemInput[];
+}
+
+/**
+ * `POST B/inventory-stock/{product}/document-allocations` (card 07):
+ * respalda documentalmente stock inicial **todavía existente** y sin
+ * documento. `warehouse_id: null` es «Sin ubicación», igual que en el resto
+ * del módulo — no una ubicación ausente.
+ */
+export interface IInventoryDocumentAllocationPayload {
+	origin_id: number;
+	warehouse_id: number | null;
+	purchase_document_line_id: number;
+	quantity: number;
+	reason: string;
+}
+
+/**
+ * 201 `data` de `document-allocations`, y fila de
+ * `GET .../purchase-documents/{document}/initial-stock-allocations` (misma
+ * forma en ambos, sección 8 y 6). `physical_stock_delta` es siempre `0`: la
+ * operación es puramente documental, nunca mueve una unidad.
+ */
+export interface IInventoryDocumentAllocation {
+	id: number;
+	product_id: number;
+	branch_id: number;
+	warehouse_id: number | null;
+	original_origin_id: number;
+	documented_origin_id: number;
+	quantity: number;
+	remaining_undocumented_quantity: number;
+	purchase_document: IPurchaseDocumentCompact;
+	supplier: ISupplierCompact | null;
+	cost: IProcurementCost;
+	physical_stock_delta: 0;
+	reason: string;
+	created_at: TIsoTimestamp;
+}
+
+/* =================================================
    Proveedores — sección 5 del contrato
    ================================================= */
 

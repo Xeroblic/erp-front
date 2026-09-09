@@ -18,7 +18,15 @@ import useStockPorUbicacion from '@/pages/inventario/abastecimiento/StockPorUbic
 import InventoryOrigins from '@/pages/inventario/abastecimiento/StockPorUbicacion/components/InventoryOrigins';
 import StockPagination from '@/pages/inventario/abastecimiento/StockPorUbicacion/components/StockPagination';
 
-const StockSession = ({ branchId, owner }: { branchId: number; owner: string }) => {
+const StockSession = ({
+	branchId,
+	subsidiaryId,
+	owner,
+}: {
+	branchId: number;
+	subsidiaryId: number | null;
+	owner: string;
+}) => {
 	const {
 		formik,
 		setFilter,
@@ -220,9 +228,11 @@ const StockSession = ({ branchId, owner }: { branchId: number; owner: string }) 
 													<InventoryOrigins
 														key={`${queryKey}:${row.product.id}`}
 														branchId={branchId}
+														subsidiaryId={subsidiaryId}
 														productId={row.product.id}
 														owner={queryKey}
 														location={locationParams}
+														onDocumented={refresh}
 													/>
 												</Td>
 											</Tr>
@@ -273,7 +283,15 @@ const StockPorUbicacionView = () => {
 				La consulta de stock por ubicación aún no está habilitada en este entorno.
 			</Alert>
 		);
-	else content = <StockSession key={owner} owner={owner} branchId={branchId} />;
+	else
+		content = (
+			<StockSession
+				key={owner}
+				owner={owner}
+				branchId={branchId}
+				subsidiaryId={subsidiaryId}
+			/>
+		);
 	return (
 		<PageWrapper isProtectedRoute title='Stock por ubicación'>
 			<Subheader>

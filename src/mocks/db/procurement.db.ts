@@ -773,6 +773,59 @@ export const pcExpressKeyboardInvoiceDocument: IPurchaseDocument = {
 	updated_at: '2026-08-29T10:20:00-03:00',
 };
 
+/**
+ * Boleta confirmada, **sin proveedor** («la boleta lo permite null»), con
+ * capacidad **sin consumir** para `cableProduct` (card 07, sección 8,
+ * ZF-112): existe para respaldar documentalmente el origin canónico de 100
+ * físicos sin documento (`inventoryStock.db.ts`, origin 220) — mismo criterio
+ * que `pcExpressKeyboardInvoiceDocument` para las recepciones de la card 05,
+ * pero para `document-allocations`. Sin proveedor a propósito: la sección 8
+ * de `document-allocations` no exige coincidencia de proveedor (a diferencia
+ * de vincular un documento a una recepción, sección 8 endpoint 1) —
+ * mantenerlo `null` evita que este fixture altere las pruebas de
+ * `listPurchaseDocuments` que ya filtran/buscan por PCExpress. Capacidad (40)
+ * deliberadamente menor que el origin (100): permite ejercer tanto el
+ * respaldo parcial del caso canónico como el rechazo por capacidad de línea
+ * sin necesitar un tercer fixture.
+ */
+export const cableProductInitialStockDocument: IPurchaseDocument = {
+	id: 90,
+	document_type: 'receipt',
+	document_number: '7788',
+	issue_date: '2026-09-01',
+	currency_code: 'CLP',
+	total_amount: null,
+	status: 'confirmed',
+	reception_status: 'pending',
+	supplier: null,
+	items_count: 1,
+	created_at: '2026-08-31T09:00:00-03:00',
+	allowed_actions: ['create_receipt', 'add_attachment'],
+	supplier_snapshot: null,
+	notes: null,
+	items: [
+		{
+			id: 950,
+			product: cableProduct,
+			sku_snapshot: cableProduct.sku,
+			name_snapshot: cableProduct.name,
+			quantity: 40,
+			cost: netEnteredCost,
+			notes: null,
+			received_quantity: 0,
+			initial_stock_allocated_quantity: 0,
+			accounted_quantity: 0,
+			remaining_quantity: 40,
+			received_distribution: [],
+		},
+	],
+	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
+	confirmed_at: '2026-08-31T09:30:00-03:00',
+	cancelled_at: null,
+	cancellation_reason: null,
+	updated_at: '2026-08-31T09:30:00-03:00',
+};
+
 /** Semilla del listado. El servicio mock la clona a su propio store mutable. */
 export const purchaseDocuments: IPurchaseDocument[] = [
 	pcExpressInvoiceDocument,
@@ -780,6 +833,7 @@ export const purchaseDocuments: IPurchaseDocument[] = [
 	draftReceiptDocument,
 	draftInvoiceDocument,
 	cancelledInvoiceDocument,
+	cableProductInitialStockDocument,
 ];
 
 /* =================================================

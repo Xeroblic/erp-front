@@ -3,6 +3,7 @@ import {
 	cancelStockReceipt,
 	createStockReceipt,
 	getStockReceipt,
+	linkStockReceiptPurchaseDocument,
 	listStockReceipts,
 	listStockReceiptsForPurchaseDocument,
 	listWarehousesForStockReceipts,
@@ -23,7 +24,7 @@ import {
 	resetPurchaseDocumentsStoreForTests,
 	simulatePurchaseDocumentsReloadForTests,
 } from '@/services/procurement/purchaseDocuments.service';
-import type { IStockReceiptCreatePayload } from '@/interface/procurement.interface';
+import type { IStockReceipt, IStockReceiptCreatePayload } from '@/interface/procurement.interface';
 
 /**
  * El servicio simula `/api/subsidiaries/{subsidiary}/procurement/
@@ -53,9 +54,12 @@ const SHELF_WAREHOUSE_ID = 12; // misma sucursal (4) que MAIN_WAREHOUSE_ID
 const SOUTH_BRANCH_WAREHOUSE_ID = 15; // sucursal 6, hallazgo 5
 const SOUTH_BRANCH_ID = 6;
 const PC_EXPRESS_SUPPLIER_ID = 7;
+const CONTRERAS_SUPPLIER_ID = 15; // Marcelo Contreras (contrerasSupplierFull)
 const MOUSE_PRODUCT_ID = 31;
+const KEYBOARD_PRODUCT_ID = 67;
 const KEYBOARD_DOCUMENT_ID = 61; // pcExpressKeyboardInvoiceDocument, confirmado
 const KEYBOARD_DOCUMENT_LINE_ID = 601; // remaining_quantity: 12
+const DRAFT_INVOICE_DOCUMENT_ID = 42; // draftInvoiceDocument, sin confirmar
 
 const ACTOR = { id: 40, name: 'Camila Vidal' };
 
@@ -110,6 +114,73 @@ const createCleanConfirmedDocument = async (quantity: number) => {
 	});
 	const { data: confirmed } = await confirmPurchaseDocument(SUBSIDIARY_A, draft.id);
 	return confirmed;
+};
+
+/**
+ * Documento confirmado con proveedor y producto configurables (card 07,
+ * sección 8): a diferencia de `createCleanConfirmedDocument`, éste sí lleva
+ * proveedor — necesario para ejercer «el proveedor debe coincidir» al
+ * vincular.
+ */
+const createConfirmedDocumentWithSupplier = async (
+	supplierId: number | null,
+	productId: number,
+	quantity: number,
+) => {
+	const { data: draft } = await createPurchaseDocument(SUBSIDIARY_A, {
+		document_type: supplierId === null ? 'receipt' : 'invoice',
+		supplier_id: supplierId,
+		document_number: `TEST-${Math.random().toString(36).slice(2, 8)}`,
+		issue_date: '2026-09-08',
+		currency_code: 'CLP',
+		total_amount: null,
+		notes: null,
+		items: [
+			{
+				product_id: productId,
+				quantity,
+				unit_cost: '5000.00',
+				unit_cost_basis: 'net',
+				notes: null,
+			},
+		],
+	});
+	const { data: confirmed } = await confirmPurchaseDocument(SUBSIDIARY_A, draft.id);
+	return confirmed;
+};
+
+/**
+ * Recepción `posted` sin documento, con proveedor y producto configurables
+ * (card 07, sección 8): ningún fixture semilla nace `posted` sin documento —
+ * se construye vía `draft → queued → posted`, mismo patrón que el resto del
+ * archivo.
+ */
+const createPostedManualReceipt = async (
+	supplierId: number | null,
+	productId: number,
+	quantity: number,
+): Promise<IStockReceipt> => {
+	const { data: created } = await createStockReceipt(SUBSIDIARY_A, {
+		purchase_document_id: null,
+		supplier_id: supplierId,
+		warehouse_id: MAIN_WAREHOUSE_ID,
+		received_on: '2026-09-04',
+		reason: 'Ingreso de prueba para vinculación posterior',
+		notes: null,
+		items: [
+			{
+				product_id: productId,
+				quantity,
+				...(supplierId !== null
+					? { unit_cost: '5000.00', unit_cost_basis: 'net' as const }
+					: {}),
+			},
+		],
+	});
+	await postStockReceipt(SUBSIDIARY_A, created.id, ACTOR);
+	await waitForWorker();
+	const { data: posted } = await getStockReceipt(SUBSIDIARY_A, created.id);
+	return posted;
 };
 
 afterEach(() => {
@@ -327,7 +398,11 @@ describe('Ciclo de estados: draft → queued → posted', () => {
 		expect(resolved.posted_at).not.toBeNull();
 		expect(resolved.inventory_operation_id).not.toBeNull();
 		expect(resolved.posted_by).toEqual(ACTOR);
-		expect(resolved.allowed_actions).toEqual(['reverse']);
+		// `manualPayload` no lleva documento: `posted` sin documento ofrece
+		// `link_purchase_document` (card 07, sección 8) además de `reverse`.
+		expect(resolved.allowed_actions.sort()).toEqual(
+			['link_purchase_document', 'reverse'].sort(),
+		);
 	});
 
 	it('una recepción en queued no admite update ni post/retry manual', async () => {
@@ -847,5 +922,317 @@ describe('allowed_actions por estado', () => {
 
 		const posted = await getStockReceipt(SUBSIDIARY_A, POSTED_CONSUMED_ID);
 		expect(posted.data.allowed_actions).toEqual(['reverse']);
+	});
+});
+
+/**
+ * `PUT /stock-receipts/{receipt}/purchase-document` (card 07, sección 8,
+ * ZF-112): vincula un documento confirmado a una recepción `posted` que se
+ * creó sin uno. `createPostedManualReceipt` construye la recepción real vía
+ * `draft → queued → posted` (ningún fixture semilla nace `posted` sin
+ * documento) y `createConfirmedDocumentWithSupplier` el documento destino.
+ */
+describe('linkStockReceiptPurchaseDocument — sección 8', () => {
+	it('vincula con proveedor coincidente: costo y proveedor del documento prevalecen, sin tocar received_on ni status', async () => {
+		const receipt = await createPostedManualReceipt(
+			PC_EXPRESS_SUPPLIER_ID,
+			KEYBOARD_PRODUCT_ID,
+			5,
+		);
+		const document = await createConfirmedDocumentWithSupplier(
+			PC_EXPRESS_SUPPLIER_ID,
+			KEYBOARD_PRODUCT_ID,
+			20,
+		);
+		const documentLineId = document.items[0].id;
+
+		const { data: linked } = await linkStockReceiptPurchaseDocument(SUBSIDIARY_A, receipt.id, {
+			purchase_document_id: document.id,
+			reason: 'Factura recibida después de la entrega',
+			items: [
+				{
+					stock_receipt_line_id: receipt.items[0].id,
+					purchase_document_line_id: documentLineId,
+				},
+			],
+		});
+
+		expect(linked.status).toBe('posted');
+		expect(linked.received_on).toBe(receipt.received_on);
+		expect(linked.purchase_document?.id).toBe(document.id);
+		expect(linked.supplier?.id).toBe(PC_EXPRESS_SUPPLIER_ID);
+		// El costo documental prevalece sobre el declarado (sección 8).
+		expect(linked.items[0].cost.source).toBe('document');
+		expect(linked.items[0].purchase_document_line_id).toBe(documentLineId);
+		// Vínculo único: ya no se vuelve a ofrecer.
+		expect(linked.allowed_actions).toEqual(['reverse']);
+
+		const updatedDocument = findPurchaseDocumentForReceipts(SUBSIDIARY_A, document.id)!;
+		const line = updatedDocument.items.find((item) => item.id === documentLineId)!;
+		expect(line.received_quantity).toBe(5);
+		expect(line.remaining_quantity).toBe(15);
+	});
+
+	it('vincula con proveedor previamente desconocido: se completa desde el documento', async () => {
+		const receipt = await createPostedManualReceipt(null, KEYBOARD_PRODUCT_ID, 5);
+		expect(receipt.supplier).toBeNull();
+		const document = await createConfirmedDocumentWithSupplier(
+			PC_EXPRESS_SUPPLIER_ID,
+			KEYBOARD_PRODUCT_ID,
+			20,
+		);
+
+		const { data: linked } = await linkStockReceiptPurchaseDocument(SUBSIDIARY_A, receipt.id, {
+			purchase_document_id: document.id,
+			reason: 'Factura recibida después de la entrega',
+			items: [
+				{
+					stock_receipt_line_id: receipt.items[0].id,
+					purchase_document_line_id: document.items[0].id,
+				},
+			],
+		});
+
+		expect(linked.supplier?.id).toBe(PC_EXPRESS_SUPPLIER_ID);
+	});
+
+	it('puede completarse aunque las unidades ya se hayan vendido (consumidas)', async () => {
+		// El mock simula «consumido» con `STOCK_RECEIPT_CONSUMED_IDS`, fijo a
+		// `POSTED_CONSUMED_ID` — que ya tiene documento. Se ejerce igual la
+		// regla («puede completarse aunque unidades ya se hayan vendido»,
+		// sección 8) contra una recepción sin documento cualquiera: nada en el
+		// servicio condiciona `link_purchase_document` al consumo, a
+		// diferencia de `reverse`.
+		const receipt = await createPostedManualReceipt(null, MOUSE_PRODUCT_ID, 2);
+		const document = await createCleanConfirmedDocument(10);
+
+		const { data: linked } = await linkStockReceiptPurchaseDocument(SUBSIDIARY_A, receipt.id, {
+			purchase_document_id: document.id,
+			reason: 'Se completa aunque ya se haya vendido',
+			items: [
+				{
+					stock_receipt_line_id: receipt.items[0].id,
+					purchase_document_line_id: document.items[0].id,
+				},
+			],
+		});
+		expect(linked.purchase_document?.id).toBe(document.id);
+	});
+
+	it('rechaza una recepción no posted (RECEIPT_NOT_POSTED)', async () => {
+		const response = await readErrorData(
+			linkStockReceiptPurchaseDocument(SUBSIDIARY_A, DRAFT_MANUAL_ID, {
+				purchase_document_id: KEYBOARD_DOCUMENT_ID,
+				reason: 'No corresponde',
+				items: [
+					{
+						stock_receipt_line_id: 900,
+						purchase_document_line_id: KEYBOARD_DOCUMENT_LINE_ID,
+					},
+				],
+			}),
+		);
+		expect(response.status).toBe(409);
+		expect(response.data.code).toBe('RECEIPT_NOT_POSTED');
+	});
+
+	it('rechaza una recepción que ya tiene documento vinculado (RECEIPT_DOCUMENT_ALREADY_LINKED)', async () => {
+		const response = await readErrorData(
+			linkStockReceiptPurchaseDocument(SUBSIDIARY_A, POSTED_CONSUMED_ID, {
+				purchase_document_id: KEYBOARD_DOCUMENT_ID,
+				reason: 'Ya tiene documento',
+				items: [
+					{
+						stock_receipt_line_id: 906,
+						purchase_document_line_id: KEYBOARD_DOCUMENT_LINE_ID,
+					},
+				],
+			}),
+		);
+		expect(response.status).toBe(409);
+		expect(response.data.code).toBe('RECEIPT_DOCUMENT_ALREADY_LINKED');
+	});
+
+	it('rechaza un documento en draft (DOCUMENT_NOT_CONFIRMED)', async () => {
+		const receipt = await createPostedManualReceipt(null, MOUSE_PRODUCT_ID, 2);
+		const response = await readErrorData(
+			linkStockReceiptPurchaseDocument(SUBSIDIARY_A, receipt.id, {
+				purchase_document_id: DRAFT_INVOICE_DOCUMENT_ID,
+				reason: 'Documento todavía en borrador',
+				items: [
+					{ stock_receipt_line_id: receipt.items[0].id, purchase_document_line_id: 301 },
+				],
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('DOCUMENT_NOT_CONFIRMED');
+	});
+
+	it('rechaza una línea que no corresponde al producto de la recepción (DOCUMENT_LINE_MISMATCH)', async () => {
+		const receipt = await createPostedManualReceipt(null, MOUSE_PRODUCT_ID, 2);
+		const response = await readErrorData(
+			linkStockReceiptPurchaseDocument(SUBSIDIARY_A, receipt.id, {
+				purchase_document_id: KEYBOARD_DOCUMENT_ID,
+				reason: 'Producto distinto',
+				items: [
+					{
+						stock_receipt_line_id: receipt.items[0].id,
+						purchase_document_line_id: KEYBOARD_DOCUMENT_LINE_ID,
+					},
+				],
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('DOCUMENT_LINE_MISMATCH');
+	});
+
+	it('rechaza un mapeo que no cubre todas las líneas de la recepción (DOCUMENT_LINE_MISMATCH)', async () => {
+		const response = await readErrorData(
+			linkStockReceiptPurchaseDocument(SUBSIDIARY_A, POSTED_CONSUMED_ID, {
+				purchase_document_id: KEYBOARD_DOCUMENT_ID,
+				reason: 'Mapeo vacío',
+				items: [],
+			}),
+		);
+		// Recepción ya vinculada gana primero (misma jerarquía que el resto del
+		// servicio: estado antes que forma del payload). Se ejerce el mapeo
+		// incompleto contra una recepción sin documento en su lugar.
+		expect(response.status).toBe(409);
+		expect(response.data.code).toBe('RECEIPT_DOCUMENT_ALREADY_LINKED');
+
+		const receipt = await createPostedManualReceipt(null, MOUSE_PRODUCT_ID, 2);
+		const incomplete = await readErrorData(
+			linkStockReceiptPurchaseDocument(SUBSIDIARY_A, receipt.id, {
+				purchase_document_id: KEYBOARD_DOCUMENT_ID,
+				reason: 'Mapeo vacío',
+				items: [],
+			}),
+		);
+		expect(incomplete.status).toBe(422);
+		expect(incomplete.data.code).toBe('DOCUMENT_LINE_MISMATCH');
+	});
+
+	it('rechaza proveedor que no coincide con el ya conocido de la recepción', async () => {
+		const receipt = await createPostedManualReceipt(
+			CONTRERAS_SUPPLIER_ID,
+			KEYBOARD_PRODUCT_ID,
+			5,
+		);
+		const document = await createConfirmedDocumentWithSupplier(
+			PC_EXPRESS_SUPPLIER_ID,
+			KEYBOARD_PRODUCT_ID,
+			20,
+		);
+
+		const response = await readErrorData(
+			linkStockReceiptPurchaseDocument(SUBSIDIARY_A, receipt.id, {
+				purchase_document_id: document.id,
+				reason: 'Proveedor distinto',
+				items: [
+					{
+						stock_receipt_line_id: receipt.items[0].id,
+						purchase_document_line_id: document.items[0].id,
+					},
+				],
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('RECEIPT_DOCUMENT_SUPPLIER_MISMATCH');
+	});
+
+	it('rechaza cantidad mayor a la capacidad de la línea del documento (RECEIPT_EXCEEDS_DOCUMENT)', async () => {
+		// Línea 601 tiene 12 de saldo; la recepción pide 13.
+		const receipt = await createPostedManualReceipt(null, KEYBOARD_PRODUCT_ID, 13);
+		const response = await readErrorData(
+			linkStockReceiptPurchaseDocument(SUBSIDIARY_A, receipt.id, {
+				purchase_document_id: KEYBOARD_DOCUMENT_ID,
+				reason: 'Excede capacidad',
+				items: [
+					{
+						stock_receipt_line_id: receipt.items[0].id,
+						purchase_document_line_id: KEYBOARD_DOCUMENT_LINE_ID,
+					},
+				],
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('RECEIPT_EXCEEDS_DOCUMENT');
+	});
+
+	it('exige motivo obligatorio', async () => {
+		const receipt = await createPostedManualReceipt(null, MOUSE_PRODUCT_ID, 2);
+		const document = await createCleanConfirmedDocument(10);
+		const response = await readErrorData(
+			linkStockReceiptPurchaseDocument(SUBSIDIARY_A, receipt.id, {
+				purchase_document_id: document.id,
+				reason: '   ',
+				items: [
+					{
+						stock_receipt_line_id: receipt.items[0].id,
+						purchase_document_line_id: document.items[0].id,
+					},
+				],
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('LINK_REASON_REQUIRED');
+	});
+
+	// Hallazgo 3 (QA, revisión ZF-112): `linkStockReceiptPurchaseDocument`
+	// comparte `withIdempotency`/`withReceiptLock` con el resto de este
+	// archivo (ya probado en `describe('Idempotencia', ...)` para
+	// `createStockReceipt`), pero no tenía un caso propio — el vínculo es
+	// además de un solo uso (`RECEIPT_DOCUMENT_ALREADY_LINKED`), así que sin
+	// este test un reintento por timeout que perdiera la clave repetiría la
+	// operación y chocaría con esa regla en vez de devolver el resultado
+	// cacheado.
+	it('misma Idempotency-Key repite el vínculo ya hecho; con otro payload responde 409 IDEMPOTENCY_KEY_REUSED', async () => {
+		const receipt = await createPostedManualReceipt(
+			PC_EXPRESS_SUPPLIER_ID,
+			KEYBOARD_PRODUCT_ID,
+			5,
+		);
+		const document = await createConfirmedDocumentWithSupplier(
+			PC_EXPRESS_SUPPLIER_ID,
+			KEYBOARD_PRODUCT_ID,
+			20,
+		);
+		const payload = {
+			purchase_document_id: document.id,
+			reason: 'Factura recibida después de la entrega',
+			items: [
+				{
+					stock_receipt_line_id: receipt.items[0].id,
+					purchase_document_line_id: document.items[0].id,
+				},
+			],
+		};
+		const headers = { idempotencyKey: 'idem-link-1' };
+
+		const first = await linkStockReceiptPurchaseDocument(
+			SUBSIDIARY_A,
+			receipt.id,
+			payload,
+			headers,
+		);
+		const replay = await linkStockReceiptPurchaseDocument(
+			SUBSIDIARY_A,
+			receipt.id,
+			payload,
+			headers,
+		);
+		expect(replay.data.purchase_document?.id).toBe(first.data.purchase_document?.id);
+		expect(replay.data.updated_at).toBe(first.data.updated_at);
+
+		const response = await readErrorData(
+			linkStockReceiptPurchaseDocument(
+				SUBSIDIARY_A,
+				receipt.id,
+				{ ...payload, reason: 'Motivo distinto' },
+				headers,
+			),
+		);
+		expect(response.status).toBe(409);
+		expect(response.data.code).toBe('IDEMPOTENCY_KEY_REUSED');
 	});
 });

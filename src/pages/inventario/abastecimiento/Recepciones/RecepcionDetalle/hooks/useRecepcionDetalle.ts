@@ -70,6 +70,7 @@ const useRecepcionDetalle = () => {
 	const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 	const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 	const [isReverseModalOpen, setIsReverseModalOpen] = useState(false);
+	const [isLinkDocumentModalOpen, setIsLinkDocumentModalOpen] = useState(false);
 
 	/**
 	 * Cierra los overlays **durante el render**, no en un efecto posterior
@@ -89,6 +90,7 @@ const useRecepcionDetalle = () => {
 		if (isFormModalOpen) setIsFormModalOpen(false);
 		if (isCancelModalOpen) setIsCancelModalOpen(false);
 		if (isReverseModalOpen) setIsReverseModalOpen(false);
+		if (isLinkDocumentModalOpen) setIsLinkDocumentModalOpen(false);
 	}
 
 	const goToList = useCallback(
@@ -161,6 +163,7 @@ const useRecepcionDetalle = () => {
 			if (action === 'update') setIsFormModalOpen(true);
 			else if (action === 'cancel') setIsCancelModalOpen(true);
 			else if (action === 'reverse') setIsReverseModalOpen(true);
+			else if (action === 'link_purchase_document') setIsLinkDocumentModalOpen(true);
 			else if (action === 'post') void handlePost();
 			else if (action === 'retry') void handleRetry();
 		},
@@ -182,6 +185,8 @@ const useRecepcionDetalle = () => {
 		setIsCancelModalOpen,
 		isReverseModalOpen,
 		setIsReverseModalOpen,
+		isLinkDocumentModalOpen,
+		setIsLinkDocumentModalOpen,
 		handleAction,
 		goToList,
 		retry: retryFetch,

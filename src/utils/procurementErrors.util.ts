@@ -211,6 +211,17 @@ export const PURCHASE_DOCUMENT_HAS_ACTIVE_RECEIPTS_MESSAGE =
 export const PURCHASE_DOCUMENT_NOT_DRAFT_MESSAGE = 'El documento ya no está en borrador.';
 
 /**
+ * Código propio del mock de vinculación posterior de documento (card 07,
+ * sección 8): el contrato exige «proveedor ya conocido debe coincidir», pero
+ * no da un código estable para el rechazo — misma licencia que los códigos
+ * propios de documentos de compra de arriba. Se define acá, fuera de
+ * `PROCUREMENT_ERROR_DEFINITIONS`, para no alterar la tabla que copia
+ * literalmente la sección 16.
+ */
+export const RECEIPT_DOCUMENT_SUPPLIER_MISMATCH_MESSAGE =
+	'El proveedor del documento no coincide con el proveedor ya conocido de la recepción.';
+
+/**
  * `428` no trae código estable: el contrato lo emite cuando falta la precondición
  * `If-Match`. Se trata como recarga porque el ETag vigente es lo que falta.
  */

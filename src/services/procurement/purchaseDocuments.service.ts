@@ -19,7 +19,6 @@ import { PROCUREMENT_VAT_RATE_PERCENT, previewCostBreakdown } from '@/utils/proc
 import { normalizePageParams } from '@/utils/procurementPagination.util';
 import type {
 	IApiCollectionEnvelope,
-	IApiPaginationMeta,
 	IProcurementCost,
 	IProcurementSupplier,
 	IPurchaseDocument,
@@ -1022,58 +1021,16 @@ export const cancelPurchaseDocument = (
 		}),
 	);
 
-const emptyRelatedListEnvelope = (
-	subsidiaryId: number,
-	documentId: number,
-	path: string,
-	params: { page?: number; per_page?: number },
-): IApiCollectionEnvelope<never> => {
-	const { page, per_page: perPage } = normalizePageParams(params);
-	const meta: IApiPaginationMeta = {
-		current_page: page,
-		from: null,
-		last_page: 1,
-		links: [],
-		path: `/api/subsidiaries/${subsidiaryId}/procurement/purchase-documents/${documentId}/${path}`,
-		per_page: perPage,
-		to: null,
-		total: 0,
-	};
-	return {
-		data: [],
-		links: { first: '?page=1', last: '?page=1', prev: null, next: null },
-		meta,
-	};
-};
-
 /**
- * `GET .../initial-stock-allocations` (sección 6): lista relacionada
- * paginada, nunca incrustada en el detalle. Siempre vacía en este mock —
- * documentar stock inicial (card 04/08, ZF-112) todavía no existe — pero
- * pagina de verdad: el día que ese contrato exista, sólo el servicio cambia.
- *
- * `GET .../stock-receipts` (hallazgo 9, revisión ZF-110) ya no vive acá:
- * las recepciones reales viven en `stockReceipts.service`, que las expone
- * como `listStockReceiptsForPurchaseDocument` — importarlo desde este
- * archivo crearía el ciclo que ese servicio evita a propósito, porque él sí
- * importa de acá.
+ * `GET .../initial-stock-allocations` (sección 6) ya no vive acá: las
+ * asignaciones reales viven en `inventoryStock.service` (el store que las
+ * posee, sección 8), que las expone como
+ * `listInitialStockAllocationsForPurchaseDocument` — mismo criterio que
+ * `GET .../stock-receipts` (hallazgo 9, revisión ZF-110): importarlo desde
+ * este archivo crearía el ciclo que ese servicio evita a propósito, porque
+ * `inventoryStock.service` sí importa de acá (`findPurchaseDocumentForReceipts`)
+ * para resolver el documento y su línea al documentar.
  */
-export const listPurchaseDocumentInitialStockAllocations = async (
-	subsidiaryId: number,
-	documentId: number,
-	params: { page?: number; per_page?: number } = {},
-): Promise<IApiCollectionEnvelope<never>> => {
-	const store = getStore(subsidiaryId);
-	if (!store.documents.some((document) => document.id === documentId)) {
-		return fail(404, {
-			message: 'El documento de compra no existe.',
-			code: 'PURCHASE_DOCUMENT_NOT_FOUND',
-		});
-	}
-	return delay(
-		emptyRelatedListEnvelope(subsidiaryId, documentId, 'initial-stock-allocations', params),
-	);
-};
 
 /**
  * Sólo para el servicio de adjuntos (card 04, sección 6): lee el documento
@@ -1130,6 +1087,24 @@ export const findPurchaseDocumentForReceipts = (
 ): IPurchaseDocument | undefined => {
 	const store = getStore(subsidiaryId);
 	const document = store.documents.find((item) => item.id === id);
+	return document ? cloneDocument(document) : undefined;
+};
+
+/**
+ * Sólo para `inventoryStock.service` (card 07, sección 8): el payload de
+ * `document-allocations` sólo trae `purchase_document_line_id` — a
+ * diferencia de vincular un documento a una recepción (mismo endpoint 1 de
+ * la sección 8), acá no viaja `purchase_document_id` — así que resolver el
+ * documento exige buscar por línea. El id de línea es único por filial (lo
+ * asigna `nextLineIdFor` sobre todos los documentos de la filial, nunca por
+ * documento), así que la primera coincidencia es la única posible.
+ */
+export const findPurchaseDocumentByLineId = (
+	subsidiaryId: number,
+	lineId: number,
+): IPurchaseDocument | undefined => {
+	const store = getStore(subsidiaryId);
+	const document = store.documents.find((item) => item.items.some((line) => line.id === lineId));
 	return document ? cloneDocument(document) : undefined;
 };
 
@@ -1242,6 +1217,90 @@ export const bumpPurchaseDocumentStockReceiptsCount = (
 					related_counts: {
 						...document.related_counts,
 						stock_receipts: Math.max(0, document.related_counts.stock_receipts + delta),
+					},
+				}
+			: document,
+	);
+	bumpVersion(store, documentId);
+	persistSubsidiaryState(subsidiaryId);
+};
+
+/**
+ * Aplica el efecto de respaldar (o, en teoría, deshacer) una asignación de
+ * stock inicial sobre la cobertura del documento vinculado (sección 6/8):
+ * mismo criterio exacto que `applyStockReceiptCoverageDelta`, pero suma sobre
+ * `initial_stock_allocated_quantity` en vez de `received_quantity` — la
+ * cobertura de stock inicial **no** crea recepción ni suma
+ * `received_quantity` (sección 6). No hay `received_distribution` que tocar:
+ * ese campo es «dónde ingresó físicamente», y una asignación documental no
+ * ingresa nada.
+ *
+ * Síncrona a propósito, igual que `applyStockReceiptCoverageDelta`: no cruza
+ * ningún `await`, así que el single-thread de JS ya la hace atómica frente a
+ * cualquier otra escritura de este módulo — no necesita `withDocumentLock`.
+ */
+export const applyInitialStockAllocationCoverageDelta = (
+	subsidiaryId: number,
+	documentId: number,
+	lineId: number,
+	quantityDelta: number,
+): void => {
+	if (quantityDelta === 0) return;
+
+	const store = getStore(subsidiaryId);
+	const existing = store.documents.find((document) => document.id === documentId);
+	if (!existing) return;
+
+	const items = existing.items.map((line) => {
+		if (line.id !== lineId) return line;
+
+		const initialStockAllocatedQuantity = line.initial_stock_allocated_quantity + quantityDelta;
+		const accountedQuantity = line.received_quantity + initialStockAllocatedQuantity;
+		return {
+			...line,
+			initial_stock_allocated_quantity: initialStockAllocatedQuantity,
+			accounted_quantity: accountedQuantity,
+			remaining_quantity: line.quantity - accountedQuantity,
+		};
+	});
+
+	const receptionStatus = computeReceptionStatus(items);
+
+	const updated: IPurchaseDocument = {
+		...existing,
+		items,
+		reception_status: receptionStatus,
+		updated_at: new Date().toISOString(),
+	};
+	store.documents = store.documents.map((document) =>
+		document.id === documentId ? updated : document,
+	);
+	bumpVersion(store, documentId);
+	persistSubsidiaryState(subsidiaryId);
+};
+
+/**
+ * Ajusta `related_counts.initial_stock_allocations` al respaldar stock
+ * inicial (sección 6/8) — mismo criterio exacto que
+ * `bumpPurchaseDocumentStockReceiptsCount`: conteo histórico de
+ * «relacionadas», no sólo de las vigentes.
+ */
+export const bumpPurchaseDocumentInitialStockAllocationsCount = (
+	subsidiaryId: number,
+	documentId: number,
+	delta: number,
+): void => {
+	const store = getStore(subsidiaryId);
+	store.documents = store.documents.map((document) =>
+		document.id === documentId
+			? {
+					...document,
+					related_counts: {
+						...document.related_counts,
+						initial_stock_allocations: Math.max(
+							0,
+							document.related_counts.initial_stock_allocations + delta,
+						),
 					},
 				}
 			: document,
