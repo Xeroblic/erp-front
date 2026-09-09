@@ -3,31 +3,33 @@ import type { IApiCollectionEnvelope, IApiPaginationMeta } from '@/interface/pro
 
 /**
  * Listas relacionadas paginadas del detalle de documento de compra (sección
- * 6): `stock-receipts` e `initial-stock-allocations`. Siempre vacías en el
- * mock — nada las puebla todavía (cards 04/05) — pero pagina de verdad
- * contra el servicio, no un stub que sólo muestre el contador de
- * `related_counts`.
+ * 6): `stock-receipts` e `initial-stock-allocations`. Recepciones ya tiene
+ * datos reales desde la card 05 (hallazgo 9 de la revisión ZF-110); stock
+ * inicial sigue vacía — nada la puebla todavía (cards 04/08, ZF-112) — pero
+ * pagina de verdad contra el servicio, no un stub que sólo muestre el
+ * contador de `related_counts`.
  */
 
-type TRelatedListFetcher = (
+type TRelatedListFetcher<TRow> = (
 	subsidiaryId: number,
 	documentId: number,
 	params: { page?: number; per_page?: number },
-) => Promise<IApiCollectionEnvelope<never>>;
+) => Promise<IApiCollectionEnvelope<TRow>>;
 
-interface IUseRelatedDocumentListArgs {
+interface IUseRelatedDocumentListArgs<TRow> {
 	subsidiaryId: number | null;
 	documentId: number | null;
-	fetcher: TRelatedListFetcher;
+	fetcher: TRelatedListFetcher<TRow>;
 }
 
 const PER_PAGE = 10;
 
-const useRelatedDocumentList = ({
+const useRelatedDocumentList = <TRow>({
 	subsidiaryId,
 	documentId,
 	fetcher,
-}: IUseRelatedDocumentListArgs) => {
+}: IUseRelatedDocumentListArgs<TRow>) => {
+	const [data, setData] = useState<TRow[]>([]);
 	const [meta, setMeta] = useState<IApiPaginationMeta | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,9 @@ const useRelatedDocumentList = ({
 		setError(null);
 		fetcher(subsidiaryId, documentId, { page, per_page: PER_PAGE })
 			.then((response) => {
-				if (!cancelled) setMeta(response.meta);
+				if (cancelled) return;
+				setData(response.data);
+				setMeta(response.meta);
 			})
 			.catch(() => {
 				if (!cancelled) setError('No se pudo cargar el listado.');
@@ -64,7 +68,7 @@ const useRelatedDocumentList = ({
 
 	const onPageChange = useCallback((nextPage: number) => setPage(nextPage), []);
 
-	return { meta, loading, error, page, onPageChange };
+	return { data, meta, loading, error, page, onPageChange };
 };
 
 export default useRelatedDocumentList;

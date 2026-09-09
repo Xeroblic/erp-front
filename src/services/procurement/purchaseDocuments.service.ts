@@ -4,6 +4,11 @@ import {
 } from '@/mocks/db/procurement.db';
 import { getProcurementSupplier } from '@/services/procurement/procurementSuppliers.service';
 import {
+	clearAllPersistedMockState,
+	loadPersistedMockState,
+	savePersistedMockState,
+} from '@/services/procurement/procurementMockPersistence.util';
+import {
 	PROCUREMENT_ERROR_DEFINITIONS,
 	PURCHASE_DOCUMENT_HAS_ACTIVE_RECEIPTS_MESSAGE,
 	PURCHASE_DOCUMENT_ITEMS_EMPTY_MESSAGE,
@@ -85,10 +90,80 @@ const seedNextDocumentId = (): number =>
 const seedNextLineId = (): number =>
 	Math.max(...documentSeed.flatMap((document) => document.items.map((item) => item.id))) + 1;
 
+interface IIdempotencyLogEntry {
+	payloadHash: string;
+	/** `undefined` mientras la operación sigue en curso. */
+	result?: unknown;
+}
+
+const idempotencyLog = new Map<string, IIdempotencyLogEntry>();
+const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subsidiaryId}:${key}`;
+
+/**
+ * Persistencia local del store autoritativo (hallazgo 1, revisión ZF-110):
+ * ver `procurementMockPersistence.util`. Sin esto, la cobertura que refleja
+ * una recepción publicada (`applyStockReceiptCoverageDelta`) se perdía al
+ * recargar la pestaña — persistir sólo el slice de UI de recepciones no
+ * alcanza si el documento vinculado vuelve a nacer desde cero.
+ */
+const PURCHASE_DOCUMENTS_STORAGE_NAMESPACE = 'purchase-documents';
+const PURCHASE_DOCUMENTS_STORAGE_VERSION = 1;
+
+interface IPersistedPurchaseDocumentsState {
+	documents: IPurchaseDocument[];
+	versions: [number, number][];
+	nextDocumentId: number;
+	nextLineId: number;
+	idempotency: [string, IIdempotencyLogEntry][];
+}
+
+const hydrateStoreFromStorage = (subsidiaryId: number): IPurchaseDocumentVersionedStore | null => {
+	const persisted = loadPersistedMockState<IPersistedPurchaseDocumentsState>(
+		PURCHASE_DOCUMENTS_STORAGE_NAMESPACE,
+		PURCHASE_DOCUMENTS_STORAGE_VERSION,
+		subsidiaryId,
+	);
+	if (!persisted) return null;
+
+	nextDocumentIdBySubsidiary.set(subsidiaryId, persisted.nextDocumentId);
+	nextLineIdBySubsidiary.set(subsidiaryId, persisted.nextLineId);
+	persisted.idempotency.forEach(([key, entry]) => {
+		idempotencyLog.set(idempotencyLogKey(subsidiaryId, key), entry);
+	});
+
+	return { documents: persisted.documents, versions: new Map(persisted.versions) };
+};
+
+/** Serializa y guarda el estado autoritativo vigente de una filial (hallazgo 1). */
+const persistSubsidiaryState = (subsidiaryId: number): void => {
+	const store = storesBySubsidiary.get(subsidiaryId);
+	if (!store) return;
+
+	const prefix = `${subsidiaryId}:`;
+	const idempotency: [string, IIdempotencyLogEntry][] = [];
+	idempotencyLog.forEach((entry, key) => {
+		if (key.startsWith(prefix)) idempotency.push([key.slice(prefix.length), entry]);
+	});
+
+	const payload: IPersistedPurchaseDocumentsState = {
+		documents: store.documents,
+		versions: Array.from(store.versions.entries()),
+		nextDocumentId: nextDocumentIdBySubsidiary.get(subsidiaryId) ?? seedNextDocumentId(),
+		nextLineId: nextLineIdBySubsidiary.get(subsidiaryId) ?? seedNextLineId(),
+		idempotency,
+	};
+	savePersistedMockState(
+		PURCHASE_DOCUMENTS_STORAGE_NAMESPACE,
+		PURCHASE_DOCUMENTS_STORAGE_VERSION,
+		subsidiaryId,
+		payload,
+	);
+};
+
 const getStore = (subsidiaryId: number): IPurchaseDocumentVersionedStore => {
 	let store = storesBySubsidiary.get(subsidiaryId);
 	if (store === undefined) {
-		store = seedStore();
+		store = hydrateStoreFromStorage(subsidiaryId) ?? seedStore();
 		storesBySubsidiary.set(subsidiaryId, store);
 	}
 	return store;
@@ -115,15 +190,6 @@ const bumpVersion = (store: IPurchaseDocumentVersionedStore, documentId: number)
 	store.versions.set(documentId, next);
 	return next;
 };
-
-interface IIdempotencyLogEntry {
-	payloadHash: string;
-	/** `undefined` mientras la operación sigue en curso. */
-	result?: unknown;
-}
-
-const idempotencyLog = new Map<string, IIdempotencyLogEntry>();
-const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subsidiaryId}:${key}`;
 
 const delay = <T>(value: T): Promise<T> =>
 	new Promise((resolve) => {
@@ -159,7 +225,13 @@ async function withIdempotency<T>(
 	payloadForHash: unknown,
 	run: () => Promise<T>,
 ): Promise<T> {
-	if (!idempotencyKey) return run();
+	if (!idempotencyKey) {
+		const result = await run();
+		// Sin clave no hay entrada de idempotencia que persistir, pero el store
+		// sí cambió: persiste igual (hallazgo 1).
+		persistSubsidiaryState(subsidiaryId);
+		return result;
+	}
 
 	const logKey = idempotencyLogKey(subsidiaryId, idempotencyKey);
 	const payloadHash = JSON.stringify(payloadForHash);
@@ -184,6 +256,10 @@ async function withIdempotency<T>(
 	try {
 		const result = await run();
 		idempotencyLog.set(logKey, { payloadHash, result });
+		// Persiste después de fijar el resultado idempotente definitivo (hallazgo
+		// 1): persistir antes congelaría la clave en «en curso» para siempre si
+		// la pestaña se recarga justo en este instante.
+		persistSubsidiaryState(subsidiaryId);
 		return result;
 	} catch (error) {
 		idempotencyLog.delete(logKey);
@@ -902,10 +978,20 @@ export const cancelPurchaseDocument = (
 					),
 				);
 			}
-			if (
-				existing.related_counts.stock_receipts > 0 ||
-				existing.related_counts.initial_stock_allocations > 0
-			) {
+			// Hallazgo 9: el bloqueo depende de recepciones `posted` y asignaciones
+			// documentales **activas**, no de `related_counts` — ese contador es
+			// histórico (sube al dar de alta cualquier recepción, incluso un
+			// borrador) y no baja al revertir, a propósito: conserva la historia
+			// de anulaciones/reversiones en vez de borrarla para ajustar un
+			// número. `received_quantity`/`initial_stock_allocated_quantity` por
+			// línea sí reflejan sólo el efecto físico vigente: una reversión los
+			// resta exactamente lo que esa recepción había aportado
+			// (`applyStockReceiptCoverageDelta`), así que en 0 significa «sin
+			// recepciones posted activas para esa línea».
+			const hasActivePhysicalEffect = existing.items.some(
+				(line) => line.received_quantity > 0 || line.initial_stock_allocated_quantity > 0,
+			);
+			if (hasActivePhysicalEffect) {
 				return fail(409, {
 					message: PURCHASE_DOCUMENT_HAS_ACTIVE_RECEIPTS_MESSAGE,
 					code: 'PURCHASE_DOCUMENT_HAS_ACTIVE_RECEIPTS',
@@ -961,27 +1047,17 @@ const emptyRelatedListEnvelope = (
 };
 
 /**
- * `GET .../stock-receipts` y `GET .../initial-stock-allocations` (sección 6):
- * listas relacionadas paginadas, nunca incrustadas en el detalle. Siempre
- * vacías en este mock — nada las puebla todavía, porque recibir mercadería
- * (card 05) y documentar stock inicial (card 04/08) no existen— pero
- * paginan de verdad: el día que ese contrato exista, sólo el servicio cambia.
+ * `GET .../initial-stock-allocations` (sección 6): lista relacionada
+ * paginada, nunca incrustada en el detalle. Siempre vacía en este mock —
+ * documentar stock inicial (card 04/08, ZF-112) todavía no existe — pero
+ * pagina de verdad: el día que ese contrato exista, sólo el servicio cambia.
+ *
+ * `GET .../stock-receipts` (hallazgo 9, revisión ZF-110) ya no vive acá:
+ * las recepciones reales viven en `stockReceipts.service`, que las expone
+ * como `listStockReceiptsForPurchaseDocument` — importarlo desde este
+ * archivo crearía el ciclo que ese servicio evita a propósito, porque él sí
+ * importa de acá.
  */
-export const listPurchaseDocumentStockReceipts = async (
-	subsidiaryId: number,
-	documentId: number,
-	params: { page?: number; per_page?: number } = {},
-): Promise<IApiCollectionEnvelope<never>> => {
-	const store = getStore(subsidiaryId);
-	if (!store.documents.some((document) => document.id === documentId)) {
-		return fail(404, {
-			message: 'El documento de compra no existe.',
-			code: 'PURCHASE_DOCUMENT_NOT_FOUND',
-		});
-	}
-	return delay(emptyRelatedListEnvelope(subsidiaryId, documentId, 'stock-receipts', params));
-};
-
 export const listPurchaseDocumentInitialStockAllocations = async (
 	subsidiaryId: number,
 	documentId: number,
@@ -1036,6 +1112,7 @@ export const setPurchaseDocumentAttachmentsCount = (
 			: document,
 	);
 	bumpVersion(store, id);
+	persistSubsidiaryState(subsidiaryId);
 };
 
 /**
@@ -1142,6 +1219,7 @@ export const applyStockReceiptCoverageDelta = (
 		document.id === documentId ? updated : document,
 	);
 	bumpVersion(store, documentId);
+	persistSubsidiaryState(subsidiaryId);
 };
 
 /**
@@ -1169,12 +1247,23 @@ export const bumpPurchaseDocumentStockReceiptsCount = (
 			: document,
 	);
 	bumpVersion(store, documentId);
+	persistSubsidiaryState(subsidiaryId);
 };
 
-/** Sólo para pruebas: reinicia el store en memoria a la semilla de fixtures. */
-export const resetPurchaseDocumentsStoreForTests = (): void => {
+/**
+ * Sólo para pruebas: descarta el estado **en memoria** — como una recarga
+ * real de la pestaña — pero conserva lo persistido en `localStorage`
+ * (hallazgo 1, igual criterio que `simulateStockReceiptsReloadForTests`).
+ */
+export const simulatePurchaseDocumentsReloadForTests = (): void => {
 	storesBySubsidiary.clear();
 	nextDocumentIdBySubsidiary.clear();
 	nextLineIdBySubsidiary.clear();
 	idempotencyLog.clear();
+};
+
+/** Sólo para pruebas: reinicia el store a la semilla de fixtures, incluida la persistencia. */
+export const resetPurchaseDocumentsStoreForTests = (): void => {
+	simulatePurchaseDocumentsReloadForTests();
+	clearAllPersistedMockState(PURCHASE_DOCUMENTS_STORAGE_NAMESPACE);
 };

@@ -38,8 +38,14 @@ const CancelStockReceiptModal: React.FC<ICancelStockReceiptModalProps> = ({
 	const handleClose = () => {
 		if (idempotentWrite.isSubmitting) return;
 		setIsOpen(false);
-		setReason('');
-		idempotentWrite.clearError();
+		// Hallazgo 8: con un resultado incierto (`canRetry`), conserva el
+		// motivo y la clave — reabrir debe seguir listo para reintentar
+		// exactamente el mismo comando, no un motivo en blanco con la misma
+		// `Idempotency-Key` (eso termina en `IDEMPOTENCY_KEY_REUSED`).
+		if (!idempotentWrite.canRetry) {
+			setReason('');
+			idempotentWrite.clearError();
+		}
 	};
 
 	const handleConfirm = async () => {
@@ -85,6 +91,7 @@ const CancelStockReceiptModal: React.FC<ICancelStockReceiptModalProps> = ({
 						id='cancel-recepcion-reason'
 						name='reason'
 						rows={3}
+						disabled={idempotentWrite.canRetry}
 						value={reason}
 						onChange={(event) => setReason(event.target.value)}
 						isValid={reason.trim().length > 0}
@@ -111,7 +118,7 @@ const CancelStockReceiptModal: React.FC<ICancelStockReceiptModalProps> = ({
 					onClick={handleConfirm}
 					isDisable={idempotentWrite.isSubmitting || !reason.trim()}
 					isLoading={idempotentWrite.isSubmitting}>
-					Anular
+					{idempotentWrite.canRetry ? 'Reintentar' : 'Anular'}
 				</Button>
 			</ModalFooter>
 		</Modal>

@@ -88,6 +88,37 @@ describe('useIdempotentWrite', () => {
 		await waitFor(() => expect(result.current.idempotencyKey).not.toBe(keyBefore));
 	});
 
+	it('onError entrega el resuelto del intento actual, no un cierre de un render anterior', async () => {
+		// Hallazgo 7 (revisión ZF-110): un consumidor que lee `result.current.error`
+		// después de un `await submit(...)` capturado en un cierre viejo ve el
+		// valor de ANTES del envío, no el que este intento acaba de producir.
+		// `onError` existe para entregarlo sin ese desfase — se llama dentro del
+		// mismo `catch` que fija `error`, así que nunca puede ir un intento
+		// detrás como podía pasar leyendo el objeto del hook tras el `await`.
+		const write = vi
+			.fn()
+			.mockRejectedValueOnce(validationError)
+			.mockRejectedValueOnce({
+				isAxiosError: true,
+				response: { status: 422, data: { message: 'Otro error.', code: 'OTHER_FIELD' } },
+			});
+		const { result } = renderHook(() => useIdempotentWrite());
+
+		const seen: string[] = [];
+		await act(async () => {
+			await result.current.submit(write, {
+				onError: (error) => seen.push(error.code),
+			});
+		});
+		await act(async () => {
+			await result.current.submit(write, {
+				onError: (error) => seen.push(error.code),
+			});
+		});
+
+		expect(seen).toEqual(['UNIT_COST_REQUIRED', 'OTHER_FIELD']);
+	});
+
 	it('ignora el segundo submit mientras hay uno en curso', async () => {
 		let release: (value: string) => void = () => undefined;
 		const write = vi.fn(

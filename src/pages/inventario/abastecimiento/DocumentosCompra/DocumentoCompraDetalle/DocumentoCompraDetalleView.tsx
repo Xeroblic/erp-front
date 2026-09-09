@@ -1,18 +1,21 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
+import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
 import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import PermissionGuard from '@/components/authorization/PermissionGuard';
 import { AllowedActionsToolbar } from '@/components/procurement';
 import { formatDate } from '@/utils/format.utils';
 import { formatDecimalAmount } from '@/utils/procurementDecimal.util';
-import {
-	listPurchaseDocumentInitialStockAllocations,
-	listPurchaseDocumentStockReceipts,
-} from '@/services/procurement/purchaseDocuments.service';
+import { listPurchaseDocumentInitialStockAllocations } from '@/services/procurement/purchaseDocuments.service';
+import { listStockReceiptsForPurchaseDocument } from '@/services/procurement/stockReceipts.service';
+import type { IStockReceiptListRow, TStockReceiptStatus } from '@/interface/procurement.interface';
+import type { TColors } from '@/types/colors.type';
 import DocumentTypeBadge from '../components/parts/DocumentTypeBadge';
 import DocumentStatusBadge from '../components/parts/DocumentStatusBadge';
 import ReceptionStatusBadge from '../components/parts/ReceptionStatusBadge';
@@ -24,6 +27,30 @@ import DocumentAttachmentsCard from './components/parts/DocumentAttachmentsCard'
 import RelatedCountsCard from './components/parts/RelatedCountsCard';
 import RelatedListCard from './components/parts/RelatedListCard';
 import useDocumentoCompraDetalle from './hooks/useDocumentoCompraDetalle';
+
+/**
+ * Colores de estado de recepción para la fila del resumen (hallazgo 9): sin
+ * importar el badge propio de `Recepciones` — cada página del módulo maneja
+ * su propia presentación, y esta lista sólo necesita distinguir de un
+ * vistazo `posted`/`failed` del resto.
+ */
+const STOCK_RECEIPT_STATUS_COLOR: Record<TStockReceiptStatus, TColors> = {
+	draft: 'zinc',
+	queued: 'blue',
+	posted: 'emerald',
+	failed: 'red',
+	reversed: 'amber',
+	cancelled: 'zinc',
+};
+
+const STOCK_RECEIPT_STATUS_LABEL: Record<TStockReceiptStatus, string> = {
+	draft: 'Borrador',
+	queued: 'Procesando',
+	posted: 'Contabilizada',
+	failed: 'Con error',
+	reversed: 'Revertida',
+	cancelled: 'Anulada',
+};
 
 /**
  * Ficha de documento de compra: lista + `supplier_snapshot`, `notes`,
@@ -51,6 +78,38 @@ const DocumentoCompraDetalleView = () => {
 		goToList,
 		retry,
 	} = useDocumentoCompraDetalle();
+
+	/**
+	 * Fila de resumen de recepción (hallazgo 9): navega a la ficha completa
+	 * sólo con `view-product` — el permiso de lectura de recepciones
+	 * (sección 15), no `view-purchase-document` (el de esta pantalla), que es
+	 * un permiso distinto. Sin ese permiso, la fila queda sin enlace en vez
+	 * de ofrecer una navegación que el destino igual rechazaría.
+	 */
+	const renderStockReceiptRow = (row: IStockReceiptListRow): React.ReactNode => (
+		<div className='flex flex-wrap items-center justify-between gap-2 text-sm'>
+			<div className='flex items-center gap-2'>
+				<Badge color={STOCK_RECEIPT_STATUS_COLOR[row.status]} variant='solid'>
+					{STOCK_RECEIPT_STATUS_LABEL[row.status]}
+				</Badge>
+				<span>{row.warehouse.name}</span>
+				<span className='text-zinc-500'>
+					· {row.total_quantity} u. · {formatDate(row.received_on)}
+				</span>
+			</div>
+			<PermissionGuard
+				permission='view-product'
+				branchId={row.branch_id}
+				subsidiaryId={subsidiaryId}
+				scope='visible'>
+				<Link
+					to={`/inventario/abastecimiento/recepciones/${row.id}`}
+					className='text-blue-600 hover:underline dark:text-blue-400'>
+					Ver recepción #{row.id}
+				</Link>
+			</PermissionGuard>
+		</div>
+	);
 
 	return (
 		<PageWrapper isProtectedRoute title={document?.document_number ?? 'Documento de compra'}>
@@ -260,19 +319,21 @@ const DocumentoCompraDetalleView = () => {
 						/>
 
 						<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-							<RelatedListCard
+							<RelatedListCard<IStockReceiptListRow>
 								title='Recepciones'
 								emptyLabel='Sin recepciones registradas todavía.'
 								subsidiaryId={subsidiaryId}
 								documentId={document.id}
-								fetcher={listPurchaseDocumentStockReceipts}
+								fetcher={listStockReceiptsForPurchaseDocument}
+								renderRow={renderStockReceiptRow}
 							/>
-							<RelatedListCard
+							<RelatedListCard<never>
 								title='Asignaciones de stock inicial'
 								emptyLabel='Sin asignaciones de stock inicial todavía.'
 								subsidiaryId={subsidiaryId}
 								documentId={document.id}
 								fetcher={listPurchaseDocumentInitialStockAllocations}
+								renderRow={() => null}
 							/>
 						</div>
 					</>

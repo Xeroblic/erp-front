@@ -1,5 +1,8 @@
 import {
+	bodegaActor,
+	getProcurementWarehousesForBranchContext,
 	procurementWarehouses,
+	PROCUREMENT_WAREHOUSE_BRANCH_BY_ID,
 	purchasableProcurementProducts,
 	STOCK_RECEIPT_CONSUMED_IDS,
 	stockReceipts as stockReceiptSeed,
@@ -10,6 +13,11 @@ import {
 	findPurchaseDocumentForReceipts,
 } from '@/services/procurement/purchaseDocuments.service';
 import { getProcurementSupplier } from '@/services/procurement/procurementSuppliers.service';
+import {
+	clearAllPersistedMockState,
+	loadPersistedMockState,
+	savePersistedMockState,
+} from '@/services/procurement/procurementMockPersistence.util';
 import { PROCUREMENT_ERROR_DEFINITIONS } from '@/utils/procurementErrors.util';
 import { formatDecimalCents, parseDecimalString } from '@/utils/procurementDecimal.util';
 import { previewCostBreakdown } from '@/utils/procurementCost.util';
@@ -84,6 +92,28 @@ const cloneReceipt = (receipt: IStockReceipt): IStockReceipt => ({
 const storesBySubsidiary = new Map<number, IStockReceiptVersionedStore>();
 const nextReceiptIdBySubsidiary = new Map<number, number>();
 const nextItemIdBySubsidiary = new Map<number, number>();
+
+/**
+ * Persistencia local del store autoritativo (hallazgo 1, revisión ZF-110):
+ * ver `procurementMockPersistence.util`. Se sube la versión si cambia la
+ * forma de `IPersistedStockReceiptsState`.
+ */
+const STOCK_RECEIPTS_STORAGE_NAMESPACE = 'stock-receipts';
+const STOCK_RECEIPTS_STORAGE_VERSION = 1;
+
+interface IPersistedStockReceiptsState {
+	receipts: IStockReceipt[];
+	versions: [number, number][];
+	nextReceiptId: number;
+	nextItemId: number;
+	/** Solicitante de un `post`/`retry` en curso, por ID de recepción — `posted_by` no es un worker anónimo (sección 7). */
+	requestedBy: [number, IProcurementActorCompact][];
+	/** Resultado idempotente por clave, para que un reintento tras recargar la pestaña siga viendo el mismo resultado. */
+	idempotency: [string, IIdempotencyLogEntry][];
+}
+
+/** Filiales cuyo store ya reconcilió sus `queued` pendientes en este proceso. */
+const reconciledSubsidiaries = new Set<number>();
 
 const seedNextReceiptId = (): number =>
 	Math.max(...stockReceiptSeed.map((receipt) => receipt.id)) + 1;
@@ -178,6 +208,38 @@ interface IIdempotencyLogEntry {
 const idempotencyLog = new Map<string, IIdempotencyLogEntry>();
 const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subsidiaryId}:${key}`;
 
+/** Serializa y guarda el estado autoritativo vigente de una filial (hallazgo 1). */
+const persistSubsidiaryState = (subsidiaryId: number): void => {
+	const store = storesBySubsidiary.get(subsidiaryId);
+	if (!store) return;
+
+	const prefix = `${subsidiaryId}:`;
+	const requestedBy: [number, IProcurementActorCompact][] = [];
+	requestedByByReceipt.forEach((actor, key) => {
+		if (!key.startsWith(prefix)) return;
+		requestedBy.push([Number(key.slice(prefix.length)), actor]);
+	});
+	const idempotency: [string, IIdempotencyLogEntry][] = [];
+	idempotencyLog.forEach((entry, key) => {
+		if (key.startsWith(prefix)) idempotency.push([key.slice(prefix.length), entry]);
+	});
+
+	const payload: IPersistedStockReceiptsState = {
+		receipts: store.receipts,
+		versions: Array.from(store.versions.entries()),
+		nextReceiptId: nextReceiptIdBySubsidiary.get(subsidiaryId) ?? seedNextReceiptId(),
+		nextItemId: nextItemIdBySubsidiary.get(subsidiaryId) ?? seedNextItemId(),
+		requestedBy,
+		idempotency,
+	};
+	savePersistedMockState(
+		STOCK_RECEIPTS_STORAGE_NAMESPACE,
+		STOCK_RECEIPTS_STORAGE_VERSION,
+		subsidiaryId,
+		payload,
+	);
+};
+
 /**
  * Misma disciplina que `withIdempotency` de `purchaseDocuments.service`: la
  * clave se reserva antes del primer `await` para que dos llamadas
@@ -189,7 +251,13 @@ async function withIdempotency<T>(
 	payloadForHash: unknown,
 	run: () => Promise<T>,
 ): Promise<T> {
-	if (!idempotencyKey) return run();
+	if (!idempotencyKey) {
+		const result = await run();
+		// Sin clave no hay entrada de idempotencia que persistir, pero el store
+		// sí cambió: persiste igual (hallazgo 1).
+		persistSubsidiaryState(subsidiaryId);
+		return result;
+	}
 
 	const logKey = idempotencyLogKey(subsidiaryId, idempotencyKey);
 	const payloadHash = JSON.stringify(payloadForHash);
@@ -214,6 +282,11 @@ async function withIdempotency<T>(
 	try {
 		const result = await run();
 		idempotencyLog.set(logKey, { payloadHash, result });
+		// Persiste **después** de fijar el resultado idempotente definitivo: si
+		// se persistiera antes, una recarga justo en este instante congelaría la
+		// clave en «en curso» para siempre (hallazgo 1: «conserva... resultado
+		// idempotente»).
+		persistSubsidiaryState(subsidiaryId);
 		return result;
 	} catch (error) {
 		idempotencyLog.delete(logKey);
@@ -280,6 +353,69 @@ const groupQuantityByLine = (
 	}));
 };
 
+/**
+ * Agrupa cantidades de líneas «con documento» por `purchase_document_line_id`
+ * (hallazgo 2): valida la suma, no cada ítem por separado.
+ */
+const groupDocumentLineQuantities = (
+	items: (
+		| IStockReceiptLineWithDocumentInput
+		| { purchase_document_line_id: number; quantity: number }
+	)[],
+): Map<number, number> => {
+	const grouped = new Map<number, number>();
+	items.forEach((input) => {
+		grouped.set(
+			input.purchase_document_line_id,
+			(grouped.get(input.purchase_document_line_id) ?? 0) + input.quantity,
+		);
+	});
+	return grouped;
+};
+
+/**
+ * Valida la capacidad **agregada y vigente** de cada línea de documento
+ * involucrada (hallazgo 2, sección 7 del contrato): agrupa antes de
+ * comparar contra `remaining_quantity`, y siempre contra el documento que se
+ * le pase — al crear/editar es el snapshot recién leído; al contabilizar
+ * (`resolveStockReceiptWorker`) es el documento **vigente** en ese instante,
+ * no el leído cuando se creó el borrador. Devuelve el error del contrato
+ * (`DOCUMENT_LINE_MISMATCH`/`RECEIPT_EXCEEDS_DOCUMENT`) o `null` si cabe.
+ */
+const validateDocumentLineCapacity = (
+	document: NonNullable<ReturnType<typeof findPurchaseDocumentForReceipts>>,
+	groupedQuantities: Map<number, number>,
+): Record<string, unknown> | null => {
+	const missingLine = Array.from(groupedQuantities.keys()).find(
+		(lineId) => !document.items.some((item) => item.id === lineId),
+	);
+	if (missingLine !== undefined) {
+		return {
+			message: PROCUREMENT_ERROR_DEFINITIONS.DOCUMENT_LINE_MISMATCH.fallbackMessage,
+			code: 'DOCUMENT_LINE_MISMATCH',
+		};
+	}
+
+	const exceeding = Array.from(groupedQuantities.entries())
+		.map(([lineId, quantity]) => ({
+			quantity,
+			line: document.items.find((item) => item.id === lineId)!,
+		}))
+		.find(({ quantity, line }) => quantity > line.remaining_quantity);
+	if (exceeding) {
+		return {
+			message: PROCUREMENT_ERROR_DEFINITIONS.RECEIPT_EXCEEDS_DOCUMENT.fallbackMessage,
+			code: 'RECEIPT_EXCEEDS_DOCUMENT',
+			context: {
+				purchase_document_line_id: exceeding.line.id,
+				remaining_quantity: exceeding.line.remaining_quantity,
+			},
+		};
+	}
+
+	return null;
+};
+
 const clearWorkerTimer = (subsidiaryId: number, receiptId: number): void => {
 	const key = storeKey(subsidiaryId, receiptId);
 	const timer = pendingWorkerTimers.get(key);
@@ -306,6 +442,51 @@ function resolveStockReceiptWorker(subsidiaryId: number, receiptId: number): voi
 	const outcome = forcedOutcomeByReceipt.get(key) ?? 'posted';
 	const now = new Date().toISOString();
 	const attemptCount = receipt.processing.attempt_count;
+
+	// Antes de aplicar el efecto físico, revalida la capacidad **vigente** del
+	// documento (hallazgo 2): dos recepciones (o dos reintentos) que
+	// individualmente cabían al crearse pueden competir por el mismo saldo —
+	// un borrador nunca reserva stock (sección 7), así que el único momento
+	// seguro para bloquear el exceso es este, justo antes de contabilizar.
+	if (outcome === 'posted' && receipt.purchase_document) {
+		const liveDocument = findPurchaseDocumentForReceipts(
+			subsidiaryId,
+			receipt.purchase_document.id,
+		);
+		const groupedQuantities = new Map(
+			groupQuantityByLine(receipt.items).map(({ lineId, quantityDelta }) => [
+				lineId,
+				quantityDelta,
+			]),
+		);
+		const capacityError = liveDocument
+			? validateDocumentLineCapacity(liveDocument, groupedQuantities)
+			: {
+					message: 'El documento de compra ya no existe.',
+					code: 'DOCUMENT_LINE_MISMATCH',
+				};
+
+		if (capacityError) {
+			const updated: IStockReceipt = {
+				...receipt,
+				status: 'failed',
+				failed_at: now,
+				allowed_actions: ALLOWED_ACTIONS_BY_STATUS.failed,
+				failure_code: String(capacityError.code),
+				failure_message: String(capacityError.message),
+				processing: {
+					attempt_count: attemptCount,
+					last_attempt_at: now,
+					next_retry_at: null,
+				},
+				updated_at: now,
+			};
+			store.receipts = store.receipts.map((item) => (item.id === receiptId ? updated : item));
+			bumpVersion(store, receiptId);
+			persistSubsidiaryState(subsidiaryId);
+			return;
+		}
+	}
 
 	if (outcome === 'posted') {
 		if (receipt.purchase_document) {
@@ -347,6 +528,7 @@ function resolveStockReceiptWorker(subsidiaryId: number, receiptId: number): voi
 		store.receipts = store.receipts.map((item) => (item.id === receiptId ? updated : item));
 	}
 	bumpVersion(store, receiptId);
+	persistSubsidiaryState(subsidiaryId);
 }
 
 function scheduleWorker(subsidiaryId: number, receiptId: number): void {
@@ -363,22 +545,70 @@ const seedStore = (subsidiaryId: number): IStockReceiptVersionedStore => {
 		receipts: stockReceiptSeed.map(cloneReceipt),
 		versions: new Map(stockReceiptSeed.map((receipt) => [receipt.id, 1])),
 	};
-	// La recepción sembrada en `queued` simula que el worker ya estaba
-	// procesándola antes de esta carga de página: se le programa su propia
-	// resolución, igual que si `post` acabara de encolarla — sin esto, una
-	// recepción `queued` de fixtures se quedaría así para siempre porque
-	// nunca pasó por `postStockReceipt`.
+	// La recepción sembrada en `queued` necesita un solicitante histórico
+	// coherente: `posted_by` no representa a un worker anónimo (sección 7), y
+	// sin esto el fixture resolvía a `posted_by: null` porque nunca pasó por
+	// `postStockReceipt`, que es lo único que normalmente registra al actor.
+	store.receipts
+		.filter((receipt) => receipt.status === 'queued')
+		.forEach((receipt) => {
+			const key = storeKey(subsidiaryId, receipt.id);
+			if (!requestedByByReceipt.has(key)) requestedByByReceipt.set(key, bodegaActor);
+		});
+	return store;
+};
+
+/**
+ * Reconstruye el store de una filial desde `localStorage`, si existe
+ * (hallazgo 1). Repuebla también los mapas satélite (`requestedBy`,
+ * `idempotencyLog`, contadores de ID) que no viven dentro del store mismo.
+ */
+const hydrateStoreFromStorage = (subsidiaryId: number): IStockReceiptVersionedStore | null => {
+	const persisted = loadPersistedMockState<IPersistedStockReceiptsState>(
+		STOCK_RECEIPTS_STORAGE_NAMESPACE,
+		STOCK_RECEIPTS_STORAGE_VERSION,
+		subsidiaryId,
+	);
+	if (!persisted) return null;
+
+	nextReceiptIdBySubsidiary.set(subsidiaryId, persisted.nextReceiptId);
+	nextItemIdBySubsidiary.set(subsidiaryId, persisted.nextItemId);
+	persisted.requestedBy.forEach(([receiptId, actor]) => {
+		requestedByByReceipt.set(storeKey(subsidiaryId, receiptId), actor);
+	});
+	persisted.idempotency.forEach(([key, entry]) => {
+		idempotencyLog.set(idempotencyLogKey(subsidiaryId, key), entry);
+	});
+
+	return { receipts: persisted.receipts, versions: new Map(persisted.versions) };
+};
+
+/**
+ * Reanuda el trabajo pendiente de las recepciones `queued` que sobrevivieron
+ * a hidratar el store de una filial (hallazgo 1): su `setTimeout` no
+ * sobrevive a una recarga real (reinstancia el módulo), así que sin esto se
+ * quedarían en `queued` para siempre. Corre una sola vez por filial, tanto
+ * si el store viene de `localStorage` como si nace de la semilla de
+ * fixtures — un `queued` es un `queued`, sin importar su origen.
+ */
+const reconcileQueuedReceipts = (
+	subsidiaryId: number,
+	store: IStockReceiptVersionedStore,
+): void => {
 	store.receipts
 		.filter((receipt) => receipt.status === 'queued')
 		.forEach((receipt) => scheduleWorker(subsidiaryId, receipt.id));
-	return store;
 };
 
 const getStore = (subsidiaryId: number): IStockReceiptVersionedStore => {
 	let store = storesBySubsidiary.get(subsidiaryId);
 	if (store === undefined) {
-		store = seedStore(subsidiaryId);
+		store = hydrateStoreFromStorage(subsidiaryId) ?? seedStore(subsidiaryId);
 		storesBySubsidiary.set(subsidiaryId, store);
+	}
+	if (!reconciledSubsidiaries.has(subsidiaryId)) {
+		reconciledSubsidiaries.add(subsidiaryId);
+		reconcileQueuedReceipts(subsidiaryId, store);
 	}
 	return store;
 };
@@ -424,6 +654,47 @@ const toSupplierCompact = (supplier: {
 
 const findWarehouse = (warehouseId: number): IWarehouseCompact | undefined =>
 	procurementWarehouses.find((warehouse) => warehouse.id === warehouseId);
+
+interface IWarehouseContext {
+	warehouse: IWarehouseCompact;
+	branchId: number;
+}
+
+/**
+ * Resuelve la bodega elegida a su sucursal real (hallazgo 5, sección 7 del
+ * contrato: «Nueva recepción exige bodega; branch se deriva de ella»).
+ * `null` si la bodega no existe o —cuando se conocen las sucursales
+ * autorizadas del actor— pertenece a una sucursal fuera de esa lista. Lista
+ * vacía/`undefined` de sucursales autorizadas no filtra por sucursal, mismo
+ * criterio que `canAccessBranch` de `useAuthorization`.
+ */
+const resolveWarehouseContext = (
+	warehouseId: number,
+	authorizedBranchIds?: readonly number[] | null,
+): IWarehouseContext | null => {
+	const warehouse = findWarehouse(warehouseId);
+	if (!warehouse) return null;
+
+	const branchId = PROCUREMENT_WAREHOUSE_BRANCH_BY_ID[warehouseId];
+	if (branchId === undefined) return null;
+
+	const hasBranchRestriction = Boolean(authorizedBranchIds && authorizedBranchIds.length > 0);
+	if (hasBranchRestriction && !authorizedBranchIds!.includes(branchId)) return null;
+
+	return { warehouse, branchId };
+};
+
+/**
+ * Bodegas que corresponde ofrecer para dar de alta/editar una recepción
+ * (hallazgo 5): filtra, si se conocen, por sucursales autorizadas. Se expone
+ * desde el servicio para que la UI no importe el catálogo de fixtures
+ * directamente para decidir qué mostrar en un selector — la misma disciplina
+ * que ya siguen `listPurchaseDocuments`/`listProcurementSuppliers` para sus
+ * propios pickers.
+ */
+export const listWarehousesForStockReceipts = (
+	authorizedBranchIds?: readonly number[] | null,
+): IWarehouseCompact[] => getProcurementWarehousesForBranchContext(authorizedBranchIds);
 
 const todayBusinessDate = (): string => new Date().toISOString().slice(0, 10);
 
@@ -505,18 +776,11 @@ const buildDocumentLine = (
 			),
 		};
 	}
-	if (input.quantity > line.remaining_quantity) {
-		return {
-			error: {
-				message: PROCUREMENT_ERROR_DEFINITIONS.RECEIPT_EXCEEDS_DOCUMENT.fallbackMessage,
-				code: 'RECEIPT_EXCEEDS_DOCUMENT',
-				context: {
-					purchase_document_line_id: line.id,
-					remaining_quantity: line.remaining_quantity,
-				},
-			},
-		};
-	}
+	// La comparación contra `remaining_quantity` **no** se hace acá por línea
+	// individual (hallazgo 2): dos ítems de esta misma recepción pueden
+	// compartir `purchase_document_line_id` y cada uno, visto por separado,
+	// caber en el saldo — `validateDocumentLineCapacity` valida la suma
+	// agrupada antes de aplicar el efecto físico.
 
 	return {
 		item: {
@@ -673,6 +937,20 @@ export const listStockReceipts = (
 	});
 };
 
+/**
+ * `GET .../purchase-documents/{document}/stock-receipts` (hallazgo 9, sección
+ * 6 del contrato): resumen paginado de las recepciones vinculadas a un
+ * documento, servido desde **este** store — el único que conoce recepciones
+ * reales — para que `purchaseDocuments.service` no necesite importar este
+ * módulo (evita el ciclo de inicialización que ya lo importa a él).
+ */
+export const listStockReceiptsForPurchaseDocument = (
+	subsidiaryId: number,
+	documentId: number,
+	params: { page?: number; per_page?: number } = {},
+): Promise<IApiCollectionEnvelope<IStockReceiptListRow>> =>
+	listStockReceipts(subsidiaryId, { ...params, purchase_document_id: documentId });
+
 /** `GET /stock-receipts/{receipt}`: detalle con `ETag`. */
 export const getStockReceipt = (
 	subsidiaryId: number,
@@ -691,26 +969,36 @@ export const getStockReceipt = (
 /** `POST /stock-receipts`: 201 `draft`, con o sin documento (sección 7). */
 export const createStockReceipt = (
 	subsidiaryId: number,
-	branchId: number,
 	payload: IStockReceiptCreatePayload,
 	headers: IMockWriteHeaders = {},
+	/**
+	 * Sucursales que el actor puede operar (`useCurrentBranch().visibleBranches`,
+	 * por ejemplo). `undefined`/vacío no restringe por sucursal — mismo criterio
+	 * que `canAccessBranch` de `useAuthorization` (sección 5 de este archivo de
+	 * revisión): sin lista, no bloquea. Siempre restringe por **filial**.
+	 */
+	authorizedBranchIds?: readonly number[] | null,
 ): Promise<{ data: IStockReceipt; headers: { etag: string } }> =>
 	withIdempotency(
 		subsidiaryId,
 		headers.idempotencyKey,
 		{ action: 'create', payload },
 		async () => {
-			const warehouse = findWarehouse(payload.warehouse_id);
-			if (!warehouse) {
+			const warehouseContext = resolveWarehouseContext(
+				payload.warehouse_id,
+				authorizedBranchIds,
+			);
+			if (!warehouseContext) {
 				return fail(
 					422,
 					buildFieldError(
 						'WAREHOUSE_REQUIRED',
-						'Selecciona una bodega válida.',
+						'Selecciona una bodega válida de tu filial y sucursales autorizadas.',
 						'warehouse_id',
 					),
 				);
 			}
+			const { warehouse, branchId } = warehouseContext;
 			if (!payload.received_on) {
 				return fail(
 					422,
@@ -769,6 +1057,14 @@ export const createStockReceipt = (
 				);
 				const failed = results.find((result) => result.error);
 				if (failed) return fail(422, failed.error!);
+
+				// Hallazgo 2: valida la suma agrupada por línea, no cada ítem por
+				// separado — dos ítems de esta recepción que comparten línea pueden
+				// caber individualmente y exceder el saldo juntos.
+				const groupedQuantities = groupDocumentLineQuantities(payload.items);
+				const capacityError = validateDocumentLineCapacity(document, groupedQuantities);
+				if (capacityError) return fail(422, capacityError);
+
 				items = results.map((result) => result.item!);
 				supplierCompact = document.supplier;
 			} else {
@@ -886,6 +1182,7 @@ export const updateStockReceipt = (
 	id: number,
 	payload: IStockReceiptUpdatePayload,
 	headers: IMockWriteHeaders = {},
+	authorizedBranchIds?: readonly number[] | null,
 ): Promise<{ data: IStockReceipt; headers: { etag: string } }> =>
 	withIdempotency(subsidiaryId, headers.idempotencyKey, { action: 'update', id, payload }, () =>
 		withReceiptLock(subsidiaryId, id, async () => {
@@ -917,17 +1214,44 @@ export const updateStockReceipt = (
 				});
 			}
 
-			const warehouse =
-				payload.warehouse_id === undefined
-					? existing.warehouse
-					: findWarehouse(payload.warehouse_id);
-			if (!warehouse) {
+			// Hallazgo 5: cambiar de bodega recalcula `branch_id` desde la bodega
+			// elegida, nunca desde la sucursal activa de quien edita.
+			let { warehouse } = existing;
+			let branchId = existing.branch_id;
+			if (payload.warehouse_id !== undefined) {
+				const warehouseContext = resolveWarehouseContext(
+					payload.warehouse_id,
+					authorizedBranchIds,
+				);
+				if (!warehouseContext) {
+					return fail(
+						422,
+						buildFieldError(
+							'WAREHOUSE_REQUIRED',
+							'Selecciona una bodega válida de tu filial y sucursales autorizadas.',
+							'warehouse_id',
+						),
+					);
+				}
+				warehouse = warehouseContext.warehouse;
+				branchId = warehouseContext.branchId;
+			}
+
+			// Hallazgo 6: `received_on` sólo se cambia en `draft` (sección 7). Una
+			// recepción `failed` la conserva hasta volver a `draft` — corregir
+			// otros campos sí se permite, y reenviar el mismo valor no cuenta como
+			// «cambiarla».
+			if (
+				existing.status === 'failed' &&
+				payload.received_on !== undefined &&
+				payload.received_on !== existing.received_on
+			) {
 				return fail(
 					422,
 					buildFieldError(
-						'WAREHOUSE_REQUIRED',
-						'Selecciona una bodega válida.',
-						'warehouse_id',
+						'STOCK_RECEIPT_RECEIVED_ON_IMMUTABLE',
+						'La fecha de recepción no se puede cambiar mientras la recepción tiene un error. Corrige el resto y guarda para volver a borrador; ahí sí se puede cambiar la fecha.',
+						'received_on',
 					),
 				);
 			}
@@ -1011,25 +1335,31 @@ export const updateStockReceipt = (
 						subsidiaryId,
 						existing.purchase_document!.id,
 					)!;
-					const results = (payload.items as IStockReceiptLineWithDocumentInput[]).map(
-						(input) => {
-							const existingId =
-								input.id !== undefined ? existingById.get(input.id)?.id : undefined;
-							if (input.id !== undefined && existingId === undefined) {
-								return {
-									error: {
-										message:
-											PROCUREMENT_ERROR_DEFINITIONS.DOCUMENT_LINE_MISMATCH
-												.fallbackMessage,
-										code: 'DOCUMENT_LINE_MISMATCH',
-									},
-								};
-							}
-							return buildDocumentLine(subsidiaryId, document, input, existingId);
-						},
-					);
+					const documentItems = payload.items as IStockReceiptLineWithDocumentInput[];
+					const results = documentItems.map((input) => {
+						const existingId =
+							input.id !== undefined ? existingById.get(input.id)?.id : undefined;
+						if (input.id !== undefined && existingId === undefined) {
+							return {
+								error: {
+									message:
+										PROCUREMENT_ERROR_DEFINITIONS.DOCUMENT_LINE_MISMATCH
+											.fallbackMessage,
+									code: 'DOCUMENT_LINE_MISMATCH',
+								},
+							};
+						}
+						return buildDocumentLine(subsidiaryId, document, input, existingId);
+					});
 					const failed = results.find((result) => result.error);
 					if (failed) return fail(422, failed.error!);
+
+					// Hallazgo 2: suma agrupada por línea antes de comparar contra el
+					// saldo vigente del documento.
+					const groupedQuantities = groupDocumentLineQuantities(documentItems);
+					const capacityError = validateDocumentLineCapacity(document, groupedQuantities);
+					if (capacityError) return fail(422, capacityError);
+
 					items = results.map((result) => result.item!);
 				}
 			}
@@ -1039,6 +1369,7 @@ export const updateStockReceipt = (
 			const updated: IStockReceipt = {
 				...existing,
 				warehouse,
+				branch_id: branchId,
 				supplier: supplierCompact,
 				received_on: receivedOn,
 				notes: Object.prototype.hasOwnProperty.call(payload, 'notes')
@@ -1337,8 +1668,15 @@ export const reverseStockReceipt = (
 		}),
 	);
 
-/** Sólo para pruebas: reinicia el store en memoria a la semilla de fixtures. */
-export const resetStockReceiptsStoreForTests = (): void => {
+/**
+ * Sólo para pruebas: descarta el estado **en memoria** — como una recarga
+ * real de la pestaña, que reinstancia el módulo y pierde todo `setTimeout` —
+ * pero conserva deliberadamente lo persistido en `localStorage` (hallazgo 1).
+ * `forcedOutcomeByReceipt` también se descarta: es control de pruebas, no
+ * estado del mock, así que una prueba que reanuda tras «recargar» debe
+ * volver a fijarlo si necesita un resultado específico del worker.
+ */
+export const simulateStockReceiptsReloadForTests = (): void => {
 	pendingWorkerTimers.forEach((timer) => clearTimeout(timer));
 	pendingWorkerTimers.clear();
 	storesBySubsidiary.clear();
@@ -1347,4 +1685,16 @@ export const resetStockReceiptsStoreForTests = (): void => {
 	idempotencyLog.clear();
 	requestedByByReceipt.clear();
 	forcedOutcomeByReceipt.clear();
+	reconciledSubsidiaries.clear();
+};
+
+/**
+ * Sólo para pruebas: reinicia el store a la semilla de fixtures, incluida la
+ * persistencia (a diferencia de `simulateStockReceiptsReloadForTests`, que
+ * conserva `localStorage` a propósito para probar justamente la
+ * supervivencia a una recarga).
+ */
+export const resetStockReceiptsStoreForTests = (): void => {
+	simulateStockReceiptsReloadForTests();
+	clearAllPersistedMockState(STOCK_RECEIPTS_STORAGE_NAMESPACE);
 };

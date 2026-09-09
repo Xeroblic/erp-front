@@ -88,7 +88,6 @@ interface IWriteHeaders {
 }
 
 const MISSING_SUBSIDIARY_MESSAGE = 'No se pudo determinar la filial activa.';
-const MISSING_BRANCH_MESSAGE = 'No se pudo determinar la sucursal activa.';
 
 export const fetchStockReceipts = createAsyncThunk(
 	'stockReceipts/fetchList',
@@ -128,20 +127,20 @@ export const createStockReceiptThunk = createAsyncThunk(
 	async (
 		args: {
 			subsidiaryId: number | null;
-			branchId: number | null;
 			payload: IStockReceiptCreatePayload;
 			headers?: IWriteHeaders;
+			/** Sucursales autorizadas del actor (hallazgo 5); `null`/vacío no filtra. */
+			authorizedBranchIds?: number[] | null;
 		},
 		{ rejectWithValue },
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
-		if (args.branchId === null) return rejectWithValue(MISSING_BRANCH_MESSAGE);
 		try {
 			const response = await createStockReceipt(
 				args.subsidiaryId,
-				args.branchId,
 				args.payload,
 				args.headers,
+				args.authorizedBranchIds,
 			);
 			return {
 				data: response.data,
@@ -162,6 +161,8 @@ export const updateStockReceiptThunk = createAsyncThunk(
 			id: number;
 			payload: IStockReceiptUpdatePayload;
 			headers: IWriteHeaders;
+			/** Sucursales autorizadas del actor (hallazgo 5); `null`/vacío no filtra. */
+			authorizedBranchIds?: number[] | null;
 		},
 		{ rejectWithValue },
 	) => {
@@ -172,6 +173,7 @@ export const updateStockReceiptThunk = createAsyncThunk(
 				args.id,
 				args.payload,
 				args.headers,
+				args.authorizedBranchIds,
 			);
 			return {
 				data: response.data,
@@ -366,6 +368,12 @@ const stockReceiptsSlice = createSlice({
 				state.listError = null;
 				state.listRequestId = action.meta.requestId;
 				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
+				// Propiedad de contexto (ZF-12): `items`/`meta` de la filial anterior
+				// no pueden seguir pintados mientras se pide la nueva — un GET
+				// rechazado para la filial entrante no debe dejar ver datos de la
+				// saliente por debajo del error (hallazgo 3).
+				state.items = [];
+				state.meta = null;
 			})
 			.addCase(fetchStockReceipts.fulfilled, (state, action) => {
 				if (action.meta.requestId !== state.listRequestId) return;
@@ -510,6 +518,9 @@ export const selectStockReceiptsItems = (state: RootState) => state.stockReceipt
 export const selectStockReceiptsMeta = (state: RootState) => state.stockReceipts.meta;
 export const selectStockReceiptsListLoading = (state: RootState) => state.stockReceipts.listLoading;
 export const selectStockReceiptsListError = (state: RootState) => state.stockReceipts.listError;
+/** Filial dueña de `items`/`meta`/`listError` vigentes (propiedad de contexto, ZF-12). */
+export const selectStockReceiptsListSubsidiaryId = (state: RootState) =>
+	state.stockReceipts.listSubsidiaryId;
 export const selectStockReceiptCurrent = (state: RootState) => state.stockReceipts.current;
 export const selectStockReceiptCurrentEtag = (state: RootState) => state.stockReceipts.currentEtag;
 export const selectStockReceiptCurrentLoading = (state: RootState) =>

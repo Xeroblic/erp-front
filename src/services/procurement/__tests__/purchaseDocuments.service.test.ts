@@ -5,7 +5,6 @@ import {
 	createPurchaseDocument,
 	getPurchaseDocument,
 	listPurchaseDocumentInitialStockAllocations,
-	listPurchaseDocumentStockReceipts,
 	listPurchaseDocuments,
 	resetPurchaseDocumentsStoreForTests,
 	updatePurchaseDocument,
@@ -484,20 +483,21 @@ describe('cancelPurchaseDocument', () => {
 });
 
 describe('listas relacionadas', () => {
-	it('paginan vacías y 404 si el documento no existe', async () => {
-		const receipts = await listPurchaseDocumentStockReceipts(SUBSIDIARY_A, DRAFT_INVOICE_ID);
-		expect(receipts.data).toEqual([]);
-		expect(receipts.meta.total).toBe(0);
-
+	it('asignaciones de stock inicial: paginan vacías y 404 si el documento no existe', async () => {
 		const allocations = await listPurchaseDocumentInitialStockAllocations(
 			SUBSIDIARY_A,
 			DRAFT_INVOICE_ID,
 		);
 		expect(allocations.data).toEqual([]);
+		expect(allocations.meta.total).toBe(0);
 
 		const { status } = await readErrorData(
-			listPurchaseDocumentStockReceipts(SUBSIDIARY_A, 9999),
+			listPurchaseDocumentInitialStockAllocations(SUBSIDIARY_A, 9999),
 		);
 		expect(status).toBe(404);
 	});
+
+	// Las recepciones vinculadas se cubren en
+	// `stockReceipts.service.test.ts` (`listStockReceiptsForPurchaseDocument`,
+	// hallazgo 9): ese store es la fuente real, no un stub de este servicio.
 });

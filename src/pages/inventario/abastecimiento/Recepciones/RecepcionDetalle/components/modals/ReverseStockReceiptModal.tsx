@@ -41,8 +41,13 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 	const handleClose = () => {
 		if (idempotentWrite.isSubmitting) return;
 		setIsOpen(false);
-		setReason('');
-		idempotentWrite.clearError();
+		// Hallazgo 8: con un resultado incierto (`canRetry`), conserva el
+		// motivo y la clave para poder reabrir y reintentar exactamente el
+		// mismo comando en vez de perderlo.
+		if (!idempotentWrite.canRetry) {
+			setReason('');
+			idempotentWrite.clearError();
+		}
 	};
 
 	const handleConfirm = async () => {
@@ -91,6 +96,7 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 						id='reverse-recepcion-reason'
 						name='reason'
 						rows={3}
+						disabled={idempotentWrite.canRetry}
 						value={reason}
 						onChange={(event) => setReason(event.target.value)}
 						isValid={reason.trim().length > 0}
@@ -128,7 +134,7 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 					onClick={handleConfirm}
 					isDisable={idempotentWrite.isSubmitting || !reason.trim() || isAlreadyConsumed}
 					isLoading={idempotentWrite.isSubmitting}>
-					Revertir
+					{idempotentWrite.canRetry ? 'Reintentar' : 'Revertir'}
 				</Button>
 			</ModalFooter>
 		</Modal>

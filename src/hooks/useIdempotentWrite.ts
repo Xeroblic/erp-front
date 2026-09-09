@@ -30,6 +30,21 @@ export interface IIdempotentWriteState {
 	canRetry: boolean;
 }
 
+export interface ISubmitOptions {
+	/**
+	 * Se llama de forma síncrona, dentro del mismo `catch` que fija `error`
+	 * (hallazgo 7). Existe para el llamador que necesita el error **del
+	 * intento actual** justo después de `await submit(...)`: leer `error` del
+	 * objeto devuelto por el hook en ese punto es leer un cierre viejo — ese
+	 * objeto es el de antes de que el envío empezara, no el que
+	 * `setError` acaba de producir. `onError` entrega el resuelto sin ese
+	 * desfase, sin cambiar la firma de retorno de `submit` para el resto de
+	 * los consumidores que sí leen `error` desde el render (JSX), donde no
+	 * hay cierre viejo posible.
+	 */
+	onError?: (error: IProcurementResolvedError) => void;
+}
+
 export interface IUseIdempotentWriteResult extends IIdempotentWriteState {
 	/**
 	 * Ejecuta la escritura. Recibe las cabeceras ya armadas (`Idempotency-Key` y,
@@ -37,6 +52,7 @@ export interface IUseIdempotentWriteResult extends IIdempotentWriteState {
 	 */
 	submit: <TResult>(
 		write: (headers: Record<string, string>) => Promise<TResult>,
+		options?: ISubmitOptions,
 	) => Promise<TResult | undefined>;
 	/**
 	 * Descarta la clave actual y genera una nueva. Se llama al **corregir el
@@ -85,6 +101,7 @@ const useIdempotentWrite = (
 	const submit = useCallback(
 		async <TResult>(
 			write: (headers: Record<string, string>) => Promise<TResult>,
+			submitOptions?: ISubmitOptions,
 		): Promise<TResult | undefined> => {
 			// Doble submit: un segundo clic con la misma clave sería idempotente en
 			// el backend, pero devolvería 409 OPERATION_IN_PROGRESS y ensuciaría la
@@ -108,10 +125,12 @@ const useIdempotentWrite = (
 
 				return result;
 			} catch (caught) {
-				setError(resolveProcurementError(caught, fallbackMessage));
+				const resolved = resolveProcurementError(caught, fallbackMessage);
+				setError(resolved);
 				// La clave NO se renueva acá: si el reintento es válido debe ir con la
 				// misma, y si el usuario corrige el payload llamará a `renewKey`.
 				setCanRetry(shouldRetryWithSameKey(caught));
+				submitOptions?.onError?.(resolved);
 
 				return undefined;
 			} finally {

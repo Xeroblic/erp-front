@@ -7,6 +7,7 @@ import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import ProtectedButton from '@/components/ui/ProtectedButton';
+import useAuthorization from '@/hooks/useAuthorization';
 import useRecepciones from './hooks/useRecepciones';
 import RecepcionesFilters from './components/filters/RecepcionesFilters';
 import RecepcionesTable from './components/tables/RecepcionesTable';
@@ -29,6 +30,7 @@ const RecepcionesView = () => {
 	const {
 		branchId,
 		subsidiaryId,
+		visibleBranches,
 		items,
 		meta,
 		loading,
@@ -50,12 +52,23 @@ const RecepcionesView = () => {
 		refresh,
 	} = useRecepciones();
 
+	const { authorize } = useAuthorization();
+	/**
+	 * Mismo permiso + scope que exige `useRecepcionForm` al enviar (hallazgo
+	 * 4): la ruta sólo pide `view-product`, así que el alta necesita su propio
+	 * guard — no basta con ocultar el botón «Nueva recepción», porque
+	 * `?purchase_document_id=` puede abrir el mismo formulario por URL directa
+	 * sin pasar por ese botón.
+	 */
+	const canWriteReceipts = authorize({
+		permission: 'edit-product',
+		scope: 'access',
+		branchId,
+		subsidiaryId,
+	});
+
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const preselectedDocumentId = searchParams.get('purchase_document_id');
-
-	useEffect(() => {
-		if (preselectedDocumentId) setIsCreateModalOpen(true);
-	}, [preselectedDocumentId]);
 
 	const handleView = (id: number) => navigate(`/inventario/abastecimiento/recepciones/${id}`);
 
@@ -66,6 +79,22 @@ const RecepcionesView = () => {
 			setSearchParams(searchParams, { replace: true });
 		}
 	};
+
+	useEffect(() => {
+		if (preselectedDocumentId && canWriteReceipts) setIsCreateModalOpen(true);
+	}, [preselectedDocumentId, canWriteReceipts]);
+
+	/**
+	 * Revalida al vuelo (hallazgo 4): si se pierde `edit-product` o el scope
+	 * de la filial/sucursal mientras el formulario está abierto — cambio de
+	 * contexto, permisos que se refrescan — lo cierra. Corre también al
+	 * montar sin query param: sin autorización y sin nada que abrir, no pasa
+	 * de un `setState` en falso.
+	 */
+	useEffect(() => {
+		if (!canWriteReceipts) handleCloseCreateModal(false);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [canWriteReceipts]);
 
 	return (
 		<PageWrapper isProtectedRoute title='Recepciones'>
@@ -133,6 +162,7 @@ const RecepcionesView = () => {
 				setIsOpen={handleCloseCreateModal}
 				subsidiaryId={subsidiaryId}
 				branchId={branchId}
+				authorizedBranchIds={visibleBranches.map((branch) => branch.id)}
 				receipt={null}
 				initialDocumentId={
 					preselectedDocumentId ? Number(preselectedDocumentId) : undefined

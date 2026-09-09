@@ -16,6 +16,9 @@ const useActiveSupplierOptions = (subsidiaryId: number | null, isEnabled: boolea
 		if (!isEnabled || subsidiaryId === null) return undefined;
 
 		let cancelled = false;
+		// Hallazgo 3: no dejar proveedores de la filial anterior visibles
+		// mientras se pide la nueva.
+		setSuppliers([]);
 		setLoading(true);
 		listProcurementSuppliers(subsidiaryId, { per_page: 100 })
 			.then((response) => {

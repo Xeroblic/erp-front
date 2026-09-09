@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
+import useAuthorization from '@/hooks/useAuthorization';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch } from '@/store';
 import {
@@ -148,6 +149,8 @@ interface IUseRecepcionFormArgs {
 	etag?: string | null;
 	/** Sólo en alta: preselecciona modo «con documento» y ese documento. */
 	initialDocumentId?: number;
+	/** Sucursales autorizadas del actor (hallazgo 5); `null`/vacío no filtra. */
+	authorizedBranchIds?: number[] | null;
 	onSuccess?: (receipt: IStockReceipt) => void;
 }
 
@@ -158,9 +161,11 @@ const useRecepcionForm = ({
 	receipt = null,
 	etag = null,
 	initialDocumentId,
+	authorizedBranchIds,
 	onSuccess,
 }: IUseRecepcionFormArgs) => {
 	const dispatch = useAppDispatch();
+	const { authorize } = useAuthorization();
 	const isEdit = receipt !== null;
 	const idempotentWrite = useIdempotentWrite({
 		etag,
@@ -174,6 +179,25 @@ const useRecepcionForm = ({
 		enableReinitialize: true,
 		validationSchema: recepcionFormSchema,
 		onSubmit: async (values, { resetForm }) => {
+			// Hallazgo 4: revalida al confirmar, no sólo al abrir — cubre un
+			// permiso o contexto (filial/sucursal) que cambió con el formulario
+			// ya abierto. La ruta sólo exige `view-product`; escribir exige
+			// `edit-product` con el scope de la sucursal/filial de destino.
+			if (
+				!authorize({ permission: 'edit-product', scope: 'access', branchId, subsidiaryId })
+			) {
+				toast.error(
+					'No tienes permiso para crear o corregir recepciones en este contexto.',
+				);
+				return;
+			}
+
+			// Hallazgo 3: si la filial cambia mientras esta escritura sigue en
+			// vuelo, la continuación no debe navegar ni cerrar el modal de un
+			// contexto que ya no es el activo — la operación se completó, pero
+			// para la filial con la que se envió, no con la que quedó activa.
+			const submittedSubsidiaryId = subsidiaryId;
+
 			const result = await idempotentWrite.submit((headers) =>
 				isEdit && receipt
 					? dispatch(
@@ -182,17 +206,29 @@ const useRecepcionForm = ({
 								id: receipt.id,
 								payload: toUpdatePayload(values),
 								headers: { idempotencyKey: headers['Idempotency-Key'], etag },
+								authorizedBranchIds,
 							}),
 						).unwrap()
 					: dispatch(
 							createStockReceiptThunk({
 								subsidiaryId,
-								branchId,
 								payload: toCreatePayload(values),
 								headers: { idempotencyKey: headers['Idempotency-Key'] },
+								authorizedBranchIds,
 							}),
 						).unwrap(),
 			);
+
+			if (result && subsidiaryId !== submittedSubsidiaryId) {
+				// El contexto cambió mientras la escritura seguía en curso: se
+				// completó de verdad (no se pierde ni se duplica), pero esta
+				// instancia del formulario ya no debe actuar sobre el destino
+				// nuevo — ni resetear como si fuera su propio alta, ni disparar
+				// `onSuccess` (que en las pantallas de este módulo navega o
+				// cierra un modal que podría pertenecer a otra recepción ahora).
+				toast.info('La recepción se guardó, pero cambiaste de filial: no se abrirá aquí.');
+				return;
+			}
 
 			if (result) {
 				if (!isEdit)
@@ -242,6 +278,15 @@ const useRecepcionForm = ({
 		isEdit,
 		isSubmitting: idempotentWrite.isSubmitting,
 		hasVersionConflict,
+		/**
+		 * Resultado incierto de la tentativa anterior (timeout, `OPERATION_IN_
+		 * PROGRESS`): el hook expone esto para que la vista bloquee el
+		 * formulario y conserve `formik.values` intactos hasta que el usuario
+		 * reintente con el mismo comando — un reintento debe reenviar
+		 * exactamente lo que se envió, nunca datos editados a mitad de camino
+		 * (hallazgo 8).
+		 */
+		canRetry: idempotentWrite.canRetry,
 		reset,
 	};
 };

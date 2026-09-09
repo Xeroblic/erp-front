@@ -7,6 +7,7 @@ import {
 	selectStockReceiptsItems,
 	selectStockReceiptsListError,
 	selectStockReceiptsListLoading,
+	selectStockReceiptsListSubsidiaryId,
 	selectStockReceiptsMeta,
 } from '@/store/slices/procurement/stockReceiptsSlice';
 import type { IStockReceiptListParams } from '@/interface/procurement.interface';
@@ -23,11 +24,24 @@ const DEFAULT_PAGE_SIZE = 15; // Defecto del contrato (sección 1).
  */
 const useRecepciones = () => {
 	const dispatch = useAppDispatch();
-	const { branchId, subsidiaryId } = useCurrentBranch();
-	const items = useAppSelector(selectStockReceiptsItems);
-	const meta = useAppSelector(selectStockReceiptsMeta);
+	const { branchId, subsidiaryId, visibleBranches } = useCurrentBranch();
+	const rawItems = useAppSelector(selectStockReceiptsItems);
+	const rawMeta = useAppSelector(selectStockReceiptsMeta);
 	const listLoading = useAppSelector(selectStockReceiptsListLoading);
-	const error = useAppSelector(selectStockReceiptsListError);
+	const rawError = useAppSelector(selectStockReceiptsListError);
+	const listSubsidiaryId = useAppSelector(selectStockReceiptsListSubsidiaryId);
+	/**
+	 * Propiedad de contexto (ZF-12, hallazgo 3): `items`/`meta`/`error` del
+	 * store sólo se muestran si pertenecen a la filial activa. El `pending`
+	 * del thunk ya limpia `items`/`meta` al empezar una petición nueva, pero
+	 * esto cubre la ventana **antes** de que esa petición llegue a salir —
+	 * mientras el debounce de búsqueda todavía retiene el `dispatch` — para
+	 * que un cambio de filial nunca pinte, ni por un instante, datos ajenos.
+	 */
+	const isCurrentSubsidiaryData = listSubsidiaryId !== null && listSubsidiaryId === subsidiaryId;
+	const items = isCurrentSubsidiaryData ? rawItems : [];
+	const meta = isCurrentSubsidiaryData ? rawMeta : null;
+	const error = isCurrentSubsidiaryData ? rawError : null;
 
 	const [search, setSearch] = useState('');
 	const [debouncedSearch] = useDebounce(search, 300);
@@ -120,9 +134,10 @@ const useRecepciones = () => {
 	return {
 		branchId,
 		subsidiaryId,
+		visibleBranches,
 		items,
 		meta,
-		loading: listLoading || isSearchDebouncing,
+		loading: listLoading || isSearchDebouncing || !isCurrentSubsidiaryData,
 		error,
 		search,
 		status,

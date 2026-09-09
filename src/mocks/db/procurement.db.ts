@@ -197,7 +197,29 @@ export const mainWarehouse: IWarehouseCompact = { id: 8, name: 'Bodega Central' 
 
 export const shelfWarehouse: IWarehouseCompact = { id: 12, name: 'Estante A3' };
 
-export const procurementWarehouses: IWarehouseCompact[] = [mainWarehouse, shelfWarehouse];
+/**
+ * Bodega de una **segunda sucursal** (hallazgo 5, revisión ZF-110): existe
+ * para poder dar de alta una recepción cuya bodega no pertenece a la
+ * sucursal activa de la sesión, y comprobar que `branch_id` se deriva de la
+ * bodega elegida, no del argumento de sucursal activa. También es la bodega
+ * «sin acceso» cuando se restringe por `authorizedBranchIds` sin incluir su
+ * sucursal.
+ */
+export const southBranchWarehouse: IWarehouseCompact = { id: 15, name: 'Bodega Sucursal Sur' };
+
+/**
+ * Catálogo completo de bodegas conocidas por el mock, sin filtrar por
+ * contexto. **No** es lo que se ofrece en un selector de la UI —
+ * `getProcurementWarehousesForBranchContext` filtra por sucursal autorizada;
+ * este array es la fuente de la que ese filtro parte, y
+ * `findWarehouse`/`PROCUREMENT_WAREHOUSE_BRANCH_BY_ID` la usan para resolver
+ * la relación organizacional.
+ */
+export const procurementWarehouses: IWarehouseCompact[] = [
+	mainWarehouse,
+	shelfWarehouse,
+	southBranchWarehouse,
+];
 
 /* =================================================
    Proveedores — sección 5 del contrato
@@ -805,6 +827,55 @@ export const purchaseDocumentAttachmentsSeed: Record<number, IPurchaseDocumentAt
  */
 export const STOCK_RECEIPT_SUBSIDIARY_ID = 2;
 export const STOCK_RECEIPT_BRANCH_ID = 4;
+
+/**
+ * Segunda sucursal, dueña de `southBranchWarehouse` — modela un usuario
+ * multi-sucursal que puede recibir mercadería en una bodega que no es la de
+ * su sucursal activa.
+ *
+ * Nota de alcance: el catálogo de bodegas de este mock, igual que el de
+ * productos y proveedores, **no está particionado por filial** — cada
+ * partición por `subsidiaryId` clona el mismo catálogo global (así lo
+ * ejercen las pruebas existentes con IDs de filial arbitrarios). La relación
+ * organizacional que modela el hallazgo 5 es bodega → **sucursal**; no se le
+ * agrega una dimensión de filial que el resto del módulo no tiene, para no
+ * romper esa convención ni inventar un aislamiento que no existe en ningún
+ * otro catálogo de este archivo.
+ */
+export const STOCK_RECEIPT_SOUTH_BRANCH_ID = 6;
+
+/**
+ * Relación bodega → sucursal (hallazgo 5, revisión ZF-110). El compacto
+ * `IWarehouseCompact` de respuesta se mantiene `{id, name}` — esta relación
+ * es un dato **interno** del mock, nunca se serializa tal cual en una
+ * respuesta; `stockReceipts.service` la usa para derivar `branch_id` de la
+ * bodega elegida en vez de asignarlo desde la sucursal activa de quien
+ * opera, y para rechazar una bodega fuera de las sucursales autorizadas.
+ */
+export const PROCUREMENT_WAREHOUSE_BRANCH_BY_ID: Record<number, number> = {
+	[mainWarehouse.id]: STOCK_RECEIPT_BRANCH_ID,
+	[shelfWarehouse.id]: STOCK_RECEIPT_BRANCH_ID,
+	[southBranchWarehouse.id]: STOCK_RECEIPT_SOUTH_BRANCH_ID,
+};
+
+/**
+ * Bodegas que corresponde ofrecer en un selector: cuando se conocen las
+ * sucursales autorizadas del usuario (`visibleBranches`/`access.branches` de
+ * `useCurrentBranch`), excluye las de una sucursal fuera de esa lista. Lista
+ * vacía/`null` no filtra (mismo criterio que `canAccessBranch` de
+ * `useAuthorization`: sin sucursales listadas, no bloquea).
+ */
+export const getProcurementWarehousesForBranchContext = (
+	authorizedBranchIds?: readonly number[] | null,
+): IWarehouseCompact[] => {
+	const hasBranchRestriction = Boolean(authorizedBranchIds && authorizedBranchIds.length > 0);
+	if (!hasBranchRestriction) return procurementWarehouses;
+
+	return procurementWarehouses.filter((warehouse) => {
+		const branchId = PROCUREMENT_WAREHOUSE_BRANCH_BY_ID[warehouse.id];
+		return branchId !== undefined && authorizedBranchIds!.includes(branchId);
+	});
+};
 
 /** Vacío de `processing` fuera de `queued`/`failed`: nunca se intentó. */
 export const emptyStockReceiptProcessing = {

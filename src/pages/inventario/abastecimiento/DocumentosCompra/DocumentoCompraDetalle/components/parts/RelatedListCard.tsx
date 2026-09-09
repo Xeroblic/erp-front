@@ -10,26 +10,30 @@ import useRelatedDocumentList from '../../hooks/useRelatedDocumentList';
 /**
  * Una lista relacionada paginada del detalle (sección 6): «las listas
  * relacionadas paginan; no se incrusta historia ilimitada en el detalle».
- * Siempre vacía en este mock, pero la paginación es real contra el
- * servicio — el día que exista contenido, sólo el servicio cambia.
+ * `renderRow` es del llamador: esta card no sabe si la fila es un resumen de
+ * recepción o una asignación de stock inicial — sólo pagina y decide el
+ * estado vacío/cargando/error, igual que antes de que recepciones (card 05,
+ * hallazgo 9) le diera contenido real a la primera.
  */
 
-interface IRelatedListCardProps {
+interface IRelatedListCardProps<TRow> {
 	title: string;
 	emptyLabel: string;
 	subsidiaryId: number | null;
 	documentId: number | null;
-	fetcher: Parameters<typeof useRelatedDocumentList>[0]['fetcher'];
+	fetcher: Parameters<typeof useRelatedDocumentList<TRow>>[0]['fetcher'];
+	renderRow: (row: TRow) => React.ReactNode;
 }
 
-const RelatedListCard: React.FC<IRelatedListCardProps> = ({
+const RelatedListCard = <TRow,>({
 	title,
 	emptyLabel,
 	subsidiaryId,
 	documentId,
 	fetcher,
-}) => {
-	const { meta, loading, error, page, onPageChange } = useRelatedDocumentList({
+	renderRow,
+}: IRelatedListCardProps<TRow>) => {
+	const { data, meta, loading, error, page, onPageChange } = useRelatedDocumentList<TRow>({
 		subsidiaryId,
 		documentId,
 		fetcher,
@@ -71,6 +75,16 @@ const RelatedListCard: React.FC<IRelatedListCardProps> = ({
 				)}
 				{!loading && !error && meta?.total === 0 && (
 					<p className='text-sm text-zinc-500 dark:text-zinc-400'>{emptyLabel}</p>
+				)}
+				{!loading && !error && data.length > 0 && (
+					<ul className='divide-y divide-zinc-200 dark:divide-zinc-700'>
+						{data.map((row, index) => (
+							// eslint-disable-next-line react/no-array-index-key -- las filas no exponen una key propia genérica al caller.
+							<li key={index} className='py-2 first:pt-0 last:pb-0'>
+								{renderRow(row)}
+							</li>
+						))}
+					</ul>
 				)}
 			</CardBody>
 			{meta && !error && meta.total > 0 && (

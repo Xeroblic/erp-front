@@ -27,6 +27,10 @@ const usePurchaseDocumentPicker = (
 		if (!isEnabled || subsidiaryId === null) return undefined;
 
 		let cancelled = false;
+		// Hallazgo 3: no dejar la lista de la filial anterior visible mientras
+		// se pide la nueva — sin esto, cambiar de filial con el modal abierto
+		// mostraba documentos ajenos hasta que la petición nueva resolviera.
+		setDocuments([]);
 		setLoadingDocuments(true);
 		listPurchaseDocuments(subsidiaryId, { status: 'confirmed', per_page: 100 })
 			.then((response) => {
@@ -54,6 +58,9 @@ const usePurchaseDocumentPicker = (
 		}
 
 		let cancelled = false;
+		// Mismo criterio que la lista: no dejar la línea seleccionada de un
+		// documento/filial anterior visible mientras se pide la nueva.
+		setSelectedDocument(null);
 		setLoadingSelectedDocument(true);
 		getPurchaseDocument(subsidiaryId, selectedDocumentId)
 			.then((response) => {

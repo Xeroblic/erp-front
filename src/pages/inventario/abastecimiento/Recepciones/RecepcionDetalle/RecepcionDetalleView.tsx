@@ -24,6 +24,7 @@ const RecepcionDetalleView = () => {
 	const {
 		branchId,
 		subsidiaryId,
+		visibleBranches,
 		receipt,
 		etag,
 		loading,
@@ -88,7 +89,11 @@ const RecepcionDetalleView = () => {
 								allowedActions={receipt.allowed_actions}
 								resource='stock_receipt'
 								onAction={handleAction}
-								branchId={branchId}
+								// Hallazgo 5: autoriza contra la sucursal **real** de la
+								// recepción, no la sucursal activa de quien mira la
+								// pantalla — una bodega puede pertenecer a otra sucursal
+								// que la del usuario en ese momento.
+								branchId={receipt.branch_id}
 								subsidiaryId={subsidiaryId}
 								scope='access'
 								pendingAction={pendingAction}
@@ -107,6 +112,7 @@ const RecepcionDetalleView = () => {
 				setIsOpen={setIsFormModalOpen}
 				subsidiaryId={subsidiaryId}
 				branchId={branchId}
+				authorizedBranchIds={visibleBranches.map((branch) => branch.id)}
 				receipt={receipt}
 				etag={etag}
 				onSuccess={() => setIsFormModalOpen(false)}
