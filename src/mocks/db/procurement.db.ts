@@ -1,6 +1,7 @@
 import type {
 	IApiCollectionEnvelope,
 	IInventoryLocationContext,
+	IInventoryStockRow,
 	IProcurementActorCompact,
 	IProcurementCost,
 	IProcurementProduct,
@@ -1281,14 +1282,7 @@ export const STOCK_RECEIPT_CONSUMED_IDS: ReadonlySet<number> = new Set([
    Envoltorio y paginación — sección 3 del contrato
    ================================================= */
 
-export interface IInventoryStockRow {
-	product: IProcurementProduct;
-	physical_quantity: number;
-	fit_quantity: number;
-	unfit_quantity: number;
-	documented_quantity: number;
-	undocumented_quantity: number;
-}
+export type { IInventoryStockRow } from '@/interface/procurement.interface';
 
 /**
  * Respuesta literal de `GET B/inventory-stock` del contrato. Se incluye acá
