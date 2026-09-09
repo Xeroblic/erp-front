@@ -91,6 +91,9 @@ const ClientesVentasDetalle = lazy(
 );
 
 const IngresoStock = lazy(() => import('@/pages/inventario/ingresoStock'));
+const CatalogoAbastecimiento = lazy(
+	() => import('@/pages/inventario/abastecimiento/CatalogoContrato'),
+);
 const RetirosEquiposPage = lazy(() => import('@/pages/inventario/retirosEquipos'));
 
 // Páginas de Catálogos
@@ -452,6 +455,14 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: `${cfg.inventory.subPages.ingresoStock.to}`,
 		element: <IngresoStock />,
 		authority: cfg.inventory.subPages.ingresoStock.authority,
+	},
+
+	{
+		// Se lee de `pagesConfig` y no de `cfg`: `cfg` es el mismo objeto tipado
+		// como `any` para las rutas heredadas, y acá no hace falta perder el tipo.
+		path: pagesConfig.inventory.subPages.catalogoAbastecimiento.to,
+		element: <CatalogoAbastecimiento />,
+		authority: pagesConfig.inventory.subPages.catalogoAbastecimiento.authority,
 	},
 
 	{
