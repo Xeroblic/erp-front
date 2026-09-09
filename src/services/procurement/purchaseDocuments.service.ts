@@ -198,10 +198,18 @@ async function withIdempotency<T>(
  * **distintas** podían intercalarse entre esa validación y el commit,
  * perdiendo la de la que resolvió primero. Encolar por documento cierra esa
  * ventana sin necesitar una base de datos real detrás.
+ *
+ * **Exportada a propósito:** `purchaseDocumentAttachments.service` muta el
+ * mismo `document` (su `related_counts.attachments` y su versión) y debe
+ * encolarse en esta misma cola, no en una propia — dos colas separadas para
+ * el mismo documento no se excluyen mutuamente entre sí, así que una
+ * actualización de líneas y una subida de adjunto podían intercalar su
+ * lectura-modificación-escritura de `store.documents` y perder una de las
+ * dos escrituras.
  */
 const documentLocks = new Map<string, Promise<unknown>>();
 
-function withDocumentLock<T>(
+export function withDocumentLock<T>(
 	subsidiaryId: number,
 	documentId: number,
 	run: () => Promise<T>,

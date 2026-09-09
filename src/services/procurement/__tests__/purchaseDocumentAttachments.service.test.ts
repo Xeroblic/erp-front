@@ -9,6 +9,7 @@ import {
 import {
 	getPurchaseDocument,
 	resetPurchaseDocumentsStoreForTests,
+	updatePurchaseDocument,
 } from '@/services/procurement/purchaseDocuments.service';
 import { PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT } from '@/interface/procurement.interface';
 
@@ -27,6 +28,7 @@ const SUBSIDIARY_B = 9;
 const CONFIRMED_WITH_ATTACHMENT_ID = 24; // pcExpressInvoiceDocument
 const DRAFT_INVOICE_ID = 42; // draftInvoiceDocument
 const CANCELLED_ID = 50; // cancelledInvoiceDocument
+const PC_EXPRESS_SUPPLIER_ID = 7; // completo: giro + ambas direcciones (mismo fixture que purchaseDocuments.service.test.ts)
 
 const readErrorData = async (promise: Promise<unknown>) => {
 	try {
@@ -203,6 +205,102 @@ describe('uploadPurchaseDocumentAttachment', () => {
 
 		const listed = await listPurchaseDocumentAttachments(SUBSIDIARY_A, DRAFT_INVOICE_ID);
 		expect(listed.data).toHaveLength(1);
+	});
+
+	it('la misma clave con contenido distinto es 409 IDEMPOTENCY_KEY_REUSED, no el resultado anterior', async () => {
+		// Mismo nombre, mismo tamaño, mismo tipo: idéntica huella superficial.
+		// Sólo cambian los bytes — la comparación tiene que fijarse en ellos,
+		// no sólo en nombre/tamaño/tipo, o el segundo archivo se perdería
+		// silenciosamente detrás del resultado del primero.
+		const key = 'upload-key-content-check';
+		const first = await uploadPurchaseDocumentAttachment(
+			SUBSIDIARY_A,
+			DRAFT_INVOICE_ID,
+			new File(['contenido-A'], 'respaldo.pdf', { type: 'application/pdf' }),
+			{ idempotencyKey: key },
+		);
+
+		const { status, data } = await readErrorData(
+			uploadPurchaseDocumentAttachment(
+				SUBSIDIARY_A,
+				DRAFT_INVOICE_ID,
+				new File(['contenido-B-distinto'], 'respaldo.pdf', { type: 'application/pdf' }),
+				{ idempotencyKey: key },
+			),
+		);
+		expect(status).toBe(409);
+		expect(data.code).toBe('IDEMPOTENCY_KEY_REUSED');
+
+		// El primer archivo sigue siendo el único adjunto: el rechazo no lo tocó.
+		const listed = await listPurchaseDocumentAttachments(SUBSIDIARY_A, DRAFT_INVOICE_ID);
+		expect(listed.data).toHaveLength(1);
+		expect(listed.data[0].id).toBe(first.data.id);
+	});
+
+	it('reintentar con la misma clave y el mismo contenido sigue devolviendo el mismo resultado', async () => {
+		// La huella de contenido no debe convertir un reintento legítimo (mismo
+		// archivo, misma clave) en un falso IDEMPOTENCY_KEY_REUSED.
+		const key = 'upload-key-same-content';
+		const buildFile = () =>
+			new File(['contenido-estable'], 'respaldo.pdf', { type: 'application/pdf' });
+
+		const first = await uploadPurchaseDocumentAttachment(
+			SUBSIDIARY_A,
+			DRAFT_INVOICE_ID,
+			buildFile(),
+			{ idempotencyKey: key },
+		);
+		const second = await uploadPurchaseDocumentAttachment(
+			SUBSIDIARY_A,
+			DRAFT_INVOICE_ID,
+			buildFile(),
+			{ idempotencyKey: key },
+		);
+		expect(second.data.id).toBe(first.data.id);
+
+		const listed = await listPurchaseDocumentAttachments(SUBSIDIARY_A, DRAFT_INVOICE_ID);
+		expect(listed.data).toHaveLength(1);
+	});
+
+	it('subir un adjunto y editar el documento a la vez no pierde ni el conteo ni la edición', async () => {
+		// Antes compartían filial+documento pero cada servicio encolaba sus
+		// escrituras por separado: una editaba `store.documents` con su propia
+		// foto de `existing` mientras la otra escribía el conteo de adjuntos
+		// sobre esa misma colección, y una de las dos escrituras se perdía
+		// según cuál terminara último. Ahora ambas pasan por la cola
+		// compartida de `purchaseDocuments.service` (`withDocumentLock`).
+		//
+		// El `update` cambia `supplier_id`: eso lo obliga a esperar
+		// `getProcurementSupplier` (~220 ms) **dentro** de su tramo bloqueado,
+		// con `existing` ya leído de antes de esa espera — la ventana exacta
+		// en la que, sin una cola compartida, la subida (mucho más rápida) se
+		// cuela, escribe el conteo, y el `update` la pisa al reanudar con su
+		// copia vieja de `store.documents`. Un `update` sin ese await no
+		// alcanza a solaparse con la subida y el mutante de la cola separada
+		// pasaría en falso verde.
+		const { headers } = await getPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID);
+
+		const [uploadResult, updateResult] = await Promise.allSettled([
+			uploadPurchaseDocumentAttachment(
+				SUBSIDIARY_A,
+				DRAFT_INVOICE_ID,
+				pdfFile('concurrente.pdf'),
+			),
+			updatePurchaseDocument(
+				SUBSIDIARY_A,
+				DRAFT_INVOICE_ID,
+				{ supplier_id: PC_EXPRESS_SUPPLIER_ID, notes: 'editado en paralelo' },
+				{ etag: headers.etag },
+			),
+		]);
+
+		expect(uploadResult.status).toBe('fulfilled');
+		expect(updateResult.status).toBe('fulfilled');
+
+		const { data: document } = await getPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID);
+		expect(document.related_counts.attachments).toBe(1);
+		expect(document.notes).toBe('editado en paralelo');
+		expect(document.supplier?.id).toBe(PC_EXPRESS_SUPPLIER_ID);
 	});
 });
 

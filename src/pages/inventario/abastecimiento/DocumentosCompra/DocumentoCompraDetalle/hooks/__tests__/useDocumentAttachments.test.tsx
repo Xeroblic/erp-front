@@ -88,11 +88,13 @@ describe('useDocumentAttachments', () => {
 		expect(onChanged).toHaveBeenCalledTimes(1);
 	});
 
-	it('si la tanda falla a mitad de camino, refresca igual lo que sí se subió', async () => {
+	it('si la tanda falla a mitad de camino, refresca igual lo que sí se subió y deja el fallido en cola', async () => {
 		// Simula un 422 del servidor en el segundo archivo de la tanda (por
 		// ejemplo, otra pestaña agotó el cupo entre el chequeo del cliente y
 		// esta subida). Sin el fix, la lista se quedaba sin el primer archivo
 		// —que sí se guardó en el store mock— hasta el próximo refresco manual.
+		// El segundo ya no se descarta: queda en `uploadQueue` con su propio
+		// error, listo para reintentar sin afectar al primero.
 		const originalUpload = purchaseDocumentAttachmentsService.uploadPurchaseDocumentAttachment;
 		const uploadSpy = vi.spyOn(
 			purchaseDocumentAttachmentsService,
@@ -126,12 +128,106 @@ describe('useDocumentAttachments', () => {
 
 		await waitFor(() => expect(result.current.attachments).toHaveLength(1));
 		expect(result.current.attachments[0].file_name).toBe('uno.pdf');
-		expect(result.current.uploadError).toContain(
-			'Este documento ya tiene 10 adjuntos, el máximo permitido.',
-		);
 		expect(onChanged).toHaveBeenCalledTimes(1);
 
+		expect(result.current.uploadQueue).toHaveLength(1);
+		expect(result.current.uploadQueue[0].file.name).toBe('dos.pdf');
+		expect(result.current.uploadQueue[0].status).toBe('error');
+		expect(result.current.uploadQueue[0].errorMessage).toContain(
+			'Este documento ya tiene 10 adjuntos, el máximo permitido.',
+		);
+
 		uploadSpy.mockRestore();
+	});
+
+	it('reintentar un archivo fallido reutiliza la misma Idempotency-Key, no una nueva', async () => {
+		// Ante un timeout con resultado incierto, reintentar con clave nueva
+		// puede duplicar la subida en el backend real que este mock simula —
+		// por eso el reintento debe viajar con la misma clave del intento
+		// original, nunca con una recién generada.
+		const originalUpload = purchaseDocumentAttachmentsService.uploadPurchaseDocumentAttachment;
+		const uploadSpy = vi.spyOn(
+			purchaseDocumentAttachmentsService,
+			'uploadPurchaseDocumentAttachment',
+		);
+		const capturedKeys: Array<string | undefined> = [];
+		uploadSpy.mockImplementationOnce((...args) => {
+			capturedKeys.push(args[3]?.idempotencyKey);
+			return Promise.reject(mockAxiosError(500, { message: 'Error transitorio simulado.' }));
+		});
+		uploadSpy.mockImplementationOnce((...args) => {
+			capturedKeys.push(args[3]?.idempotencyKey);
+			return originalUpload(...args);
+		});
+
+		const { result } = renderHook(() =>
+			useDocumentAttachments({
+				subsidiaryId: SUBSIDIARY_A,
+				documentId: DRAFT_INVOICE_ID,
+				canUpload: true,
+				canDelete: true,
+				onChanged: vi.fn(),
+			}),
+		);
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		await act(async () => {
+			await result.current.addFiles(asFileList([pdfFile('reintento.pdf')]));
+		});
+		await waitFor(() => expect(result.current.uploadQueue).toHaveLength(1));
+		expect(result.current.uploadQueue[0].status).toBe('error');
+		const [failedItem] = result.current.uploadQueue;
+
+		act(() => {
+			result.current.retryUpload(failedItem.localId);
+		});
+		await waitFor(() => expect(result.current.attachments).toHaveLength(1));
+
+		expect(capturedKeys).toHaveLength(2);
+		expect(capturedKeys[0]).toBeDefined();
+		expect(capturedKeys[1]).toBe(capturedKeys[0]);
+		expect(result.current.uploadQueue).toHaveLength(0);
+
+		uploadSpy.mockRestore();
+	});
+
+	it('una subida en curso al cambiar de documento no refresca el documento abandonado', async () => {
+		// Propiedad de contexto (ZF-12): el router reutiliza esta misma
+		// instancia del hook al navegar de un documento a otro. Sin la guarda
+		// de generación, la subida tardía de A resolvía después de navegar a
+		// B y llamaba a `onChanged` de A — que en la pantalla real recarga el
+		// documento equivocado por encima del que el usuario está mirando.
+		const onChangedA = vi.fn();
+		const onChangedB = vi.fn();
+		const { result, rerender } = renderHook(
+			({ documentId, onChanged }) =>
+				useDocumentAttachments({
+					subsidiaryId: SUBSIDIARY_A,
+					documentId,
+					canUpload: true,
+					canDelete: true,
+					onChanged,
+				}),
+			{ initialProps: { documentId: DRAFT_INVOICE_ID, onChanged: onChangedA } },
+		);
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		let addFilesPromise!: Promise<void>;
+		act(() => {
+			addFilesPromise = result.current.addFiles(asFileList([pdfFile('tardio.pdf')]));
+		});
+
+		// Navega a otro documento antes de que la subida (con latencia
+		// artificial del mock) resuelva.
+		rerender({ documentId: CONFIRMED_WITH_ATTACHMENT_ID, onChanged: onChangedB });
+
+		await act(async () => {
+			await addFilesPromise;
+		});
+
+		expect(onChangedA).not.toHaveBeenCalled();
+		// El documento nuevo tampoco debe heredar la cola ni el resultado del anterior.
+		expect(result.current.uploadQueue).toEqual([]);
 	});
 
 	it('un tipo no permitido se rechaza en el cliente, sin llamar al servicio', async () => {

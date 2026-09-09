@@ -2,6 +2,7 @@ import { purchaseDocumentAttachmentsSeed } from '@/mocks/db/procurement.db';
 import {
 	findPurchaseDocumentForAttachments,
 	setPurchaseDocumentAttachmentsCount,
+	withDocumentLock,
 } from '@/services/procurement/purchaseDocuments.service';
 import { normalizePageParams } from '@/utils/procurementPagination.util';
 import type {
@@ -165,6 +166,36 @@ const ATTACHMENT_QUOTA_EXCEEDED_MESSAGE = `Este documento ya tiene ${PURCHASE_DO
 const idempotencyLog = new Map<string, { payloadHash: string; result?: unknown }>();
 const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subsidiaryId}:${key}`;
 
+/**
+ * Huella del contenido binario, para que la comparación de idempotencia no se
+ * quede sólo en nombre/tamaño/tipo: dos archivos distintos que coincidan en
+ * esos tres campos (por ejemplo, el usuario corrigió el PDF y volvió a
+ * seleccionar un archivo con el mismo nombre) deben tratarse como payloads
+ * distintos, no como el mismo reintento. No es criptográfico — este mock no
+ * necesita resistencia a colisión adversarial, sólo distinguir contenido
+ * distinto bajo la misma clave — así que un hash polinomial (base 31, mismo
+ * esquema que `String.hashCode` de Java) alcanza, sin operadores bit a bit
+ * (`no-bitwise` de este repo): el módulo mantiene el acumulador dentro de un
+ * entero seguro para `number` en vez de desbordar con `^`/`>>>`. Se lee con
+ * `FileReader` en vez de `Blob.prototype.arrayBuffer`: jsdom (entorno de
+ * pruebas) no implementa ese método sobre `File`, y `FileReader` sí está
+ * soportado tanto ahí como en el navegador real.
+ */
+const computeContentFingerprint = (file: File): Promise<string> =>
+	new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onerror = () => reject(reader.error ?? new Error('No se pudo leer el archivo.'));
+		reader.onload = () => {
+			const bytes = new Uint8Array(reader.result as ArrayBuffer);
+			let hash = 0;
+			for (let index = 0; index < bytes.length; index += 1) {
+				hash = (hash * 31 + bytes[index]) % 4294967296;
+			}
+			resolve(hash.toString(16).padStart(8, '0'));
+		};
+		reader.readAsArrayBuffer(file);
+	});
+
 async function withIdempotency<T>(
 	subsidiaryId: number,
 	idempotencyKey: string | undefined,
@@ -205,28 +236,16 @@ async function withIdempotency<T>(
 }
 
 /**
- * Serializa las escrituras (subir/eliminar) sobre los adjuntos de un mismo
- * documento: el cupo de 10 y el conteo de `related_counts.attachments` se
- * leen y se escriben en pasos separados, así que dos subidas concurrentes sin
- * esta cola podrían leer el mismo cupo disponible y las dos pasar la
- * validación.
+ * `withDocumentLock` se **reutiliza** de `purchaseDocuments.service`, no se
+ * declara una cola propia acá: el cupo de 10, el conteo de
+ * `related_counts.attachments` y el resto de campos del documento (que
+ * `updatePurchaseDocument`/`confirmPurchaseDocument`/`cancelPurchaseDocument`
+ * escriben con su propia lectura-modificación-escritura) viven en el mismo
+ * `store.documents`. Dos colas separadas para el mismo documento no se
+ * excluyen mutuamente entre sí — subir un adjunto mientras se edita el
+ * documento podía perder el conteo nuevo o la edición, según cuál de las dos
+ * colas terminara de escribir último.
  */
-const documentLocks = new Map<string, Promise<unknown>>();
-
-function withDocumentLock<T>(
-	subsidiaryId: number,
-	documentId: number,
-	run: () => Promise<T>,
-): Promise<T> {
-	const lockKey = `${subsidiaryId}:${documentId}`;
-	const previous = documentLocks.get(lockKey) ?? Promise.resolve();
-	const next = previous.then(run, run);
-	documentLocks.set(
-		lockKey,
-		next.catch(() => undefined),
-	);
-	return next;
-}
 
 const toPublicAttachment = (attachment: IStoredAttachment): IPurchaseDocumentAttachment => ({
 	id: attachment.id,
@@ -290,16 +309,30 @@ export const listPurchaseDocumentAttachments = async (
  * muestra de antemano, para que el 422 del mock nunca sea una sorpresa que
  * el cliente no haya podido prevenir.
  */
-export const uploadPurchaseDocumentAttachment = (
+export const uploadPurchaseDocumentAttachment = async (
 	subsidiaryId: number,
 	documentId: number,
 	file: File,
 	headers: IMockWriteHeaders = {},
-): Promise<{ data: IPurchaseDocumentAttachment }> =>
-	withIdempotency(
+): Promise<{ data: IPurchaseDocumentAttachment }> => {
+	// Se calcula **antes** de reservar la clave: `withIdempotency` sigue
+	// reservando de forma síncrona apenas entra (sin `await` de por medio
+	// hasta `run()`), así que adelantar este cómputo no reabre la ventana de
+	// carrera entre dos subidas concurrentes con la misma clave — sólo cambia
+	// qué contenido queda plasmado en el hash comparado.
+	const contentFingerprint = await computeContentFingerprint(file);
+
+	return withIdempotency(
 		subsidiaryId,
 		headers.idempotencyKey,
-		{ action: 'upload', documentId, name: file.name, size: file.size, type: file.type },
+		{
+			action: 'upload',
+			documentId,
+			name: file.name,
+			size: file.size,
+			type: file.type,
+			contentFingerprint,
+		},
 		() =>
 			withDocumentLock(subsidiaryId, documentId, async () => {
 				const document = requireDocument(subsidiaryId, documentId);
@@ -356,6 +389,7 @@ export const uploadPurchaseDocumentAttachment = (
 				return delay({ data: toPublicAttachment(attachment) });
 			}),
 	);
+};
 
 /**
  * `GET /purchase-documents/{document}/attachments/{media}`: descarga

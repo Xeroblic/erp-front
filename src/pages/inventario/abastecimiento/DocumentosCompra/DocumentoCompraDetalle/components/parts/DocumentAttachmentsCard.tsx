@@ -21,6 +21,7 @@ import type {
 	TPurchaseDocumentStatus,
 } from '@/interface/procurement.interface';
 import useDocumentAttachments from '../../hooks/useDocumentAttachments';
+import type { IPendingAttachmentUpload } from '../../hooks/useDocumentAttachments';
 
 /**
  * Adjuntos privados del documento de compra (subsección de la sección 6):
@@ -121,6 +122,46 @@ const AttachmentRow: React.FC<IAttachmentRowProps> = ({
 	</div>
 );
 
+interface IPendingUploadRowProps {
+	item: IPendingAttachmentUpload;
+	onRetry: () => void;
+	onDismiss: () => void;
+}
+
+/**
+ * Una fila por archivo en curso o fallido — nunca uno agregado en un solo
+ * mensaje de tanda: cada archivo conserva su propio estado y su propia
+ * `Idempotency-Key`, así que reintentar uno no reintenta los demás.
+ */
+const PendingUploadRow: React.FC<IPendingUploadRowProps> = ({ item, onRetry, onDismiss }) => (
+	<div className='flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-zinc-300 p-3 dark:border-zinc-600'>
+		<Icon
+			icon={item.status === 'error' ? 'HeroExclamationTriangle' : 'HeroArrowUpTray'}
+			className={item.status === 'error' ? 'text-red-500' : 'text-zinc-500'}
+		/>
+		<div className='min-w-0 grow'>
+			<p className='truncate text-sm font-semibold' title={item.file.name}>
+				{item.file.name}
+			</p>
+			<p className='text-xs text-zinc-500'>
+				{item.status === 'uploading' && 'Subiendo…'}
+				{item.status === 'pending' && 'En espera…'}
+				{item.status === 'error' && (item.errorMessage ?? 'No se pudo subir.')}
+			</p>
+		</div>
+		{item.status === 'error' && (
+			<>
+				<Button type='button' variant='outline' size='sm' onClick={onRetry}>
+					Reintentar
+				</Button>
+				<Button type='button' variant='outline' color='red' size='sm' onClick={onDismiss}>
+					Descartar
+				</Button>
+			</>
+		)}
+	</div>
+);
+
 const DocumentAttachmentsCard = forwardRef<
 	IDocumentAttachmentsCardHandle,
 	IDocumentAttachmentsCardProps
@@ -140,14 +181,20 @@ const DocumentAttachmentsCard = forwardRef<
 		listError,
 		uploadError,
 		clearUploadError,
+		uploadQueue,
 		isUploading,
 		deletingId,
 		downloadingId,
 		isQuotaReached,
 		addFiles,
+		retryUpload,
+		retryAllFailedUploads,
+		dismissUpload,
 		removeAttachment,
 		downloadAttachment,
 	} = useDocumentAttachments({ subsidiaryId, documentId, canUpload, canDelete, onChanged });
+
+	const failedUploadsCount = uploadQueue.filter((item) => item.status === 'error').length;
 
 	useImperativeHandle(ref, () => ({
 		openFilePicker: () => fileInputRef.current?.click(),
@@ -242,6 +289,30 @@ const DocumentAttachmentsCard = forwardRef<
 							</Button>
 						</div>
 					</Alert>
+				)}
+
+				{uploadQueue.length > 0 && (
+					<div className='space-y-2'>
+						{failedUploadsCount > 1 && (
+							<div className='flex justify-end'>
+								<Button
+									type='button'
+									variant='outline'
+									size='sm'
+									onClick={retryAllFailedUploads}>
+									Reintentar todos ({failedUploadsCount})
+								</Button>
+							</div>
+						)}
+						{uploadQueue.map((item) => (
+							<PendingUploadRow
+								key={item.localId}
+								item={item}
+								onRetry={() => retryUpload(item.localId)}
+								onDismiss={() => dismissUpload(item.localId)}
+							/>
+						))}
+					</div>
 				)}
 
 				{loading && (

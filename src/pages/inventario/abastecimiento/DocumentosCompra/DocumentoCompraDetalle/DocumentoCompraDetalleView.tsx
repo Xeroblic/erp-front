@@ -85,7 +85,18 @@ const DocumentoCompraDetalleView = () => {
 					</Alert>
 				)}
 
-				{loading && (
+				{/*
+				 * Sólo la carga inicial (sin `document` todavía) muestra el
+				 * esqueleto. Un `retry` posterior (tras subir/eliminar un
+				 * adjunto, confirmar, etc.) vuelve a poner `loading` en `true`
+				 * con el documento previo aún en memoria — si el esqueleto
+				 * reemplazara el contenido también en ese caso, desmontaría y
+				 * volvería a montar `DocumentAttachmentsCard`, perdiendo el
+				 * estado de su propio hook (cola de subidas, error de
+				 * validación) en cada refresco. Mismo criterio que
+				 * `DeferredPaymentDetailDrawer`.
+				 */}
+				{loading && !document && (
 					<Card>
 						<CardBody className='space-y-3'>
 							{Array.from({ length: 4 }, (_, index) => (
@@ -113,7 +124,7 @@ const DocumentoCompraDetalleView = () => {
 					</Alert>
 				)}
 
-				{!loading && !error && document && (
+				{!error && document && (
 					<>
 						{document.status === 'cancelled' && document.cancellation_reason && (
 							<Alert
