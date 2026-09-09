@@ -198,10 +198,18 @@ async function withIdempotency<T>(
  * **distintas** podían intercalarse entre esa validación y el commit,
  * perdiendo la de la que resolvió primero. Encolar por documento cierra esa
  * ventana sin necesitar una base de datos real detrás.
+ *
+ * **Exportada a propósito:** `purchaseDocumentAttachments.service` muta el
+ * mismo `document` (su `related_counts.attachments` y su versión) y debe
+ * encolarse en esta misma cola, no en una propia — dos colas separadas para
+ * el mismo documento no se excluyen mutuamente entre sí, así que una
+ * actualización de líneas y una subida de adjunto podían intercalar su
+ * lectura-modificación-escritura de `store.documents` y perder una de las
+ * dos escrituras.
  */
 const documentLocks = new Map<string, Promise<unknown>>();
 
-function withDocumentLock<T>(
+export function withDocumentLock<T>(
 	subsidiaryId: number,
 	documentId: number,
 	run: () => Promise<T>,
@@ -614,7 +622,7 @@ export const createPurchaseDocument = (
 				supplier: supplierCompact,
 				items_count: lines.length,
 				created_at: now,
-				allowed_actions: ['update', 'confirm', 'cancel'],
+				allowed_actions: ['update', 'confirm', 'cancel', 'add_attachment'],
 				supplier_snapshot: null,
 				notes: payload.notes?.trim() || null,
 				items: lines,
@@ -832,14 +840,15 @@ export const confirmPurchaseDocument = (
 			const updated: IPurchaseDocument = {
 				...existing,
 				status: 'confirmed',
-				// Sin recepciones ni asignaciones todavía (cards 04/05): un documento
+				// Sin recepciones ni asignaciones todavía (card 05): un documento
 				// recién confirmado siempre nace `pending`.
 				reception_status: 'pending',
 				supplier_snapshot: supplierSnapshot,
 				confirmed_at: new Date().toISOString(),
-				// `create_receipt` y `add_attachment` se omiten a propósito: las
-				// cards 04 y 05 todavía no existen para ofrecerlas de verdad.
-				allowed_actions: ['cancel'],
+				// `create_receipt` se omite a propósito: la card 05 (recepciones
+				// físicas) todavía no existe para ofrecerla de verdad. `add_attachment`
+				// sí corresponde — la card 04 ya permite adjuntar en `confirmed`.
+				allowed_actions: ['cancel', 'add_attachment'],
 				updated_at: new Date().toISOString(),
 			};
 
@@ -986,6 +995,45 @@ export const listPurchaseDocumentInitialStockAllocations = async (
 	return delay(
 		emptyRelatedListEnvelope(subsidiaryId, documentId, 'initial-stock-allocations', params),
 	);
+};
+
+/**
+ * Sólo para el servicio de adjuntos (card 04, sección 6): lee el documento
+ * vigente sin la latencia artificial del mock ni el envoltorio HTTP. Subir o
+ * eliminar un adjunto necesita el `status` del documento para validar la
+ * regla de estados («se puede subir en draft y confirmed, nunca cancelled;
+ * eliminar sólo en draft»), y duplicar el store de documentos en el servicio
+ * de adjuntos rompería la partición por filial que ya mantiene este archivo.
+ */
+export const findPurchaseDocumentForAttachments = (
+	subsidiaryId: number,
+	id: number,
+): Pick<IPurchaseDocument, 'id' | 'status'> | undefined => {
+	const store = getStore(subsidiaryId);
+	const document = store.documents.find((item) => item.id === id);
+	return document ? { id: document.id, status: document.status } : undefined;
+};
+
+/**
+ * Refleja en el documento el nuevo total de adjuntos tras subir o eliminar
+ * uno (`related_counts.attachments`, sección 6). Bump de versión incluido:
+ * `related_counts` es parte de la representación de `IPurchaseDocument`, así
+ * que su `ETag` cambia con ella igual que con cualquier otra escritura sobre
+ * el documento — una edición de líneas con un `If-Match` tomado antes de
+ * subir un adjunto debe recargar, no pisar el conteo nuevo.
+ */
+export const setPurchaseDocumentAttachmentsCount = (
+	subsidiaryId: number,
+	id: number,
+	count: number,
+): void => {
+	const store = getStore(subsidiaryId);
+	store.documents = store.documents.map((document) =>
+		document.id === id
+			? { ...document, related_counts: { ...document.related_counts, attachments: count } }
+			: document,
+	);
+	bumpVersion(store, id);
 };
 
 /** Sólo para pruebas: reinicia el store en memoria a la semilla de fixtures. */

@@ -20,6 +20,7 @@ import PurchaseDocumentLinesTable from '../components/parts/PurchaseDocumentLine
 import DocumentoCompraFormModal from '../components/modals/DocumentoCompraFormModal';
 import ConfirmDocumentoCompraModal from '../components/modals/ConfirmDocumentoCompraModal';
 import CancelDocumentoCompraModal from '../components/modals/CancelDocumentoCompraModal';
+import DocumentAttachmentsCard from './components/parts/DocumentAttachmentsCard';
 import RelatedCountsCard from './components/parts/RelatedCountsCard';
 import RelatedListCard from './components/parts/RelatedListCard';
 import useDocumentoCompraDetalle from './hooks/useDocumentoCompraDetalle';
@@ -45,6 +46,7 @@ const DocumentoCompraDetalleView = () => {
 		setIsConfirmModalOpen,
 		isCancelModalOpen,
 		setIsCancelModalOpen,
+		attachmentsCardRef,
 		handleAction,
 		goToList,
 		retry,
@@ -83,7 +85,18 @@ const DocumentoCompraDetalleView = () => {
 					</Alert>
 				)}
 
-				{loading && (
+				{/*
+				 * Sólo la carga inicial (sin `document` todavía) muestra el
+				 * esqueleto. Un `retry` posterior (tras subir/eliminar un
+				 * adjunto, confirmar, etc.) vuelve a poner `loading` en `true`
+				 * con el documento previo aún en memoria — si el esqueleto
+				 * reemplazara el contenido también en ese caso, desmontaría y
+				 * volvería a montar `DocumentAttachmentsCard`, perdiendo el
+				 * estado de su propio hook (cola de subidas, error de
+				 * validación) en cada refresco. Mismo criterio que
+				 * `DeferredPaymentDetailDrawer`.
+				 */}
+				{loading && !document && (
 					<Card>
 						<CardBody className='space-y-3'>
 							{Array.from({ length: 4 }, (_, index) => (
@@ -111,7 +124,7 @@ const DocumentoCompraDetalleView = () => {
 					</Alert>
 				)}
 
-				{!loading && !error && document && (
+				{!error && document && (
 					<>
 						{document.status === 'cancelled' && document.cancellation_reason && (
 							<Alert
@@ -236,6 +249,15 @@ const DocumentoCompraDetalleView = () => {
 						/>
 
 						<RelatedCountsCard relatedCounts={document.related_counts} />
+
+						<DocumentAttachmentsCard
+							ref={attachmentsCardRef}
+							documentId={document.id}
+							documentStatus={document.status}
+							subsidiaryId={subsidiaryId}
+							branchId={branchId}
+							onChanged={retry}
+						/>
 
 						<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
 							<RelatedListCard
