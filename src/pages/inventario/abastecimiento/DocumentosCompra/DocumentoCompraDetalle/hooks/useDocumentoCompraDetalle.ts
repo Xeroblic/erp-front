@@ -75,12 +75,22 @@ const useDocumentoCompraDetalle = () => {
 	const attachmentsCardRef = useRef<IDocumentAttachmentsCardHandle>(null);
 
 	/** Traduce el click de `AllowedActionsToolbar` a la interacción de esta pantalla. */
-	const handleAction = useCallback((action: TProcurementAllowedAction) => {
-		if (action === 'update') setIsFormModalOpen(true);
-		else if (action === 'confirm') setIsConfirmModalOpen(true);
-		else if (action === 'cancel') setIsCancelModalOpen(true);
-		else if (action === 'add_attachment') attachmentsCardRef.current?.openFilePicker();
-	}, []);
+	const handleAction = useCallback(
+		(action: TProcurementAllowedAction) => {
+			if (action === 'update') setIsFormModalOpen(true);
+			else if (action === 'confirm') setIsConfirmModalOpen(true);
+			else if (action === 'cancel') setIsCancelModalOpen(true);
+			else if (action === 'add_attachment') attachmentsCardRef.current?.openFilePicker();
+			// `create_receipt` (card 05, sección 7): no hay alta de recepción acá
+			// — navega al módulo de Recepciones con este documento preseleccionado
+			// en el alta «con documento», en vez de duplicar ese formulario.
+			else if (action === 'create_receipt' && document)
+				navigate(
+					`/inventario/abastecimiento/recepciones?purchase_document_id=${document.id}`,
+				);
+		},
+		[document, navigate],
+	);
 
 	return {
 		id,

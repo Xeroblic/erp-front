@@ -361,6 +361,28 @@ export const privatePages = {
 				authority: ['view-purchase-document'],
 				requireAll: true,
 			},
+			recepciones: {
+				id: 'recepciones',
+				to: '/inventario/abastecimiento/recepciones',
+				text: 'Recepciones',
+				icon: 'HeroInboxArrowDown',
+				// Card 05 del módulo de abastecimiento (mock, PR #67 del backend):
+				// recepciones físicas, alta, publicación asíncrona y estados.
+				// Permiso de lectura de la sección 15 del contrato — bloqueada por la
+				// card 03 (documentos de compra).
+				authority: ['view-product'],
+				requireAll: true,
+			},
+			recepcionDetalle: {
+				id: 'recepcionDetalle',
+				to: '/inventario/abastecimiento/recepciones/:recepcionId',
+				text: 'Ficha de recepción',
+				icon: 'HeroInboxArrowDown',
+				// Mismo permiso que el listado: publicar/reintentar/anular/revertir
+				// exigen `edit-product`, con su propio guard en `allowed_actions`.
+				authority: ['view-product'],
+				requireAll: true,
+			},
 			retirosEquipos: {
 				id: 'retirosEquipos',
 				to: '/inventario/retiros-equipos',

@@ -319,6 +319,7 @@ const DefaultAsideTemplate = () => {
 							...Pages.inventory.subPages.retirosEquipos.authority,
 							...Pages.inventory.subPages.proveedores.authority,
 							...Pages.inventory.subPages.documentosCompra.authority,
+							...Pages.inventory.subPages.recepciones.authority,
 						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
@@ -330,6 +331,7 @@ const DefaultAsideTemplate = () => {
 							...Pages.inventory.subPages.retirosEquipos.authority,
 							...Pages.inventory.subPages.proveedores.authority,
 							...Pages.inventory.subPages.documentosCompra.authority,
+							...Pages.inventory.subPages.recepciones.authority,
 						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
@@ -453,6 +455,22 @@ const DefaultAsideTemplate = () => {
 									id={Pages.inventory.subPages.documentosCompra.id}
 									onClick={() =>
 										navigate(Pages.inventory.subPages.documentosCompra.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Recepciones físicas (mock, PR #67, card 05) */}
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.recepciones.authority}
+								requireAll={Pages.inventory.subPages.recepciones.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.recepciones.text}
+									to={Pages.inventory.subPages.recepciones.to}
+									icon={Pages.inventory.subPages.recepciones.icon}
+									id={Pages.inventory.subPages.recepciones.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.recepciones.to)
 									}
 								/>
 							</AuthorityCheckNav>

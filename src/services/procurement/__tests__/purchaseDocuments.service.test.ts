@@ -5,7 +5,6 @@ import {
 	createPurchaseDocument,
 	getPurchaseDocument,
 	listPurchaseDocumentInitialStockAllocations,
-	listPurchaseDocumentStockReceipts,
 	listPurchaseDocuments,
 	resetPurchaseDocumentsStoreForTests,
 	updatePurchaseDocument,
@@ -66,13 +65,19 @@ afterEach(() => {
 	resetPurchaseDocumentsStoreForTests();
 });
 
+// Documento agregado por la card 05 (recepciones): confirmado, con
+// capacidad parcial, para que las recepciones «con documento» tengan un
+// destino real sin consumir de inmediato `CONFIRMED_WITH_RECEIPT_ID`.
+const CONFIRMED_PARTIAL_ID = 61; // pcExpressKeyboardInvoiceDocument
+
 describe('listPurchaseDocuments', () => {
-	it('lista los cuatro documentos semilla ordenados por emisión DESC', async () => {
+	it('lista los cinco documentos semilla ordenados por emisión DESC', async () => {
 		const result = await listPurchaseDocuments(SUBSIDIARY_A);
 		expect(result.data.map((row) => row.id)).toEqual([
 			DRAFT_INVOICE_ID,
 			DRAFT_RECEIPT_NO_SUPPLIER_ID,
 			CONFIRMED_WITH_RECEIPT_ID,
+			CONFIRMED_PARTIAL_ID,
 			CANCELLED_ID,
 		]);
 	});
@@ -87,7 +92,9 @@ describe('listPurchaseDocuments', () => {
 		const partial = await listPurchaseDocuments(SUBSIDIARY_A, {
 			reception_status: 'partially_received',
 		});
-		expect(partial.data.map((row) => row.id)).toEqual([CONFIRMED_WITH_RECEIPT_ID]);
+		expect(partial.data.map((row) => row.id).sort()).toEqual(
+			[CONFIRMED_WITH_RECEIPT_ID, CONFIRMED_PARTIAL_ID].sort(),
+		);
 
 		const bySupplier = await listPurchaseDocuments(SUBSIDIARY_A, {
 			supplier_id: PC_EXPRESS_SUPPLIER_ID,
@@ -104,9 +111,15 @@ describe('listPurchaseDocuments', () => {
 		expect(byFolio.data.map((row) => row.id)).toEqual([DRAFT_RECEIPT_NO_SUPPLIER_ID]);
 
 		// «1234» coincide con el folio del documento 24 y con el RUT de
-		// PCExpress (76123456-0), proveedor también de los documentos 42 y 50.
+		// PCExpress (76123456-0), proveedor también de los documentos 42, 50 y
+		// del agregado por la card 05 (61, mismo proveedor).
 		const byFolioOrSupplierRut = await listPurchaseDocuments(SUBSIDIARY_A, { search: '1234' });
-		expect(byFolioOrSupplierRut.data.map((row) => row.id).sort()).toEqual([24, 42, 50]);
+		expect(byFolioOrSupplierRut.data.map((row) => row.id).sort()).toEqual([
+			24,
+			42,
+			50,
+			CONFIRMED_PARTIAL_ID,
+		]);
 
 		const byRut = await listPurchaseDocuments(SUBSIDIARY_A, { search: '76123456' });
 		expect(byRut.data.length).toBeGreaterThan(0);
@@ -399,7 +412,9 @@ describe('confirmPurchaseDocument', () => {
 		expect(data.status).toBe('confirmed');
 		expect(data.reception_status).toBe('pending');
 		expect(data.supplier_snapshot).toBeNull();
-		expect(data.allowed_actions).toEqual(['cancel', 'add_attachment']);
+		// `create_receipt` (card 05, sección 7): un documento confirmado
+		// siempre la ofrece, aunque su capacidad restante sea baja.
+		expect(data.allowed_actions).toEqual(['create_receipt', 'cancel', 'add_attachment']);
 	});
 
 	it('confirma una factura con proveedor completo: fija el snapshot histórico', async () => {
@@ -468,20 +483,21 @@ describe('cancelPurchaseDocument', () => {
 });
 
 describe('listas relacionadas', () => {
-	it('paginan vacías y 404 si el documento no existe', async () => {
-		const receipts = await listPurchaseDocumentStockReceipts(SUBSIDIARY_A, DRAFT_INVOICE_ID);
-		expect(receipts.data).toEqual([]);
-		expect(receipts.meta.total).toBe(0);
-
+	it('asignaciones de stock inicial: paginan vacías y 404 si el documento no existe', async () => {
 		const allocations = await listPurchaseDocumentInitialStockAllocations(
 			SUBSIDIARY_A,
 			DRAFT_INVOICE_ID,
 		);
 		expect(allocations.data).toEqual([]);
+		expect(allocations.meta.total).toBe(0);
 
 		const { status } = await readErrorData(
-			listPurchaseDocumentStockReceipts(SUBSIDIARY_A, 9999),
+			listPurchaseDocumentInitialStockAllocations(SUBSIDIARY_A, 9999),
 		);
 		expect(status).toBe(404);
 	});
+
+	// Las recepciones vinculadas se cubren en
+	// `stockReceipts.service.test.ts` (`listStockReceiptsForPurchaseDocument`,
+	// hallazgo 9): ese store es la fuente real, no un stub de este servicio.
 });

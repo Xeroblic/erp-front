@@ -54,6 +54,7 @@ import procurementSuppliers, {
 import purchaseDocuments, {
 	PurchaseDocumentsState,
 } from './slices/procurement/purchaseDocumentsSlice';
+import stockReceipts, { StockReceiptsState } from './slices/procurement/stockReceiptsSlice';
 
 export interface RootState {
 	auth: AuthState;
@@ -95,6 +96,7 @@ export interface RootState {
 	equipmentWithdrawals: EquipmentWithdrawalsState;
 	procurementSuppliers: ProcurementSuppliersState;
 	purchaseDocuments: PurchaseDocumentsState;
+	stockReceipts: StockReceiptsState;
 	[RtkQueryService.reducerPath]: any;
 }
 
@@ -139,6 +141,7 @@ const staticReducers = {
 	equipmentWithdrawals,
 	procurementSuppliers,
 	purchaseDocuments,
+	stockReceipts,
 	// personalizacion, // Comentado temporalmente
 	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };
