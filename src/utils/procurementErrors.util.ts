@@ -1,3 +1,5 @@
+import type { IProcurementSupplierRutConflict } from '@/interface/procurement.interface';
+
 /**
  * Mapa de errores estables del contrato de abastecimiento (sección 16 del
  * `frontend-guide.md`, PR #67).
@@ -267,7 +269,25 @@ export interface IProcurementResolvedError {
 	fieldErrors: Record<string, string[]> | null;
 	/** `context` que un 409 puede traer con IDs/saldos para refrescar. */
 	context: Record<string, unknown> | null;
+	/**
+	 * `existing_supplier` del 409 `SUPPLIER_RUT_ALREADY_EXISTS` (sección 5 del
+	 * contrato). Esa respuesta es la única excepción de compatibilidad que **no**
+	 * usa el envoltorio común, así que se lee del mismo nivel que `message` y
+	 * `code`, no de `context`. `null` fuera de ese error.
+	 */
+	existingSupplier: IProcurementSupplierRutConflict | null;
 }
+
+const parseSupplierConflict = (value: unknown): IProcurementSupplierRutConflict | null => {
+	const record = asRecord(value);
+	if (!record) return null;
+
+	const id = asNumber(record.id);
+	const displayName = asString(record.display_name);
+	if (id === undefined || displayName === undefined) return null;
+
+	return { id, display_name: displayName, is_active: record.is_active === true };
+};
 
 const parseFieldErrors = (value: unknown): Record<string, string[]> | null => {
 	const record = asRecord(value);
@@ -305,6 +325,7 @@ export const resolveProcurementError = (
 			action: GENERIC_DEFINITION.action,
 			fieldErrors: null,
 			context: null,
+			existingSupplier: null,
 		};
 	}
 
@@ -319,6 +340,7 @@ export const resolveProcurementError = (
 			action: TRANSPORT_DEFINITION.action,
 			fieldErrors: null,
 			context: null,
+			existingSupplier: null,
 		};
 	}
 
@@ -346,6 +368,7 @@ export const resolveProcurementError = (
 		action: resolved.action,
 		fieldErrors: parseFieldErrors(dataRecord?.errors),
 		context: asRecord(dataRecord?.context) ?? null,
+		existingSupplier: parseSupplierConflict(dataRecord?.existing_supplier),
 	};
 };
 

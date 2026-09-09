@@ -319,6 +319,27 @@ export const privatePages = {
 				authority: ['view-product'],
 				requireAll: true,
 			},
+			proveedores: {
+				id: 'proveedores',
+				to: '/inventario/abastecimiento/proveedores',
+				text: 'Proveedores',
+				icon: 'HeroBuildingStorefront',
+				// Card 02 del módulo de abastecimiento (mock, PR #67 del backend):
+				// maestro de proveedores comerciales de compras. Permiso propio de la
+				// sección 15 del contrato, no el de `Supplier` de revisión técnica.
+				authority: ['view-procurement-supplier'],
+				requireAll: true,
+			},
+			proveedoresDetalle: {
+				id: 'proveedoresDetalle',
+				to: '/inventario/abastecimiento/proveedores/:proveedorId',
+				text: 'Ficha de proveedor',
+				icon: 'HeroBuildingStorefront',
+				// Mismo permiso que el listado: la ficha es sólo lectura salvo por las
+				// acciones de `allowed_actions`, que llevan su propio guard.
+				authority: ['view-procurement-supplier'],
+				requireAll: true,
+			},
 			retirosEquipos: {
 				id: 'retirosEquipos',
 				to: '/inventario/retiros-equipos',

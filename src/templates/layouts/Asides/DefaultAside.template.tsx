@@ -317,6 +317,7 @@ const DefaultAsideTemplate = () => {
 						authority={[
 							...Pages.inventory.authority,
 							...Pages.inventory.subPages.retirosEquipos.authority,
+							...Pages.inventory.subPages.proveedores.authority,
 						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
@@ -326,6 +327,7 @@ const DefaultAsideTemplate = () => {
 						authority={[
 							...Pages.inventory.authority,
 							...Pages.inventory.subPages.retirosEquipos.authority,
+							...Pages.inventory.subPages.proveedores.authority,
 						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
@@ -417,6 +419,22 @@ const DefaultAsideTemplate = () => {
 									id={Pages.inventory.subPages.catalogoAbastecimiento.id}
 									onClick={() =>
 										navigate(Pages.inventory.subPages.catalogoAbastecimiento.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Maestro de proveedores (mock, PR #67, card 02) */}
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.proveedores.authority}
+								requireAll={Pages.inventory.subPages.proveedores.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.proveedores.text}
+									to={Pages.inventory.subPages.proveedores.to}
+									icon={Pages.inventory.subPages.proveedores.icon}
+									id={Pages.inventory.subPages.proveedores.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.proveedores.to)
 									}
 								/>
 							</AuthorityCheckNav>

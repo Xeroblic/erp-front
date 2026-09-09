@@ -94,6 +94,10 @@ const IngresoStock = lazy(() => import('@/pages/inventario/ingresoStock'));
 const CatalogoAbastecimiento = lazy(
 	() => import('@/pages/inventario/abastecimiento/CatalogoContrato'),
 );
+const Proveedores = lazy(() => import('@/pages/inventario/abastecimiento/Proveedores'));
+const ProveedoresDetalle = lazy(
+	() => import('@/pages/inventario/abastecimiento/Proveedores/ProveedoresDetalle'),
+);
 const RetirosEquiposPage = lazy(() => import('@/pages/inventario/retirosEquipos'));
 
 // Páginas de Catálogos
@@ -463,6 +467,18 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: pagesConfig.inventory.subPages.catalogoAbastecimiento.to,
 		element: <CatalogoAbastecimiento />,
 		authority: pagesConfig.inventory.subPages.catalogoAbastecimiento.authority,
+	},
+
+	{
+		path: pagesConfig.inventory.subPages.proveedores.to,
+		element: <Proveedores />,
+		authority: pagesConfig.inventory.subPages.proveedores.authority,
+	},
+
+	{
+		path: pagesConfig.inventory.subPages.proveedoresDetalle.to,
+		element: <ProveedoresDetalle />,
+		authority: pagesConfig.inventory.subPages.proveedoresDetalle.authority,
 	},
 
 	{
