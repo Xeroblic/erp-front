@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+	createInventoryAdjustment,
 	createInventoryDocumentAllocation,
+	createWarehouseStockMovement,
+	getInventoryAdjustableProducts,
 	getInventoryOriginFilterOptions,
+	getInventoryStockAvailability,
 	getInventoryWarehouses,
 	listInitialStockAllocationsForPurchaseDocument,
 	listInventoryOrigins,
@@ -574,5 +578,518 @@ describe('listInitialStockAllocationsForPurchaseDocument', () => {
 		);
 		expect(allocations.data).toEqual([]);
 		expect(allocations.meta.total).toBe(0);
+	});
+});
+
+/* =================================================
+   Traslados internos y ajuste por conteo — card 08 (ZF-113), secciones 9 y 11
+   ================================================= */
+
+/** Físico, apto y no apto de un producto en una ubicación, leídos por el mismo endpoint que la UI. */
+const balanceAt = async (
+	productId: number,
+	location: IInventoryStockListParams,
+	branchId = BRANCH_ID,
+) => {
+	// `per_page` explícito: el defecto del contrato es 15 y los fixtures de
+	// demostración empujan cable y mouse fuera de la primera página.
+	const stock = await listInventoryStock(branchId, { ...location, per_page: 100 });
+	const row = stock.data.find((candidate) => candidate.product.id === productId);
+	return {
+		physical: row?.physical_quantity ?? 0,
+		fit: row?.fit_quantity ?? 0,
+		unfit: row?.unfit_quantity ?? 0,
+		documented: row?.documented_quantity ?? 0,
+		undocumented: row?.undocumented_quantity ?? 0,
+	};
+};
+
+/** Invariantes que `procurement.db.test.ts` exige a cualquier fila de stock. */
+const expectStockInvariants = async (productId: number, location: IInventoryStockListParams) => {
+	const totals = await balanceAt(productId, location);
+	expect(totals.fit + totals.unfit).toBe(totals.physical);
+	expect(totals.documented + totals.undocumented).toBe(totals.physical);
+};
+
+describe('createWarehouseStockMovement', () => {
+	it('mueve aptos entre Sin ubicación y una bodega, con neto cero y unidades contadas una vez', async () => {
+		const before = await balanceAt(MOUSE_ID, {});
+
+		const { data } = await createWarehouseStockMovement(BRANCH_ID, {
+			from_warehouse_id: null,
+			to_warehouse_id: MAIN_WAREHOUSE_ID,
+			reason: 'Ubicar productos del conteo inicial',
+			items: [{ product_id: MOUSE_ID, quantity: 5, condition: 'fit' }],
+		});
+
+		expect(data.operation_type).toBe('warehouse_stock_placement');
+		expect(data.global_stock_delta).toBe(0);
+		expect(data.items).toHaveLength(1);
+		// El criterio de aceptación: 5 unidades se leen como 5, nunca como 10.
+		expect(data.items.reduce((total, item) => total + item.quantity, 0)).toBe(5);
+
+		const unlocated = await balanceAt(MOUSE_ID, { unlocated: 1 });
+		const warehouse = await balanceAt(MOUSE_ID, { warehouse_id: MAIN_WAREHOUSE_ID });
+		expect(data.items[0].origin_quantity_after).toBe(unlocated.fit);
+		expect(data.items[0].destination_quantity_after).toBe(warehouse.fit);
+
+		// El total de la sucursal no cambió: sólo cambió dónde están las unidades.
+		const after = await balanceAt(MOUSE_ID, {});
+		expect(after).toEqual(before);
+		await expectStockInvariants(MOUSE_ID, {});
+	});
+
+	it('mueve no aptos sin tocar los aptos: no hay conversión entre condiciones', async () => {
+		const before = await balanceAt(
+			KEYBOARD_PRODUCT_ID,
+			{ warehouse_id: SOUTH_BRANCH_WAREHOUSE_ID },
+			SOUTH_BRANCH_ID,
+		);
+		expect(before.unfit).toBeGreaterThan(0);
+
+		const { data } = await createWarehouseStockMovement(SOUTH_BRANCH_ID, {
+			from_warehouse_id: SOUTH_BRANCH_WAREHOUSE_ID,
+			to_warehouse_id: null,
+			reason: 'Retirar no aptos de la bodega',
+			items: [{ product_id: KEYBOARD_PRODUCT_ID, quantity: 1, condition: 'unfit' }],
+		});
+
+		const origin = await balanceAt(
+			KEYBOARD_PRODUCT_ID,
+			{ warehouse_id: SOUTH_BRANCH_WAREHOUSE_ID },
+			SOUTH_BRANCH_ID,
+		);
+		const destination = await balanceAt(KEYBOARD_PRODUCT_ID, { unlocated: 1 }, SOUTH_BRANCH_ID);
+		expect(origin.fit).toBe(before.fit);
+		expect(origin.unfit).toBe(before.unfit - 1);
+		expect(destination.unfit).toBe(1);
+		expect(destination.fit).toBe(0);
+		expect(data.items[0].origin_quantity_after).toBe(origin.unfit);
+		expect(data.items[0].destination_quantity_after).toBe(destination.unfit);
+	});
+
+	it('conserva la procedencia y el orden FIFO en el destino', async () => {
+		await createWarehouseStockMovement(BRANCH_ID, {
+			from_warehouse_id: null,
+			to_warehouse_id: MAIN_WAREHOUSE_ID,
+			reason: 'Ubicar stock documentado',
+			// El origin 51 (documentado, fifo_at 2) va antes que el 52 (sin
+			// documento, fifo_at 1)… al revés: 52 es más viejo y sale primero.
+			items: [{ product_id: MOUSE_ID, quantity: 6, condition: 'fit' }],
+		});
+
+		const origins = await listInventoryOrigins(BRANCH_ID, MOUSE_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+		});
+		// Se consumió primero el origin sin documento (fifo_at menor) y luego el
+		// documentado: ambas procedencias llegan enteras, ninguna se mezcla.
+		const undocumented = origins.data.filter((origin) => origin.purchase_document === null);
+		const documented = origins.data.filter((origin) => origin.purchase_document !== null);
+		expect(undocumented.reduce((total, origin) => total + origin.physical_quantity, 0)).toBe(5);
+		expect(documented.reduce((total, origin) => total + origin.physical_quantity, 0)).toBe(1);
+		expect(documented[0].supplier).not.toBeNull();
+		expect(documented[0].stock_receipt_id).toBe(80);
+	});
+
+	it('fusiona en el destino en vez de multiplicar filas al mover ida y vuelta', async () => {
+		const move = (from: number | null, to: number | null) =>
+			createWarehouseStockMovement(BRANCH_ID, {
+				from_warehouse_id: from,
+				to_warehouse_id: to,
+				reason: 'Reubicar',
+				items: [{ product_id: MOUSE_ID, quantity: 3, condition: 'fit' }],
+			});
+
+		const originalRows = (await listInventoryOrigins(BRANCH_ID, MOUSE_ID, { unlocated: 1 }))
+			.meta.total;
+		await move(null, MAIN_WAREHOUSE_ID);
+		await move(MAIN_WAREHOUSE_ID, null);
+		await move(null, MAIN_WAREHOUSE_ID);
+		await move(MAIN_WAREHOUSE_ID, null);
+
+		const rows = await listInventoryOrigins(BRANCH_ID, MOUSE_ID, { unlocated: 1 });
+		expect(rows.meta.total).toBe(originalRows);
+		await expectStockInvariants(MOUSE_ID, { unlocated: 1 });
+	});
+
+	it('rechaza saldo insuficiente en la condición pedida', async () => {
+		const response = await readError(
+			createWarehouseStockMovement(BRANCH_ID, {
+				from_warehouse_id: null,
+				to_warehouse_id: MAIN_WAREHOUSE_ID,
+				reason: 'Mover más de lo que hay',
+				items: [{ product_id: MOUSE_ID, quantity: 999, condition: 'fit' }],
+			}),
+		);
+		expect(response.status).toBe(409);
+		expect(response.data.code).toBe('INSUFFICIENT_LOCATION_STOCK');
+	});
+
+	it('rechaza una bodega de otra sucursal como destino', async () => {
+		const response = await readError(
+			createWarehouseStockMovement(BRANCH_ID, {
+				from_warehouse_id: null,
+				to_warehouse_id: SOUTH_BRANCH_WAREHOUSE_ID,
+				reason: 'Mover a otra sucursal',
+				items: [{ product_id: MOUSE_ID, quantity: 1, condition: 'fit' }],
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('WAREHOUSE_INVALID');
+	});
+
+	it('rechaza origen igual a destino, motivo vacío y cantidad no positiva', async () => {
+		const same = await readError(
+			createWarehouseStockMovement(BRANCH_ID, {
+				from_warehouse_id: null,
+				to_warehouse_id: null,
+				reason: 'Mover a la misma ubicación',
+				items: [{ product_id: MOUSE_ID, quantity: 1, condition: 'fit' }],
+			}),
+		);
+		expect(same.data.code).toBe('MOVEMENT_SAME_LOCATION');
+
+		const noReason = await readError(
+			createWarehouseStockMovement(BRANCH_ID, {
+				from_warehouse_id: null,
+				to_warehouse_id: MAIN_WAREHOUSE_ID,
+				reason: '   ',
+				items: [{ product_id: MOUSE_ID, quantity: 1, condition: 'fit' }],
+			}),
+		);
+		expect(noReason.data.code).toBe('MOVEMENT_REASON_REQUIRED');
+
+		const badQuantity = await readError(
+			createWarehouseStockMovement(BRANCH_ID, {
+				from_warehouse_id: null,
+				to_warehouse_id: MAIN_WAREHOUSE_ID,
+				reason: 'Cantidad inválida',
+				items: [{ product_id: MOUSE_ID, quantity: 0, condition: 'fit' }],
+			}),
+		);
+		expect(badQuantity.data.code).toBe('MOVEMENT_QUANTITY_INVALID');
+	});
+
+	it('no aplica ninguna línea cuando una sola falta de saldo', async () => {
+		const before = await balanceAt(MOUSE_ID, { unlocated: 1 });
+		await readError(
+			createWarehouseStockMovement(BRANCH_ID, {
+				from_warehouse_id: null,
+				to_warehouse_id: MAIN_WAREHOUSE_ID,
+				reason: 'Traslado atómico',
+				items: [
+					{ product_id: MOUSE_ID, quantity: 1, condition: 'fit' },
+					{ product_id: MOUSE_ID, quantity: 999, condition: 'unfit' },
+				],
+			}),
+		);
+		expect(await balanceAt(MOUSE_ID, { unlocated: 1 })).toEqual(before);
+	});
+
+	it('replica la respuesta con la misma clave y rechaza reusarla con otro payload', async () => {
+		const payload = {
+			from_warehouse_id: null,
+			to_warehouse_id: MAIN_WAREHOUSE_ID,
+			reason: 'Ubicar',
+			items: [{ product_id: MOUSE_ID, quantity: 2, condition: 'fit' as const }],
+		};
+		const first = await createWarehouseStockMovement(BRANCH_ID, payload, {
+			idempotencyKey: 'key-traslado',
+		});
+		const replay = await createWarehouseStockMovement(BRANCH_ID, payload, {
+			idempotencyKey: 'key-traslado',
+		});
+		expect(replay.data.id).toBe(first.data.id);
+		// La réplica no volvió a mover: el saldo refleja un solo traslado.
+		const warehouse = await balanceAt(MOUSE_ID, { warehouse_id: MAIN_WAREHOUSE_ID });
+		expect(warehouse.fit).toBe(2);
+
+		const reused = await readError(
+			createWarehouseStockMovement(
+				BRANCH_ID,
+				{ ...payload, items: [{ ...payload.items[0], quantity: 3 }] },
+				{ idempotencyKey: 'key-traslado' },
+			),
+		);
+		expect(reused.status).toBe(409);
+		expect(reused.data.code).toBe('IDEMPOTENCY_KEY_REUSED');
+	});
+});
+
+describe('createInventoryAdjustment', () => {
+	const baseAdjustment = {
+		warehouse_id: MAIN_WAREHOUSE_ID as number | null,
+		reason: 'Conteo físico',
+		notes: null,
+		related_stock_receipt_id: null as number | null,
+	};
+
+	it('aplica un egreso FIFO y devuelve antes/después de físico, apto y no apto', async () => {
+		const before = await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID });
+
+		const { data } = await createInventoryAdjustment(BRANCH_ID, {
+			...baseAdjustment,
+			reason: 'Conteo físico: faltan dos unidades',
+			items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: -2, condition: 'fit' }],
+		});
+
+		expect(data.operation_type).toBe('inventory_adjustment');
+		expect(data.items[0]).toMatchObject({
+			physical_quantity_before: before.physical,
+			physical_quantity_after: before.physical - 2,
+			fit_quantity_before: before.fit,
+			fit_quantity_after: before.fit - 2,
+			unfit_quantity_before: before.unfit,
+			unfit_quantity_after: before.unfit,
+		});
+		await expectStockInvariants(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID });
+	});
+
+	it('crea un origen desconocido de ajuste en un ingreso positivo', async () => {
+		await createInventoryAdjustment(BRANCH_ID, {
+			...baseAdjustment,
+			reason: 'Conteo físico: sobran tres unidades',
+			items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: 3, condition: 'fit' }],
+		});
+
+		const origins = await listInventoryOrigins(BRANCH_ID, CABLE_PRODUCT_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+		});
+		const adjustmentOrigin = origins.data.find(
+			(origin) => origin.origin_type === 'inventory_adjustment',
+		);
+		expect(adjustmentOrigin).toBeDefined();
+		expect(adjustmentOrigin).toMatchObject({
+			stock_receipt_id: null,
+			received_on: null,
+			supplier: null,
+			purchase_document: null,
+			physical_quantity: 3,
+			fit_quantity: 3,
+			unfit_quantity: 0,
+		});
+		// El ingreso entra al final de la cola FIFO: no se adelanta al stock viejo.
+		expect(origins.data[origins.data.length - 1].origin_id).toBe(adjustmentOrigin?.origin_id);
+	});
+
+	it('exige un origen de la recepción enlazada en los egresos', async () => {
+		const missing = await readError(
+			createInventoryAdjustment(BRANCH_ID, {
+				...baseAdjustment,
+				warehouse_id: null,
+				related_stock_receipt_id: 80,
+				reason: 'Corrección enlazada',
+				items: [{ product_id: MOUSE_ID, quantity_delta: -1, condition: 'fit' }],
+			}),
+		);
+		expect(missing.status).toBe(422);
+		expect(missing.data.code).toBe('ADJUSTMENT_ORIGIN_REQUIRED');
+
+		const { data } = await createInventoryAdjustment(BRANCH_ID, {
+			...baseAdjustment,
+			warehouse_id: null,
+			related_stock_receipt_id: 80,
+			reason: 'Corrección enlazada',
+			items: [{ product_id: MOUSE_ID, quantity_delta: -1, condition: 'fit', origin_id: 51 }],
+		});
+		expect(data.related_stock_receipt_id).toBe(80);
+		expect(data.items[0].fit_quantity_after).toBe(data.items[0].fit_quantity_before - 1);
+	});
+
+	it('rechaza un origen que no pertenece a la recepción enlazada', async () => {
+		const response = await readError(
+			createInventoryAdjustment(BRANCH_ID, {
+				...baseAdjustment,
+				warehouse_id: null,
+				related_stock_receipt_id: 80,
+				reason: 'Origen ajeno',
+				// El origin 52 es stock inicial sin recepción.
+				items: [
+					{ product_id: MOUSE_ID, quantity_delta: -1, condition: 'fit', origin_id: 52 },
+				],
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('ADJUSTMENT_ORIGIN_MISMATCH');
+	});
+
+	it('no permite atribuir un ingreso positivo a un origen viejo', async () => {
+		const response = await readError(
+			createInventoryAdjustment(BRANCH_ID, {
+				...baseAdjustment,
+				warehouse_id: null,
+				reason: 'Ingreso atribuido',
+				items: [
+					{ product_id: MOUSE_ID, quantity_delta: 2, condition: 'fit', origin_id: 51 },
+				],
+			}),
+		);
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('ADJUSTMENT_ORIGIN_NOT_ALLOWED');
+	});
+
+	it('rechaza delta cero, motivo vacío y egreso bajo cero', async () => {
+		const zero = await readError(
+			createInventoryAdjustment(BRANCH_ID, {
+				...baseAdjustment,
+				items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: 0, condition: 'fit' }],
+			}),
+		);
+		expect(zero.data.code).toBe('ADJUSTMENT_QUANTITY_DELTA_INVALID');
+
+		const noReason = await readError(
+			createInventoryAdjustment(BRANCH_ID, {
+				...baseAdjustment,
+				reason: '  ',
+				items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: -1, condition: 'fit' }],
+			}),
+		);
+		expect(noReason.data.code).toBe('ADJUSTMENT_REASON_REQUIRED');
+
+		const belowZero = await readError(
+			createInventoryAdjustment(BRANCH_ID, {
+				...baseAdjustment,
+				items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: -9999, condition: 'fit' }],
+			}),
+		);
+		expect(belowZero.status).toBe(409);
+		expect(belowZero.data.code).toBe('INSUFFICIENT_LOCATION_STOCK');
+	});
+
+	it('rechaza una bodega de otra sucursal y una recepción sin stock acá', async () => {
+		const foreign = await readError(
+			createInventoryAdjustment(BRANCH_ID, {
+				...baseAdjustment,
+				warehouse_id: SOUTH_BRANCH_WAREHOUSE_ID,
+				items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: -1, condition: 'fit' }],
+			}),
+		);
+		expect(foreign.data.code).toBe('WAREHOUSE_INVALID');
+
+		const unknownReceipt = await readError(
+			createInventoryAdjustment(BRANCH_ID, {
+				...baseAdjustment,
+				related_stock_receipt_id: 99999,
+				items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: -1, condition: 'fit' }],
+			}),
+		);
+		expect(unknownReceipt.data.code).toBe('ADJUSTMENT_RECEIPT_NOT_FOUND');
+	});
+
+	it('no aplica ninguna línea cuando una sola falta de saldo', async () => {
+		const before = await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID });
+		await readError(
+			createInventoryAdjustment(BRANCH_ID, {
+				...baseAdjustment,
+				items: [
+					{ product_id: CABLE_PRODUCT_ID, quantity_delta: -1, condition: 'fit' },
+					{ product_id: CABLE_PRODUCT_ID, quantity_delta: -50, condition: 'unfit' },
+				],
+			}),
+		);
+		expect(await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID })).toEqual(
+			before,
+		);
+	});
+
+	it('trata la recepción omitida igual que una recepción nula: egreso general por FIFO', async () => {
+		const omitted = await createInventoryAdjustment(BRANCH_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			reason: 'Conteo físico',
+			items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: -2, condition: 'fit' }],
+		});
+		const afterOmitted = await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID });
+
+		resetInventoryStockStoreForTests();
+
+		const explicit = await createInventoryAdjustment(BRANCH_ID, {
+			...baseAdjustment,
+			related_stock_receipt_id: null,
+			items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: -2, condition: 'fit' }],
+		});
+
+		expect(omitted.data.related_stock_receipt_id).toBeNull();
+		expect(omitted.data.items).toEqual(explicit.data.items);
+		expect(await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID })).toEqual(
+			afterOmitted,
+		);
+	});
+
+	it('vuelve a subir un producto cuyo saldo llegó a cero, con ubicación y sin ella', async () => {
+		const start = await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID });
+
+		await createInventoryAdjustment(BRANCH_ID, {
+			...baseAdjustment,
+			reason: 'Conteo físico: no queda ninguno',
+			items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: -start.fit, condition: 'fit' }],
+		});
+		expect((await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID })).physical) //
+			.toBe(0);
+
+		// El catálogo lo sigue ofreciendo: un conteo en cero es corregible al alza.
+		expect(
+			getInventoryAdjustableProducts().some(
+				(product) => product.id === CABLE_PRODUCT_ID && !product.serial_tracking,
+			),
+		).toBe(true);
+
+		await createInventoryAdjustment(BRANCH_ID, {
+			...baseAdjustment,
+			reason: 'Conteo físico: aparecen tres',
+			items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: 3, condition: 'fit' }],
+		});
+		expect(
+			await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID }),
+		).toMatchObject({ physical: 3, fit: 3, unfit: 0 });
+
+		// «Sin ubicación» es una ubicación como cualquier otra, también en cero.
+		expect((await balanceAt(CABLE_PRODUCT_ID, { unlocated: 1 })).physical).toBe(0);
+		await createInventoryAdjustment(BRANCH_ID, {
+			...baseAdjustment,
+			warehouse_id: null,
+			reason: 'Conteo físico: aparecen dos sin ubicar',
+			items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: 2, condition: 'fit' }],
+		});
+		expect(await balanceAt(CABLE_PRODUCT_ID, { unlocated: 1 })).toMatchObject({
+			physical: 2,
+			fit: 2,
+		});
+		await expectStockInvariants(CABLE_PRODUCT_ID, { unlocated: 1 });
+	});
+
+	it('deja ver el faltante cuando el conteo baja del disponible reservado, sin truncarlo en cero', async () => {
+		const before = getInventoryStockAvailability(BRANCH_ID, MOUSE_ID);
+		// El fixture reserva 16 de los 17 aptos de la sucursal: queda 1 disponible.
+		expect(before).toMatchObject({ fit_quantity: 17, reserved_quantity: 16 });
+		expect(before.available_quantity).toBe(1);
+
+		await createInventoryAdjustment(BRANCH_ID, {
+			...baseAdjustment,
+			warehouse_id: null,
+			reason: 'Conteo físico: faltan tres',
+			items: [{ product_id: MOUSE_ID, quantity_delta: -3, condition: 'fit' }],
+		});
+
+		const after = getInventoryStockAvailability(BRANCH_ID, MOUSE_ID);
+		// El ajuste corrige el físico y no libera compromisos: la reserva sigue.
+		expect(after.reserved_quantity).toBe(before.reserved_quantity);
+		expect(after.fit_quantity).toBe(before.fit_quantity - 3);
+		// Lo que la card exige poder mostrar: negativo, no truncado en cero.
+		expect(after.available_quantity).toBe(-2);
+	});
+
+	it('persiste el resultado entre recargas de la pestaña', async () => {
+		await createInventoryAdjustment(BRANCH_ID, {
+			...baseAdjustment,
+			reason: 'Conteo físico',
+			items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: -4, condition: 'fit' }],
+		});
+		const afterWrite = await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID });
+
+		simulateInventoryStockReloadForTests();
+
+		expect(await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID })).toEqual(
+			afterWrite,
+		);
 	});
 });

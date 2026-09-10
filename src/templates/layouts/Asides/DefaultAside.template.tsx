@@ -489,6 +489,37 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
+							{/* Traslados internos y ajuste por conteo (mock, PR #67, card 08) */}
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.trasladosInternos.authority}
+								requireAll={Pages.inventory.subPages.trasladosInternos.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.trasladosInternos.text}
+									to={Pages.inventory.subPages.trasladosInternos.to}
+									icon={Pages.inventory.subPages.trasladosInternos.icon}
+									id={Pages.inventory.subPages.trasladosInternos.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.trasladosInternos.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.ajustesInventario.authority}
+								requireAll={Pages.inventory.subPages.ajustesInventario.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.ajustesInventario.text}
+									to={Pages.inventory.subPages.ajustesInventario.to}
+									icon={Pages.inventory.subPages.ajustesInventario.icon}
+									id={Pages.inventory.subPages.ajustesInventario.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.ajustesInventario.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
 							<AuthorityCheckNav
 								authority={Pages.inventory.subPages.retirosEquipos.authority}
 								userAuthority={userAuthority}

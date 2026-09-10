@@ -88,6 +88,47 @@ const products = [
 export const resolveInventoryProduct = (productId: number): IProcurementProduct | undefined =>
 	products.find((product) => product.id === productId);
 
+/**
+ * Catálogo ajustable de la sucursal: **todos** los productos no serializados,
+ * tengan o no saldo hoy en la ubicación que se está corrigiendo.
+ *
+ * Un ajuste por conteo existe justamente para registrar lo que el saldo no
+ * dice: un producto que llegó a cero —o que nunca estuvo en esa bodega— sigue
+ * siendo corregible al alza. Alimentar el selector con el stock vigente lo
+ * dejaría fuera para siempre. Los serializados quedan afuera por la misma
+ * razón que en `listInventoryStock`: se corrigen por serie, no por cantidad.
+ */
+export const inventoryAdjustableProducts: IProcurementProduct[] = products
+	.filter((product) => !product.serial_tracking)
+	.sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id);
+
+/**
+ * Reservas (holds) vigentes de la sucursal: unidades ya comprometidas con
+ * ventas o pedidos que todavía no salieron físicamente.
+ *
+ * Son **globales de la sucursal**, no de una bodega: un compromiso de venta no
+ * elige de qué estante saldrá la unidad, y repartirlo entre bodegas inventaría
+ * un dato que el negocio no tiene. Existen para poder mostrar lo que la card
+ * exige: un conteo real puede dejar el disponible por debajo de lo reservado,
+ * y ese faltante se muestra en vez de truncarse en cero. Ningún ajuste las
+ * toca — corrige el físico, no cancela compromisos.
+ */
+export interface IInventoryStockHold {
+	branch_id: number;
+	product_id: number;
+	reserved_quantity: number;
+}
+
+/**
+ * El mouse de la sucursal 4 tiene 17 aptos repartidos (13 sin ubicación + 4 en
+ * el estante) y 16 comprometidos: queda 1 disponible. Un conteo que reste 3
+ * deja el disponible en −2, que es exactamente el caso que la card pide poder
+ * mostrar. Ningún otro fixture depende de este número.
+ */
+export const inventoryStockHolds: IInventoryStockHold[] = [
+	{ branch_id: 4, product_id: mouseProduct.id, reserved_quantity: 16 },
+];
+
 export const inventoryOrigins: IInventorySeedOrigin[] = [
 	unknownOrigin,
 	inventoryOrigin51,
