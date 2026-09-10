@@ -104,6 +104,8 @@ const DocumentoCompraDetalle = lazy(
 );
 const Recepciones = lazy(() => import('@/pages/inventario/abastecimiento/Recepciones'));
 const StockPorUbicacion = lazy(() => import('@/pages/inventario/abastecimiento/StockPorUbicacion'));
+const TrasladosInternos = lazy(() => import('@/pages/inventario/abastecimiento/TrasladosInternos'));
+const AjustesInventario = lazy(() => import('@/pages/inventario/abastecimiento/AjustesInventario'));
 const RecepcionDetalle = lazy(
 	() => import('@/pages/inventario/abastecimiento/Recepciones/RecepcionDetalle'),
 );
@@ -517,6 +519,18 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: pagesConfig.inventory.subPages.stockPorUbicacion.to,
 		element: <StockPorUbicacion />,
 		authority: pagesConfig.inventory.subPages.stockPorUbicacion.authority,
+	},
+
+	{
+		path: pagesConfig.inventory.subPages.trasladosInternos.to,
+		element: <TrasladosInternos />,
+		authority: pagesConfig.inventory.subPages.trasladosInternos.authority,
+	},
+
+	{
+		path: pagesConfig.inventory.subPages.ajustesInventario.to,
+		element: <AjustesInventario />,
+		authority: pagesConfig.inventory.subPages.ajustesInventario.authority,
 	},
 
 	{

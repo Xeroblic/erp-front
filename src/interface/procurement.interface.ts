@@ -887,3 +887,131 @@ export interface IProcurementPageParams {
 	page: number;
 	per_page: number;
 }
+
+/* =================================================
+   Traslado interno y ajuste por conteo — secciones 9 y 11 del contrato
+   ================================================= */
+
+/**
+ * Condición de las unidades, como **unión explícita**.
+ *
+ * Hasta la card 08 (ZF-113) la condición sólo existía como el par de campos
+ * `fit_quantity`/`unfit_quantity` de una fila agregada (sección 3). Traslados y
+ * ajustes son las primeras operaciones que la reciben como **entrada**: el
+ * contrato exige condición explícita por ítem y **prohíbe la conversión entre
+ * condiciones** dentro de la misma operación, así que el tipo tiene que poder
+ * expresar «esta línea es de aptos» sin arrastrar un par de cantidades.
+ */
+export type TStockCondition = 'fit' | 'unfit';
+
+/**
+ * `POST B/warehouse-stock-movements` (sección 9): ubica o mueve stock ya
+ * existente entre ubicaciones de **la misma sucursal**.
+ *
+ * `from_warehouse_id`/`to_warehouse_id` en `null` son «Sin ubicación» — origen
+ * y destino válidos, no una ubicación ausente, igual que en el resto del
+ * módulo. Entre sucursales **no** se usa esta ruta: eso sigue siendo el flujo
+ * de transferencia existente.
+ */
+export interface IWarehouseStockMovementItemInput {
+	product_id: number;
+	quantity: number;
+	condition: TStockCondition;
+}
+
+export interface IWarehouseStockMovementPayload {
+	from_warehouse_id: number | null;
+	to_warehouse_id: number | null;
+	reason: string;
+	items: IWarehouseStockMovementItemInput[];
+}
+
+/**
+ * Ítem de la respuesta 201. Los saldos son **de la condición indicada** en el
+ * ítem, no del físico total de la ubicación.
+ */
+export interface IWarehouseStockMovementItem extends IWarehouseStockMovementItemInput {
+	origin_quantity_after: number;
+	destination_quantity_after: number;
+}
+
+/**
+ * 201 `data` de `warehouse-stock-movements`. `global_stock_delta` es siempre
+ * `0`: las unidades trasladadas cuentan **una vez** aunque la operación tenga
+ * dos efectos (salida del origen y entrada al destino) — mismo criterio de
+ * literal-cero que `physical_stock_delta` en `IInventoryDocumentAllocation`.
+ */
+export interface IWarehouseStockMovement {
+	/** UUID de la operación de inventario. */
+	id: string;
+	operation_type: 'warehouse_stock_placement';
+	branch_id: number;
+	from_warehouse_id: number | null;
+	to_warehouse_id: number | null;
+	reason: string;
+	items: IWarehouseStockMovementItem[];
+	global_stock_delta: 0;
+	created_at: TIsoTimestamp;
+}
+
+/**
+ * `POST B/inventory-adjustments` (sección 11): corrige una diferencia de
+ * conteo con motivo auditado.
+ *
+ * `origin_id` sólo es admisible en **egresos** (`quantity_delta` negativo): un
+ * ingreso positivo no puede atribuirse a una procedencia vieja, crea un origen
+ * desconocido de ajuste. Un egreso general sin `origin_id` consume FIFO.
+ */
+export interface IInventoryAdjustmentItemInput {
+	product_id: number;
+	/** Distinto de cero. Negativo es egreso, positivo es ingreso. */
+	quantity_delta: number;
+	condition: TStockCondition;
+	origin_id?: number | null;
+}
+
+/**
+ * `warehouse_id` es **obligatorio aunque admita `null`**: la ubicación siempre
+ * se declara, y `null` significa «Sin ubicación», nunca «no se eligió».
+ * `related_stock_receipt_id` enlaza la corrección a una recepción sin
+ * reescribirla; en ese caso los egresos exigen un origen de esa recepción.
+ */
+export interface IInventoryAdjustmentPayload {
+	warehouse_id: number | null;
+	reason: string;
+	/** Opcionales del contrato: omitirlos equivale a mandarlos en `null`. */
+	notes?: string | null;
+	related_stock_receipt_id?: number | null;
+	items: IInventoryAdjustmentItemInput[];
+}
+
+/**
+ * Ítem de la respuesta 201: antes y después de `physical`, `fit` y `unfit`
+ * **por producto** en la ubicación ajustada. La pantalla los muestra como
+ * confirmación de lo aplicado.
+ */
+export interface IInventoryAdjustmentItem {
+	product_id: number;
+	quantity_delta: number;
+	condition: TStockCondition;
+	physical_quantity_before: number;
+	physical_quantity_after: number;
+	fit_quantity_before: number;
+	fit_quantity_after: number;
+	unfit_quantity_before: number;
+	unfit_quantity_after: number;
+}
+
+/** 201 `data` de `inventory-adjustments`. */
+export interface IInventoryAdjustment {
+	/** UUID de la operación de inventario. */
+	id: string;
+	operation_type: 'inventory_adjustment';
+	branch_id: number;
+	warehouse_id: number | null;
+	reason: string;
+	notes: string | null;
+	related_stock_receipt_id: number | null;
+	items: IInventoryAdjustmentItem[];
+	created_at: TIsoTimestamp;
+}

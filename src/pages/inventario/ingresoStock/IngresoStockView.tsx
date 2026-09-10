@@ -1,4 +1,8 @@
 import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import Alert from '@/components/ui/Alert';
+import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
+import Pages from '@/config/pages.config';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -92,6 +96,41 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 
 			<Container>
 				<div className='flex flex-col gap-6 py-8'>
+					{/*
+					 * Card 08 (ZF-113): esta pantalla convive con las tres del contrato
+					 * nuevo mientras el backend no publique sus endpoints. No cambia de
+					 * comportamiento; sólo deriva a la pantalla correcta de cada caso.
+					 * Va detrás del flag porque, con los mocks apagados, las tres
+					 * destinos sólo saben decir «no habilitado».
+					 */}
+					{INVENTORY_STOCK_USE_MOCKS && (
+						<Alert
+							color='blue'
+							variant='outline'
+							icon='HeroInformationCircle'
+							title='Esta pantalla se está separando en tres'>
+							Para <strong>ingresar mercadería comprada</strong> usa{' '}
+							<Link
+								className='font-semibold underline'
+								to={Pages.inventory.subPages.recepciones.to}>
+								Recepciones
+							</Link>
+							; para <strong>mover unidades entre bodegas</strong>,{' '}
+							<Link
+								className='font-semibold underline'
+								to={Pages.inventory.subPages.trasladosInternos.to}>
+								Traslados internos
+							</Link>
+							; para <strong>corregir una diferencia de conteo</strong>,{' '}
+							<Link
+								className='font-semibold underline'
+								to={Pages.inventory.subPages.ajustesInventario.to}>
+								Ajuste de inventario
+							</Link>
+							. Esas pantallas registran bodega, condición y procedencia, que acá no
+							existen.
+						</Alert>
+					)}
 					{lastBatchId && (
 						<div className='flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900'>
 							<span>

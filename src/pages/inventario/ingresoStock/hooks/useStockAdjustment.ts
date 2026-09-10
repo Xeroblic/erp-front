@@ -1,6 +1,21 @@
 /**
  * Hook para manejar envío de ajuste de stock
  * Responsabilidad única: comunicación con API (Single Responsibility)
+ *
+ * **Decisión de migración (card 08, ZF-113).** Este hook escribe contra el
+ * endpoint real `POST /subsidiaries/{sub}/stock-adjustments`, que hoy sirve dos
+ * cosas distintas: ingresar mercadería comprada y corregir una diferencia de
+ * conteo. El contrato nuevo (`frontend-guide.md`, PR #67 del backend) las
+ * separa en tres pantallas —recepción, traslado interno y ajuste por conteo—,
+ * que ya existen mockeadas bajo `pages/inventario/abastecimiento`.
+ *
+ * Mientras el backend no publique esos endpoints, ambas cosas **conviven**:
+ * esta pantalla sigue siendo la única operativa (`VITE_INVENTORY_STOCK_USE_MOCKS`
+ * está apagado fuera de desarrollo) y sólo suma un aviso que deriva al destino
+ * correcto. Cuando el contrato se publique, lo que se retira es este hook junto
+ * con `pages/inventario/ingresoStock`, no una parte suya: su payload
+ * (`quantity_change` firmado, sin bodega, sin condición y sin procedencia) no
+ * tiene equivalente en el contrato nuevo y no se puede migrar campo a campo.
  */
 import { useCallback, useState } from 'react';
 import { toast } from 'react-toastify';
