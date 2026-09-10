@@ -112,7 +112,9 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 						</CardHeader>
 						<CardBody className='space-y-4'>
 							<div className='space-y-1'>
-								<Label htmlFor='proveedor-rut'>RUT</Label>
+								<Label htmlFor='proveedor-rut'>
+									RUT <span className='text-red-500'>*</span>
+								</Label>
 								<Input
 									id='proveedor-rut'
 									name='rut'
@@ -166,6 +168,10 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 									/>
 								</div>
 							</div>
+							<p className='-mt-2 text-xs text-zinc-500 dark:text-zinc-400'>
+								<span className='text-red-500'>*</span> Ingresa al menos una de las
+								dos.
+							</p>
 
 							<div className='space-y-1'>
 								<Label htmlFor='proveedor-activity'>Giro</Label>
