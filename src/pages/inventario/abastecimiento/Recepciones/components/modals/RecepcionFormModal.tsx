@@ -2,7 +2,12 @@ import React from 'react';
 import { FieldArray, FormikProvider } from 'formik';
 import { purchasableProcurementProducts } from '@/mocks/db/procurement.db';
 import { listWarehousesForStockReceipts } from '@/services/procurement/stockReceipts.service';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Input from '@/components/form/Input';
@@ -150,13 +155,24 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 				if (!open) handleClose();
 			}}
 			size='xl'
+			isScrollable
 			isStaticBackdrop={isSubmitting}>
-			<ModalHeader>{isEdit ? 'Corregir recepción' : 'Nueva recepción'}</ModalHeader>
+			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+				<div>
+					<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+						{isEdit ? 'Corregir recepción' : 'Nueva recepción'}
+					</h2>
+					<p className='text-sm font-normal text-zinc-600 dark:text-zinc-400'>
+						Completa la bodega, las líneas recibidas y el respaldo documental.
+					</p>
+				</div>
+			</ModalHeader>
 			{/* `FieldArray` lee su bag de Formik vía contexto: sin `FormikProvider`,
 			    `push`/`remove` no encuentran `items` porque este modal usa `useFormik`
 			    directo. Mismo motivo que en `DocumentoCompraFormModal`. */}
 			<FormikProvider value={formik}>
 				<form
+					className='flex min-h-0 flex-1 flex-col overflow-hidden'
 					onSubmit={(event) => {
 						if (hasVersionConflict) {
 							event.preventDefault();
@@ -164,7 +180,7 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 						}
 						formik.handleSubmit(event);
 					}}>
-					<ModalBody className='space-y-4'>
+					<ModalBody className='min-h-0 flex-1 space-y-4 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
 						{hasVersionConflict && (
 							<Alert
 								color='amber'
@@ -623,18 +639,26 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 							</FieldArray>
 						</fieldset>
 					</ModalBody>
-					<ModalFooter>
-						<Button variant='outline' onClick={handleClose} isDisable={isSubmitting}>
-							Cancelar
-						</Button>
-						<Button
-							type='submit'
-							variant='solid'
-							color='blue'
-							isDisable={isSubmitting || hasVersionConflict}
-							isLoading={isSubmitting}>
-							{submitLabel}
-						</Button>
+					<ModalFooter className='shrink-0 border-t border-zinc-200 bg-white pt-4 dark:border-zinc-700 dark:bg-zinc-950'>
+						<ModalFooterChild>
+							<Button
+								variant='outline'
+								onClick={handleClose}
+								isDisable={isSubmitting}>
+								Cancelar
+							</Button>
+						</ModalFooterChild>
+						<ModalFooterChild>
+							<Button
+								type='submit'
+								variant='solid'
+								color='blue'
+								icon='HeroCheck'
+								isDisable={isSubmitting || hasVersionConflict}
+								isLoading={isSubmitting}>
+								{submitLabel}
+							</Button>
+						</ModalFooterChild>
 					</ModalFooter>
 				</form>
 			</FormikProvider>

@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Label from '@/components/form/Label';
 import Textarea from '@/components/form/Textarea';
@@ -77,7 +82,11 @@ const CancelStockReceiptModal: React.FC<ICancelStockReceiptModalProps> = ({
 			size='sm'
 			isCentered
 			isStaticBackdrop={idempotentWrite.isSubmitting}>
-			<ModalHeader>Anular recepción</ModalHeader>
+			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+				<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+					Anular recepción
+				</h2>
+			</ModalHeader>
 			<ModalBody>
 				<p className='text-lg'>
 					¿Anular la recepción <strong>#{receipt?.id}</strong>?
@@ -105,21 +114,25 @@ const CancelStockReceiptModal: React.FC<ICancelStockReceiptModalProps> = ({
 					</p>
 				)}
 			</ModalBody>
-			<ModalFooter>
-				<Button
-					variant='outline'
-					onClick={handleClose}
-					isDisable={idempotentWrite.isSubmitting}>
-					Volver
-				</Button>
-				<Button
-					variant='outline'
-					color='red'
-					onClick={handleConfirm}
-					isDisable={idempotentWrite.isSubmitting || !reason.trim()}
-					isLoading={idempotentWrite.isSubmitting}>
-					{idempotentWrite.canRetry ? 'Reintentar' : 'Anular'}
-				</Button>
+			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						onClick={handleClose}
+						isDisable={idempotentWrite.isSubmitting}>
+						Volver
+					</Button>
+				</ModalFooterChild>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						color='red'
+						onClick={handleConfirm}
+						isDisable={idempotentWrite.isSubmitting || !reason.trim()}
+						isLoading={idempotentWrite.isSubmitting}>
+						{idempotentWrite.canRetry ? 'Reintentar' : 'Anular'}
+					</Button>
+				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>
 	);

@@ -1,6 +1,11 @@
 import React from 'react';
 import { toast } from 'react-toastify';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch } from '@/store';
@@ -62,7 +67,11 @@ const ConfirmDocumentoCompraModal: React.FC<IConfirmDocumentoCompraModalProps> =
 			size='sm'
 			isCentered
 			isStaticBackdrop={idempotentWrite.isSubmitting}>
-			<ModalHeader>Confirmar documento</ModalHeader>
+			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+				<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+					Confirmar documento
+				</h2>
+			</ModalHeader>
 			<ModalBody>
 				<p className='text-lg'>
 					¿Confirmar el documento <strong>{document?.document_number}</strong>?
@@ -77,21 +86,25 @@ const ConfirmDocumentoCompraModal: React.FC<IConfirmDocumentoCompraModalProps> =
 					</p>
 				)}
 			</ModalBody>
-			<ModalFooter>
-				<Button
-					variant='outline'
-					onClick={() => setIsOpen(false)}
-					isDisable={idempotentWrite.isSubmitting}>
-					Cancelar
-				</Button>
-				<Button
-					variant='solid'
-					color='emerald'
-					onClick={handleConfirm}
-					isDisable={idempotentWrite.isSubmitting}
-					isLoading={idempotentWrite.isSubmitting}>
-					Confirmar
-				</Button>
+			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						onClick={() => setIsOpen(false)}
+						isDisable={idempotentWrite.isSubmitting}>
+						Cancelar
+					</Button>
+				</ModalFooterChild>
+				<ModalFooterChild>
+					<Button
+						variant='solid'
+						color='emerald'
+						onClick={handleConfirm}
+						isDisable={idempotentWrite.isSubmitting}
+						isLoading={idempotentWrite.isSubmitting}>
+						Confirmar
+					</Button>
+				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>
 	);

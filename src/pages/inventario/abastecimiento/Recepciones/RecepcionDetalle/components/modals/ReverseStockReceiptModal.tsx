@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Label from '@/components/form/Label';
@@ -81,7 +86,11 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 			size='sm'
 			isCentered
 			isStaticBackdrop={idempotentWrite.isSubmitting}>
-			<ModalHeader>Revertir recepción</ModalHeader>
+			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+				<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+					Revertir recepción
+				</h2>
+			</ModalHeader>
 			<ModalBody>
 				<p className='text-lg'>
 					¿Revertir la recepción <strong>#{receipt?.id}</strong>?
@@ -121,21 +130,27 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 					</Alert>
 				)}
 			</ModalBody>
-			<ModalFooter>
-				<Button
-					variant='outline'
-					onClick={handleClose}
-					isDisable={idempotentWrite.isSubmitting}>
-					Volver
-				</Button>
-				<Button
-					variant='outline'
-					color='red'
-					onClick={handleConfirm}
-					isDisable={idempotentWrite.isSubmitting || !reason.trim() || isAlreadyConsumed}
-					isLoading={idempotentWrite.isSubmitting}>
-					{idempotentWrite.canRetry ? 'Reintentar' : 'Revertir'}
-				</Button>
+			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						onClick={handleClose}
+						isDisable={idempotentWrite.isSubmitting}>
+						Volver
+					</Button>
+				</ModalFooterChild>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						color='red'
+						onClick={handleConfirm}
+						isDisable={
+							idempotentWrite.isSubmitting || !reason.trim() || isAlreadyConsumed
+						}
+						isLoading={idempotentWrite.isSubmitting}>
+						{idempotentWrite.canRetry ? 'Reintentar' : 'Revertir'}
+					</Button>
+				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>
 	);

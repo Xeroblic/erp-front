@@ -34,6 +34,14 @@ interface SelectComuneProps {
 	onChange?: (value: string | null, data?: IComunaOptionData) => void;
 	error?: string | boolean;
 	disabled?: boolean;
+	/**
+	 * Oculta el rótulo propio (ícono + texto). Para usarlo junto a otro campo con el
+	 * `Label` estándar (mismo `<div className='space-y-1'>` que envuelve un `Input`),
+	 * en vez de dos rótulos distintos y desalineados entre sí.
+	 */
+	hideLabel?: boolean;
+	/** `id` del control, para asociarlo a un `Label` externo (`htmlFor`) cuando `hideLabel` es `true`. */
+	inputId?: string;
 }
 
 export const SelectComune: React.FC<SelectComuneProps> = ({
@@ -46,6 +54,8 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 	onChange: manualOnChange,
 	error: manualError,
 	disabled: manualDisabled = false,
+	hideLabel = false,
+	inputId,
 }) => {
 	// Si no está dentro de FormProvider, useFormContext() retorna null pero NO debemos hacer throw error manualmente.
 	const methods = useFormContext();
@@ -113,6 +123,7 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 			<div className='group relative w-full'>
 				<SelectReact
 					name={name}
+					inputId={inputId}
 					options={options as TSelectOption[]}
 					value={selectedOption as TSelectOption}
 					placeholder={dynamicPlaceholder}
@@ -138,10 +149,12 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 
 	return (
 		<div ref={containerRef} className='w-full'>
-			<div className='mb-1.5 flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-				<Icon icon='HeroMapPin' className='h-4 w-4 text-blue-500' />
-				{label} {isRequired && <span className='text-red-500'>*</span>}
-			</div>
+			{!hideLabel && (
+				<div className='mb-1.5 flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+					<Icon icon='HeroMapPin' className='h-4 w-4 text-blue-500' />
+					{label} {isRequired && <span className='text-red-500'>*</span>}
+				</div>
+			)}
 			<FieldWrap>
 				{methods && methods.control ? (
 					<Controller

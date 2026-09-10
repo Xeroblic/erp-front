@@ -1,6 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Label from '@/components/form/Label';
@@ -151,7 +156,11 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 			size='md'
 			isCentered
 			isStaticBackdrop={idempotentWrite.isSubmitting}>
-			<ModalHeader>Vincular documento de compra</ModalHeader>
+			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+				<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+					Vincular documento de compra
+				</h2>
+			</ModalHeader>
 			<ModalBody className='space-y-4'>
 				<p className='text-lg'>
 					Vincular un documento a la recepción <strong>#{receipt?.id}</strong>
@@ -255,21 +264,25 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 					</p>
 				)}
 			</ModalBody>
-			<ModalFooter>
-				<Button
-					variant='outline'
-					onClick={handleClose}
-					isDisable={idempotentWrite.isSubmitting}>
-					Volver
-				</Button>
-				<Button
-					variant='solid'
-					color='blue'
-					onClick={handleConfirm}
-					isDisable={idempotentWrite.isSubmitting || !canSubmit}
-					isLoading={idempotentWrite.isSubmitting}>
-					{idempotentWrite.canRetry ? 'Reintentar' : 'Vincular'}
-				</Button>
+			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						onClick={handleClose}
+						isDisable={idempotentWrite.isSubmitting}>
+						Volver
+					</Button>
+				</ModalFooterChild>
+				<ModalFooterChild>
+					<Button
+						variant='solid'
+						color='blue'
+						onClick={handleConfirm}
+						isDisable={idempotentWrite.isSubmitting || !canSubmit}
+						isLoading={idempotentWrite.isSubmitting}>
+						{idempotentWrite.canRetry ? 'Reintentar' : 'Vincular'}
+					</Button>
+				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>
 	);

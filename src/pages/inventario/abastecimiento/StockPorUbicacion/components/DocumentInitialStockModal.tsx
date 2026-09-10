@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Input from '@/components/form/Input';
@@ -159,7 +164,11 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 			size='md'
 			isCentered
 			isStaticBackdrop={idempotentWrite.isSubmitting}>
-			<ModalHeader>Documentar stock inicial</ModalHeader>
+			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+				<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+					Documentar stock inicial
+				</h2>
+			</ModalHeader>
 			<ModalBody className='space-y-4'>
 				<p className='text-lg'>
 					Respaldar unidades del origin <strong>#{origin?.origin_id}</strong>
@@ -276,21 +285,25 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 					</p>
 				)}
 			</ModalBody>
-			<ModalFooter>
-				<Button
-					variant='outline'
-					onClick={handleClose}
-					isDisable={idempotentWrite.isSubmitting}>
-					Volver
-				</Button>
-				<Button
-					variant='solid'
-					color='blue'
-					onClick={handleConfirm}
-					isDisable={idempotentWrite.isSubmitting || !canSubmit}
-					isLoading={idempotentWrite.isSubmitting}>
-					{idempotentWrite.canRetry ? 'Reintentar' : 'Documentar'}
-				</Button>
+			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						onClick={handleClose}
+						isDisable={idempotentWrite.isSubmitting}>
+						Volver
+					</Button>
+				</ModalFooterChild>
+				<ModalFooterChild>
+					<Button
+						variant='solid'
+						color='blue'
+						onClick={handleConfirm}
+						isDisable={idempotentWrite.isSubmitting || !canSubmit}
+						isLoading={idempotentWrite.isSubmitting}>
+						{idempotentWrite.canRetry ? 'Reintentar' : 'Documentar'}
+					</Button>
+				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>
 	);
