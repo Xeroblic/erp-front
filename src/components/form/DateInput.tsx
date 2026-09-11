@@ -18,6 +18,8 @@ type Props = {
 	maxYear?: number;
 	minDate?: Date;
 	maxDate?: Date;
+	/** En filtros, conserva el borrador hasta completar una fecha válida o borrar el campo. */
+	commitOnComplete?: boolean;
 } & Partial<IValidationBaseProps>;
 
 const isoToDisplay = (v?: string | null): string => {
@@ -42,6 +44,19 @@ const formatDisplayMask = (raw: string): string => {
 	return out;
 };
 
+const parseCompleteDate = (display: string): string | null => {
+	const match = display.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+	if (!match) return null;
+	const [, day, month, year] = match;
+	const iso = `${year}-${month}-${day}`;
+	const date = new Date(`${iso}T00:00:00`);
+	return date.getFullYear() === Number(year) &&
+		date.getMonth() + 1 === Number(month) &&
+		date.getDate() === Number(day)
+		? iso
+		: null;
+};
+
 const DateInput: React.FC<Props> = ({
 	name,
 	value,
@@ -55,6 +70,7 @@ const DateInput: React.FC<Props> = ({
 	maxYear,
 	minDate,
 	maxDate,
+	commitOnComplete = false,
 	isValid,
 	isTouched,
 	invalidFeedback,
@@ -98,8 +114,15 @@ const DateInput: React.FC<Props> = ({
 	const handleTypedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const masked = formatDisplayMask(e.target.value);
 		setDisplay(masked);
-		const iso = toApiDate(masked) || '';
+		const iso =
+			commitOnComplete && masked !== '' ? parseCompleteDate(masked) : toApiDate(masked) || '';
+		if (iso === null) return;
 		onChange?.({ target: { name, value: iso } });
+	};
+
+	const handleBlur: React.FocusEventHandler<HTMLInputElement> = (event) => {
+		if (commitOnComplete) setDisplay(isoToDisplay(value));
+		onBlur?.(event);
 	};
 
 	const openPicker = () => setOpen((v) => !v);
@@ -174,7 +197,7 @@ const DateInput: React.FC<Props> = ({
 					value={display}
 					placeholder={placeholder}
 					onChange={handleTypedChange}
-					onBlur={onBlur}
+					onBlur={handleBlur}
 					disabled={disabled}
 					className={className}
 					isValid={isValid}

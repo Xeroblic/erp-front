@@ -268,10 +268,12 @@ describe('Ficha de stock por ubicación — procedencias y documentar', () => {
 			expect(within(region).queryByText('Cargando procedencias…')).not.toBeInTheDocument(),
 		);
 		expect(within(region).getByRole('option', { name: 'Factura #1234' })).toBeInTheDocument();
-		// Mismo paginador que el resto de las tablas (`TableCardFooterTemplateV2`):
-		// sin botón «Siguiente» con nombre accesible, se salta a la página 2 por
-		// el campo de página.
-		fireEvent.change(within(region).getByRole('textbox'), { target: { value: '2' } });
+		expect(within(region).getByRole('button', { name: 'Primera página' })).toBeDisabled();
+		expect(within(region).getByRole('button', { name: 'Anterior' })).toBeDisabled();
+		expect(within(region).getByRole('button', { name: 'Última página' })).toBeEnabled();
+		expect(within(region).getByRole('textbox', { name: 'Página' })).toHaveValue('1');
+		expect(within(region).getByRole('combobox', { name: 'Por página' })).toBeEnabled();
+		fireEvent.click(within(region).getByRole('button', { name: 'Siguiente' }));
 		await screen.findByText('1 documentados por factura #1234');
 		expect(spy.mock.calls.at(-1)?.[2]?.page).toBe(2);
 		fireEvent.change(screen.getByLabelText('Documento de compra'), { target: { value: '24' } });

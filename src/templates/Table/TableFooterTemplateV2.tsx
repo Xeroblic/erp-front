@@ -30,6 +30,7 @@ export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({
 		<CardFooter>
 			<CardFooterChild>
 				<Select
+					aria-label='Por página'
 					disabled={isDisabled}
 					value={table.getState().pagination.pageSize}
 					onChange={(e) => {
@@ -46,21 +47,24 @@ export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({
 			</CardFooterChild>
 			<CardFooterChild>
 				<Button
+					aria-label='Primera página'
 					onClick={() => table.setPageIndex(0)}
 					isDisable={isDisabled || !table.getCanPreviousPage()}
 					icon='HeroChevronDoubleLeft'
 					className='!px-0'
 				/>
 				<Button
+					aria-label='Anterior'
 					onClick={() => table.previousPage()}
 					isDisable={isDisabled || !table.getCanPreviousPage()}
 					icon='HeroChevronLeft'
 					className='!px-0'
 				/>
 				<span className='flex items-center gap-1'>
-					<div>Pagina</div>
+					<div>Página</div>
 					<strong>
 						<Input
+							aria-label='Página'
 							disabled={isDisabled}
 							value={table.getState().pagination.pageIndex + 1}
 							onChange={(e) => {
@@ -74,12 +78,14 @@ export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({
 					</strong>
 				</span>
 				<Button
+					aria-label='Siguiente'
 					onClick={() => table.nextPage()}
 					isDisable={isDisabled || !table.getCanNextPage()}
 					icon='HeroChevronRight'
 					className='!px-0'
 				/>
 				<Button
+					aria-label='Última página'
 					onClick={() => table.setPageIndex(table.getPageCount() - 1)}
 					isDisable={isDisabled || !table.getCanNextPage()}
 					icon='HeroChevronDoubleRight'

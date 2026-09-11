@@ -4,7 +4,8 @@ import Select from '@/components/form/Select';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-import TableCardFooterTemplateV2, {
+import {
+	TableCardFooterTemplateV2,
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
 import type {

@@ -31,6 +31,13 @@ export interface IStatusPillProps {
 	children: React.ReactNode;
 	/** Ancho fijo en rem. Todas las píldoras de la misma columna deben pasar el mismo valor. */
 	width?: number;
+	/**
+	 * Ignora `width` y se ajusta al contenido. Para usos fuera de una columna
+	 * de tabla —p. ej. la cabecera del detalle, donde varias píldoras de
+	 * largos distintos conviven en una misma fila y un ancho fijo por columna
+	 * ya no tiene sentido.
+	 */
+	fit?: boolean;
 	className?: string;
 }
 
@@ -38,11 +45,12 @@ const StatusPill: React.FC<IStatusPillProps> = ({
 	color,
 	children,
 	width = DEFAULT_WIDTH_REM,
+	fit = false,
 	className,
 }) => (
 	<span
-		style={{ width: `${width}rem` }}
-		className={`inline-flex items-center justify-center whitespace-normal rounded-full px-3 py-1.5 text-center text-sm font-semibold shadow-sm ${COLOR_CLASSES[color]} ${className ?? ''}`}>
+		style={fit ? undefined : { width: `${width}rem` }}
+		className={`inline-flex items-center justify-center rounded-full px-3 py-1.5 text-center text-sm font-semibold shadow-sm ${fit ? 'w-fit whitespace-nowrap' : 'whitespace-normal'} ${COLOR_CLASSES[color]} ${className ?? ''}`}>
 		{children}
 	</span>
 );

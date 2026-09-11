@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
+import useAuthorization from '@/hooks/useAuthorization';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import {
 	TableCardFooterTemplateV2,
@@ -22,6 +23,7 @@ import type {
 } from '@/interface/procurement.interface';
 import useDocumentAttachments from '../../hooks/useDocumentAttachments';
 import type { IPendingAttachmentUpload } from '../../hooks/useDocumentAttachments';
+import useAttachmentDropZone from '../../hooks/useAttachmentDropZone';
 
 /**
  * Adjuntos privados del documento de compra (subsección de la sección 6):
@@ -30,9 +32,10 @@ import type { IPendingAttachmentUpload } from '../../hooks/useDocumentAttachment
  * alimenta construyen ni guardan una, la descarga siempre pasa por
  * `downloadAttachment`.
  *
- * Reglas de estado (sección 6): se sube en `draft`/`confirmed`, nunca en
- * `cancelled`; se elimina sólo en `draft`. Los adjuntos no son requisito para
- * confirmar, así que esta tarjeta nunca bloquea `AllowedActionsToolbar`.
+ * Reglas de estado (sección 6): se sube en `draft`/`confirmed` y se elimina
+ * sólo en `draft`; nunca se modifica un documento `cancelled`. Los adjuntos
+ * no son requisito para confirmar, así que esta tarjeta nunca bloquea
+ * `AllowedActionsToolbar`.
  */
 
 export interface IDocumentAttachmentsCardHandle {
@@ -124,6 +127,7 @@ const AttachmentRow: React.FC<IAttachmentRowProps> = ({
 
 interface IPendingUploadRowProps {
 	item: IPendingAttachmentUpload;
+	canRetry: boolean;
 	onRetry: () => void;
 	onDismiss: () => void;
 }
@@ -133,7 +137,12 @@ interface IPendingUploadRowProps {
  * mensaje de tanda: cada archivo conserva su propio estado y su propia
  * `Idempotency-Key`, así que reintentar uno no reintenta los demás.
  */
-const PendingUploadRow: React.FC<IPendingUploadRowProps> = ({ item, onRetry, onDismiss }) => (
+const PendingUploadRow: React.FC<IPendingUploadRowProps> = ({
+	item,
+	canRetry,
+	onRetry,
+	onDismiss,
+}) => (
 	<div className='flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-zinc-300 p-3 dark:border-zinc-600'>
 		<Icon
 			icon={item.status === 'error' ? 'HeroExclamationTriangle' : 'HeroArrowUpTray'}
@@ -151,7 +160,12 @@ const PendingUploadRow: React.FC<IPendingUploadRowProps> = ({ item, onRetry, onD
 		</div>
 		{item.status === 'error' && (
 			<>
-				<Button type='button' variant='outline' size='sm' onClick={onRetry}>
+				<Button
+					type='button'
+					variant='outline'
+					size='sm'
+					isDisable={!canRetry}
+					onClick={onRetry}>
 					Reintentar
 				</Button>
 				<Button type='button' variant='outline' color='red' size='sm' onClick={onDismiss}>
@@ -167,10 +181,18 @@ const DocumentAttachmentsCard = forwardRef<
 	IDocumentAttachmentsCardProps
 >(({ documentId, documentStatus, subsidiaryId, branchId, onChanged }, ref) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	// Sección 6: «se puede subir en draft y en confirmed, nunca en cancelled;
-	// eliminar sólo en draft».
-	const canUpload = documentStatus !== 'cancelled';
-	const canDelete = documentStatus === 'draft';
+	const { authorize } = useAuthorization();
+	const hasEditAccess = authorize({
+		permission: 'edit-purchase-document',
+		branchId,
+		subsidiaryId,
+		scope: 'access',
+	});
+	// Sección 6: la subida se permite en draft/confirmed; la eliminación sólo
+	// en draft. Ninguna operación se permite sobre un documento anulado.
+	const documentAcceptsAttachments = documentStatus !== 'cancelled';
+	const canUpload = documentAcceptsAttachments && hasEditAccess;
+	const canDelete = documentStatus === 'draft' && hasEditAccess;
 
 	const {
 		attachments,
@@ -196,9 +218,15 @@ const DocumentAttachmentsCard = forwardRef<
 
 	const failedUploadsCount = uploadQueue.filter((item) => item.status === 'error').length;
 
-	useImperativeHandle(ref, () => ({
-		openFilePicker: () => fileInputRef.current?.click(),
-	}));
+	useImperativeHandle(
+		ref,
+		() => ({
+			openFilePicker: () => {
+				if (canUpload && !isUploading && !isQuotaReached) fileInputRef.current?.click();
+			},
+		}),
+		[canUpload, isQuotaReached, isUploading],
+	);
 
 	const pagination: PaginationState = {
 		pageIndex: Math.max(0, page - 1),
@@ -222,6 +250,13 @@ const DocumentAttachmentsCard = forwardRef<
 	const uploadDisabled = !canUpload || isUploading || isQuotaReached;
 	const rowActionsDisabled = isUploading || deletingId !== null || downloadingId !== null;
 
+	const { isDraggingOver, dropZoneProps } = useAttachmentDropZone({
+		canDrop: !uploadDisabled,
+		onFiles: (files) => {
+			addFiles(files).catch(() => undefined);
+		},
+	});
+
 	return (
 		<Card>
 			<CardHeader>
@@ -235,17 +270,34 @@ const DocumentAttachmentsCard = forwardRef<
 				</div>
 			</CardHeader>
 			<CardBody className='space-y-3'>
-				<div className='flex flex-wrap items-center justify-between gap-3'>
+				<div
+					{...dropZoneProps}
+					data-testid='attachments-drop-zone'
+					className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-dashed p-3 transition-colors ${
+						isDraggingOver
+							? 'border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/30'
+							: 'border-zinc-200 dark:border-zinc-700'
+					}`}>
 					<p className='text-sm text-zinc-500 dark:text-zinc-400'>
-						PDF, JPG o PNG. Máximo {MAX_SIZE_MB} MB por archivo y{' '}
-						{PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT} archivos por documento. No son
-						requisito para confirmar el documento.
-						{!canUpload && ' El documento anulado no admite adjuntos.'}
-						{canUpload &&
-							isQuotaReached &&
-							' Ya se alcanzó el máximo de archivos para este documento.'}
+						{isDraggingOver ? (
+							<span className='font-semibold text-blue-600 dark:text-blue-400'>
+								Suelta los archivos para adjuntarlos
+							</span>
+						) : (
+							<>
+								Arrastra los archivos aquí o usa el botón. PDF, JPG o PNG. Máximo{' '}
+								{MAX_SIZE_MB} MB por archivo y{' '}
+								{PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT} archivos por documento. No
+								son requisito para confirmar el documento.
+								{!documentAcceptsAttachments &&
+									' El documento anulado no admite adjuntos.'}
+								{documentAcceptsAttachments &&
+									isQuotaReached &&
+									' Ya se alcanzó el máximo de archivos para este documento.'}
+							</>
+						)}
 					</p>
-					{canUpload && (
+					{documentAcceptsAttachments && (
 						<ProtectedButton
 							permission='edit-purchase-document'
 							branchId={branchId}
@@ -299,6 +351,7 @@ const DocumentAttachmentsCard = forwardRef<
 									type='button'
 									variant='outline'
 									size='sm'
+									isDisable={!canUpload}
 									onClick={retryAllFailedUploads}>
 									Reintentar todos ({failedUploadsCount})
 								</Button>
@@ -308,7 +361,10 @@ const DocumentAttachmentsCard = forwardRef<
 							<PendingUploadRow
 								key={item.localId}
 								item={item}
-								onRetry={() => retryUpload(item.localId)}
+								canRetry={canUpload}
+								onRetry={() => {
+									if (canUpload) retryUpload(item.localId);
+								}}
 								onDismiss={() => dismissUpload(item.localId)}
 							/>
 						))}
