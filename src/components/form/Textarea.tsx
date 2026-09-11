@@ -1,4 +1,4 @@
-import React, { FC, TextareaHTMLAttributes } from 'react';
+import React, { TextareaHTMLAttributes } from 'react';
 import classNames from 'classnames';
 import { IValidationBaseProps } from './Validation';
 import { TBorderWidth } from '../../types/borderWidth.type';
@@ -45,7 +45,11 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, ITextareaProps>((props, r
 		...rest
 	} = props;
 
-	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
+	// Igual criterio que `Input.tsx`: el borde por defecto es neutro y sólo
+	// hover/focus toman el color de tema — con ambas variables resolviendo al
+	// mismo color de tema, el borde se veía "seleccionado" (azul) todo el
+	// tiempo, incluso sin foco.
+	const resolvedBorderColor = '#d4d4d8';
 	const resolvedBorderHoverColor = resolveTailwindColor(color, colorIntensity);
 
 	const inputVariants: { [key in TInputVariants]: { general: string; validation: string } } = {
@@ -53,14 +57,15 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, ITextareaProps>((props, r
 			general: classNames(
 				// Default
 				[`${borderWidth} border-[color:var(--textarea-border)] dark:border-zinc-800`],
-				'bg-gray-300 dark:bg-zinc-800',
+				'bg-zinc-50 dark:bg-zinc-900',
 				// Hover
 				'hover:border-[color:var(--textarea-border-hover)]',
 				'dark:hover:border-[color:var(--textarea-border-hover)]',
 				'disabled:!border-zinc-500',
 				// Focus
-				'focus:border-zinc-300 dark:focus:border-zinc-800',
-				'focus:bg-transparent dark:focus:bg-transparent',
+				'focus:border-[color:var(--textarea-border-hover)] dark:focus:border-[color:var(--textarea-border-hover)]',
+				'focus:bg-white dark:focus:bg-zinc-800',
+				'focus:ring-1 focus:ring-[color:var(--textarea-border-hover)]',
 			),
 			validation: classNames({
 				'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,

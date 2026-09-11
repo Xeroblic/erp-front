@@ -416,6 +416,16 @@ export const privatePages = {
 				authority: ['view-product'],
 				requireAll: true,
 			},
+			stockPorUbicacionDetalle: {
+				id: 'stockPorUbicacionDetalle',
+				to: '/inventario/abastecimiento/stock/:productId',
+				text: 'Detalle de stock',
+				icon: 'HeroCube',
+				// Mismo permiso que el listado: es la misma consulta, sólo acotada a
+				// un producto. Documentar exige su propio guard en la pantalla.
+				authority: ['view-product'],
+				requireAll: true,
+			},
 			retirosEquipos: {
 				id: 'retirosEquipos',
 				to: '/inventario/retiros-equipos',

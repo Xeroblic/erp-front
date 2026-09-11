@@ -109,6 +109,9 @@ const AjustesInventario = lazy(() => import('@/pages/inventario/abastecimiento/A
 const RecepcionDetalle = lazy(
 	() => import('@/pages/inventario/abastecimiento/Recepciones/RecepcionDetalle'),
 );
+const StockPorUbicacionDetalle = lazy(
+	() => import('@/pages/inventario/abastecimiento/StockPorUbicacion/StockPorUbicacionDetalle'),
+);
 const RetirosEquiposPage = lazy(() => import('@/pages/inventario/retirosEquipos'));
 
 // Páginas de Catálogos
@@ -519,6 +522,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: pagesConfig.inventory.subPages.stockPorUbicacion.to,
 		element: <StockPorUbicacion />,
 		authority: pagesConfig.inventory.subPages.stockPorUbicacion.authority,
+	},
+	{
+		path: pagesConfig.inventory.subPages.stockPorUbicacionDetalle.to,
+		element: <StockPorUbicacionDetalle />,
+		authority: pagesConfig.inventory.subPages.stockPorUbicacionDetalle.authority,
 	},
 
 	{

@@ -1,17 +1,12 @@
 import type { ReactNode } from 'react';
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import StockPorUbicacionView from '@/pages/inventario/abastecimiento/StockPorUbicacion/StockPorUbicacionView';
 import * as service from '@/services/procurement/inventoryStock.service';
-import { inventoryStockEnvelope } from '@/mocks/db/procurement.db';
-import type {
-	IInventoryStockResponse,
-	IInventoryOriginsResponse,
-} from '@/interface/procurement.interface';
 
 const context = vi.hoisted(() => ({
 	branchId: 4 as number | null,
@@ -31,44 +26,11 @@ vi.mock('@/store', async () => {
 vi.mock('@/components/layouts/PageWrapper/PageWrapper', () => ({
 	default: ({ children }: { children: ReactNode }) => <main>{children}</main>,
 }));
-/**
- * `react-select` no expone sus opciones como controles nativos accesibles por
- * teclado en jsdom sin `pointer capture`; el resto de la suite del repo
- * (`ScreenDefectCounts.test.tsx`, etc.) resuelve esto sustituyendo
- * `SelectReact` por un `<select>` nativo cableado a las mismas props
- * (`options`/`value`/`onChange`) que usa `DocumentInitialStockModal`.
- */
-vi.mock('@/components/form/SelectReact', () => ({
-	default: ({
-		inputId,
-		options,
-		value,
-		onChange,
-		placeholder,
-	}: {
-		inputId?: string;
-		options?: { value: string; label: string }[];
-		value?: { value: string; label: string } | null;
-		onChange?: (option: { value: string; label: string } | null) => void;
-		placeholder?: string;
-	}) => (
-		<select
-			id={inputId}
-			value={value?.value ?? ''}
-			onChange={(event) => {
-				const selected =
-					options?.find((option) => option.value === event.target.value) ?? null;
-				onChange?.(selected);
-			}}>
-			<option value=''>{placeholder}</option>
-			{options?.map((option) => (
-				<option key={option.value} value={option.value}>
-					{option.label}
-				</option>
-			))}
-		</select>
-	),
-}));
+
+const LocationProbe = () => {
+	const location = useLocation();
+	return <div data-testid='location-probe'>{`${location.pathname}${location.search}`}</div>;
+};
 
 const auth = createSlice({
 	name: 'auth',
@@ -81,14 +43,7 @@ const auth = createSlice({
 			visible: { branches: [{ id: 4 }, { id: 6 }], subsidiaries: [{ id: 2 }] },
 		},
 	},
-	reducers: {
-		deny(state) {
-			state.user.permisos = [];
-		},
-		allow(state) {
-			state.user.permisos = ['view-product'];
-		},
-	},
+	reducers: {},
 });
 const renderPage = () => {
 	const store = configureStore({ reducer: { inventoryStock, auth: auth.reducer } });
@@ -96,6 +51,7 @@ const renderPage = () => {
 		<Provider store={store}>
 			<MemoryRouter>
 				<StockPorUbicacionView />
+				<LocationProbe />
 			</MemoryRouter>
 		</Provider>
 	);
@@ -104,37 +60,20 @@ const renderPage = () => {
 };
 const unlocated = async () => {
 	fireEvent.change(screen.getByLabelText('Ubicación'), { target: { value: 'unlocated' } });
-	await screen.findByRole('button', { name: /Procedencias de Mouse/ });
+	await screen.findByRole('button', { name: /Ver detalle de Mouse/ });
 };
-const expandMouse = async () => {
-	fireEvent.click(screen.getByRole('button', { name: /Procedencias de Mouse/ }));
-	await screen.findByText('10 documentados por factura #1234');
-};
-const deferred = <T,>() => {
-	let resolve!: (value: T) => void;
-	const promise = new Promise<T>((done) => {
-		resolve = done;
-	});
-	return { promise, resolve };
-};
+
 beforeEach(() => {
 	context.branchId = 4;
 	context.subsidiaryId = 2;
 	context.enabled = true;
-	// `DocumentInitialStockModal` (sección 8) renderiza vía `Portal`, que
-	// busca `#portal-root` en el DOM (`Portal.tsx`) — sin él el modal se monta
-	// como `null` en silencio, igual criterio que `Modal.test.tsx`.
-	const portalRoot = document.createElement('div');
-	portalRoot.id = 'portal-root';
-	document.body.appendChild(portalRoot);
 });
 afterEach(() => {
-	document.getElementById('portal-root')?.remove();
 	vi.restoreAllMocks();
 });
 
-describe('Stock por ubicación — integración de vista, hooks, slice y servicio', () => {
-	it('muestra los dos desgloses del mismo físico y expande 10 documentados + 5 sin respaldo', async () => {
+describe('Stock por ubicación — listado', () => {
+	it('muestra los dos desgloses del mismo físico, resalta lo no apto y navega al detalle al hacer clic en la fila', async () => {
 		renderPage();
 		expect(screen.getByText('Datos simulados')).toBeInTheDocument();
 		await unlocated();
@@ -147,194 +86,108 @@ describe('Stock por ubicación — integración de vista, hooks, slice y servici
 			'colspan',
 			'2',
 		);
-		const row = within(table).getAllByRole('row')[2];
+		const row = within(table).getByRole('button', { name: /Ver detalle de Mouse/ });
 		expect(
-			within(row)
-				.getAllByRole('cell')
-				.slice(1, 6)
+			Array.from(row.querySelectorAll('td'))
+				.slice(1)
 				.map((cell) => cell.textContent),
 		).toEqual(['15', '13', '2', '10', '5']);
 		expect(within(row).getByText('2')).toHaveClass('text-amber-700');
-		await expandMouse();
-		expect(screen.getByText('5 sin respaldo')).toBeInTheDocument();
-		expect(screen.getByText('Procedencia desconocida')).toBeInTheDocument();
-		expect(screen.getByText('Fecha desconocida')).toBeInTheDocument();
-		expect(screen.queryByText('15 documentados por factura #1234')).not.toBeInTheDocument();
-		const trigger = screen.getByRole('button', { name: /Procedencias de Mouse/ });
-		await waitFor(() => expect(trigger).toBeEnabled());
-		trigger.focus();
-		expect(trigger).toHaveFocus();
-		expect(trigger).toHaveAttribute('aria-expanded', 'true');
-		fireEvent.click(trigger);
-		expect(
-			screen.queryByRole('region', { name: 'Procedencias del producto' }),
-		).not.toBeInTheDocument();
+
+		fireEvent.click(row);
+		expect(screen.getByTestId('location-probe')).toHaveTextContent(
+			'/inventario/abastecimiento/stock/31?location=unlocated',
+		);
 	});
 
-	it('filtra procedencias por proveedor y documento sin alterar el físico del producto', async () => {
+	it('reintenta con Enter y Espacio desde el teclado, igual que un clic', async () => {
 		renderPage();
 		await unlocated();
-		await expandMouse();
-		fireEvent.change(screen.getByLabelText('Proveedor'), { target: { value: '7' } });
-		await waitFor(() => expect(screen.queryByText('5 sin respaldo')).not.toBeInTheDocument());
-		await screen.findByText('10 documentados por factura #1234');
-		fireEvent.change(screen.getByLabelText('Documento de compra'), { target: { value: '24' } });
-		await screen.findByText('10 documentados por factura #1234');
-		expect(
-			within(screen.getByRole('table', { name: 'Stock físico por ubicación' })).getByRole(
-				'cell',
-				{ name: '15' },
-			),
-		).toBeInTheDocument();
+		const table = screen.getByRole('table', { name: 'Stock físico por ubicación' });
+		const row = within(table).getByRole('button', { name: /Ver detalle de Mouse/ });
+		row.focus();
+		fireEvent.keyDown(row, { key: 'Enter' });
+		expect(screen.getByTestId('location-probe')).toHaveTextContent(
+			'/inventario/abastecimiento/stock/31?location=unlocated',
+		);
 	});
 
-	it('cierra la expansión y reinicia página al cambiar búsqueda o ubicación, sin enviar ambos filtros', async () => {
+	it('cierra la ubicación anterior y reinicia página al cambiar búsqueda o ubicación, sin enviar ambos filtros', async () => {
 		const spy = vi.spyOn(service, 'listInventoryStock');
 		renderPage();
 		await unlocated();
-		await expandMouse();
 		fireEvent.change(screen.getByLabelText('Ubicación'), { target: { value: 'warehouse:8' } });
-		expect(screen.queryByText('10 documentados por factura #1234')).not.toBeInTheDocument();
-		await waitFor(() => expect(screen.queryByText('Cargando stock…')).not.toBeInTheDocument());
-		fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+		await waitFor(() => expect(spy.mock.calls.at(-1)?.[1]?.warehouse_id).toBe(8));
+		const pageInput = await waitFor(() => {
+			const input = document.querySelector<HTMLInputElement>('input[name="page"]');
+			if (!input) throw new Error('Input de página no encontrado todavía.');
+			return input;
+		});
+		fireEvent.change(pageInput, { target: { value: '2' } });
 		await waitFor(() => expect(spy.mock.calls.at(-1)?.[1]?.page).toBe(2));
 		fireEvent.change(screen.getByLabelText('Buscar por nombre o SKU'), {
 			target: { value: 'inexistente' },
 		});
-		await screen.findByText('Sin productos para esta ubicación o búsqueda.');
+		await screen.findByText('Sin resultados para esta ubicación o búsqueda');
 		expect(spy.mock.calls.at(-1)?.[1]?.page).toBe(1);
 		expect(
 			spy.mock.calls.every(([, params]) => !(params?.warehouse_id && params?.unlocated)),
 		).toBe(true);
 	});
 
-	it('cambia sucursal sin pintar filtros, opciones ni procedencias del contexto anterior', async () => {
+	it('cambia sucursal sin pintar filtros ni opciones del contexto anterior', async () => {
 		const page = renderPage();
 		await unlocated();
-		await expandMouse();
 		context.branchId = 6;
 		page.update();
 		expect(screen.getByLabelText('Ubicación')).toHaveValue('branch');
 		expect(screen.getByLabelText('Buscar por nombre o SKU')).toHaveValue('');
-		expect(screen.queryByText('10 documentados por factura #1234')).not.toBeInTheDocument();
 		expect(screen.queryByRole('option', { name: 'Bodega Central' })).not.toBeInTheDocument();
 		await waitFor(() =>
 			expect(page.store.getState().inventoryStock.list.response?.context.branch_id).toBe(6),
 		);
 	});
 
-	it('pérdida de permiso desmonta la consulta, cancela solicitudes y no deja datos al recuperar acceso', async () => {
-		const page = renderPage();
-		await unlocated();
-		const pending = deferred<IInventoryOriginsResponse>();
-		const spy = vi.spyOn(service, 'listInventoryOrigins').mockReturnValueOnce(pending.promise);
-		fireEvent.click(screen.getByRole('button', { name: /Procedencias de Mouse/ }));
-		await waitFor(() => expect(spy).toHaveBeenCalled());
-		act(() => {
-			page.store.dispatch(auth.actions.deny());
-		});
-		expect(screen.getByText('Sin permiso')).toBeInTheDocument();
-		expect(screen.queryByLabelText('Ubicación')).not.toBeInTheDocument();
-		expect(spy.mock.calls[0][3]?.aborted).toBe(true);
-		await act(async () => {
-			pending.resolve({
-				data: [],
-				context: {
-					scope: 'unlocated',
-					branch_id: 4,
-					warehouse: null,
-					product: inventoryStockEnvelope.data[0].product,
-				},
-				links: inventoryStockEnvelope.links,
-				meta: inventoryStockEnvelope.meta,
-			});
-			await pending.promise;
-		});
-		act(() => {
-			page.store.dispatch(auth.actions.allow());
-		});
-		expect(screen.getByLabelText('Ubicación')).toHaveValue('branch');
-		expect(
-			screen.queryByRole('region', { name: 'Procedencias del producto' }),
-		).not.toBeInTheDocument();
-	});
-
 	it('ignora una respuesta tardía de búsqueda y permite reintentar el error vigente', async () => {
-		const pending = deferred<IInventoryStockResponse>();
+		const deferred = <T,>() => {
+			let resolve!: (value: T) => void;
+			const promise = new Promise<T>((done) => {
+				resolve = done;
+			});
+			return { promise, resolve };
+		};
+		const pending = deferred<Awaited<ReturnType<typeof service.listInventoryStock>>>();
 		const spy = vi.spyOn(service, 'listInventoryStock').mockReturnValueOnce(pending.promise);
 		renderPage();
 		fireEvent.change(screen.getByLabelText('Buscar por nombre o SKU'), {
 			target: { value: 'inexistente' },
 		});
-		await screen.findByText('Sin productos para esta ubicación o búsqueda.');
+		await screen.findByText('Sin resultados para esta ubicación o búsqueda');
 		await act(async () => {
 			pending.resolve({
-				...inventoryStockEnvelope,
+				data: [],
 				context: { scope: 'branch', branch_id: 4, warehouse: null },
+				links: { first: null, last: null, prev: null, next: null },
+				meta: {
+					current_page: 1,
+					from: null,
+					last_page: 1,
+					links: [],
+					path: '',
+					per_page: 15,
+					to: null,
+					total: 0,
+				},
 			});
 			await pending.promise;
 		});
-		expect(
-			screen.queryByRole('button', { name: /Procedencias de Mouse/ }),
-		).not.toBeInTheDocument();
 		spy.mockRejectedValueOnce(new Error('Fallo simulado'));
 		fireEvent.change(screen.getByLabelText('Buscar por nombre o SKU'), {
 			target: { value: 'mouse' },
 		});
 		await screen.findByText('No pudimos cargar el stock');
 		fireEvent.click(screen.getByRole('button', { name: 'Reintentar stock' }));
-		await screen.findByRole('button', { name: /Procedencias de Mouse/ });
-	});
-
-	it('cerrar cancela una procedencia pendiente y una reapertura permite reintentar sin restaurar la anterior', async () => {
-		const canonical = await service.listInventoryOrigins(4, 31, { unlocated: 1 });
-		renderPage();
-		await unlocated();
-		const pending = deferred<IInventoryOriginsResponse>();
-		const spy = vi
-			.spyOn(service, 'listInventoryOrigins')
-			.mockReturnValueOnce(pending.promise)
-			.mockRejectedValueOnce(new Error('Fallo de procedencias'));
-		const trigger = screen.getByRole('button', { name: /Procedencias de Mouse/ });
-		fireEvent.click(trigger);
-		await screen.findByText('Cargando procedencias…');
-		await waitFor(() => expect(trigger).toBeEnabled());
-		fireEvent.click(trigger);
-		expect(spy.mock.calls[0][3]?.aborted).toBe(true);
-		await waitFor(() => expect(trigger).toBeEnabled());
-		fireEvent.click(trigger);
-		await screen.findByText('No pudimos cargar las procedencias');
-		await act(async () => {
-			pending.resolve(canonical);
-			await pending.promise;
-		});
-		expect(screen.queryByText('10 documentados por factura #1234')).not.toBeInTheDocument();
-		fireEvent.click(screen.getByRole('button', { name: 'Reintentar procedencias' }));
-		await screen.findByText('10 documentados por factura #1234');
-	});
-
-	it('ofrece filtros de todas las procedencias y vuelve a página uno al seleccionar documento', async () => {
-		const spy = vi.spyOn(service, 'listInventoryOrigins');
-		renderPage();
-		fireEvent.change(screen.getByLabelText('Ubicación'), { target: { value: 'warehouse:8' } });
-		fireEvent.change(screen.getByLabelText('Buscar por nombre o SKU'), {
-			target: { value: 'KB-001' },
-		});
-		fireEvent.click(await screen.findByRole('button', { name: /Procedencias de Teclado/ }));
-		const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
-		await waitFor(() =>
-			expect(within(region).queryByText('Cargando procedencias…')).not.toBeInTheDocument(),
-		);
-		expect(within(region).getByRole('option', { name: 'Factura #1234' })).toBeInTheDocument();
-		expect(
-			within(region).queryByText('1 documentados por factura #1234'),
-		).not.toBeInTheDocument();
-		fireEvent.click(within(region).getByRole('button', { name: 'Siguiente' }));
-		await screen.findByText('1 documentados por factura #1234');
-		expect(spy.mock.calls.at(-1)?.[2]?.page).toBe(2);
-		fireEvent.change(screen.getByLabelText('Documento de compra'), { target: { value: '24' } });
-		await waitFor(() => expect(spy.mock.calls.at(-1)?.[2]?.page).toBe(1));
-		await screen.findByText('1 documentados por factura #1234');
+		await screen.findByRole('button', { name: /Ver detalle de Mouse/ });
 	});
 
 	it('no consulta sin permiso geográfico, sin sucursal o con mocks apagados', () => {
@@ -350,71 +203,5 @@ describe('Stock por ubicación — integración de vista, hooks, slice y servici
 		page.update();
 		expect(screen.getByText('Consulta no habilitada')).toBeInTheDocument();
 		expect(spy).not.toHaveBeenCalled();
-	});
-
-	it('documentar 10 de 100 refresca la fila agregada y el panel de procedencias en el mismo render (hallazgo QA bloqueante)', async () => {
-		renderPage();
-		fireEvent.change(screen.getByLabelText('Ubicación'), { target: { value: 'warehouse:8' } });
-		fireEvent.change(screen.getByLabelText('Buscar por nombre o SKU'), {
-			target: { value: 'CBL-HDMI-2' },
-		});
-		const trigger = await screen.findByRole('button', {
-			name: /Procedencias de Cable HDMI 2 m/,
-		});
-		const table = screen.getByRole('table', { name: 'Stock físico por ubicación' });
-		const initialRow = within(table).getAllByRole('row')[2];
-		expect(
-			within(initialRow)
-				.getAllByRole('cell')
-				.slice(1, 6)
-				.map((cell) => cell.textContent),
-		).toEqual(['100', '100', '0', '0', '100']);
-
-		fireEvent.click(trigger);
-		await screen.findByText('100 sin respaldo');
-
-		fireEvent.click(screen.getByRole('button', { name: 'Documentar' }));
-		const dialog = await screen.findByRole('dialog', { name: 'Documentar stock inicial' });
-		// El picker carga los documentos confirmados de forma asíncrona
-		// (`usePurchaseDocumentPicker`): hay que esperar a que la opción exista
-		// antes de disparar el `change`, o el `<select>` no tiene nada que
-		// seleccionar todavía.
-		await within(dialog).findByRole('option', { name: '7788 · Sin proveedor' });
-		fireEvent.change(within(dialog).getByLabelText('Documento confirmado'), {
-			target: { value: '90' },
-		});
-		await within(dialog).findByLabelText('Línea del documento');
-		fireEvent.change(within(dialog).getByLabelText('Línea del documento'), {
-			target: { value: '950' },
-		});
-		fireEvent.change(within(dialog).getByLabelText('Cantidad a documentar'), {
-			target: { value: '10' },
-		});
-		fireEvent.change(within(dialog).getByLabelText('Motivo'), {
-			target: { value: 'Factura llegó con retraso, respaldo parcial del conteo inicial.' },
-		});
-		fireEvent.click(within(dialog).getByRole('button', { name: 'Documentar' }));
-
-		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-
-		// Hallazgo QA bloqueante: la fila agregada (arriba) tiene que reflejar
-		// 10 documentados / 90 sin documento en el MISMO render que el panel de
-		// procedencias expandido — no sólo tras cambiar filtros o navegar.
-		await waitFor(() => {
-			const updatedRow = within(
-				screen.getByRole('table', { name: 'Stock físico por ubicación' }),
-			).getAllByRole('row')[2];
-			expect(
-				within(updatedRow)
-					.getAllByRole('cell')
-					.slice(1, 6)
-					.map((cell) => cell.textContent),
-			).toEqual(['100', '100', '0', '10', '90']);
-		});
-		// El panel de procedencias refresca por su cuenta (`useInventoryOrigins`,
-		// misma llamada async que el resto de la suite) — se espera por
-		// separado, no en el mismo `waitFor` que la fila agregada.
-		await screen.findByText('90 sin respaldo');
-		await screen.findByText('10 documentados por boleta #7788');
 	});
 });

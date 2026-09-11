@@ -30,7 +30,7 @@ export interface InventoryOriginsProps {
 	 * agregada y tabla de procedencias— muestren la misma cifra sin recargar
 	 * la página (hallazgo QA: la fila agregada no se refrescaba).
 	 */
-	onDocumented: () => void;
+	onDocumented: (quantity: number) => void;
 }
 
 const InventoryOrigins = ({
@@ -215,10 +215,10 @@ const InventoryOrigins = ({
 				productId={productId}
 				warehouseId={resolvedWarehouseId}
 				origin={documentingOrigin}
-				onDocumented={() => {
+				onDocumented={(quantity) => {
 					setDocumentingOrigin(null);
 					refresh();
-					onDocumented();
+					onDocumented(quantity);
 				}}
 			/>
 		</section>

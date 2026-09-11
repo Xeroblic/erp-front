@@ -8,6 +8,7 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import Card, { CardBody } from '@/components/ui/Card';
 import Label from '@/components/form/Label';
 import SelectReact from '@/components/form/SelectReact';
 import type { TSelectOption } from '@/components/form/SelectReact';
@@ -34,6 +35,10 @@ import type {
  * toast de éxito y manejo de error inline — con el selector de documento y el
  * mapeo de líneas propios de esta acción.
  */
+
+/** Tarjeta de primer nivel dentro del cuerpo del modal (mismo estándar que el resto de abastecimiento). */
+const LINK_DOCUMENT_CARD_CLASSNAME =
+	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
 
 interface ILinkPurchaseDocumentModalProps {
 	isOpen: boolean;
@@ -161,108 +166,114 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 					Vincular documento de compra
 				</h2>
 			</ModalHeader>
-			<ModalBody className='space-y-4'>
-				<p className='text-lg'>
-					Vincular un documento a la recepción <strong>#{receipt?.id}</strong>
-				</p>
-				{/* Requisito de aceptación explícito del issue: texto visible antes
-				    de confirmar, no sólo un comentario de código. */}
-				<Alert
-					color='blue'
-					variant='outline'
-					icon='HeroInformationCircle'
-					title='Esto no mueve stock'>
-					No cambia la fecha de recepción, no genera movimiento físico y no crea una
-					compra más reciente: sólo respalda documentalmente unidades que ya están en
-					bodega.
-				</Alert>
-
-				<div className='space-y-1'>
-					<Label htmlFor='link-document'>Documento confirmado</Label>
-					<SelectReact
-						name='purchase_document_id'
-						inputId='link-document'
-						isDisabled={idempotentWrite.canRetry}
-						isLoading={loadingDocuments}
-						options={documentOptions}
-						placeholder='Selecciona un documento…'
-						value={
-							documentOptions.find((option) => option.value === String(documentId)) ??
-							null
-						}
-						onChange={(option) => {
-							const selected = option as TSelectOption | null;
-							if (Array.isArray(selected)) return;
-							setDocumentId(selected ? Number(selected.value) : '');
-						}}
-					/>
-					{receipt?.supplier && (
-						<p className='text-xs text-zinc-500'>
-							Sólo documentos de {receipt.supplier.display_name}: el proveedor ya es
-							conocido.
+			<ModalBody>
+				<Card className={LINK_DOCUMENT_CARD_CLASSNAME}>
+					<CardBody className='space-y-4'>
+						<p className='text-lg'>
+							Vincular un documento a la recepción <strong>#{receipt?.id}</strong>
 						</p>
-					)}
-				</div>
+						{/* Requisito de aceptación explícito del issue: texto visible antes
+						    de confirmar, no sólo un comentario de código. */}
+						<Alert
+							color='blue'
+							variant='outline'
+							icon='HeroInformationCircle'
+							title='Esto no mueve stock'>
+							No cambia la fecha de recepción, no genera movimiento físico y no crea
+							una compra más reciente: sólo respalda documentalmente unidades que ya
+							están en bodega.
+						</Alert>
 
-				{loadingSelectedDocument && (
-					<p className='text-sm text-zinc-500'>Cargando líneas del documento…</p>
-				)}
+						<div className='space-y-1'>
+							<Label htmlFor='link-document'>Documento confirmado</Label>
+							<SelectReact
+								name='purchase_document_id'
+								inputId='link-document'
+								isDisabled={idempotentWrite.canRetry}
+								isLoading={loadingDocuments}
+								options={documentOptions}
+								placeholder='Selecciona un documento…'
+								value={
+									documentOptions.find(
+										(option) => option.value === String(documentId),
+									) ?? null
+								}
+								onChange={(option) => {
+									const selected = option as TSelectOption | null;
+									if (Array.isArray(selected)) return;
+									setDocumentId(selected ? Number(selected.value) : '');
+								}}
+							/>
+							{receipt?.supplier && (
+								<p className='text-xs text-zinc-500'>
+									Sólo documentos de {receipt.supplier.display_name}: el proveedor
+									ya es conocido.
+								</p>
+							)}
+						</div>
 
-				{selectedDocument && mapping && receipt && (
-					<div className='space-y-1 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700'>
-						<p className='font-semibold'>Mapeo de líneas</p>
-						{receipt.items.map((line) => {
-							const matched = mapping.items.find(
-								(item) => item.stock_receipt_line_id === line.id,
-							);
-							const documentLine = matched
-								? selectedDocument.items.find(
-										(docLine) =>
-											docLine.id === matched.purchase_document_line_id,
-									)
-								: undefined;
-							return (
-								<div
-									key={line.id}
-									className='flex items-center justify-between gap-2'>
-									<span>
-										{line.name_snapshot} ({line.quantity} u.)
-									</span>
-									{documentLine ? (
-										<span className='text-emerald-600 dark:text-emerald-400'>
-											→ {documentLine.name_snapshot}
-										</span>
-									) : (
-										<span className='text-red-600 dark:text-red-400'>
-											Sin línea compatible en el documento
-										</span>
-									)}
-								</div>
-							);
-						})}
-					</div>
-				)}
+						{loadingSelectedDocument && (
+							<p className='text-sm text-zinc-500'>Cargando líneas del documento…</p>
+						)}
 
-				<div className='space-y-1'>
-					<Label htmlFor='link-reason'>Motivo</Label>
-					<Textarea
-						id='link-reason'
-						name='reason'
-						rows={3}
-						disabled={idempotentWrite.canRetry}
-						value={reason}
-						onChange={(event) => setReason(event.target.value)}
-						isValid={reason.trim().length > 0}
-						isTouched={reason.length > 0}
-						invalidFeedback='Indica el motivo del vínculo posterior.'
-					/>
-				</div>
+						{selectedDocument && mapping && receipt && (
+							<div className='space-y-1 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700'>
+								<p className='font-semibold'>Mapeo de líneas</p>
+								{receipt.items.map((line) => {
+									const matched = mapping.items.find(
+										(item) => item.stock_receipt_line_id === line.id,
+									);
+									const documentLine = matched
+										? selectedDocument.items.find(
+												(docLine) =>
+													docLine.id ===
+													matched.purchase_document_line_id,
+											)
+										: undefined;
+									return (
+										<div
+											key={line.id}
+											className='flex items-center justify-between gap-2'>
+											<span>
+												{line.name_snapshot} ({line.quantity} u.)
+											</span>
+											{documentLine ? (
+												<span className='text-emerald-600 dark:text-emerald-400'>
+													→ {documentLine.name_snapshot}
+												</span>
+											) : (
+												<span className='text-red-600 dark:text-red-400'>
+													Sin línea compatible en el documento
+												</span>
+											)}
+										</div>
+									);
+								})}
+							</div>
+						)}
 
-				{idempotentWrite.error && (
-					<p role='alert' className='text-sm text-red-600 dark:text-red-400'>
-						{idempotentWrite.error.message}
-					</p>
-				)}
+						<div className='space-y-1'>
+							<Label htmlFor='link-reason'>Motivo</Label>
+							<Textarea
+								id='link-reason'
+								name='reason'
+								rows={3}
+								disabled={idempotentWrite.canRetry}
+								value={reason}
+								onChange={(event) => setReason(event.target.value)}
+								isValid={reason.trim().length > 0}
+								isTouched={reason.length > 0}
+								invalidFeedback='Indica el motivo del vínculo posterior.'
+							/>
+						</div>
+
+						{idempotentWrite.error && (
+							<p role='alert' className='text-sm text-red-600 dark:text-red-400'>
+								{idempotentWrite.error.message}
+							</p>
+						)}
+					</CardBody>
+				</Card>
 			</ModalBody>
 			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 				<ModalFooterChild>

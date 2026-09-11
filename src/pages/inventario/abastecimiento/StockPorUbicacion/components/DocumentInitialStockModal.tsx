@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import Modal, {
 	ModalHeader,
@@ -42,7 +42,7 @@ interface IDocumentInitialStockModalProps {
 	productId: number;
 	warehouseId: number | null;
 	origin: Pick<IInventoryStockOriginRow, 'origin_id' | 'physical_quantity'> | null;
-	onDocumented: () => void;
+	onDocumented: (quantity: number) => void;
 }
 
 const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
@@ -60,6 +60,13 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 	const [lineId, setLineId] = useState<number | ''>('');
 	const [quantity, setQuantity] = useState('');
 	const [reason, setReason] = useState('');
+	const isMountedRef = useRef(true);
+	useEffect(() => {
+		isMountedRef.current = true;
+		return () => {
+			isMountedRef.current = false;
+		};
+	}, []);
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo respaldar el stock inicial.',
 	});
@@ -146,12 +153,12 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 			).unwrap(),
 		);
 
-		if (result) {
+		if (result && isMountedRef.current) {
 			toast.success(
 				`Respaldadas ${result.quantity} unidades del origin #${origin.origin_id}.`,
 			);
 			handleClose();
-			onDocumented();
+			onDocumented(result.quantity);
 		}
 	};
 

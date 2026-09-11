@@ -25,6 +25,9 @@ const baseValues: IDocumentoCompraFormValues = {
 	issue_date: '2026-09-06',
 	total_amount: '',
 	notes: '',
+	include_shipping: false,
+	shipping_cost: '',
+	shipping_cost_basis: '',
 	items: [validLine],
 };
 

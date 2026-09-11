@@ -85,6 +85,9 @@ export interface IDocumentoCompraFormValues {
 	document_number: string;
 	issue_date: string;
 	total_amount: string;
+	include_shipping: boolean;
+	shipping_cost: string;
+	shipping_cost_basis: TCostEntryBasis | '';
 	notes: string;
 	items: IDocumentoCompraLineFormValues[];
 }
@@ -93,7 +96,7 @@ export const EMPTY_DOCUMENTO_LINE: IDocumentoCompraLineFormValues = {
 	product_id: '',
 	quantity: '1',
 	unit_cost: '',
-	unit_cost_basis: '',
+	unit_cost_basis: 'net',
 	notes: '',
 };
 
@@ -103,6 +106,9 @@ export const EMPTY_DOCUMENTO_VALUES: IDocumentoCompraFormValues = {
 	document_number: '',
 	issue_date: '',
 	total_amount: '',
+	include_shipping: false,
+	shipping_cost: '',
+	shipping_cost_basis: 'net',
 	notes: '',
 	items: [{ ...EMPTY_DOCUMENTO_LINE }],
 };
@@ -159,6 +165,27 @@ export const documentoCompraFormSchema = Yup.object({
 			if (!value || !value.trim()) return true;
 			return parseDecimalString(normalizeCostInput(value)) !== null;
 		}),
+	include_shipping: Yup.boolean().required(),
+	shipping_cost: Yup.string().when('include_shipping', {
+		is: true,
+		then: (schema) =>
+			schema
+				.required('Indica el costo de envío.')
+				.test('decimal-envio-valido', 'Usa un monto con hasta dos decimales.', (value) => {
+					if (!value) return false;
+					const cents = parseDecimalString(normalizeCostInput(value));
+					return cents !== null && cents > 0n;
+				}),
+		otherwise: (schema) => schema.optional(),
+	}),
+	shipping_cost_basis: Yup.string().when('include_shipping', {
+		is: true,
+		then: (schema) =>
+			schema
+				.oneOf(['net', 'gross'], 'Indica si el envío es neto o bruto.')
+				.required('Indica si el envío es neto o bruto.'),
+		otherwise: (schema) => schema.optional(),
+	}),
 	notes: Yup.string().max(1000, 'Máximo 1000 caracteres.'),
 	items: Yup.array().of(lineSchema).min(1, 'Agrega al menos una línea.'),
 });

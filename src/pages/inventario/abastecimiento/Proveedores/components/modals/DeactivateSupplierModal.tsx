@@ -7,9 +7,14 @@ import Modal, {
 	ModalFooterChild,
 } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import Card, { CardBody } from '@/components/ui/Card';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch } from '@/store';
 import { deactivateProcurementSupplierThunk } from '@/store/slices/procurement/procurementSuppliersSlice';
+
+/** Tarjeta de primer nivel dentro del cuerpo del modal (mismo estándar que el resto de abastecimiento). */
+const DEACTIVATE_SUPPLIER_CARD_CLASSNAME =
+	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
 
 /**
  * Confirmación de `deactivate` (soft delete, sección 5 del contrato): acción
@@ -84,13 +89,17 @@ const DeactivateSupplierModal: React.FC<IDeactivateSupplierModalProps> = ({
 				</h2>
 			</ModalHeader>
 			<ModalBody>
-				<p className='text-lg'>
-					¿Desactivar a <strong>{supplier?.display_name}</strong>?
-				</p>
-				<p className='mt-2 text-sm text-zinc-500 dark:text-zinc-400'>
-					Sale de las selecciones nuevas, pero sigue visible en el historial y puede
-					completar un documento ya confirmado. Se puede restaurar después.
-				</p>
+				<Card className={DEACTIVATE_SUPPLIER_CARD_CLASSNAME}>
+					<CardBody>
+						<p className='text-lg'>
+							¿Desactivar a <strong>{supplier?.display_name}</strong>?
+						</p>
+						<p className='mt-2 text-sm text-zinc-500 dark:text-zinc-400'>
+							Sale de las selecciones nuevas, pero sigue visible en el historial y
+							puede completar un documento ya confirmado. Se puede restaurar después.
+						</p>
+					</CardBody>
+				</Card>
 			</ModalBody>
 			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 				<ModalFooterChild>
