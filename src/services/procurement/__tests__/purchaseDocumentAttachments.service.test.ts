@@ -7,6 +7,7 @@ import {
 	uploadPurchaseDocumentAttachment,
 } from '@/services/procurement/purchaseDocumentAttachments.service';
 import {
+	cancelPurchaseDocument,
 	getPurchaseDocument,
 	resetPurchaseDocumentsStoreForTests,
 	updatePurchaseDocument,
@@ -366,6 +367,30 @@ describe('deletePurchaseDocumentAttachment', () => {
 			SUBSIDIARY_A,
 			CONFIRMED_WITH_ATTACHMENT_ID,
 		);
+		expect(listed.data).toHaveLength(1);
+	});
+
+	it('rechaza en cancelled con 409, sin eliminar nada', async () => {
+		// El seed no trae un documento cancelado con adjuntos propios (subir ya
+		// está bloqueado en `cancelled`): se sube en `draft` y luego se anula ese
+		// mismo documento, para dejar un adjunto preexistente sobre un
+		// documento que ya no admite escritura.
+		const { data: uploaded } = await uploadPurchaseDocumentAttachment(
+			SUBSIDIARY_A,
+			DRAFT_INVOICE_ID,
+			pdfFile(),
+		);
+		await cancelPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID, {
+			reason: 'Anulado para la prueba',
+		});
+
+		const { status, data } = await readErrorData(
+			deletePurchaseDocumentAttachment(SUBSIDIARY_A, DRAFT_INVOICE_ID, uploaded.id),
+		);
+		expect(status).toBe(409);
+		expect(data.code).toBe('PURCHASE_DOCUMENT_ATTACHMENT_DELETE_NOT_DRAFT');
+
+		const listed = await listPurchaseDocumentAttachments(SUBSIDIARY_A, DRAFT_INVOICE_ID);
 		expect(listed.data).toHaveLength(1);
 	});
 

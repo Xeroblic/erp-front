@@ -15,6 +15,8 @@ const PILL_WIDTH_REM = 11;
 interface IReceptionStatusBadgeProps {
 	/** `null` en `draft`/`cancelled` (sección 6): sin cobertura que mostrar. */
 	receptionStatus: TPurchaseDocumentReceptionStatus | null;
+	/** Píldora a medida del contenido, en vez del ancho fijo de columna. Ver `StatusPill`. */
+	fit?: boolean;
 }
 
 /**
@@ -22,16 +24,19 @@ interface IReceptionStatusBadgeProps {
  * en la misma píldora (no un guion suelto): las tres variantes de la columna
  * comparten el mismo ancho, tengan o no cobertura que mostrar.
  */
-const ReceptionStatusBadge: React.FC<IReceptionStatusBadgeProps> = ({ receptionStatus }) => {
+const ReceptionStatusBadge: React.FC<IReceptionStatusBadgeProps> = ({ receptionStatus, fit }) => {
 	if (receptionStatus === null)
 		return (
-			<StatusPill color='zinc' width={PILL_WIDTH_REM}>
+			<StatusPill color='zinc' width={PILL_WIDTH_REM} fit={fit}>
 				—
 			</StatusPill>
 		);
 
 	return (
-		<StatusPill color={COLOR_BY_RECEPTION_STATUS[receptionStatus]} width={PILL_WIDTH_REM}>
+		<StatusPill
+			color={COLOR_BY_RECEPTION_STATUS[receptionStatus]}
+			width={PILL_WIDTH_REM}
+			fit={fit}>
 			{DOCUMENT_RECEPTION_STATUS_LABELS[receptionStatus]}
 		</StatusPill>
 	);

@@ -1,13 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import Icon from '@/components/icon/Icon';
 import { ProductCard, CostBlock, WarehouseLabel } from '@/components/procurement';
+import { formatDecimalAmount } from '@/utils/procurementDecimal.util';
 import type { IPurchaseDocumentLine } from '@/interface/procurement.interface';
 
 /**
  * Líneas del documento con su cobertura (sección 6). `remaining_quantity`
  * nunca se muestra negativo — el contrato lo calcula así, pero un mock que
  * lo repitiera sin cuidado dejaría pasar un dato imposible.
+ *
+ * Cada línea nace **compacta** (producto, cantidad, costo efectivo) y se
+ * expande a pedido para el resto: notas, desglose de costo completo y
+ * cobertura de recepción. Con documentos de muchas líneas, mostrar todo
+ * siempre convertía esta card en un muro de texto — igual que
+ * `TimelineItem` en trazabilidad, cada línea guarda su propio estado de
+ * expansión.
  */
 
 interface IPurchaseDocumentLinesTableProps {
@@ -22,38 +31,76 @@ const CoverageStat: React.FC<{ label: string; value: number }> = ({ label, value
 	</div>
 );
 
-const PurchaseDocumentLinesTable: React.FC<IPurchaseDocumentLinesTableProps> = ({
-	lines,
-	hasCoverage,
-}) => (
-	<Card>
-		<CardHeader>
-			<CardTitle className='text-lg'>Líneas</CardTitle>
-			<span className='text-sm text-zinc-500'>
-				{lines.length} línea{lines.length === 1 ? '' : 's'}
-			</span>
-		</CardHeader>
-		<CardBody className='space-y-4'>
-			{lines.map((line) => (
-				<div
-					key={line.id}
-					className='space-y-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700'>
+interface ILineRowProps {
+	line: IPurchaseDocumentLine;
+	hasCoverage: boolean;
+}
+
+const LineRow: React.FC<ILineRowProps> = ({ line, hasCoverage }) => {
+	const [isExpanded, setIsExpanded] = useState(false);
+	const isMismatched =
+		line.sku_snapshot !== line.product.sku || line.name_snapshot !== line.product.name;
+	const detailsId = `purchase-document-line-${line.id}-details`;
+	const effectiveUnitAmount = formatDecimalAmount(
+		line.cost.effective_unit_amount,
+		line.cost.currency_code,
+	);
+
+	return (
+		<div className='rounded-xl border border-zinc-200 dark:border-zinc-700'>
+			<button
+				type='button'
+				onClick={() => setIsExpanded((previous) => !previous)}
+				aria-expanded={isExpanded}
+				aria-controls={detailsId}
+				aria-label={`${isExpanded ? 'Ocultar' : 'Mostrar'} detalle de la línea de ${line.product.name}`}
+				className='flex w-full items-center gap-3 rounded-xl p-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60'>
+				<div className='min-w-0 grow'>
 					<ProductCard
 						product={line.product}
-						density='comfortable'
+						density='compact'
 						showCatalogPricing={false}
-						aside={
-							<div className='text-right'>
-								<p className='text-xs text-zinc-500 dark:text-zinc-400'>Cantidad</p>
-								<p className='text-lg font-semibold tabular-nums'>
-									{line.quantity}
-								</p>
-							</div>
-						}
 					/>
+				</div>
+				<div className='flex shrink-0 items-center gap-4'>
+					<div className='text-right'>
+						<p className='text-xs text-zinc-500 dark:text-zinc-400'>Cantidad</p>
+						<p className='text-base font-semibold tabular-nums'>{line.quantity}</p>
+					</div>
+					<div className='text-right'>
+						<p className='text-xs text-zinc-500 dark:text-zinc-400'>Costo efectivo</p>
+						<p className='text-base font-semibold tabular-nums'>
+							{effectiveUnitAmount ?? 'Desconocido'}
+						</p>
+					</div>
+					{isMismatched && (
+						<Icon
+							icon='HeroExclamationTriangle'
+							className='shrink-0 text-amber-500'
+							aria-label='El catálogo cambió después de esta compra'
+						/>
+					)}
+					{/*
+					 * Un solo ícono que rota, no dos íconos que se alternan: `Icon`
+					 * carga cada nombre de forma asíncrona y pinta `null` mientras
+					 * tanto — alternar `HeroChevronUp`/`HeroChevronDown` hacía que la
+					 * flecha desapareciera un instante en cada clic y el `grow` del
+					 * `ProductCard` de al lado ocupara ese espacio, corriendo el
+					 * texto. Mismo patrón que `WebhookCatalogPanel`. */}
+					<Icon
+						icon='HeroChevronDown'
+						className={`shrink-0 text-zinc-400 transition-transform duration-200 ${
+							isExpanded ? 'rotate-180' : ''
+						}`}
+					/>
+				</div>
+			</button>
 
-					{(line.sku_snapshot !== line.product.sku ||
-						line.name_snapshot !== line.product.name) && (
+			{isExpanded && (
+				<div
+					id={detailsId}
+					className='space-y-3 border-t border-zinc-200 p-3 dark:border-zinc-700'>
+					{isMismatched && (
 						<p className='text-xs text-amber-700 dark:text-amber-400'>
 							Comprado como <strong>{line.name_snapshot}</strong> ({line.sku_snapshot}
 							); el catálogo cambió después.
@@ -95,6 +142,25 @@ const PurchaseDocumentLinesTable: React.FC<IPurchaseDocumentLinesTableProps> = (
 						</div>
 					)}
 				</div>
+			)}
+		</div>
+	);
+};
+
+const PurchaseDocumentLinesTable: React.FC<IPurchaseDocumentLinesTableProps> = ({
+	lines,
+	hasCoverage,
+}) => (
+	<Card>
+		<CardHeader>
+			<CardTitle className='text-lg'>Líneas</CardTitle>
+			<span className='text-sm text-zinc-500'>
+				{lines.length} línea{lines.length === 1 ? '' : 's'}
+			</span>
+		</CardHeader>
+		<CardBody className='space-y-2'>
+			{lines.map((line) => (
+				<LineRow key={line.id} line={line} hasCoverage={hasCoverage} />
 			))}
 		</CardBody>
 	</Card>

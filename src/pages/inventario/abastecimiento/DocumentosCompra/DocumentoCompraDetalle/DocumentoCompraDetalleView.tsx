@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import Card, { CardBody, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
 import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -224,117 +224,176 @@ const DocumentoCompraDetalleView = () => {
 
 						<Card>
 							<CardHeader>
-								<div className='flex flex-wrap items-center gap-3'>
-									<CardTitle className='text-lg'>
-										{document.document_number}
-									</CardTitle>
-									<DocumentTypeBadge documentType={document.document_type} />
-									<DocumentStatusBadge status={document.status} />
-									<ReceptionStatusBadge
-										receptionStatus={document.reception_status}
-									/>
+								<div className='flex items-center gap-3'>
+									<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-sm'>
+										<Icon
+											icon='HeroDocumentText'
+											size='text-2xl'
+											color='white'
+										/>
+									</div>
+									<div>
+										<CardTitle className='text-lg'>
+											Documento de compra
+										</CardTitle>
+										<p className='font-mono text-sm text-zinc-500 dark:text-zinc-400'>
+											N° {document.document_number}
+										</p>
+									</div>
 								</div>
 							</CardHeader>
-							<CardBody className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-								<div>
-									<p className='text-xs uppercase text-zinc-500'>Proveedor</p>
-									{document.supplier ? (
-										<p>
-											{document.supplier.display_name}{' '}
-											<span className='font-mono text-xs text-zinc-500'>
-												({document.supplier.rut})
-											</span>
+							<CardBody className='space-y-4'>
+								<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+									<div>
+										<p className='text-xs uppercase text-zinc-500'>Proveedor</p>
+										{document.supplier ? (
+											<p>
+												{document.supplier.display_name}{' '}
+												<span className='font-mono text-xs text-zinc-500'>
+													({document.supplier.rut})
+												</span>
+											</p>
+										) : (
+											<p className='text-zinc-400'>Sin proveedor</p>
+										)}
+									</div>
+									<div>
+										<p className='text-xs uppercase text-zinc-500'>
+											Fecha de emisión
 										</p>
-									) : (
-										<p className='text-zinc-400'>Sin proveedor</p>
+										<p>{formatDate(document.issue_date)}</p>
+									</div>
+									<div>
+										<p className='text-xs uppercase text-zinc-500'>
+											Total informativo
+										</p>
+										<p>
+											{formatDecimalAmount(
+												document.total_amount,
+												document.currency_code,
+											) ?? '—'}
+										</p>
+									</div>
+									<div>
+										<p className='text-xs uppercase text-zinc-500'>
+											Confirmado
+										</p>
+										<p>
+											{document.confirmed_at
+												? formatDate(document.confirmed_at)
+												: '—'}
+										</p>
+									</div>
+									<div>
+										<p className='text-xs uppercase text-zinc-500'>Anulado</p>
+										<p>
+											{document.cancelled_at
+												? formatDate(document.cancelled_at)
+												: '—'}
+										</p>
+									</div>
+									<div>
+										<p className='text-xs uppercase text-zinc-500'>Creado</p>
+										<p>{formatDate(document.created_at)}</p>
+									</div>
+									{document.notes && (
+										<div className='sm:col-span-2 lg:col-span-3'>
+											<p className='text-xs uppercase text-zinc-500'>Notas</p>
+											<p>{document.notes}</p>
+										</div>
 									)}
 								</div>
-								<div>
-									<p className='text-xs uppercase text-zinc-500'>
-										Fecha de emisión
-									</p>
-									<p>{formatDate(document.issue_date)}</p>
-								</div>
-								<div>
-									<p className='text-xs uppercase text-zinc-500'>
-										Total informativo
-									</p>
-									<p>
-										{formatDecimalAmount(
-											document.total_amount,
-											document.currency_code,
-										) ?? '—'}
-									</p>
-								</div>
-								<div>
-									<p className='text-xs uppercase text-zinc-500'>Confirmado</p>
-									<p>
-										{document.confirmed_at
-											? formatDate(document.confirmed_at)
-											: '—'}
-									</p>
-								</div>
-								<div>
-									<p className='text-xs uppercase text-zinc-500'>Anulado</p>
-									<p>
-										{document.cancelled_at
-											? formatDate(document.cancelled_at)
-											: '—'}
-									</p>
-								</div>
-								<div>
-									<p className='text-xs uppercase text-zinc-500'>Creado</p>
-									<p>{formatDate(document.created_at)}</p>
-								</div>
-								{document.notes && (
-									<div className='sm:col-span-2 lg:col-span-3'>
-										<p className='text-xs uppercase text-zinc-500'>Notas</p>
-										<p>{document.notes}</p>
+
+								{/*
+								 * `supplier_snapshot` es la ficha histórica del proveedor al
+								 * confirmar (distinta de `document.supplier`, vigente): se
+								 * muestra como un bloque secundario de la misma card, no
+								 * como una segunda card "Proveedor" — eso duplicaba el
+								 * título y hacía parecer que era el mismo dato dos veces.
+								 */}
+								{document.supplier_snapshot && (
+									<div className='rounded-lg border border-dashed border-zinc-300 p-3 dark:border-zinc-700'>
+										<p className='mb-2 text-xs uppercase text-zinc-500'>
+											Datos del proveedor registrados al confirmar
+										</p>
+										<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+											<div>
+												<p className='text-xs text-zinc-500'>
+													Razón social
+												</p>
+												<p className='text-sm'>
+													{document.supplier_snapshot.company_name ?? '—'}
+												</p>
+											</div>
+											<div>
+												<p className='text-xs text-zinc-500'>Giro</p>
+												<p className='text-sm'>
+													{document.supplier_snapshot.business_activity ??
+														'—'}
+												</p>
+											</div>
+											<div>
+												<p className='text-xs text-zinc-500'>
+													Dirección de facturación
+												</p>
+												<p className='text-sm'>
+													{document.supplier_snapshot.billing_address ??
+														'—'}
+												</p>
+											</div>
+											<div>
+												<p className='text-xs text-zinc-500'>
+													Dirección de despacho
+												</p>
+												<p className='text-sm'>
+													{document.supplier_snapshot.shipping_address ??
+														'—'}
+												</p>
+											</div>
+										</div>
 									</div>
 								)}
 							</CardBody>
+							<CardFooter>
+								{/*
+								 * Un único hijo dentro de `CardFooter`: su `justify-between`
+								 * reparte hijos directos, así que con las tres píldoras
+								 * sueltas como hijos quedaban una en cada extremo. Agrupadas
+								 * en este `div` quedan juntas, una al lado de la otra.
+								 */}
+								<div className='flex flex-wrap items-center gap-2'>
+									<DocumentTypeBadge documentType={document.document_type} fit />
+									<DocumentStatusBadge status={document.status} fit />
+									{/*
+									 * `reception_status` es `null` en `draft`/`cancelled`: la
+									 * tabla lo pinta como píldora «—» a propósito, para que
+									 * las tres variantes de esa columna midan lo mismo. Acá no
+									 * hay columna que alinear, así que una píldora vacía sólo
+									 * era ruido — se omite en vez de mostrarla.
+									 */}
+									{document.reception_status !== null && (
+										<ReceptionStatusBadge
+											receptionStatus={document.reception_status}
+											fit
+										/>
+									)}
+								</div>
+							</CardFooter>
 						</Card>
-
-						{document.supplier_snapshot && (
-							<Card>
-								<CardHeader>
-									<CardTitle className='text-lg'>
-										Proveedor al momento de confirmar
-									</CardTitle>
-								</CardHeader>
-								<CardBody className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-									<div>
-										<p className='text-xs uppercase text-zinc-500'>
-											Razón social
-										</p>
-										<p>{document.supplier_snapshot.company_name ?? '—'}</p>
-									</div>
-									<div>
-										<p className='text-xs uppercase text-zinc-500'>Giro</p>
-										<p>{document.supplier_snapshot.business_activity ?? '—'}</p>
-									</div>
-									<div>
-										<p className='text-xs uppercase text-zinc-500'>
-											Dirección de facturación
-										</p>
-										<p>{document.supplier_snapshot.billing_address ?? '—'}</p>
-									</div>
-									<div>
-										<p className='text-xs uppercase text-zinc-500'>
-											Dirección de despacho
-										</p>
-										<p>{document.supplier_snapshot.shipping_address ?? '—'}</p>
-									</div>
-								</CardBody>
-							</Card>
-						)}
 
 						<PurchaseDocumentLinesTable
 							lines={document.items}
 							hasCoverage={document.status === 'confirmed'}
 						/>
 
-						<RelatedCountsCard relatedCounts={document.related_counts} />
+						<Card>
+							<CardHeader>
+								<CardTitle className='text-lg'>Relacionados</CardTitle>
+							</CardHeader>
+							<CardBody>
+								<RelatedCountsCard relatedCounts={document.related_counts} />
+							</CardBody>
+						</Card>
 
 						<DocumentAttachmentsCard
 							ref={attachmentsCardRef}

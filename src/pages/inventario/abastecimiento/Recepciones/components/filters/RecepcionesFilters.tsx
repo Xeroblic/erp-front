@@ -155,6 +155,7 @@ const RecepcionesFilters: React.FC<IRecepcionesFiltersProps> = ({
 								Recepción desde
 							</label>
 							<DateInput
+								commitOnComplete
 								id='recepciones-received-from'
 								name='received_from'
 								value={receivedFrom}
@@ -166,6 +167,7 @@ const RecepcionesFilters: React.FC<IRecepcionesFiltersProps> = ({
 								Recepción hasta
 							</label>
 							<DateInput
+								commitOnComplete
 								id='recepciones-received-to'
 								name='received_to'
 								value={receivedTo}

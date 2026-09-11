@@ -1,7 +1,7 @@
 import React from 'react';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
-import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import Card, { CardBody } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
 import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -12,6 +12,8 @@ import ProveedorFormModal from '../components/modals/ProveedorFormModal';
 import DeactivateSupplierModal from '../components/modals/DeactivateSupplierModal';
 import SupplierStatusBadge from '../components/parts/SupplierStatusBadge';
 import useProveedoresDetalle from './hooks/useProveedoresDetalle';
+import useSupplierPhoto from './hooks/useSupplierPhoto';
+import SupplierAvatar from './components/parts/SupplierAvatar';
 import SupplierPurchaseSummaryCard from './components/parts/SupplierPurchaseSummaryCard';
 
 /**
@@ -40,6 +42,10 @@ const ProveedoresDetalleView = () => {
 		retry,
 		resolveCommuneName,
 	} = useProveedoresDetalle();
+	const { photoUrl, uploadPhoto, isUploading } = useSupplierPhoto({
+		subsidiaryId,
+		supplierId: id,
+	});
 
 	return (
 		<PageWrapper isProtectedRoute title={supplier?.display_name ?? 'Proveedor'}>
@@ -105,17 +111,54 @@ const ProveedoresDetalleView = () => {
 				{!loading && !error && supplier && (
 					<>
 						<Card>
-							<CardHeader>
-								<div className='flex items-center gap-3'>
-									<CardTitle className='text-lg'>
-										{supplier.display_name}
-									</CardTitle>
-									<SupplierStatusBadge isActive={supplier.is_active} />
+							<CardBody className='flex flex-col gap-6 sm:flex-row sm:items-center'>
+								<SupplierAvatar
+									photoUrl={photoUrl}
+									displayName={supplier.display_name}
+									isUploading={isUploading}
+									onUpload={uploadPhoto}
+								/>
+								<div className='min-w-0 flex-1'>
+									<div className='flex flex-wrap items-center gap-3'>
+										<h1 className='truncate text-xl font-semibold text-zinc-900 dark:text-white'>
+											{supplier.display_name}
+										</h1>
+										<SupplierStatusBadge isActive={supplier.is_active} />
+									</div>
+									<p className='mt-1 font-mono text-sm text-zinc-500'>
+										{supplier.rut}
+									</p>
+									<div className='mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-600 dark:text-zinc-300'>
+										<span className='inline-flex items-center gap-1.5'>
+											<Icon
+												icon='HeroBriefcase'
+												size='text-base'
+												className='text-zinc-400'
+											/>
+											{supplier.business_activity ?? 'Sin giro registrado'}
+										</span>
+										<span className='inline-flex items-center gap-1.5'>
+											<Icon
+												icon='HeroPhone'
+												size='text-base'
+												className='text-zinc-400'
+											/>
+											{supplier.phone ?? 'Sin teléfono'}
+										</span>
+										<span className='inline-flex items-center gap-1.5'>
+											<Icon
+												icon='HeroEnvelope'
+												size='text-base'
+												className='text-zinc-400'
+											/>
+											{supplier.email ?? 'Sin email'}
+										</span>
+									</div>
 								</div>
-								<span className='font-mono text-sm text-zinc-500'>
-									{supplier.rut}
-								</span>
-							</CardHeader>
+							</CardBody>
+						</Card>
+
+						<Card>
 							<CardBody className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
 								<div>
 									<p className='text-xs uppercase text-zinc-500'>Razón social</p>
@@ -127,19 +170,6 @@ const ProveedoresDetalleView = () => {
 									</p>
 									<p>{supplier.contact_name ?? '—'}</p>
 								</div>
-								<div>
-									<p className='text-xs uppercase text-zinc-500'>Giro</p>
-									<p>{supplier.business_activity ?? '—'}</p>
-								</div>
-								<div>
-									<p className='text-xs uppercase text-zinc-500'>Teléfono</p>
-									<p>{supplier.phone ?? '—'}</p>
-								</div>
-								<div>
-									<p className='text-xs uppercase text-zinc-500'>Email</p>
-									<p>{supplier.email ?? '—'}</p>
-								</div>
-								<div />
 								<div>
 									<p className='text-xs uppercase text-zinc-500'>
 										Dirección de facturación

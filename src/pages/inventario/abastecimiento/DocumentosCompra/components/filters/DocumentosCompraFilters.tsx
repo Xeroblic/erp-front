@@ -194,6 +194,7 @@ const DocumentosCompraFilters: React.FC<IDocumentosCompraFiltersProps> = ({
 								Emisión desde
 							</label>
 							<DateInput
+								commitOnComplete
 								id='documentos-compra-issued-from'
 								name='issued_from'
 								value={issuedFrom}
@@ -207,6 +208,7 @@ const DocumentosCompraFilters: React.FC<IDocumentosCompraFiltersProps> = ({
 								Emisión hasta
 							</label>
 							<DateInput
+								commitOnComplete
 								id='documentos-compra-issued-to'
 								name='issued_to'
 								value={issuedTo}
