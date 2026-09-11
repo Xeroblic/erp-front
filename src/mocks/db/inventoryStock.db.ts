@@ -8,6 +8,7 @@ import type {
 } from '@/interface/procurement.interface';
 import {
 	cableProduct,
+	ecopcWarehouse,
 	invoiceDocument,
 	keyboardProduct,
 	mainWarehouse,
@@ -215,6 +216,58 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 		warehouse_id: mainWarehouse.id,
 		fifo_at: 600,
 	},
+	/**
+	 * Ejemplos de la sucursal Ecopc (`branch_id: 1`, ver `ecopcWarehouse` en
+	 * `procurement.db.ts`): mouse con las dos procedencias — 8 documentadas
+	 * (recepción con proveedor) y 4 sin documento — y teclado sin documento,
+	 * para que `StockPorUbicacion` no aparezca vacío con la sesión real del
+	 * equipo.
+	 */
+	{
+		origin_id: 300,
+		origin_type: 'stock_receipt',
+		stock_receipt_id: 90,
+		received_on: '2026-09-05',
+		supplier: pcExpressSupplier,
+		purchase_document: invoiceDocument,
+		physical_quantity: 8,
+		fit_quantity: 7,
+		unfit_quantity: 1,
+		branch_id: 1,
+		product_id: mouseProduct.id,
+		warehouse_id: ecopcWarehouse.id,
+		fifo_at: 1,
+	},
+	{
+		origin_id: 301,
+		origin_type: 'initial_stock',
+		stock_receipt_id: null,
+		received_on: null,
+		supplier: null,
+		purchase_document: null,
+		physical_quantity: 4,
+		fit_quantity: 3,
+		unfit_quantity: 1,
+		branch_id: 1,
+		product_id: mouseProduct.id,
+		warehouse_id: ecopcWarehouse.id,
+		fifo_at: 2,
+	},
+	{
+		origin_id: 302,
+		origin_type: 'initial_stock',
+		stock_receipt_id: null,
+		received_on: null,
+		supplier: null,
+		purchase_document: null,
+		physical_quantity: 6,
+		fit_quantity: 6,
+		unfit_quantity: 0,
+		branch_id: 1,
+		product_id: keyboardProduct.id,
+		warehouse_id: ecopcWarehouse.id,
+		fifo_at: 1,
+	},
 ];
 
 /** One source of truth for current balances; the canonical unlocated mouse stays 15/13/2/10/5. */
@@ -246,6 +299,7 @@ export const inventoryStockRows: IInventorySeedRow[] = [
 ];
 
 export const inventoryWarehousesByBranch: Record<number, IWarehouseCompact[]> = {
+	1: [ecopcWarehouse],
 	4: [mainWarehouse, shelfWarehouse],
 	6: [southBranchWarehouse],
 };

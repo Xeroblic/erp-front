@@ -26,6 +26,44 @@ vi.mock('@/store', async () => {
 vi.mock('@/components/layouts/PageWrapper/PageWrapper', () => ({
 	default: ({ children }: { children: ReactNode }) => <main>{children}</main>,
 }));
+/**
+ * `react-select` no expone sus opciones como controles nativos accesibles por
+ * teclado en jsdom sin `pointer capture`; el resto de la suite del repo
+ * resuelve esto sustituyendo `SelectReact` por un `<select>` nativo cableado
+ * a las mismas props (`options`/`value`/`onChange`/`placeholder`) — mismo
+ * shim que `StockPorUbicacionDetalle.test.tsx`.
+ */
+vi.mock('@/components/form/SelectReact', () => ({
+	default: ({
+		inputId,
+		options,
+		value,
+		onChange,
+		placeholder,
+	}: {
+		inputId?: string;
+		options?: { value: string; label: string }[];
+		value?: { value: string; label: string } | null;
+		onChange?: (option: { value: string; label: string } | null) => void;
+		placeholder?: string;
+	}) => (
+		<select
+			id={inputId}
+			value={value?.value ?? ''}
+			onChange={(event) => {
+				const selected =
+					options?.find((option) => option.value === event.target.value) ?? null;
+				onChange?.(selected);
+			}}>
+			<option value=''>{placeholder}</option>
+			{options?.map((option) => (
+				<option key={option.value} value={option.value}>
+					{option.label}
+				</option>
+			))}
+		</select>
+	),
+}));
 
 const LocationProbe = () => {
 	const location = useLocation();
@@ -140,7 +178,10 @@ describe('Stock por ubicación — listado', () => {
 		await unlocated();
 		context.branchId = 6;
 		page.update();
-		expect(screen.getByLabelText('Ubicación')).toHaveValue('branch');
+		// «Sucursal completa» ya no es una opción de la lista: es la ausencia de
+		// selección (`value=null`), que el shim de `SelectReact` deja como el
+		// placeholder en blanco.
+		expect(screen.getByLabelText('Ubicación')).toHaveValue('');
 		expect(screen.getByLabelText('Buscar por nombre o SKU')).toHaveValue('');
 		expect(screen.queryByRole('option', { name: 'Bodega Central' })).not.toBeInTheDocument();
 		await waitFor(() =>

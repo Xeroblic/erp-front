@@ -1,5 +1,5 @@
 import React from 'react';
-import Badge from '@/components/ui/Badge';
+import { StatusPill } from '@/components/procurement';
 
 interface ISupplierStatusBadgeProps {
 	isActive: boolean;
@@ -7,9 +7,9 @@ interface ISupplierStatusBadgeProps {
 
 /** Activo/Inactivo del proveedor. Desactivado es soft delete, no un error. */
 const SupplierStatusBadge: React.FC<ISupplierStatusBadgeProps> = ({ isActive }) => (
-	<Badge color={isActive ? 'green' : 'zinc'} variant='solid'>
+	<StatusPill color={isActive ? 'emerald' : 'zinc'} width={6}>
 		{isActive ? 'Activo' : 'Inactivo'}
-	</Badge>
+	</StatusPill>
 );
 
 export default SupplierStatusBadge;

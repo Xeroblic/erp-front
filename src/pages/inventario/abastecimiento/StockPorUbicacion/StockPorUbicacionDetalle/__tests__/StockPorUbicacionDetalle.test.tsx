@@ -268,7 +268,10 @@ describe('Ficha de stock por ubicación — procedencias y documentar', () => {
 			expect(within(region).queryByText('Cargando procedencias…')).not.toBeInTheDocument(),
 		);
 		expect(within(region).getByRole('option', { name: 'Factura #1234' })).toBeInTheDocument();
-		fireEvent.click(within(region).getByRole('button', { name: 'Siguiente' }));
+		// Mismo paginador que el resto de las tablas (`TableCardFooterTemplateV2`):
+		// sin botón «Siguiente» con nombre accesible, se salta a la página 2 por
+		// el campo de página.
+		fireEvent.change(within(region).getByRole('textbox'), { target: { value: '2' } });
 		await screen.findByText('1 documentados por factura #1234');
 		expect(spy.mock.calls.at(-1)?.[2]?.page).toBe(2);
 		fireEvent.change(screen.getByLabelText('Documento de compra'), { target: { value: '24' } });
@@ -289,7 +292,9 @@ describe('Ficha de stock por ubicación — procedencias y documentar', () => {
 		);
 		await screen.findByText('100 sin respaldo');
 		const getSummaryValue = (label: string) => {
-			const value = screen.getByText(label).parentElement?.querySelector('dd');
+			// StockSummaryKpis (caja + ícono, estilo pagos diferidos): la etiqueta
+			// y el valor son dos <p> hermanos, no un <dl>/<dt>/<dd>.
+			const value = screen.getByText(label).nextElementSibling;
 			if (!(value instanceof HTMLElement)) throw new Error(`Falta el resumen ${label}.`);
 			return value;
 		};

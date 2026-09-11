@@ -9,15 +9,8 @@ import { ProductCard } from '@/components/procurement';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import InventoryOrigins from '@/pages/inventario/abastecimiento/StockPorUbicacion/components/InventoryOrigins';
+import StockSummaryKpis from './components/StockSummaryKpis';
 import useStockPorUbicacionDetalle from './hooks/useStockPorUbicacionDetalle';
-
-const SUMMARY_FIELDS = [
-	{ key: 'physical_quantity', label: 'Físico' },
-	{ key: 'fit_quantity', label: 'Apto' },
-	{ key: 'unfit_quantity', label: 'No apto' },
-	{ key: 'documented_quantity', label: 'Documentado' },
-	{ key: 'undocumented_quantity', label: 'Sin documento' },
-] as const;
 
 /**
  * Ficha de stock de un producto en una ubicación: procedencias por FIFO y
@@ -86,16 +79,7 @@ const StockPorUbicacionDetalleView = () => {
 						</CardHeader>
 						<CardBody className='space-y-4'>
 							<ProductCard product={summaryRow.product} showCatalogPricing={false} />
-							<dl className='grid grid-cols-2 gap-4 sm:grid-cols-5'>
-								{SUMMARY_FIELDS.map((field) => (
-									<div key={field.key}>
-										<dt className='text-sm text-zinc-500'>{field.label}</dt>
-										<dd className='text-lg font-semibold tabular-nums'>
-											{summaryRow[field.key]}
-										</dd>
-									</div>
-								))}
-							</dl>
+							<StockSummaryKpis summaryRow={summaryRow} />
 						</CardBody>
 					</Card>
 				)}

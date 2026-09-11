@@ -19,6 +19,9 @@ export type { IWarehouseLabelProps } from './WarehouseLabel';
 export { default as ConditionLabel, CONDITION_LABELS, CONDITION_OPTIONS } from './ConditionLabel';
 export type { IConditionLabelProps } from './ConditionLabel';
 
+export { default as StatusPill } from './StatusPill';
+export type { IStatusPillProps, TStatusPillColor } from './StatusPill';
+
 export {
 	default as AllowedActionsToolbar,
 	PROCUREMENT_ACTION_DEFINITIONS,
