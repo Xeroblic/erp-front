@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Input from '@/components/form/Input';
@@ -37,7 +42,7 @@ interface IDocumentInitialStockModalProps {
 	productId: number;
 	warehouseId: number | null;
 	origin: Pick<IInventoryStockOriginRow, 'origin_id' | 'physical_quantity'> | null;
-	onDocumented: () => void;
+	onDocumented: (quantity: number) => void;
 }
 
 const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
@@ -55,6 +60,13 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 	const [lineId, setLineId] = useState<number | ''>('');
 	const [quantity, setQuantity] = useState('');
 	const [reason, setReason] = useState('');
+	const isMountedRef = useRef(true);
+	useEffect(() => {
+		isMountedRef.current = true;
+		return () => {
+			isMountedRef.current = false;
+		};
+	}, []);
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo respaldar el stock inicial.',
 	});
@@ -141,12 +153,12 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 			).unwrap(),
 		);
 
-		if (result) {
+		if (result && isMountedRef.current) {
 			toast.success(
 				`Respaldadas ${result.quantity} unidades del origin #${origin.origin_id}.`,
 			);
 			handleClose();
-			onDocumented();
+			onDocumented(result.quantity);
 		}
 	};
 
@@ -159,7 +171,11 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 			size='md'
 			isCentered
 			isStaticBackdrop={idempotentWrite.isSubmitting}>
-			<ModalHeader>Documentar stock inicial</ModalHeader>
+			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+				<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+					Documentar stock inicial
+				</h2>
+			</ModalHeader>
 			<ModalBody className='space-y-4'>
 				<p className='text-lg'>
 					Respaldar unidades del origin <strong>#{origin?.origin_id}</strong>
@@ -276,21 +292,25 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 					</p>
 				)}
 			</ModalBody>
-			<ModalFooter>
-				<Button
-					variant='outline'
-					onClick={handleClose}
-					isDisable={idempotentWrite.isSubmitting}>
-					Volver
-				</Button>
-				<Button
-					variant='solid'
-					color='blue'
-					onClick={handleConfirm}
-					isDisable={idempotentWrite.isSubmitting || !canSubmit}
-					isLoading={idempotentWrite.isSubmitting}>
-					{idempotentWrite.canRetry ? 'Reintentar' : 'Documentar'}
-				</Button>
+			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						onClick={handleClose}
+						isDisable={idempotentWrite.isSubmitting}>
+						Volver
+					</Button>
+				</ModalFooterChild>
+				<ModalFooterChild>
+					<Button
+						variant='solid'
+						color='blue'
+						onClick={handleConfirm}
+						isDisable={idempotentWrite.isSubmitting || !canSubmit}
+						isLoading={idempotentWrite.isSubmitting}>
+						{idempotentWrite.canRetry ? 'Reintentar' : 'Documentar'}
+					</Button>
+				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>
 	);

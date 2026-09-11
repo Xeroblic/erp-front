@@ -30,6 +30,7 @@ const RecepcionesView = () => {
 	const {
 		branchId,
 		subsidiaryId,
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars -- TODO(testing local): sin uso mientras authorizedBranchIds va en null más abajo; revertir junto con esa prop.
 		visibleBranches,
 		items,
 		meta,
@@ -162,7 +163,12 @@ const RecepcionesView = () => {
 				setIsOpen={handleCloseCreateModal}
 				subsidiaryId={subsidiaryId}
 				branchId={branchId}
-				authorizedBranchIds={visibleBranches.map((branch) => branch.id)}
+				// TODO(testing local): el mock de bodegas sólo tiene fixtures para
+				// las sucursales 4/6 (STOCK_RECEIPT_BRANCH_ID/_SOUTH_BRANCH_ID en
+				// procurement.db.ts), así que authorizedBranchIds real deja el
+				// selector sin opciones para cualquier sucursal real. Revertir a
+				// `visibleBranches.map((branch) => branch.id)` antes de commitear.
+				authorizedBranchIds={null}
 				receipt={null}
 				initialDocumentId={
 					preselectedDocumentId ? Number(preselectedDocumentId) : undefined

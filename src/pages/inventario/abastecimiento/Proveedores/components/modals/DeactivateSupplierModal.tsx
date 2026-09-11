@@ -1,10 +1,20 @@
 import React from 'react';
 import { toast } from 'react-toastify';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import Card, { CardBody } from '@/components/ui/Card';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch } from '@/store';
 import { deactivateProcurementSupplierThunk } from '@/store/slices/procurement/procurementSuppliersSlice';
+
+/** Tarjeta de primer nivel dentro del cuerpo del modal (mismo estándar que el resto de abastecimiento). */
+const DEACTIVATE_SUPPLIER_CARD_CLASSNAME =
+	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
 
 /**
  * Confirmación de `deactivate` (soft delete, sección 5 del contrato): acción
@@ -73,31 +83,43 @@ const DeactivateSupplierModal: React.FC<IDeactivateSupplierModalProps> = ({
 			size='sm'
 			isCentered
 			isStaticBackdrop={idempotentWrite.isSubmitting}>
-			<ModalHeader>Desactivar proveedor</ModalHeader>
+			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+				<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+					Desactivar proveedor
+				</h2>
+			</ModalHeader>
 			<ModalBody>
-				<p className='text-lg'>
-					¿Desactivar a <strong>{supplier?.display_name}</strong>?
-				</p>
-				<p className='mt-2 text-sm text-zinc-500 dark:text-zinc-400'>
-					Sale de las selecciones nuevas, pero sigue visible en el historial y puede
-					completar un documento ya confirmado. Se puede restaurar después.
-				</p>
+				<Card className={DEACTIVATE_SUPPLIER_CARD_CLASSNAME}>
+					<CardBody>
+						<p className='text-lg'>
+							¿Desactivar a <strong>{supplier?.display_name}</strong>?
+						</p>
+						<p className='mt-2 text-sm text-zinc-500 dark:text-zinc-400'>
+							Sale de las selecciones nuevas, pero sigue visible en el historial y
+							puede completar un documento ya confirmado. Se puede restaurar después.
+						</p>
+					</CardBody>
+				</Card>
 			</ModalBody>
-			<ModalFooter>
-				<Button
-					variant='outline'
-					onClick={() => setIsOpen(false)}
-					isDisable={idempotentWrite.isSubmitting}>
-					Cancelar
-				</Button>
-				<Button
-					variant='outline'
-					color='amber'
-					onClick={handleConfirm}
-					isDisable={idempotentWrite.isSubmitting}
-					isLoading={idempotentWrite.isSubmitting}>
-					Desactivar
-				</Button>
+			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						onClick={() => setIsOpen(false)}
+						isDisable={idempotentWrite.isSubmitting}>
+						Cancelar
+					</Button>
+				</ModalFooterChild>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						color='amber'
+						onClick={handleConfirm}
+						isDisable={idempotentWrite.isSubmitting}
+						isLoading={idempotentWrite.isSubmitting}>
+						Desactivar
+					</Button>
+				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>
 	);

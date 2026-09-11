@@ -6,6 +6,7 @@ import {
 	getPurchaseDocument,
 	listPurchaseDocuments,
 	resetPurchaseDocumentsStoreForTests,
+	simulatePurchaseDocumentsReloadForTests,
 	updatePurchaseDocument,
 } from '@/services/procurement/purchaseDocuments.service';
 import type { IPurchaseDocumentCreatePayload } from '@/interface/procurement.interface';
@@ -152,6 +153,32 @@ describe('getPurchaseDocument', () => {
 });
 
 describe('createPurchaseDocument', () => {
+	it('conserva el envío separado de productos al recargar y permite quitarlo del borrador', async () => {
+		const created = await createPurchaseDocument(SUBSIDIARY_A, {
+			...basePayload,
+			shipping_cost: '1190.00',
+			shipping_cost_basis: 'gross',
+		});
+		expect(created.data.items).toHaveLength(1);
+		expect(created.data.shipping_cost?.entered_unit_amount).toBe('1190.00');
+		expect(created.data.shipping_cost?.entered_basis).toBe('gross');
+		simulatePurchaseDocumentsReloadForTests();
+		const reloaded = await getPurchaseDocument(SUBSIDIARY_A, created.data.id);
+		expect(reloaded.data.shipping_cost).toEqual(created.data.shipping_cost);
+		const updated = await updatePurchaseDocument(
+			SUBSIDIARY_A,
+			created.data.id,
+			{ shipping_cost: null, shipping_cost_basis: null },
+			{ etag: reloaded.headers.etag },
+		);
+		expect(updated.data.shipping_cost).toBeNull();
+		expect(updated.data.items).toEqual(created.data.items);
+		simulatePurchaseDocumentsReloadForTests();
+		expect(
+			(await getPurchaseDocument(SUBSIDIARY_A, created.data.id)).data.shipping_cost,
+		).toBeNull();
+	});
+
 	it('la factura sin proveedor es 422 INVOICE_SUPPLIER_REQUIRED', async () => {
 		const { status, data } = await readErrorData(
 			createPurchaseDocument(SUBSIDIARY_A, { ...basePayload, document_type: 'invoice' }),

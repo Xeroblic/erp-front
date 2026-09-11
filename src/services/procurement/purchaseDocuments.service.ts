@@ -65,6 +65,7 @@ const cloneDocument = (document: IPurchaseDocument): IPurchaseDocument => ({
 	...document,
 	supplier: document.supplier ? { ...document.supplier } : null,
 	supplier_snapshot: document.supplier_snapshot ? { ...document.supplier_snapshot } : null,
+	shipping_cost: document.shipping_cost ? { ...document.shipping_cost } : null,
 	related_counts: { ...document.related_counts },
 	items: document.items.map((item) => ({
 		...item,
@@ -684,6 +685,29 @@ export const createPurchaseDocument = (
 			);
 			if (built.error) return fail(422, built.error);
 			const lines = built.lines!;
+			const shippingAmount = payload.shipping_cost ?? null;
+			const shippingBasis = payload.shipping_cost_basis ?? null;
+			const shippingCost =
+				shippingAmount !== null && shippingBasis !== null
+					? buildLineCost(
+							shippingAmount,
+							shippingBasis,
+							payload.document_type,
+							currencyCode,
+						)
+					: null;
+			if (
+				(shippingAmount === null) !== (shippingBasis === null) ||
+				(shippingAmount !== null && shippingCost === null)
+			)
+				return fail(
+					422,
+					buildFieldError(
+						'SHIPPING_COST_INVALID',
+						'Indica un costo de envío válido y si su monto es neto o bruto.',
+						'shipping_cost',
+					),
+				);
 
 			const now = new Date().toISOString();
 			const document: IPurchaseDocument = {
@@ -700,6 +724,7 @@ export const createPurchaseDocument = (
 				created_at: now,
 				allowed_actions: ['update', 'confirm', 'cancel', 'add_attachment'],
 				supplier_snapshot: null,
+				shipping_cost: shippingCost,
 				notes: payload.notes?.trim() || null,
 				items: lines,
 				related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
@@ -805,6 +830,40 @@ export const updatePurchaseDocument = (
 			}
 
 			const currencyCode = payload.currency_code ?? existing.currency_code;
+			const hasShippingUpdate =
+				Object.prototype.hasOwnProperty.call(payload, 'shipping_cost') ||
+				Object.prototype.hasOwnProperty.call(payload, 'shipping_cost_basis');
+			let shippingCost = existing.shipping_cost ?? null;
+			if (hasShippingUpdate) {
+				if (payload.shipping_cost === null && payload.shipping_cost_basis === null) {
+					shippingCost = null;
+				} else if (payload.shipping_cost && payload.shipping_cost_basis) {
+					shippingCost = buildLineCost(
+						payload.shipping_cost,
+						payload.shipping_cost_basis,
+						documentType,
+						currencyCode,
+					);
+					if (shippingCost === null)
+						return fail(
+							422,
+							buildFieldError(
+								'SHIPPING_COST_INVALID',
+								'Indica un costo de envío válido y si su monto es neto o bruto.',
+								'shipping_cost',
+							),
+						);
+				} else {
+					return fail(
+						422,
+						buildFieldError(
+							'SHIPPING_COST_INVALID',
+							'Indica un costo de envío válido y si su monto es neto o bruto.',
+							'shipping_cost',
+						),
+					);
+				}
+			}
 
 			let { items } = existing;
 			if (payload.items !== undefined) {
@@ -836,6 +895,7 @@ export const updatePurchaseDocument = (
 				total_amount: Object.prototype.hasOwnProperty.call(payload, 'total_amount')
 					? (payload.total_amount ?? null)
 					: existing.total_amount,
+				shipping_cost: shippingCost,
 				notes: Object.prototype.hasOwnProperty.call(payload, 'notes')
 					? payload.notes?.trim() || null
 					: existing.notes,

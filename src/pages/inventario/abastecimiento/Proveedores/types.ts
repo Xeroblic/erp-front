@@ -47,22 +47,28 @@ export interface IProveedorFormValues {
 }
 
 /**
- * El `TestContext` es de Yup, no del componente: definida fuera del schema
- * para que `this.createError` no dispare `react/no-this-in-sfc` (mismo
- * criterio que `hasUsableName` en `CreateCustomerSaleModal`).
+ * El `TestContext` es de Yup, no del componente: definidas fuera del schema
+ * para que `this.parent` no dispare `react/no-this-in-sfc` (mismo criterio
+ * que `hasUsableName` en `CreateCustomerSaleModal`).
+ *
+ * Es una regla "al menos uno de los dos", validada en CADA campo (no un
+ * `.test()` del objeto con un único `path` fijo): así, si ambos quedan
+ * vacíos, los dos se marcan en rojo al enviar — no sólo `company_name` al
+ * azar, dejando `contact_name` sin ningún indicio del error.
  */
-function hasCompanyOrContact(
-	this: Yup.TestContext,
-	values?: { company_name?: string; contact_name?: string },
-) {
-	const company = values?.company_name?.trim() ?? '';
-	const contact = values?.contact_name?.trim() ?? '';
-	if (company || contact) return true;
-	return this.createError({
-		path: 'company_name',
-		message: 'Ingresa razón social o nombre de contacto.',
-	});
+function hasContactName(this: Yup.TestContext, company?: string) {
+	if (company?.trim()) return true;
+	const contact = (this.parent as { contact_name?: string }).contact_name;
+	return Boolean(contact?.trim());
 }
+
+function hasCompanyName(this: Yup.TestContext, contact?: string) {
+	if (contact?.trim()) return true;
+	const company = (this.parent as { company_name?: string }).company_name;
+	return Boolean(company?.trim());
+}
+
+const NOMBRE_UTILIZABLE_MESSAGE = 'Ingresa razón social o nombre de contacto.';
 
 /**
  * Únicos obligatorios del contrato: RUT válido y razón social o contacto. El
@@ -74,8 +80,12 @@ export const proveedorFormSchema = Yup.object({
 	rut: Yup.string()
 		.required('El RUT es obligatorio.')
 		.test('rut-valido', 'El RUT no es válido.', (value) => validateRut(value ?? '')),
-	company_name: Yup.string().max(255, 'Máximo 255 caracteres.'),
-	contact_name: Yup.string().max(255, 'Máximo 255 caracteres.'),
+	company_name: Yup.string()
+		.max(255, 'Máximo 255 caracteres.')
+		.test('nombre-utilizable', NOMBRE_UTILIZABLE_MESSAGE, hasContactName),
+	contact_name: Yup.string()
+		.max(255, 'Máximo 255 caracteres.')
+		.test('nombre-utilizable', NOMBRE_UTILIZABLE_MESSAGE, hasCompanyName),
 	business_activity: Yup.string().max(255, 'Máximo 255 caracteres.'),
 	billing_address: Yup.string().max(255, 'Máximo 255 caracteres.'),
 	billing_commune_id: Yup.number().nullable(),
@@ -83,7 +93,7 @@ export const proveedorFormSchema = Yup.object({
 	shipping_commune_id: Yup.number().nullable(),
 	phone: Yup.string().max(50, 'Máximo 50 caracteres.'),
 	email: Yup.string().email('El email no es válido.'),
-}).test('nombre-utilizable', 'Ingresa razón social o nombre de contacto.', hasCompanyOrContact);
+});
 
 /** `true` cuando falta algo de lo que exige confirmar una factura. */
 export const isIncompleteForInvoicing = (values: IProveedorFormValues): boolean =>

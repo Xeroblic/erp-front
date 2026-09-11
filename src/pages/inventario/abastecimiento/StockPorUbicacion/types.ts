@@ -1,12 +1,6 @@
 import * as Yup from 'yup';
 import type { IInventoryStockListParams } from '@/interface/procurement.interface';
 
-export const StockFiltersSchema = Yup.object({
-	search: Yup.string().defined(),
-	location: Yup.string()
-		.matches(/^(branch|unlocated|warehouse:[1-9]\d*)$/, 'Selecciona una ubicación válida.')
-		.required(),
-});
 export const OriginsFiltersSchema = Yup.object({
 	supplier: Yup.string()
 		.matches(/^([1-9]\d*)?$/, 'Selecciona un proveedor válido.')

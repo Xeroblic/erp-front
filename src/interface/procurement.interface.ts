@@ -571,6 +571,8 @@ export interface IPurchaseDocumentListRow {
  */
 export interface IPurchaseDocument extends IPurchaseDocumentListRow {
 	supplier_snapshot: IProcurementSupplier | null;
+	/** Extensión del mock: envío separado de productos; pendiente de contrato backend. */
+	shipping_cost?: IProcurementCost | null;
 	notes: string | null;
 	items: IPurchaseDocumentLine[];
 	related_counts: IPurchaseDocumentRelatedCounts;
@@ -606,6 +608,9 @@ export interface IPurchaseDocumentCreatePayload {
 	issue_date: TBusinessDate;
 	currency_code: string;
 	total_amount: TDecimalString | null;
+	/** Extensión exclusiva del mock, aún no definida por el contrato backend. */
+	shipping_cost?: TDecimalString | null;
+	shipping_cost_basis?: TCostEntryBasis | null;
 	notes: string | null;
 	items: IPurchaseDocumentLineInput[];
 }

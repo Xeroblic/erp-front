@@ -45,6 +45,14 @@ const toFormValues = (document: IPurchaseDocument | null): IDocumentoCompraFormV
 				document_number: document.document_number,
 				issue_date: document.issue_date,
 				total_amount: document.total_amount ?? '',
+				include_shipping:
+					document.shipping_cost !== null && document.shipping_cost !== undefined,
+				shipping_cost: document.shipping_cost?.entered_unit_amount ?? '',
+				shipping_cost_basis:
+					document.shipping_cost?.entered_basis &&
+					document.shipping_cost.entered_basis !== 'unknown'
+						? document.shipping_cost.entered_basis
+						: 'net',
 				notes: document.notes ?? '',
 				items: document.items.map((item) => ({
 					id: item.id,
@@ -75,6 +83,8 @@ const toPayload = (values: IDocumentoCompraFormValues): IPurchaseDocumentCreateP
 	issue_date: values.issue_date,
 	currency_code: 'CLP',
 	total_amount: toOptionalDecimal(values.total_amount),
+	shipping_cost: values.include_shipping ? toOptionalDecimal(values.shipping_cost) : null,
+	shipping_cost_basis: values.include_shipping ? values.shipping_cost_basis || null : null,
 	notes: values.notes.trim() || null,
 	items: values.items.map(toLineInput),
 });
@@ -83,6 +93,7 @@ const FORM_FIELD_BY_API_FIELD: Partial<Record<string, keyof IDocumentoCompraForm
 	supplier_id: 'supplier_id',
 	document_number: 'document_number',
 	issue_date: 'issue_date',
+	shipping_cost: 'shipping_cost',
 };
 
 interface IUseDocumentoCompraFormArgs {
@@ -117,11 +128,6 @@ const useDocumentoCompraForm = ({
 			})),
 		[],
 	);
-	const productsById = useMemo(
-		() => new Map(purchasableProcurementProducts.map((product) => [product.id, product])),
-		[],
-	);
-
 	const formik = useFormik<IDocumentoCompraFormValues>({
 		initialValues: toFormValues(document),
 		enableReinitialize: true,
@@ -215,7 +221,6 @@ const useDocumentoCompraForm = ({
 		isSubmitting: idempotentWrite.isSubmitting,
 		hasVersionConflict,
 		productOptions,
-		productsById,
 		reset,
 	};
 };
