@@ -209,6 +209,22 @@ export const shelfWarehouse: IWarehouseCompact = { id: 12, name: 'Estante A3' };
 export const southBranchWarehouse: IWarehouseCompact = { id: 15, name: 'Bodega Sucursal Sur' };
 
 /**
+ * Bodega de la sucursal Ecopc (`branch_id: 1`, `subsidiary_id: 1` — la que
+ * devuelve `/perfil` en este entorno de desarrollo, ver
+ * `orgContext.util.test.ts`). Sirve para que `StockPorUbicacion` muestre
+ * ejemplos reales al navegar con la sesión propia del equipo, no sólo con las
+ * sucursales 4/6 del resto del mock.
+ *
+ * A propósito **no** entra a `procurementWarehouses`: ese catálogo es el
+ * contrato de Recepciones (`stockReceipts.service`), que lo espera cerrado a
+ * las bodegas de las sucursales 4/6 — sumarla ahí filtraría de más en ese
+ * módulo por una bodega que no recibe mercadería. `inventoryStock.db.ts` la
+ * usa directo en `inventoryWarehousesByBranch`, que es de dónde
+ * `StockPorUbicacion` realmente lee.
+ */
+export const ecopcWarehouse: IWarehouseCompact = { id: 20, name: 'Bodega Ecopc' };
+
+/**
  * Catálogo completo de bodegas conocidas por el mock, sin filtrar por
  * contexto. **No** es lo que se ofrece en un selector de la UI —
  * `getProcurementWarehousesForBranchContext` filtra por sucursal autorizada;

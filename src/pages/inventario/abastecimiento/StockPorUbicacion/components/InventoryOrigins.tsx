@@ -1,16 +1,55 @@
 import { useState } from 'react';
+import type { PaginationState, Updater } from '@tanstack/react-table';
 import Select from '@/components/form/Select';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import TableCardFooterTemplateV2, {
+	type TablePaginationController,
+} from '@/templates/Table/TableFooterTemplateV2';
 import type {
+	IApiPaginationMeta,
 	IInventoryStockListParams,
 	IInventoryStockOriginRow,
 	TInventoryOriginType,
 } from '@/interface/procurement.interface';
 import useInventoryOrigins from '@/pages/inventario/abastecimiento/StockPorUbicacion/hooks/useInventoryOrigins';
-import StockPagination from '@/pages/inventario/abastecimiento/StockPorUbicacion/components/StockPagination';
 import DocumentInitialStockModal from '@/pages/inventario/abastecimiento/StockPorUbicacion/components/DocumentInitialStockModal';
+
+/** Mismo paginador que el resto de las tablas de abastecimiento (`TableCardFooterTemplateV2`), no el `Pagination` a medida de `StockPagination`. */
+const OriginsPagination = ({
+	meta,
+	loading,
+	onChange,
+}: {
+	meta: IApiPaginationMeta;
+	loading: boolean;
+	onChange: (page: number, perPage: number) => void;
+}) => {
+	const pagination: PaginationState = {
+		pageIndex: Math.max(0, meta.current_page - 1),
+		pageSize: meta.per_page,
+	};
+	const table: TablePaginationController = {
+		getState: () => ({ pagination }),
+		setPageSize: (updater: Updater<number>) => {
+			const perPage = typeof updater === 'function' ? updater(pagination.pageSize) : updater;
+			onChange(1, perPage);
+		},
+		setPageIndex: (updater: Updater<number>) => {
+			const pageIndex =
+				typeof updater === 'function' ? updater(pagination.pageIndex) : updater;
+			onChange(Math.min(Math.max(1, pageIndex + 1), meta.last_page), pagination.pageSize);
+		},
+		getCanPreviousPage: () => meta.current_page > 1,
+		previousPage: () => onChange(Math.max(1, meta.current_page - 1), pagination.pageSize),
+		getPageCount: () => meta.last_page,
+		getCanNextPage: () => meta.current_page < meta.last_page,
+		nextPage: () => onChange(meta.current_page + 1, pagination.pageSize),
+	};
+
+	return <TableCardFooterTemplateV2 table={table} isDisabled={loading} />;
+};
 
 const ORIGIN_LABELS: Record<TInventoryOriginType, string> = {
 	stock_receipt: 'Recepción',
@@ -61,12 +100,19 @@ const InventoryOrigins = ({
 
 	return (
 		<section aria-label='Procedencias del producto' className='space-y-4 p-2'>
-			<div>
-				<h3 className='font-semibold'>Procedencias · orden FIFO</h3>
-				<p className='text-sm text-zinc-500'>
-					Cantidades actuales de cada procedencia. El orden conserva su prioridad aunque
-					la fecha sea desconocida.
-				</p>
+			<div className='flex flex-wrap items-start justify-between gap-2'>
+				<div>
+					<h3 className='font-semibold'>Procedencias · orden FIFO</h3>
+					<p className='text-sm text-zinc-500'>
+						Cantidades actuales de cada procedencia. El orden conserva su prioridad
+						aunque la fecha sea desconocida.
+					</p>
+				</div>
+				{response && (
+					<span className='text-sm text-zinc-500'>
+						{response.meta.total} procedencias
+					</span>
+				)}
 			</div>
 			<form onSubmit={formik.handleSubmit} className='grid gap-3 sm:grid-cols-2'>
 				<div>
@@ -75,11 +121,7 @@ const InventoryOrigins = ({
 						id={`origin-supplier-${productId}`}
 						name='supplier'
 						value={formik.values.supplier}
-						onChange={(event) => setFilter('supplier', event.target.value)}
-						onBlur={formik.handleBlur}
-						isValid={!formik.errors.supplier}
-						isTouched={formik.touched.supplier}
-						invalidFeedback={formik.errors.supplier}>
+						onChange={(event) => setFilter('supplier', event.target.value)}>
 						<option value=''>Todos los proveedores</option>
 						{options.suppliers.map((supplier) => (
 							<option key={supplier.id} value={supplier.id}>
@@ -94,11 +136,7 @@ const InventoryOrigins = ({
 						id={`origin-document-${productId}`}
 						name='document'
 						value={formik.values.document}
-						onChange={(event) => setFilter('document', event.target.value)}
-						onBlur={formik.handleBlur}
-						isValid={!formik.errors.document}
-						isTouched={formik.touched.document}
-						invalidFeedback={formik.errors.document}>
+						onChange={(event) => setFilter('document', event.target.value)}>
 						<option value=''>Todos los documentos</option>
 						{options.documents.map((document) => (
 							<option key={document.id} value={document.id}>
@@ -202,7 +240,7 @@ const InventoryOrigins = ({
 							))}
 						</TBody>
 					</Table>
-					<StockPagination meta={response.meta} noun='procedencias' onChange={paginate} />
+					<OriginsPagination meta={response.meta} loading={loading} onChange={paginate} />
 				</>
 			)}
 			<DocumentInitialStockModal

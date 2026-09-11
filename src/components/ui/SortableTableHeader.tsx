@@ -14,6 +14,9 @@ interface SortableTableHeaderProps<TKey extends string> {
 	sort: TableSortState<TKey>;
 	onSort: (key: TKey) => void;
 	align?: 'left' | 'center' | 'right';
+	/** Para headers agrupados (rowSpan/scope), como el encabezado de dos filas de stock por ubicación. */
+	scope?: 'col' | 'colgroup';
+	rowSpan?: number;
 }
 
 const SortIcon: FC<{ direction: TableSortDirection | null }> = ({ direction }) => (
@@ -43,6 +46,8 @@ const SortableTableHeader = <TKey extends string>({
 	sort,
 	onSort,
 	align = 'left',
+	scope,
+	rowSpan,
 }: SortableTableHeaderProps<TKey>) => {
 	const direction = sort?.key === sortKey ? sort.direction : null;
 	const alignmentClasses = {
@@ -55,7 +60,11 @@ const SortableTableHeader = <TKey extends string>({
 	if (direction === 'desc') ariaSort = 'descending';
 
 	return (
-		<Th className={alignmentClasses.header} aria-sort={ariaSort}>
+		<Th
+			className={alignmentClasses.header}
+			aria-sort={ariaSort}
+			scope={scope}
+			rowSpan={rowSpan}>
 			<button
 				type='button'
 				className={`flex w-full items-center space-x-2 ${alignmentClasses.content}`}

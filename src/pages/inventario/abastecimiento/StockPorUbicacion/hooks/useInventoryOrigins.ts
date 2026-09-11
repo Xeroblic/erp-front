@@ -7,7 +7,6 @@ import {
 } from '@/store/slices/procurement/inventoryStockSlice';
 import { getInventoryOriginFilterOptions } from '@/services/procurement/inventoryStock.service';
 import type { IInventoryStockListParams } from '@/interface/procurement.interface';
-import { OriginsFiltersSchema } from '@/pages/inventario/abastecimiento/StockPorUbicacion/types';
 
 export default function useInventoryOrigins(
 	branchId: number,
@@ -20,9 +19,11 @@ export default function useInventoryOrigins(
 	const raw = useAppSelector((state) => state.inventoryStock.origins);
 	const [pagination, setPagination] = useState({ page: 1, per_page: 15 });
 	const [retry, setRetry] = useState(0);
+	// Son filtros de un listado, no un formulario: sin `validationSchema`, para
+	// que `Select` nunca los marque en rojo por «faltar» un valor que en
+	// realidad es una elección válida (Todos los proveedores/documentos).
 	const formik = useFormik({
 		initialValues: { supplier: '', document: '' },
-		validationSchema: OriginsFiltersSchema,
 		onSubmit: () => undefined,
 	});
 	const { supplier, document } = formik.values;
