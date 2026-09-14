@@ -283,6 +283,12 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 													</option>
 												))}
 											</Select>
+											{warehouseOptions.length === 0 && (
+												<p className='text-xs text-zinc-500'>
+													Tus sucursales autorizadas no tienen bodegas de
+													recepción.
+												</p>
+											)}
 										</div>
 
 										<div className='space-y-1'>

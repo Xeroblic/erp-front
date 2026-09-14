@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import useAuthorization from '@/hooks/useAuthorization';
@@ -9,6 +9,10 @@ import {
 	updateStockReceiptThunk,
 } from '@/store/slices/procurement/stockReceiptsSlice';
 import { normalizeCostInput } from '@/components/procurement';
+import {
+	getStockReceiptWarehouseBranchId,
+	listWarehousesForStockReceipts,
+} from '@/services/procurement/stockReceipts.service';
 import { formatDecimalCents, parseDecimalString } from '@/utils/procurementDecimal.util';
 import type {
 	IStockReceipt,
@@ -167,6 +171,13 @@ const useRecepcionForm = ({
 	const dispatch = useAppDispatch();
 	const { authorize } = useAuthorization();
 	const isEdit = receipt !== null;
+	/**
+	 * Filial **vigente**, leída después del `await` del envío. Comparar con el
+	 * `subsidiaryId` del cierre de `onSubmit` no sirve: ese valor quedó
+	 * capturado al enviar y nunca ve un cambio posterior.
+	 */
+	const subsidiaryIdRef = useRef(subsidiaryId);
+	subsidiaryIdRef.current = subsidiaryId;
 	const idempotentWrite = useIdempotentWrite({
 		etag,
 		fallbackMessage: isEdit
@@ -178,7 +189,7 @@ const useRecepcionForm = ({
 		initialValues: toFormValues(receipt, defaultWarehouseId, initialDocumentId),
 		enableReinitialize: true,
 		validationSchema: recepcionFormSchema,
-		onSubmit: async (values, { resetForm }) => {
+		onSubmit: async (values, { resetForm, setFieldError }) => {
 			// Hallazgo 4: revalida al confirmar, no sólo al abrir — cubre un
 			// permiso o contexto (filial/sucursal) que cambió con el formulario
 			// ya abierto. La ruta sólo exige `view-product`; escribir exige
@@ -188,6 +199,32 @@ const useRecepcionForm = ({
 			) {
 				toast.error(
 					'No tienes permiso para crear o corregir recepciones en este contexto.',
+				);
+				return;
+			}
+
+			// La bodega decide la sucursal de la recepción: se autoriza contra
+			// **esa** sucursal y contra la lista autorizada, no sólo contra la
+			// sucursal activa. Cubre una bodega ajena que llegue por valor
+			// inicial o por una recepción existente.
+			const warehouseId = Number(values.warehouse_id);
+			const warehouseBranchId = getStockReceiptWarehouseBranchId(warehouseId);
+			const isOfferedWarehouse = listWarehousesForStockReceipts(authorizedBranchIds).some(
+				(warehouse) => warehouse.id === warehouseId,
+			);
+			if (
+				warehouseBranchId === null ||
+				!isOfferedWarehouse ||
+				!authorize({
+					permission: 'edit-product',
+					scope: 'access',
+					branchId: warehouseBranchId,
+					subsidiaryId,
+				})
+			) {
+				setFieldError(
+					'warehouse_id',
+					'Selecciona una bodega de una sucursal en la que puedas operar.',
 				);
 				return;
 			}
@@ -219,7 +256,7 @@ const useRecepcionForm = ({
 						).unwrap(),
 			);
 
-			if (result && subsidiaryId !== submittedSubsidiaryId) {
+			if (result && subsidiaryIdRef.current !== submittedSubsidiaryId) {
 				// El contexto cambió mientras la escritura seguía en curso: se
 				// completó de verdad (no se pierde ni se duplica), pero esta
 				// instancia del formulario ya no debe actuar sobre el destino
