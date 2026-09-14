@@ -3,10 +3,10 @@ import Label from '@/components/form/Label';
 import Validation from '@/components/form/Validation';
 import Select from '@/components/form/Select';
 import Textarea from '@/components/form/Textarea';
-import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -269,8 +269,11 @@ const TrasladosInternosView = () => {
 		<PageWrapper isProtectedRoute title='Traslados internos'>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon icon='HeroArrowsRightLeft' />
-					<span>Inventario / Traslados internos</span>
+					<SubheaderTitle
+						icon='HeroArrowsRightLeft'
+						title='Traslados internos'
+						description='Mueve stock entre bodegas y ubicaciones de la sucursal activa'
+					/>
 				</SubheaderLeft>
 			</Subheader>
 			<Container className='space-y-4'>

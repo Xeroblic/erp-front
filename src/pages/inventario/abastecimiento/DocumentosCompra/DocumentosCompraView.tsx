@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Container from '@/components/layouts/Container/Container';
-import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import useDocumentosCompra from './hooks/useDocumentosCompra';
 import DocumentosCompraFilters from './components/filters/DocumentosCompraFilters';
@@ -58,8 +58,11 @@ const DocumentosCompraView = () => {
 		<PageWrapper isProtectedRoute title='Documentos de compra'>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon icon='HeroDocumentText' />
-					<span>Inventario / Abastecimiento / Documentos de compra</span>
+					<SubheaderTitle
+						icon='HeroDocumentText'
+						title='Documentos de compra'
+						description='Boletas y facturas de compra con su estado de confirmación y recepción'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<ProtectedButton

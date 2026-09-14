@@ -1,8 +1,8 @@
 import React from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Container from '@/components/layouts/Container/Container';
-import Badge from '@/components/ui/Badge';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import WarehousesTable from './tables/WarehousesTable';
 import WarehouseStats from './components/WarehouseStats';
@@ -18,12 +18,13 @@ const BodegasView: React.FC = () => {
 
 	return (
 		<PageWrapper isProtectedRoute title='Bodegas' name='bodegas'>
-			<Subheader className='p-2'>
+			<Subheader>
 				<SubheaderLeft>
-					<div className='start-0'>
-						<Badge className='text-3xl font-semibold'>Bodegas</Badge>
-						<p>Administración de las bodegas asociadas a la sucursal principal.</p>
-					</div>
+					<SubheaderTitle
+						icon='DuoBarcode'
+						title='Bodegas'
+						description='Administración de las bodegas asociadas a la sucursal principal'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight className='flex space-x-2'>
 					<ProtectedButton

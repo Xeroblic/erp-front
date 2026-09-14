@@ -2,9 +2,9 @@ import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
-import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import { ProductCard } from '@/components/procurement';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import useAuthorization from '@/hooks/useAuthorization';
@@ -105,8 +105,11 @@ const StockPorUbicacionDetalleView = () => {
 			title={summaryRow ? `Stock de ${summaryRow.product.name}` : 'Detalle de stock'}>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon icon='HeroCube' />
-					<span>Inventario / Abastecimiento / Stock por ubicación</span>
+					<SubheaderTitle
+						icon='HeroCube'
+						title='Stock por ubicación'
+						description='Procedencias y documentación del stock del producto en esta ubicación'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Button variant='outline' icon='HeroArrowLeft' onClick={goToList}>

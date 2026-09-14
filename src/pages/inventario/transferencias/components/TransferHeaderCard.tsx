@@ -1,8 +1,7 @@
 import React from 'react';
 import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
-import Icon from '@/components/icon/Icon';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 
 interface TransferHeaderCardProps {
 	onNavigateHistory: () => void;
@@ -17,17 +16,11 @@ const TransferHeaderCard: React.FC<TransferHeaderCardProps> = ({
 }) => (
 	<Subheader>
 		<SubheaderLeft>
-			<div>
-				<div className='flex items-center gap-2'>
-					<Icon icon='HeroTruck' size='text-3xl' />
-					<Badge className='text-3xl font-bold'>Nueva Transferencia</Badge>
-				</div>
-				<div className='flex flex-col gap-2'>
-					<p className='mt-1 text-sm text-zinc-400'>
-						Transferir productos entre bodegas de forma rápida y segura
-					</p>
-				</div>
-			</div>
+			<SubheaderTitle
+				icon='HeroTruck'
+				title='Nueva Transferencia'
+				description='Transferir productos entre bodegas de forma rápida y segura'
+			/>
 		</SubheaderLeft>
 		<SubheaderRight>
 			<div className='flex justify-center gap-3'>

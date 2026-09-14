@@ -5,6 +5,7 @@ import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import Pages from '@/config/pages.config';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Container from '@/components/layouts/Container/Container';
 import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle, CardHeaderChild } from '@/components/ui/Card';
@@ -58,17 +59,11 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 		<PageWrapper title='Ajuste Stock' name='Admin Stock' isProtectedRoute={true}>
 			<Subheader>
 				<SubheaderLeft>
-					<div className='flex items-center space-x-3'>
-						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20'>
-							<Icon icon='DuoBox' className='h-6 w-6' />
-						</div>
-						<div>
-							<h3 className='text-2xl font-bold'>Ajuste de Stock</h3>
-							<p className='text-sm text-zinc-500'>
-								Flujo de facturas/boletas y mermas sin salir de la pantalla.
-							</p>
-						</div>
-					</div>
+					<SubheaderTitle
+						icon='DuoBox'
+						title='Ajuste de Stock'
+						description='Flujo de facturas/boletas y mermas sin salir de la pantalla'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Tooltip text='Crear un producto nuevo sin salir de esta pantalla'>

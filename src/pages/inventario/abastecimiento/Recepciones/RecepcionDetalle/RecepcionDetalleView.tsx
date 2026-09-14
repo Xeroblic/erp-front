@@ -2,9 +2,9 @@ import React from 'react';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Container from '@/components/layouts/Container/Container';
-import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import { AllowedActionsToolbar } from '@/components/procurement';
 import useRecepcionDetalle from './hooks/useRecepcionDetalle';
 import StockReceiptSummaryCard from './components/parts/StockReceiptSummaryCard';
@@ -53,8 +53,11 @@ const RecepcionDetalleView = () => {
 		<PageWrapper isProtectedRoute title={receipt ? `Recepción #${receipt.id}` : 'Recepción'}>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon icon='HeroInboxArrowDown' />
-					<span>Inventario / Abastecimiento / Recepciones</span>
+					<SubheaderTitle
+						icon='HeroInboxArrowDown'
+						title='Recepciones'
+						description='Detalle, procesamiento y líneas de la recepción'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Button variant='outline' icon='HeroArrowLeft' onClick={goToList}>

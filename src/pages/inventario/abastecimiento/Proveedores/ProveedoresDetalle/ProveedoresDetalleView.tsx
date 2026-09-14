@@ -6,6 +6,7 @@ import Container from '@/components/layouts/Container/Container';
 import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import { AllowedActionsToolbar } from '@/components/procurement';
 import { formatDate } from '@/utils/format.utils';
 import ProveedorFormModal from '../components/modals/ProveedorFormModal';
@@ -54,10 +55,11 @@ const ProveedoresDetalleView = () => {
 		<PageWrapper isProtectedRoute title={supplier?.display_name ?? 'Proveedor'}>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon icon='HeroBuildingStorefront' />
-					<span>
-						Inventario / Abastecimiento / Proveedores / {supplier?.display_name ?? '…'}
-					</span>
+					<SubheaderTitle
+						icon='HeroBuildingStorefront'
+						title='Proveedores'
+						description='Ficha del proveedor, resumen de compras y productos suministrados'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Button variant='outline' icon='HeroArrowLeft' onClick={goToList}>

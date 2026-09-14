@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Container from '@/components/layouts/Container/Container';
-import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import type { IProcurementSupplierListRow } from '@/interface/procurement.interface';
 import useProveedores from './hooks/useProveedores';
@@ -65,8 +65,11 @@ const ProveedoresView = () => {
 		<PageWrapper isProtectedRoute title='Proveedores'>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon icon='HeroBuildingStorefront' />
-					<span>Inventario / Abastecimiento / Proveedores</span>
+					<SubheaderTitle
+						icon='HeroBuildingStorefront'
+						title='Proveedores'
+						description='Maestro de proveedores de la filial: alta, consulta, desactivación y restauración'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<ProtectedButton

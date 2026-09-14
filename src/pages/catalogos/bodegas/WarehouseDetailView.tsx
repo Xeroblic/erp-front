@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
 import ProtectedButton from '@/components/ui/ProtectedButton';
@@ -61,15 +62,19 @@ const WarehouseDetailView: React.FC = () => {
 		<PageWrapper isProtectedRoute title={state.warehouse.name} name='bodega-detail'>
 			<Subheader>
 				<SubheaderLeft>
+					<SubheaderTitle
+						icon='DuoBarcode'
+						title='Bodegas'
+						description='Información, capacidad y productos asociados a la bodega'
+					/>
+				</SubheaderLeft>
+				<SubheaderRight>
 					<Button
 						onClick={() => navigate('/inventario/bodegas')}
 						variant='outline'
 						icon='HeroArrowLeft'>
 						Volver
 					</Button>
-					<span className='ml-2 text-lg font-semibold'>{state.warehouse.name}</span>
-				</SubheaderLeft>
-				<SubheaderRight>
 					<ProtectedButton
 						permission='update-warehouse'
 						branchId={state.branchId}
