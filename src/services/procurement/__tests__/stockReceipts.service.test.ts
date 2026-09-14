@@ -189,9 +189,10 @@ afterEach(() => {
 });
 
 describe('listStockReceipts', () => {
-	it('lista las siete recepciones semilla ordenadas por received_on DESC, ID DESC', async () => {
-		const result = await listStockReceipts(SUBSIDIARY_A);
-		expect(result.data).toHaveLength(7);
+	it('lista las recepciones semilla ordenadas por received_on DESC, ID DESC', async () => {
+		// 7 de estados + 16 del historial de compras de proveedores.
+		const result = await listStockReceipts(SUBSIDIARY_A, { per_page: 100 });
+		expect(result.data).toHaveLength(23);
 		const sorted = [...result.data];
 		expect(result.data).toEqual(sorted);
 	});

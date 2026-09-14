@@ -13,8 +13,10 @@ import DeactivateSupplierModal from '../components/modals/DeactivateSupplierModa
 import SupplierStatusBadge from '../components/parts/SupplierStatusBadge';
 import useProveedoresDetalle from './hooks/useProveedoresDetalle';
 import useSupplierPhoto from './hooks/useSupplierPhoto';
+import useSupplierSuppliedProducts from './hooks/useSupplierSuppliedProducts';
 import SupplierAvatar from './components/parts/SupplierAvatar';
 import SupplierPurchaseSummaryCard from './components/parts/SupplierPurchaseSummaryCard';
+import SupplierSuppliedProductsTable from './components/tables/SupplierSuppliedProductsTable';
 
 /**
  * Ficha de proveedor: los mismos campos del formulario más id, display_name,
@@ -46,6 +48,7 @@ const ProveedoresDetalleView = () => {
 		subsidiaryId,
 		supplierId: id,
 	});
+	const suppliedProducts = useSupplierSuppliedProducts({ subsidiaryId, supplierId: id });
 
 	return (
 		<PageWrapper isProtectedRoute title={supplier?.display_name ?? 'Proveedor'}>
@@ -222,6 +225,27 @@ const ProveedoresDetalleView = () => {
 						</Card>
 
 						<SupplierPurchaseSummaryCard summary={supplier.purchase_summary} />
+
+						{/*
+						 * Leer recepciones exige `view-product` (sección 15), distinto
+						 * del `view-procurement-supplier` de esta ruta: sin él se dice
+						 * por qué no hay tabla, en vez de mostrarla vacía.
+						 */}
+						{!suppliedProducts.checkingAccess && suppliedProducts.canRead && (
+							<SupplierSuppliedProductsTable
+								rows={suppliedProducts.rows}
+								loading={suppliedProducts.loading}
+								error={suppliedProducts.error}
+								subsidiaryId={subsidiaryId}
+								onRetry={suppliedProducts.retry}
+							/>
+						)}
+						{!suppliedProducts.checkingAccess && !suppliedProducts.canRead && (
+							<Alert color='amber' variant='outline' title='Productos suministrados'>
+								No tienes permiso para consultar recepciones, así que no podemos
+								mostrar los productos que entrega este proveedor.
+							</Alert>
+						)}
 					</>
 				)}
 			</Container>
