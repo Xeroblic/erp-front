@@ -103,7 +103,12 @@ const nextItemIdBySubsidiary = new Map<number, number>();
  * forma de `IPersistedStockReceiptsState`.
  */
 const STOCK_RECEIPTS_STORAGE_NAMESPACE = 'stock-receipts';
-const STOCK_RECEIPTS_STORAGE_VERSION = 1;
+/**
+ * v2: la semilla sumó el historial de compras de proveedores
+ * (`supplierPurchaseHistoryReceipts`). Un store v1 ya persistido hidrataría
+ * sin esas recepciones y la ficha de proveedor seguiría vacía.
+ */
+const STOCK_RECEIPTS_STORAGE_VERSION = 2;
 
 interface IPersistedStockReceiptsState {
 	receipts: IStockReceipt[];

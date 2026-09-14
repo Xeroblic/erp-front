@@ -1326,6 +1326,219 @@ export const postedKeyboardStockReceipt: IStockReceipt = {
 	updated_at: '2026-08-29T10:15:00-03:00',
 };
 
+/* =================================================
+   Historial de compras de proveedores — ficha de proveedor
+   ================================================= */
+
+/**
+ * Productos que sólo aparecen en el historial de compras de proveedores. No se
+ * suman a `procurementProducts` a propósito: ese arreglo alimenta el catálogo,
+ * los selectores de líneas y el stock por ubicación, y sus pruebas cuentan
+ * productos. Misma forma que el ejemplo de la sección 2.
+ */
+export const monitorProduct: IProcurementProduct = {
+	id: 72,
+	sku: 'MON-24-FHD',
+	commercial_sku: null,
+	name: 'Monitor 24" Full HD',
+	short_description: 'Monitor IPS de 24 pulgadas',
+	serial_tracking: false,
+	grade: null,
+	currency_code: 'CLP',
+	price: '129990.00',
+	offer_price: '119990.00',
+	cost: '82000.00',
+	cost_basis: 'net',
+	brand: { id: 21, name: 'Samsung', slug: 'samsung' },
+	categories: [{ id: 12, name: 'Monitores', slug: 'monitores' }],
+	image: null,
+	is_active: true,
+};
+
+export const ssdProduct: IProcurementProduct = {
+	id: 81,
+	sku: 'SSD-1TB-NVME',
+	commercial_sku: null,
+	name: 'SSD NVMe 1 TB',
+	short_description: 'Unidad de estado sólido M.2',
+	serial_tracking: false,
+	grade: null,
+	currency_code: 'CLP',
+	price: '64990.00',
+	offer_price: null,
+	cost: '41000.00',
+	cost_basis: 'net',
+	brand: { id: 25, name: 'Kingston', slug: 'kingston' },
+	categories: [{ id: 14, name: 'Almacenamiento', slug: 'almacenamiento' }],
+	image: null,
+	is_active: true,
+};
+
+export const headsetProduct: IProcurementProduct = {
+	id: 93,
+	sku: 'HS-USB-PRO',
+	commercial_sku: null,
+	name: 'Audífonos USB con micrófono',
+	short_description: null,
+	serial_tracking: false,
+	grade: null,
+	currency_code: 'CLP',
+	price: '34990.00',
+	offer_price: null,
+	cost: '19500.00',
+	cost_basis: 'gross',
+	brand: { id: 27, name: 'HyperX', slug: 'hyperx' },
+	categories: [{ id: 16, name: 'Audio', slug: 'audio' }],
+	image: null,
+	is_active: true,
+};
+
+/**
+ * Costo declarado sin documento, con la misma forma que `declaredCost`
+ * (entrada bruta, IVA 19 %, base efectiva bruta) y otro importe.
+ */
+const declaredGrossCost = (grossUnitAmount: number): IProcurementCost => {
+	const netUnitAmount = (grossUnitAmount / 1.19).toFixed(2);
+	return {
+		...declaredCost,
+		entered_unit_amount: grossUnitAmount.toFixed(2),
+		net_unit_amount: netUnitAmount,
+		vat_unit_amount: (grossUnitAmount - Number(netUnitAmount)).toFixed(2),
+		gross_unit_amount: grossUnitAmount.toFixed(2),
+		effective_unit_amount: grossUnitAmount.toFixed(2),
+	};
+};
+
+interface ISupplierHistoryLine {
+	product: IProcurementProduct;
+	quantity: number;
+	grossUnitAmount: number;
+}
+
+/**
+ * Recepción `posted` sin documento (sección 7: proveedor conocido, costo
+ * declarado y `reason` obligatorio), con la misma forma que
+ * `postedKeyboardStockReceipt`. Los IDs de línea son `id * 10 + índice`, así
+ * no chocan con los de la semilla de estados (900–906).
+ */
+const buildPostedSupplierReceipt = (
+	id: number,
+	supplier: ISupplierCompact,
+	receivedOn: string,
+	warehouse: IWarehouseCompact,
+	lines: ISupplierHistoryLine[],
+): IStockReceipt => {
+	const postedAt = `${receivedOn}T11:00:00-03:00`;
+	return {
+		id,
+		subsidiary_id: STOCK_RECEIPT_SUBSIDIARY_ID,
+		branch_id: STOCK_RECEIPT_BRANCH_ID,
+		status: 'posted',
+		warehouse,
+		supplier,
+		purchase_document: null,
+		received_on: receivedOn,
+		items_count: lines.length,
+		total_quantity: lines.reduce((total, line) => total + line.quantity, 0),
+		created_at: `${receivedOn}T09:30:00-03:00`,
+		posted_at: postedAt,
+		// Mismo criterio que `postedKeyboardStockReceipt`: sin `link_purchase_document`.
+		allowed_actions: ['reverse'],
+		reason: 'Compra sin documento, respaldo pendiente',
+		notes: null,
+		items: lines.map((line, index) => ({
+			id: id * 10 + index,
+			product: line.product,
+			sku_snapshot: line.product.sku,
+			name_snapshot: line.product.name,
+			purchase_document_line_id: null,
+			quantity: line.quantity,
+			cost: declaredGrossCost(line.grossUnitAmount),
+		})),
+		inventory_operation_id: `5d0c1f7e-0000-4000-8000-${String(id).padStart(12, '0')}`,
+		reversal_operation_id: null,
+		queued_at: `${receivedOn}T10:58:00-03:00`,
+		failed_at: null,
+		reversed_at: null,
+		cancellation_reason: null,
+		reversal_reason: null,
+		failure_code: null,
+		failure_message: null,
+		processing: { attempt_count: 1, last_attempt_at: postedAt, next_retry_at: null },
+		posted_by: bodegaActor,
+		updated_at: postedAt,
+	};
+};
+
+/**
+ * Historial de compras para la tabla «Productos suministrados» de la ficha
+ * de proveedor. Cuadra con el `purchase_summary` de cada ficha, que cuenta
+ * sólo recepciones `posted`:
+ *
+ * - PCExpress: estas 13 + `postedKeyboardStockReceipt` = 14 recepciones, 128
+ *   unidades, 6 productos, última compra `2026-09-04`. `queuedStockReceipt`
+ *   suma una más cuando el worker la publica, igual que en el backend.
+ * - Marcelo Contreras: 3 recepciones, 30 unidades, 2 productos, última compra
+ *   `2026-07-01` (`failedStockReceipt` no cuenta).
+ *
+ * La recepción 213 trae dos líneas de audífonos a propósito: ejerce el caso
+ * «varias líneas del mismo producto», que la tabla no promedia.
+ */
+export const supplierPurchaseHistoryReceipts: IStockReceipt[] = [
+	buildPostedSupplierReceipt(201, pcExpressSupplier, '2026-03-12', mainWarehouse, [
+		{ product: mouseProduct, quantity: 20, grossUnitAmount: 5990 },
+		{ product: keyboardProduct, quantity: 6, grossUnitAmount: 28490 },
+	]),
+	buildPostedSupplierReceipt(202, pcExpressSupplier, '2026-04-02', mainWarehouse, [
+		{ product: cableProduct, quantity: 15, grossUnitAmount: 3490 },
+	]),
+	buildPostedSupplierReceipt(203, pcExpressSupplier, '2026-04-23', shelfWarehouse, [
+		{ product: monitorProduct, quantity: 4, grossUnitAmount: 97580 },
+	]),
+	buildPostedSupplierReceipt(204, pcExpressSupplier, '2026-05-14', mainWarehouse, [
+		{ product: ssdProduct, quantity: 10, grossUnitAmount: 48790 },
+	]),
+	buildPostedSupplierReceipt(205, pcExpressSupplier, '2026-05-30', mainWarehouse, [
+		{ product: headsetProduct, quantity: 6, grossUnitAmount: 23205 },
+	]),
+	buildPostedSupplierReceipt(206, pcExpressSupplier, '2026-06-18', mainWarehouse, [
+		{ product: mouseProduct, quantity: 12, grossUnitAmount: 5890 },
+	]),
+	buildPostedSupplierReceipt(207, pcExpressSupplier, '2026-07-09', shelfWarehouse, [
+		{ product: cableProduct, quantity: 10, grossUnitAmount: 3390 },
+	]),
+	buildPostedSupplierReceipt(208, pcExpressSupplier, '2026-07-25', mainWarehouse, [
+		{ product: keyboardProduct, quantity: 4, grossUnitAmount: 28560 },
+	]),
+	buildPostedSupplierReceipt(209, pcExpressSupplier, '2026-08-06', mainWarehouse, [
+		{ product: monitorProduct, quantity: 3, grossUnitAmount: 96390 },
+	]),
+	buildPostedSupplierReceipt(210, pcExpressSupplier, '2026-08-14', mainWarehouse, [
+		{ product: ssdProduct, quantity: 6, grossUnitAmount: 47600 },
+		{ product: headsetProduct, quantity: 4, grossUnitAmount: 22610 },
+	]),
+	buildPostedSupplierReceipt(211, pcExpressSupplier, '2026-08-21', shelfWarehouse, [
+		{ product: mouseProduct, quantity: 8, grossUnitAmount: 5712 },
+	]),
+	buildPostedSupplierReceipt(212, pcExpressSupplier, '2026-09-01', mainWarehouse, [
+		{ product: cableProduct, quantity: 4, grossUnitAmount: 3290 },
+	]),
+	buildPostedSupplierReceipt(213, pcExpressSupplier, '2026-09-04', mainWarehouse, [
+		{ product: headsetProduct, quantity: 3, grossUnitAmount: 22015 },
+		{ product: headsetProduct, quantity: 2, grossUnitAmount: 22610 },
+		{ product: ssdProduct, quantity: 3, grossUnitAmount: 47005 },
+	]),
+	buildPostedSupplierReceipt(221, contrerasSupplier, '2026-05-08', mainWarehouse, [
+		{ product: mouseProduct, quantity: 10, grossUnitAmount: 5950 },
+	]),
+	buildPostedSupplierReceipt(222, contrerasSupplier, '2026-06-05', shelfWarehouse, [
+		{ product: headsetProduct, quantity: 8, grossUnitAmount: 23800 },
+	]),
+	buildPostedSupplierReceipt(223, contrerasSupplier, '2026-07-01', mainWarehouse, [
+		{ product: mouseProduct, quantity: 12, grossUnitAmount: 5830 },
+	]),
+];
+
 /** Semilla del listado. El servicio mock la clona a su propio store mutable. */
 export const stockReceipts: IStockReceipt[] = [
 	draftManualStockReceipt,
@@ -1335,6 +1548,7 @@ export const stockReceipts: IStockReceipt[] = [
 	cancelledStockReceipt,
 	reversedStockReceipt,
 	postedKeyboardStockReceipt,
+	...supplierPurchaseHistoryReceipts,
 ];
 
 /**

@@ -10,7 +10,10 @@ import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import Button from '@/components/ui/Button';
 import { SelectComune } from '@/components/utils/selects/SelectComune';
-import type { IProcurementSupplier } from '@/interface/procurement.interface';
+import type {
+	IProcurementSupplier,
+	IProcurementSupplierRutConflict,
+} from '@/interface/procurement.interface';
 import useProveedorForm from '../../hooks/useProveedorForm';
 import SupplierCompletenessNotice from '../parts/SupplierCompletenessNotice';
 import SupplierRutConflictNotice from '../parts/SupplierRutConflictNotice';
@@ -36,6 +39,11 @@ interface IProveedorFormModalProps {
 	onSuccess?: (supplier: IProcurementSupplier) => void;
 	/** Navega a la ficha del proveedor en conflicto, sin cerrar este flujo por el usuario. */
 	onViewSupplier: (id: number) => void;
+	/**
+	 * Alta en línea desde otro formulario: si el RUT ya pertenece a un
+	 * proveedor activo, ofrece usarlo. Cierra este modal y lo entrega al caller.
+	 */
+	onUseExistingSupplier?: (conflict: IProcurementSupplierRutConflict) => void;
 }
 
 const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
@@ -46,6 +54,7 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 	supplier = null,
 	onSuccess,
 	onViewSupplier,
+	onUseExistingSupplier,
 }) => {
 	const {
 		formik,
@@ -70,6 +79,14 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 		setIsOpen(false);
 		reset();
 	};
+
+	const handleUseExistingSupplier = onUseExistingSupplier
+		? (existingSupplier: IProcurementSupplierRutConflict) => {
+				setIsOpen(false);
+				reset();
+				onUseExistingSupplier(existingSupplier);
+			}
+		: undefined;
 
 	return (
 		<Modal
@@ -96,6 +113,7 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 							isRestoring={isRestoring}
 							onRestore={restoreConflicting}
 							onViewSupplier={onViewSupplier}
+							onUseExistingSupplier={handleUseExistingSupplier}
 							branchId={branchId}
 							subsidiaryId={subsidiaryId}
 						/>
