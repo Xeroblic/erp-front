@@ -4,6 +4,7 @@ import {
 } from '@/mocks/db/procurement.db';
 import {
 	clearAllPersistedMockState,
+	loadAllPersistedMockStates,
 	loadPersistedMockState,
 	savePersistedMockState,
 } from '@/services/procurement/procurementMockPersistence.util';
@@ -150,6 +151,37 @@ export const findPurchasableProcurementProduct = (
 ): IProcurementProduct | undefined =>
 	listPurchasableProcurementProducts(subsidiaryId).find((product) => product.id === productId);
 
+let hydratedAllSubsidiaries = false;
+
+/** Hidrata una sola vez las filiales persistidas que todavía no pasaron por `getState`. */
+const hydrateAllPersistedStates = (): void => {
+	if (hydratedAllSubsidiaries) return;
+	hydratedAllSubsidiaries = true;
+	loadAllPersistedMockStates<unknown>(
+		PRODUCTS_STORAGE_NAMESPACE,
+		PRODUCTS_STORAGE_VERSION,
+	).forEach(([subsidiaryId, persisted]) => {
+		if (!statesBySubsidiary.has(subsidiaryId) && isProductsState(persisted))
+			statesBySubsidiary.set(subsidiaryId, persisted);
+	});
+};
+
+const allCreatedProducts = (): IProcurementProduct[] => {
+	hydrateAllPersistedStates();
+	return Array.from(statesBySubsidiary.values()).flatMap((state) => state.products);
+};
+
+/**
+ * Resuelve un producto por ID —fixture o creado en cualquier filial— sin
+ * conocer la filial. Lo usa el stock por ubicación, particionado por
+ * sucursal: una unidad recibida de un producto creado tiene que poder
+ * pintarse como fila, no descartarse por no estar en el catálogo estático.
+ * Incluye serializados: decidir si se muestran es del llamador.
+ */
+export const findProcurementProductById = (productId: number): IProcurementProduct | undefined =>
+	productSeed.find((product) => product.id === productId) ??
+	allCreatedProducts().find((product) => product.id === productId);
+
 /**
  * `true` si el SKU ya lo usa un producto de los fixtures o uno creado en esta
  * filial, sin distinguir mayúsculas. Lo usa el alta y también el generador de
@@ -205,8 +237,15 @@ export const createProcurementProduct = (
 			}
 		}
 
+		// El ID es único entre filiales, no sólo dentro de ésta: el stock por
+		// ubicación resuelve productos sin conocer la filial
+		// (`findProcurementProductById`).
+		const id = allCreatedProducts().reduce(
+			(highest, created) => Math.max(highest, created.id + 1),
+			state.nextId,
+		);
 		const product: IProcurementProduct = {
-			id: state.nextId,
+			id,
 			sku,
 			commercial_sku: null,
 			name,
@@ -242,6 +281,7 @@ export const createProcurementProduct = (
 /** Sólo para pruebas: vacía memoria, idempotencia y lo persistido. */
 export const resetProcurementProductsStoreForTests = (): void => {
 	statesBySubsidiary.clear();
+	hydratedAllSubsidiaries = false;
 	idempotencyLog.clear();
 	clearAllPersistedMockState(PRODUCTS_STORAGE_NAMESPACE);
 };

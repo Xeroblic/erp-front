@@ -24,6 +24,17 @@ import {
 	resetPurchaseDocumentsStoreForTests,
 	simulatePurchaseDocumentsReloadForTests,
 } from '@/services/procurement/purchaseDocuments.service';
+import {
+	createInventoryAdjustment,
+	getInventoryAdjustableProducts,
+	listInventoryOrigins,
+	listInventoryStock,
+	resetInventoryStockStoreForTests,
+} from '@/services/procurement/inventoryStock.service';
+import {
+	createProcurementProduct,
+	resetProcurementProductsStoreForTests,
+} from '@/services/procurement/procurementProducts.service';
 import type { IStockReceipt, IStockReceiptCreatePayload } from '@/interface/procurement.interface';
 
 /**
@@ -53,6 +64,7 @@ const MAIN_WAREHOUSE_ID = 8;
 const SHELF_WAREHOUSE_ID = 12; // misma sucursal (4) que MAIN_WAREHOUSE_ID
 const SOUTH_BRANCH_WAREHOUSE_ID = 15; // sucursal 6, hallazgo 5
 const SOUTH_BRANCH_ID = 6;
+const ECOPC_WAREHOUSE_ID = 20; // sucursal 1
 const PC_EXPRESS_SUPPLIER_ID = 7;
 const CONTRERAS_SUPPLIER_ID = 15; // Marcelo Contreras (contrerasSupplierFull)
 const MOUSE_PRODUCT_ID = 31;
@@ -186,6 +198,8 @@ const createPostedManualReceipt = async (
 afterEach(() => {
 	resetStockReceiptsStoreForTests();
 	resetPurchaseDocumentsStoreForTests();
+	resetInventoryStockStoreForTests();
+	resetProcurementProductsStoreForTests();
 });
 
 describe('listStockReceipts', () => {
@@ -785,7 +799,14 @@ describe('Hallazgo 5: la bodega elegida deriva la sucursal, no la sucursal activ
 			listWarehousesForStockReceipts()
 				.map((warehouse) => warehouse.id)
 				.sort(),
-		).toEqual([MAIN_WAREHOUSE_ID, SHELF_WAREHOUSE_ID, SOUTH_BRANCH_WAREHOUSE_ID].sort());
+		).toEqual(
+			[
+				MAIN_WAREHOUSE_ID,
+				SHELF_WAREHOUSE_ID,
+				SOUTH_BRANCH_WAREHOUSE_ID,
+				ECOPC_WAREHOUSE_ID,
+			].sort(),
+		);
 
 		expect(
 			listWarehousesForStockReceipts([BRANCH_ID])
@@ -1235,5 +1256,133 @@ describe('linkStockReceiptPurchaseDocument — sección 8', () => {
 		);
 		expect(response.status).toBe(409);
 		expect(response.data.code).toBe('IDEMPOTENCY_KEY_REUSED');
+	});
+});
+
+describe('Efecto en el stock real (sección 7)', () => {
+	/**
+	 * Producto creado desde compras: ningún fixture —ni la recepción sembrada en
+	 * `queued`, que es de mouse— toca su saldo, y además ejerce el catálogo
+	 * compartido entre compras, stock y ajustes.
+	 */
+	const createProduct = async () => {
+		const { data } = await createProcurementProduct(SUBSIDIARY_A, {
+			name: 'Hub USB-C de prueba',
+			brand: { id: 21, name: 'Samsung', slug: 'samsung' },
+			sku: null,
+			categories: [],
+			serial_tracking: false,
+			is_active: true,
+		});
+		return data;
+	};
+
+	const stockRowAtMainWarehouse = async (productId: number) => {
+		const stock = await listInventoryStock(BRANCH_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			per_page: 100,
+		});
+		return stock.data.find((row) => row.product.id === productId) ?? null;
+	};
+
+	it('publicar ingresa las unidades con su procedencia y revertir las retira', async () => {
+		const product = await createProduct();
+		expect(await stockRowAtMainWarehouse(product.id)).toBeNull();
+
+		const receipt = await createPostedManualReceipt(null, product.id, 3);
+		expect(receipt.status).toBe('posted');
+		expect(await stockRowAtMainWarehouse(product.id)).toMatchObject({
+			physical_quantity: 3,
+			fit_quantity: 3,
+			documented_quantity: 0,
+			undocumented_quantity: 3,
+		});
+
+		const { data: origins } = await listInventoryOrigins(BRANCH_ID, product.id, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+		});
+		expect(origins).toEqual([
+			expect.objectContaining({
+				origin_type: 'stock_receipt',
+				stock_receipt_id: receipt.id,
+				received_on: receipt.received_on,
+				physical_quantity: 3,
+			}),
+		]);
+		expect(origins[0]).not.toHaveProperty('stock_receipt_subsidiary_id');
+
+		const { data: reversed } = await reverseStockReceipt(SUBSIDIARY_A, receipt.id, {
+			reason: 'Ingreso duplicado',
+		});
+		expect(reversed.status).toBe('reversed');
+		expect(await stockRowAtMainWarehouse(product.id)).toBeNull();
+	});
+
+	it('el producto recibido es corregible por conteo, y lo que ya salió no se revierte', async () => {
+		const product = await createProduct();
+		expect(
+			getInventoryAdjustableProducts(SUBSIDIARY_A).some(
+				(candidate) => candidate.id === product.id,
+			),
+		).toBe(true);
+
+		const receipt = await createPostedManualReceipt(null, product.id, 3);
+		const { data: origins } = await listInventoryOrigins(BRANCH_ID, product.id, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+		});
+		await createInventoryAdjustment(BRANCH_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			reason: 'Conteo físico: falta una',
+			notes: null,
+			related_stock_receipt_id: receipt.id,
+			items: [
+				{
+					product_id: product.id,
+					quantity_delta: -1,
+					condition: 'fit',
+					origin_id: origins[0].origin_id,
+				},
+			],
+		});
+
+		const response = await readErrorData(
+			reverseStockReceipt(SUBSIDIARY_A, receipt.id, { reason: 'Error de ingreso' }),
+		);
+		expect(response.status).toBe(409);
+		expect(response.data.code).toBe('RECEIPT_ALREADY_CONSUMED');
+		// Todo o nada: ni la recepción ni el stock cambian.
+		expect((await getStockReceipt(SUBSIDIARY_A, receipt.id)).data.status).toBe('posted');
+		expect(await stockRowAtMainWarehouse(product.id)).toMatchObject({ physical_quantity: 2 });
+	});
+
+	it('vincular un documento después documenta las unidades ya ingresadas', async () => {
+		const receipt = await createPostedManualReceipt(null, KEYBOARD_PRODUCT_ID, 5);
+		const document = await createConfirmedDocumentWithSupplier(
+			PC_EXPRESS_SUPPLIER_ID,
+			KEYBOARD_PRODUCT_ID,
+			20,
+		);
+
+		await linkStockReceiptPurchaseDocument(SUBSIDIARY_A, receipt.id, {
+			purchase_document_id: document.id,
+			reason: 'Factura recibida después de la entrega',
+			items: [
+				{
+					stock_receipt_line_id: receipt.items[0].id,
+					purchase_document_line_id: document.items[0].id,
+				},
+			],
+		});
+
+		const { data: origins } = await listInventoryOrigins(BRANCH_ID, KEYBOARD_PRODUCT_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			per_page: 100,
+		});
+		const receiptOrigin = origins.find((origin) => origin.stock_receipt_id === receipt.id);
+		expect(receiptOrigin).toMatchObject({
+			physical_quantity: 5,
+			purchase_document: { id: document.id },
+			supplier: { id: PC_EXPRESS_SUPPLIER_ID },
+		});
 	});
 });

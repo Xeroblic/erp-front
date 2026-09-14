@@ -20,7 +20,15 @@ import useAjusteInventario from '@/pages/inventario/abastecimiento/AjustesInvent
 import AjusteItemsEditor from '@/pages/inventario/abastecimiento/AjustesInventario/components/AjusteItemsEditor';
 import AjusteResultCard from '@/pages/inventario/abastecimiento/AjustesInventario/components/AjusteResultCard';
 
-const AjusteSession = ({ branchId, owner }: { branchId: number; owner: string }) => {
+const AjusteSession = ({
+	branchId,
+	subsidiaryId,
+	owner,
+}: {
+	branchId: number;
+	subsidiaryId: number | null;
+	owner: string;
+}) => {
 	const {
 		formik,
 		locationOptions,
@@ -41,7 +49,7 @@ const AjusteSession = ({ branchId, owner }: { branchId: number; owner: string })
 		idempotentWrite,
 		result,
 		clearResult,
-	} = useAjusteInventario(branchId, owner);
+	} = useAjusteInventario(branchId, owner, subsidiaryId);
 
 	const frozen = idempotentWrite.isSubmitting || idempotentWrite.canRetry;
 	const hasLinkedReceipt = formik.values.relatedStockReceiptId !== '';
@@ -289,7 +297,15 @@ const AjusteInventarioView = () => {
 	// La sesión autorizada se monta con `key` ANTES de renderizar: un cambio de
 	// usuario, filial o sucursal desmonta el formulario en vez de dejar que
 	// pinte líneas y saldos de un contexto que ya no es el activo.
-	else content = <AjusteSession key={owner} owner={owner} branchId={branchId} />;
+	else
+		content = (
+			<AjusteSession
+				key={owner}
+				owner={owner}
+				branchId={branchId}
+				subsidiaryId={subsidiaryId}
+			/>
+		);
 
 	return (
 		<PageWrapper isProtectedRoute title='Ajuste de inventario'>

@@ -43,6 +43,10 @@ import {
 	loadPersistedMockState,
 	savePersistedMockState,
 } from '@/services/procurement/procurementMockPersistence.util';
+import {
+	findProcurementProductById,
+	listPurchasableProcurementProducts,
+} from '@/services/procurement/procurementProducts.service';
 import { PROCUREMENT_ERROR_DEFINITIONS } from '@/utils/procurementErrors.util';
 import { normalizePageParams } from '@/utils/procurementPagination.util';
 
@@ -106,6 +110,20 @@ interface IInventoryStockBranchStore {
 	movements: IWarehouseStockMovement[];
 	/** Ajustes por conteo confirmados (card 08, sección 11). */
 	adjustments: IInventoryAdjustment[];
+	/** Ingresos de recepciones publicadas en la sucursal (sección 7). */
+	stockReceiptEffects: IStockReceiptInventoryEffect[];
+}
+
+/**
+ * Lo que una recepción `posted` ingresó a la sucursal. Es el registro que
+ * permite revertir exactamente eso y detectar si parte ya salió; sin él, una
+ * reversión no distingue «nunca ingresó» de «ya se consumió».
+ */
+interface IStockReceiptInventoryEffect {
+	subsidiary_id: number;
+	stock_receipt_id: number;
+	items: { product_id: number; quantity: number }[];
+	reversed_at: string | null;
 }
 
 const cloneOrigin = (origin: IInventorySeedOrigin): IInventorySeedOrigin => ({
@@ -150,7 +168,7 @@ const INVENTORY_STOCK_STORAGE_NAMESPACE = 'inventory-stock';
  * migración que escribir, pero el bump es obligatorio para no hidratar un
  * objeto al que le faltan los arreglos nuevos.
  */
-const INVENTORY_STOCK_STORAGE_VERSION = 2;
+const INVENTORY_STOCK_STORAGE_VERSION = 3; // v3: `stockReceiptEffects`.
 
 interface IIdempotencyLogEntry {
 	payloadHash: string;
@@ -163,6 +181,7 @@ interface IPersistedInventoryStockState {
 	allocations: IInventoryDocumentAllocation[];
 	movements: IWarehouseStockMovement[];
 	adjustments: IInventoryAdjustment[];
+	stockReceiptEffects: IStockReceiptInventoryEffect[];
 	nextOriginId: number;
 	nextAllocationId: number;
 	idempotency: [string, IIdempotencyLogEntry][];
@@ -186,6 +205,7 @@ const persistBranchState = (branchId: number): void => {
 		allocations: store.allocations,
 		movements: store.movements,
 		adjustments: store.adjustments,
+		stockReceiptEffects: store.stockReceiptEffects,
 		nextOriginId: nextOriginIdByBranch.get(branchId) ?? seedNextOriginId(),
 		nextAllocationId: nextAllocationIdByBranch.get(branchId) ?? 1,
 		idempotency,
@@ -217,6 +237,7 @@ const hydrateStoreFromStorage = (branchId: number): IInventoryStockBranchStore |
 		allocations: persisted.allocations,
 		movements: persisted.movements,
 		adjustments: persisted.adjustments,
+		stockReceiptEffects: persisted.stockReceiptEffects,
 	};
 };
 
@@ -227,7 +248,16 @@ const seedStore = (branchId: number): IInventoryStockBranchStore => ({
 	allocations: [],
 	movements: [],
 	adjustments: [],
+	stockReceiptEffects: [],
 });
+
+/**
+ * Catálogo del stock: el de fixtures de inventario y, si no está ahí, el de
+ * abastecimiento (incluidos los productos creados desde compras). Un producto
+ * que entra por recepción tiene que existir también para stock y ajustes.
+ */
+const resolveStockProduct = (productId: number): IProcurementProduct | undefined =>
+	resolveInventoryProduct(productId) ?? findProcurementProductById(productId);
 
 const getStore = (branchId: number): IInventoryStockBranchStore => {
 	let store = storesByBranch.get(branchId);
@@ -361,7 +391,7 @@ const page = <T>(items: T[], path: string, params: { page?: number; per_page?: n
 const aggregateStockRows = (origins: readonly IInventorySeedOrigin[]): IInventorySeedRow[] => {
 	const rows = new Map<string, IInventorySeedRow>();
 	origins.forEach((origin) => {
-		const product = resolveInventoryProduct(origin.product_id);
+		const product = resolveStockProduct(origin.product_id);
 		// Defensivo: no debería ocurrir con fixtures/splits válidos — un origin
 		// sin producto resoluble no puede pintarse como fila.
 		if (!product) return;
@@ -395,9 +425,24 @@ export const getInventoryWarehouses = (branchId: number): IWarehouseCompact[] =>
  * saldo o sin él. No es una vista del stock — es el catálogo — porque un
  * conteo que encuentra unidades de un producto que quedó en cero tiene que
  * poder nombrarlo (sección 11).
+ *
+ * Es el **mismo** catálogo que compras (`listPurchasableProcurementProducts`)
+ * más los fixtures propios de inventario: un producto creado desde compras y
+ * recibido tiene que poder corregirse por conteo.
  */
-export const getInventoryAdjustableProducts = (): IProcurementProduct[] =>
-	inventoryAdjustableProducts.map((product) => ({ ...product }));
+export const getInventoryAdjustableProducts = (
+	subsidiaryId: number | null = null,
+): IProcurementProduct[] => {
+	const byId = new Map<number, IProcurementProduct>();
+	[...inventoryAdjustableProducts, ...listPurchasableProcurementProducts(subsidiaryId)].forEach(
+		(product) => {
+			if (!product.serial_tracking && !byId.has(product.id)) byId.set(product.id, product);
+		},
+	);
+	return [...byId.values()]
+		.sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id)
+		.map((product) => ({ ...product }));
+};
 
 /**
  * Disponible de un producto en la **sucursal completa**, frente a las reservas
@@ -503,7 +548,7 @@ export const getInventoryOriginFilterOptions = (
 	location: IInventoryStockListParams,
 ): { suppliers: ISupplierCompact[]; documents: IPurchaseDocumentCompact[] } => {
 	const context = locationContext(branchId, location);
-	const product = resolveInventoryProduct(productId);
+	const product = resolveStockProduct(productId);
 	if (!product || product.serial_tracking) return { suppliers: [], documents: [] };
 	return structuredClone(inventoryOriginFilterOptions(originsFor(branchId, productId, context)));
 };
@@ -514,7 +559,7 @@ export const listInventoryOrigins = async (
 	params: IInventoryOriginsParams = {},
 	signal?: AbortSignal,
 ): Promise<IInventoryOriginsResponse> => {
-	const product = resolveInventoryProduct(productId);
+	const product = resolveStockProduct(productId);
 	if (!product || product.serial_tracking)
 		return Promise.reject(
 			apiError(
@@ -546,6 +591,7 @@ export const listInventoryOrigins = async (
 				warehouse_id: _warehouse,
 				fifo_at: _fifo,
 				product_id: _product,
+				stock_receipt_subsidiary_id: _receiptSubsidiary,
 				...origin
 			}) => origin,
 		);
@@ -969,6 +1015,7 @@ const provenanceKey = (origin: IInventorySeedOrigin): string =>
 	JSON.stringify([
 		origin.origin_type,
 		origin.stock_receipt_id,
+		origin.stock_receipt_subsidiary_id ?? null,
 		origin.received_on,
 		origin.supplier?.id ?? null,
 		origin.purchase_document?.id ?? null,
@@ -1419,6 +1466,182 @@ export const createInventoryAdjustment = (
 			return delay({ data: structuredClone(adjustment) });
 		},
 	);
+
+/* =================================================
+   Efecto físico de las recepciones — sección 7
+
+   No son endpoints: son la mitad física de `post`/`reverse`/
+   `link_purchase_document` de `stockReceipts.service`, que las llama. Viven
+   acá por la misma razón que traslados y ajustes: una recepción que no
+   moviera estos `origins` dejaría stock, traslados y ajustes sin ver lo que
+   se recibió.
+   ================================================= */
+
+export interface IStockReceiptInventoryInput {
+	subsidiaryId: number;
+	branchId: number;
+	stockReceiptId: number;
+	warehouseId: number;
+	receivedOn: string;
+	supplier: ISupplierCompact | null;
+	purchaseDocument: IPurchaseDocumentCompact | null;
+	items: readonly { productId: number; quantity: number }[];
+}
+
+interface IStockReceiptInventoryRef {
+	subsidiaryId: number;
+	branchId: number;
+	stockReceiptId: number;
+}
+
+const isOriginOfReceipt = (
+	origin: IInventorySeedOrigin,
+	{ subsidiaryId, stockReceiptId }: IStockReceiptInventoryRef,
+): boolean =>
+	origin.origin_type === 'stock_receipt' &&
+	origin.stock_receipt_id === stockReceiptId &&
+	origin.stock_receipt_subsidiary_id === subsidiaryId;
+
+const findReceiptEffect = (
+	store: IInventoryStockBranchStore,
+	{ subsidiaryId, stockReceiptId }: IStockReceiptInventoryRef,
+): IStockReceiptInventoryEffect | undefined =>
+	store.stockReceiptEffects.find(
+		(effect) =>
+			effect.subsidiary_id === subsidiaryId && effect.stock_receipt_id === stockReceiptId,
+	);
+
+/**
+ * Ingresa las unidades de una recepción publicada: una procedencia apta por
+ * producto, al final de la cola FIFO. Idempotente por recepción — si el worker
+ * se reanuda tras una recarga que no alcanzó a persistir el `posted`, no
+ * ingresa dos veces.
+ */
+export const applyStockReceiptToInventory = (input: IStockReceiptInventoryInput): void => {
+	const store = getStore(input.branchId);
+	if (findReceiptEffect(store, input)) return;
+
+	const quantities = new Map<number, number>();
+	input.items.forEach(({ productId, quantity }) => {
+		quantities.set(productId, (quantities.get(productId) ?? 0) + quantity);
+	});
+	const lastFifo = store.origins.reduce(
+		(highest, origin) => Math.max(highest, origin.fifo_at),
+		0,
+	);
+
+	const received = [...quantities.entries()].map(
+		([productId, quantity], index): IInventorySeedOrigin => ({
+			origin_id: nextOriginIdFor(input.branchId),
+			origin_type: 'stock_receipt',
+			stock_receipt_id: input.stockReceiptId,
+			stock_receipt_subsidiary_id: input.subsidiaryId,
+			received_on: input.receivedOn,
+			supplier: input.supplier ? { ...input.supplier } : null,
+			purchase_document: input.purchaseDocument ? { ...input.purchaseDocument } : null,
+			// La recepción no clasifica condición: lo recibido entra apto.
+			physical_quantity: quantity,
+			fit_quantity: quantity,
+			unfit_quantity: 0,
+			branch_id: input.branchId,
+			product_id: productId,
+			warehouse_id: input.warehouseId,
+			fifo_at: lastFifo + index + 1,
+		}),
+	);
+
+	store.origins = [...store.origins, ...received];
+	store.stockReceiptEffects = [
+		...store.stockReceiptEffects,
+		{
+			subsidiary_id: input.subsidiaryId,
+			stock_receipt_id: input.stockReceiptId,
+			items: [...quantities.entries()].map(([productId, quantity]) => ({
+				product_id: productId,
+				quantity,
+			})),
+			reversed_at: null,
+		},
+	];
+	persistBranchState(input.branchId);
+};
+
+export type TStockReceiptInventoryReversal = 'reversed' | 'not_applied' | 'consumed';
+
+/**
+ * Retira lo que la recepción ingresó, donde esté (un traslado conserva la
+ * procedencia). Todo o nada: si de algún producto queda menos de lo recibido
+ * devuelve `consumed` sin mutar. `not_applied` si la recepción nunca ingresó
+ * stock en este mock (semillas ya `posted`).
+ */
+export const reverseStockReceiptInInventory = (
+	ref: IStockReceiptInventoryRef,
+): TStockReceiptInventoryReversal => {
+	const store = getStore(ref.branchId);
+	const effect = findReceiptEffect(store, ref);
+	if (!effect || effect.reversed_at !== null) return 'not_applied';
+
+	const receiptOrigins = store.origins.filter((origin) => isOriginOfReceipt(origin, ref));
+	const isConsumed = effect.items.some(
+		(item) =>
+			receiptOrigins
+				.filter((origin) => origin.product_id === item.product_id)
+				.reduce((total, origin) => total + origin.physical_quantity, 0) < item.quantity,
+	);
+	if (isConsumed) return 'consumed';
+
+	const pendingByProduct = new Map(effect.items.map((item) => [item.product_id, item.quantity]));
+	const patched = new Map<number, IInventorySeedOrigin | null>();
+	[...receiptOrigins].sort(fifoOrder).forEach((origin) => {
+		const pending = pendingByProduct.get(origin.product_id) ?? 0;
+		if (pending === 0) return;
+		const taken = Math.min(pending, origin.physical_quantity);
+		pendingByProduct.set(origin.product_id, pending - taken);
+		const fitTaken = Math.min(taken, origin.fit_quantity);
+		const next: IInventorySeedOrigin = {
+			...origin,
+			physical_quantity: origin.physical_quantity - taken,
+			fit_quantity: origin.fit_quantity - fitTaken,
+			unfit_quantity: origin.unfit_quantity - (taken - fitTaken),
+		};
+		patched.set(origin.origin_id, next.physical_quantity > 0 ? next : null);
+	});
+
+	store.origins = store.origins
+		.map((origin) => (patched.has(origin.origin_id) ? patched.get(origin.origin_id)! : origin))
+		.filter((origin): origin is IInventorySeedOrigin => origin !== null);
+	store.stockReceiptEffects = store.stockReceiptEffects.map((candidate) =>
+		candidate === effect ? { ...candidate, reversed_at: new Date().toISOString() } : candidate,
+	);
+	persistBranchState(ref.branchId);
+	return 'reversed';
+};
+
+/**
+ * Documenta las procedencias vigentes de una recepción vinculada después de
+ * contabilizar: mismas unidades, ahora con documento. El proveedor se completa
+ * sólo si la procedencia no tenía uno.
+ */
+export const linkStockReceiptDocumentInInventory = (
+	ref: IStockReceiptInventoryRef & {
+		purchaseDocument: IPurchaseDocumentCompact;
+		supplier: ISupplierCompact | null;
+	},
+): void => {
+	const store = getStore(ref.branchId);
+	if (!store.origins.some((origin) => isOriginOfReceipt(origin, ref))) return;
+
+	store.origins = store.origins.map((origin) =>
+		isOriginOfReceipt(origin, ref)
+			? {
+					...origin,
+					purchase_document: { ...ref.purchaseDocument },
+					supplier: origin.supplier ?? (ref.supplier ? { ...ref.supplier } : null),
+				}
+			: origin,
+	);
+	persistBranchState(ref.branchId);
+};
 
 /**
  * Sólo para pruebas: descarta el estado **en memoria** — como una recarga

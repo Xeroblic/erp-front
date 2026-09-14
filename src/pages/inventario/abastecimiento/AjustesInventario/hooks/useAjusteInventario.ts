@@ -58,7 +58,11 @@ export interface IAjusteResult {
  * varias líneas necesita varias a la vez. La llamada directa queda detrás del
  * mismo flag que los thunks para no escaparse de la puerta de mocks.
  */
-export default function useAjusteInventario(branchId: number, context: string) {
+export default function useAjusteInventario(
+	branchId: number,
+	context: string,
+	subsidiaryId: number | null = null,
+) {
 	const session = useId();
 	const dispatch = useAppDispatch();
 	const raw = useAppSelector((state) => state.inventoryStock.list);
@@ -76,7 +80,10 @@ export default function useAjusteInventario(branchId: number, context: string) {
 	 * stock se sigue consultando, pero para informar el saldo y validar los
 	 * egresos, no para decidir qué se puede corregir.
 	 */
-	const products = useMemo<IProcurementProduct[]>(() => getInventoryAdjustableProducts(), []);
+	const products = useMemo<IProcurementProduct[]>(
+		() => getInventoryAdjustableProducts(subsidiaryId),
+		[subsidiaryId],
+	);
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo registrar el ajuste.',
 	});
