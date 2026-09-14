@@ -1,6 +1,7 @@
 import * as Yup from 'yup';
 import { costEntrySchema, normalizeCostInput } from '@/components/procurement';
 import { parseDecimalString } from '@/utils/procurementDecimal.util';
+import { PRODUCT_TYPES } from '@/pages/catalogos/productos/constants/products.constant';
 import type {
 	TCostEntryBasis,
 	TPurchaseDocumentReceptionStatus,
@@ -188,4 +189,46 @@ export const documentoCompraFormSchema = Yup.object({
 	}),
 	notes: Yup.string().max(1000, 'Máximo 1000 caracteres.'),
 	items: Yup.array().of(lineSchema).min(1, 'Agrega al menos una línea.'),
+});
+
+/* =================================================
+   Alta en línea de producto
+   ================================================= */
+
+/**
+ * Mismas reglas que el alta de producto por filial (`StoreSubsidiaryProductRequest`):
+ * nombre y marca obligatorios, categorías opcionales. El SKU no es un campo del
+ * formulario: se genera a partir del nombre y la marca (ver `useProductoCompraForm`).
+ */
+export interface IProductoCompraFormValues {
+	name: string;
+	brand_id: string;
+	/** Tipo de dispositivo del catálogo (`PRODUCT_TYPES`); también da el código de tipo del SKU. */
+	product_type: string;
+	serial_tracking: boolean;
+	is_active: boolean;
+	category_ids: string[];
+}
+
+export const EMPTY_PRODUCTO_COMPRA_VALUES: IProductoCompraFormValues = {
+	name: '',
+	brand_id: '',
+	product_type: 'general',
+	serial_tracking: false,
+	is_active: true,
+	category_ids: [],
+};
+
+export const productoCompraFormSchema = Yup.object({
+	name: Yup.string()
+		.trim()
+		.required('Indica el nombre del producto.')
+		.max(255, 'Máximo 255 caracteres.'),
+	brand_id: Yup.string().required('Selecciona la marca del producto.'),
+	product_type: Yup.string()
+		.oneOf([...PRODUCT_TYPES], 'Selecciona un tipo de dispositivo válido.')
+		.required('Selecciona el tipo de dispositivo.'),
+	serial_tracking: Yup.boolean().required(),
+	is_active: Yup.boolean().required(),
+	category_ids: Yup.array().of(Yup.string().required()),
 });

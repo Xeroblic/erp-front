@@ -3,10 +3,10 @@ import {
 	getProcurementWarehousesForBranchContext,
 	procurementWarehouses,
 	PROCUREMENT_WAREHOUSE_BRANCH_BY_ID,
-	purchasableProcurementProducts,
 	STOCK_RECEIPT_CONSUMED_IDS,
 	stockReceipts as stockReceiptSeed,
 } from '@/mocks/db/procurement.db';
+import { findPurchasableProcurementProduct } from '@/services/procurement/procurementProducts.service';
 import {
 	applyStockReceiptCoverageDelta,
 	bumpPurchaseDocumentStockReceiptsCount,
@@ -830,7 +830,7 @@ const buildManualLine = (
 	hasKnownSupplier: boolean,
 	existingId?: number,
 ): IBuildItemResult => {
-	const product = purchasableProcurementProducts.find((item) => item.id === input.product_id);
+	const product = findPurchasableProcurementProduct(subsidiaryId, input.product_id);
 	if (!product) {
 		return {
 			error: buildFieldError(

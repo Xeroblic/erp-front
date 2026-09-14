@@ -22,6 +22,7 @@ import Textarea from '@/components/form/Textarea';
 import { normalizeCostInput } from '@/components/procurement';
 import ProveedorFormModal from '@/pages/inventario/abastecimiento/Proveedores/components/modals/ProveedorFormModal';
 import type {
+	IProcurementProduct,
 	IProcurementSupplier,
 	IProcurementSupplierRutConflict,
 	IPurchaseDocument,
@@ -34,6 +35,7 @@ import {
 } from '@/utils/procurementDecimal.util';
 import useDocumentoCompraForm from '../../hooks/useDocumentoCompraForm';
 import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
+import ProductoCompraFormModal from './ProductoCompraFormModal';
 import { EMPTY_DOCUMENTO_LINE } from '../../types';
 
 /** Superficies equivalentes a Proveedor y al listado de ítems de Cotizaciones. */
@@ -96,16 +98,23 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 	onSuccess,
 	onStaleVersion,
 }) => {
-	const { formik, isEdit, isSubmitting, hasVersionConflict, productOptions, reset } =
-		useDocumentoCompraForm({
-			subsidiaryId,
-			document,
-			etag,
-			onSuccess: (result) => {
-				setIsOpen(false);
-				onSuccess?.(result);
-			},
-		});
+	const {
+		formik,
+		isEdit,
+		isSubmitting,
+		hasVersionConflict,
+		productOptions,
+		refreshProductOptions,
+		reset,
+	} = useDocumentoCompraForm({
+		subsidiaryId,
+		document,
+		etag,
+		onSuccess: (result) => {
+			setIsOpen(false);
+			onSuccess?.(result);
+		},
+	});
 	const {
 		suppliers,
 		loading: loadingSuppliers,
@@ -139,9 +148,25 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 		shippingTotalCents ?? 0n,
 	);
 
+	/**
+	 * Alta de producto en línea: guarda qué línea abrió `ProductoCompraFormModal`
+	 * para dejar ahí el producto creado. `null` con el modal cerrado.
+	 */
+	const [productLineIndex, setProductLineIndex] = useState<number | null>(null);
+
+	const handleProductCreated = (product: IProcurementProduct) => {
+		refreshProductOptions();
+		// Con serie no es elegible para una línea de compra: queda creado, pero no se selecciona.
+		if (productLineIndex === null || product.serial_tracking) return;
+		const field = `items.${productLineIndex}.product_id`;
+		formik.setFieldValue(field, product.id).catch(() => undefined);
+		formik.setFieldTouched(field, true, false).catch(() => undefined);
+	};
+
 	const handleClose = () => {
 		if (isSubmitting) return;
 		setIsSupplierModalOpen(false);
+		setProductLineIndex(null);
 		setIsOpen(false);
 		reset();
 	};
@@ -241,10 +266,13 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 								<CardBody className='space-y-4'>
 									<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
 										<div className='space-y-1'>
-											<Label htmlFor='documento-type'>
-												Tipo de documento{' '}
-												<span className='text-red-500'>*</span>
-											</Label>
+											{/* Misma altura que la fila de Proveedor, que lleva el botón «Nuevo proveedor». */}
+											<div className='flex min-h-6 items-center'>
+												<Label htmlFor='documento-type'>
+													Tipo de documento{' '}
+													<span className='text-red-500'>*</span>
+												</Label>
+											</div>
 											<Select
 												id='documento-type'
 												name='document_type'
@@ -263,7 +291,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 										</div>
 
 										<div className='space-y-1'>
-											<div className='flex items-center justify-between gap-2'>
+											<div className='flex min-h-6 items-center justify-between gap-2'>
 												<Label htmlFor='documento-supplier'>
 													Proveedor
 													{formik.values.document_type === 'invoice' && (
@@ -280,6 +308,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 													variant='outline'
 													color='blue'
 													icon='HeroPlus'
+													className='shrink-0 whitespace-nowrap'
 													isDisable={isSubmitting}
 													onClick={() => setIsSupplierModalOpen(true)}>
 													Nuevo proveedor
@@ -570,13 +599,37 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 																	/>
 																</div>
 																<div className='space-y-1'>
-																	<Label
-																		htmlFor={`items.${index}.product_id`}>
-																		Producto{' '}
-																		<span className='text-red-500'>
-																			*
-																		</span>
-																	</Label>
+																	<div className='flex items-start justify-between gap-2'>
+																		<Label
+																			htmlFor={`items.${index}.product_id`}>
+																			Producto{' '}
+																			<span className='text-red-500'>
+																				*
+																			</span>
+																		</Label>
+																		{/* Margen negativo: el botón no agranda la fila del label frente a Cantidad y Costo. */}
+																		<ProtectedButton
+																			type='button'
+																			permission='create-product'
+																			subsidiaryId={
+																				subsidiaryId
+																			}
+																			scope='access'
+																			fallbackMode='hidden'
+																			size='xs'
+																			variant='outline'
+																			color='blue'
+																			icon='HeroPlus'
+																			className='-my-0.5 shrink-0 whitespace-nowrap'
+																			isDisable={isSubmitting}
+																			onClick={() =>
+																				setProductLineIndex(
+																					index,
+																				)
+																			}>
+																			Nuevo producto
+																		</ProtectedButton>
+																	</div>
 																	<SelectReact
 																		name={`items.${index}.product_id`}
 																		inputId={`items.${index}.product_id`}
@@ -859,6 +912,14 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 				onSuccess={handleSupplierCreated}
 				onUseExistingSupplier={handleUseExistingSupplier}
 				onViewSupplier={openSupplierInNewTab}
+			/>
+			<ProductoCompraFormModal
+				isOpen={isOpen && productLineIndex !== null}
+				setIsOpen={(open) => {
+					if (!open) setProductLineIndex(null);
+				}}
+				subsidiaryId={subsidiaryId}
+				onSuccess={handleProductCreated}
 			/>
 		</>
 	);
