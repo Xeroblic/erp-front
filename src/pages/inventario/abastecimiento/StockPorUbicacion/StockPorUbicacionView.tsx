@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
@@ -123,8 +123,11 @@ const StockPorUbicacionView = () => {
 		<PageWrapper isProtectedRoute title='Stock por ubicación'>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon icon='HeroCube' />
-					<span>Inventario / Stock por ubicación</span>
+					<SubheaderTitle
+						icon='HeroCube'
+						title='Stock por ubicación'
+						description='Stock físico por bodega y ubicación de la sucursal activa'
+					/>
 				</SubheaderLeft>
 			</Subheader>
 			<Container className='space-y-4'>

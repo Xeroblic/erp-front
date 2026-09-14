@@ -2,6 +2,7 @@ import Icon from '@/components/icon/Icon';
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -209,19 +210,16 @@ const TrazabilidadDetalle = () => {
 			title='Detalle de Movimiento'>
 			<Subheader>
 				<SubheaderLeft>
-					<Button variant='outline' size='sm' onClick={handleGoBack} icon='HeroArrowLeft'>
-						Volver
-					</Button>
-					<div className='ml-4 flex flex-col'>
-						<Badge className='px-2 text-xl font-bold'>
-							Movimiento #{detalleMovimiento.id}
-						</Badge>
-						<p className='text-sm text-gray-500 dark:text-gray-400'>
-							Detalle completo del movimiento de inventario
-						</p>
-					</div>
+					<SubheaderTitle
+						icon='HeroArchiveBox'
+						title='Trazabilidad de Inventario'
+						description='Detalle completo del movimiento de inventario'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight>
+					<Button variant='outline' onClick={handleGoBack} icon='HeroArrowLeft'>
+						Volver
+					</Button>
 					{movementConfig && (
 						<Badge
 							color={movementConfig.color}

@@ -1,8 +1,8 @@
 import React from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Container from '@/components/layouts/Container/Container';
-import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import Alert from '@/components/ui/Alert';
 import Card, { CardBody } from '@/components/ui/Card';
@@ -54,8 +54,11 @@ const CatalogoContratoView = () => {
 		<PageWrapper isProtectedRoute title='Catálogo del contrato de abastecimiento'>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon icon='HeroCube' />
-					<span>Inventario / Abastecimiento / Catálogo del contrato</span>
+					<SubheaderTitle
+						icon='HeroCube'
+						title='Catálogo del contrato'
+						description='Componentes compartidos de abastecimiento con datos de ejemplo del contrato'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Badge variant='outline' color='amber'>

@@ -8,6 +8,7 @@ import Container from '@/components/layouts/Container/Container';
 import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import { AllowedActionsToolbar } from '@/components/procurement';
 import { formatDate } from '@/utils/format.utils';
@@ -142,11 +143,11 @@ const DocumentoCompraDetalleView = () => {
 		<PageWrapper isProtectedRoute title={document?.document_number ?? 'Documento de compra'}>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon icon='HeroDocumentText' />
-					<span>
-						Inventario / Abastecimiento / Documentos de compra /{' '}
-						{document?.document_number ?? '…'}
-					</span>
+					<SubheaderTitle
+						icon='HeroDocumentText'
+						title='Documentos de compra'
+						description='Líneas, adjuntos y recepciones asociadas al documento'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Button variant='outline' icon='HeroArrowLeft' onClick={goToList}>
