@@ -15,6 +15,10 @@ import type { IProcurementSupplierRutConflict } from '@/interface/procurement.in
  * el botón de restaurar pasa igual por `ProtectedButton` con el permiso de
  * la sección 15: `allowed_actions` no sustituye la autorización, y acá
  * directamente no está disponible para consultarla.
+ *
+ * `onUseExistingSupplier` es opcional: sólo lo pasa un alta en línea (el
+ * formulario de documento de compra), donde un proveedor activo con ese RUT
+ * se puede usar tal cual en vez de salir a verlo.
  */
 
 interface ISupplierRutConflictNoticeProps {
@@ -22,6 +26,7 @@ interface ISupplierRutConflictNoticeProps {
 	isRestoring: boolean;
 	onRestore: () => void;
 	onViewSupplier: (id: number) => void;
+	onUseExistingSupplier?: (conflict: IProcurementSupplierRutConflict) => void;
 	branchId?: number | null;
 	subsidiaryId?: number | null;
 }
@@ -31,6 +36,7 @@ const SupplierRutConflictNotice: React.FC<ISupplierRutConflictNoticeProps> = ({
 	isRestoring,
 	onRestore,
 	onViewSupplier,
+	onUseExistingSupplier,
 	branchId = null,
 	subsidiaryId = null,
 }) => (
@@ -45,6 +51,16 @@ const SupplierRutConflictNotice: React.FC<ISupplierRutConflictNoticeProps> = ({
 				{conflict.is_active ? '.' : ', pero está desactivado.'}
 			</p>
 			<div className='flex flex-wrap gap-2'>
+				{conflict.is_active && onUseExistingSupplier && (
+					<Button
+						size='sm'
+						variant='solid'
+						color='blue'
+						icon='HeroCheck'
+						onClick={() => onUseExistingSupplier(conflict)}>
+						Usar este proveedor
+					</Button>
+				)}
 				<Button
 					size='sm'
 					variant='outline'
