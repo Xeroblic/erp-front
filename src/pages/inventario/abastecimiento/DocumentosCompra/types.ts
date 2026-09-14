@@ -226,8 +226,8 @@ export const productoCompraFormSchema = Yup.object({
 		.max(255, 'Máximo 255 caracteres.'),
 	brand_id: Yup.string().required('Selecciona la marca del producto.'),
 	product_type: Yup.string()
-		.oneOf([...PRODUCT_TYPES], 'Selecciona un tipo de dispositivo válido.')
-		.required('Selecciona el tipo de dispositivo.'),
+		.required('Selecciona el tipo de dispositivo.')
+		.oneOf([...PRODUCT_TYPES], 'Selecciona un tipo de dispositivo válido.'),
 	serial_tracking: Yup.boolean().required(),
 	is_active: Yup.boolean().required(),
 	category_ids: Yup.array().of(Yup.string().required()),

@@ -37,6 +37,7 @@ import useDocumentoCompraForm from '../../hooks/useDocumentoCompraForm';
 import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
 import ProductoCompraFormModal from './ProductoCompraFormModal';
 import { EMPTY_DOCUMENTO_LINE } from '../../types';
+import { focusFirstInvalidDocumentoCompraField } from '../../utils/documentoCompraFieldFocus';
 
 /** Superficies equivalentes a Proveedor y al listado de ítems de Cotizaciones. */
 const DOCUMENTO_CARD_CLASSNAME =
@@ -229,11 +230,21 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 							// Defensa además del botón deshabilitado: Enter en un campo de
 							// texto dispara el submit nativo del `<form>` sin pasar por el
 							// botón, así que el bloqueo tiene que vivir acá también.
-							if (hasVersionConflict) {
-								event.preventDefault();
-								return;
-							}
-							formik.handleSubmit(event);
+							event.preventDefault();
+							if (hasVersionConflict) return;
+							// Mismo criterio que pagos diferidos: se envía igual (Formik
+							// marca los campos tocados y no llama a `onSubmit` si hay
+							// errores) y después se lleva la vista al primer campo inválido.
+							formik
+								.validateForm()
+								.then((errors) =>
+									formik
+										.submitForm()
+										.finally(() =>
+											focusFirstInvalidDocumentoCompraField(errors),
+										),
+								)
+								.catch(() => undefined);
 						}}>
 						<ModalBody className='min-h-0 flex-1 space-y-4 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
 							{hasVersionConflict && (
@@ -275,6 +286,15 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 											</div>
 											<Select
 												id='documento-type'
+												// `Select` pinta el borde con el color del tema aunque no tenga
+												// foco y parece seleccionado: acá el borde en reposo es gris,
+												// como el de `Input`, y el fondo blanco. Hover y foco no cambian.
+												className='!bg-white dark:!bg-zinc-900'
+												style={
+													{
+														'--select-border': '#d4d4d8',
+													} as React.CSSProperties
+												}
 												name='document_type'
 												value={formik.values.document_type}
 												onChange={formik.handleChange}
@@ -358,6 +378,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 											</Label>
 											<Input
 												id='documento-number'
+												className='!bg-white dark:!bg-zinc-900'
 												name='document_number'
 												value={formik.values.document_number}
 												onChange={formik.handleChange}
@@ -376,6 +397,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 											<DateInput
 												id='documento-issue-date'
 												name='issue_date'
+												className='!bg-white dark:!bg-zinc-900'
 												value={formik.values.issue_date}
 												maxDate={MAX_DOCUMENT_DATE}
 												maxYear={MAX_DOCUMENT_YEAR}
@@ -397,6 +419,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 											</Label>
 											<Input
 												id='documento-total-amount'
+												className='!bg-white dark:!bg-zinc-900'
 												name='total_amount'
 												type='text'
 												inputMode='decimal'
@@ -419,6 +442,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 										<Label htmlFor='documento-notes'>Notas</Label>
 										<Textarea
 											id='documento-notes'
+											className='!bg-white dark:!bg-zinc-900'
 											name='notes'
 											rows={2}
 											value={formik.values.notes}
@@ -579,6 +603,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 																	</Label>
 																	<Input
 																		id={`items.${index}.quantity`}
+																		className='!bg-white dark:!bg-zinc-900'
 																		name={`items.${index}.quantity`}
 																		type='number'
 																		min={1}
@@ -599,15 +624,16 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 																	/>
 																</div>
 																<div className='space-y-1'>
-																	<div className='flex items-start justify-between gap-2'>
+																	<div className='relative'>
 																		<Label
-																			htmlFor={`items.${index}.product_id`}>
+																			htmlFor={`items.${index}.product_id`}
+																			className='pe-36'>
 																			Producto{' '}
 																			<span className='text-red-500'>
 																				*
 																			</span>
 																		</Label>
-																		{/* Margen negativo: el botón no agranda la fila del label frente a Cantidad y Costo. */}
+																		{/* Botón fuera del flujo: la fila del label mide lo mismo que en Cantidad y Costo. */}
 																		<ProtectedButton
 																			type='button'
 																			permission='create-product'
@@ -620,7 +646,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 																			variant='outline'
 																			color='blue'
 																			icon='HeroPlus'
-																			className='-my-0.5 shrink-0 whitespace-nowrap'
+																			className='absolute -top-1 right-0 whitespace-nowrap'
 																			isDisable={isSubmitting}
 																			onClick={() =>
 																				setProductLineIndex(
@@ -677,7 +703,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 																		)}
 																	/>
 																</div>
-																<div className='space-y-2'>
+																<div className='space-y-1'>
 																	<Label
 																		htmlFor={`items.${index}.unit_cost`}>
 																		{calculatesVat
@@ -690,6 +716,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 																	<Input
 																		id={`items.${index}.unit_cost`}
 																		name={`items.${index}.unit_cost`}
+																		className='!bg-white dark:!bg-zinc-900'
 																		type='text'
 																		inputMode='decimal'
 																		placeholder='0,00'
@@ -792,7 +819,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 																	disabled
 																/>
 															</div>
-															<div className='space-y-2'>
+															<div className='space-y-1'>
 																<Label htmlFor='shipping-cost'>
 																	{shippingCalculatesVat
 																		? 'Costo neto'
@@ -804,6 +831,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 																<Input
 																	id='shipping-cost'
 																	name='shipping_cost'
+																	className='!bg-white dark:!bg-zinc-900'
 																	type='text'
 																	inputMode='decimal'
 																	placeholder='0,00'

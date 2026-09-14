@@ -130,7 +130,10 @@ const ProductoCompraFormModal: React.FC<IProductoCompraFormModalProps> = ({
 												name='sku'
 												value={sku}
 												placeholder='Se genera automáticamente...'
-												readOnly
+												// Deshabilitado, no sólo `readOnly`: no recibe foco ni se
+												// puede seleccionar, así no parece un campo editable.
+												disabled
+												className='select-none'
 												aria-describedby='producto-compra-sku-help'
 											/>
 											<p
@@ -149,6 +152,7 @@ const ProductoCompraFormModal: React.FC<IProductoCompraFormModalProps> = ({
 											<Label htmlFor='producto-compra-name'>Nombre</Label>
 											<Input
 												id='producto-compra-name'
+												className='!bg-white dark:!bg-zinc-900'
 												name='name'
 												value={formik.values.name}
 												onChange={formik.handleChange}
@@ -207,6 +211,15 @@ const ProductoCompraFormModal: React.FC<IProductoCompraFormModalProps> = ({
 											<Select
 												id='producto-compra-type'
 												name='product_type'
+												// `Select` pinta el borde con el color del tema aunque no tenga
+												// foco y parece seleccionado: acá el borde en reposo es gris,
+												// como el de `Input`, y el fondo blanco. Hover y foco no cambian.
+												className='!bg-white dark:!bg-zinc-900'
+												style={
+													{
+														'--select-border': '#d4d4d8',
+													} as React.CSSProperties
+												}
 												value={formik.values.product_type}
 												onChange={formik.handleChange}
 												onBlur={formik.handleBlur}
