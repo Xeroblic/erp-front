@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
@@ -7,7 +7,10 @@ import {
 	createPurchaseDocumentThunk,
 	updatePurchaseDocumentThunk,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
-import { purchasableProcurementProducts } from '@/mocks/db/procurement.db';
+import {
+	formatProcurementProductLabel,
+	listPurchasableProcurementProducts,
+} from '@/services/procurement/procurementProducts.service';
 import { normalizeCostInput } from '@/components/procurement';
 import { formatDecimalCents, parseDecimalString } from '@/utils/procurementDecimal.util';
 import type {
@@ -120,12 +123,17 @@ const useDocumentoCompraForm = ({
 			: 'No se pudo crear el documento de compra.',
 	});
 
-	const productOptions = useMemo(
-		() =>
-			purchasableProcurementProducts.map((product) => ({
-				value: String(product.id),
-				label: `${product.sku} · ${product.name}`,
-			})),
+	/**
+	 * El store mock no es reactivo: se relee en cada render, y crear un producto
+	 * en línea sube esta versión sólo para forzar ese render.
+	 */
+	const [, setProductsVersion] = useState(0);
+	const productOptions = listPurchasableProcurementProducts(subsidiaryId).map((product) => ({
+		value: String(product.id),
+		label: formatProcurementProductLabel(product),
+	}));
+	const refreshProductOptions = useCallback(
+		() => setProductsVersion((version) => version + 1),
 		[],
 	);
 	const formik = useFormik<IDocumentoCompraFormValues>({
@@ -221,6 +229,7 @@ const useDocumentoCompraForm = ({
 		isSubmitting: idempotentWrite.isSubmitting,
 		hasVersionConflict,
 		productOptions,
+		refreshProductOptions,
 		reset,
 	};
 };

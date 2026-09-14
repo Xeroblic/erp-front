@@ -1,6 +1,9 @@
 import React from 'react';
 import { FieldArray, FormikProvider } from 'formik';
-import { purchasableProcurementProducts } from '@/mocks/db/procurement.db';
+import {
+	formatProcurementProductLabel,
+	listPurchasableProcurementProducts,
+} from '@/services/procurement/procurementProducts.service';
 import { listWarehousesForStockReceipts } from '@/services/procurement/stockReceipts.service';
 import Modal, {
 	ModalHeader,
@@ -120,9 +123,9 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 		label: `${line.sku_snapshot} · ${line.name_snapshot} (quedan ${line.remaining_quantity})`,
 	}));
 
-	const productOptions = purchasableProcurementProducts.map((product) => ({
+	const productOptions = listPurchasableProcurementProducts(subsidiaryId).map((product) => ({
 		value: String(product.id),
-		label: `${product.sku} · ${product.name}`,
+		label: formatProcurementProductLabel(product),
 	}));
 
 	const handleClose = () => {

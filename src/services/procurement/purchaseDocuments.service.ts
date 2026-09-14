@@ -1,7 +1,5 @@
-import {
-	purchaseDocuments as documentSeed,
-	purchasableProcurementProducts,
-} from '@/mocks/db/procurement.db';
+import { purchaseDocuments as documentSeed } from '@/mocks/db/procurement.db';
+import { findPurchasableProcurementProduct } from '@/services/procurement/procurementProducts.service';
 import { getProcurementSupplier } from '@/services/procurement/procurementSuppliers.service';
 import {
 	clearAllPersistedMockState,
@@ -390,7 +388,7 @@ const buildLine = (
 	currencyCode: string,
 	existingId?: number,
 ): IBuildLineResult => {
-	const product = purchasableProcurementProducts.find((item) => item.id === input.product_id);
+	const product = findPurchasableProcurementProduct(subsidiaryId, input.product_id);
 	if (!product) {
 		return {
 			error: buildFieldError(
