@@ -155,7 +155,7 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 
 		if (result && isMountedRef.current) {
 			toast.success(
-				`Respaldadas ${result.quantity} unidades del origin #${origin.origin_id}.`,
+				`Respaldadas ${result.quantity} unidades de la procedencia #${origin.origin_id}.`,
 			);
 			handleClose();
 			onDocumented(result.quantity);
@@ -178,7 +178,7 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 			</ModalHeader>
 			<ModalBody className='space-y-4'>
 				<p className='text-lg'>
-					Respaldar unidades del origin <strong>#{origin?.origin_id}</strong>
+					Respaldar unidades de la procedencia <strong>#{origin?.origin_id}</strong>
 				</p>
 				{/* Requisito de aceptación explícito del issue: delta físico cero
 				    visible antes de confirmar, no sólo un comentario de código. */}

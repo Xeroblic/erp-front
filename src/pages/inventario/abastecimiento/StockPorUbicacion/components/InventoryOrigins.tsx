@@ -111,7 +111,8 @@ const InventoryOrigins = ({
 				</div>
 				{response && (
 					<span className='text-sm text-zinc-500'>
-						{response.meta.total} procedencias
+						{response.meta.total}{' '}
+						{response.meta.total === 1 ? 'procedencia' : 'procedencias'}
 					</span>
 				)}
 			</div>
@@ -183,12 +184,17 @@ const InventoryOrigins = ({
 							{response.data.map((origin) => (
 								<Tr key={origin.origin_id}>
 									<Td>
-										{ORIGIN_LABELS[origin.origin_type]} #{origin.origin_id}
-										{!origin.supplier && !origin.purchase_document && (
-											<p className='text-sm text-zinc-500'>
-												Procedencia desconocida
-											</p>
-										)}
+										{/* Una recepción se nombra por su número, que es lo que el usuario
+										    busca en Recepciones; el resto no tiene otro identificador. */}
+										{ORIGIN_LABELS[origin.origin_type]} #
+										{origin.stock_receipt_id ?? origin.origin_id}
+										{origin.stock_receipt_id === null &&
+											!origin.supplier &&
+											!origin.purchase_document && (
+												<p className='text-sm text-zinc-500'>
+													Procedencia desconocida
+												</p>
+											)}
 									</Td>
 									<Td>{origin.received_on ?? 'Fecha desconocida'}</Td>
 									<Td>
@@ -196,7 +202,7 @@ const InventoryOrigins = ({
 									</Td>
 									<Td>
 										{origin.purchase_document
-											? `${origin.physical_quantity} documentados por ${origin.purchase_document.document_type === 'invoice' ? 'factura' : 'boleta'} #${origin.purchase_document.document_number}`
+											? `${origin.physical_quantity} ${origin.physical_quantity === 1 ? 'documentado' : 'documentados'} por ${origin.purchase_document.document_type === 'invoice' ? 'factura' : 'boleta'} #${origin.purchase_document.document_number}`
 											: `${origin.physical_quantity} sin respaldo`}
 									</Td>
 									<Td className='font-semibold tabular-nums'>

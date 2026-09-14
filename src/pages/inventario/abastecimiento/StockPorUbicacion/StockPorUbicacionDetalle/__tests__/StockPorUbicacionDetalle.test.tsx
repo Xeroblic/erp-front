@@ -274,11 +274,11 @@ describe('Ficha de stock por ubicación — procedencias y documentar', () => {
 		expect(within(region).getByRole('textbox', { name: 'Página' })).toHaveValue('1');
 		expect(within(region).getByRole('combobox', { name: 'Por página' })).toBeEnabled();
 		fireEvent.click(within(region).getByRole('button', { name: 'Siguiente' }));
-		await screen.findByText('1 documentados por factura #1234');
+		await screen.findByText('1 documentado por factura #1234');
 		expect(spy.mock.calls.at(-1)?.[2]?.page).toBe(2);
 		fireEvent.change(screen.getByLabelText('Documento de compra'), { target: { value: '24' } });
 		await waitFor(() => expect(spy.mock.calls.at(-1)?.[2]?.page).toBe(1));
-		await screen.findByText('1 documentados por factura #1234');
+		await screen.findByText('1 documentado por factura #1234');
 	});
 
 	it('documentar respalda unidades sin factura y el panel de procedencias refleja el nuevo desglose', async () => {

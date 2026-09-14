@@ -17,7 +17,9 @@ const StockReceiptItemsTable: React.FC<IStockReceiptItemsTableProps> = ({ items 
 	<Card>
 		<CardHeader>
 			<CardTitle className='text-lg'>Líneas</CardTitle>
-			<span className='text-sm text-zinc-500'>{items.length} líneas</span>
+			<span className='text-sm text-zinc-500'>
+				{items.length} línea{items.length === 1 ? '' : 's'}
+			</span>
 		</CardHeader>
 		<CardBody className='overflow-x-auto p-0'>
 			<Table className='min-w-[720px]'>
