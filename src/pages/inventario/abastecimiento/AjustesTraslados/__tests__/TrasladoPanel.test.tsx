@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
-import TrasladosInternosView from '@/pages/inventario/abastecimiento/TrasladosInternos/TrasladosInternosView';
+import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
 import { resetInventoryStockStoreForTests } from '@/services/procurement/inventoryStock.service';
 
 const context = vi.hoisted(() => ({
@@ -50,8 +50,8 @@ const renderPage = () => {
 	const store = configureStore({ reducer: { inventoryStock, auth: auth.reducer } });
 	const view = render(
 		<Provider store={store}>
-			<MemoryRouter>
-				<TrasladosInternosView />
+			<MemoryRouter initialEntries={['/?tab=traslado']}>
+				<AjustesTrasladosView />
 			</MemoryRouter>
 		</Provider>,
 	);
@@ -118,6 +118,17 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		// (origins 52 y 51 del fixture), así que quedan 8 acá y 5 allá.
 		expect(within(row).getAllByRole('cell')[3]).toHaveTextContent('8');
 		expect(within(row).getAllByRole('cell')[4]).toHaveTextContent('5');
+	});
+
+	it('no marca en rojo las líneas en blanco al elegir el origen', async () => {
+		renderPage();
+		await chooseUnlocatedOrigin();
+
+		expect(screen.queryByText('Selecciona un producto.')).not.toBeInTheDocument();
+		expect(screen.queryByText('Indica la cantidad.')).not.toBeInTheDocument();
+		// El origen recién elegido tampoco se valida como vacío.
+		expect(screen.queryByText('Selecciona una ubicación de origen.')).not.toBeInTheDocument();
+		expect(screen.getByLabelText('Cantidad de la línea 1')).not.toHaveClass('!border-red-500');
 	});
 
 	it('no ofrece cambiar la condición dentro del traslado', async () => {
@@ -191,8 +202,8 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		store.dispatch(auth.actions.deny());
 		render(
 			<Provider store={store}>
-				<MemoryRouter>
-					<TrasladosInternosView />
+				<MemoryRouter initialEntries={['/?tab=traslado']}>
+					<AjustesTrasladosView />
 				</MemoryRouter>
 			</Provider>,
 		);
@@ -206,6 +217,6 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		context.branchId = 4;
 		context.enabled = false;
 		renderPage();
-		expect(screen.getByText('Traslados no habilitados')).toBeInTheDocument();
+		expect(screen.getByText('Ajustes y traslados no habilitados')).toBeInTheDocument();
 	});
 });

@@ -3,7 +3,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { ConditionLabel } from '@/components/procurement';
-import type { IAjusteResult } from '@/pages/inventario/abastecimiento/AjustesInventario/hooks/useAjusteInventario';
+import type { IAjusteResult } from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useAjusteInventario';
 
 export interface IAjusteResultCardProps {
 	result: IAjusteResult;

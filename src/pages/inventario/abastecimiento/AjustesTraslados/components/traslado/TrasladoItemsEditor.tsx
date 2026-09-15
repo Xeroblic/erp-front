@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { CONDITION_OPTIONS } from '@/components/procurement';
 import type { IInventoryStockRow, TStockCondition } from '@/interface/procurement.interface';
-import type { ITrasladoItemDraft } from '@/pages/inventario/abastecimiento/TrasladosInternos/types';
+import type { ITrasladoItemDraft } from '@/pages/inventario/abastecimiento/AjustesTraslados/traslado.types';
 
 export interface ITrasladoItemsEditorProps {
 	items: ITrasladoItemDraft[];
@@ -75,8 +75,10 @@ const TrasladoItemsEditor: FC<ITrasladoItemsEditorProps> = ({
 							// El índice es la identidad real de una línea en blanco:
 							// dos filas recién agregadas no tienen todavía producto que
 							// las distinga.
+							// Celdas alineadas arriba: un mensaje de error bajo un campo agranda
+							// sólo su celda, sin recentrar ni desplazar las demás de la fila.
 							// eslint-disable-next-line react/no-array-index-key
-							<Tr key={index}>
+							<Tr key={index} className='[&>td]:align-top'>
 								<Td>
 									<Validation
 										isValid={!productError}
@@ -127,7 +129,7 @@ const TrasladoItemsEditor: FC<ITrasladoItemsEditorProps> = ({
 										))}
 									</Select>
 								</Td>
-								<Td className='w-32'>
+								<Td className='w-44'>
 									<Validation
 										isValid={!quantityError}
 										isTouched={Boolean(quantityError)}
@@ -151,24 +153,30 @@ const TrasladoItemsEditor: FC<ITrasladoItemsEditorProps> = ({
 									</Validation>
 								</Td>
 								<Td className='tabular-nums'>
-									{balance === null ? (
-										<span className='text-zinc-500'>—</span>
-									) : (
-										balance
-									)}
+									{/* Misma altura que un campo: el texto queda a la altura
+									    de los controles de la fila. */}
+									<div className='flex min-h-[2.25rem] items-center'>
+										{balance === null ? (
+											<span className='text-zinc-500'>—</span>
+										) : (
+											balance
+										)}
+									</div>
 								</Td>
 								<Td>
-									<Button
-										type='button'
-										variant='outline'
-										color='red'
-										size='sm'
-										icon='HeroTrash'
-										isDisable={disabled}
-										aria-label={`Quitar la línea ${index + 1}`}
-										onClick={() => onRemoveItem(index)}>
-										Quitar
-									</Button>
+									<div className='flex min-h-[2.25rem] items-center'>
+										<Button
+											type='button'
+											variant='outline'
+											color='red'
+											size='sm'
+											icon='HeroTrash'
+											isDisable={disabled}
+											aria-label={`Quitar la línea ${index + 1}`}
+											onClick={() => onRemoveItem(index)}>
+											Quitar
+										</Button>
+									</div>
 								</Td>
 							</Tr>
 						);

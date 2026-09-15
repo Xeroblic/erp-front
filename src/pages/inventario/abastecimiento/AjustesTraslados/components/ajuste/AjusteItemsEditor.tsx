@@ -11,7 +11,7 @@ import type {
 	IProcurementProduct,
 	TStockCondition,
 } from '@/interface/procurement.interface';
-import type { IAjusteItemDraft } from '@/pages/inventario/abastecimiento/AjustesInventario/types';
+import type { IAjusteItemDraft } from '@/pages/inventario/abastecimiento/AjustesTraslados/ajuste.types';
 
 export interface IAjusteItemsEditorProps {
 	items: IAjusteItemDraft[];
@@ -116,8 +116,10 @@ const AjusteItemsEditor: FC<IAjusteItemsEditorProps> = ({
 						return (
 							// El índice es la identidad real de una línea en blanco: dos
 							// filas recién agregadas no tienen producto que las distinga.
+							// Celdas alineadas arriba: un mensaje de error bajo un campo agranda
+							// sólo su celda, sin recentrar ni desplazar las demás de la fila.
 							// eslint-disable-next-line react/no-array-index-key
-							<Tr key={index}>
+							<Tr key={index} className='[&>td]:align-top'>
 								<Td>
 									<Validation
 										isValid={!productError}
@@ -165,7 +167,7 @@ const AjusteItemsEditor: FC<IAjusteItemsEditorProps> = ({
 										))}
 									</Select>
 								</Td>
-								<Td className='w-32'>
+								<Td className='w-44'>
 									<Validation
 										isValid={!deltaError}
 										isTouched={Boolean(deltaError)}
@@ -195,11 +197,13 @@ const AjusteItemsEditor: FC<IAjusteItemsEditorProps> = ({
 											? 'tabular-nums text-zinc-500'
 											: 'tabular-nums'
 									}>
-									{balanceLabel}
+									<div className='flex min-h-[2.25rem] items-center'>
+										{balanceLabel}
+									</div>
 								</Td>
 								<Td>
 									{isEntry ? (
-										<span className='text-xs text-zinc-500'>
+										<span className='flex min-h-[2.25rem] items-center text-xs text-zinc-500'>
 											Un ingreso crea un origen de ajuste: no se atribuye a
 											una procedencia anterior.
 										</span>
@@ -244,17 +248,19 @@ const AjusteItemsEditor: FC<IAjusteItemsEditorProps> = ({
 									)}
 								</Td>
 								<Td>
-									<Button
-										type='button'
-										variant='outline'
-										color='red'
-										size='sm'
-										icon='HeroTrash'
-										isDisable={disabled}
-										aria-label={`Quitar la línea ${index + 1}`}
-										onClick={() => onRemoveItem(index)}>
-										Quitar
-									</Button>
+									<div className='flex min-h-[2.25rem] items-center'>
+										<Button
+											type='button'
+											variant='outline'
+											color='red'
+											size='sm'
+											icon='HeroTrash'
+											isDisable={disabled}
+											aria-label={`Quitar la línea ${index + 1}`}
+											onClick={() => onRemoveItem(index)}>
+											Quitar
+										</Button>
+									</div>
 								</Td>
 							</Tr>
 						);

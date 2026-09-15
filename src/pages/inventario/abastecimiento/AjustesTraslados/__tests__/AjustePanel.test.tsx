@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
-import AjusteInventarioView from '@/pages/inventario/abastecimiento/AjustesInventario/AjusteInventarioView';
+import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
 import { resetInventoryStockStoreForTests } from '@/services/procurement/inventoryStock.service';
 
 const context = vi.hoisted(() => ({
@@ -49,8 +49,8 @@ const renderPage = () => {
 	const store = configureStore({ reducer: { inventoryStock, auth: auth.reducer } });
 	const view = render(
 		<Provider store={store}>
-			<MemoryRouter>
-				<AjusteInventarioView />
+			<MemoryRouter initialEntries={['/?tab=ajuste']}>
+				<AjustesTrasladosView />
 			</MemoryRouter>
 		</Provider>,
 	);
@@ -160,6 +160,20 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		// De cero a tres: el saldo en cero no saca al producto del selector.
 		expect(cells[3]).toHaveTextContent('0');
 		expect(cells[3]).toHaveTextContent('3');
+	});
+
+	it('no marca en rojo las líneas en blanco al cambiar de ubicación', async () => {
+		renderPage();
+		await chooseMainWarehouse();
+		await chooseLocation('unlocated');
+
+		expect(screen.queryByText('Selecciona un producto.')).not.toBeInTheDocument();
+		expect(screen.queryByText('Indica la diferencia.')).not.toBeInTheDocument();
+		// La ubicación recién elegida tampoco se valida como vacía.
+		expect(screen.queryByText('Indica la ubicación del ajuste.')).not.toBeInTheDocument();
+		expect(screen.getByLabelText('Diferencia de la línea 1')).not.toHaveClass(
+			'!border-red-500',
+		);
 	});
 
 	it('muestra el faltante frente a reservas sin truncarlo en cero', async () => {
@@ -284,8 +298,8 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		store.dispatch(auth.actions.deny());
 		render(
 			<Provider store={store}>
-				<MemoryRouter>
-					<AjusteInventarioView />
+				<MemoryRouter initialEntries={['/?tab=ajuste']}>
+					<AjustesTrasladosView />
 				</MemoryRouter>
 			</Provider>,
 		);
@@ -294,6 +308,6 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 
 		context.enabled = false;
 		renderPage();
-		expect(screen.getByText('Ajustes no habilitados')).toBeInTheDocument();
+		expect(screen.getByText('Ajustes y traslados no habilitados')).toBeInTheDocument();
 	});
 });

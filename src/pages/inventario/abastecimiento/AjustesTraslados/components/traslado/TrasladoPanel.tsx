@@ -3,23 +3,24 @@ import Label from '@/components/form/Label';
 import Validation from '@/components/form/Validation';
 import Select from '@/components/form/Select';
 import Textarea from '@/components/form/Textarea';
-import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
-import Container from '@/components/layouts/Container/Container';
-import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
-import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
-import useAuthorization from '@/hooks/useAuthorization';
-import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import { useAppSelector } from '@/store';
-import useTrasladoInterno from '@/pages/inventario/abastecimiento/TrasladosInternos/hooks/useTrasladoInterno';
-import TrasladoItemsEditor from '@/pages/inventario/abastecimiento/TrasladosInternos/components/TrasladoItemsEditor';
-import TrasladoResultCard from '@/pages/inventario/abastecimiento/TrasladosInternos/components/TrasladoResultCard';
+import useTrasladoInterno from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useTrasladoInterno';
+import TrasladoItemsEditor from '@/pages/inventario/abastecimiento/AjustesTraslados/components/traslado/TrasladoItemsEditor';
+import TrasladoResultCard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/traslado/TrasladoResultCard';
 import { locationToken } from '@/utils/inventoryLocation.util';
 
-const TrasladoSession = ({ branchId, owner }: { branchId: number; owner: string }) => {
+export interface TrasladoPanelProps {
+	branchId: number;
+	owner: string;
+}
+
+/**
+ * Pestaña «Traslados internos». La autorización, la sucursal y la bandera de
+ * mocks las resuelve `AjustesTrasladosView` antes de montarla.
+ */
+const TrasladoPanel = ({ branchId, owner }: TrasladoPanelProps) => {
 	const {
 		formik,
 		warehouses,
@@ -226,66 +227,4 @@ const TrasladoSession = ({ branchId, owner }: { branchId: number; owner: string 
 	);
 };
 
-const TrasladosInternosView = () => {
-	const { branchId, subsidiaryId } = useCurrentBranch();
-	const { authorize, isLoading } = useAuthorization();
-	const userId = useAppSelector((state) => state.auth.user?.id);
-	// Sección 15 del contrato: traslados y ajustes son `edit-product` sobre
-	// ambas ubicaciones de la sucursal, no un permiso propio inventado.
-	const canWrite = authorize({
-		permission: 'edit-product',
-		branchId,
-		subsidiaryId,
-		scope: 'access',
-	});
-	const owner = `${userId}:${subsidiaryId}:${branchId}`;
-
-	let content;
-	if (isLoading) content = <p role='status'>Comprobando acceso…</p>;
-	else if (!branchId)
-		content = (
-			<Alert title='Selecciona una sucursal'>
-				Necesitas una sucursal activa para mover su stock.
-			</Alert>
-		);
-	else if (!canWrite)
-		content = (
-			<Alert color='amber' title='Sin permiso'>
-				No tienes permiso para mover el stock de esta sucursal.
-			</Alert>
-		);
-	else if (!INVENTORY_STOCK_USE_MOCKS)
-		content = (
-			<Alert title='Traslados no habilitados'>
-				Los traslados internos aún no están habilitados en este entorno.
-			</Alert>
-		);
-	// La sesión autorizada se monta con `key` ANTES de renderizar: un cambio de
-	// usuario, filial o sucursal desmonta el formulario en vez de dejar que
-	// pinte líneas y saldos de un contexto que ya no es el activo.
-	else content = <TrasladoSession key={owner} owner={owner} branchId={branchId} />;
-
-	return (
-		<PageWrapper isProtectedRoute title='Traslados internos'>
-			<Subheader>
-				<SubheaderLeft>
-					<SubheaderTitle
-						icon='HeroArrowsRightLeft'
-						title='Traslados internos'
-						description='Mueve stock entre bodegas y ubicaciones de la sucursal activa'
-					/>
-				</SubheaderLeft>
-			</Subheader>
-			<Container className='space-y-4'>
-				{INVENTORY_STOCK_USE_MOCKS && (
-					<Alert color='amber' title='Datos simulados'>
-						Pantalla de demostración. Los traslados no afectan al inventario real.
-					</Alert>
-				)}
-				{content}
-			</Container>
-		</PageWrapper>
-	);
-};
-
-export default TrasladosInternosView;
+export default TrasladoPanel;

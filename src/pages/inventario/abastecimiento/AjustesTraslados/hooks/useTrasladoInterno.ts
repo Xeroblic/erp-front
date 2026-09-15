@@ -17,11 +17,11 @@ import {
 import {
 	emptyTrasladoItem,
 	TrasladoSchema,
-} from '@/pages/inventario/abastecimiento/TrasladosInternos/types';
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/traslado.types';
 import type {
 	ITrasladoFormValues,
 	ITrasladoItemDraft,
-} from '@/pages/inventario/abastecimiento/TrasladosInternos/types';
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/traslado.types';
 import type {
 	IInventoryStockRow,
 	IWarehouseStockMovement,
@@ -131,7 +131,7 @@ export default function useTrasladoInterno(branchId: number, context: string) {
 		},
 	});
 
-	const { values, setFieldValue, setFieldTouched } = formik;
+	const { values, touched, setFieldValue, setValues, setTouched } = formik;
 
 	/* Stock vigente en el ORIGEN: alimenta el selector de producto y el saldo por línea. */
 	const request = useMemo(
@@ -204,14 +204,17 @@ export default function useTrasladoInterno(branchId: number, context: string) {
 	 * Cambiar el origen invalida las líneas: los productos y saldos del origen
 	 * anterior no existen necesariamente en el nuevo, y conservarlas produciría
 	 * un 409 al confirmar en vez de un formulario coherente.
+	 *
+	 * Un único `setValues` valida con los valores nuevos. Encadenar
+	 * `setFieldValue` + `setFieldTouched` hacía que cada llamada validara con el
+	 * estado anterior, y el origen recién elegido quedaba en rojo como vacío.
 	 */
 	const setOrigin = useCallback(
 		(token: string) => {
-			void setFieldValue('from', token);
-			void setFieldTouched('from', true);
-			void setFieldValue('items', [emptyTrasladoItem()]);
+			void setValues({ ...values, from: token, items: [emptyTrasladoItem()] }, true);
+			void setTouched({ ...touched, from: true }, false);
 		},
-		[setFieldValue, setFieldTouched],
+		[setValues, setTouched, values, touched],
 	);
 
 	/**
@@ -245,16 +248,21 @@ export default function useTrasladoInterno(branchId: number, context: string) {
 	 * arreglo como `FormikErrors<T>[]` o como una cadena única (la del `test` de
 	 * nivel arreglo); sólo el primer caso tiene mensajes por línea que mostrar
 	 * junto a su control.
+	 *
+	 * Sólo se muestran tras un intento de envío: elegir el origen marca ese campo
+	 * como tocado y Formik valida el formulario entero, lo que llenaba de errores
+	 * las líneas en blanco que el usuario todavía no editó.
 	 */
 	const errorFor = useCallback(
 		(index: number, field: keyof ITrasladoItemDraft): string | undefined => {
+			if (formik.submitCount === 0) return undefined;
 			if (!Array.isArray(formik.errors.items)) return undefined;
 			const lineErrors = formik.errors.items[index];
 			if (!lineErrors || typeof lineErrors === 'string') return undefined;
 			const message = (lineErrors as Record<string, unknown>)[field];
 			return typeof message === 'string' ? message : undefined;
 		},
-		[formik.errors.items],
+		[formik.errors.items, formik.submitCount],
 	);
 
 	const clearResult = useCallback(() => setResult(null), []);
