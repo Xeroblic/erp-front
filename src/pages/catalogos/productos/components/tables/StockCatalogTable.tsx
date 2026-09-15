@@ -328,25 +328,30 @@ const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) =
 				accessorFn: (catalogRow) => `${catalogRow.name} ${catalogRow.sku}`,
 				header: 'Producto',
 				cell: ({ row }) => (
-					<div className='space-y-1'>
+					<div className='max-w-[280px] space-y-1'>
 						{row.original.productId ? (
 							<button
 								type='button'
 								onClick={() => openProductDetail(row.original.productId)}
+								title={row.original.name}
 								className='group inline-flex items-center gap-1 text-left font-semibold text-neutral-900 transition-colors hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400'>
-								<span>{row.original.name}</span>
+								<span className='line-clamp-2 break-words'>
+									{row.original.name}
+								</span>
 								<Icon
 									icon='HeroArrowTopRightOnSquare'
-									className='h-3.5 w-3.5 text-neutral-300 transition-colors group-hover:text-blue-500 dark:text-neutral-600'
+									className='h-3.5 w-3.5 flex-none text-neutral-300 transition-colors group-hover:text-blue-500 dark:text-neutral-600'
 								/>
 							</button>
 						) : (
-							<p className='font-semibold text-neutral-900 dark:text-neutral-100'>
+							<p
+								className='line-clamp-2 break-words font-semibold text-neutral-900 dark:text-neutral-100'
+								title={row.original.name}>
 								{row.original.name}
 							</p>
 						)}
 						<div className='flex flex-wrap items-center gap-2 text-[11px] text-neutral-500'>
-							<span>SKU: {row.original.sku}</span>
+							<span className='break-all'>SKU: {row.original.sku}</span>
 							<span>ID: {row.original.productId ?? 'N/D'}</span>
 						</div>
 						<div>
