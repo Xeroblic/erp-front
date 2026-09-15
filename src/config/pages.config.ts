@@ -381,28 +381,20 @@ export const privatePages = {
 				authority: ['view-product'],
 				requireAll: true,
 			},
-			trasladosInternos: {
-				id: 'trasladosInternos',
-				to: '/inventario/abastecimiento/traslados',
-				text: 'Traslados internos',
+			ajustesTraslados: {
+				id: 'ajustesTraslados',
+				to: '/inventario/abastecimiento/ajustes-traslados',
+				text: 'Ajustes y traslados',
 				icon: 'HeroArrowsRightLeft',
-				// Card 08 del módulo de abastecimiento (mock, PR #67 del backend):
-				// mover stock entre ubicaciones de la MISMA sucursal.
+				// Card 08 del módulo de abastecimiento (mock, PR #67 del backend): una
+				// página con dos pestañas (`?tab=ajuste|traslado`) — corrección de
+				// conteo con motivo auditado y traslado entre ubicaciones de la MISMA
+				// sucursal. Las rutas previas `/ajustes` y `/traslados` redirigen acá.
 				// La sección 15 del contrato pide `edit-product` para traslados y
 				// ajustes, pero la ruta declara sólo `view-product`: `AuthorityCheck`
 				// exige TODOS los permisos del arreglo, así que sumarlo acá le
 				// quitaría la ruta a quien tenga uno y no el otro. `edit-product` con
 				// `scope: 'access'` se comprueba en la vista, igual que en Recepciones.
-				authority: ['view-product'],
-				requireAll: true,
-			},
-			ajustesInventario: {
-				id: 'ajustesInventario',
-				to: '/inventario/abastecimiento/ajustes',
-				text: 'Ajuste de inventario',
-				icon: 'HeroScale',
-				// Card 08 (mock, PR #67 del backend): corrección de conteo con motivo
-				// auditado. Mismo criterio de `authority` que traslados internos.
 				authority: ['view-product'],
 				requireAll: true,
 			},

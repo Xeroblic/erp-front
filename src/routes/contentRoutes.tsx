@@ -1,6 +1,6 @@
 // src/routes/contentRoutes.tsx
 import React, { lazy } from 'react';
-import { PathRouteProps } from 'react-router-dom';
+import { Navigate, PathRouteProps } from 'react-router-dom';
 import pagesConfig from '@/config/pages.config';
 
 import LoginPage from '@/pages/Login.page';
@@ -104,8 +104,7 @@ const DocumentoCompraDetalle = lazy(
 );
 const Recepciones = lazy(() => import('@/pages/inventario/abastecimiento/Recepciones'));
 const StockPorUbicacion = lazy(() => import('@/pages/inventario/abastecimiento/StockPorUbicacion'));
-const TrasladosInternos = lazy(() => import('@/pages/inventario/abastecimiento/TrasladosInternos'));
-const AjustesInventario = lazy(() => import('@/pages/inventario/abastecimiento/AjustesInventario'));
+const AjustesTraslados = lazy(() => import('@/pages/inventario/abastecimiento/AjustesTraslados'));
 const RecepcionDetalle = lazy(
 	() => import('@/pages/inventario/abastecimiento/Recepciones/RecepcionDetalle'),
 );
@@ -530,15 +529,31 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 
 	{
-		path: pagesConfig.inventory.subPages.trasladosInternos.to,
-		element: <TrasladosInternos />,
-		authority: pagesConfig.inventory.subPages.trasladosInternos.authority,
+		path: pagesConfig.inventory.subPages.ajustesTraslados.to,
+		element: <AjustesTraslados />,
+		authority: pagesConfig.inventory.subPages.ajustesTraslados.authority,
 	},
-
+	// Rutas previas a la unificación: redirigen a su pestaña para no romper
+	// enlaces guardados.
 	{
-		path: pagesConfig.inventory.subPages.ajustesInventario.to,
-		element: <AjustesInventario />,
-		authority: pagesConfig.inventory.subPages.ajustesInventario.authority,
+		path: '/inventario/abastecimiento/traslados',
+		element: (
+			<Navigate
+				to={`${pagesConfig.inventory.subPages.ajustesTraslados.to}?tab=traslado`}
+				replace
+			/>
+		),
+		authority: pagesConfig.inventory.subPages.ajustesTraslados.authority,
+	},
+	{
+		path: '/inventario/abastecimiento/ajustes',
+		element: (
+			<Navigate
+				to={`${pagesConfig.inventory.subPages.ajustesTraslados.to}?tab=ajuste`}
+				replace
+			/>
+		),
+		authority: pagesConfig.inventory.subPages.ajustesTraslados.authority,
 	},
 
 	{

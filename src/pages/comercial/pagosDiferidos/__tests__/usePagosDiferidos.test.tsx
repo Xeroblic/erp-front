@@ -50,6 +50,7 @@ const listResponse = (page = 1, perPage = 10): DeferredPaymentsListResponse => (
 			days_until_due: 5,
 			due_date: '2026-08-05',
 			issue_date: '2026-07-01',
+			paid_at: null,
 			customer: { id: 7, billing_company: 'Cliente Real', rut: '1-9', contact_name: null },
 		},
 	],

@@ -5,6 +5,7 @@
 export const AIO_LABELS: Record<string, string> = {
 	brand: 'Marca',
 	model: 'Modelo',
+	line: 'Línea',
 	general_condition: 'Condición general',
 	observations: 'Observaciones',
 	extra_attributes: 'Atributos extra',

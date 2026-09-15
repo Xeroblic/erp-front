@@ -3,7 +3,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { ConditionLabel } from '@/components/procurement';
-import type { ITrasladoResult } from '@/pages/inventario/abastecimiento/TrasladosInternos/hooks/useTrasladoInterno';
+import type { ITrasladoResult } from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useTrasladoInterno';
 
 export interface ITrasladoResultCardProps {
 	result: ITrasladoResult;

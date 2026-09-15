@@ -489,33 +489,18 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Traslados internos y ajuste por conteo (mock, PR #67, card 08) */}
+							{/* Ajuste por conteo y traslados internos en una sola página (mock, PR #67, card 08) */}
 							<AuthorityCheckNav
-								authority={Pages.inventory.subPages.trasladosInternos.authority}
-								requireAll={Pages.inventory.subPages.trasladosInternos.requireAll}
+								authority={Pages.inventory.subPages.ajustesTraslados.authority}
+								requireAll={Pages.inventory.subPages.ajustesTraslados.requireAll}
 								userAuthority={userAuthority}>
 								<NavItem
-									text={Pages.inventory.subPages.trasladosInternos.text}
-									to={Pages.inventory.subPages.trasladosInternos.to}
-									icon={Pages.inventory.subPages.trasladosInternos.icon}
-									id={Pages.inventory.subPages.trasladosInternos.id}
+									text={Pages.inventory.subPages.ajustesTraslados.text}
+									to={Pages.inventory.subPages.ajustesTraslados.to}
+									icon={Pages.inventory.subPages.ajustesTraslados.icon}
+									id={Pages.inventory.subPages.ajustesTraslados.id}
 									onClick={() =>
-										navigate(Pages.inventory.subPages.trasladosInternos.to)
-									}
-								/>
-							</AuthorityCheckNav>
-
-							<AuthorityCheckNav
-								authority={Pages.inventory.subPages.ajustesInventario.authority}
-								requireAll={Pages.inventory.subPages.ajustesInventario.requireAll}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.inventory.subPages.ajustesInventario.text}
-									to={Pages.inventory.subPages.ajustesInventario.to}
-									icon={Pages.inventory.subPages.ajustesInventario.icon}
-									id={Pages.inventory.subPages.ajustesInventario.id}
-									onClick={() =>
-										navigate(Pages.inventory.subPages.ajustesInventario.to)
+										navigate(Pages.inventory.subPages.ajustesTraslados.to)
 									}
 								/>
 							</AuthorityCheckNav>

@@ -28,6 +28,11 @@ export const aioSchema = Yup.object({
 		.required('El modelo es obligatorio')
 		.max(150, 'Máximo 150 caracteres'),
 
+	// ZF-102. La columna y la regla `nullable|string` existían en el backend, pero el
+	// formulario de AIO nunca capturaba la línea y quedaba siempre NULL. Se pide igual que
+	// en los otros cuatro tipos de equipo.
+	line: Yup.string().trim().max(150, 'Máximo 150 caracteres').required('La línea es obligatoria'),
+
 	// ─── Condición General ───────────────────────────────────────────────────
 	general_condition: Yup.string()
 		.oneOf([...ALLOWED_GENERAL_CONDITIONS], 'Condición general no válida')

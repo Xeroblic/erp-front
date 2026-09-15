@@ -25,11 +25,11 @@ import {
 	AjusteSchema,
 	emptyAjusteItem,
 	optionalId,
-} from '@/pages/inventario/abastecimiento/AjustesInventario/types';
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/ajuste.types';
 import type {
 	IAjusteFormValues,
 	IAjusteItemDraft,
-} from '@/pages/inventario/abastecimiento/AjustesInventario/types';
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/ajuste.types';
 import type {
 	IInventoryAdjustment,
 	IInventoryAdjustmentPayload,
@@ -169,7 +169,7 @@ export default function useAjusteInventario(
 		},
 	});
 
-	const { values, setFieldValue, setFieldTouched } = formik;
+	const { values, touched, setFieldValue, setValues, setTouched } = formik;
 
 	/* Stock vigente en la ubicación ajustada: alimenta el selector de producto. */
 	const request = useMemo(
@@ -319,16 +319,28 @@ export default function useAjusteInventario(
 		[setFieldValue, values.items],
 	);
 
-	/** Cambiar de ubicación invalida líneas, procedencias y recepción enlazada. */
+	/**
+	 * Cambiar de ubicación invalida líneas, procedencias y recepción enlazada.
+	 *
+	 * Un único `setValues` valida con los valores nuevos. Encadenar
+	 * `setFieldValue` + `setFieldTouched` hacía que cada llamada validara con el
+	 * estado anterior, y la ubicación recién elegida quedaba en rojo como vacía.
+	 */
 	const setLocation = useCallback(
 		(token: string) => {
-			void setFieldValue('location', token);
-			void setFieldTouched('location', true);
-			void setFieldValue('items', [emptyAjusteItem()]);
-			void setFieldValue('relatedStockReceiptId', '');
+			void setValues(
+				{
+					...values,
+					location: token,
+					relatedStockReceiptId: '',
+					items: [emptyAjusteItem()],
+				},
+				true,
+			);
+			void setTouched({ ...touched, location: true }, false);
 			setOriginsByProduct({});
 		},
-		[setFieldValue, setFieldTouched],
+		[setValues, setTouched, values, touched],
 	);
 
 	const setRelatedReceipt = useCallback(
@@ -349,16 +361,21 @@ export default function useAjusteInventario(
 	 * arreglo como `FormikErrors<T>[]` o como una cadena única (la del `test` de
 	 * nivel arreglo); sólo el primer caso tiene mensajes por línea que mostrar
 	 * junto a su control.
+	 *
+	 * Sólo se muestran tras un intento de envío: cambiar la ubicación marca ese
+	 * campo como tocado y Formik valida el formulario entero, lo que llenaba de
+	 * errores las líneas en blanco que el usuario todavía no editó.
 	 */
 	const errorFor = useCallback(
 		(index: number, field: keyof IAjusteItemDraft): string | undefined => {
+			if (formik.submitCount === 0) return undefined;
 			if (!Array.isArray(formik.errors.items)) return undefined;
 			const lineErrors = formik.errors.items[index];
 			if (!lineErrors || typeof lineErrors === 'string') return undefined;
 			const message = (lineErrors as Record<string, unknown>)[field];
 			return typeof message === 'string' ? message : undefined;
 		},
-		[formik.errors.items],
+		[formik.errors.items, formik.submitCount],
 	);
 
 	const clearResult = useCallback(() => setResult(null), []);

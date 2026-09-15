@@ -113,13 +113,13 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 							; para <strong>mover unidades entre bodegas</strong>,{' '}
 							<Link
 								className='font-semibold underline'
-								to={Pages.inventory.subPages.trasladosInternos.to}>
+								to={`${Pages.inventory.subPages.ajustesTraslados.to}?tab=traslado`}>
 								Traslados internos
 							</Link>
 							; para <strong>corregir una diferencia de conteo</strong>,{' '}
 							<Link
 								className='font-semibold underline'
-								to={Pages.inventory.subPages.ajustesInventario.to}>
+								to={`${Pages.inventory.subPages.ajustesTraslados.to}?tab=ajuste`}>
 								Ajuste de inventario
 							</Link>
 							. Esas pantallas registran bodega, condición y procedencia, que acá no

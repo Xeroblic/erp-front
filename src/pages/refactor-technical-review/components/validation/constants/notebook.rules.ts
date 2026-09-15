@@ -218,7 +218,10 @@ export const ALLOWED_BATTERY_STATUSES = [
 	'no_battery',
 ] as const;
 
-export const ALLOWED_TOUCHPAD_CONDITIONS = ['ok', 'worn', 'missing_pieces', 'broken'] as const;
+// El touchpad no usa el contrato de componente genérico: ZB-89 le dio el suyo, sin
+// `missing_pieces`. Ninguna regla de puntuación lo contempla y el schema publica tres
+// estados, no cuatro.
+export const ALLOWED_TOUCHPAD_CONDITIONS = ['ok', 'worn', 'broken'] as const;
 
 export const ALLOWED_BOTTOM_CONDITIONS = [
 	'ok',

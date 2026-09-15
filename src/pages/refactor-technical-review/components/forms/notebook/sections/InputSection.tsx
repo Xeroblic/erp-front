@@ -60,6 +60,10 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	// inventarlos produciría un 422. Se muestra sólo cuando el backend lo publica, que
 	// es el comportamiento de `develop`, donde el campo no existe.
 	const speakersField = schemaFields?.speakers_condition;
+	// ZF-102. El mismo flag que consume `resolveNotebookSchema`, para que el asterisco del
+	// rótulo y la validación no puedan contradecirse. Tras #189 el contenedor es `role='group'`
+	// y ya no expone `aria-required`, inválido en ese rol.
+	const speakersRequired = speakersField?.required === true;
 	const nonFunctionalKeysCount = watch('non_functional_keys_count') ?? 0;
 	return (
 		<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
@@ -318,9 +322,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									className='text-lg font-bold text-zinc-900 dark:text-zinc-100'
 									id='speakers-condition-label'>
 									{speakersField.label}
-									{speakersField.required && (
-										<span className='text-red-500'> *</span>
-									)}
+									{speakersRequired && <span className='text-red-500'> *</span>}
 								</h3>
 							</div>
 						</div>
@@ -341,6 +343,11 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								/>
 							))}
 						</div>
+						{errors.speakers_condition && (
+							<p className='mt-3 text-xs text-red-500'>
+								{errors.speakers_condition.message}
+							</p>
+						)}
 						{(speakersField.hint ?? speakersField.warning) && (
 							<p className='mt-3 text-xs text-zinc-600 dark:text-zinc-400'>
 								{speakersField.hint ?? speakersField.warning}

@@ -49,7 +49,10 @@ const Select: FC<ISelectProps> = (props) => {
 		...rest
 	} = props;
 
-	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
+	// Igual criterio que `Input.tsx` y `Textarea.tsx`: el borde por defecto es
+	// neutro y sólo hover toma el color de tema — con ambas variables resolviendo
+	// al color de tema, el select se veía "seleccionado" (azul) sin foco.
+	const resolvedBorderColor = '#d4d4d8';
 	const resolvedBorderHoverColor = resolveTailwindColor(color, colorIntensity);
 
 	const selectVariants: {
