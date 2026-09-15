@@ -24,6 +24,13 @@ export interface IInventorySeedOrigin extends IInventoryStockOriginRow {
 	branch_id: number;
 	warehouse_id: number | null;
 	fifo_at: number;
+	/**
+	 * Filial de la recepción que creó esta procedencia. Dato interno del mock,
+	 * nunca viaja a la UI: los IDs de recepción se numeran por filial y las
+	 * sucursales de este mock no lo están, así que `stock_receipt_id` solo no
+	 * identifica la recepción. Las procedencias sembradas no lo traen.
+	 */
+	stock_receipt_subsidiary_id?: number;
 }
 
 export interface IInventorySeedRow extends IInventoryStockRow {

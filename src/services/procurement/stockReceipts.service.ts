@@ -6,6 +6,11 @@ import {
 	STOCK_RECEIPT_CONSUMED_IDS,
 	stockReceipts as stockReceiptSeed,
 } from '@/mocks/db/procurement.db';
+import {
+	applyStockReceiptToInventory,
+	linkStockReceiptDocumentInInventory,
+	reverseStockReceiptInInventory,
+} from '@/services/procurement/inventoryStock.service';
 import { findPurchasableProcurementProduct } from '@/services/procurement/procurementProducts.service';
 import {
 	applyStockReceiptCoverageDelta,
@@ -524,6 +529,23 @@ function resolveStockReceiptWorker(subsidiaryId: number, receiptId: number): voi
 			);
 		}
 
+		// Efecto físico: sin esto la recepción llegaba a `posted` con el stock
+		// intacto. Es el mismo store de procedencias que leen stock por
+		// ubicación, traslados y ajustes.
+		applyStockReceiptToInventory({
+			subsidiaryId,
+			branchId: receipt.branch_id,
+			stockReceiptId: receipt.id,
+			warehouseId: receipt.warehouse.id,
+			receivedOn: receipt.received_on,
+			supplier: receipt.supplier,
+			purchaseDocument: receipt.purchase_document,
+			items: receipt.items.map((item) => ({
+				productId: item.product.id,
+				quantity: item.quantity,
+			})),
+		});
+
 		const requestedBy = requestedByByReceipt.get(key) ?? null;
 		requestedByByReceipt.delete(key);
 
@@ -723,6 +745,14 @@ const resolveWarehouseContext = (
 export const listWarehousesForStockReceipts = (
 	authorizedBranchIds?: readonly number[] | null,
 ): IWarehouseCompact[] => getProcurementWarehousesForBranchContext(authorizedBranchIds);
+
+/**
+ * Sucursal dueña de una bodega de recepción, o `null` si no existe. Permite a
+ * la UI autorizar contra la sucursal **de la bodega elegida**, no contra la
+ * sucursal activa de quien opera.
+ */
+export const getStockReceiptWarehouseBranchId = (warehouseId: number): number | null =>
+	resolveWarehouseContext(warehouseId)?.branchId ?? null;
 
 const todayBusinessDate = (): string => new Date().toISOString().slice(0, 10);
 
@@ -1665,6 +1695,23 @@ export const reverseStockReceipt = (
 				});
 			}
 
+			// Retira del stock exactamente lo que esta recepción ingresó. Si parte
+			// ya salió (un ajuste la egresó), la reversión no puede fabricar el
+			// faltante: 409 sin tocar recepción, cobertura ni stock. Las
+			// recepciones sembradas como `posted` no dejaron ingreso registrado
+			// (`not_applied`) y se revierten sin efecto físico, como antes.
+			const inventoryReversal = reverseStockReceiptInInventory({
+				subsidiaryId,
+				branchId: existing.branch_id,
+				stockReceiptId: existing.id,
+			});
+			if (inventoryReversal === 'consumed') {
+				return fail(409, {
+					message: PROCUREMENT_ERROR_DEFINITIONS.RECEIPT_ALREADY_CONSUMED.fallbackMessage,
+					code: 'RECEIPT_ALREADY_CONSUMED',
+				});
+			}
+
 			if (existing.purchase_document) {
 				applyStockReceiptCoverageDelta(
 					subsidiaryId,
@@ -1926,6 +1973,15 @@ export const linkStockReceiptPurchaseDocument = (
 					})),
 				);
 				bumpPurchaseDocumentStockReceiptsCount(subsidiaryId, document.id, 1);
+				// Las unidades que ya ingresó pasan a documentadas: mismas
+				// procedencias, ahora con documento (y proveedor si no tenían).
+				linkStockReceiptDocumentInInventory({
+					subsidiaryId,
+					branchId: existing.branch_id,
+					stockReceiptId: existing.id,
+					purchaseDocument: updated.purchase_document!,
+					supplier: document.supplier,
+				});
 
 				return delay({
 					data: cloneReceipt(updated),

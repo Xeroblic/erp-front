@@ -215,12 +215,9 @@ export const southBranchWarehouse: IWarehouseCompact = { id: 15, name: 'Bodega S
  * ejemplos reales al navegar con la sesión propia del equipo, no sólo con las
  * sucursales 4/6 del resto del mock.
  *
- * A propósito **no** entra a `procurementWarehouses`: ese catálogo es el
- * contrato de Recepciones (`stockReceipts.service`), que lo espera cerrado a
- * las bodegas de las sucursales 4/6 — sumarla ahí filtraría de más en ese
- * módulo por una bodega que no recibe mercadería. `inventoryStock.db.ts` la
- * usa directo en `inventoryWarehousesByBranch`, que es de dónde
- * `StockPorUbicacion` realmente lee.
+ * También recibe mercadería (`procurementWarehouses`): con las bodegas de
+ * Recepciones filtradas por sucursal autorizada, sin ella la sesión del
+ * equipo no tendría dónde recibir ni podría recorrer recepción → stock.
  */
 export const ecopcWarehouse: IWarehouseCompact = { id: 20, name: 'Bodega Ecopc' };
 
@@ -236,6 +233,7 @@ export const procurementWarehouses: IWarehouseCompact[] = [
 	mainWarehouse,
 	shelfWarehouse,
 	southBranchWarehouse,
+	ecopcWarehouse,
 ];
 
 /* =================================================
@@ -915,6 +913,9 @@ export const STOCK_RECEIPT_BRANCH_ID = 4;
  */
 export const STOCK_RECEIPT_SOUTH_BRANCH_ID = 6;
 
+/** Sucursal Ecopc, dueña de `ecopcWarehouse` (la de `/perfil` en desarrollo). */
+export const ECOPC_BRANCH_ID = 1;
+
 /**
  * Relación bodega → sucursal (hallazgo 5, revisión ZF-110). El compacto
  * `IWarehouseCompact` de respuesta se mantiene `{id, name}` — esta relación
@@ -927,6 +928,7 @@ export const PROCUREMENT_WAREHOUSE_BRANCH_BY_ID: Record<number, number> = {
 	[mainWarehouse.id]: STOCK_RECEIPT_BRANCH_ID,
 	[shelfWarehouse.id]: STOCK_RECEIPT_BRANCH_ID,
 	[southBranchWarehouse.id]: STOCK_RECEIPT_SOUTH_BRANCH_ID,
+	[ecopcWarehouse.id]: ECOPC_BRANCH_ID,
 };
 
 /**

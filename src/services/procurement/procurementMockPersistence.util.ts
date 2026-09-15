@@ -74,6 +74,39 @@ export const savePersistedMockState = <T>(
 };
 
 /**
+ * Carga el estado persistido de **todas** las filiales de un namespace y
+ * versión. Existe para el lector que no conoce la filial de antemano (por
+ * ejemplo, resolver un producto por ID desde un store particionado por
+ * sucursal); las entradas ilegibles se omiten.
+ */
+export const loadAllPersistedMockStates = <T>(
+	namespace: string,
+	version: number,
+): [number, T][] => {
+	if (!hasLocalStorage()) return [];
+
+	const prefix = `${STORAGE_KEY_PREFIX}:${namespace}:v${version}:`;
+	const entries: [number, T][] = [];
+	try {
+		for (let index = 0; index < window.localStorage.length; index += 1) {
+			const key = window.localStorage.key(index);
+			const subsidiaryId = key?.startsWith(prefix) ? Number(key.slice(prefix.length)) : NaN;
+			const raw = Number.isInteger(subsidiaryId) ? window.localStorage.getItem(key!) : null;
+			if (raw) {
+				try {
+					entries.push([subsidiaryId, JSON.parse(raw) as T]);
+				} catch {
+					// Ver `loadPersistedMockState`.
+				}
+			}
+		}
+	} catch {
+		// Ver `loadPersistedMockState`.
+	}
+	return entries;
+};
+
+/**
  * Borra **todo** lo persistido de un namespace (todas las filiales, todas
  * las versiones). Sólo para pruebas: `resetForTests` necesita simular un
  * entorno sin ningún dato previo, no sólo el de la filial de turno.
