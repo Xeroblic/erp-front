@@ -43,6 +43,11 @@ export const notebookSchema = Yup.object({
 		.oneOf([...ALLOWED_GENERAL_CONDITIONS], 'Condición general no válida')
 		.required('La condición general es obligatoria'),
 
+	// ZF-102. El backend exige `powers_on` para cerrar la revisión de un notebook, así que
+	// se pide acá y no en el 422: `false` es una respuesta válida y completa (el equipo no
+	// enciende → grado M); lo que bloquea el cierre es no haber respondido nunca.
+	powers_on: Yup.boolean().required('Debes indicar si el equipo enciende'),
+
 	// ─── Hardware ────────────────────────────────────────────────────────────
 	processor: Yup.string()
 		.trim()
@@ -150,6 +155,11 @@ export const notebookSchema = Yup.object({
 		.min(0, 'No puede ser negativo')
 		.nullable(),
 
+	// ZF-102. El backend lo exige para cerrar (`COMPLETION_REQUIREMENTS` de notebook), pero su
+	// catálogo nace en el schema remoto y no hay constante local que lo reemplace: si ese
+	// fetch falla la tarjeta no se renderiza. Exigirlo acá dejaría la revisión incerrable con
+	// un error sin campo en pantalla donde corregirlo, así que la obligatoriedad vive en
+	// `resolveNotebookSchema`, condicionada al `required` que publica el backend.
 	speakers_condition: Yup.string().nullable(),
 
 	keyboard_layout: Yup.string()
@@ -329,6 +339,32 @@ export const notebookSchema = Yup.object({
 // ─── Tipos derivados ──────────────────────────────────────────────────────────
 
 export type NotebookFormData = Yup.InferType<typeof notebookSchema>;
+
+/**
+ * Variante del schema que exige `speakers_condition`, para cuando el backend publica el
+ * campo y la tarjeta está en pantalla.
+ */
+const notebookSchemaWithSpeakers = notebookSchema.shape({
+	speakers_condition: Yup.string().required('El estado de los parlantes es obligatorio'),
+});
+
+/**
+ * Schema efectivo del formulario de notebook.
+ *
+ * ZF-102. `speakers_condition` figura en `COMPLETION_REQUIREMENTS`: sin responderlo el
+ * backend devuelve 422 al finalizar, sin señalar el campo. Se exige con el mismo criterio
+ * que `NOTEBOOK_REMOTE_ONLY_FIELDS` usa para avanzar de sección — sólo cuando el schema
+ * remoto publica el campo como obligatorio, que es cuando la tarjeta está en pantalla con su
+ * asterisco —, de modo que el error siempre tiene dónde corregirse.
+ *
+ * El `as unknown as` acota la única diferencia entre ambas variantes: al pasar a
+ * `required()`, Yup infiere `string` en lugar de `string | null | undefined`, y el
+ * formulario sigue tipado con `NotebookFormData`.
+ */
+export const resolveNotebookSchema = (requiresSpeakers: boolean): typeof notebookSchema =>
+	requiresSpeakers
+		? (notebookSchemaWithSpeakers as unknown as typeof notebookSchema)
+		: notebookSchema;
 
 /**
  * Schema parcial para validación de campos individuales (útil para validación en tiempo real).

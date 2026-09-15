@@ -28,8 +28,10 @@ export const useSubsidiaryColumns = (
 									className='text-sm text-primary-600'
 								/>
 							</div>
-							<div className='min-w-0'>
-								<div className='truncate font-medium'>{name}</div>
+							<div className='min-w-0 max-w-[280px]'>
+								<div className='line-clamp-2 break-words font-medium' title={name}>
+									{name}
+								</div>
 								<div className='text-xs text-zinc-500'>ID: {subsidiary.id}</div>
 							</div>
 						</div>

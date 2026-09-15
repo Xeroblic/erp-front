@@ -167,7 +167,10 @@ describe('ZF-48 schema fields', () => {
 		// sección daba por buena cualquier opción con tal de que existiera en algún otro
 		// campo, y así fijó en verde un valor que el backend rechaza.
 		expect(optionValuesOf('Teclado')).toEqual(['ok', 'worn', 'missing_pieces', 'broken']);
-		expect(optionValuesOf('Touchpad')).toEqual(['ok', 'worn', 'missing_pieces', 'broken']);
+		// El touchpad tampoco usa el contrato de componente genérico: `CONDITION_TOUCHPAD`
+		// no incluye `missing_pieces`, ninguna regla lo puntúa y el schema publica tres
+		// estados. La validación del backend lo rechaza desde este cambio.
+		expect(optionValuesOf('Touchpad')).toEqual(['ok', 'worn', 'broken']);
 		// B1-bis: la bisagra tiene su propio contrato (`CONDITION_HINGE`). No admite
 		// `missing_pieces` y sí los dos estados de grado C que ZB-89 separó.
 		expect(optionValuesOf('Bisagras')).toEqual(['ok', 'worn', 'cracked', 'loose', 'broken']);

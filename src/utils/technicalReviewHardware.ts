@@ -34,6 +34,31 @@ export const applyHardwareAbsenceToPayload = (
  */
 export const DERIVED_TECHNICAL_REVIEW_FIELDS = ['loose_ports_count'] as const;
 
+/**
+ * Campos que sólo existen en el estado del formulario: el backend no los declara en su
+ * contrato ni tiene columna donde guardarlos, así que viajaban al vacío (Laravel ignora las
+ * claves desconocidas en silencio, no las rechaza).
+ *
+ * - `battery_health` es la **etiqueta** de `battery_status` («Buena», «Sin Batería»), que se
+ *   calcula acá para mostrarla. Lo que se persiste es el token en `battery_status`, o el
+ *   número en `battery_percentage` cuando el equipo no es Dell.
+ * - `screen_defects_count` quedó reemplazado por `spots_count` y `dead_pixels_count`.
+ * - `second_battery_condition` es una columna que existe en la base pero que nunca recibió
+ *   una fila, y el formulario le escribía la etiqueta en vez del token, así que el backend
+ *   la habría rechazado. Salió del contrato junto con `battery_condition`.
+ */
+export const FORM_ONLY_TECHNICAL_REVIEW_FIELDS = [
+	'battery_health',
+	'screen_defects_count',
+	'battery_condition',
+	'second_battery_condition',
+] as const;
+
+const NON_PAYLOAD_FIELDS: readonly string[] = [
+	...DERIVED_TECHNICAL_REVIEW_FIELDS,
+	...FORM_ONLY_TECHNICAL_REVIEW_FIELDS,
+];
+
 export const filterTechnicalReviewPayload = (
 	data: Record<string, unknown>,
 	nullableFields: readonly string[],
@@ -42,7 +67,7 @@ export const filterTechnicalReviewPayload = (
 
 	return Object.fromEntries(
 		Object.entries(normalizedData).filter(([key, value]) => {
-			if (DERIVED_TECHNICAL_REVIEW_FIELDS.includes(key as 'loose_ports_count')) return false;
+			if (NON_PAYLOAD_FIELDS.includes(key)) return false;
 			if (nullableFields.includes(key)) return value !== undefined && value !== '';
 			return value !== null && value !== undefined && value !== '';
 		}),

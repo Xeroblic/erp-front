@@ -38,6 +38,7 @@ const documentFixture = (id: number): IDeferredPaymentDocument => ({
 	days_until_due: 10,
 	due_date: '2026-08-10',
 	issue_date: '2026-07-01',
+	paid_at: null,
 	notes: null,
 	customer: { id: 7, billing_company: 'Cliente Real', rut: '1-9', contact_name: 'Ana' },
 	assignees: [],

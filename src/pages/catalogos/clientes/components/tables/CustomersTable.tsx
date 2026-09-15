@@ -41,8 +41,10 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
 						<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'>
 							<Icon icon='HeroUserCircle' className='h-5 w-5' />
 						</div>
-						<div className='min-w-0'>
-							<div className='truncate text-sm font-semibold text-gray-900 dark:text-white'>
+						<div className='min-w-0 max-w-[280px]'>
+							<div
+								className='line-clamp-2 break-words text-sm font-semibold text-gray-900 dark:text-white'
+								title={row.original.name}>
 								{row.original.name}
 							</div>
 							<div className='mt-1 flex flex-wrap items-center gap-2'>

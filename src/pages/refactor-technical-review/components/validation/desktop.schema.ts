@@ -91,7 +91,11 @@ export const desktopSchema = Yup.object({
 		.oneOf([...ALLOWED_COVER_CONDITIONS], 'Condición de carcasa no válida')
 		.required('La condición de la carcasa es obligatoria'),
 
-	powers_on: Yup.boolean().nullable(),
+	// ZF-102. `COMPLETION_REQUIREMENTS` lo exige para cerrar tanto en desktop como en
+	// notebook. Declararlo nullable dejaba pasar el submit final y el 422 aparecía recién en
+	// el backend, sin campo señalado: el mismo agujero que trababa a los notebook, con el
+	// control ya en pantalla. `false` es una respuesta válida y completa (grado M).
+	powers_on: Yup.boolean().required('Debes indicar si el equipo enciende'),
 
 	// ─── Puertos ─────────────────────────────────────────────────────────────
 	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),

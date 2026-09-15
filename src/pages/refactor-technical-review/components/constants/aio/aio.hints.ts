@@ -7,6 +7,7 @@
 export const AIO_HINTS: Record<string, string> = {
 	brand: 'Fabricante del equipo (Dell, HP, Lenovo, etc.)',
 	model: 'Modelo exacto del equipo para referencia y compatibilidad',
+	line: 'Línea o sub-línea del producto (ej: OptiPlex, ThinkCentre, IdeaCentre)',
 	general_condition: 'Estado general del equipo considerando estética y funcionamiento global',
 	observations: 'Notas libres relevantes encontradas durante la revisión',
 	extra_attributes: 'Contenedor para atributos específicos no estandarizados',
@@ -22,6 +23,7 @@ export const AIO_HINTS: Record<string, string> = {
 export const AIO_PLACEHOLDERS: Record<string, string> = {
 	brand: 'Ej: Dell, HP, Lenovo, Apple',
 	model: 'Ej: OptiPlex 7470, iMac 27, IdeaCentre',
+	line: 'Ej: OptiPlex, ThinkCentre, IdeaCentre',
 	processor: 'Ej: Intel Core i5-10400T',
 	ram_size: 'Ej: 8GB, 16GB',
 	ram_slots: 'Ej: 8x1, 8x2',

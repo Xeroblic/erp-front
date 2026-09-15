@@ -143,7 +143,6 @@ export const BATTERY_STATUS_OPTIONS: TypedOption<BatteryStatusValue>[] = [
 export const TOUCHPAD_CONDITION_OPTIONS: TypedOption<TouchpadConditionValue>[] = [
 	{ value: 'ok', label: 'Funciona Sin Problemas' },
 	{ value: 'worn', label: 'Desgastado' },
-	{ value: 'missing_pieces', label: 'Faltan Piezas' },
 	{ value: 'broken', label: 'Roto' },
 ];
 

@@ -81,6 +81,8 @@ interface DockingFormProps {
 	readOnly?: boolean;
 	/** Called when user navigates between form sections */
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Guarda el borrador aunque la validación bloquee el avance de sección (ZF-102). */
+	onPersistDraft?: () => Promise<void> | void;
 	/** Registers a getter for current form values (used by auto-save) */
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	/** Whether auto-save is in progress */
@@ -98,6 +100,7 @@ const DockingForm: React.FC<DockingFormProps> = ({
 	isSubmitting = false,
 	readOnly = false,
 	onStepChange,
+	onPersistDraft,
 	registerGetFormValues,
 	isSaving = false,
 	initialSectionKey,
@@ -230,6 +233,7 @@ const DockingForm: React.FC<DockingFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onPersistDraft={onPersistDraft}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
 			initialSectionKey={initialSectionKey}
