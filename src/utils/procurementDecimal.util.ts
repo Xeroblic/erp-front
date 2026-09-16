@@ -96,3 +96,41 @@ export const formatDecimalAmount = (
 
 	return `${isNegative ? '-' : ''}${symbol}${groupIntegerDigits(integerDigits)}${DECIMAL_SEPARATOR}${fractionDigits}`;
 };
+
+/**
+ * Lee lo que el usuario escribe en un campo de monto con formato peso y lo
+ * deja sin formato (`"$1.234,5"` → `"1234,5"`). En es-CL el punto es separador
+ * de miles, así que se descarta; la coma es la única marca decimal y se
+ * conservan a lo sumo dos decimales, la escala del contrato.
+ */
+export const parsePesoInput = (value: string): string => {
+	const cleaned = value.replace(/[^\d,]/g, '');
+	const commaIndex = cleaned.indexOf(',');
+	if (commaIndex === -1) return cleaned;
+
+	const integerPart = cleaned.slice(0, commaIndex);
+	const fractionPart = cleaned
+		.slice(commaIndex + 1)
+		.replace(/,/g, '')
+		.slice(0, DECIMAL_SCALE);
+
+	return `${integerPart},${fractionPart}`;
+};
+
+/**
+ * Presenta un monto sin formato como peso mientras se escribe (`"1234,5"` →
+ * `"$1.234,5"`). Acepta también el string del contrato (`"5712.00"`), que es
+ * el que llega al editar. No completa decimales para no pelear con el tipeo.
+ */
+export const formatPesoInput = (value: string): string => {
+	const trimmed = value.trim();
+	if (trimmed === '') return '';
+
+	const [integerPart = '', fractionPart] = trimmed.split(/[.,]/);
+	const integerDigits = integerPart.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+	const grouped = groupIntegerDigits(integerDigits === '' ? '0' : integerDigits);
+
+	return fractionPart === undefined
+		? `$${grouped}`
+		: `$${grouped}${DECIMAL_SEPARATOR}${fractionPart.replace(/\D/g, '')}`;
+};
