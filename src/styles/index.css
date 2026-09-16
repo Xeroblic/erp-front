@@ -75,6 +75,20 @@
 }
 
 @layer base {
+	/*
+	 * `index.html` declara `color-scheme: dark light`, así que con el sistema
+	 * operativo en oscuro el navegador pintaba los controles nativos (lista de
+	 * un <select>, calendario) en oscuro aunque la app estuviera en claro: al
+	 * pasar el mouse por las opciones todo quedaba blanco. El esquema sigue al
+	 * tema de la app, no al del sistema.
+	 */
+	html {
+		color-scheme: light;
+	}
+	html.dark {
+		color-scheme: dark;
+	}
+
 	:root {
 		--header-height: 0px;
 		--subheader-height: 0px;

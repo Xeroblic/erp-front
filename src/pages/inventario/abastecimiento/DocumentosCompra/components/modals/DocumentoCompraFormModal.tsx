@@ -31,10 +31,13 @@ import { previewCostBreakdown } from '@/utils/procurementCost.util';
 import {
 	formatDecimalAmount,
 	formatDecimalCents,
+	formatPesoInput,
 	parseDecimalString,
+	parsePesoInput,
 } from '@/utils/procurementDecimal.util';
 import useDocumentoCompraForm from '../../hooks/useDocumentoCompraForm';
 import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
+import useSupplierInlineEdit from '../../hooks/useSupplierInlineEdit';
 import ProductoCompraFormModal from './ProductoCompraFormModal';
 import { EMPTY_DOCUMENTO_LINE } from '../../types';
 import { focusFirstInvalidDocumentoCompraField } from '../../utils/documentoCompraFieldFocus';
@@ -128,6 +131,10 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 	 * el borrador del documento.
 	 */
 	const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+	const { editingSupplier, isLoadingSupplier, openSupplierEdit, closeSupplierEdit } =
+		useSupplierInlineEdit(subsidiaryId);
+	const selectedSupplierId =
+		formik.values.supplier_id === '' ? null : Number(formik.values.supplier_id);
 	// `useHref` respeta el `basename` del router al abrir la ficha en otra pestaña.
 	const suppliersHref = useHref('/inventario/abastecimiento/proveedores');
 	const supplierOptions = suppliers.map((supplier) => ({
@@ -167,6 +174,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 	const handleClose = () => {
 		if (isSubmitting) return;
 		setIsSupplierModalOpen(false);
+		closeSupplierEdit();
 		setProductLineIndex(null);
 		setIsOpen(false);
 		reset();
@@ -197,6 +205,11 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 		setIsOpen(false);
 		reset();
 		onStaleVersion?.();
+	};
+
+	/** Los montos se ven con formato peso, pero Formik guarda el valor sin formato. */
+	const handlePesoChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+		formik.setFieldValue(field, parsePesoInput(event.target.value)).catch(() => undefined);
 	};
 
 	return (
@@ -318,21 +331,50 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 														<span className='text-red-500'> *</span>
 													)}
 												</Label>
-												<ProtectedButton
-													type='button'
-													permission='create-procurement-supplier'
-													subsidiaryId={subsidiaryId}
-													scope='access'
-													fallbackMode='hidden'
-													size='xs'
-													variant='outline'
-													color='blue'
-													icon='HeroPlus'
-													className='shrink-0 whitespace-nowrap'
-													isDisable={isSubmitting}
-													onClick={() => setIsSupplierModalOpen(true)}>
-													Nuevo proveedor
-												</ProtectedButton>
+												<div className='flex shrink-0 items-center gap-2'>
+													{/* Evita ir a la ficha sólo para completar giro o direcciones. */}
+													{selectedSupplierId !== null && (
+														<ProtectedButton
+															type='button'
+															permission='edit-procurement-supplier'
+															subsidiaryId={subsidiaryId}
+															scope='access'
+															fallbackMode='hidden'
+															size='xs'
+															variant='outline'
+															color='zinc'
+															icon='HeroPencilSquare'
+															className='whitespace-nowrap'
+															isDisable={
+																isSubmitting || isLoadingSupplier
+															}
+															isLoading={isLoadingSupplier}
+															onClick={() => {
+																openSupplierEdit(
+																	selectedSupplierId,
+																).catch(() => undefined);
+															}}>
+															Editar proveedor
+														</ProtectedButton>
+													)}
+													<ProtectedButton
+														type='button'
+														permission='create-procurement-supplier'
+														subsidiaryId={subsidiaryId}
+														scope='access'
+														fallbackMode='hidden'
+														size='xs'
+														variant='outline'
+														color='blue'
+														icon='HeroPlus'
+														className='whitespace-nowrap'
+														isDisable={isSubmitting}
+														onClick={() =>
+															setIsSupplierModalOpen(true)
+														}>
+														Nuevo proveedor
+													</ProtectedButton>
+												</div>
 											</div>
 											<SelectReact
 												name='supplier_id'
@@ -423,9 +465,9 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 												name='total_amount'
 												type='text'
 												inputMode='decimal'
-												placeholder='0,00'
-												value={formik.values.total_amount}
-												onChange={formik.handleChange}
+												placeholder='$0'
+												value={formatPesoInput(formik.values.total_amount)}
+												onChange={handlePesoChange('total_amount')}
 												onBlur={formik.handleBlur}
 												isValid={!formik.errors.total_amount}
 												isTouched={Boolean(formik.touched.total_amount)}
@@ -719,11 +761,13 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 																		className='!bg-white dark:!bg-zinc-900'
 																		type='text'
 																		inputMode='decimal'
-																		placeholder='0,00'
-																		value={line.unit_cost}
-																		onChange={
-																			formik.handleChange
-																		}
+																		placeholder='$0'
+																		value={formatPesoInput(
+																			line.unit_cost,
+																		)}
+																		onChange={handlePesoChange(
+																			`items.${index}.unit_cost`,
+																		)}
 																		onBlur={formik.handleBlur}
 																		isValid={
 																			!errorFor('unit_cost')
@@ -834,11 +878,13 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 																	className='!bg-white dark:!bg-zinc-900'
 																	type='text'
 																	inputMode='decimal'
-																	placeholder='0,00'
-																	value={
-																		formik.values.shipping_cost
-																	}
-																	onChange={formik.handleChange}
+																	placeholder='$0'
+																	value={formatPesoInput(
+																		formik.values.shipping_cost,
+																	)}
+																	onChange={handlePesoChange(
+																		'shipping_cost',
+																	)}
 																	onBlur={formik.handleBlur}
 																	isValid={
 																		!formik.errors.shipping_cost
@@ -939,6 +985,19 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 				subsidiaryId={subsidiaryId}
 				onSuccess={handleSupplierCreated}
 				onUseExistingSupplier={handleUseExistingSupplier}
+				onViewSupplier={openSupplierInNewTab}
+			/>
+			<ProveedorFormModal
+				isOpen={isOpen && editingSupplier !== null}
+				setIsOpen={(open) => {
+					if (!open) closeSupplierEdit();
+				}}
+				subsidiaryId={subsidiaryId}
+				supplier={editingSupplier}
+				onSuccess={(supplier) => {
+					closeSupplierEdit();
+					addSupplier(supplier);
+				}}
 				onViewSupplier={openSupplierInNewTab}
 			/>
 			<ProductoCompraFormModal
