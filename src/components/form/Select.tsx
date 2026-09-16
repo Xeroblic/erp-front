@@ -106,6 +106,10 @@ const Select: FC<ISelectProps> = (props) => {
 	const classes = classNames(
 		'w-full appearance-none outline-0',
 		'text-black dark:text-white',
+		// La lista nativa no hereda el fondo del select: en modo oscuro las
+		// opciones necesitan colores propios. En claro se dejan las del navegador
+		// para no romper el resaltado al pasar el mouse (`color-scheme` en index.css).
+		'dark:[&_option]:bg-zinc-900 dark:[&_option]:text-zinc-100',
 		'disabled:!opacity-25',
 		themeConfig.transition,
 		selectVariantClasses,
