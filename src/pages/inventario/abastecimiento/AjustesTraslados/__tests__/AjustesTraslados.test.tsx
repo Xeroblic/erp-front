@@ -160,4 +160,20 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		expect(screen.getByTestId('location')).toHaveTextContent('?tab=ajuste');
 		expect(screen.getByLabelText('Ubicación')).toHaveValue('unlocated');
 	});
+
+	it('nombra cada paso con su propio título aunque ambas pestañas estén montadas', () => {
+		renderPage('/?tab=ajuste');
+		fireEvent.click(screen.getByRole('tab', { name: 'Traslados internos' }));
+
+		const sections = [...document.querySelectorAll('section[aria-labelledby]')];
+		expect(sections).toHaveLength(2);
+		const titleIds = sections.map((section) => section.getAttribute('aria-labelledby') ?? '');
+		expect(new Set(titleIds).size).toBe(2);
+		sections.forEach((section, index) => {
+			// Cada sección apunta a un título que está dentro de ella misma.
+			expect(section).toContainElement(document.getElementById(titleIds[index]));
+		});
+		expect(screen.getByRole('region', { name: /Origen y destino/ })).toBeInTheDocument();
+		expect(screen.getByRole('region', { name: /Paso 1 de 3: Ubicación/ })).toBeInTheDocument();
+	});
 });

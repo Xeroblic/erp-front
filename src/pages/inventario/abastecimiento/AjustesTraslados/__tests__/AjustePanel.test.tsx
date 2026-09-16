@@ -325,6 +325,46 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		expect(screen.queryByLabelText(/Documento de compra/i)).not.toBeInTheDocument();
 	});
 
+	it('lleva el foco al título del paso nuevo al navegar con el teclado', async () => {
+		renderPage();
+		fireEvent.change(screen.getByLabelText('Ubicación'), { target: { value: 'warehouse:8' } });
+
+		/** Activa un botón ya enfocado, como Enter o Espacio. */
+		const activate = async (name: string) => {
+			const button = screen.getByRole('button', { name });
+			await waitFor(() => expect(button).toBeEnabled());
+			button.focus();
+			fireEvent.click(button);
+		};
+		/** `to` aparece después de `from` en el orden del documento (y de tabulación). */
+		const follows = (from: Element, to: Element) => {
+			const order = [...document.querySelectorAll('*')];
+			return order.indexOf(to) > order.indexOf(from);
+		};
+
+		await activate('Siguiente');
+		const products = await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+		await waitFor(() => expect(products).toHaveFocus());
+		// El siguiente Tab llega al primer campo del paso, no al pie del asistente.
+		const product = screen.getByLabelText('Producto de la línea 1');
+		expect(follows(products, product)).toBe(true);
+		expect(follows(product, screen.getByRole('button', { name: 'Siguiente' }))).toBe(true);
+
+		fillLine('58', '-1');
+		await activate('Siguiente');
+		// «Siguiente» desaparece en el último paso: el foco no puede caer en <body>.
+		const confirmation = await screen.findByRole('heading', {
+			name: /Paso 3 de 3: Motivo y confirmación/,
+		});
+		await waitFor(() => expect(confirmation).toHaveFocus());
+		expect(follows(confirmation, screen.getByLabelText('Motivo'))).toBe(true);
+
+		await activate('Anterior');
+		await waitFor(() =>
+			expect(screen.getByRole('heading', { name: /Paso 2 de 3: Productos/ })).toHaveFocus(),
+		);
+	});
+
 	it('no avanza sin ubicación', async () => {
 		renderPage();
 		await clickNext();

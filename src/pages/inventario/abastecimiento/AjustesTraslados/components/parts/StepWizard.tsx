@@ -1,4 +1,4 @@
-import React, { FC, ReactNode } from 'react';
+import React, { FC, ReactNode, useCallback, useId, useLayoutEffect, useRef } from 'react';
 import classNames from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
 import Icon from '@/components/icon/Icon';
@@ -42,6 +42,44 @@ const StepWizard: FC<IStepWizardProps> = ({
 }) => {
 	const current = steps[step];
 	const isLastStep = step === steps.length - 1;
+	// Único por instancia: ajuste y traslado quedan montados a la vez en sus
+	// pestañas y un id fijo haría que una sección se nombrara con el título de
+	// la otra.
+	const titleId = `${useId()}-paso-${step}`;
+
+	/*
+	 * Al cambiar de paso el foco pasa al título del paso nuevo: si no, queda en
+	 * «Siguiente» (después de los campos nuevos) o cae en `<body>` cuando ese
+	 * botón desaparece en el último paso. Con `AnimatePresence mode='wait'` el
+	 * título nuevo se monta al terminar la salida del anterior, así que el foco
+	 * se aplica cuando el título del paso vigente existe: en el efecto si ya
+	 * está montado, o en su ref cuando se monte.
+	 */
+	const shownStep = useRef(step);
+	const pendingFocus = useRef(false);
+	const headingRef = useRef<HTMLHeadingElement | null>(null);
+
+	const focusIfCurrent = useCallback((node: HTMLHeadingElement | null) => {
+		if (!node || !pendingFocus.current) return;
+		if (node.dataset.step !== String(shownStep.current)) return;
+		pendingFocus.current = false;
+		node.focus();
+	}, []);
+
+	const setHeading = useCallback(
+		(node: HTMLHeadingElement | null) => {
+			headingRef.current = node;
+			focusIfCurrent(node);
+		},
+		[focusIfCurrent],
+	);
+
+	useLayoutEffect(() => {
+		if (shownStep.current === step) return;
+		shownStep.current = step;
+		pendingFocus.current = true;
+		focusIfCurrent(headingRef.current);
+	}, [step, focusIfCurrent]);
 
 	return (
 		<div className='flex flex-col'>
@@ -127,12 +165,15 @@ const StepWizard: FC<IStepWizardProps> = ({
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: direction * -40 }}
 						transition={{ duration: 0.25, ease: 'easeInOut' }}
-						aria-labelledby='wizard-step-title'
+						aria-labelledby={titleId}
 						className='p-6'>
 						<header className='mb-6'>
 							<h2
-								id='wizard-step-title'
-								className='flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-zinc-100'>
+								id={titleId}
+								ref={setHeading}
+								data-step={step}
+								tabIndex={-1}
+								className='flex items-center gap-2 text-lg font-bold text-zinc-900 outline-none dark:text-zinc-100'>
 								<Icon icon={current.icon} className='h-5 w-5 text-blue-600' />
 								<span className='sr-only'>
 									Paso {step + 1} de {steps.length}:{' '}
