@@ -19,6 +19,67 @@ vi.mock('@/store', async () => {
 vi.mock('@/components/layouts/PageWrapper/PageWrapper', () => ({
 	default: ({ children }: { children: ReactNode }) => <main>{children}</main>,
 }));
+/**
+ * La transición entre pasos del asistente no aporta a estas pruebas y en jsdom
+ * demora el cambio de paso: `framer-motion` se sustituye por elementos planos.
+ */
+vi.mock('framer-motion', () => ({
+	AnimatePresence: ({ children }: { children: ReactNode }) => children,
+	motion: {
+		section: ({
+			children,
+			className,
+			'aria-labelledby': labelledBy,
+		}: {
+			children: ReactNode;
+			className?: string;
+			'aria-labelledby'?: string;
+		}) => (
+			<section className={className} aria-labelledby={labelledBy}>
+				{children}
+			</section>
+		),
+	},
+}));
+/**
+ * `react-select` no expone sus opciones como controles nativos en jsdom; como
+ * en `StockPorUbicacion.test.tsx`, `SelectReact` se sustituye por un `<select>`
+ * nativo cableado a las mismas props.
+ */
+vi.mock('@/components/form/SelectReact', () => ({
+	default: ({
+		'aria-label': ariaLabel,
+		isDisabled,
+		options,
+		value,
+		onChange,
+		placeholder,
+	}: {
+		'aria-label'?: string;
+		isDisabled?: boolean;
+		options?: { value: string; label: string }[];
+		value?: { value: string; label: string } | null;
+		onChange?: (option: { value: string; label: string } | null) => void;
+		placeholder?: string;
+	}) => (
+		<select
+			aria-label={ariaLabel}
+			disabled={isDisabled}
+			value={value?.value ?? ''}
+			onChange={(event) => {
+				const selected =
+					options?.find((option) => option.value === event.target.value) ?? null;
+				onChange?.(selected);
+			}}>
+			<option value=''>{placeholder}</option>
+			{options?.map((option) => (
+				<option key={option.value} value={option.value}>
+					{option.label}
+				</option>
+			))}
+		</select>
+	),
+}));
 
 const auth = createSlice({
 	name: 'auth',
@@ -87,8 +148,8 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 
 	it('cambia de pestaña en la URL sin descartar el formulario de la otra', () => {
 		renderPage('/?tab=ajuste');
-		fireEvent.change(screen.getByLabelText('Motivo'), {
-			target: { value: 'Conteo a medias' },
+		fireEvent.change(screen.getByLabelText('Ubicación'), {
+			target: { value: 'unlocated' },
 		});
 
 		fireEvent.click(screen.getByRole('tab', { name: 'Traslados internos' }));
@@ -97,6 +158,22 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 
 		fireEvent.click(screen.getByRole('tab', { name: 'Ajuste de inventario' }));
 		expect(screen.getByTestId('location')).toHaveTextContent('?tab=ajuste');
-		expect(screen.getByDisplayValue('Conteo a medias')).toBeInTheDocument();
+		expect(screen.getByLabelText('Ubicación')).toHaveValue('unlocated');
+	});
+
+	it('nombra cada paso con su propio título aunque ambas pestañas estén montadas', () => {
+		renderPage('/?tab=ajuste');
+		fireEvent.click(screen.getByRole('tab', { name: 'Traslados internos' }));
+
+		const sections = [...document.querySelectorAll('section[aria-labelledby]')];
+		expect(sections).toHaveLength(2);
+		const titleIds = sections.map((section) => section.getAttribute('aria-labelledby') ?? '');
+		expect(new Set(titleIds).size).toBe(2);
+		sections.forEach((section, index) => {
+			// Cada sección apunta a un título que está dentro de ella misma.
+			expect(section).toContainElement(document.getElementById(titleIds[index]));
+		});
+		expect(screen.getByRole('region', { name: /Origen y destino/ })).toBeInTheDocument();
+		expect(screen.getByRole('region', { name: /Paso 1 de 3: Ubicación/ })).toBeInTheDocument();
 	});
 });

@@ -3,12 +3,14 @@ import Label from '@/components/form/Label';
 import Validation from '@/components/form/Validation';
 import Select from '@/components/form/Select';
 import Textarea from '@/components/form/Textarea';
+import Icon from '@/components/icon/Icon';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
-import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import useTrasladoInterno from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useTrasladoInterno';
 import TrasladoItemsEditor from '@/pages/inventario/abastecimiento/AjustesTraslados/components/traslado/TrasladoItemsEditor';
 import TrasladoResultCard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/traslado/TrasladoResultCard';
+import StepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
+import type { IWizardStepConfig } from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
 import { locationToken } from '@/utils/inventoryLocation.util';
 
 export interface TrasladoPanelProps {
@@ -16,9 +18,32 @@ export interface TrasladoPanelProps {
 	owner: string;
 }
 
+const TRASLADO_STEP_CONFIG: readonly IWizardStepConfig[] = [
+	{
+		key: 'route',
+		label: 'Origen y destino',
+		icon: 'HeroArrowsRightLeft',
+		hint: 'Ubicaciones de la sucursal activa.',
+	},
+	{
+		key: 'items',
+		label: 'Productos',
+		icon: 'HeroCube',
+		hint: 'La condición no cambia en un traslado: las unidades conservan su condición de apto o no apto.',
+	},
+	{
+		key: 'reason',
+		label: 'Motivo y confirmación',
+		icon: 'HeroClipboardDocumentCheck',
+		hint: 'El motivo queda registrado en la auditoría del movimiento.',
+	},
+];
+
 /**
  * Pestaña «Traslados internos». La autorización, la sucursal y la bandera de
  * mocks las resuelve `AjustesTrasladosView` antes de montarla.
+ *
+ * Se lee en tres pasos: origen y destino, productos, y motivo.
  */
 const TrasladoPanel = ({ branchId, owner }: TrasladoPanelProps) => {
 	const {
@@ -38,6 +63,8 @@ const TrasladoPanel = ({ branchId, owner }: TrasladoPanelProps) => {
 		idempotentWrite,
 		result,
 		clearResult,
+		wizard,
+		submit,
 	} = useTrasladoInterno(branchId, owner);
 
 	// Con un resultado incierto (`canRetry`) el formulario se congela: el
@@ -46,183 +73,206 @@ const TrasladoPanel = ({ branchId, owner }: TrasladoPanelProps) => {
 	const hasOrigin = Boolean(formik.values.from);
 
 	return (
-		<form onSubmit={formik.handleSubmit} className='space-y-4' noValidate>
-			<Card>
-				<CardHeader>
-					<CardTitle>Mover stock dentro de la sucursal</CardTitle>
-				</CardHeader>
-				<CardBody className='space-y-4'>
-					<Alert
-						color='blue'
-						variant='outline'
-						icon='HeroInformationCircle'
-						title='Esto no cambia el stock de la sucursal'>
-						Un traslado sólo cambia dónde están las unidades: el total de la sucursal
-						queda igual. La condición no cambia en un traslado y la procedencia se
-						conserva. Para mover stock a <strong>otra sucursal</strong> usa el flujo de
-						transferencias, no esta pantalla.
-					</Alert>
+		<form
+			className='space-y-4'
+			noValidate
+			onSubmit={(event) => {
+				event.preventDefault();
+				// Enter fuera del último paso avanza en vez de confirmar.
+				void (wizard.isLastStep ? submit() : wizard.next());
+			}}>
+			<p className='text-sm text-zinc-600 dark:text-zinc-300'>
+				Cambia la <strong>ubicación</strong> de productos dentro de la sucursal. El stock
+				total de la sucursal no varía.
+			</p>
 
-					<div className='grid gap-4 md:grid-cols-2'>
-						<div className='space-y-1'>
-							<Label htmlFor='traslado-from'>Origen</Label>
-							<Validation
-								isValid={!formik.errors.from}
-								isTouched={formik.touched.from}
-								invalidFeedback={formik.errors.from}>
-								<Select
-									id='traslado-from'
-									name='from'
-									disabled={frozen}
-									value={formik.values.from}
-									onChange={(event) => setOrigin(event.target.value)}
-									onBlur={formik.handleBlur}
-									isValid={!formik.errors.from}
-									isTouched={formik.touched.from}
-									invalidFeedback={formik.errors.from}>
-									<option value=''>Selecciona el origen…</option>
-									<option value={locationToken(null)}>Sin ubicación</option>
-									{warehouses.map((warehouse) => (
-										<option
-											key={warehouse.id}
-											value={locationToken(warehouse.id)}>
-											{warehouse.name}
-										</option>
-									))}
-								</Select>
-							</Validation>
-						</div>
-						<div className='space-y-1'>
-							<Label htmlFor='traslado-to'>Destino</Label>
-							<Validation
-								isValid={!formik.errors.to}
-								isTouched={formik.touched.to}
-								invalidFeedback={formik.errors.to}>
-								<Select
-									id='traslado-to'
-									name='to'
-									disabled={frozen}
-									value={formik.values.to}
-									onChange={formik.handleChange}
-									onBlur={formik.handleBlur}
-									isValid={!formik.errors.to}
-									isTouched={formik.touched.to}
-									invalidFeedback={formik.errors.to}>
-									<option value=''>Selecciona el destino…</option>
-									{destinationOptions.map((option) => (
-										<option key={option.value} value={option.value}>
-											{option.label}
-										</option>
-									))}
-								</Select>
-							</Validation>
-							<p className='text-xs text-zinc-500'>
-								Sólo ubicaciones de esta sucursal. «Sin ubicación» es un destino
-								válido.
+			{result ? (
+				<TrasladoResultCard result={result} onDismiss={clearResult} />
+			) : (
+				<StepWizard
+					steps={TRASLADO_STEP_CONFIG}
+					step={wizard.step}
+					direction={wizard.direction}
+					onStepClick={(index) => {
+						void wizard.stepClick(index);
+					}}
+					onPrev={wizard.prev}
+					onNext={() => {
+						void wizard.next();
+					}}
+					finishActions={
+						<>
+							<Button
+								type='submit'
+								variant='solid'
+								color='emerald'
+								icon='HeroArrowsRightLeft'
+								isDisable={idempotentWrite.isSubmitting}
+								isLoading={idempotentWrite.isSubmitting}>
+								{idempotentWrite.canRetry
+									? 'Reintentar traslado'
+									: 'Registrar traslado'}
+							</Button>
+							{idempotentWrite.canRetry && (
+								<Button
+									type='button'
+									variant='outline'
+									onClick={idempotentWrite.renewKey}>
+									Descartar y corregir
+								</Button>
+							)}
+						</>
+					}>
+					{wizard.stepKey === 'route' && (
+						<div>
+							<div className='grid gap-4 md:grid-cols-[1fr_auto_1fr]'>
+								<div className='space-y-1'>
+									<Label htmlFor='traslado-from'>Origen</Label>
+									<Validation
+										isValid={!formik.errors.from}
+										isTouched={formik.touched.from}
+										invalidFeedback={formik.errors.from}>
+										<Select
+											id='traslado-from'
+											name='from'
+											disabled={frozen}
+											value={formik.values.from}
+											onChange={(event) => setOrigin(event.target.value)}
+											onBlur={formik.handleBlur}
+											isValid={!formik.errors.from}
+											isTouched={formik.touched.from}
+											invalidFeedback={formik.errors.from}>
+											<option value=''>Selecciona el origen…</option>
+											<option value={locationToken(null)}>
+												Sin ubicación
+											</option>
+											{warehouses.map((warehouse) => (
+												<option
+													key={warehouse.id}
+													value={locationToken(warehouse.id)}>
+													{warehouse.name}
+												</option>
+											))}
+										</Select>
+									</Validation>
+								</div>
+								<div
+									aria-hidden='true'
+									className='hidden h-9 items-center self-start text-zinc-400 md:mt-6 md:flex'>
+									<Icon icon='HeroArrowLongRight' className='h-6 w-6' />
+								</div>
+								<div className='space-y-1'>
+									<Label htmlFor='traslado-to'>Destino</Label>
+									<Validation
+										isValid={!formik.errors.to}
+										isTouched={formik.touched.to}
+										invalidFeedback={formik.errors.to}>
+										<Select
+											id='traslado-to'
+											name='to'
+											disabled={frozen}
+											value={formik.values.to}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+											isValid={!formik.errors.to}
+											isTouched={formik.touched.to}
+											invalidFeedback={formik.errors.to}>
+											<option value=''>Selecciona el destino…</option>
+											{destinationOptions.map((option) => (
+												<option key={option.value} value={option.value}>
+													{option.label}
+												</option>
+											))}
+										</Select>
+									</Validation>
+								</div>
+							</div>
+							<p className='mt-2 text-xs text-zinc-500'>
+								«Sin ubicación» agrupa el stock que aún no tiene ubicación asignada
+								y es válido como origen o destino.
 							</p>
 						</div>
-					</div>
+					)}
 
-					<div className='space-y-1'>
-						<Label htmlFor='traslado-reason'>Motivo</Label>
-						<Validation
-							isValid={!formik.errors.reason}
-							isTouched={formik.touched.reason}
-							invalidFeedback={formik.errors.reason}>
-							<Textarea
-								id='traslado-reason'
-								name='reason'
-								rows={2}
+					{wizard.stepKey === 'items' && (
+						<div className='space-y-3'>
+							<p
+								data-testid='traslado-preview'
+								className='text-sm font-semibold tabular-nums'>
+								Total a mover: {totalUnits}{' '}
+								{totalUnits === 1 ? 'unidad' : 'unidades'}
+							</p>
+							{!hasOrigin && (
+								<p className='text-sm text-zinc-600 dark:text-zinc-300'>
+									Selecciona el origen en el paso 1 para cargar sus productos.
+								</p>
+							)}
+							{originError && (
+								<Alert color='red' title='No pudimos cargar el stock del origen'>
+									{originError}
+								</Alert>
+							)}
+							{hasOrigin &&
+								!loadingOrigin &&
+								!originError &&
+								originRows.length === 0 && (
+									<Alert color='amber' title='Sin stock en el origen'>
+										Esta ubicación no tiene productos que trasladar.
+									</Alert>
+								)}
+							<TrasladoItemsEditor
+								items={formik.values.items}
+								originRows={originRows}
+								loadingOrigin={loadingOrigin}
+								hasOrigin={hasOrigin}
 								disabled={frozen}
-								value={formik.values.reason}
-								onChange={formik.handleChange}
-								onBlur={formik.handleBlur}
-								isValid={!formik.errors.reason}
-								isTouched={formik.touched.reason}
-								invalidFeedback={formik.errors.reason}
-								placeholder='Ej: Ubicar productos del conteo inicial'
+								balanceFor={balanceFor}
+								errorFor={errorFor}
+								onChangeItem={setItem}
+								onAddItem={addItem}
+								onRemoveItem={removeItem}
 							/>
-						</Validation>
-					</div>
-				</CardBody>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Productos a mover</CardTitle>
-					<p
-						data-testid='traslado-preview'
-						className='text-sm font-semibold tabular-nums'>
-						{totalUnits} {totalUnits === 1 ? 'unidad' : 'unidades'} · Efecto neto en la
-						sucursal: 0
-					</p>
-				</CardHeader>
-				<CardBody className='space-y-3'>
-					{!hasOrigin && (
-						<p className='text-sm text-zinc-600 dark:text-zinc-300'>
-							Elige primero el origen: los productos disponibles salen de esa
-							ubicación.
-						</p>
-					)}
-					{originError && (
-						<Alert color='red' title='No pudimos cargar el stock del origen'>
-							{originError}
-						</Alert>
-					)}
-					{hasOrigin && !loadingOrigin && !originError && originRows.length === 0 && (
-						<Alert color='amber' title='Sin stock en el origen'>
-							Esta ubicación no tiene productos que trasladar.
-						</Alert>
-					)}
-					<TrasladoItemsEditor
-						items={formik.values.items}
-						originRows={originRows}
-						loadingOrigin={loadingOrigin}
-						hasOrigin={hasOrigin}
-						disabled={frozen}
-						balanceFor={balanceFor}
-						errorFor={errorFor}
-						onChangeItem={setItem}
-						onAddItem={addItem}
-						onRemoveItem={removeItem}
-					/>
-					{typeof formik.errors.items === 'string' && formik.touched.items && (
-						<p role='alert' className='text-sm text-red-600 dark:text-red-400'>
-							{formik.errors.items}
-						</p>
+							{typeof formik.errors.items === 'string' && formik.touched.items && (
+								<p role='alert' className='text-sm text-red-600 dark:text-red-400'>
+									{formik.errors.items}
+								</p>
+							)}
+						</div>
 					)}
 
-					{idempotentWrite.error && (
-						<Alert color='red' title='No se pudo registrar el traslado'>
-							<span role='alert'>{idempotentWrite.error.message}</span>
-						</Alert>
+					{wizard.stepKey === 'reason' && (
+						<div className='space-y-4'>
+							<div className='space-y-1'>
+								<Label htmlFor='traslado-reason'>Motivo</Label>
+								<Validation
+									isValid={!formik.errors.reason}
+									isTouched={formik.touched.reason}
+									invalidFeedback={formik.errors.reason}>
+									<Textarea
+										id='traslado-reason'
+										name='reason'
+										rows={2}
+										disabled={frozen}
+										value={formik.values.reason}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+										isValid={!formik.errors.reason}
+										isTouched={formik.touched.reason}
+										invalidFeedback={formik.errors.reason}
+										placeholder='Ej: Ubicar productos del conteo inicial'
+									/>
+								</Validation>
+							</div>
+
+							{idempotentWrite.error && (
+								<Alert color='red' title='No se pudo registrar el traslado'>
+									<span role='alert'>{idempotentWrite.error.message}</span>
+								</Alert>
+							)}
+						</div>
 					)}
-
-					<div className='flex flex-wrap gap-3'>
-						<Button
-							type='submit'
-							variant='solid'
-							color='blue'
-							icon='HeroArrowsRightLeft'
-							isDisable={idempotentWrite.isSubmitting}
-							isLoading={idempotentWrite.isSubmitting}>
-							{idempotentWrite.canRetry
-								? 'Reintentar traslado'
-								: 'Registrar traslado'}
-						</Button>
-						{idempotentWrite.canRetry && (
-							<Button
-								type='button'
-								variant='outline'
-								onClick={idempotentWrite.renewKey}>
-								Descartar y corregir
-							</Button>
-						)}
-					</div>
-				</CardBody>
-			</Card>
-
-			{result && <TrasladoResultCard result={result} onDismiss={clearResult} />}
+				</StepWizard>
+			)}
 		</form>
 	);
 };

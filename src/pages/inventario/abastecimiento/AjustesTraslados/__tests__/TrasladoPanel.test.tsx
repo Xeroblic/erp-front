@@ -26,6 +26,67 @@ vi.mock('@/store', async () => {
 vi.mock('@/components/layouts/PageWrapper/PageWrapper', () => ({
 	default: ({ children }: { children: ReactNode }) => <main>{children}</main>,
 }));
+/**
+ * La transición entre pasos del asistente no aporta a estas pruebas y en jsdom
+ * demora el cambio de paso: `framer-motion` se sustituye por elementos planos.
+ */
+vi.mock('framer-motion', () => ({
+	AnimatePresence: ({ children }: { children: ReactNode }) => children,
+	motion: {
+		section: ({
+			children,
+			className,
+			'aria-labelledby': labelledBy,
+		}: {
+			children: ReactNode;
+			className?: string;
+			'aria-labelledby'?: string;
+		}) => (
+			<section className={className} aria-labelledby={labelledBy}>
+				{children}
+			</section>
+		),
+	},
+}));
+/**
+ * `react-select` no expone sus opciones como controles nativos en jsdom; como
+ * en `StockPorUbicacion.test.tsx`, `SelectReact` se sustituye por un `<select>`
+ * nativo cableado a las mismas props.
+ */
+vi.mock('@/components/form/SelectReact', () => ({
+	default: ({
+		'aria-label': ariaLabel,
+		isDisabled,
+		options,
+		value,
+		onChange,
+		placeholder,
+	}: {
+		'aria-label'?: string;
+		isDisabled?: boolean;
+		options?: { value: string; label: string }[];
+		value?: { value: string; label: string } | null;
+		onChange?: (option: { value: string; label: string } | null) => void;
+		placeholder?: string;
+	}) => (
+		<select
+			aria-label={ariaLabel}
+			disabled={isDisabled}
+			value={value?.value ?? ''}
+			onChange={(event) => {
+				const selected =
+					options?.find((option) => option.value === event.target.value) ?? null;
+				onChange?.(selected);
+			}}>
+			<option value=''>{placeholder}</option>
+			{options?.map((option) => (
+				<option key={option.value} value={option.value}>
+					{option.label}
+				</option>
+			))}
+		</select>
+	),
+}));
 
 const auth = createSlice({
 	name: 'auth',
@@ -58,16 +119,45 @@ const renderPage = () => {
 	return { ...view, store };
 };
 
-/** Elige «Sin ubicación» como origen y espera a que cargue su catálogo. */
-const chooseUnlocatedOrigin = async () => {
+/**
+ * `Button` descarta un segundo clic mientras dura su guarda anti doble clic: se
+ * espera a que «Siguiente» vuelva a estar habilitado antes de pulsarlo.
+ */
+const clickNext = async () => {
+	const button = screen.getByRole('button', { name: 'Siguiente' });
+	await waitFor(() => expect(button).toBeEnabled());
+	fireEvent.click(button);
+};
+
+/**
+ * Paso 1 → 2: «Sin ubicación» como origen, la bodega principal como destino, y
+ * espera a que cargue el catálogo del origen.
+ */
+const chooseRoute = async () => {
 	fireEvent.change(screen.getByLabelText('Origen'), { target: { value: 'unlocated' } });
+	fireEvent.change(screen.getByLabelText('Destino'), { target: { value: 'warehouse:8' } });
+	await clickNext();
+	const product = await screen.findByLabelText('Producto de la línea 1');
 	await waitFor(() =>
-		expect(
-			within(screen.getByLabelText('Producto de la línea 1')).getByRole('option', {
-				name: /Mouse/,
-			}),
-		).toBeInTheDocument(),
+		expect(within(product).getByRole('option', { name: /Mouse/ })).toBeInTheDocument(),
 	);
+};
+
+/** Completa la primera línea con producto y cantidad. */
+const fillLine = (productId: string, quantity: string) => {
+	fireEvent.change(screen.getByLabelText('Producto de la línea 1'), {
+		target: { value: productId },
+	});
+	fireEvent.change(screen.getByLabelText('Cantidad de la línea 1'), {
+		target: { value: quantity },
+	});
+};
+
+/** Paso 2 → 3: avanza a «Motivo y confirmación» y, si se indica, escribe el motivo. */
+const goToReason = async (reason?: string) => {
+	await clickNext();
+	const field = await screen.findByLabelText('Motivo');
+	if (reason) fireEvent.change(field, { target: { value: reason } });
 };
 
 beforeEach(() => {
@@ -85,23 +175,15 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		renderPage();
 		expect(screen.getByText('Datos simulados')).toBeInTheDocument();
 
-		await chooseUnlocatedOrigin();
-		fireEvent.change(screen.getByLabelText('Destino'), { target: { value: 'warehouse:8' } });
-		fireEvent.change(screen.getByLabelText('Motivo'), {
-			target: { value: 'Ubicar productos del conteo inicial' },
-		});
-		fireEvent.change(screen.getByLabelText('Producto de la línea 1'), {
-			target: { value: '31' },
-		});
-		fireEvent.change(screen.getByLabelText('Cantidad de la línea 1'), {
-			target: { value: '5' },
-		});
+		await chooseRoute();
+		fillLine('31', '5');
 
 		// La vista previa cuenta las unidades una vez, no una por efecto.
 		expect(screen.getByTestId('traslado-preview')).toHaveTextContent(
-			'5 unidades · Efecto neto en la sucursal: 0',
+			'Total a mover: 5 unidades',
 		);
 
+		await goToReason('Ubicar productos del conteo inicial');
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar traslado' }));
 
 		const table = await screen.findByRole('table', { name: 'Saldos después del traslado' });
@@ -118,22 +200,40 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		// (origins 52 y 51 del fixture), así que quedan 8 acá y 5 allá.
 		expect(within(row).getAllByRole('cell')[3]).toHaveTextContent('8');
 		expect(within(row).getAllByRole('cell')[4]).toHaveTextContent('5');
+
+		// El resultado reemplaza al asistente; «Nuevo traslado» vuelve al primer paso.
+		expect(screen.queryByLabelText('Producto de la línea 1')).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Nuevo traslado' }));
+		expect(await screen.findByLabelText('Origen')).toHaveValue('unlocated');
+		expect(screen.getByLabelText('Destino')).toHaveValue('warehouse:8');
 	});
 
 	it('no marca en rojo las líneas en blanco al elegir el origen', async () => {
 		renderPage();
-		await chooseUnlocatedOrigin();
+		fireEvent.change(screen.getByLabelText('Origen'), { target: { value: 'unlocated' } });
+		// El origen recién elegido no se valida como vacío.
+		await waitFor(() => expect(screen.getByLabelText('Origen')).toHaveValue('unlocated'));
+		expect(screen.queryByText('Selecciona una ubicación de origen.')).not.toBeInTheDocument();
 
+		fireEvent.change(screen.getByLabelText('Destino'), { target: { value: 'warehouse:8' } });
+		await clickNext();
+		await screen.findByLabelText('Producto de la línea 1');
 		expect(screen.queryByText('Selecciona un producto.')).not.toBeInTheDocument();
 		expect(screen.queryByText('Indica la cantidad.')).not.toBeInTheDocument();
-		// El origen recién elegido tampoco se valida como vacío.
-		expect(screen.queryByText('Selecciona una ubicación de origen.')).not.toBeInTheDocument();
 		expect(screen.getByLabelText('Cantidad de la línea 1')).not.toHaveClass('!border-red-500');
+	});
+
+	it('no avanza sin destino', async () => {
+		renderPage();
+		fireEvent.change(screen.getByLabelText('Origen'), { target: { value: 'unlocated' } });
+		await clickNext();
+		expect(await screen.findByText('Selecciona una ubicación de destino.')).toBeInTheDocument();
+		expect(screen.queryByLabelText('Producto de la línea 1')).not.toBeInTheDocument();
 	});
 
 	it('no ofrece cambiar la condición dentro del traslado', async () => {
 		renderPage();
-		await chooseUnlocatedOrigin();
+		await chooseRoute();
 
 		// Una sola condición por línea: no existe «condición de destino».
 		expect(screen.getByLabelText('Condición de la línea 1')).toBeInTheDocument();
@@ -160,15 +260,9 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 
 	it('explica el 409 de saldo insuficiente sin dejar el mensaje en genérico', async () => {
 		renderPage();
-		await chooseUnlocatedOrigin();
-		fireEvent.change(screen.getByLabelText('Destino'), { target: { value: 'warehouse:8' } });
-		fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Mover de más' } });
-		fireEvent.change(screen.getByLabelText('Producto de la línea 1'), {
-			target: { value: '31' },
-		});
-		fireEvent.change(screen.getByLabelText('Cantidad de la línea 1'), {
-			target: { value: '999' },
-		});
+		await chooseRoute();
+		fillLine('31', '999');
+		await goToReason('Mover de más');
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar traslado' }));
 
 		const alert = await screen.findByRole('alert');
@@ -181,14 +275,9 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 
 	it('no envía sin motivo', async () => {
 		renderPage();
-		await chooseUnlocatedOrigin();
-		fireEvent.change(screen.getByLabelText('Destino'), { target: { value: 'warehouse:8' } });
-		fireEvent.change(screen.getByLabelText('Producto de la línea 1'), {
-			target: { value: '31' },
-		});
-		fireEvent.change(screen.getByLabelText('Cantidad de la línea 1'), {
-			target: { value: '1' },
-		});
+		await chooseRoute();
+		fillLine('31', '1');
+		await goToReason();
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar traslado' }));
 
 		expect(await screen.findByText('Indica el motivo del traslado.')).toBeInTheDocument();
