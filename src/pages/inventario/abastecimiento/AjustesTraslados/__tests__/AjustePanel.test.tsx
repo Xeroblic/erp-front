@@ -186,19 +186,19 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		const table = await screen.findByRole('table', {
 			name: 'Saldos antes y después del ajuste',
 		});
-		expect(
-			within(table).getByRole('columnheader', { name: 'Antes → después' }),
-		).toHaveAttribute('colspan', '3');
+		expect(screen.getByText(/Se restaron/)).toHaveTextContent(
+			'Se restaron 2 unidades aptas de Cable HDMI 2 m.',
+		);
 
-		const row = within(table).getAllByRole('row')[2];
+		const row = within(table).getAllByRole('row')[1];
 		const cells = within(row).getAllByRole('cell');
 		expect(cells[2]).toHaveTextContent('-2');
-		// El fixture canónico del cable son 100 físicos aptos en la bodega principal.
+		// El fixture canónico del cable son 100 físicos aptos en la bodega principal:
+		// «Antes» y «Ahora» son de la condición ajustada (apto).
 		expect(cells[3]).toHaveTextContent('100');
-		expect(cells[3]).toHaveTextContent('98');
 		expect(cells[4]).toHaveTextContent('98');
-		// El no apto no se movió: el ajuste no reclasifica entre condiciones.
-		expect(cells[5]).toHaveTextContent('0');
+		// El total de la ubicación: el no apto no se movió, no hay reclasificación.
+		expect(cells[5]).toHaveTextContent('100 → pasó a 98');
 
 		// El resultado reemplaza al asistente: no vuelve a la selección de productos.
 		expect(screen.queryByLabelText('Producto de la línea 1')).not.toBeInTheDocument();
@@ -222,9 +222,12 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		const table = await screen.findByRole('table', {
 			name: 'Saldos antes y después del ajuste',
 		});
-		const cells = within(within(table).getAllByRole('row')[2]).getAllByRole('cell');
+		const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
 		expect(cells[2]).toHaveTextContent('+3');
-		expect(cells[3]).toHaveTextContent('103');
+		expect(cells[4]).toHaveTextContent('103');
+		expect(screen.getByText(/Se sumaron/)).toHaveTextContent(
+			'Se sumaron 3 unidades aptas de Cable HDMI 2 m.',
+		);
 	});
 
 	it('ofrece el catálogo aunque el producto no tenga saldo en esa ubicación', async () => {
@@ -240,10 +243,10 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		const table = await screen.findByRole('table', {
 			name: 'Saldos antes y después del ajuste',
 		});
-		const cells = within(within(table).getAllByRole('row')[2]).getAllByRole('cell');
+		const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
 		// De cero a tres: el saldo en cero no saca al producto del selector.
 		expect(cells[3]).toHaveTextContent('0');
-		expect(cells[3]).toHaveTextContent('3');
+		expect(cells[4]).toHaveTextContent('3');
 	});
 
 	it('no marca en rojo las líneas en blanco al cambiar de ubicación', async () => {
@@ -273,14 +276,14 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		// disponible en −2, y eso se muestra.
 		const available = await screen.findByTestId('ajuste-disponible-31');
 		expect(available).toHaveTextContent('-2');
-		expect(
-			screen.getByText(/Faltante: 2 unidades comprometidas que no existen/),
-		).toBeInTheDocument();
+		expect(screen.getByRole('alert')).toHaveTextContent(
+			'2 unidades reservadas no tienen stock que las respalde.',
+		);
 		const table = screen.getByRole('table', {
 			name: 'Disponible en la sucursal frente a reservas',
 		});
 		const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
-		expect(cells[3]).toHaveTextContent('16');
+		expect(cells[2]).toHaveTextContent('16');
 	});
 
 	it('no avanza con un egreso enlazado a una recepción sin indicar su origen', async () => {
