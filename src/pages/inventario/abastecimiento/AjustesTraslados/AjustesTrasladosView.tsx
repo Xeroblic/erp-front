@@ -40,16 +40,23 @@ const AjustesTrasladosTabs = ({
 		<>
 			{/* Criterio de aceptación de la card: la pantalla no ofrece «ingresar una
 			    compra» — deriva a la recepción antes de elegir ajuste o traslado. */}
-			<Alert color='blue' variant='outline' icon='HeroInboxArrowDown' title='¿Es una compra?'>
-				Esto no es la pantalla para ingresar mercadería comprada. Un ajuste corrige una
-				diferencia de conteo con motivo auditado y un traslado mueve unidades dentro de la
-				sucursal; una compra entra por su recepción, con proveedor, documento y costo.{' '}
-				<Link
-					className='font-semibold underline'
-					to={Pages.inventory.subPages.recepciones.to}>
-					Ir a Recepciones
-				</Link>
-				.
+			<Alert
+				color='blue'
+				variant='outline'
+				icon='HeroInformationCircle'
+				title='Otros movimientos de stock'>
+				<ul className='list-disc space-y-0.5 pl-5'>
+					<li>
+						Mercadería comprada: se ingresa en{' '}
+						<Link
+							className='font-semibold underline'
+							to={Pages.inventory.subPages.recepciones.to}>
+							Recepciones
+						</Link>
+						, con proveedor, documento y costo.
+					</li>
+					<li>Envíos a otra sucursal: se gestionan en Transferencias.</li>
+				</ul>
 			</Alert>
 
 			{/* Mismo contenedor de pestañas que el catálogo de productos: pastillas
@@ -127,7 +134,7 @@ const AjustesTrasladosView = () => {
 						<div>
 							<h1 className='text-2xl font-semibold'>Ajustes y traslados</h1>
 							<p className='text-sm text-neutral-500 dark:text-neutral-400'>
-								Corrige el stock por conteo o muévelo entre ubicaciones de la
+								Corrige diferencias de conteo o reubica productos dentro de la
 								sucursal activa.
 							</p>
 						</div>

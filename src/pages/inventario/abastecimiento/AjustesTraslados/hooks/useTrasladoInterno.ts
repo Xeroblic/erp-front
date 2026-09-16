@@ -22,6 +22,11 @@ import type {
 	ITrasladoFormValues,
 	ITrasladoItemDraft,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/traslado.types';
+import useStepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useStepWizard';
+import {
+	TRASLADO_STEPS,
+	type TTrasladoStep,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import type {
 	IInventoryStockRow,
 	IWarehouseStockMovement,
@@ -52,6 +57,9 @@ export default function useTrasladoInterno(branchId: number, context: string) {
 	const raw = useAppSelector((state) => state.inventoryStock.list);
 	const [result, setResult] = useState<ITrasladoResult | null>(null);
 	const [retry, setRetry] = useState(0);
+	// Las líneas muestran sus errores tras intentar avanzar del paso de
+	// productos, no sólo tras un envío: el asistente valida antes de confirmar.
+	const [itemsChecked, setItemsChecked] = useState(false);
 
 	const warehouses = useMemo(() => getInventoryWarehouses(branchId), [branchId]);
 	const idempotentWrite = useIdempotentWrite({
@@ -127,11 +135,13 @@ export default function useTrasladoInterno(branchId: number, context: string) {
 					items: [emptyTrasladoItem()],
 				},
 			});
+			setItemsChecked(false);
 			setRetry((value) => value + 1);
 		},
 	});
 
-	const { values, touched, setFieldValue, setValues, setTouched } = formik;
+	const { values, touched, setFieldValue, setValues, setTouched, setFieldTouched, validateForm } =
+		formik;
 
 	/* Stock vigente en el ORIGEN: alimenta el selector de producto y el saldo por línea. */
 	const request = useMemo(
@@ -213,6 +223,7 @@ export default function useTrasladoInterno(branchId: number, context: string) {
 		(token: string) => {
 			void setValues({ ...values, from: token, items: [emptyTrasladoItem()] }, true);
 			void setTouched({ ...touched, from: true }, false);
+			setItemsChecked(false);
 		},
 		[setValues, setTouched, values, touched],
 	);
@@ -255,17 +266,54 @@ export default function useTrasladoInterno(branchId: number, context: string) {
 	 */
 	const errorFor = useCallback(
 		(index: number, field: keyof ITrasladoItemDraft): string | undefined => {
-			if (formik.submitCount === 0) return undefined;
+			if (formik.submitCount === 0 && !itemsChecked) return undefined;
 			if (!Array.isArray(formik.errors.items)) return undefined;
 			const lineErrors = formik.errors.items[index];
 			if (!lineErrors || typeof lineErrors === 'string') return undefined;
 			const message = (lineErrors as Record<string, unknown>)[field];
 			return typeof message === 'string' ? message : undefined;
 		},
-		[formik.errors.items, formik.submitCount],
+		[formik.errors.items, formik.submitCount, itemsChecked],
 	);
 
-	const clearResult = useCallback(() => setResult(null), []);
+	/** Valida sólo los campos de un paso y marca como tocados sólo esos. */
+	const validateStep = useCallback(
+		async (key: TTrasladoStep): Promise<string | undefined> => {
+			const errors = await validateForm();
+			if (key === 'route') {
+				void setFieldTouched('from', true, false);
+				void setFieldTouched('to', true, false);
+				return errors.from ?? errors.to;
+			}
+			if (key === 'items') {
+				setItemsChecked(true);
+				void setFieldTouched('items', true, false);
+				if (!errors.items) return undefined;
+				return typeof errors.items === 'string'
+					? errors.items
+					: 'Revisa las líneas marcadas antes de continuar.';
+			}
+			void setFieldTouched('reason', true, false);
+			return errors.reason;
+		},
+		[validateForm, setFieldTouched],
+	);
+
+	const wizard = useStepWizard(TRASLADO_STEPS, validateStep);
+	const { restartAt, finish } = wizard;
+
+	const { submitForm } = formik;
+	const submit = useCallback(() => finish(submitForm), [finish, submitForm]);
+
+	/**
+	 * Cierra el resultado y empieza otro movimiento desde el primer paso. El
+	 * resultado reemplaza al asistente mientras está visible: al confirmar no se
+	 * vuelve a la selección de productos. Origen y destino se conservan.
+	 */
+	const clearResult = useCallback(() => {
+		setResult(null);
+		restartAt(0);
+	}, [restartAt]);
 
 	return {
 		formik,
@@ -284,5 +332,7 @@ export default function useTrasladoInterno(branchId: number, context: string) {
 		idempotentWrite,
 		result,
 		clearResult,
+		wizard,
+		submit,
 	};
 }

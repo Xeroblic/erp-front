@@ -16,3 +16,11 @@ export const isAjustesTrasladosTab = (value: unknown): value is AjustesTraslados
  * estado que los monta: el resto se resuelve antes de pintar pestañas.
  */
 export type AjustesTrasladosAccess = 'loading' | 'no-branch' | 'forbidden' | 'disabled' | 'ready';
+
+/** Pasos del asistente de ajuste, en orden. */
+export const AJUSTE_STEPS = ['location', 'items', 'reason'] as const;
+export type TAjusteStep = (typeof AJUSTE_STEPS)[number];
+
+/** Pasos del asistente de traslado, en orden. */
+export const TRASLADO_STEPS = ['route', 'items', 'reason'] as const;
+export type TTrasladoStep = (typeof TRASLADO_STEPS)[number];

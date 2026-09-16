@@ -36,8 +36,13 @@ const AjusteResultCard: FC<IAjusteResultCardProps> = ({ result, onDismiss }) => 
 		<Card>
 			<CardHeader>
 				<CardTitle>Ajuste aplicado</CardTitle>
-				<Button type='button' variant='outline' size='sm' onClick={onDismiss}>
-					Ocultar
+				<Button
+					type='button'
+					variant='solid'
+					color='blue'
+					icon='HeroPlus'
+					onClick={onDismiss}>
+					Nuevo ajuste
 				</Button>
 			</CardHeader>
 			<CardBody className='space-y-4'>

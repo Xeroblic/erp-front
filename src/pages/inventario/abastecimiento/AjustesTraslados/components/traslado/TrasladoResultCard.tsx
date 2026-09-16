@@ -25,8 +25,13 @@ const TrasladoResultCard: FC<ITrasladoResultCardProps> = ({ result, onDismiss })
 		<Card>
 			<CardHeader>
 				<CardTitle>Traslado registrado</CardTitle>
-				<Button type='button' variant='outline' size='sm' onClick={onDismiss}>
-					Ocultar
+				<Button
+					type='button'
+					variant='solid'
+					color='blue'
+					icon='HeroPlus'
+					onClick={onDismiss}>
+					Nuevo traslado
 				</Button>
 			</CardHeader>
 			<CardBody className='space-y-4'>

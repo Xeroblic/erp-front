@@ -65,10 +65,12 @@ export const AjusteSchema = Yup.object({
 					.positive()
 					.required('Selecciona un producto.'),
 				quantityDelta: Yup.number()
-					.typeError('La diferencia debe ser un entero distinto de cero.')
-					.integer('La diferencia debe ser un entero distinto de cero.')
-					.notOneOf([0], 'La diferencia debe ser distinta de cero.')
-					.required('Indica la diferencia.'),
+					.typeError(
+						'Escribe un número entero: positivo para sumar, negativo para restar.',
+					)
+					.integer('Escribe un número entero: positivo para sumar, negativo para restar.')
+					.notOneOf([0], 'La cantidad a sumar o restar no puede ser cero.')
+					.required('Indica cuánto sumar o restar.'),
 				condition: Yup.string()
 					.oneOf(['fit', 'unfit'], 'Indica si las unidades son aptas o no aptas.')
 					.required('Indica si las unidades son aptas o no aptas.'),
@@ -91,7 +93,7 @@ export const AjusteSchema = Yup.object({
 		// usuario no sabría cuál de las líneas corregir.
 		.test(
 			'ingreso-sin-origen',
-			'Un ingreso no puede atribuirse a una procedencia anterior.',
+			'Lo que sumas no se descuenta de una compra anterior.',
 			function ingresoSinOrigen(items) {
 				const offending = (items ?? []).findIndex(
 					(item) => Number(item.quantityDelta) > 0 && hasId(item.originId),
@@ -99,14 +101,14 @@ export const AjusteSchema = Yup.object({
 				if (offending === -1) return true;
 				return this.createError({
 					path: `${this.path}[${offending}].originId`,
-					message: 'Un ingreso no puede atribuirse a una procedencia anterior.',
+					message: 'Lo que sumas no se descuenta de una compra anterior.',
 				});
 			},
 		)
 		.defined(),
 }).test(
 	'egreso-con-origen-de-la-recepcion',
-	'Con una recepción enlazada, cada egreso debe indicar un origen de esa recepción.',
+	'Con una recepción enlazada, cada línea que resta debe indicar de qué compra descontar.',
 	function egresoConOrigenDeLaRecepcion(values) {
 		if (!hasId(values.relatedStockReceiptId)) return true;
 		const offending = (values.items ?? []).findIndex(
@@ -115,8 +117,7 @@ export const AjusteSchema = Yup.object({
 		if (offending === -1) return true;
 		return this.createError({
 			path: `items[${offending}].originId`,
-			message:
-				'Con una recepción enlazada, el egreso debe indicar un origen de esa recepción.',
+			message: 'Con una recepción enlazada, elige de qué compra descontar.',
 		});
 	},
 );

@@ -30,6 +30,11 @@ import type {
 	IAjusteFormValues,
 	IAjusteItemDraft,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/ajuste.types';
+import useStepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useStepWizard';
+import {
+	AJUSTE_STEPS,
+	type TAjusteStep,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import type {
 	IInventoryAdjustment,
 	IInventoryAdjustmentPayload,
@@ -68,6 +73,9 @@ export default function useAjusteInventario(
 	const raw = useAppSelector((state) => state.inventoryStock.list);
 	const [result, setResult] = useState<IAjusteResult | null>(null);
 	const [retry, setRetry] = useState(0);
+	// Las líneas muestran sus errores tras intentar avanzar del paso de
+	// productos, no sólo tras un envío: el asistente valida antes de confirmar.
+	const [itemsChecked, setItemsChecked] = useState(false);
 	const [originsByProduct, setOriginsByProduct] = useState<
 		Record<number, IInventoryStockOriginRow[]>
 	>({});
@@ -165,11 +173,13 @@ export default function useAjusteInventario(
 				},
 			});
 			setOriginsByProduct({});
+			setItemsChecked(false);
 			setRetry((value) => value + 1);
 		},
 	});
 
-	const { values, touched, setFieldValue, setValues, setTouched } = formik;
+	const { values, touched, setFieldValue, setValues, setTouched, setFieldTouched, validateForm } =
+		formik;
 
 	/* Stock vigente en la ubicación ajustada: alimenta el selector de producto. */
 	const request = useMemo(
@@ -339,6 +349,7 @@ export default function useAjusteInventario(
 			);
 			void setTouched({ ...touched, location: true }, false);
 			setOriginsByProduct({});
+			setItemsChecked(false);
 		},
 		[setValues, setTouched, values, touched],
 	);
@@ -368,17 +379,54 @@ export default function useAjusteInventario(
 	 */
 	const errorFor = useCallback(
 		(index: number, field: keyof IAjusteItemDraft): string | undefined => {
-			if (formik.submitCount === 0) return undefined;
+			if (formik.submitCount === 0 && !itemsChecked) return undefined;
 			if (!Array.isArray(formik.errors.items)) return undefined;
 			const lineErrors = formik.errors.items[index];
 			if (!lineErrors || typeof lineErrors === 'string') return undefined;
 			const message = (lineErrors as Record<string, unknown>)[field];
 			return typeof message === 'string' ? message : undefined;
 		},
-		[formik.errors.items, formik.submitCount],
+		[formik.errors.items, formik.submitCount, itemsChecked],
 	);
 
-	const clearResult = useCallback(() => setResult(null), []);
+	/** Valida sólo los campos de un paso y marca como tocados sólo esos. */
+	const validateStep = useCallback(
+		async (key: TAjusteStep): Promise<string | undefined> => {
+			const errors = await validateForm();
+			if (key === 'location') {
+				void setFieldTouched('location', true, false);
+				return errors.location;
+			}
+			if (key === 'items') {
+				setItemsChecked(true);
+				void setFieldTouched('items', true, false);
+				if (!errors.items) return undefined;
+				return typeof errors.items === 'string'
+					? errors.items
+					: 'Revisa las líneas marcadas antes de continuar.';
+			}
+			void setFieldTouched('reason', true, false);
+			void setFieldTouched('notes', true, false);
+			return errors.reason ?? errors.notes;
+		},
+		[validateForm, setFieldTouched],
+	);
+
+	const wizard = useStepWizard(AJUSTE_STEPS, validateStep);
+	const { restartAt, finish } = wizard;
+
+	const { submitForm } = formik;
+	const submit = useCallback(() => finish(submitForm), [finish, submitForm]);
+
+	/**
+	 * Cierra el resultado y empieza otro movimiento desde el primer paso. El
+	 * resultado reemplaza al asistente mientras está visible: al confirmar no se
+	 * vuelve a la selección de productos. La ubicación se conserva.
+	 */
+	const clearResult = useCallback(() => {
+		setResult(null);
+		restartAt(0);
+	}, [restartAt]);
 	const locationOptions = useMemo(
 		() => [
 			{ value: locationToken(null), label: 'Sin ubicación' },
@@ -410,5 +458,7 @@ export default function useAjusteInventario(
 		idempotentWrite,
 		result,
 		clearResult,
+		wizard,
+		submit,
 	};
 }
