@@ -18,6 +18,13 @@ import {
 	shelfWarehouse,
 	southBranchWarehouse,
 } from '@/mocks/db/procurement.db';
+import {
+	ecopcDemoHolds,
+	ecopcShowroomWarehouse,
+	ecopcDemoOrigins,
+	ecopcDemoProducts,
+	ecopcDemoThresholds,
+} from '@/mocks/db/inventoryEcopcDemo.db';
 
 export interface IInventorySeedOrigin extends IInventoryStockOriginRow {
 	product_id: number;
@@ -83,6 +90,7 @@ const products = [
 	notebookProduct,
 	cableProduct,
 	...paginatedProducts,
+	...ecopcDemoProducts,
 ];
 
 /**
@@ -135,7 +143,21 @@ export interface IInventoryStockHold {
  */
 export const inventoryStockHolds: IInventoryStockHold[] = [
 	{ branch_id: 4, product_id: mouseProduct.id, reserved_quantity: 16 },
+	...ecopcDemoHolds,
 ];
+
+/**
+ * Umbral crítico inicial por producto (`critical_stock_threshold`, §13 del
+ * contrato). Un producto ausente no tiene umbral configurado. El mouse queda
+ * crítico en la sucursal 4 (disponible 1 ≤ 10) y el cable sano (100 > 20),
+ * para que la vista de Inventario muestre los dos estados sin tocar datos.
+ */
+export const inventoryCriticalThresholdSeed: Record<number, number> = {
+	[mouseProduct.id]: 10,
+	[keyboardProduct.id]: 3,
+	[cableProduct.id]: 20,
+	...ecopcDemoThresholds,
+};
 
 export const inventoryOrigins: IInventorySeedOrigin[] = [
 	unknownOrigin,
@@ -275,6 +297,8 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 		warehouse_id: ecopcWarehouse.id,
 		fifo_at: 1,
 	},
+	// Ejemplos para navegar con la sesión del equipo (sucursal Ecopc).
+	...ecopcDemoOrigins,
 ];
 
 /** One source of truth for current balances; the canonical unlocated mouse stays 15/13/2/10/5. */
@@ -306,7 +330,7 @@ export const inventoryStockRows: IInventorySeedRow[] = [
 ];
 
 export const inventoryWarehousesByBranch: Record<number, IWarehouseCompact[]> = {
-	1: [ecopcWarehouse],
+	1: [ecopcWarehouse, ecopcShowroomWarehouse],
 	4: [mainWarehouse, shelfWarehouse],
 	6: [southBranchWarehouse],
 };
@@ -322,4 +346,72 @@ export const inventoryOriginFilterOptions = (
 			documents.set(origin.purchase_document.id, origin.purchase_document);
 	});
 	return { suppliers: [...suppliers.values()], documents: [...documents.values()] };
+};
+
+/**
+ * Ficha de cada bodega simulada (lo que el backend real lee de `warehouses`):
+ * A3 la devuelve junto con los agregados para la cabecera de la ficha.
+ */
+export interface IInventoryWarehouseProfileSeed {
+	code: string | null;
+	warehouse_type: string | null;
+	is_active: boolean;
+	description: string | null;
+	manager_name: string | null;
+	address: string | null;
+	commune_name: string | null;
+	schedule: string | null;
+	requires_serial_tracking: boolean;
+	maximum_capacity: number | null;
+}
+
+export const inventoryWarehouseProfiles: Record<number, IInventoryWarehouseProfileSeed> = {
+	8: {
+		code: 'BOD-CENTRAL',
+		warehouse_type: 'Principal',
+		is_active: true,
+		description: 'Bodega de recepción y despacho de la sucursal.',
+		manager_name: 'Camila Rojas',
+		address: 'Av. Providencia 1234',
+		commune_name: 'Providencia',
+		schedule: 'Lunes a viernes, 9:00 a 18:00',
+		requires_serial_tracking: false,
+		maximum_capacity: 500,
+	},
+	12: {
+		code: 'EST-A3',
+		warehouse_type: 'Estante',
+		is_active: true,
+		description: null,
+		manager_name: null,
+		address: null,
+		commune_name: null,
+		schedule: null,
+		requires_serial_tracking: false,
+		maximum_capacity: 60,
+	},
+	20: {
+		code: 'BOD-ECOPC',
+		warehouse_type: 'Principal',
+		is_active: true,
+		description: 'Bodega principal de Ecopc: recepción de compras y stock de reposición.',
+		manager_name: 'Pedro Soto',
+		address: 'San Diego 1023',
+		commune_name: 'Santiago',
+		schedule: 'Lunes a viernes, 9:00 a 18:30',
+		requires_serial_tracking: false,
+		maximum_capacity: 200,
+	},
+	21: {
+		code: 'SALA-ECOPC',
+		warehouse_type: 'Sala de ventas',
+		is_active: true,
+		description: 'Productos en exhibición y venta directa en tienda.',
+		manager_name: null,
+		address: 'San Diego 1023, local 2',
+		commune_name: 'Santiago',
+		schedule: 'Lunes a sábado, 10:00 a 20:00',
+		requires_serial_tracking: false,
+		maximum_capacity: 40,
+	},
 };

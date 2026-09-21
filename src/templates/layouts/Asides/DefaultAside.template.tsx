@@ -460,17 +460,15 @@ const DefaultAsideTemplate = () => {
 							</AuthorityCheckNav>
 
 							<AuthorityCheckNav
-								authority={Pages.inventory.subPages.stockPorUbicacion.authority}
-								requireAll={Pages.inventory.subPages.stockPorUbicacion.requireAll}
+								authority={Pages.inventory.subPages.inventario.authority}
+								requireAll={Pages.inventory.subPages.inventario.requireAll}
 								userAuthority={userAuthority}>
 								<NavItem
-									text={Pages.inventory.subPages.stockPorUbicacion.text}
-									to={Pages.inventory.subPages.stockPorUbicacion.to}
-									icon={Pages.inventory.subPages.stockPorUbicacion.icon}
-									id={Pages.inventory.subPages.stockPorUbicacion.id}
-									onClick={() =>
-										navigate(Pages.inventory.subPages.stockPorUbicacion.to)
-									}
+									text={Pages.inventory.subPages.inventario.text}
+									to={Pages.inventory.subPages.inventario.to}
+									icon={Pages.inventory.subPages.inventario.icon}
+									id={Pages.inventory.subPages.inventario.id}
+									onClick={() => navigate(Pages.inventory.subPages.inventario.to)}
 								/>
 							</AuthorityCheckNav>
 							{/* Recepciones físicas (mock, PR #67, card 05) */}

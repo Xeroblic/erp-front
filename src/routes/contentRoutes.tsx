@@ -1,6 +1,6 @@
 // src/routes/contentRoutes.tsx
 import React, { lazy } from 'react';
-import { Navigate, PathRouteProps } from 'react-router-dom';
+import { Navigate, PathRouteProps, useParams } from 'react-router-dom';
 import pagesConfig from '@/config/pages.config';
 
 import LoginPage from '@/pages/Login.page';
@@ -103,14 +103,19 @@ const DocumentoCompraDetalle = lazy(
 	() => import('@/pages/inventario/abastecimiento/DocumentosCompra/DocumentoCompraDetalle'),
 );
 const Recepciones = lazy(() => import('@/pages/inventario/abastecimiento/Recepciones'));
-const StockPorUbicacion = lazy(() => import('@/pages/inventario/abastecimiento/StockPorUbicacion'));
+const Inventario = lazy(() => import('@/pages/inventario/Inventario'));
 const AjustesTraslados = lazy(() => import('@/pages/inventario/abastecimiento/AjustesTraslados'));
 const RecepcionDetalle = lazy(
 	() => import('@/pages/inventario/abastecimiento/Recepciones/RecepcionDetalle'),
 );
-const StockPorUbicacionDetalle = lazy(
-	() => import('@/pages/inventario/abastecimiento/StockPorUbicacion/StockPorUbicacionDetalle'),
-);
+const InventarioProducto = lazy(() => import('@/pages/inventario/Inventario/InventarioProducto'));
+const InventarioBodega = lazy(() => import('@/pages/inventario/Inventario/InventarioBodega'));
+
+/** Detalle de Stock por ubicación → ficha de Inventario del mismo producto. */
+const StockDetalleRedirect = () => {
+	const { productId } = useParams();
+	return <Navigate to={`/inventario/stock/${productId ?? ''}`} replace />;
+};
 const RetirosEquiposPage = lazy(() => import('@/pages/inventario/retirosEquipos'));
 
 // Páginas de Catálogos
@@ -518,14 +523,31 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: pagesConfig.inventory.subPages.recepcionDetalle.authority,
 	},
 	{
-		path: pagesConfig.inventory.subPages.stockPorUbicacion.to,
-		element: <StockPorUbicacion />,
-		authority: pagesConfig.inventory.subPages.stockPorUbicacion.authority,
+		path: pagesConfig.inventory.subPages.inventario.to,
+		element: <Inventario />,
+		authority: pagesConfig.inventory.subPages.inventario.authority,
 	},
 	{
-		path: pagesConfig.inventory.subPages.stockPorUbicacionDetalle.to,
-		element: <StockPorUbicacionDetalle />,
-		authority: pagesConfig.inventory.subPages.stockPorUbicacionDetalle.authority,
+		path: pagesConfig.inventory.subPages.inventarioBodega.to,
+		element: <InventarioBodega />,
+		authority: pagesConfig.inventory.subPages.inventarioBodega.authority,
+	},
+	{
+		path: pagesConfig.inventory.subPages.inventarioProducto.to,
+		element: <InventarioProducto />,
+		authority: pagesConfig.inventory.subPages.inventarioProducto.authority,
+	},
+	// Stock por ubicación se unificó en Inventario: los enlaces guardados siguen
+	// abriendo (la ficha conserva el producto; la ubicación se elige en ella).
+	{
+		path: '/inventario/abastecimiento/stock',
+		element: <Navigate to={pagesConfig.inventory.subPages.inventario.to} replace />,
+		authority: pagesConfig.inventory.subPages.inventario.authority,
+	},
+	{
+		path: '/inventario/abastecimiento/stock/:productId',
+		element: <StockDetalleRedirect />,
+		authority: pagesConfig.inventory.subPages.inventarioProducto.authority,
 	},
 
 	{

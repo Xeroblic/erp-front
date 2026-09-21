@@ -168,7 +168,7 @@ const INVENTORY_STOCK_STORAGE_NAMESPACE = 'inventory-stock';
  * migración que escribir, pero el bump es obligatorio para no hidratar un
  * objeto al que le faltan los arreglos nuevos.
  */
-const INVENTORY_STOCK_STORAGE_VERSION = 3; // v3: `stockReceiptEffects`.
+const INVENTORY_STOCK_STORAGE_VERSION = 4; // v3: `stockReceiptEffects`. v4: ejemplos de Ecopc.
 
 interface IIdempotencyLogEntry {
 	payloadHash: string;
@@ -489,6 +489,23 @@ export const getInventoryStockAvailability = (
 		available_quantity: fit - reserved,
 	};
 };
+
+/* =================================================
+   Lecturas compartidas con `inventoryOverview.service` (vista unificada de
+   Inventario). Leen el mismo store, así un ajuste o traslado simulado se ve
+   en las dos pantallas sin duplicar el estado.
+   ================================================= */
+
+/** Procedencias vigentes de la sucursal, copiadas: quien agrega no muta el store. */
+export const readInventoryBranchOrigins = (branchId: number): IInventorySeedOrigin[] =>
+	getStore(branchId).origins.map(cloneOrigin);
+
+export const resolveInventoryStockProduct = (productId: number): IProcurementProduct | undefined =>
+	resolveStockProduct(productId);
+
+export const inventoryMockDelay = delay;
+export const inventoryMockError = apiError;
+export const paginateInventoryMock = page;
 
 export const listInventoryStock = async (
 	branchId: number,

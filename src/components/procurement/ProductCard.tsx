@@ -27,7 +27,8 @@ export interface IProductCardProps {
 	className?: string;
 }
 
-const ProductThumbnail: FC<{ product: IProcurementProduct; size: string }> = ({
+/** Miniatura del producto; también la usan tablas que no necesitan la tarjeta completa. */
+export const ProductThumbnail: FC<{ product: IProcurementProduct; size: string }> = ({
 	product,
 	size,
 }) => {
