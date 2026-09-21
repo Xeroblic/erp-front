@@ -7,6 +7,7 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Badge from '@/components/ui/Badge';
+import Tabs, { Tab } from '@/components/ui/Tabs';
 import ReportFiltersInventory from '../components/ReportFiltersInventory';
 import { useInventoryReports } from './hooks/useInventoryReports';
 import ReportExportButton from '../components/ReportExportButton';
@@ -17,6 +18,9 @@ const InventoryReports: React.FC = () => {
 		setFilters,
 		rows,
 		columns,
+		tabs,
+		activeTab,
+		changeTab,
 		reportsLoading,
 		reportsError,
 		currentSubsidiaryId,
@@ -49,7 +53,7 @@ const InventoryReports: React.FC = () => {
 				<SubheaderRight>
 					<ReportExportButton
 						subsidiaryId={Number(currentSubsidiaryId ?? 0)}
-						type='stock'
+						type={activeTab.type}
 						filters={mapFilters(filters)}
 					/>
 				</SubheaderRight>
@@ -84,6 +88,16 @@ const InventoryReports: React.FC = () => {
 						</Card>
 					)}
 
+					{tabs.length > 1 && (
+						<Tabs activeTab={activeTab.type} onTabChange={changeTab} variant='pills'>
+							{tabs.map((tab) => (
+								<Tab key={tab.type} id={tab.type} text={tab.label}>
+									{null}
+								</Tab>
+							))}
+						</Tabs>
+					)}
+
 					<ReportFiltersInventory
 						initial={filters}
 						onApply={(f) => setFilters(f)}
@@ -102,10 +116,10 @@ const InventoryReports: React.FC = () => {
 									</div>
 									<div>
 										<h2 className='text-lg font-bold text-emerald-900'>
-											Reportes de Inventario
+											{activeTab.label}
 										</h2>
 										<p className='text-sm text-emerald-700'>
-											Existencias, SKUs y valoración
+											{activeTab.description}
 										</p>
 									</div>
 								</div>
@@ -113,7 +127,7 @@ const InventoryReports: React.FC = () => {
 								{/* Export Buttons */}
 								<ReportExportButton
 									subsidiaryId={Number(currentSubsidiaryId ?? 0)}
-									type='stock'
+									type={activeTab.type}
 									filters={mapFilters(filters)}
 								/>
 							</div>

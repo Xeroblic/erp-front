@@ -373,11 +373,16 @@ export const privatePages = {
 				authority: ['view-product'],
 				requireAll: true,
 			},
-			stockPorUbicacion: {
-				id: 'stockPorUbicacion',
-				to: '/inventario/abastecimiento/stock',
-				text: 'Stock por ubicación',
+			inventario: {
+				id: 'inventario',
+				to: '/inventario/stock',
+				text: 'Inventario',
 				icon: 'HeroCube',
+				// Vista unificada de stock de la sucursal (reemplaza a Stock por
+				// ubicación, que redirige acá). Mock sobre la ampliación del contrato
+				// de abastecimiento: docs/inventario-unificado-contrato.md. El §15 pide
+				// `view-product` para leer stock; editar el umbral (`edit-product`)
+				// se comprueba en la ficha, no en la ruta.
 				authority: ['view-product'],
 				requireAll: true,
 			},
@@ -408,13 +413,22 @@ export const privatePages = {
 				authority: ['view-product'],
 				requireAll: true,
 			},
-			stockPorUbicacionDetalle: {
-				id: 'stockPorUbicacionDetalle',
-				to: '/inventario/abastecimiento/stock/:productId',
-				text: 'Detalle de stock',
+			inventarioBodega: {
+				id: 'inventarioBodega',
+				to: '/inventario/stock/bodegas/:bodegaId',
+				text: 'Inventario de bodega',
+				icon: 'HeroBuildingStorefront',
+				// Misma consulta que la lista (A1 filtrado por bodega + A3): mismo permiso.
+				authority: ['view-product'],
+				requireAll: true,
+			},
+			inventarioProducto: {
+				id: 'inventarioProducto',
+				to: '/inventario/stock/:productId',
+				text: 'Ficha de inventario',
 				icon: 'HeroCube',
-				// Mismo permiso que el listado: es la misma consulta, sólo acotada a
-				// un producto. Documentar exige su propio guard en la pantalla.
+				// Mismo permiso que la lista: es la misma consulta acotada a un producto.
+				// Documentar y editar el umbral llevan su propio guard en la pantalla.
 				authority: ['view-product'],
 				requireAll: true,
 			},
