@@ -439,6 +439,12 @@ const resolveColumnValue = (item: IItem, key: string): string => {
 	};
 	const hardwareDisplay = getHardwareDisplayValue(detailSource, key);
 	if (hardwareDisplay !== null) return hardwareDisplay;
+	// Los AIO guardan el cargador como includes_power_adapter (includes_charger es sólo alias).
+	if (key === 'includes_charger') {
+		return normalizeDetailValue(
+			detailSource.includes_charger ?? detailSource.includes_power_adapter,
+		);
+	}
 	return normalizeDetailValue(detailSource[key]);
 };
 
