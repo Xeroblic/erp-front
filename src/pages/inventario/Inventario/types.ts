@@ -68,6 +68,10 @@ const ORDENES: readonly TInventoryStockSort[] = [
 	'-physical_quantity',
 	'available_quantity',
 	'-available_quantity',
+	'location',
+	'-location',
+	'stock_status',
+	'-stock_status',
 ];
 
 const isEstado = (value: string | null): value is TInventoryStockStatusFilter =>

@@ -20,7 +20,16 @@ export type TCriticalStockStatus = 'critical' | 'healthy' | 'unconfigured';
 /** Filtro `stock_status` de A1: los tres estados del §13 más `out` (disponible ≤ 0). */
 export type TInventoryStockStatusFilter = TCriticalStockStatus | 'out';
 
-export type TInventoryStockSortField = 'name' | 'physical_quantity' | 'available_quantity';
+/**
+ * `location`: primera ubicación del reparto («Sin ubicación» antes que las bodegas).
+ * `stock_status`: de más a menos urgente (sin disponible, bajo el umbral, sin umbral, normal).
+ */
+export type TInventoryStockSortField =
+	| 'name'
+	| 'location'
+	| 'physical_quantity'
+	| 'available_quantity'
+	| 'stock_status';
 export type TInventoryStockSort = TInventoryStockSortField | `-${TInventoryStockSortField}`;
 
 /** Bloque `critical_stock` del §13, calculado para la sucursal (`scope: 'branch'`). */

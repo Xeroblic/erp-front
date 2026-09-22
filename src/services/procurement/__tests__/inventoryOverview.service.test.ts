@@ -120,6 +120,43 @@ describe('A1 · listInventoryOverview', () => {
 		expect(ids.indexOf(MOUSE_ID)).toBeLessThan(ids.indexOf(CABLE_ID));
 	});
 
+	it('ordena por ubicación con «Sin ubicación» antes que las bodegas', async () => {
+		const firstLocation = (row: { warehouses: { warehouse: { name: string } | null }[] }) =>
+			row.warehouses[0]?.warehouse?.name ?? '';
+
+		const asc = await overview({ sort: 'location', per_page: 100 });
+		const names = asc.data.map(firstLocation);
+		expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'es')));
+		expect(asc.data[0].product.id).toBe(MOUSE_ID);
+
+		const desc = await overview({ sort: '-location', per_page: 100 });
+		expect(desc.data.map(firstLocation)).toEqual([...names].reverse());
+	});
+
+	it('ordena por estado de más a menos urgente', async () => {
+		const rank = { out: 0, critical: 1, unconfigured: 2, healthy: 3 } as const;
+		const rankOf = (row: {
+			critical_stock: { available_quantity: number; status: keyof typeof rank } | null;
+		}) =>
+			!row.critical_stock
+				? 4
+				: rank[
+						row.critical_stock.available_quantity <= 0
+							? 'out'
+							: row.critical_stock.status
+					];
+
+		const asc = await overview({ sort: 'stock_status', per_page: 100 });
+		const ranks = asc.data.map(rankOf);
+		expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+		const ids = asc.data.map((row) => row.product.id);
+		expect(ids.indexOf(MOUSE_ID)).toBeLessThan(ids.indexOf(CABLE_ID));
+
+		const desc = await overview({ sort: '-stock_status', per_page: 100 });
+		const descRanks = desc.data.map(rankOf);
+		expect(descRanks).toEqual([...descRanks].sort((a, b) => b - a));
+	});
+
 	it('rechaza un estado u orden desconocidos con 422', async () => {
 		expect((await readError(overview({ stock_status: 'otro' as 'critical' }))).status).toBe(
 			422,
