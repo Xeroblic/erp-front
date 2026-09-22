@@ -5,7 +5,7 @@ import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
-import { AllowedActionsToolbar } from '@/components/procurement';
+import { AllowedActionsToolbar, ProcurementMockNotice } from '@/components/procurement';
 import useRecepcionDetalle from './hooks/useRecepcionDetalle';
 import StockReceiptSummaryCard from './components/parts/StockReceiptSummaryCard';
 import StockReceiptProcessingCard from './components/parts/StockReceiptProcessingCard';
@@ -66,6 +66,7 @@ const RecepcionDetalleView = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
+				<ProcurementMockNotice />
 				{loading && (
 					<div className='space-y-4'>
 						<div className='h-24 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700' />

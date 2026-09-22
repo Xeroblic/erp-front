@@ -8,6 +8,7 @@ import {
 	updateInventoryCriticalThreshold,
 } from '@/services/procurement/inventoryOverview.service';
 import {
+	createInventoryAdjustment,
 	createWarehouseStockMovement,
 	resetInventoryStockStoreForTests,
 } from '@/services/procurement/inventoryStock.service';
@@ -202,6 +203,36 @@ describe('A2 · getInventoryStockSummary', () => {
 			unlocated_quantity: 15,
 			unfit_quantity: 2,
 		});
+	});
+
+	it('un producto sin disponible cuenta y se filtra sólo como `out`, no también como bajo el umbral', async () => {
+		// Mouse: 17 aptos, 16 reservados, umbral 10 → disponible 1, `critical`.
+		// Quitar un apto lo deja en 0: sigue bajo el umbral, pero lo visible es `out`.
+		await createInventoryAdjustment(BRANCH_ID, {
+			warehouse_id: null,
+			reason: 'Conteo',
+			notes: null,
+			related_stock_receipt_id: null,
+			items: [
+				{ product_id: MOUSE_ID, quantity_delta: -1, condition: 'fit', origin_id: null },
+			],
+		});
+
+		const { data } = await getInventoryStockSummary(BRANCH_ID);
+		const critical = await overview({ stock_status: 'critical' });
+		const out = await overview({ stock_status: 'out' });
+		const aggregates = await listInventoryWarehouseAggregates(BRANCH_ID);
+
+		expect(out.data.map((row) => row.product.id)).toContain(MOUSE_ID);
+		expect(critical.data.map((row) => row.product.id)).not.toContain(MOUSE_ID);
+		expect(data.critical_count).toBe(critical.meta.total);
+		expect(data.out_count).toBe(out.meta.total);
+		// Tampoco suma a «bajo el umbral» en las bodegas donde está.
+		expect(
+			aggregates.data
+				.filter((row) => row.warehouse === null || row.warehouse.id === SHELF_WAREHOUSE_ID)
+				.map((row) => row.critical_count),
+		).toEqual([0, 0]);
 	});
 });
 

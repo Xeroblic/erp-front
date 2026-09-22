@@ -238,14 +238,25 @@ const criticalStockFor = (
 	};
 };
 
+/**
+ * Estado visible de la sucursal: `out` (disponible ≤ 0) gana a los tres del
+ * §13. Los estados son excluyentes, igual que la etiqueta de la tabla y el
+ * orden `stock_status`: un producto sin disponible no cuenta ni se filtra
+ * también como «bajo el umbral» o «sin umbral».
+ */
+const visibleStockStatus = (
+	critical: IInventoryCriticalStock | null,
+): TInventoryStockStatusFilter | null => {
+	if (!critical) return null;
+	return critical.available_quantity <= 0 ? 'out' : critical.status;
+};
+
 const matchesStockStatus = (
 	critical: IInventoryCriticalStock | null,
 	filter: TInventoryStockStatusFilter | undefined,
 ): boolean => {
 	if (!filter) return true;
-	if (!critical) return false;
-	if (filter === 'out') return critical.available_quantity <= 0;
-	return critical.status === filter;
+	return visibleStockStatus(critical) === filter;
 };
 
 /* =================================================
@@ -332,8 +343,8 @@ const STOCK_STATUS_RANK: Record<TInventoryStockStatusFilter, number> = {
 };
 
 const stockStatusRank = (critical: IInventoryCriticalStock | null): number => {
-	if (!critical) return Object.keys(STOCK_STATUS_RANK).length;
-	return STOCK_STATUS_RANK[critical.available_quantity <= 0 ? 'out' : critical.status];
+	const status = visibleStockStatus(critical);
+	return status === null ? Object.keys(STOCK_STATUS_RANK).length : STOCK_STATUS_RANK[status];
 };
 
 const compareRows =
@@ -502,7 +513,7 @@ export const listInventoryWarehouseAggregates = async (
 	});
 
 	aggregateBranch(branchId).forEach((aggregate) => {
-		const isCritical = criticalStockFor(branchId, aggregate)?.status === 'critical';
+		const isCritical = matchesStockStatus(criticalStockFor(branchId, aggregate), 'critical');
 		aggregate.byWarehouse.forEach((location, warehouseId) => {
 			if (location.physical_quantity === 0) return;
 			const target =
