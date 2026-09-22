@@ -266,6 +266,10 @@ const SORT_VALUES: readonly TInventoryStockSort[] = [
 	'-physical_quantity',
 	'available_quantity',
 	'-available_quantity',
+	'location',
+	'-location',
+	'stock_status',
+	'-stock_status',
 ];
 
 const validBranch = (branchId: number): void => {
@@ -309,13 +313,40 @@ const locationTotals = (
 	return aggregate.byWarehouse.get(key);
 };
 
+/** Primera ubicación del reparto, en el mismo orden en que se muestra. */
+const compareLocation = (a: IInventoryOverviewRow, b: IInventoryOverviewRow): number => {
+	const first = a.warehouses[0];
+	const second = b.warehouses[0];
+	if (!first || !second) return Number(!first) - Number(!second);
+	if (first.warehouse === null || second.warehouse === null)
+		return Number(first.warehouse !== null) - Number(second.warehouse !== null);
+	return first.warehouse.name.localeCompare(second.warehouse.name, 'es');
+};
+
+/** De más a menos urgente; sin estado (series) al final. */
+const STOCK_STATUS_RANK: Record<TInventoryStockStatusFilter, number> = {
+	out: 0,
+	critical: 1,
+	unconfigured: 2,
+	healthy: 3,
+};
+
+const stockStatusRank = (critical: IInventoryCriticalStock | null): number => {
+	if (!critical) return Object.keys(STOCK_STATUS_RANK).length;
+	return STOCK_STATUS_RANK[critical.available_quantity <= 0 ? 'out' : critical.status];
+};
+
 const compareRows =
 	(sort: TInventoryStockSort) =>
 	(a: IInventoryOverviewRow, b: IInventoryOverviewRow): number => {
 		const descending = sort.startsWith('-');
 		const field = descending ? sort.slice(1) : sort;
 		let comparison: number;
-		if (field === 'physical_quantity') comparison = a.physical_quantity - b.physical_quantity;
+		if (field === 'location') comparison = compareLocation(a, b);
+		else if (field === 'stock_status')
+			comparison = stockStatusRank(a.critical_stock) - stockStatusRank(b.critical_stock);
+		else if (field === 'physical_quantity')
+			comparison = a.physical_quantity - b.physical_quantity;
 		else if (field === 'available_quantity')
 			comparison =
 				(a.critical_stock?.available_quantity ?? 0) -

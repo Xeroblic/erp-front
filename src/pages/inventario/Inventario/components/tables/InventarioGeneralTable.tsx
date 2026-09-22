@@ -96,7 +96,12 @@ const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 								sort={sort}
 								onSort={handleSort}
 							/>
-							<Th scope='col'>Dónde está</Th>
+							<SortableTableHeader
+								label='Ubicación'
+								sortKey='location'
+								sort={sort}
+								onSort={handleSort}
+							/>
 							<SortableTableHeader
 								label={isFiltered ? 'En esta ubicación' : 'En bodega'}
 								sortKey='physical_quantity'
@@ -111,9 +116,13 @@ const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 								onSort={handleSort}
 								align='right'
 							/>
-							<Th scope='col' className='text-center'>
-								Estado
-							</Th>
+							<SortableTableHeader
+								label='Estado'
+								sortKey='stock_status'
+								sort={sort}
+								onSort={handleSort}
+								align='center'
+							/>
 							<Th scope='col' className='text-center'>
 								Acciones
 							</Th>
