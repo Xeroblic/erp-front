@@ -60,6 +60,7 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 	const [reason, setReason] = useState('');
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo vincular el documento.',
+		renewKeyOnDefinitiveError: true,
 	});
 
 	const { documents, loadingDocuments, selectedDocument, loadingSelectedDocument } =

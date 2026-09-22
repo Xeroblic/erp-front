@@ -45,6 +45,7 @@ const CancelDocumentoCompraModal: React.FC<ICancelDocumentoCompraModalProps> = (
 	const [reason, setReason] = useState('');
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo anular el documento.',
+		renewKeyOnDefinitiveError: true,
 	});
 
 	const handleClose = () => {

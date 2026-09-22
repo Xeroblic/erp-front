@@ -46,6 +46,7 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 	const [reason, setReason] = useState('');
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo revertir la recepción.',
+		renewKeyOnDefinitiveError: true,
 	});
 
 	const handleClose = () => {

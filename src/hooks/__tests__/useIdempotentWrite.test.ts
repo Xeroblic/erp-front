@@ -76,6 +76,46 @@ describe('useIdempotentWrite', () => {
 		expect(result.current.error).toBeNull();
 	});
 
+	it('con renewKeyOnDefinitiveError, el envío corregido tras un error definitivo usa otra clave y conserva el error', async () => {
+		const write = vi.fn().mockRejectedValueOnce(validationError).mockResolvedValueOnce('ok');
+		const { result } = renderHook(() =>
+			useIdempotentWrite({ renewKeyOnDefinitiveError: true }),
+		);
+
+		await act(async () => {
+			await result.current.submit(write);
+		});
+
+		await waitFor(() => expect(result.current.error?.code).toBe('UNIT_COST_REQUIRED'));
+		expect(result.current.canRetry).toBe(false);
+
+		await act(async () => {
+			await result.current.submit(write);
+		});
+
+		expect(headersOf(write, 1)['Idempotency-Key']).not.toBe(
+			headersOf(write, 0)['Idempotency-Key'],
+		);
+	});
+
+	it('con renewKeyOnDefinitiveError, un timeout sigue reintentando con la misma clave', async () => {
+		const write = vi.fn().mockRejectedValueOnce(timeoutError).mockResolvedValueOnce('ok');
+		const { result } = renderHook(() =>
+			useIdempotentWrite({ renewKeyOnDefinitiveError: true }),
+		);
+
+		await act(async () => {
+			await result.current.submit(write);
+		});
+		await waitFor(() => expect(result.current.canRetry).toBe(true));
+
+		await act(async () => {
+			await result.current.submit(write);
+		});
+
+		expect(headersOf(write, 1)['Idempotency-Key']).toBe(headersOf(write, 0)['Idempotency-Key']);
+	});
+
 	it('renueva la clave tras una escritura exitosa', async () => {
 		const write = vi.fn().mockResolvedValue('ok');
 		const { result } = renderHook(() => useIdempotentWrite());

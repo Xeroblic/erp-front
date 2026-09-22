@@ -7,7 +7,7 @@ import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
-import { AllowedActionsToolbar } from '@/components/procurement';
+import { AllowedActionsToolbar, ProcurementMockNotice } from '@/components/procurement';
 import { formatDate } from '@/utils/format.utils';
 import ProveedorFormModal from '../components/modals/ProveedorFormModal';
 import DeactivateSupplierModal from '../components/modals/DeactivateSupplierModal';
@@ -79,6 +79,7 @@ const ProveedoresDetalleView = () => {
 			</Subheader>
 
 			<Container className='space-y-4'>
+				<ProcurementMockNotice />
 				{id === null && (
 					<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
 						El proveedor solicitado no es válido.

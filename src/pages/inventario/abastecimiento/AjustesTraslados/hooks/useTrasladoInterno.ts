@@ -64,6 +64,7 @@ export default function useTrasladoInterno(branchId: number, context: string) {
 	const warehouses = useMemo(() => getInventoryWarehouses(branchId), [branchId]);
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo registrar el traslado.',
+		renewKeyOnDefinitiveError: true,
 	});
 
 	/**

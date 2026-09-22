@@ -40,3 +40,6 @@ export {
 	toCostEntryPayload,
 } from './costEntry.schema';
 export type { ICostEntryFormValues } from './costEntry.schema';
+
+export { default as ProcurementMockGate, ProcurementMockNotice } from './ProcurementMockGate';
+export type { IProcurementMockGateProps } from './ProcurementMockGate';

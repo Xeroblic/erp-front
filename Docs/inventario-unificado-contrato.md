@@ -46,7 +46,7 @@ Se conservan los filtros y el orden del §3. Parámetros nuevos, todos opcionale
 | Parámetro                 | Valores                                                                                                | Efecto                                                                                                                                                                                                                                                                          |
 | ------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `include`                 | `warehouses`                                                                                           | Cada fila agrega `warehouses[]` y `critical_stock`. Sin `include`, la respuesta es idéntica a la del §3 (los consumidores actuales no cambian).                                                                                                                                 |
-| `stock_status`            | `critical`, `healthy`, `unconfigured`, `out`                                                           | Filtra por el estado de la sucursal. `out`: `available_quantity <= 0`. Valor inválido → 422.                                                                                                                                                                                    |
+| `stock_status`            | `critical`, `healthy`, `unconfigured`, `out`                                                           | Filtra por el estado de la sucursal. `out`: `available_quantity <= 0`, y gana a los otros tres: los estados son excluyentes (un producto sin disponible no aparece en `critical` ni en `unconfigured`). Valor inválido → 422.                                                   |
 | `brand_id`, `category_id` | entero                                                                                                 | Filtros de catálogo.                                                                                                                                                                                                                                                            |
 | `sort`                    | `name`, `location`, `physical_quantity`, `available_quantity`, `stock_status`; prefijo `-` descendente | Orden secundario por producto ID ASC (paginación estable). Por defecto `name`. `location`: primera ubicación de `warehouses[]` («Sin ubicación» antes que las bodegas, luego por nombre). `stock_status`: `out` → `critical` → `unconfigured` → `healthy`, sin estado al final. |
 
@@ -123,7 +123,8 @@ Totales de la sucursal para la franja de alertas. Permiso `view-product` (sucurs
 
 Cuenta productos con saldo en la sucursal. Cada contador corresponde exactamente al filtro
 `stock_status` de A1 con el mismo nombre, para que la alerta y la lista filtrada muestren el
-mismo número.
+mismo número. Como los estados son excluyentes, `critical_count + out_count + unconfigured_count`
+nunca cuenta dos veces el mismo producto.
 
 ## A3 · `GET B/inventory-stock/warehouses` — Nuevo
 
@@ -161,7 +162,7 @@ Una fila por bodega **activa** de la sucursal, tenga o no saldo, más una fila �
 ```
 
 `critical_count` cuenta productos con saldo en esa bodega cuyo estado **de sucursal** es
-`critical` (no existe umbral por bodega en V1). `capacity`/`maximum_capacity` vienen de
+`critical` (sin contar los que están en `out`) (no existe umbral por bodega en V1). `capacity`/`maximum_capacity` vienen de
 `warehouses`; `null` si no están configuradas. `description`, `manager_name`, `address`,
 `commune_name`, `schedule` y `requires_serial_tracking` son las columnas ya existentes de
 `warehouses` (las que devuelve `GET B/warehouses/{id}`), para que la ficha de bodega muestre sus

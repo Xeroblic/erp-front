@@ -68,12 +68,23 @@ export interface IUseIdempotentWriteOptions {
 	etag?: string | null;
 	/** Texto de respaldo si la respuesta no trae `message`. */
 	fallbackMessage?: string;
+	/**
+	 * Genera una clave nueva en cuanto la escritura falla con un error
+	 * definitivo (no reintentable), sin limpiar el error visible.
+	 *
+	 * Para los llamadores que dejan editar el payload tras el fallo y no llaman
+	 * a `renewKey` al corregirlo: sin esto, el envío corregido viaja con la
+	 * clave del intento fallido y el backend responde
+	 * `409 IDEMPOTENCY_KEY_REUSED`. Un error definitivo no produjo efectos, así
+	 * que descartar su clave no puede duplicar la operación.
+	 */
+	renewKeyOnDefinitiveError?: boolean;
 }
 
 const useIdempotentWrite = (
 	options: IUseIdempotentWriteOptions = {},
 ): IUseIdempotentWriteResult => {
-	const { etag = null, fallbackMessage } = options;
+	const { etag = null, fallbackMessage, renewKeyOnDefinitiveError = false } = options;
 
 	const [idempotencyKey, setIdempotencyKey] = useState<string>(() => createIdempotencyKey());
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,10 +137,18 @@ const useIdempotentWrite = (
 				return result;
 			} catch (caught) {
 				const resolved = resolveProcurementError(caught, fallbackMessage);
+				const retryable = shouldRetryWithSameKey(caught);
 				setError(resolved);
-				// La clave NO se renueva acá: si el reintento es válido debe ir con la
-				// misma, y si el usuario corrige el payload llamará a `renewKey`.
-				setCanRetry(shouldRetryWithSameKey(caught));
+				// Por omisión la clave NO se renueva acá: si el reintento es válido
+				// debe ir con la misma, y si el usuario corrige el payload llamará a
+				// `renewKey`. Con `renewKeyOnDefinitiveError` se renueva ya, sólo
+				// cuando el error no admite reintento.
+				setCanRetry(retryable);
+				if (renewKeyOnDefinitiveError && !retryable) {
+					const nextKey = createIdempotencyKey();
+					keyRef.current = nextKey;
+					setIdempotencyKey(nextKey);
+				}
 				submitOptions?.onError?.(resolved);
 
 				return undefined;
@@ -138,7 +157,7 @@ const useIdempotentWrite = (
 				setIsSubmitting(false);
 			}
 		},
-		[etag, fallbackMessage],
+		[etag, fallbackMessage, renewKeyOnDefinitiveError],
 	);
 
 	return { idempotencyKey, isSubmitting, error, canRetry, submit, renewKey, clearError };

@@ -69,6 +69,7 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 	}, []);
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo respaldar el stock inicial.',
+		renewKeyOnDefinitiveError: true,
 	});
 
 	const { documents, loadingDocuments, selectedDocument, loadingSelectedDocument } =

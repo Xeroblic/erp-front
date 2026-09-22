@@ -43,6 +43,7 @@ const CancelStockReceiptModal: React.FC<ICancelStockReceiptModalProps> = ({
 	const [reason, setReason] = useState('');
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo anular la recepción.',
+		renewKeyOnDefinitiveError: true,
 	});
 
 	const handleClose = () => {

@@ -94,6 +94,7 @@ export default function useAjusteInventario(
 	);
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo registrar el ajuste.',
+		renewKeyOnDefinitiveError: true,
 	});
 
 	const stockRowsRef = useRef<IInventoryStockRow[]>([]);
