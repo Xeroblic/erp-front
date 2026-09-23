@@ -46,6 +46,15 @@ const RECEPCION_CARD_CLASSNAME =
 const RECEPCION_ITEM_CLASSNAME =
 	'rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50';
 const RECEPCION_SUBTITLE_CLASSNAME = 'text-sm font-normal text-zinc-600 dark:text-zinc-400';
+/** Fondo blanco en todos los campos, igual que en `DocumentoCompraFormModal`. */
+const RECEPCION_FIELD_CLASSNAME = '!bg-white dark:!bg-zinc-900';
+/**
+ * `SelectReact` ya es blanco en reposo, pero con foco se vuelve transparente y
+ * deja ver el gris de la card. Sólo aplica con foco: no pisa el deshabilitado.
+ */
+const RECEPCION_SELECT_CLASSNAME = 'focus-within:!bg-white dark:focus-within:!bg-zinc-900';
+
+const RequiredMark: React.FC = () => <span className='text-red-500'> *</span>;
 
 interface IRecepcionFormModalProps {
 	isOpen: boolean;
@@ -99,6 +108,8 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 
 	const warehouseOptions = listWarehousesForStockReceipts(authorizedBranchIds);
 	const isManual = formik.values.mode === 'manual';
+	/** Con proveedor conocido el costo unitario pasa a ser obligatorio. */
+	const hasKnownSupplier = formik.values.supplier_id !== '';
 	const { suppliers, loading: loadingSuppliers } = useActiveSupplierOptions(
 		subsidiaryId,
 		isOpen && isManual,
@@ -266,9 +277,20 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 
 									<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
 										<div className='space-y-1'>
-											<Label htmlFor='recepcion-warehouse'>Bodega</Label>
+											<Label htmlFor='recepcion-warehouse'>
+												Bodega
+												<RequiredMark />
+											</Label>
 											<Select
 												id='recepcion-warehouse'
+												// Borde gris en reposo, como `Input`: sin esto `Select`
+												// usa el color del tema y parece seleccionado.
+												className={RECEPCION_FIELD_CLASSNAME}
+												style={
+													{
+														'--select-border': '#d4d4d8',
+													} as React.CSSProperties
+												}
 												name='warehouse_id'
 												value={formik.values.warehouse_id}
 												onChange={formik.handleChange}
@@ -294,9 +316,11 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 										<div className='space-y-1'>
 											<Label htmlFor='recepcion-received-on'>
 												Fecha de recepción
+												<RequiredMark />
 											</Label>
 											<DateInput
 												id='recepcion-received-on'
+												className={RECEPCION_FIELD_CLASSNAME}
 												name='received_on'
 												// Hallazgo 6: `received_on` es inmutable en `failed`
 												// (sección 7) — se corrige el resto del formulario, y
@@ -330,8 +354,10 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 											<div className='space-y-1 sm:col-span-2'>
 												<Label htmlFor='recepcion-document'>
 													Documento confirmado
+													<RequiredMark />
 												</Label>
 												<SelectReact
+													className={RECEPCION_SELECT_CLASSNAME}
 													name='purchase_document_id'
 													inputId='recepcion-document'
 													isDisabled={isEdit || canRetry}
@@ -387,6 +413,7 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 													Proveedor (opcional)
 												</Label>
 												<SelectReact
+													className={RECEPCION_SELECT_CLASSNAME}
 													name='supplier_id'
 													inputId='recepcion-supplier'
 													isClearable
@@ -427,9 +454,13 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 
 										{isManual && (
 											<div className='space-y-1'>
-												<Label htmlFor='recepcion-reason'>Motivo</Label>
+												<Label htmlFor='recepcion-reason'>
+													Motivo
+													<RequiredMark />
+												</Label>
 												<Input
 													id='recepcion-reason'
+													className={RECEPCION_FIELD_CLASSNAME}
 													name='reason'
 													value={formik.values.reason}
 													onChange={formik.handleChange}
@@ -446,6 +477,7 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 										<Label htmlFor='recepcion-notes'>Notas</Label>
 										<Textarea
 											id='recepcion-notes'
+											className={RECEPCION_FIELD_CLASSNAME}
 											name='notes'
 											rows={2}
 											value={formik.values.notes}
@@ -456,6 +488,9 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 											invalidFeedback={formik.errors.notes}
 										/>
 									</div>
+									<p className='text-xs text-zinc-500 dark:text-zinc-400'>
+										<span className='text-red-500'>*</span> Campos obligatorios.
+									</p>
 								</CardBody>
 							</Card>
 
@@ -575,9 +610,13 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 																	<Label
 																		htmlFor={`items.${index}.quantity`}>
 																		Cantidad
+																		<RequiredMark />
 																	</Label>
 																	<Input
 																		id={`items.${index}.quantity`}
+																		className={
+																			RECEPCION_FIELD_CLASSNAME
+																		}
 																		name={`items.${index}.quantity`}
 																		type='number'
 																		min={1}
@@ -603,8 +642,12 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 																		<Label
 																			htmlFor={`items.${index}.product_id`}>
 																			Producto
+																			<RequiredMark />
 																		</Label>
 																		<SelectReact
+																			className={
+																				RECEPCION_SELECT_CLASSNAME
+																			}
 																			name={`items.${index}.product_id`}
 																			inputId={`items.${index}.product_id`}
 																			isDisabled={canRetry}
@@ -660,8 +703,12 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 																		<Label
 																			htmlFor={`items.${index}.purchase_document_line_id`}>
 																			Línea del documento
+																			<RequiredMark />
 																		</Label>
 																		<SelectReact
+																			className={
+																				RECEPCION_SELECT_CLASSNAME
+																			}
 																			name={`items.${index}.purchase_document_line_id`}
 																			inputId={`items.${index}.purchase_document_line_id`}
 																			isDisabled={
@@ -727,9 +774,15 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 																			'net'
 																				? 'Costo neto'
 																				: 'Costo bruto c/ IVA'}
+																			{hasKnownSupplier && (
+																				<RequiredMark />
+																			)}
 																		</Label>
 																		<Input
 																			id={`items.${index}.unit_cost`}
+																			className={
+																				RECEPCION_FIELD_CLASSNAME
+																			}
 																			name={`items.${index}.unit_cost`}
 																			type='text'
 																			inputMode='decimal'
