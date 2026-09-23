@@ -8,12 +8,14 @@ import inventoryOverview from '@/store/slices/procurement/inventoryOverviewSlice
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import InventarioProductoView from '@/pages/inventario/Inventario/InventarioProducto/InventarioProductoView';
 import { resetInventoryStockStoreForTests } from '@/services/procurement/inventoryStock.service';
+import { resetStockReceiptsStoreForTests } from '@/services/procurement/stockReceipts.service';
 import { resetInventoryCriticalThresholdsForTests } from '@/services/procurement/inventoryOverview.service';
 import { clearAllPersistedMockState } from '@/services/procurement/procurementMockPersistence.util';
 
 const context = vi.hoisted(() => ({
 	branchId: 4 as number | null,
 	subsidiaryId: 2,
+	visibleBranches: [] as { id: number; name: string }[],
 	enabled: true,
 }));
 vi.mock('@/config/inventoryStock.config', () => ({
@@ -76,13 +78,18 @@ const auth = createSlice({
 			visible: { branches: [{ id: 4 }, { id: 6 }], subsidiaries: [{ id: 2 }] },
 		},
 	},
-	reducers: {},
+	reducers: {
+		grant(state, action: { payload: string }) {
+			state.user.permisos.push(action.payload);
+		},
+	},
 });
 
-const renderFicha = (productId: number | string) => {
+const renderFicha = (productId: number | string, permisos: string[] = []) => {
 	const store = configureStore({
 		reducer: { inventoryOverview, inventoryStock, auth: auth.reducer },
 	});
+	permisos.forEach((permiso) => store.dispatch(auth.actions.grant(permiso)));
 	return render(
 		<Provider store={store}>
 			<MemoryRouter initialEntries={[`/inventario/stock/${productId}`]}>
@@ -114,6 +121,8 @@ beforeEach(() => {
 });
 afterEach(() => {
 	document.getElementById('portal-root')?.remove();
+	// La trazabilidad lee las recepciones: su worker simulado no debe sobrevivir a la prueba.
+	resetStockReceiptsStoreForTests();
 	resetInventoryStockStoreForTests();
 	resetInventoryCriticalThresholdsForTests();
 	clearAllPersistedMockState('inventory-critical-thresholds');
@@ -221,5 +230,23 @@ describe('Ficha de inventario', () => {
 			expect(await kpi('Sin documento de compra')).toHaveTextContent('90'),
 		);
 		expect(await screen.findByText('Boleta #7788')).toBeInTheDocument();
+	});
+
+	describe('Trazabilidad', () => {
+		it('con `view-inventory-movements` muestra las operaciones del producto', async () => {
+			renderFicha(MOUSE_ID, ['view-inventory-movements']);
+
+			const table = await screen.findByRole('table', { name: 'Trazabilidad' });
+
+			expect(await within(table).findByText('Saldo inicial')).toBeInTheDocument();
+			expect(within(table).getByText('Recepción #80')).toBeInTheDocument();
+		});
+
+		it('sin el permiso la ficha no muestra la trazabilidad', async () => {
+			renderFicha(MOUSE_ID);
+
+			await screen.findByRole('table', { name: 'Unidades por ubicación' });
+			expect(screen.queryByRole('table', { name: 'Trazabilidad' })).not.toBeInTheDocument();
+		});
 	});
 });

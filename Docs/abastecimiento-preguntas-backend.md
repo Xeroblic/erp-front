@@ -171,3 +171,36 @@ que el archivo no dependa de tener el reporte completo cargado en la pantalla.
     depende de desplegar front y backend juntos. Propuesta: que cada tipo de `GET S/reports`
     informe la versión del formato de exportación (p. ej. `export_layout: 1`).
     _Decisión provisional:_ el cambio se hace en un PR coordinado con el despliegue del backend.
+
+---
+
+## Inventario › Trazabilidad de productos sin serie (§14)
+
+La vista de Inventario suma la pestaña Trazabilidad, y la ficha de producto su historial, sobre
+`GET S/inventory-operations` y su detalle. El endpoint todavía no existe: el front lo simula con
+el stock simulado del módulo.
+
+23. **¿Los efectos pueden traer la ubicación compacta (`warehouse: {id, name}`) además de
+    `warehouse_id`?** El §14 sólo trae el ID. Un traslado viejo puede pasar por una bodega hoy
+    desactivada o eliminada, que ya no está en A3.
+    _Decisión provisional:_ el nombre se busca en A3 y, si no está, se muestra «Bodega #ID».
+
+24. **¿Cómo se dejan fuera los productos con serie?** La sección es la trazabilidad de los
+    productos sin serie; los serializados se siguen por número de serie. El §14 no tiene un
+    filtro por tipo de seguimiento, y una venta o una devolución pueden incluir series.
+    Propuesta: un filtro `serial_tracking=0`, o bien que las operaciones del §14 nunca incluyan
+    ítems con serie.
+    _Decisión provisional:_ el mock omite los ítems de productos con serie. Con el endpoint real
+    se mostrarían si el backend los incluye.
+
+25. **¿Con qué `operation_type` y `title` llega el saldo inicial que ya existía?** Las
+    procedencias `initial_stock` del backfill no tienen un tipo público nuevo en el §14, que dice
+    que los tipos legados se conservan con su nombre.
+    _Decisión provisional:_ el mock usa `initial_balance`, «Saldo inicial». Un tipo que el front
+    no conoce se muestra con el `title` del backend y un icono neutro.
+
+26. **En las operaciones documentales, ¿`summary.units_affected` es 0?** El §14 dice «Operación
+    documental: cero físico», pero no aclara si ese cero se aplica también al resumen o sólo a los
+    efectos.
+    _Decisión provisional:_ se muestra «Sin cambio físico» en vez de un número, y el detalle
+    muestra las unidades documentadas.

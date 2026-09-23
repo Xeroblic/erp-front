@@ -25,14 +25,23 @@ Catálogo › Productos, la tabla de productos del detalle de Bodegas («Stock»
 aclarar que una es de la sucursal y la otra de la bodega) y Stock por ubicación. Las tres
 muestran el mismo dato —cantidad de cada producto en cada bodega— agrupado de otra forma.
 
-La vista unificada tiene tres entradas sobre la **sucursal activa**:
+La vista unificada tiene cuatro entradas sobre la **sucursal activa**:
 
 | Vista                 | Pregunta que responde                                       | Endpoints                         |
 | --------------------- | ----------------------------------------------------------- | --------------------------------- |
 | General (por defecto) | ¿Cuánto tengo de cada producto, dónde está y en qué estado? | A1, A2                            |
 | Por bodega            | ¿Qué hay en cada bodega?                                    | A3                                |
+| Trazabilidad          | ¿Qué entró, salió o se movió, cuándo y con qué saldo quedó? | §14 operaciones + A3              |
 | Ficha de bodega       | ¿Qué guarda esta bodega y en qué estado?                    | A3 + A1 con `warehouse_id`        |
 | Ficha de producto     | Todo sobre un producto en la sucursal                       | A4 + §3 origins + §14 operaciones |
+
+Trazabilidad es la de los productos **sin serie** (los serializados se siguen por número de
+serie) y exige `view-inventory-movements`. La pestaña lista las operaciones de la sucursal con
+filtros de tipo, ubicación, fechas y búsqueda; la ficha de producto muestra las mismas filtradas
+por `product_id`. Cada operación se despliega con su detalle y marca los ítems que coinciden.
+Tipos en `src/interface/inventoryOperations.interface.ts`; mientras el endpoint no exista, el mock
+`src/services/procurement/inventoryOperations.service.ts` la reconstruye del stock simulado.
+Preguntas 23–26 de `Docs/abastecimiento-preguntas-backend.md`.
 
 Reportes › Inventario (`S/reports`) concentra umbrales, estadísticas y sugerencias (R1–R4). La
 vista operativa sólo muestra las alertas que piden actuar y enlaza a la lista filtrada.
