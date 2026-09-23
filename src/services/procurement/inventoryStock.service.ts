@@ -32,6 +32,7 @@ import {
 	type IInventorySeedOrigin,
 	type IInventorySeedRow,
 } from '@/mocks/db/inventoryStock.db';
+import { ecopcDemoHistory } from '@/mocks/db/inventoryEcopcDemo.db';
 import {
 	applyInitialStockAllocationCoverageDelta,
 	bumpPurchaseDocumentInitialStockAllocationsCount,
@@ -183,7 +184,7 @@ const INVENTORY_STOCK_STORAGE_NAMESPACE = 'inventory-stock';
  * migración que escribir, pero el bump es obligatorio para no hidratar un
  * objeto al que le faltan los arreglos nuevos.
  */
-const INVENTORY_STOCK_STORAGE_VERSION = 4; // v3: `stockReceiptEffects`. v4: ejemplos de Ecopc.
+const INVENTORY_STOCK_STORAGE_VERSION = 5; // v3: `stockReceiptEffects`. v4: ejemplos de Ecopc. v5: su historial.
 
 interface IIdempotencyLogEntry {
 	payloadHash: string;
@@ -256,15 +257,19 @@ const hydrateStoreFromStorage = (branchId: number): IInventoryStockBranchStore |
 	};
 };
 
-const seedStore = (branchId: number): IInventoryStockBranchStore => ({
-	origins: inventoryOriginsSeed
-		.filter((origin) => origin.branch_id === branchId)
-		.map(cloneOrigin),
-	allocations: [],
-	movements: [],
-	adjustments: [],
-	stockReceiptEffects: [],
-});
+const seedStore = (branchId: number): IInventoryStockBranchStore => {
+	const store: IInventoryStockBranchStore = {
+		origins: inventoryOriginsSeed
+			.filter((origin) => origin.branch_id === branchId)
+			.map(cloneOrigin),
+		allocations: [],
+		movements: [],
+		adjustments: [],
+		stockReceiptEffects: [],
+	};
+	applySeededHistory(store, branchId);
+	return store;
+};
 
 /**
  * Catálogo del stock: el de fixtures de inventario y, si no está ahí, el de
@@ -1228,60 +1233,80 @@ export const createWarehouseStockMovement = (
 				);
 			}
 
-			let working: IInventorySeedOrigin[] = store.origins;
-			payload.items.forEach((item) => {
-				const { origins, taken } = takeFromLocation(
-					working,
-					item.product_id,
-					payload.from_warehouse_id,
-					item.condition,
-					item.quantity,
-				);
-				working = placeAtLocation(
-					origins,
-					branchId,
-					item.product_id,
-					payload.to_warehouse_id,
-					item.condition,
-					taken,
-				);
-			});
-			store.origins = working;
-
-			const items: IWarehouseStockMovementItem[] = payload.items.map((item) => ({
-				product_id: item.product_id,
-				quantity: item.quantity,
-				condition: item.condition,
-				origin_quantity_after: conditionBalanceAt(
-					working,
-					item.product_id,
-					payload.from_warehouse_id,
-					item.condition,
-				),
-				destination_quantity_after: conditionBalanceAt(
-					working,
-					item.product_id,
-					payload.to_warehouse_id,
-					item.condition,
-				),
-			}));
-
-			const movement: IWarehouseStockMovement = {
-				id: crypto.randomUUID(),
-				operation_type: 'warehouse_stock_placement',
-				branch_id: branchId,
-				from_warehouse_id: payload.from_warehouse_id,
-				to_warehouse_id: payload.to_warehouse_id,
-				reason: payload.reason.trim(),
-				items,
-				global_stock_delta: 0,
-				created_at: new Date().toISOString(),
-			};
-			store.movements = [...store.movements, movement];
-
+			const movement = applyWarehouseStockMovement(
+				store,
+				branchId,
+				payload,
+				crypto.randomUUID(),
+				new Date().toISOString(),
+			);
 			return delay({ data: structuredClone(movement) });
 		},
 	);
+
+/**
+ * Mueve las unidades ya validadas y registra el traslado. Lo usan el `POST` y
+ * la siembra del historial de ejemplo, para que ambos muevan igual.
+ */
+const applyWarehouseStockMovement = (
+	store: IInventoryStockBranchStore,
+	branchId: number,
+	payload: IWarehouseStockMovementPayload,
+	id: string,
+	createdAt: string,
+): IWarehouseStockMovement => {
+	let working: IInventorySeedOrigin[] = store.origins;
+	payload.items.forEach((item) => {
+		const { origins, taken } = takeFromLocation(
+			working,
+			item.product_id,
+			payload.from_warehouse_id,
+			item.condition,
+			item.quantity,
+		);
+		working = placeAtLocation(
+			origins,
+			branchId,
+			item.product_id,
+			payload.to_warehouse_id,
+			item.condition,
+			taken,
+		);
+	});
+	store.origins = working;
+
+	const items: IWarehouseStockMovementItem[] = payload.items.map((item) => ({
+		product_id: item.product_id,
+		quantity: item.quantity,
+		condition: item.condition,
+		origin_quantity_after: conditionBalanceAt(
+			working,
+			item.product_id,
+			payload.from_warehouse_id,
+			item.condition,
+		),
+		destination_quantity_after: conditionBalanceAt(
+			working,
+			item.product_id,
+			payload.to_warehouse_id,
+			item.condition,
+		),
+	}));
+
+	const movement: IWarehouseStockMovement = {
+		id,
+		operation_type: 'warehouse_stock_placement',
+		branch_id: branchId,
+		from_warehouse_id: payload.from_warehouse_id,
+		to_warehouse_id: payload.to_warehouse_id,
+		reason: payload.reason.trim(),
+		items,
+		global_stock_delta: 0,
+		created_at: createdAt,
+	};
+	store.movements = [...store.movements, movement];
+	return movement;
+};
 
 /**
  * `POST B/inventory-adjustments` (card 08, sección 11): corrige una diferencia
@@ -1453,75 +1478,162 @@ export const createInventoryAdjustment = (
 				}, null);
 			if (balanceError) return Promise.reject(balanceError);
 
-			let working: IInventorySeedOrigin[] = store.origins;
-			const items: IInventoryAdjustmentItem[] = payload.items.map((item) => {
-				const before = locationTotalsAt(working, item.product_id, payload.warehouse_id);
-				if (item.quantity_delta < 0) {
-					working = takeFromLocation(
-						working,
-						item.product_id,
-						payload.warehouse_id,
-						item.condition,
-						Math.abs(item.quantity_delta),
-						item.origin_id ?? null,
-					).origins;
-				} else {
-					// Ingreso positivo: origen desconocido de ajuste, al final de la
-					// cola FIFO para no adelantarse a stock más viejo.
-					const lastFifo = working.reduce(
-						(highest, origin) => Math.max(highest, origin.fifo_at),
-						0,
-					);
-					working = [
-						...working,
-						{
-							origin_id: nextOriginIdFor(branchId),
-							origin_type: 'inventory_adjustment',
-							stock_receipt_id: null,
-							received_on: null,
-							supplier: null,
-							purchase_document: null,
-							physical_quantity: item.quantity_delta,
-							fit_quantity: item.condition === 'fit' ? item.quantity_delta : 0,
-							unfit_quantity: item.condition === 'unfit' ? item.quantity_delta : 0,
-							branch_id: branchId,
-							product_id: item.product_id,
-							warehouse_id: payload.warehouse_id,
-							fifo_at: lastFifo + 1,
-						},
-					];
-				}
-				const after = locationTotalsAt(working, item.product_id, payload.warehouse_id);
-				return {
-					product_id: item.product_id,
-					quantity_delta: item.quantity_delta,
-					condition: item.condition,
-					physical_quantity_before: before.physical,
-					physical_quantity_after: after.physical,
-					fit_quantity_before: before.fit,
-					fit_quantity_after: after.fit,
-					unfit_quantity_before: before.unfit,
-					unfit_quantity_after: after.unfit,
-				};
-			});
-			store.origins = working;
-
-			const adjustment: IInventoryAdjustment = {
-				id: crypto.randomUUID(),
-				operation_type: 'inventory_adjustment',
-				branch_id: branchId,
-				warehouse_id: payload.warehouse_id,
-				reason: payload.reason.trim(),
-				notes: payload.notes?.trim() || null,
-				related_stock_receipt_id: receiptId,
-				items,
-				created_at: new Date().toISOString(),
-			};
-			store.adjustments = [...store.adjustments, adjustment];
-
+			const adjustment = applyInventoryAdjustment(
+				store,
+				branchId,
+				payload,
+				crypto.randomUUID(),
+				new Date().toISOString(),
+			);
 			return delay({ data: structuredClone(adjustment) });
 		},
 	);
+
+/**
+ * Aplica el ajuste ya validado y lo registra. Lo usan el `POST` y la siembra
+ * del historial de ejemplo, para que ambos ajusten igual.
+ */
+const applyInventoryAdjustment = (
+	store: IInventoryStockBranchStore,
+	branchId: number,
+	payload: IInventoryAdjustmentPayload,
+	id: string,
+	createdAt: string,
+): IInventoryAdjustment => {
+	let working: IInventorySeedOrigin[] = store.origins;
+	const items: IInventoryAdjustmentItem[] = payload.items.map((item) => {
+		const before = locationTotalsAt(working, item.product_id, payload.warehouse_id);
+		if (item.quantity_delta < 0) {
+			working = takeFromLocation(
+				working,
+				item.product_id,
+				payload.warehouse_id,
+				item.condition,
+				Math.abs(item.quantity_delta),
+				item.origin_id ?? null,
+			).origins;
+		} else {
+			// Ingreso positivo: origen desconocido de ajuste, al final de la
+			// cola FIFO para no adelantarse a stock más viejo.
+			const lastFifo = working.reduce(
+				(highest, origin) => Math.max(highest, origin.fifo_at),
+				0,
+			);
+			working = [
+				...working,
+				{
+					origin_id: nextOriginIdFor(branchId),
+					origin_type: 'inventory_adjustment',
+					stock_receipt_id: null,
+					received_on: null,
+					supplier: null,
+					purchase_document: null,
+					physical_quantity: item.quantity_delta,
+					fit_quantity: item.condition === 'fit' ? item.quantity_delta : 0,
+					unfit_quantity: item.condition === 'unfit' ? item.quantity_delta : 0,
+					branch_id: branchId,
+					product_id: item.product_id,
+					warehouse_id: payload.warehouse_id,
+					fifo_at: lastFifo + 1,
+				},
+			];
+		}
+		const after = locationTotalsAt(working, item.product_id, payload.warehouse_id);
+		return {
+			product_id: item.product_id,
+			quantity_delta: item.quantity_delta,
+			condition: item.condition,
+			physical_quantity_before: before.physical,
+			physical_quantity_after: after.physical,
+			fit_quantity_before: before.fit,
+			fit_quantity_after: after.fit,
+			unfit_quantity_before: before.unfit,
+			unfit_quantity_after: after.unfit,
+		};
+	});
+	store.origins = working;
+
+	const adjustment: IInventoryAdjustment = {
+		id,
+		operation_type: 'inventory_adjustment',
+		branch_id: branchId,
+		warehouse_id: payload.warehouse_id,
+		reason: payload.reason.trim(),
+		notes: payload.notes?.trim() || null,
+		related_stock_receipt_id: payload.related_stock_receipt_id ?? null,
+		items,
+		created_at: createdAt,
+	};
+	store.adjustments = [...store.adjustments, adjustment];
+	return adjustment;
+};
+
+/* =================================================
+   Historial de ejemplo sembrado
+   ================================================= */
+
+/**
+ * Aplica el historial de ejemplo de la sucursal (`ecopcDemoHistory`) sobre
+ * sus procedencias recién sembradas. Una semilla mal escrita —más salida que
+ * saldo— rompe al cargar en vez de dejar saldos que la trazabilidad no puede
+ * reproducir, igual que un producto de fixture inexistente.
+ */
+const applySeededHistory = (store: IInventoryStockBranchStore, branchId: number): void => {
+	(ecopcDemoHistory[branchId] ?? []).forEach((event) => {
+		if (event.kind === 'reversed_receipt') {
+			// Entró y salió entera de la misma bodega: no deja procedencias.
+			store.stockReceiptEffects = [
+				...store.stockReceiptEffects,
+				{
+					subsidiary_id: event.subsidiary_id,
+					stock_receipt_id: event.stock_receipt_id,
+					items: event.items.map((item) => ({ ...item })),
+					reversed_at: event.reversed_at,
+					warehouse_id: event.warehouse_id,
+					applied_at: event.applied_at,
+					reversed_locations: event.items.map((item) => ({
+						product_id: item.product_id,
+						warehouse_id: event.warehouse_id,
+						fit_quantity: item.quantity,
+						unfit_quantity: 0,
+					})),
+				},
+			];
+			return;
+		}
+		const outflows =
+			event.kind === 'movement'
+				? event.items.map((item) => ({
+						...item,
+						warehouse_id: event.from_warehouse_id,
+						origin_id: null,
+					}))
+				: event.items
+						.filter((item) => item.quantity_delta < 0)
+						.map((item) => ({
+							...item,
+							quantity: Math.abs(item.quantity_delta),
+							warehouse_id: event.warehouse_id,
+							origin_id: item.origin_id ?? null,
+						}));
+		outflows.forEach((item) => {
+			const balance = conditionBalanceAt(
+				store.origins,
+				item.product_id,
+				item.warehouse_id,
+				item.condition,
+				item.origin_id,
+			);
+			if (item.quantity > balance)
+				throw new Error(
+					`Historial de ejemplo sin saldo: ${event.id}, producto ${item.product_id}`,
+				);
+		});
+		if (event.kind === 'movement')
+			applyWarehouseStockMovement(store, branchId, event, event.id, event.created_at);
+		else applyInventoryAdjustment(store, branchId, event, event.id, event.created_at);
+	});
+};
 
 /* =================================================
    Efecto físico de las recepciones — sección 7
