@@ -4,7 +4,11 @@ import { toast } from 'react-toastify';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { costEntrySchema, toCostEntryPayload } from '@/components/procurement';
 import type { ICostEntryFormValues } from '@/components/procurement';
+import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
+import { STOCK_RECEIPT_STATUS_LABELS } from '@/pages/inventario/abastecimiento/Recepciones/types';
+import { DOCUMENT_STATUS_LABELS } from '@/pages/inventario/abastecimiento/DocumentosCompra/types';
+import { ESTADO_LABELS } from '@/pages/inventario/Inventario/types';
 import {
 	allowedActionsByState,
 	cableProduct,
@@ -20,8 +24,10 @@ import {
 } from '@/mocks/db/procurement.db';
 import type {
 	ICatalogActionsSample,
+	ICatalogConditionSample,
 	ICatalogCostSample,
 	ICatalogProductSample,
+	ICatalogStatusPillSample,
 	ICatalogWarehouseSample,
 } from '../types';
 
@@ -130,6 +136,75 @@ const useCatalogoContrato = () => {
 		[],
 	);
 
+	const conditionSamples = useMemo<ICatalogConditionSample[]>(
+		() => [
+			{
+				id: 'fit',
+				title: 'Apto',
+				description: 'Unidades vendibles. Es la condición por defecto de una recepción.',
+				condition: 'fit',
+				withIcon: true,
+			},
+			{
+				id: 'unfit',
+				title: 'No apto',
+				description:
+					'Destacado en ámbar: en un traslado o un ajuste decide si las unidades pueden venderse. Nunca se convierte en apto al trasladar.',
+				condition: 'unfit',
+				withIcon: true,
+			},
+			{
+				id: 'unfit-compact',
+				title: 'Sin icono',
+				description: 'Para celdas densas donde la columna ya aporta el contexto.',
+				condition: 'unfit',
+				withIcon: false,
+			},
+		],
+		[],
+	);
+
+	/**
+	 * Convención de color de `StatusPill` en todo el módulo. Las etiquetas no
+	 * son datos del contrato: salen de las constantes de cada pantalla para que
+	 * el catálogo no repita un texto que después cambie en un solo lado.
+	 */
+	const statusPillSamples = useMemo<ICatalogStatusPillSample[]>(
+		() => [
+			{
+				color: 'zinc',
+				label: DOCUMENT_STATUS_LABELS.draft,
+				meaning: 'Neutro: borrador, anulado o sin umbral.',
+			},
+			{
+				color: 'blue',
+				label: STOCK_RECEIPT_STATUS_LABELS.queued,
+				meaning: 'En proceso: todavía no es un éxito ni un error.',
+			},
+			{
+				color: 'emerald',
+				label: STOCK_RECEIPT_STATUS_LABELS.posted,
+				meaning: 'Completado o sano.',
+			},
+			{
+				color: 'amber',
+				label: ESTADO_LABELS.critical,
+				meaning: 'Requiere atención: bajo el umbral o revertido.',
+			},
+			{
+				color: 'red',
+				label: STOCK_RECEIPT_STATUS_LABELS.failed,
+				meaning: 'Error, anulación de un documento o sin disponible.',
+			},
+			{
+				color: 'violet',
+				label: 'Todo reservado',
+				meaning: 'Caso aparte que no es falta de stock, o un tipo (boleta).',
+			},
+		],
+		[],
+	);
+
 	const actionSamples = useMemo<ICatalogActionsSample[]>(
 		() => [
 			{
@@ -198,7 +273,10 @@ const useCatalogoContrato = () => {
 		costSamples,
 		productSamples,
 		warehouseSamples,
+		conditionSamples,
+		statusPillSamples,
 		actionSamples,
+		mockEnabled: INVENTORY_STOCK_USE_MOCKS,
 		costForm,
 		lastAction,
 		handleAction,

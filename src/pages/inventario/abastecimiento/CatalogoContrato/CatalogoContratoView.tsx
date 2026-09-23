@@ -8,9 +8,13 @@ import Alert from '@/components/ui/Alert';
 import Card, { CardBody } from '@/components/ui/Card';
 import {
 	AllowedActionsToolbar,
+	ConditionLabel,
 	CostBlock,
 	CostInput,
+	ProcurementMockNotice,
 	ProductCard,
+	ProductThumbnail,
+	StatusPill,
 	WarehouseLabel,
 } from '@/components/procurement';
 import { PROCUREMENT_ERROR_DEFINITIONS } from '@/utils/procurementErrors.util';
@@ -41,7 +45,10 @@ const CatalogoContratoView = () => {
 		costSamples,
 		productSamples,
 		warehouseSamples,
+		conditionSamples,
+		statusPillSamples,
 		actionSamples,
+		mockEnabled,
 		costForm,
 		lastAction,
 		handleAction,
@@ -76,8 +83,9 @@ const CatalogoContratoView = () => {
 					<Alert color='amber' icon='HeroExclamationTriangle'>
 						Ninguno de los endpoints de este módulo existe todavía. Todo lo que se ve
 						acá sale de fixtures locales copiados de los ejemplos del contrato (PR #67
-						del backend, <code>frontend-guide.md</code>). Sirve para acordar la
-						presentación antes de que haya una línea de implementación.
+						del backend, <code>frontend-guide.md</code>) y de su ampliación para
+						Inventario (<code>docs/inventario-unificado-contrato.md</code>). Sirve para
+						acordar la presentación y reutilizar las mismas piezas en cada pantalla.
 					</Alert>
 
 					<CatalogSection
@@ -101,6 +109,20 @@ const CatalogoContratoView = () => {
 									product={productSamples[0].product}
 									density='compact'
 								/>
+							</CatalogSample>
+
+							<CatalogSample
+								title='Miniatura sola'
+								description='ProductThumbnail, para listas que ya muestran nombre y SKU en sus propias columnas. Sin imagen, un icono decorativo; nunca un texto inventado.'>
+								<div className='flex items-center gap-3'>
+									{productSamples.map((sample) => (
+										<ProductThumbnail
+											key={sample.id}
+											product={sample.product}
+											size='h-9 w-9'
+										/>
+									))}
+								</div>
 							</CatalogSample>
 						</div>
 					</CatalogSection>
@@ -165,6 +187,84 @@ const CatalogoContratoView = () => {
 									<WarehouseLabel warehouse={sample.warehouse} />
 								</CatalogSample>
 							))}
+						</div>
+					</CatalogSection>
+
+					<CatalogSection
+						id='catalogo-condicion'
+						title='Etiqueta de condición'
+						summary='Apto / No apto con el mismo texto en stock, traslados, ajustes y trazabilidad. Un traslado nunca cambia la condición de las unidades.'>
+						<div className='flex flex-col gap-3'>
+							{conditionSamples.map((sample) => (
+								<CatalogSample
+									key={sample.id}
+									title={sample.title}
+									description={sample.description}>
+									<ConditionLabel
+										condition={sample.condition}
+										withIcon={sample.withIcon}
+									/>
+								</CatalogSample>
+							))}
+						</div>
+					</CatalogSection>
+
+					<CatalogSection
+						id='catalogo-estado'
+						title='Píldora de estado'
+						summary='Fondo sólido y texto blanco, como en pagos diferidos. Cada color significa lo mismo en todo el módulo; la etiqueta la pone cada pantalla.'>
+						<div className='flex flex-col gap-3'>
+							<CatalogSample
+								title='Convención de color'
+								description='Una etiqueta real de ejemplo por color.'>
+								<ul className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
+									{statusPillSamples.map((sample) => (
+										<li key={sample.color} className='flex flex-col gap-1'>
+											<StatusPill color={sample.color} width={9}>
+												{sample.label}
+											</StatusPill>
+											<span className='text-xs text-zinc-500 dark:text-zinc-400'>
+												{sample.meaning}
+											</span>
+										</li>
+									))}
+								</ul>
+							</CatalogSample>
+
+							<CatalogSample
+								title='Ancho fijo o a medida'
+								description='En una columna todas las píldoras miden lo mismo, fijado por la etiqueta más larga de esa columna. En una cabecera, fit ajusta cada una a su texto.'>
+								<div className='flex flex-wrap items-start gap-6'>
+									<div className='flex flex-col gap-2'>
+										<span className='text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
+											En una columna (width 9)
+										</span>
+										{statusPillSamples.slice(0, 3).map((sample) => (
+											<StatusPill
+												key={sample.color}
+												color={sample.color}
+												width={9}>
+												{sample.label}
+											</StatusPill>
+										))}
+									</div>
+									<div className='flex flex-col gap-2'>
+										<span className='text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
+											En una cabecera (fit)
+										</span>
+										<div className='flex flex-wrap gap-2'>
+											{statusPillSamples.slice(0, 3).map((sample) => (
+												<StatusPill
+													key={sample.color}
+													color={sample.color}
+													fit>
+													{sample.label}
+												</StatusPill>
+											))}
+										</div>
+									</div>
+								</div>
+							</CatalogSample>
 						</div>
 					</CatalogSection>
 
@@ -247,6 +347,33 @@ const CatalogoContratoView = () => {
 										(per_page {inventoryStockEnvelope.meta.per_page})
 									</span>
 								</p>
+							</CatalogSample>
+						</div>
+					</CatalogSection>
+
+					<CatalogSection
+						id='catalogo-simulado'
+						title='Aviso de datos simulados'
+						summary='Proveedores, documentos de compra, recepciones e inventario comparten la bandera VITE_INVENTORY_STOCK_USE_MOCKS: el módulo se enciende o se apaga entero.'>
+						<div className='grid gap-3 md:grid-cols-2'>
+							<CatalogSample
+								title='Bandera encendida'
+								description='Cada pantalla muestra este aviso sobre su contenido.'>
+								{mockEnabled ? (
+									<ProcurementMockNotice />
+								) : (
+									<p className='text-sm text-zinc-500 dark:text-zinc-400'>
+										La bandera está apagada en este entorno: el aviso no se
+										muestra.
+									</p>
+								)}
+							</CatalogSample>
+							<CatalogSample
+								title='Bandera apagada'
+								description='ProcurementMockGate, en el index.tsx de cada pantalla, reemplaza la vista antes de ejecutar su hook: no se siembra ni se persiste el store simulado.'>
+								<Alert title='Pantalla no habilitada'>
+									Esta pantalla aún no está habilitada en este entorno.
+								</Alert>
 							</CatalogSample>
 						</div>
 					</CatalogSection>

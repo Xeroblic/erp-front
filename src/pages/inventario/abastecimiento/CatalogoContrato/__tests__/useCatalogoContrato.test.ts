@@ -48,6 +48,27 @@ describe('useCatalogoContrato', () => {
 		expect(warehouses.some((warehouse) => warehouse !== null)).toBe(true);
 	});
 
+	it('muestra las dos condiciones, con y sin icono', () => {
+		const { result } = renderCatalog();
+		const samples = result.current.conditionSamples;
+
+		expect(new Set(samples.map((sample) => sample.condition))).toEqual(
+			new Set(['fit', 'unfit']),
+		);
+		expect(samples.some((sample) => !sample.withIcon)).toBe(true);
+	});
+
+	it('documenta cada color de StatusPill una sola vez y con etiqueta', () => {
+		const { result } = renderCatalog();
+		const colors = result.current.statusPillSamples.map((sample) => sample.color);
+
+		expect(new Set(colors)).toEqual(
+			new Set(['zinc', 'blue', 'violet', 'emerald', 'amber', 'red']),
+		);
+		expect(colors).toHaveLength(6);
+		expect(result.current.statusPillSamples.every((sample) => sample.label !== '')).toBe(true);
+	});
+
 	it('representa allowed_actions vacío y con acciones, en distintos recursos', () => {
 		const { result } = renderCatalog();
 		const samples = result.current.actionSamples;
