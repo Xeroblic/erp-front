@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
@@ -22,26 +22,45 @@ import ResumenInventario from '@/pages/inventario/Inventario/components/parts/Re
 import InventarioFiltros from '@/pages/inventario/Inventario/components/filters/InventarioFiltros';
 import InventarioGeneralTable from '@/pages/inventario/Inventario/components/tables/InventarioGeneralTable';
 import BodegasTable from '@/pages/inventario/Inventario/components/tables/BodegasTable';
+import TrazabilidadInventario from '@/pages/inventario/Inventario/components/trazabilidad/TrazabilidadInventario';
 import {
 	inventarioBodegaPath,
 	inventarioProductoPath,
 	type TInventarioVista,
 } from '@/pages/inventario/Inventario/types';
 
-const InventarioSession = ({ branchId, owner }: { branchId: number; owner: string }) => {
+interface IInventarioSessionProps {
+	branchId: number;
+	owner: string;
+	/** Filial y nombre de la sucursal para Trazabilidad; `null` si no hay filial activa. */
+	trazabilidad: { subsidiaryId: number; branchName: string | null } | null;
+}
+
+const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSessionProps) => {
 	const navigate = useNavigate();
 	const { pathname, search } = useLocation();
 	const {
-		filtros,
+		filtros: filtrosUrl,
 		hasFilters,
 		setVista,
 		setUbicacion,
 		setEstado,
 		setBusqueda,
 		setOrden,
+		setTipo,
+		setDesde,
+		setHasta,
 		paginate,
 		limpiar,
 	} = useInventarioFiltros();
+	// Un enlace a Trazabilidad abierto por alguien sin ese permiso cae en la vista General.
+	const filtros = useMemo(
+		() =>
+			filtrosUrl.vista === 'trazabilidad' && !trazabilidad
+				? { ...filtrosUrl, vista: 'general' as const }
+				: filtrosUrl,
+		[filtrosUrl, trazabilidad],
+	);
 	const data = useInventario(branchId, owner, filtros);
 
 	const openProducto = useCallback(
@@ -117,6 +136,28 @@ const InventarioSession = ({ branchId, owner }: { branchId: number; owner: strin
 						/>
 					)}
 				</Tab>
+				{trazabilidad && (
+					<Tab id='trazabilidad' text='Trazabilidad' icon='HeroArrowsRightLeft'>
+						{filtros.vista === 'trazabilidad' && (
+							<TrazabilidadInventario
+								subsidiaryId={trazabilidad.subsidiaryId}
+								branchId={branchId}
+								branchName={trazabilidad.branchName}
+								owner={owner}
+								filtros={filtros}
+								hasFilters={hasFilters}
+								warehouses={data.warehouses}
+								onBusqueda={setBusqueda}
+								onTipo={setTipo}
+								onUbicacion={setUbicacion}
+								onDesde={setDesde}
+								onHasta={setHasta}
+								onLimpiar={limpiar}
+								onPaginate={paginate}
+							/>
+						)}
+					</Tab>
+				)}
 			</Tabs>
 		</>
 	);
@@ -129,7 +170,7 @@ const InventarioSession = ({ branchId, owner }: { branchId: number; owner: strin
  */
 const InventarioView = () => {
 	const navigate = useNavigate();
-	const { branchId, subsidiaryId } = useCurrentBranch();
+	const { branchId, subsidiaryId, visibleBranches } = useCurrentBranch();
 	const { authorize, isLoading } = useAuthorization();
 	const userId = useAppSelector((state) => state.auth.user?.id);
 	const canRead = authorize({
@@ -138,6 +179,20 @@ const InventarioView = () => {
 		subsidiaryId,
 		scope: 'visible',
 	});
+	// Trazabilidad (§14) es de filial y exige su propio permiso.
+	const canTrace =
+		subsidiaryId !== null &&
+		authorize({
+			permission: 'view-inventory-movements',
+			branchId,
+			subsidiaryId,
+			scope: 'visible',
+		});
+	const branchName = visibleBranches.find((branch) => branch.id === branchId)?.name ?? null;
+	const trazabilidad = useMemo(
+		() => (canTrace && subsidiaryId !== null ? { subsidiaryId, branchName } : null),
+		[canTrace, subsidiaryId, branchName],
+	);
 	const owner = `${userId}:${subsidiaryId}:${branchId}`;
 
 	// La sesión autorizada se monta con `key` ANTES de pintar: un cambio de
@@ -162,7 +217,15 @@ const InventarioView = () => {
 				La consulta de inventario aún no está habilitada en este entorno.
 			</Alert>
 		);
-	else content = <InventarioSession key={owner} owner={owner} branchId={branchId} />;
+	else
+		content = (
+			<InventarioSession
+				key={owner}
+				owner={owner}
+				branchId={branchId}
+				trazabilidad={trazabilidad}
+			/>
+		);
 
 	return (
 		<PageWrapper isProtectedRoute title='Inventario'>

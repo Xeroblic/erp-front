@@ -1024,6 +1024,13 @@ export const getStockReceipt = (
 	return delay({ data: cloneReceipt(receipt), headers: { etag: buildEtag(id, version) } });
 };
 
+/**
+ * Lectura síncrona para la trazabilidad (§14): quién publicó cada recepción,
+ * con qué documento y el motivo de su reversión. Copiadas.
+ */
+export const readStockReceiptsForTraceability = (subsidiaryId: number): IStockReceipt[] =>
+	getStore(subsidiaryId).receipts.map(cloneReceipt);
+
 /** `POST /stock-receipts`: 201 `draft`, con o sin documento (sección 7). */
 export const createStockReceipt = (
 	subsidiaryId: number,

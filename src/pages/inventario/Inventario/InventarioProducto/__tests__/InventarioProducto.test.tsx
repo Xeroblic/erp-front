@@ -14,6 +14,7 @@ import { clearAllPersistedMockState } from '@/services/procurement/procurementMo
 const context = vi.hoisted(() => ({
 	branchId: 4 as number | null,
 	subsidiaryId: 2,
+	visibleBranches: [] as { id: number; name: string }[],
 	enabled: true,
 }));
 vi.mock('@/config/inventoryStock.config', () => ({

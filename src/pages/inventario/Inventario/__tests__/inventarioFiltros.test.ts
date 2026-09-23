@@ -22,6 +22,9 @@ describe('Filtros de Inventario en la URL', () => {
 			estado: 'critical',
 			busqueda: 'mouse',
 			orden: '-available_quantity',
+			tipo: null,
+			desde: '',
+			hasta: '',
 			page: 2,
 			perPage: 50,
 		};

@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import classNames from 'classnames';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -23,6 +23,7 @@ import InventarioKpis, {
 	type IInventarioKpi,
 } from '@/pages/inventario/Inventario/components/parts/InventarioKpis';
 import InventoryOrigins from '@/pages/inventario/Inventario/InventarioProducto/components/InventoryOrigins';
+import TrazabilidadProducto from '@/pages/inventario/Inventario/InventarioProducto/components/TrazabilidadProducto';
 import UmbralModal from '@/pages/inventario/Inventario/InventarioProducto/components/UmbralModal';
 import useInventarioProducto from '@/pages/inventario/Inventario/InventarioProducto/hooks/useInventarioProducto';
 import { INVENTARIO_PATH } from '@/pages/inventario/Inventario/types';
@@ -145,11 +146,14 @@ const ProductoSession = ({
 	subsidiaryId,
 	owner,
 	productId,
+	trazabilidad,
 }: {
 	branchId: number;
 	subsidiaryId: number | null;
 	owner: string;
 	productId: number;
+	/** Filial y nombre de la sucursal para Trazabilidad; `null` sin permiso o sin filial. */
+	trazabilidad: { subsidiaryId: number; branchName: string | null } | null;
 }) => {
 	const {
 		detail,
@@ -354,6 +358,17 @@ const ProductoSession = ({
 				</Card>
 			)}
 
+			{/* Los productos con serie se siguen por su número de serie, no por operaciones. */}
+			{!product.serial_tracking && trazabilidad && (
+				<TrazabilidadProducto
+					subsidiaryId={trazabilidad.subsidiaryId}
+					branchId={branchId}
+					branchName={trazabilidad.branchName}
+					owner={owner}
+					productId={productId}
+				/>
+			)}
+
 			<UmbralModal
 				isOpen={umbralOpen}
 				onClose={closeUmbral}
@@ -374,7 +389,7 @@ const InventarioProductoView = () => {
 	const { productId: productIdParam } = useParams();
 	const productId = Number(productIdParam);
 	const hasValidProductId = Number.isInteger(productId) && productId > 0;
-	const { branchId, subsidiaryId } = useCurrentBranch();
+	const { branchId, subsidiaryId, visibleBranches } = useCurrentBranch();
 	const { authorize, isLoading } = useAuthorization();
 	const userId = useAppSelector((state) => state.auth.user?.id);
 	const canRead = authorize({
@@ -383,6 +398,20 @@ const InventarioProductoView = () => {
 		subsidiaryId,
 		scope: 'visible',
 	});
+	// Trazabilidad (§14) es de filial y exige su propio permiso.
+	const canTrace =
+		subsidiaryId !== null &&
+		authorize({
+			permission: 'view-inventory-movements',
+			branchId,
+			subsidiaryId,
+			scope: 'visible',
+		});
+	const branchName = visibleBranches.find((branch) => branch.id === branchId)?.name ?? null;
+	const trazabilidad = useMemo(
+		() => (canTrace && subsidiaryId !== null ? { subsidiaryId, branchName } : null),
+		[canTrace, subsidiaryId, branchName],
+	);
 	const owner = `${userId}:${subsidiaryId}:${branchId}:inventario-producto:${productId}`;
 
 	// Quien abre la ficha manda su ruta con filtros (lista o ficha de bodega), para volver a ella.
@@ -433,6 +462,7 @@ const InventarioProductoView = () => {
 				branchId={branchId}
 				subsidiaryId={subsidiaryId}
 				productId={productId}
+				trazabilidad={trazabilidad}
 			/>
 		);
 
@@ -443,7 +473,7 @@ const InventarioProductoView = () => {
 					<SubheaderTitle
 						icon='HeroCube'
 						title='Ficha de inventario'
-						description='Estado, ubicación y procedencia del producto en esta sucursal'
+						description='Estado, ubicación, procedencia e historial del producto en esta sucursal'
 					/>
 				</SubheaderLeft>
 				<SubheaderRight>

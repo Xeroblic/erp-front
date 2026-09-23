@@ -118,12 +118,27 @@ interface IInventoryStockBranchStore {
  * Lo que una recepción `posted` ingresó a la sucursal. Es el registro que
  * permite revertir exactamente eso y detectar si parte ya salió; sin él, una
  * reversión no distingue «nunca ingresó» de «ya se consumió».
+ *
+ * `warehouse_id`, `applied_at` y `reversed_locations` los lee la trazabilidad
+ * (§14) para reconstruir los saldos antes y después. Son opcionales porque un
+ * estado persistido antes de agregarlos no los trae.
  */
-interface IStockReceiptInventoryEffect {
+export interface IStockReceiptInventoryEffect {
 	subsidiary_id: number;
 	stock_receipt_id: number;
 	items: { product_id: number; quantity: number }[];
 	reversed_at: string | null;
+	warehouse_id?: number;
+	applied_at?: string;
+	/** De dónde retiró la reversión, que toma las unidades donde estén. */
+	reversed_locations?: IStockReceiptReversedLocation[];
+}
+
+export interface IStockReceiptReversedLocation {
+	product_id: number;
+	warehouse_id: number | null;
+	fit_quantity: number;
+	unfit_quantity: number;
 }
 
 const cloneOrigin = (origin: IInventorySeedOrigin): IInventorySeedOrigin => ({
@@ -499,6 +514,30 @@ export const getInventoryStockAvailability = (
 /** Procedencias vigentes de la sucursal, copiadas: quien agrega no muta el store. */
 export const readInventoryBranchOrigins = (branchId: number): IInventorySeedOrigin[] =>
 	getStore(branchId).origins.map(cloneOrigin);
+
+/**
+ * Todo lo que cambió el stock de la sucursal, para la trazabilidad (§14): las
+ * procedencias sembradas (el punto de partida) y cada traslado, ajuste,
+ * documentación y recepción confirmados después. Copiado.
+ */
+export interface IInventoryBranchLedger {
+	seedOrigins: IInventorySeedOrigin[];
+	movements: IWarehouseStockMovement[];
+	adjustments: IInventoryAdjustment[];
+	allocations: IInventoryDocumentAllocation[];
+	stockReceiptEffects: IStockReceiptInventoryEffect[];
+}
+
+export const readInventoryBranchLedger = (branchId: number): IInventoryBranchLedger => {
+	const store = getStore(branchId);
+	return structuredClone({
+		seedOrigins: inventoryOriginsSeed.filter((origin) => origin.branch_id === branchId),
+		movements: store.movements,
+		adjustments: store.adjustments,
+		allocations: store.allocations,
+		stockReceiptEffects: store.stockReceiptEffects,
+	});
+};
 
 export const resolveInventoryStockProduct = (productId: number): IProcurementProduct | undefined =>
 	resolveStockProduct(productId);
@@ -1578,6 +1617,8 @@ export const applyStockReceiptToInventory = (input: IStockReceiptInventoryInput)
 				quantity,
 			})),
 			reversed_at: null,
+			warehouse_id: input.warehouseId,
+			applied_at: new Date().toISOString(),
 		},
 	];
 	persistBranchState(input.branchId);
@@ -1609,12 +1650,23 @@ export const reverseStockReceiptInInventory = (
 
 	const pendingByProduct = new Map(effect.items.map((item) => [item.product_id, item.quantity]));
 	const patched = new Map<number, IInventorySeedOrigin | null>();
+	const reversedLocations = new Map<string, IStockReceiptReversedLocation>();
 	[...receiptOrigins].sort(fifoOrder).forEach((origin) => {
 		const pending = pendingByProduct.get(origin.product_id) ?? 0;
 		if (pending === 0) return;
 		const taken = Math.min(pending, origin.physical_quantity);
 		pendingByProduct.set(origin.product_id, pending - taken);
 		const fitTaken = Math.min(taken, origin.fit_quantity);
+		const locationKey = `${origin.product_id}:${origin.warehouse_id ?? 'unlocated'}`;
+		const location = reversedLocations.get(locationKey) ?? {
+			product_id: origin.product_id,
+			warehouse_id: origin.warehouse_id,
+			fit_quantity: 0,
+			unfit_quantity: 0,
+		};
+		location.fit_quantity += fitTaken;
+		location.unfit_quantity += taken - fitTaken;
+		reversedLocations.set(locationKey, location);
 		const next: IInventorySeedOrigin = {
 			...origin,
 			physical_quantity: origin.physical_quantity - taken,
@@ -1628,7 +1680,13 @@ export const reverseStockReceiptInInventory = (
 		.map((origin) => (patched.has(origin.origin_id) ? patched.get(origin.origin_id)! : origin))
 		.filter((origin): origin is IInventorySeedOrigin => origin !== null);
 	store.stockReceiptEffects = store.stockReceiptEffects.map((candidate) =>
-		candidate === effect ? { ...candidate, reversed_at: new Date().toISOString() } : candidate,
+		candidate === effect
+			? {
+					...candidate,
+					reversed_at: new Date().toISOString(),
+					reversed_locations: [...reversedLocations.values()],
+				}
+			: candidate,
 	);
 	persistBranchState(ref.branchId);
 	return 'reversed';
