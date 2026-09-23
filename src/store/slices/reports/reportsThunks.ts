@@ -1,6 +1,11 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { ReportsService } from '@/services/reports/reports.service';
-import { IReportExportParams, IReportFilters, IReportResult } from '@/interface/reports.interface';
+import { IReportExportParams, IReportFilters } from '@/interface/reports.interface';
+import type { TInventoryReportResult } from '@/interface/inventoryReports.interface';
+import {
+	getInventoryReport,
+	type IInventoryReportQuery,
+} from '@/services/reports/inventoryReports.service';
 
 export const fetchReportTypes = createAsyncThunk(
 	'reports/fetchReportTypes',
@@ -15,74 +20,43 @@ export const fetchReportTypes = createAsyncThunk(
 	},
 );
 
-export const fetchPaginatedReportResults = createAsyncThunk(
-	'reports/fetchPaginatedReportResults',
-	async (
-		params: {
-			subsidiaryId: number;
-			type: string;
-			filters: IReportFilters;
-		},
-		thunkAPI,
-	) => {
-		try {
-			const resData = await ReportsService.getResults(
-				params.subsidiaryId,
-				params.type,
-				params.filters,
-			);
+/** Consulta de Reportes › Inventario con la clave de quién la pidió (ZF-12). */
+export interface IInventoryReportRequest extends IInventoryReportQuery {
+	ownerContext: string;
+}
 
-			// Check if standard paginated response { data, meta, links }
-			if (resData?.meta) {
-				return resData as IReportResult<unknown>;
-			}
+export const inventoryReportQueryKey = (request: IInventoryReportRequest): string =>
+	JSON.stringify([
+		request.ownerContext,
+		request.subsidiaryId,
+		request.type,
+		request.source,
+		request.params.branchId,
+		request.params.days ?? null,
+		request.branches.map((branch) => branch.id),
+	]);
 
-			// If it's a raw Laravel paginator, it has current_page at the root
-			if (typeof resData?.current_page === 'number') {
-				return {
-					data: Array.isArray(resData.data) ? resData.data : [],
-					meta: {
-						current_page: resData.current_page,
-						from: resData.from || null,
-						last_page: resData.last_page || 1,
-						per_page: resData.per_page || 15,
-						to: resData.to || null,
-						total: resData.total || 0,
-					},
-					links: {
-						first: resData.first_page_url || null,
-						last: resData.last_page_url || null,
-						prev: resData.prev_page_url || null,
-						next: resData.next_page_url || null,
-					},
-				} as IReportResult<unknown>;
-			}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && value !== null && !Array.isArray(value);
 
-			// Fallback if we just got a raw array or something else
-			const pageData = Array.isArray(resData)
-				? resData
-				: Array.isArray(resData?.data)
-					? resData.data
-					: [];
+const reportErrorMessage = (error: unknown, fallback: string): string => {
+	const data = isRecord(error) && isRecord(error.response) ? error.response.data : null;
+	return isRecord(data) && typeof data.message === 'string' && data.message.trim() !== ''
+		? data.message
+		: fallback;
+};
 
-			return {
-				data: pageData,
-				meta: {
-					current_page: 1,
-					from: 1,
-					last_page: 1,
-					per_page: pageData.length || 15,
-					to: pageData.length,
-					total: pageData.length,
-				},
-				links: {},
-			} as unknown as IReportResult<unknown>;
-		} catch (err: unknown) {
-			const error = err as { response?: { data?: unknown }; message?: string };
-			return thunkAPI.rejectWithValue(error.response?.data || error.message);
-		}
-	},
-);
+export const fetchInventoryReport = createAsyncThunk<
+	TInventoryReportResult,
+	IInventoryReportRequest,
+	{ rejectValue: string }
+>('reports/fetchInventoryReport', async (request, { signal, rejectWithValue }) => {
+	try {
+		return await getInventoryReport(request, signal);
+	} catch (error: unknown) {
+		return rejectWithValue(reportErrorMessage(error, 'No pudimos cargar el reporte.'));
+	}
+});
 
 export const fetchReportResults = createAsyncThunk(
 	'reports/fetchReportResults',
