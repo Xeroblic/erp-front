@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import reducer, {
+	fetchInventoryOperationDetail,
+	fetchInventoryOperations,
 	fetchInventorySummary,
 	inventoryBranchQueryKey,
+	inventoryOperationDetailQueryKey,
+	inventoryOperationsQueryKey,
 	type InventoryOverviewState,
 } from '@/store/slices/procurement/inventoryOverviewSlice';
 import type { IInventoryStockSummaryResponse } from '@/interface/inventoryOverview.interface';
+import type { IInventoryOperationsResponse } from '@/interface/inventoryOperations.interface';
 
 const request = { branchId: 4, ownerContext: 'owner' };
 const summary = (products: number): IInventoryStockSummaryResponse => ({
@@ -57,5 +62,92 @@ describe('inventoryOverviewSlice', () => {
 			fetchInventorySummary.rejected(null, 'r2', request, 'Sin conexión'),
 		);
 		expect(failed.summary.error).toBe('Sin conexión');
+	});
+});
+
+describe('inventoryOverviewSlice · Trazabilidad (§14)', () => {
+	const operationsRequest = {
+		branchId: 4,
+		ownerContext: 'owner',
+		subsidiaryId: 2,
+		branchName: 'Casa Matriz',
+		params: { branch_id: 4, page: 1, per_page: 20 },
+	};
+	const detailRequest = (operationId: string) => ({
+		...operationsRequest,
+		operationId,
+		params: { branch_id: 4, product_id: 31 },
+	});
+	const operations = (total: number): IInventoryOperationsResponse => ({
+		data: [],
+		meta: {
+			current_page: 1,
+			from: null,
+			last_page: 1,
+			links: [],
+			path: '/api/subsidiaries/2/inventory-operations',
+			per_page: 20,
+			to: null,
+			total,
+		},
+		links: { first: null, last: null, prev: null, next: null },
+	});
+
+	it('sólo la última petición resuelve la lista y cada lista nueva pliega los detalles', () => {
+		let state = reducer(
+			initial,
+			fetchInventoryOperationDetail.pending('d1', detailRequest('op-1')),
+		);
+		state = reducer(state, fetchInventoryOperations.pending('old', operationsRequest));
+		expect(state.operationDetails).toEqual({});
+
+		state = reducer(state, fetchInventoryOperations.pending('new', operationsRequest));
+		state = reducer(
+			state,
+			fetchInventoryOperations.fulfilled(operations(1), 'old', operationsRequest),
+		);
+		expect(state.operations.response).toBeNull();
+
+		state = reducer(
+			state,
+			fetchInventoryOperations.fulfilled(operations(2), 'new', operationsRequest),
+		);
+		expect(state.operations.ownerContext).toBe(inventoryOperationsQueryKey(operationsRequest));
+		expect(state.operations.response?.meta.total).toBe(2);
+	});
+
+	it('cada detalle guarda su clave y descarta una respuesta vieja', () => {
+		const opRequest = detailRequest('op-1');
+		let state = reducer(initial, fetchInventoryOperationDetail.pending('old', opRequest));
+		state = reducer(state, fetchInventoryOperationDetail.pending('new', opRequest));
+		state = reducer(
+			state,
+			fetchInventoryOperationDetail.rejected(null, 'old', opRequest, 'Vieja'),
+		);
+
+		expect(state.operationDetails['op-1']).toMatchObject({
+			ownerContext: inventoryOperationDetailQueryKey(opRequest),
+			loading: true,
+			error: null,
+		});
+
+		state = reducer(
+			state,
+			fetchInventoryOperationDetail.rejected(null, 'new', opRequest, 'Sin conexión'),
+		);
+		expect(state.operationDetails['op-1']).toMatchObject({
+			loading: false,
+			error: 'Sin conexión',
+		});
+	});
+
+	it('la clave del detalle cambia con los filtros que marcan los ítems', () => {
+		const withProduct = inventoryOperationDetailQueryKey(detailRequest('op-1'));
+		const withoutProduct = inventoryOperationDetailQueryKey({
+			...detailRequest('op-1'),
+			params: { branch_id: 4 },
+		});
+
+		expect(withProduct).not.toBe(withoutProduct);
 	});
 });

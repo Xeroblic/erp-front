@@ -8,6 +8,7 @@ import inventoryOverview from '@/store/slices/procurement/inventoryOverviewSlice
 import InventarioView from '@/pages/inventario/Inventario/InventarioView';
 import * as service from '@/services/procurement/inventoryOverview.service';
 import { resetInventoryStockStoreForTests } from '@/services/procurement/inventoryStock.service';
+import { resetStockReceiptsStoreForTests } from '@/services/procurement/stockReceipts.service';
 import type { IInventoryOverviewResponse } from '@/interface/inventoryOverview.interface';
 
 const context = vi.hoisted(() => ({
@@ -22,6 +23,8 @@ vi.mock('@/config/inventoryStock.config', () => ({
 	},
 }));
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
+// Los menús de la pestaña Trazabilidad leen la dirección del texto (`useDir`).
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: { dir: () => 'ltr' } }) }));
 vi.mock('@/store', async () => {
 	const redux = await import('react-redux');
 	return { useAppDispatch: redux.useDispatch, useAppSelector: redux.useSelector };
@@ -77,6 +80,9 @@ const auth = createSlice({
 		deny(state) {
 			state.user.permisos = [];
 		},
+		grant(state, action: { payload: string }) {
+			state.user.permisos.push(action.payload);
+		},
 	},
 });
 
@@ -85,8 +91,9 @@ const LocationProbe = () => {
 	return <div data-testid='location'>{`${location.pathname}${location.search}`}</div>;
 };
 
-const renderPage = (path = '/inventario/stock') => {
+const renderPage = (path = '/inventario/stock', permisos: string[] = []) => {
 	const store = configureStore({ reducer: { inventoryOverview, auth: auth.reducer } });
+	permisos.forEach((permiso) => store.dispatch(auth.actions.grant(permiso)));
 	const tree = () => (
 		<Provider store={store}>
 			<MemoryRouter initialEntries={[path]}>
@@ -123,6 +130,8 @@ beforeEach(() => {
 	context.enabled = true;
 });
 afterEach(() => {
+	// La trazabilidad lee las recepciones: su worker simulado no debe sobrevivir a la prueba.
+	resetStockReceiptsStoreForTests();
 	resetInventoryStockStoreForTests();
 	vi.restoreAllMocks();
 });
@@ -225,5 +234,41 @@ describe('Inventario — vista unificada', () => {
 
 		expect(firstSignal?.aborted).toBe(true);
 		await waitFor(() => expect(productRows()).toEqual(['Teclado mecánico compacto']));
+	});
+
+	describe('Trazabilidad', () => {
+		it('sin `view-inventory-movements` no hay pestaña y un enlace directo cae en General', async () => {
+			renderPage('/inventario/stock?vista=trazabilidad&q=mouse');
+
+			expect(
+				await screen.findByRole('button', { name: 'Ver ficha de Mouse USB' }),
+			).toBeInTheDocument();
+			expect(screen.queryByRole('tab', { name: /Trazabilidad/ })).not.toBeInTheDocument();
+			expect(screen.queryByRole('table', { name: 'Operaciones' })).not.toBeInTheDocument();
+		});
+
+		it('con el permiso lista las operaciones y despliega el detalle de una', async () => {
+			renderPage('/inventario/stock', ['view-inventory-movements']);
+			fireEvent.click(screen.getByRole('tab', { name: /Trazabilidad/ }));
+
+			await waitFor(() => expect(location()).toBe('/inventario/stock?vista=trazabilidad'));
+			const table = await screen.findByRole('table', { name: 'Operaciones' });
+			expect(await within(table).findByText('Saldo inicial')).toBeInTheDocument();
+
+			const [first] = within(table).getAllByRole('button', { name: 'Ver detalle' });
+			fireEvent.click(first);
+
+			expect(first).toHaveAttribute('aria-expanded', 'true');
+			expect(
+				await screen.findByRole('table', { name: /^Productos de / }),
+			).toBeInTheDocument();
+		});
+
+		it('entrar a Trazabilidad limpia los filtros de productos', async () => {
+			renderPage('/inventario/stock?estado=critical&q=mouse', ['view-inventory-movements']);
+			fireEvent.click(screen.getByRole('tab', { name: /Trazabilidad/ }));
+
+			await waitFor(() => expect(location()).toBe('/inventario/stock?vista=trazabilidad'));
+		});
 	});
 });
