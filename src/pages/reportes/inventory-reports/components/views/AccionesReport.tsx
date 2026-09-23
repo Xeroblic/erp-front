@@ -41,9 +41,13 @@ const SupplierCell: React.FC<{ recommendation: IReplenishmentReportRow['recommen
 	const { supplier, last_purchase: lastPurchase } = recommendation;
 	if (!supplier && !lastPurchase) return <EmptyCell />;
 	return (
-		<div className='min-w-0'>
+		<div className='min-w-0 max-w-[240px]'>
 			{supplier ? (
-				<p className='truncate text-sm font-semibold'>{supplier.display_name}</p>
+				<p
+					className='line-clamp-2 break-words text-sm font-semibold'
+					title={supplier.display_name}>
+					{supplier.display_name}
+				</p>
 			) : (
 				<p className='text-sm text-zinc-500'>Ningún proveedor elegible</p>
 			)}

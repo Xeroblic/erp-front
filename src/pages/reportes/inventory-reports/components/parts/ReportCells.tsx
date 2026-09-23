@@ -11,11 +11,19 @@ export const formatReportDate = (iso: string): string => {
 
 export const EmptyCell = () => <span className='text-sm text-zinc-500'>—</span>;
 
-/** Nombre con el SKU debajo, como `ProductCard` compacto en Inventario. */
+/**
+ * Nombre con el SKU debajo, como `ProductCard` compacto en Inventario. El tope
+ * va dentro de la celda: con `truncate` sin ancho máximo, el layout automático
+ * de la tabla fija la columna al nombre completo y empuja las demás fuera.
+ */
 export const ProductCell: React.FC<{ name: string; sku: string }> = ({ name, sku }) => (
-	<div className='min-w-0 py-1'>
-		<p className='truncate text-sm font-semibold'>{name}</p>
-		<p className='mt-0.5 font-mono text-xs text-zinc-500 dark:text-zinc-400'>{sku}</p>
+	<div className='min-w-0 max-w-[280px] py-1'>
+		<p className='line-clamp-2 break-words text-sm font-semibold' title={name}>
+			{name}
+		</p>
+		<p className='mt-0.5 break-words font-mono text-xs text-zinc-500 dark:text-zinc-400'>
+			{sku}
+		</p>
 	</div>
 );
 
