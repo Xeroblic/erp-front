@@ -3,8 +3,9 @@ import type {
 	IProcurementProduct,
 	IWarehouseCompact,
 	TProcurementAllowedAction,
+	TStockCondition,
 } from '@/interface/procurement.interface';
-import type { TProcurementResource } from '@/components/procurement';
+import type { TProcurementResource, TStatusPillColor } from '@/components/procurement';
 
 /**
  * Tipos de la pantalla de catálogo del contrato de abastecimiento.
@@ -43,4 +44,20 @@ export interface ICatalogActionsSample {
 	description: string;
 	resource: TProcurementResource;
 	allowedActions: TProcurementAllowedAction[];
+}
+
+export interface ICatalogConditionSample {
+	id: string;
+	title: string;
+	description: string;
+	condition: TStockCondition;
+	withIcon: boolean;
+}
+
+export interface ICatalogStatusPillSample {
+	color: TStatusPillColor;
+	/** Etiqueta real de una pantalla del módulo que usa este color. */
+	label: string;
+	/** Qué significa el color en todo el módulo. */
+	meaning: string;
 }
