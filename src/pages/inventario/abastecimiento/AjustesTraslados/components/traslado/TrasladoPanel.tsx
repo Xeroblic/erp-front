@@ -156,10 +156,13 @@ const TrasladoPanel = ({ branchId, owner }: TrasladoPanelProps) => {
 										</Select>
 									</Validation>
 								</div>
-								<div
-									aria-hidden='true'
-									className='hidden h-9 items-center self-start text-zinc-400 md:mt-6 md:flex'>
-									<Icon icon='HeroArrowLongRight' className='h-6 w-6' />
+								{/* Replica la caja de cada campo (etiqueta + select con su borde
+								    y padding) para que la flecha quede centrada con los selects. */}
+								<div aria-hidden='true' className='hidden space-y-1 md:block'>
+									<span className='mb-2 inline-block text-sm'>&nbsp;</span>
+									<div className='flex items-center border-2 border-transparent py-1.5 text-base text-zinc-400'>
+										<Icon icon='HeroArrowLongRight' className='h-6 w-6' />
+									</div>
 								</div>
 								<div className='space-y-1'>
 									<Label htmlFor='traslado-to'>Destino</Label>
