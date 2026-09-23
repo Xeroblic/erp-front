@@ -259,6 +259,24 @@ const matchesStockStatus = (
 	return visibleStockStatus(critical) === filter;
 };
 
+/**
+ * Filas de A1 de toda la sucursal con su `critical_stock`, sin filtros ni
+ * página. Base del mock de Reportes › Inventario, que compara sucursales.
+ */
+export const readInventoryBranchRows = (branchId: number): IInventoryOverviewRow[] => {
+	const rows: IInventoryOverviewRow[] = [];
+	aggregateBranch(branchId).forEach((aggregate) => {
+		if (aggregate.totals.physical_quantity === 0) return;
+		rows.push({
+			product: aggregate.product,
+			...quantitiesOf(aggregate.totals),
+			warehouses: sortedBreakdown(aggregate),
+			critical_stock: criticalStockFor(branchId, aggregate),
+		});
+	});
+	return rows;
+};
+
 /* =================================================
    Contexto de ubicación (mismas reglas que §3)
    ================================================= */

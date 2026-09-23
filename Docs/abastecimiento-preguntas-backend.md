@@ -99,3 +99,75 @@ que corregirla sea un cambio acotado y no una reescritura.
 
 Las cards 02 a 08 agregan sus preguntas debajo de este bloque, con el mismo formato:
 pregunta, por qué importa y decisión provisional del front.
+
+---
+
+## Reportes › Inventario — Exportación con el formato de reportes
+
+Reportes › Inventario tiene cuatro pestañas (Datos, Umbrales, Acciones y Estadísticas) y cada una
+exporta a PDF y Excel. Hoy sólo existe `GET S/reports/stock/export`, con un diseño propio (título
+«Reporte: Stock», columna Sucursal). El front definió un formato único para los cuatro archivos y
+lo genera en el navegador como **reemplazo provisional**. Se pide que el backend lo genere, para
+que el archivo no dependa de tener el reporte completo cargado en la pantalla.
+
+19. **¿Puede `GET S/reports/{type}/export` generar el archivo con este formato?** Es el mismo en
+    PDF y en Excel, y para `stock`, `stock_health` y `replenishment`:
+    - **Nombre** en `Content-Disposition`: `reporte-<slug>-AAAAMMDD-HHmm.<pdf|xlsx>`. Slugs
+      `existencias`, `umbrales` y `reposicion`.
+    - **Encabezado:** título del reporte y, debajo, `Empresa: <filial>`, `Alcance: <sucursal>` (o
+      `Todas las sucursales`), `Filtros: búsqueda «…» · estado …` (sólo si hay filtros) y
+      `Generado el DD-MM-AAAA HH:mm`. La sucursal va en el alcance, no como columna.
+    - **Indicadores**, calculados sobre el reporte completo del alcance, no sobre la búsqueda:
+
+        | Tipo            | Indicadores                                                                                                                        |
+        | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+        | `stock`         | Productos, Stock total, Con stock (`quantity > 0`), Sin stock                                                                      |
+        | `stock_health`  | Bajo el umbral, Sin disponible (`available ≤ 0`, gana a los otros estados), Sin umbral, Normal                                     |
+        | `replenishment` | Por reponer, Con proveedor sugerido, Sin compras anteriores, Sin proveedor elegible (`no_active_suppliers` + `no_comparable_cost`) |
+
+    - **Columnas, en este orden:**
+
+        | Tipo            | Columnas                                                                         |
+        | --------------- | -------------------------------------------------------------------------------- |
+        | `stock`         | SKU, Producto, Stock, Actualizado                                                |
+        | `stock_health`  | SKU, Producto, Sucursal, En bodega, Disponible, Umbral, Estado                   |
+        | `replenishment` | SKU, Producto, Disponible, Umbral, Proveedor sugerido, Última compra, Sugerencia |
+
+        Los estados y las sugerencias van con el texto de la pantalla, no con el código:
+        «Sin disponible», «Bajo el umbral», «Sin umbral», «Normal»; «Proveedor sugerido», «Sin
+        compras anteriores», «Sin proveedores activos», «Sin costo comparable».
+
+    - **Excel:** una hoja «Resumen» (Indicador | Valor) y una hoja por tabla. Cada hoja repite el
+      encabezado. La fila de títulos va en negrita, con fondo gris claro (`#F4F4F5`), borde
+      inferior, autofiltro y paneles fijos debajo de ella. Los números van como número con
+      formato `#,##0`, las fechas como `DD-MM-AAAA` y los vacíos como celda vacía.
+    - **PDF:** A4, horizontal si alguna tabla tiene más de 4 columnas. Título de 16 pt, contexto
+      de 9 pt en gris, indicadores en tarjetas grises, tablas con filas alternadas y la fila de
+      títulos repetida en cada página. Una tabla de hasta 20 filas no se parte entre páginas.
+      Pie: «Zentria ERP · Reportes de inventario» y «Página X de Y». Tabla vacía: «Sin filas
+      para estos filtros.»
+
+    _Decisión provisional:_ el front arma estos archivos en el navegador con las filas ya
+    cargadas (`src/pages/reportes/inventory-reports/export/`). Quien quiera ver el formato puede
+    descargar cualquiera de las cuatro pestañas. Cuando el backend lo genere, cada pestaña
+    vuelve a `GET …/export`.
+
+20. **¿La exportación puede aceptar los mismos filtros que la pantalla, incluido el orden?** Hoy
+    `export` valida `q` y `branch_id`, pero no `status` (R1), `days` (R3) ni un orden. La pantalla
+    ordena por cualquier columna y el archivo debería salir en ese mismo orden. Propuesta: `sort`
+    con la clave de columna y prefijo `-` para descendente, como A1.
+    _Decisión provisional:_ el archivo del navegador respeta búsqueda, sucursal, estado y orden.
+
+21. **¿Estadísticas puede ser un tipo exportable propio (`inventory_statistics`)?** La pestaña
+    agrega R1 y R3 (`dead_stock` con `days=0`). Su archivo lleva los indicadores (unidades en
+    bodega, disponibles para vender, requieren atención = bajo el umbral + sin disponible, sin
+    movimiento hace 90 días o más) y cuatro tablas: estado del stock (productos por estado), stock
+    por sucursal (disponible, reservado o no vendible, y cantidad por estado), antigüedad por días
+    desde el último movimiento (hasta 30, 31 a 90, 91 a 180, más de 180, sin registro; productos y
+    unidades) y los 10 productos con más unidades. Slug `estadisticas-inventario`.
+    _Decisión provisional:_ se calcula y se exporta en el navegador.
+
+22. **¿Cómo sabe el front que la exportación ya viene con este formato?** Sin una señal, el cambio
+    depende de desplegar front y backend juntos. Propuesta: que cada tipo de `GET S/reports`
+    informe la versión del formato de exportación (p. ej. `export_layout: 1`).
+    _Decisión provisional:_ el cambio se hace en un PR coordinado con el despliegue del backend.

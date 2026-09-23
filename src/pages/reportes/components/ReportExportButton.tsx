@@ -15,12 +15,14 @@ const ReportExportButton: React.FC<Props> = ({ subsidiaryId, type, filters }) =>
 	const doExport = async (format: ReportFormat) => {
 		setLoading(true);
 		try {
-			const res = await ReportsService.export(subsidiaryId, type, { ...filters, format });
-			const blob = res instanceof Blob ? res : new Blob([res as unknown as BlobPart]);
+			const { blob, fileName } = await ReportsService.export(subsidiaryId, type, {
+				...filters,
+				format,
+			});
 			const url = window.URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = `${type}.${format}`;
+			a.download = fileName ?? `${type}.${format}`;
 			document.body.appendChild(a);
 			a.click();
 			a.remove();

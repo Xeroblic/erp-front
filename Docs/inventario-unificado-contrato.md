@@ -219,7 +219,11 @@ disponibles: el frontend muestra una pestaña por tipo informado.
 | **R4** `rotation`      | producto, `units_out`, `average_on_hand`, `rotation`                                  | Parámetros `date_from`, `date_to`. Base: operaciones del §14, **no** `equipment_movements` (el tipo `movements` actual lee esa tabla legada). |
 
 En todas las filas, `product` es `{ id, sku, name }` y `branch` es `{ id, name }` (objetos compactos,
-nunca nombres sueltos). El frontend lee exactamente estos campos: `src/pages/reportes/inventory-reports/inventoryReportTabs.ts`.
+nunca nombres sueltos). El frontend lee exactamente estos campos: `src/interface/inventoryReports.interface.ts`
+(mientras no existan, los sirve el mock `src/services/reports/inventoryReportsMock.service.ts`).
+
+Formato de los archivos exportados (PDF y Excel), filtros de la exportación y tipo exportable de
+Estadísticas: preguntas 19–22 de `Docs/abastecimiento-preguntas-backend.md`.
 
 ---
 

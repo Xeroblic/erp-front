@@ -1,16 +1,37 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { IReportType } from '@/interface/reports.interface';
+import type {
+	TInventoryReportResult,
+	TInventoryReportType,
+} from '@/interface/inventoryReports.interface';
 import {
 	exportReport,
+	fetchInventoryReport,
 	fetchReportResults,
-	fetchPaginatedReportResults,
 	fetchReportTypes,
+	inventoryReportQueryKey,
 } from './reportsThunks';
-import { IReportType, IReportResult } from '@/interface/reports.interface';
+
+/**
+ * Una consulta de Reportes › Inventario. Va aparte de `loading`/`error`, que
+ * comparten Ventas y el dashboard: guarda la clave de quien la pidió
+ * (`ownerContext`) y sólo la última petición (`requestId`) puede resolverla,
+ * así un cambio de filial, sucursal o pestaña nunca pinta filas del contexto
+ * anterior (ZF-12).
+ */
+export interface IInventoryReportSlot {
+	ownerContext: string | null;
+	requestId: string | null;
+	result: TInventoryReportResult | null;
+	loading: boolean;
+	error: string | null;
+}
 
 export interface ReportsState {
 	types: IReportType[];
-	paginatedResults: IReportResult<unknown> | null;
 	aggregatedResults: unknown[] | null;
+	/** Una consulta por tipo: Estadísticas lee dos reportes a la vez. */
+	inventory: Partial<Record<TInventoryReportType, IInventoryReportSlot>>;
 	loading: boolean;
 	exporting: boolean;
 	error: string | null;
@@ -18,8 +39,8 @@ export interface ReportsState {
 
 const initialState: ReportsState = {
 	types: [],
-	paginatedResults: null,
 	aggregatedResults: null,
+	inventory: {},
 	loading: false,
 	exporting: false,
 	error: null,
@@ -30,9 +51,11 @@ export const reportsSlice = createSlice({
 	initialState,
 	reducers: {
 		clearResults: (state) => {
-			state.paginatedResults = null;
 			state.aggregatedResults = null;
 			state.error = null;
+		},
+		clearInventoryReports: (state) => {
+			state.inventory = {};
 		},
 	},
 	extraReducers: (builder) => {
@@ -70,21 +93,32 @@ export const reportsSlice = createSlice({
 			state.error = action.payload as string;
 		});
 
-		// ------- RESULTADOS PAGINADOS -------
-		builder.addCase(fetchPaginatedReportResults.pending, (state) => {
-			state.loading = true;
-			state.error = null;
+		// ------- REPORTES › INVENTARIO -------
+		builder.addCase(fetchInventoryReport.pending, (state, action) => {
+			state.inventory[action.meta.arg.type] = {
+				ownerContext: inventoryReportQueryKey(action.meta.arg),
+				requestId: action.meta.requestId,
+				result: null,
+				loading: true,
+				error: null,
+			};
 		});
 
-		builder.addCase(fetchPaginatedReportResults.fulfilled, (state, action) => {
-			state.paginatedResults = action.payload as IReportResult<unknown>;
-			state.loading = false;
-			state.error = null;
+		builder.addCase(fetchInventoryReport.fulfilled, (state, action) => {
+			const slot = state.inventory[action.meta.arg.type];
+			if (!slot || slot.requestId !== action.meta.requestId) return;
+			slot.result = action.payload;
+			slot.loading = false;
 		});
 
-		builder.addCase(fetchPaginatedReportResults.rejected, (state, action) => {
-			state.loading = false;
-			state.error = action.payload as string;
+		builder.addCase(fetchInventoryReport.rejected, (state, action) => {
+			const slot = state.inventory[action.meta.arg.type];
+			if (!slot || slot.requestId !== action.meta.requestId) return;
+			slot.loading = false;
+			// Un abort no es un error que mostrar.
+			slot.error = action.meta.aborted
+				? null
+				: (action.payload ?? 'No pudimos cargar el reporte.');
 		});
 
 		// ------- EXPORTACION -------
@@ -101,5 +135,5 @@ export const reportsSlice = createSlice({
 	},
 });
 
-export const { clearResults } = reportsSlice.actions;
+export const { clearResults, clearInventoryReports } = reportsSlice.actions;
 export default reportsSlice.reducer;
