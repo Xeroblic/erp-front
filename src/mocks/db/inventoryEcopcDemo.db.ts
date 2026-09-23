@@ -1,4 +1,9 @@
-import type { IProcurementProduct, IWarehouseCompact } from '@/interface/procurement.interface';
+import type {
+	IInventoryAdjustmentPayload,
+	IProcurementProduct,
+	IWarehouseCompact,
+	IWarehouseStockMovementPayload,
+} from '@/interface/procurement.interface';
 import {
 	ecopcWarehouse,
 	invoiceDocument,
@@ -13,6 +18,9 @@ import type { IInventorySeedOrigin } from '@/mocks/db/inventoryStock.db';
  * variados: precio y oferta, sin marca ni precio, varias bodegas, sin
  * ubicación, bajo el umbral, sin disponible por reservas, no vendibles y con
  * y sin documento de compra.
+ *
+ * Las procedencias son el punto de partida de la trazabilidad; el historial
+ * (`ecopcDemoHistory`, al final) las lleva al stock que muestra Inventario.
  *
  * Viven aparte de `inventoryStock.db.ts` porque ningún test depende de ellos:
  * son sólo para navegar. IDs 2001+ y procedencias 400+, fuera de los rangos
@@ -173,32 +181,32 @@ const recibido = {
 };
 
 export const ecopcDemoOrigins: IInventorySeedOrigin[] = [
-	// Monitor: repartido entre bodega y sala; parte documentado.
+	// Monitor: entran 10 a bodega y 2 pasan a la sala (8 + 3); parte documentado.
 	origin({
 		...recibido,
 		stock_receipt_id: 95,
 		product_id: 2001,
 		warehouse_id: ecopcWarehouse.id,
-		physical_quantity: 8,
-		fit_quantity: 8,
+		physical_quantity: 10,
+		fit_quantity: 10,
 		unfit_quantity: 0,
 	}),
 	origin({
 		product_id: 2001,
 		warehouse_id: ecopcShowroomWarehouse.id,
-		physical_quantity: 3,
-		fit_quantity: 3,
+		physical_quantity: 1,
+		fit_quantity: 1,
 		unfit_quantity: 0,
 	}),
-	// Audífonos: quedan 2, bajo el umbral de 5.
+	// Audífonos: entran 4 y se dan de baja 2; quedan 2, bajo el umbral de 5.
 	origin({
 		...recibido,
 		stock_receipt_id: 96,
 		purchase_document: receiptDocument,
 		product_id: 2002,
 		warehouse_id: ecopcShowroomWarehouse.id,
-		physical_quantity: 2,
-		fit_quantity: 2,
+		physical_quantity: 4,
+		fit_quantity: 4,
 		unfit_quantity: 0,
 	}),
 	// SSD: 4 físicos, todos reservados.
@@ -211,7 +219,7 @@ export const ecopcDemoOrigins: IInventorySeedOrigin[] = [
 		fit_quantity: 4,
 		unfit_quantity: 0,
 	}),
-	// Cargador: conteo inicial sin ubicar ni documentar, sin umbral.
+	// Cargador: conteo inicial sin ubicar ni documentar; después se ubican 12. Sin umbral.
 	origin({
 		product_id: 2004,
 		warehouse_id: null,
@@ -219,7 +227,7 @@ export const ecopcDemoOrigins: IInventorySeedOrigin[] = [
 		fit_quantity: 20,
 		unfit_quantity: 0,
 	}),
-	// Mouse pad: 3 de 15 dañados (no vendibles).
+	// Mouse pad: 3 de 15 dañados (no vendibles), que después pasan a bodega.
 	origin({
 		product_id: 2005,
 		warehouse_id: ecopcShowroomWarehouse.id,
@@ -227,7 +235,7 @@ export const ecopcDemoOrigins: IInventorySeedOrigin[] = [
 		fit_quantity: 12,
 		unfit_quantity: 3,
 	}),
-	// Webcam: todo documentado por factura.
+	// Webcam: todo documentado por factura; 2 pasan a la sala.
 	origin({
 		...recibido,
 		stock_receipt_id: 98,
@@ -237,20 +245,157 @@ export const ecopcDemoOrigins: IInventorySeedOrigin[] = [
 		fit_quantity: 6,
 		unfit_quantity: 0,
 	}),
-	// Hub: una sola unidad, bajo el umbral de 3.
+	// Hub: un conteo encuentra 1 de 2; queda bajo el umbral de 3.
 	origin({
 		product_id: 2007,
 		warehouse_id: ecopcWarehouse.id,
-		physical_quantity: 1,
-		fit_quantity: 1,
+		physical_quantity: 2,
+		fit_quantity: 2,
 		unfit_quantity: 0,
 	}),
-	// Alargador: sin marca, sin categoría y sin precio.
+	// Alargador: sin marca, sin categoría y sin precio; un conteo suma 6 (24 + 6).
 	origin({
 		product_id: 2008,
 		warehouse_id: null,
-		physical_quantity: 30,
-		fit_quantity: 30,
+		physical_quantity: 24,
+		fit_quantity: 24,
 		unfit_quantity: 0,
 	}),
 ];
+
+/* =================================================
+   Historial para la trazabilidad
+   ================================================= */
+
+/**
+ * Operación ya confirmada en la sucursal después de sus procedencias.
+ * `inventoryStock.service` las aplica al sembrar la sucursal con la misma
+ * lógica que los traslados y ajustes reales, así que el stock de Inventario y
+ * la trazabilidad cuentan la misma historia.
+ */
+export type TInventoryDemoEvent =
+	| ({ kind: 'movement'; id: string; created_at: string } & IWarehouseStockMovementPayload)
+	| ({ kind: 'adjustment'; id: string; created_at: string } & IInventoryAdjustmentPayload)
+	| {
+			/** Recepción que ingresó y se revirtió entera: no deja saldo. */
+			kind: 'reversed_receipt';
+			subsidiary_id: number;
+			stock_receipt_id: number;
+			warehouse_id: number;
+			applied_at: string;
+			reversed_at: string;
+			items: { product_id: number; quantity: number }[];
+	  };
+
+/** Filial de Ecopc: la de `/perfil` en desarrollo. */
+const ECOPC_SUBSIDIARY_ID = 1;
+
+/** Fecha y hora local, como las demás semillas de la trazabilidad. */
+const at = (businessDate: string, time: string): string =>
+	new Date(`${businessDate}T${time}:00`).toISOString();
+
+const demoOperationId = (index: number): string =>
+	`ec0bc000-0000-4000-8000-${String(index).padStart(12, '0')}`;
+
+const [, , audioReceipt] = ecopcDemoOrigins;
+
+/** Historial por sucursal, en orden cronológico. */
+export const ecopcDemoHistory: Record<number, TInventoryDemoEvent[]> = {
+	[ECOPC_BRANCH_ID]: [
+		{
+			kind: 'movement',
+			id: demoOperationId(1),
+			created_at: at('2026-09-11', '09:40'),
+			from_warehouse_id: ecopcWarehouse.id,
+			to_warehouse_id: ecopcShowroomWarehouse.id,
+			reason: 'Reposición de la vitrina de monitores',
+			items: [{ product_id: 2001, condition: 'fit', quantity: 2 }],
+		},
+		{
+			kind: 'movement',
+			id: demoOperationId(2),
+			created_at: at('2026-09-12', '11:15'),
+			from_warehouse_id: null,
+			to_warehouse_id: ecopcWarehouse.id,
+			reason: 'Ubicación de cargadores contados sin ubicar',
+			items: [{ product_id: 2004, condition: 'fit', quantity: 12 }],
+		},
+		{
+			// Ingresó por error a la bodega y se revirtió la misma tarde.
+			kind: 'reversed_receipt',
+			subsidiary_id: ECOPC_SUBSIDIARY_ID,
+			stock_receipt_id: 99,
+			warehouse_id: ecopcWarehouse.id,
+			applied_at: at('2026-09-13', '10:20'),
+			reversed_at: at('2026-09-13', '16:45'),
+			items: [
+				{ product_id: 2002, quantity: 5 },
+				{ product_id: 2006, quantity: 2 },
+			],
+		},
+		{
+			kind: 'adjustment',
+			id: demoOperationId(3),
+			created_at: at('2026-09-15', '18:05'),
+			warehouse_id: null,
+			reason: 'Sobrante en conteo de cierre',
+			notes: 'Seis alargadores sin registrar en el pasillo de despacho.',
+			items: [{ product_id: 2008, condition: 'fit', quantity_delta: 6 }],
+		},
+		{
+			kind: 'movement',
+			id: demoOperationId(4),
+			created_at: at('2026-09-16', '12:30'),
+			from_warehouse_id: ecopcShowroomWarehouse.id,
+			to_warehouse_id: ecopcWarehouse.id,
+			reason: 'Mouse pads dañados a bodega para revisión',
+			items: [{ product_id: 2005, condition: 'unfit', quantity: 3 }],
+		},
+		{
+			kind: 'adjustment',
+			id: demoOperationId(5),
+			created_at: at('2026-09-17', '17:50'),
+			warehouse_id: ecopcWarehouse.id,
+			reason: 'Faltante en conteo cíclico',
+			notes: 'Se revisó la bodega completa: falta un hub.',
+			items: [{ product_id: 2007, condition: 'fit', quantity_delta: -1 }],
+		},
+		{
+			kind: 'adjustment',
+			id: demoOperationId(6),
+			created_at: at('2026-09-18', '15:10'),
+			warehouse_id: ecopcShowroomWarehouse.id,
+			reason: 'Baja por daño en exhibición',
+			related_stock_receipt_id: audioReceipt.stock_receipt_id,
+			items: [
+				{
+					product_id: audioReceipt.product_id,
+					condition: 'fit',
+					quantity_delta: -2,
+					origin_id: audioReceipt.origin_id,
+				},
+			],
+		},
+		{
+			kind: 'movement',
+			id: demoOperationId(7),
+			created_at: at('2026-09-20', '10:00'),
+			from_warehouse_id: ecopcWarehouse.id,
+			to_warehouse_id: ecopcShowroomWarehouse.id,
+			reason: 'Reposición semanal de la sala de ventas',
+			items: [
+				{ product_id: 2006, condition: 'fit', quantity: 2 },
+				{ product_id: 2003, condition: 'fit', quantity: 1 },
+			],
+		},
+		{
+			kind: 'movement',
+			id: demoOperationId(8),
+			created_at: at('2026-09-22', '09:25'),
+			from_warehouse_id: ecopcShowroomWarehouse.id,
+			to_warehouse_id: ecopcWarehouse.id,
+			reason: 'SSD reservado para despacho: vuelve a bodega',
+			items: [{ product_id: 2003, condition: 'fit', quantity: 1 }],
+		},
+	],
+};
