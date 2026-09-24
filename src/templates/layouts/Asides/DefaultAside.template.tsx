@@ -377,20 +377,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Transferencias Comerciales */}
-							<AuthorityCheckNav
-								authority={Pages.inventory.subPages.transfers.authority}
-								roles={Pages.inventory.subPages.transfers.roles}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.inventory.subPages.transfers.text}
-									to={Pages.inventory.subPages.transfers.to}
-									icon={Pages.inventory.subPages.transfers.icon}
-									id={Pages.inventory.subPages.transfers.id}
-									onClick={() => navigate(Pages.inventory.subPages.transfers.to)}
-								/>
-							</AuthorityCheckNav>
-
 							{/* Ingreso de Stock */}
 							<AuthorityCheckNav
 								authority={Pages.inventory.subPages.ingresoStock.authority}

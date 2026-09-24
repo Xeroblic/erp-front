@@ -223,37 +223,14 @@ export const privatePages = {
 		// allowlist de nombres de rol dejaba fuera a perfiles que sí tienen los
 		// permisos del flujo. Cada permiso abre al menos una subpágina —
 		// `view-warehouse` Bodegas, `edit-product` Ingreso de Stock,
-		// `view-inventory-movements` Trazabilidad, `view-transfer` Transferencias,
-		// `view-product` Catálogo del contrato — así que basta con cualquiera de
-		// ellos para mostrar la sección.
+		// `view-inventory-movements` Trazabilidad, `view-product` Catálogo del
+		// contrato — así que basta con cualquiera de ellos para mostrar la sección.
 		// Este nodo no gatea ninguna ruta (ver `contentRoutes.tsx`): sólo decide la
 		// visibilidad del menú, que el aside evalúa con OR. Ampliarlo acá no le
 		// quita la ruta a nadie.
-		authority: [
-			'view-warehouse',
-			'edit-product',
-			'view-inventory-movements',
-			'view-transfer',
-			'view-product',
-		],
+		authority: ['view-warehouse', 'edit-product', 'view-inventory-movements', 'view-product'],
 		requireAll: false,
 		subPages: {
-			transfers: {
-				id: 'commercialTransfers',
-				to: '/inventario/transferencias',
-				text: 'Transferencias Comerciales',
-				icon: 'HeroTruck',
-				authority: ['view-transfer'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'warehouse-manager',
-				],
-			},
 			warehouses: {
 				id: 'warehouses',
 				to: '/inventario/bodegas',
@@ -286,13 +263,6 @@ export const privatePages = {
 				// el gate y el endpoint quedaban desalineados en ambos sentidos.
 				authority: ['view-inventory-movements'],
 				requireAll: false,
-			},
-			movements: {
-				id: 'movements',
-				to: '/inventario/movimientos',
-				text: 'Movimientos',
-				icon: 'HeroArrowsRightLeft',
-				authority: [],
 			},
 			ingresoStock: {
 				id: 'ingresoStock',
