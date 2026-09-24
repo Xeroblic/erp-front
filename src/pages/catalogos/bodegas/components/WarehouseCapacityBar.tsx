@@ -1,72 +1,34 @@
 import React from 'react';
-import classNames from 'classnames';
-import Progress from '@/components/ui/Progress';
 
 interface WarehouseCapacityBarProps {
 	current: number;
 	maximum: number | null;
-	showLabel?: boolean;
-	size?: 'sm' | 'md' | 'lg';
 }
 
 /**
- * Componente visual para mostrar la capacidad de una bodega
+ * Capacidad usada de una bodega, con el mismo formato que `CapacidadBodega`
+ * de Inventario; «Sin definir» si no tiene máximo configurado.
  */
-const WarehouseCapacityBar: React.FC<WarehouseCapacityBarProps> = ({
-	current,
-	maximum,
-	showLabel = true,
-	size = 'md',
-}) => {
-	// Si no hay capacidad máxima definida, mostrar ilimitado
-	if (maximum === null || maximum === 0) {
-		return (
-			<div className='flex items-center gap-2'>
-				{showLabel && (
-					<span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
-						{current} unidades (Ilimitado)
-					</span>
-				)}
-			</div>
-		);
-	}
-
-	const percentage = Math.min((current / maximum) * 100, 100);
-	const available = Math.max(maximum - current, 0);
-
-	// Determinar color según porcentaje
-	const getColor = () => {
-		if (percentage >= 90) return 'red';
-		if (percentage >= 70) return 'amber';
-		return 'emerald';
-	};
-
-	const heightClass = {
-		sm: 'h-1.5',
-		md: 'h-2',
-		lg: 'h-3',
-	}[size];
-
+const WarehouseCapacityBar: React.FC<WarehouseCapacityBarProps> = ({ current, maximum }) => {
+	if (!maximum) return <span className='text-sm text-zinc-500'>Sin definir</span>;
+	const percent = Math.min(100, Math.round((current / maximum) * 100));
 	return (
-		<div className='space-y-1'>
-			{showLabel && (
-				<div className='flex items-center justify-between text-sm'>
-					<span className='font-medium text-gray-700 dark:text-gray-300'>
-						{current} / {maximum} unidades
-					</span>
-					<span className='text-gray-500 dark:text-gray-400'>
-						{available} disponibles
-					</span>
-				</div>
-			)}
-			<div className='relative'>
-				<Progress value={percentage} max={100} color={getColor()} className={heightClass} />
+		<div className='min-w-[8rem] space-y-1'>
+			<div
+				className='h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700'
+				role='progressbar'
+				aria-valuenow={percent}
+				aria-valuemin={0}
+				aria-valuemax={100}
+				aria-label={`Capacidad usada ${percent}%`}>
+				<div
+					className={percent >= 90 ? 'h-full bg-amber-500' : 'h-full bg-blue-500'}
+					style={{ width: `${percent}%` }}
+				/>
 			</div>
-			{showLabel && (
-				<div className='text-right text-xs text-gray-500 dark:text-gray-400'>
-					{percentage.toFixed(1)}% ocupado
-				</div>
-			)}
+			<p className='text-xs text-zinc-500'>
+				{current} de {maximum} ({percent}%)
+			</p>
 		</div>
 	);
 };

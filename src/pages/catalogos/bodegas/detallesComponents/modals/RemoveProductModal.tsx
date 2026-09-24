@@ -1,7 +1,12 @@
-import React from 'react';
-import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
+import React, { useState } from 'react';
 import Button from '@/components/ui/Button';
-import Icon from '@/components/icon/Icon';
+import Card, { CardBody } from '@/components/ui/Card';
+import Modal, {
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+	ModalHeader,
+} from '@/components/ui/Modal';
 import type { IWarehouseProduct } from '@/interface/warehouse.interface';
 
 interface RemoveProductModalProps {
@@ -17,42 +22,64 @@ const RemoveProductModal: React.FC<RemoveProductModalProps> = ({
 	onClose,
 	onConfirm,
 }) => {
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	if (!product) return null;
 
 	const handleConfirm = async () => {
-		await onConfirm(product.id);
+		setIsSubmitting(true);
+		try {
+			await onConfirm(product.id);
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='md'>
-			<ModalHeader>
-				<div className='flex items-center gap-3'>
-					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20'>
-						<Icon
-							icon='HeroExclamationTriangle'
-							className='text-red-600 dark:text-red-400'
-						/>
-					</div>
-					<h3 className='text-lg font-semibold'>Confirmar eliminación</h3>
-				</div>
+		<Modal
+			isOpen={isOpen}
+			setIsOpen={() => {
+				if (!isSubmitting) onClose();
+			}}
+			size='sm'
+			isCentered
+			isStaticBackdrop={isSubmitting}>
+			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+				<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+					Quitar producto de la bodega
+				</h2>
 			</ModalHeader>
 			<ModalBody>
-				<p className='text-sm'>¿Estás seguro de quitar este producto de la bodega?</p>
-				<div className='mt-3 rounded-lg border p-3'>
-					<p className='font-medium'>Producto: {product.name}</p>
-					<p className='text-sm text-gray-600'>SKU: {product.sku}</p>
-					<p className='text-sm text-gray-600'>Cantidad: {product.quantity}</p>
-				</div>
+				<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
+					<CardBody>
+						<p className='text-lg'>
+							¿Quitar <strong>{product.name}</strong> de esta bodega?
+						</p>
+						<p className='mt-1 font-mono text-sm text-zinc-500'>SKU {product.sku}</p>
+						<p className='mt-2 text-sm text-zinc-500 dark:text-zinc-400'>
+							La bodega deja de registrar sus{' '}
+							{product.quantity.toLocaleString('es-CL')} unidades. Se puede volver a
+							asociar después.
+						</p>
+					</CardBody>
+				</Card>
 			</ModalBody>
-			<ModalFooter>
-				<div className='flex justify-end gap-2'>
-					<Button variant='outline' onClick={onClose}>
+			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+				<ModalFooterChild>
+					<Button variant='outline' onClick={onClose} isDisable={isSubmitting}>
 						Cancelar
 					</Button>
-					<Button color='red' onClick={handleConfirm}>
-						Sí, quitar
+				</ModalFooterChild>
+				<ModalFooterChild>
+					<Button
+						variant='outline'
+						color='red'
+						icon='HeroTrash'
+						onClick={handleConfirm}
+						isDisable={isSubmitting}
+						isLoading={isSubmitting}>
+						Quitar
 					</Button>
-				</div>
+				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>
 	);

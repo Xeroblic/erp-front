@@ -1,8 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { IWarehouse, IWarehouseStats } from '@/interface/warehouse.interface';
-import warehouseReducer, { createWarehouse, fetchWarehouses } from '../warehouseSlice';
+import { configureStore } from '@reduxjs/toolkit';
+import type {
+	IWarehouse,
+	IWarehouseDetail,
+	IWarehouseStats,
+} from '@/interface/warehouse.interface';
+import warehouseReducer, {
+	createWarehouse,
+	fetchWarehouseDetail,
+	fetchWarehouses,
+} from '../warehouseSlice';
 
-vi.mock('@/services/ApiService', () => ({ default: { fetchData: vi.fn() } }));
+const fetchData = vi.hoisted(() => vi.fn());
+
+vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
 
 const warehouse = (branchId: number): IWarehouse => ({
 	id: branchId,
@@ -140,5 +151,56 @@ describe('warehouseSlice contexto organizacional', () => {
 
 		expect(state.loading).toBe(false);
 		expect(state.warehouses).toEqual([warehouse(7)]);
+	});
+
+	it('descarta la carga tardía del detalle de otra bodega o sucursal', () => {
+		const detail = (id: number, branchId: number): IWarehouseDetail => ({
+			...warehouse(branchId),
+			id,
+			products: [],
+		});
+		const firstArg = { branchId: 1, warehouseId: 3 };
+		const secondArg = { branchId: 2, warehouseId: 3 };
+
+		let state = warehouseReducer(undefined, fetchWarehouseDetail.pending('a', firstArg));
+		state = warehouseReducer(state, fetchWarehouseDetail.pending('b', secondArg));
+		state = warehouseReducer(
+			state,
+			fetchWarehouseDetail.fulfilled(detail(3, 1), 'a', firstArg),
+		);
+
+		expect(state.warehouseDetail).toBeNull();
+		expect(state.warehouseDetailLoading).toBe(true);
+
+		state = warehouseReducer(
+			state,
+			fetchWarehouseDetail.rejected(new Error('fallo A'), 'a', firstArg, {
+				message: 'fallo A',
+			}),
+		);
+		expect(state.warehouseDetailError).toBeNull();
+
+		state = warehouseReducer(
+			state,
+			fetchWarehouseDetail.fulfilled(detail(3, 2), 'b', secondArg),
+		);
+		expect(state.warehouseDetail?.branch_id).toBe(2);
+		expect(state.warehouseDetailLoading).toBe(false);
+	});
+
+	it('traduce el 404 del detalle en vez de mostrar el mensaje interno de Laravel', async () => {
+		fetchData.mockRejectedValueOnce({
+			response: {
+				status: 404,
+				data: { message: 'No query results for model [Warehouse] 9999' },
+			},
+		});
+		const store = configureStore({ reducer: { warehouse: warehouseReducer } });
+
+		await store.dispatch(fetchWarehouseDetail({ branchId: 1, warehouseId: 9999 }));
+
+		expect(store.getState().warehouse.warehouseDetailError).toBe(
+			'La bodega no existe o no pertenece a la sucursal activa.',
+		);
 	});
 });

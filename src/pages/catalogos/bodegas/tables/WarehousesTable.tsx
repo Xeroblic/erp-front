@@ -1,197 +1,256 @@
-import React, { useMemo } from 'react';
-import { type ColumnDef, type CellContext } from '@tanstack/react-table';
-import DataTable from '@/components/ui/DataTable/DataTable';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
+import { StatusPill } from '@/components/procurement';
+import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import ProtectedButton from '@/components/ui/ProtectedButton';
-import Icon from '@/components/icon/Icon';
+// eslint-disable-next-line import/extensions
+import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
+import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import type { IWarehouse } from '@/interface/warehouse.interface';
 import WarehouseCapacityBar from '../components/WarehouseCapacityBar';
-import Card, { CardBody } from '@/components/ui/Card';
+
+const COLUMN_COUNT = 7;
+
+type SortKey = 'name' | 'type' | 'units' | 'status';
+type SortState = TableSortState<SortKey>;
+
+const getSortValue = (warehouse: IWarehouse, key: SortKey): string | number => {
+	switch (key) {
+		case 'name':
+			return warehouse.name;
+		case 'type':
+			return warehouse.warehouse_type;
+		case 'units':
+			return warehouse.current_capacity ?? 0;
+		case 'status':
+			return Number(warehouse.is_active);
+		default:
+			return '';
+	}
+};
+
+const compareRows = (left: IWarehouse, right: IWarehouse, sort: NonNullable<SortState>) => {
+	const leftValue = getSortValue(left, sort.key);
+	const rightValue = getSortValue(right, sort.key);
+	const comparison =
+		typeof leftValue === 'number' && typeof rightValue === 'number'
+			? leftValue - rightValue
+			: String(leftValue).localeCompare(String(rightValue), 'es', {
+					numeric: true,
+					sensitivity: 'base',
+				});
+	return sort.direction === 'asc' ? comparison : -comparison;
+};
 
 interface WarehousesTableProps {
 	warehouses: IWarehouse[];
-	loading?: boolean;
+	loading: boolean;
+	hasError: boolean;
+	hasFilters: boolean;
 	onEdit: (warehouse: IWarehouse) => void;
 	onDelete: (warehouse: IWarehouse) => void;
 	branchId?: number | null;
-	searchValue?: string;
-	onSearchChange?: (value: string) => void;
 }
 
+/** Bodegas de la sucursal activa: stock, capacidad y acciones de mantención. */
 const WarehousesTable: React.FC<WarehousesTableProps> = ({
 	warehouses,
-	loading = false,
+	loading,
+	hasError,
+	hasFilters,
 	onEdit,
 	onDelete,
 	branchId,
-	searchValue,
-	onSearchChange,
 }) => {
 	const navigate = useNavigate();
-
-	const columns = useMemo<ColumnDef<IWarehouse>[]>(
-		() => [
-			{
-				id: 'name',
-				header: 'Nombre',
-				accessorKey: 'name',
-				cell: (info: CellContext<IWarehouse, string>) => (
-					<div className='flex items-center gap-3'>
-						<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'>
-							<Icon icon='HeroBuildingStorefront' className='h-5 w-5' />
-						</div>
-						<div>
-							<div className='font-semibold text-gray-900 dark:text-white'>
-								{info.row.original.name}
-							</div>
-							<div className='font-mono text-xs text-gray-500 dark:text-gray-400'>
-								{info.row.original.code}
-							</div>
-						</div>
-					</div>
-				),
-			},
-			{
-				id: 'warehouse_type',
-				header: 'Tipo',
-				accessorKey: 'warehouse_type',
-				cell: (info: CellContext<IWarehouse, string>) => (
-					<Badge
-						variant='outline'
-						color={
-							info.row.original.warehouse_type === 'physical' ? 'indigo' : 'fuchsia'
-						}
-						className='border-dashed px-2'>
-						{info.row.original.warehouse_type === 'physical'
-							? 'Física'
-							: info.row.original.warehouse_type}
-					</Badge>
-				),
-			},
-			{
-				id: 'capacity',
-				header: 'Capacidad',
-				accessorKey: 'maximum_capacity',
-				cell: (info: CellContext<IWarehouse, number | null>) => {
-					const warehouse = info.row.original;
-					return (
-						<div className='min-w-[200px]'>
-							<WarehouseCapacityBar
-								current={warehouse.current_capacity || 0}
-								maximum={warehouse.maximum_capacity}
-								size='sm'
-							/>
-						</div>
-					);
-				},
-			},
-			{
-				id: 'manager',
-				header: 'Encargado',
-				accessorKey: 'manager_name',
-				cell: (info: CellContext<IWarehouse, string | null>) => (
-					<div>
-						{info.row.original.manager_name ? (
-							<Badge variant='outline' color='sky' className='px-2'>
-								<Icon icon='HeroUser' className='mr-1.5 h-3.5 w-3.5' />
-								{info.row.original.manager_name}
-							</Badge>
-						) : (
-							<Badge variant='outline' color='zinc' className='px-2 text-zinc-500'>
-								Sin encargado
-							</Badge>
-						)}
-					</div>
-				),
-			},
-			{
-				id: 'status',
-				header: 'Estado',
-				accessorKey: 'is_active',
-				cell: (info: CellContext<IWarehouse, boolean>) => (
-					<Badge
-						variant='solid'
-						color={info.row.original.is_active ? 'emerald' : 'zinc'}
-						className='px-2 font-medium shadow-sm'>
-						{info.row.original.is_active ? (
-							<>
-								<Icon
-									icon='HeroCheckCircle'
-									color='white'
-									className='mr-1.5 size-4'
-								/>
-								Activa
-							</>
-						) : (
-							<>
-								<Icon icon='HeroXCircle' color='white' className='mr-1.5 size-4' />
-								Inactiva
-							</>
-						)}
-					</Badge>
-				),
-			},
-			{
-				id: 'actions',
-				header: 'Acciones',
-				cell: (info: CellContext<IWarehouse, unknown>) => (
-					<div className='flex items-center gap-2'>
-						<Button
-							icon='HeroEye'
-							color='violet'
-							variant='outline'
-							size='sm'
-							onClick={() => navigate(`/inventario/bodegas/${info.row.original.id}`)}
-							title='Ver detalle'
-						/>
-						<ProtectedButton
-							permission='update-warehouse'
-							branchId={branchId}
-							scope='access'
-							icon='HeroPencil'
-							color='blue'
-							variant='outline'
-							size='sm'
-							onClick={() => onEdit(info.row.original)}
-							title='Editar'
-						/>
-						<ProtectedButton
-							permission='delete-warehouse'
-							branchId={branchId}
-							scope='access'
-							icon='HeroTrash'
-							color='red'
-							variant='outline'
-							size='sm'
-							onClick={() => onDelete(info.row.original)}
-							title='Eliminar'
-						/>
-					</div>
-				),
-			},
-		],
-		[navigate, onEdit, onDelete, branchId],
+	const [sort, setSort] = useState<SortState>(null);
+	const sortedRows = useMemo(
+		() =>
+			sort === null
+				? warehouses
+				: [...warehouses].sort((left, right) => compareRows(left, right, sort)),
+		[warehouses, sort],
 	);
+	const handleSort = (key: SortKey) => {
+		setSort((current) => ({
+			key,
+			direction: current?.key === key && current.direction === 'asc' ? 'desc' : 'asc',
+		}));
+	};
 
 	return (
-		<Card className='border-0 shadow-lg shadow-zinc-200/50 ring-1 ring-zinc-200 dark:shadow-zinc-900/50 dark:ring-zinc-800'>
-			<CardBody className='p-0'>
-				<DataTable
-					columns={columns}
-					data={warehouses}
-					loading={loading}
-					pageSize={10}
-					searchValue={searchValue}
-					onSearchChange={onSearchChange}
-					searchPlaceholder='Buscar por nombre o código...'
-					emptyMessage={
-						warehouses.length === 0 && !loading
-							? 'No hay bodegas registradas. Comienza creando tu primera bodega.'
-							: 'No se encontraron bodegas que coincidan.'
-					}
-				/>
+		<Card>
+			<CardHeader>
+				<CardTitle className='text-lg'>Bodegas de la sucursal</CardTitle>
+				{!loading && !hasError && (
+					<span className='text-sm text-zinc-500'>
+						{warehouses.length} {warehouses.length === 1 ? 'bodega' : 'bodegas'}
+					</span>
+				)}
+			</CardHeader>
+			<CardBody className='overflow-x-auto p-0'>
+				<Table aria-label='Bodegas de la sucursal' className='min-w-[1040px]'>
+					<THead>
+						<Tr>
+							<SortableTableHeader
+								label='Bodega'
+								sortKey='name'
+								sort={sort}
+								onSort={handleSort}
+							/>
+							<SortableTableHeader
+								label='Tipo'
+								sortKey='type'
+								sort={sort}
+								onSort={handleSort}
+							/>
+							<Th scope='col' className='text-left'>
+								Encargado
+							</Th>
+							<SortableTableHeader
+								label='Unidades'
+								sortKey='units'
+								sort={sort}
+								onSort={handleSort}
+								align='right'
+							/>
+							<Th scope='col' className='text-left'>
+								Capacidad
+							</Th>
+							<SortableTableHeader
+								label='Estado'
+								sortKey='status'
+								sort={sort}
+								onSort={handleSort}
+								align='center'
+							/>
+							<Th scope='col' className='text-center'>
+								Acciones
+							</Th>
+						</Tr>
+					</THead>
+					<TBody>
+						{loading &&
+							Array.from({ length: 3 }, (_, rowIndex) => (
+								<Tr key={`warehouses-skeleton-${rowIndex}`}>
+									{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
+										<Td key={`warehouses-skeleton-${rowIndex}-${cellIndex}`}>
+											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+										</Td>
+									))}
+								</Tr>
+							))}
+						{!loading && hasError && (
+							<Tr>
+								<Td colSpan={COLUMN_COUNT} className='py-12 text-center'>
+									<p className='font-medium text-red-700 dark:text-red-300'>
+										No fue posible mostrar las bodegas
+									</p>
+									<p className='mt-1 text-sm text-zinc-500'>
+										Revisa el mensaje de error e intenta cargar la información
+										nuevamente.
+									</p>
+								</Td>
+							</Tr>
+						)}
+						{!loading && !hasError && warehouses.length === 0 && (
+							<Tr>
+								<Td colSpan={COLUMN_COUNT} className='py-12 text-center'>
+									<p className='font-medium text-zinc-700 dark:text-zinc-200'>
+										{hasFilters
+											? 'Sin resultados para los filtros aplicados'
+											: 'Esta sucursal aún no tiene bodegas'}
+									</p>
+									<p className='mt-1 text-sm text-zinc-500'>
+										{hasFilters
+											? 'Prueba ajustando o limpiando los filtros.'
+											: 'Crea la primera con «Nueva bodega».'}
+									</p>
+								</Td>
+							</Tr>
+						)}
+						{!loading &&
+							!hasError &&
+							sortedRows.map((warehouse) => (
+								<Tr key={warehouse.id}>
+									<Td>
+										<p className='font-medium'>{warehouse.name}</p>
+										<p className='font-mono text-xs text-zinc-500'>
+											{warehouse.code}
+										</p>
+									</Td>
+									<Td className='text-sm text-zinc-600 dark:text-zinc-300'>
+										{warehouse.warehouse_type}
+									</Td>
+									<Td className='text-sm'>
+										{warehouse.manager_name ?? (
+											<span className='text-zinc-400'>Sin encargado</span>
+										)}
+									</Td>
+									<Td className='text-right text-lg font-semibold tabular-nums'>
+										{(warehouse.current_capacity ?? 0).toLocaleString('es-CL')}
+									</Td>
+									<Td>
+										<WarehouseCapacityBar
+											current={warehouse.current_capacity ?? 0}
+											maximum={warehouse.maximum_capacity}
+										/>
+									</Td>
+									<Td>
+										<div className='flex justify-center'>
+											<StatusPill
+												color={warehouse.is_active ? 'emerald' : 'zinc'}
+												width={6.5}>
+												{warehouse.is_active ? 'Activa' : 'Inactiva'}
+											</StatusPill>
+										</div>
+									</Td>
+									<Td>
+										<div className='flex flex-wrap justify-center gap-2'>
+											<ProtectedButton
+												permission='view-warehouse-detail'
+												branchId={branchId}
+												scope='visible'
+												size='sm'
+												variant='outline'
+												icon='HeroEye'
+												color='violet'
+												aria-label={`Ver ${warehouse.name}`}
+												onClick={() =>
+													navigate(`/inventario/bodegas/${warehouse.id}`)
+												}>
+												Ver
+											</ProtectedButton>
+											<ProtectedButton
+												permission='edit-warehouse'
+												branchId={branchId}
+												scope='access'
+												size='sm'
+												variant='outline'
+												color='blue'
+												icon='HeroPencil'
+												aria-label={`Editar ${warehouse.name}`}
+												onClick={() => onEdit(warehouse)}>
+												Editar
+											</ProtectedButton>
+											<ProtectedButton
+												permission='delete-warehouse'
+												branchId={branchId}
+												scope='access'
+												size='sm'
+												variant='outline'
+												color='red'
+												icon='HeroTrash'
+												aria-label={`Eliminar ${warehouse.name}`}
+												onClick={() => onDelete(warehouse)}>
+												Eliminar
+											</ProtectedButton>
+										</div>
+									</Td>
+								</Tr>
+							))}
+					</TBody>
+				</Table>
 			</CardBody>
 		</Card>
 	);
