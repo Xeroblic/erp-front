@@ -6,7 +6,6 @@ import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
-import { ProcurementMockNotice } from '@/components/procurement';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import type { IProcurementSupplierListRow } from '@/interface/procurement.interface';
 import useProveedores from './hooks/useProveedores';
@@ -87,7 +86,6 @@ const ProveedoresView = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
-				<ProcurementMockNotice />
 				<ProveedoresFilters
 					search={search}
 					onSearchChange={setSearchValue}

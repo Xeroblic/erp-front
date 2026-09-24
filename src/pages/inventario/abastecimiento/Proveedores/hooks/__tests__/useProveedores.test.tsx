@@ -3,16 +3,21 @@ import { configureStore } from '@reduxjs/toolkit';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resetProcurementSuppliersStoreForTests } from '@/services/procurement/procurementSuppliers.service';
+import { resetProcurementSuppliersStoreForTests } from '@/mocks/services/procurementSuppliers.mock';
 import procurementSuppliersReducer from '@/store/slices/procurement/procurementSuppliersSlice';
 import useProveedores from '../useProveedores';
 
 /**
- * Contra el servicio mock real (no se mockea): estas pruebas verifican que
+ * Contra el doble en memoria del servicio: estas pruebas verifican que
  * el filtro «activos/inactivos/todos» se traduce en los parámetros
  * excluyentes del contrato (`is_active` vs `include_inactive`) y que cambiar
  * de filtro vuelve a la página 1.
  */
+
+vi.mock(
+	'@/services/procurement/procurementSuppliers.service',
+	() => import('@/mocks/services/procurementSuppliers.mock'),
+);
 
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ branchId: 4, subsidiaryId: 4 }),

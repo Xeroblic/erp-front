@@ -9,9 +9,9 @@ import type { IProcurementSupplierListRow } from '@/interface/procurement.interf
  * listado de la pantalla de Proveedores, y compartir el mismo estado de
  * Redux para dos propósitos distintos acoplaría ambas pantallas sin razón.
  *
- * `per_page: 100` (el máximo del contrato, sección 1) es suficiente para el
- * mock; el día que exista el backend, un selector con más proveedores que
- * eso necesita búsqueda server-side, no una carga completa.
+ * `per_page: 100` es el máximo del contrato (sección 1): una filial con más
+ * proveedores activos que eso no los verá todos aquí. Cuando pase, el
+ * selector necesita búsqueda server-side (`search`), no una carga completa.
  *
  * `addSupplier` suma un proveedor creado o restaurado desde el propio
  * formulario (alta en línea). Se guarda aparte, con la filial en que se

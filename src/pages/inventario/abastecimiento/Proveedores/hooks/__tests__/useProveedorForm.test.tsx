@@ -3,7 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resetProcurementSuppliersStoreForTests } from '@/services/procurement/procurementSuppliers.service';
+import { resetProcurementSuppliersStoreForTests } from '@/mocks/services/procurementSuppliers.mock';
 import procurementSuppliersReducer from '@/store/slices/procurement/procurementSuppliersSlice';
 import type { IProveedorFormValues } from '../../types';
 import useProveedorForm from '../useProveedorForm';
@@ -12,8 +12,13 @@ import useProveedorForm from '../useProveedorForm';
  * El conflicto de RUT (409 `SUPPLIER_RUT_ALREADY_EXISTS`) es la regla más
  * fácil de romper del contrato: no se toastea (lo resuelve el banner de la
  * modal) y **nunca** restaura solo. Estas pruebas ejercen ese camino contra
- * el servicio mock real.
+ * el doble en memoria del servicio.
  */
+
+vi.mock(
+	'@/services/procurement/procurementSuppliers.service',
+	() => import('@/mocks/services/procurementSuppliers.mock'),
+);
 
 vi.mock('@/store', async () => {
 	const reactRedux = await vi.importActual<typeof import('react-redux')>('react-redux');

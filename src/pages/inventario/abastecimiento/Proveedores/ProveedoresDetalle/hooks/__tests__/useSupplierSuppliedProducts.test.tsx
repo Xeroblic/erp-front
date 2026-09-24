@@ -30,6 +30,13 @@ const authorizeMock = vi.fn<(options?: { permission?: string }) => boolean>();
 vi.mock('@/hooks/useAuthorization', () => ({
 	default: () => ({ authorize: authorizeMock, isLoading: false }),
 }));
+// Las recepciones siguen siendo mock: el hook sólo las pide con la bandera encendida.
+const mockFlag = vi.hoisted(() => ({ enabled: true }));
+vi.mock('@/config/inventoryStock.config', () => ({
+	get default() {
+		return mockFlag.enabled;
+	},
+}));
 vi.mock('@/services/procurement/stockReceipts.service', () => ({
 	listStockReceipts: vi.fn(),
 	getStockReceipt: vi.fn(),
@@ -126,6 +133,20 @@ describe('useSupplierSuppliedProducts', () => {
 		authorizeMock.mockReset();
 		listMock.mockReset();
 		detailMock.mockReset();
+		mockFlag.enabled = true;
+	});
+
+	it('sin la bandera de datos simulados no consulta recepciones aunque tenga permiso', () => {
+		mockFlag.enabled = false;
+		authorizeMock.mockReturnValue(true);
+
+		const { result } = renderHook(() =>
+			useSupplierSuppliedProducts({ subsidiaryId: 2, supplierId: 7 }),
+		);
+
+		expect(result.current.available).toBe(false);
+		expect(result.current.loading).toBe(false);
+		expect(listMock).not.toHaveBeenCalled();
 	});
 
 	it('sin view-product no consulta recepciones', () => {

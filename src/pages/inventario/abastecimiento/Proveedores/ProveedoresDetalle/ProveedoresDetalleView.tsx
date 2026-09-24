@@ -43,7 +43,8 @@ const ProveedoresDetalleView = () => {
 		goToSupplier,
 		goToList,
 		retry,
-		resolveCommuneName,
+		billingCommuneName,
+		shippingCommuneName,
 	} = useProveedoresDetalle();
 	const { photoUrl, uploadPhoto, isUploading } = useSupplierPhoto({
 		subsidiaryId,
@@ -79,7 +80,6 @@ const ProveedoresDetalleView = () => {
 			</Subheader>
 
 			<Container className='space-y-4'>
-				<ProcurementMockNotice />
 				{id === null && (
 					<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
 						El proveedor solicitado no es válido.
@@ -186,11 +186,7 @@ const ProveedoresDetalleView = () => {
 											supplier.billing_commune_id !== null && (
 												<span className='text-zinc-500'>
 													{' '}
-													(
-													{resolveCommuneName(
-														supplier.billing_commune_id,
-													) ?? 'comuna'}
-													)
+													({billingCommuneName ?? 'comuna'})
 												</span>
 											)}
 									</p>
@@ -205,11 +201,7 @@ const ProveedoresDetalleView = () => {
 											supplier.shipping_commune_id !== null && (
 												<span className='text-zinc-500'>
 													{' '}
-													(
-													{resolveCommuneName(
-														supplier.shipping_commune_id,
-													) ?? 'comuna'}
-													)
+													({shippingCommuneName ?? 'comuna'})
 												</span>
 											)}
 									</p>
@@ -234,21 +226,38 @@ const ProveedoresDetalleView = () => {
 						 * del `view-procurement-supplier` de esta ruta: sin él se dice
 						 * por qué no hay tabla, en vez de mostrarla vacía.
 						 */}
-						{!suppliedProducts.checkingAccess && suppliedProducts.canRead && (
-							<SupplierSuppliedProductsTable
-								rows={suppliedProducts.rows}
-								loading={suppliedProducts.loading}
-								error={suppliedProducts.error}
-								subsidiaryId={subsidiaryId}
-								onRetry={suppliedProducts.retry}
-							/>
-						)}
-						{!suppliedProducts.checkingAccess && !suppliedProducts.canRead && (
-							<Alert color='amber' variant='outline' title='Productos suministrados'>
-								No tienes permiso para consultar recepciones, así que no podemos
-								mostrar los productos que entrega este proveedor.
+						{!suppliedProducts.available && (
+							<Alert color='zinc' variant='outline' title='Productos suministrados'>
+								Estarán disponibles cuando se habiliten las recepciones de
+								mercadería.
 							</Alert>
 						)}
+						{suppliedProducts.available &&
+							!suppliedProducts.checkingAccess &&
+							suppliedProducts.canRead && (
+								<>
+									{/* Las recepciones siguen simuladas aunque el proveedor sea real. */}
+									<ProcurementMockNotice />
+									<SupplierSuppliedProductsTable
+										rows={suppliedProducts.rows}
+										loading={suppliedProducts.loading}
+										error={suppliedProducts.error}
+										subsidiaryId={subsidiaryId}
+										onRetry={suppliedProducts.retry}
+									/>
+								</>
+							)}
+						{suppliedProducts.available &&
+							!suppliedProducts.checkingAccess &&
+							!suppliedProducts.canRead && (
+								<Alert
+									color='amber'
+									variant='outline'
+									title='Productos suministrados'>
+									No tienes permiso para consultar recepciones, así que no podemos
+									mostrar los productos que entrega este proveedor.
+								</Alert>
+							)}
 					</>
 				)}
 			</Container>

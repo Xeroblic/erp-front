@@ -395,6 +395,21 @@ export interface IProcurementSupplierPurchaseSummary {
 }
 
 /**
+ * Comuna anidada de la ficha de proveedor, con su provincia y región. Viene
+ * resuelta por el backend para mostrar el nombre sin cargar el catálogo; el
+ * id que se edita sigue siendo `billing_commune_id`/`shipping_commune_id`.
+ */
+export interface IProcurementSupplierCommune {
+	id: number;
+	name: string;
+	province: {
+		id: number;
+		name: string;
+		region: { id: number; name: string } | null;
+	} | null;
+}
+
+/**
  * Ficha completa de proveedor comercial de compras.
  *
  * No confundir con `ISupplier` de revisión técnica (`@/interface/supplier.interface.ts`
@@ -411,8 +426,10 @@ export interface IProcurementSupplier {
 	business_activity: string | null;
 	billing_address: string | null;
 	billing_commune_id: number | null;
+	billing_commune: IProcurementSupplierCommune | null;
 	shipping_address: string | null;
 	shipping_commune_id: number | null;
+	shipping_commune: IProcurementSupplierCommune | null;
 	phone: string | null;
 	email: string | null;
 	/** Calculado por el servidor. No es un campo del formulario. */
@@ -421,6 +438,8 @@ export interface IProcurementSupplier {
 	is_active: boolean;
 	created_at: TIsoTimestamp;
 	updated_at: TIsoTimestamp;
+	/** Fecha de desactivación (soft delete); `null` mientras está activo. */
+	deleted_at: TIsoTimestamp | null;
 	allowed_actions: TProcurementAllowedAction[];
 	purchase_summary: IProcurementSupplierPurchaseSummary;
 }

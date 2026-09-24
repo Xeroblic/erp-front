@@ -19,15 +19,13 @@ import type {
 
 /**
  * Store del maestro de proveedores (card 02 del módulo de abastecimiento,
- * sección 5 del contrato). Los thunks llaman al servicio mock de
- * `@/services/procurement/procurementSuppliers.service`: el día que el
- * endpoint exista, sólo ese servicio cambia.
+ * sección 5 del contrato). Los thunks llaman al servicio real de
+ * `@/services/procurement/procurementSuppliers.service`.
  *
  * `subsidiaryId` viaja en cada thunk y se reenvía al servicio: el contrato
  * ata el RUT único a la filial
- * (`/api/subsidiaries/{subsidiary}/procurement/suppliers`), y el mock
- * particiona su store por filial por la misma razón — dos filiales no ven ni
- * pisan los proveedores de la otra.
+ * (`/api/subsidiaries/{subsidiary}/procurement/suppliers`). Las escrituras
+ * exigen `headers.idempotencyKey`: el backend rechaza una escritura sin ella.
  */
 
 export interface ProcurementSuppliersState {
@@ -71,7 +69,7 @@ const initialState: ProcurementSuppliersState = {
 };
 
 interface IWriteHeaders {
-	idempotencyKey?: string;
+	idempotencyKey: string;
 }
 
 const MISSING_SUBSIDIARY_MESSAGE = 'No se pudo determinar la filial activa.';
@@ -110,7 +108,7 @@ export const createProcurementSupplierThunk = createAsyncThunk(
 		args: {
 			subsidiaryId: number | null;
 			payload: IProcurementSupplierPayload;
-			headers?: IWriteHeaders;
+			headers: IWriteHeaders;
 		},
 		{ rejectWithValue },
 	) => {
@@ -135,7 +133,7 @@ export const updateProcurementSupplierThunk = createAsyncThunk(
 			subsidiaryId: number | null;
 			id: number;
 			payload: IProcurementSupplierPayload;
-			headers?: IWriteHeaders;
+			headers: IWriteHeaders;
 		},
 		{ rejectWithValue },
 	) => {
@@ -163,7 +161,7 @@ export const updateProcurementSupplierThunk = createAsyncThunk(
 export const deactivateProcurementSupplierThunk = createAsyncThunk(
 	'procurementSuppliers/deactivate',
 	async (
-		args: { subsidiaryId: number | null; id: number; headers?: IWriteHeaders },
+		args: { subsidiaryId: number | null; id: number; headers: IWriteHeaders },
 		{ rejectWithValue },
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
@@ -179,7 +177,7 @@ export const deactivateProcurementSupplierThunk = createAsyncThunk(
 export const restoreProcurementSupplierThunk = createAsyncThunk(
 	'procurementSuppliers/restore',
 	async (
-		args: { subsidiaryId: number | null; id: number; headers?: IWriteHeaders },
+		args: { subsidiaryId: number | null; id: number; headers: IWriteHeaders },
 		{ rejectWithValue },
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);

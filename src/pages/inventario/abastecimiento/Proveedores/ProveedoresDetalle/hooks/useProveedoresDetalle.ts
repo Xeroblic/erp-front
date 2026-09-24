@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { listaComunasThunk } from '@/store/slices/core/coreSlice';
 import {
 	clearProcurementSupplierCurrent,
 	fetchProcurementSupplierDetail,
@@ -27,24 +26,10 @@ const useProveedoresDetalle = () => {
 	const supplier = useAppSelector(selectProcurementSupplierCurrent);
 	const loading = useAppSelector(selectProcurementSupplierCurrentLoading);
 	const error = useAppSelector(selectProcurementSupplierCurrentError);
-	const listaComunas = useAppSelector((state) => state.core.listaComunas);
 
-	// El contrato sólo entrega el id de comuna: se resuelve a nombre contra el
-	// mismo catálogo que usa `SelectComune` en el formulario.
-	useEffect(() => {
-		void dispatch(listaComunasThunk());
-	}, [dispatch]);
-
-	const resolveCommuneName = useCallback(
-		(communeId: number | null): string | null => {
-			if (communeId === null) return null;
-			return (
-				listaComunas.find((comuna) => String(comuna.codigo) === String(communeId))
-					?.nombre ?? null
-			);
-		},
-		[listaComunas],
-	);
+	// La ficha trae la comuna anidada: no hace falta cargar el catálogo completo.
+	const billingCommuneName = supplier?.billing_commune?.name ?? null;
+	const shippingCommuneName = supplier?.shipping_commune?.name ?? null;
 
 	const parsedId = Number(proveedorId);
 	const id = proveedorId !== undefined && Number.isFinite(parsedId) ? parsedId : null;
@@ -122,7 +107,8 @@ const useProveedoresDetalle = () => {
 		goToSupplier,
 		goToList,
 		retry,
-		resolveCommuneName,
+		billingCommuneName,
+		shippingCommuneName,
 	};
 };
 
