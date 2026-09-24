@@ -342,6 +342,20 @@ const DefaultAsideTemplate = () => {
 							to=''
 							isOpen={collapseStates.inventario}
 							onToggle={() => toggleCollapse('inventario')}>
+							{/* Inventario (stock unificado de la sucursal) */}
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.inventario.authority}
+								requireAll={Pages.inventory.subPages.inventario.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.inventario.text}
+									to={Pages.inventory.subPages.inventario.to}
+									icon={Pages.inventory.subPages.inventario.icon}
+									id={Pages.inventory.subPages.inventario.id}
+									onClick={() => navigate(Pages.inventory.subPages.inventario.to)}
+								/>
+							</AuthorityCheckNav>
+
 							{/* Bodegas */}
 							<AuthorityCheckNav
 								authority={Pages.inventory.subPages.warehouses.authority}
@@ -354,62 +368,6 @@ const DefaultAsideTemplate = () => {
 									icon={Pages.inventory.subPages.warehouses.icon}
 									id={Pages.inventory.subPages.warehouses.id}
 									onClick={() => navigate(Pages.inventory.subPages.warehouses.to)}
-								/>
-							</AuthorityCheckNav>
-
-							{/* Trazabilidad Subsidiary */}
-							<AuthorityCheckNav
-								authority={
-									Pages.inventory.subPages.trazabilidadSubsidiary.authority
-								}
-								userAuthority={userAuthority}
-								requireAll={
-									Pages.inventory.subPages.trazabilidadSubsidiary.requireAll
-								}>
-								<NavItem
-									text={Pages.inventory.subPages.trazabilidadSubsidiary.text}
-									to={Pages.inventory.subPages.trazabilidadSubsidiary.to}
-									icon={Pages.inventory.subPages.trazabilidadSubsidiary.icon}
-									id={Pages.inventory.subPages.trazabilidadSubsidiary.id}
-									onClick={() =>
-										navigate(Pages.inventory.subPages.trazabilidadSubsidiary.to)
-									}
-								/>
-							</AuthorityCheckNav>
-
-							{/* Ingreso de Stock */}
-							<AuthorityCheckNav
-								authority={Pages.inventory.subPages.ingresoStock.authority}
-								requireAll={Pages.inventory.subPages.ingresoStock.requireAll}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.inventory.subPages.ingresoStock.text}
-									to={Pages.inventory.subPages.ingresoStock.to}
-									icon={Pages.inventory.subPages.ingresoStock.icon}
-									id={Pages.inventory.subPages.ingresoStock.id}
-									onClick={() =>
-										navigate(Pages.inventory.subPages.ingresoStock.to)
-									}
-								/>
-							</AuthorityCheckNav>
-
-							{/* Catálogo del contrato de abastecimiento (mock, PR #67) */}
-							<AuthorityCheckNav
-								authority={
-									Pages.inventory.subPages.catalogoAbastecimiento.authority
-								}
-								requireAll={
-									Pages.inventory.subPages.catalogoAbastecimiento.requireAll
-								}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.inventory.subPages.catalogoAbastecimiento.text}
-									to={Pages.inventory.subPages.catalogoAbastecimiento.to}
-									icon={Pages.inventory.subPages.catalogoAbastecimiento.icon}
-									id={Pages.inventory.subPages.catalogoAbastecimiento.id}
-									onClick={() =>
-										navigate(Pages.inventory.subPages.catalogoAbastecimiento.to)
-									}
 								/>
 							</AuthorityCheckNav>
 
@@ -445,18 +403,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							<AuthorityCheckNav
-								authority={Pages.inventory.subPages.inventario.authority}
-								requireAll={Pages.inventory.subPages.inventario.requireAll}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.inventory.subPages.inventario.text}
-									to={Pages.inventory.subPages.inventario.to}
-									icon={Pages.inventory.subPages.inventario.icon}
-									id={Pages.inventory.subPages.inventario.id}
-									onClick={() => navigate(Pages.inventory.subPages.inventario.to)}
-								/>
-							</AuthorityCheckNav>
 							{/* Recepciones físicas (mock, PR #67, card 05) */}
 							<AuthorityCheckNav
 								authority={Pages.inventory.subPages.recepciones.authority}
@@ -489,6 +435,43 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
+							{/* Ingreso de Stock */}
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.ingresoStock.authority}
+								requireAll={Pages.inventory.subPages.ingresoStock.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.ingresoStock.text}
+									to={Pages.inventory.subPages.ingresoStock.to}
+									icon={Pages.inventory.subPages.ingresoStock.icon}
+									id={Pages.inventory.subPages.ingresoStock.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.ingresoStock.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Trazabilidad Subsidiary */}
+							<AuthorityCheckNav
+								authority={
+									Pages.inventory.subPages.trazabilidadSubsidiary.authority
+								}
+								userAuthority={userAuthority}
+								requireAll={
+									Pages.inventory.subPages.trazabilidadSubsidiary.requireAll
+								}>
+								<NavItem
+									text={Pages.inventory.subPages.trazabilidadSubsidiary.text}
+									to={Pages.inventory.subPages.trazabilidadSubsidiary.to}
+									icon={Pages.inventory.subPages.trazabilidadSubsidiary.icon}
+									id={Pages.inventory.subPages.trazabilidadSubsidiary.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.trazabilidadSubsidiary.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Retiros de equipos */}
 							<AuthorityCheckNav
 								authority={Pages.inventory.subPages.retirosEquipos.authority}
 								userAuthority={userAuthority}
@@ -500,6 +483,26 @@ const DefaultAsideTemplate = () => {
 									id={Pages.inventory.subPages.retirosEquipos.id}
 									onClick={() =>
 										navigate(Pages.inventory.subPages.retirosEquipos.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Catálogo del contrato de abastecimiento (mock, PR #67) */}
+							<AuthorityCheckNav
+								authority={
+									Pages.inventory.subPages.catalogoAbastecimiento.authority
+								}
+								requireAll={
+									Pages.inventory.subPages.catalogoAbastecimiento.requireAll
+								}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.catalogoAbastecimiento.text}
+									to={Pages.inventory.subPages.catalogoAbastecimiento.to}
+									icon={Pages.inventory.subPages.catalogoAbastecimiento.icon}
+									id={Pages.inventory.subPages.catalogoAbastecimiento.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.catalogoAbastecimiento.to)
 									}
 								/>
 							</AuthorityCheckNav>
