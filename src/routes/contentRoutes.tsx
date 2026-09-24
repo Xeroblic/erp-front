@@ -60,7 +60,6 @@ const SystemParameterDetails = lazy(
 );
 
 // Paginas de Comercial
-// const InventarioPage = lazy(() => import('../pages/inventario/Inventario'));
 const SalesListPage = lazy(() => import('../pages/comercial/ventas/SalesListPage'));
 const PendientesSeriePage = lazy(() => import('../pages/comercial/ventas/pendientesSerie'));
 const CotizacionesPage = lazy(() => import('../pages/comercial/cotizaciones/CotizacionesAdmin'));
@@ -68,16 +67,10 @@ const SolicitudesVentasPage = lazy(() => import('../pages/comercial/SolicitudesV
 const EnlacesPublicosPage = lazy(() => import('@/pages/comercial/EnlacesPublicosPage'));
 
 // Paginas de Inventario
-const TransferenciasInventario = lazy(
-	() => import('@/pages/inventario/transferencias/Transferencias'),
-);
 const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas'));
 const BodegasDetailPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseDetailView'));
 const TransferenciasComercial = lazy(
 	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
-);
-const HistorialInventario = lazy(
-	() => import('@/pages/inventario/historial/HistorialInventarioAdmin'),
 );
 const TrazabilidadSubsidiary = lazy(
 	() => import('@/pages/inventario/trazabilidad-sucursal/TrazabilidadSubsidiary'),
@@ -305,24 +298,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 
 	// Rutas ERP
-	// {
-	// 	path: cfg.inventory.to,
-	// 	element: <InventarioPage />,
-	// 	authority: cfg.inventory.authority,
-	// },
-	{
-		path: cfg.inventory.subPages.transfers.to,
-		element: <TransferenciasInventario />,
-		authority: cfg.inventory.subPages.transfers.authority,
-	},
-	{
-		// No usa `cfg.inventory.authority`: ese nodo agrupa los permisos que abren la
-		// sección (view-warehouse O edit-product) y `AuthorityCheck` evalúa siempre
-		// con requireAll, así que exigiría ambos. El historial es de bodega.
-		path: '/inventario/historial',
-		element: <HistorialInventario />,
-		authority: cfg.inventory.subPages.warehouses.authority,
-	},
 	{
 		path: cfg.commercial.subPages.sales.to,
 		element: <SalesListPage />,
@@ -576,6 +551,25 @@ const contentRoutes: IRoutePersonalizada[] = [
 			/>
 		),
 		authority: pagesConfig.inventory.subPages.ajustesTraslados.authority,
+	},
+	// El formulario de transferencias entre bodegas se retiró: confirmaba con éxito sin
+	// llamar a la API. Mover unidades entre bodegas es la pestaña Traslado.
+	{
+		path: '/inventario/transferencias',
+		element: (
+			<Navigate
+				to={`${pagesConfig.inventory.subPages.ajustesTraslados.to}?tab=traslado`}
+				replace
+			/>
+		),
+		authority: pagesConfig.inventory.subPages.ajustesTraslados.authority,
+	},
+	// El historial de inventario sólo listaba transferencias con la misma tabla de
+	// Comercial › Transferencias, que es donde se consultan ahora.
+	{
+		path: '/inventario/historial',
+		element: <Navigate to={pagesConfig.commercial.subPages.transfers.to} replace />,
+		authority: pagesConfig.commercial.subPages.transfers.authority,
 	},
 
 	{
