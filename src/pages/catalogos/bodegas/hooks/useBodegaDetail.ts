@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
@@ -13,7 +13,7 @@ import {
 } from '@/store/slices/warehouses/warehouseSlice';
 import type { IAttachProductRequest, IWarehouseProduct } from '@/interface/warehouse.interface';
 import type { IProduct } from '@/interface/product.interface';
-import type { IWarehouseDetail } from '@/interface/warehouse.interface';
+import type { IFichaBodegaResumen } from '../types';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -36,44 +36,44 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 
 export const useBodegaDetail = () => {
 	const { id } = useParams<{ id: string }>();
-	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
+	const parsedId = Number(id);
+	const warehouseId = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : null;
 
 	const warehouse = useAppSelector((s) => s.warehouse.warehouseDetail);
 	const warehouseDetailLoading = useAppSelector((s) => s.warehouse.warehouseDetailLoading);
+	const warehouseDetailError = useAppSelector((s) => s.warehouse.warehouseDetailError);
 	const allProducts = useAppSelector((s) => s.products.items);
 	const productsLoading = useAppSelector((s) => s.products.loading);
 
 	// UI state
-	const [isEditable, setIsEditable] = useState(false);
+	const [showAvailable, setShowAvailable] = useState(false);
 	const [productToRemove, setProductToRemove] = useState<IWarehouseProduct | null>(null);
 	const [attachProduct, setAttachProduct] = useState<IProduct | null>(null);
-	const [showCharts, setShowCharts] = useState(false);
 	const [isAttaching, setIsAttaching] = useState(false);
 
-	// Load detail
+	// Load detail: el error queda en `warehouseDetailError` y la vista lo muestra con «Reintentar».
+	const refresh = useCallback(() => {
+		if (!branchId || warehouseId === null) return;
+		void dispatch(fetchWarehouseDetail({ branchId, warehouseId }));
+	}, [branchId, warehouseId, dispatch]);
+
 	useEffect(() => {
-		if (branchId && id) {
-			dispatch(fetchWarehouseDetail({ branchId, warehouseId: Number(id) }))
-				.unwrap()
-				.catch((e: unknown) => {
-					toast.error(getErrorMessage(e, 'Error al cargar el detalle de la bodega'));
-				});
-		}
-	}, [branchId, id, dispatch]);
+		refresh();
+	}, [refresh]);
 
 	// Load products for the branch
 	useEffect(() => {
-		if (!id || !branchId) return;
-		dispatch(
+		if (warehouseId === null || !branchId) return;
+		void dispatch(
 			fetchProductsList({
 				entityParam: 'branches',
 				entityId: branchId,
 				params: { per_page: 50 },
 			}),
 		);
-	}, [dispatch, branchId, id]);
+	}, [dispatch, branchId, warehouseId]);
 
 	// Cleanup
 	useEffect(() => {
@@ -97,6 +97,18 @@ export const useBodegaDetail = () => {
 		});
 	}, [allProducts, warehouse?.products, branchId, warehouse?.branch_id, associatedProductIds]);
 
+	// Sólo cuentan los productos asociados; las unidades salen de `current_capacity`.
+	const summary = useMemo<IFichaBodegaResumen>(() => {
+		const products = warehouse?.products ?? [];
+		const synced = products.filter((product) => product.sync_stock).length;
+		return {
+			products: products.length,
+			units: warehouse?.current_capacity ?? 0,
+			synced,
+			manual: products.length - synced,
+		};
+	}, [warehouse?.products, warehouse?.current_capacity]);
+
 	const isProductAssociated = useCallback(
 		(productId: number): boolean => associatedProductIds.has(productId),
 		[associatedProductIds],
@@ -104,10 +116,10 @@ export const useBodegaDetail = () => {
 
 	// Actions
 	const loadWarehouseDetail = useCallback(
-		async (warehouseId: number) => {
+		async (targetId: number) => {
 			if (!branchId) return;
 			try {
-				await dispatch(fetchWarehouseDetail({ branchId, warehouseId })).unwrap();
+				await dispatch(fetchWarehouseDetail({ branchId, warehouseId: targetId })).unwrap();
 			} catch (e: unknown) {
 				toast.error(getErrorMessage(e, 'Error al cargar el detalle de la bodega'));
 			}
@@ -200,26 +212,28 @@ export const useBodegaDetail = () => {
 
 	const state = useMemo(
 		() => ({
+			warehouseId,
 			warehouse,
 			warehouseDetailLoading,
+			warehouseDetailError,
 			allProducts,
 			productsLoading,
-			isEditable,
+			showAvailable,
 			productToRemove,
 			attachProduct,
-			showCharts,
 			isAttaching,
 			branchId,
 		}),
 		[
+			warehouseId,
 			warehouse,
 			warehouseDetailLoading,
+			warehouseDetailError,
 			allProducts,
 			productsLoading,
-			isEditable,
+			showAvailable,
 			productToRemove,
 			attachProduct,
-			showCharts,
 			isAttaching,
 			branchId,
 		],
@@ -230,14 +244,15 @@ export const useBodegaDetail = () => {
 			associatedProductIds,
 			availableProducts,
 			isProductAssociated,
+			summary,
 		}),
-		[associatedProductIds, availableProducts, isProductAssociated],
+		[associatedProductIds, availableProducts, isProductAssociated, summary],
 	);
 
 	const actions = useMemo(
 		() => ({
-			setIsEditable,
-			setShowCharts,
+			refresh,
+			setShowAvailable,
 			setProductToRemove,
 			closeAttachModal,
 			onSelectProductToAttach,
@@ -245,8 +260,8 @@ export const useBodegaDetail = () => {
 			onConfirmRemove,
 		}),
 		[
-			setIsEditable,
-			setShowCharts,
+			refresh,
+			setShowAvailable,
 			setProductToRemove,
 			closeAttachModal,
 			onSelectProductToAttach,

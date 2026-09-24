@@ -69,6 +69,8 @@ export interface WarehouseState {
 	listBranchId: number | null;
 	listRequestId: string | null;
 	createRequestId: string | null;
+	/** Última carga de detalle: una respuesta tardía de otra bodega o sucursal se descarta. */
+	detailRequestId: string | null;
 }
 
 // ==================== Initial State ====================
@@ -102,6 +104,7 @@ const initialState: WarehouseState = {
 	listBranchId: null,
 	listRequestId: null,
 	createRequestId: null,
+	detailRequestId: null,
 };
 
 // ==================== Helper Functions ====================
@@ -203,6 +206,11 @@ export const fetchWarehouseDetail = createAsyncThunk<
 		const data = response.data?.data ?? response.data;
 		return data as IWarehouseDetail;
 	} catch (error: unknown) {
+		// El 404 trae el mensaje interno de Laravel («No query results for model…»).
+		if (asRecord(asRecord(error)?.response)?.status === 404)
+			return rejectWithValue({
+				message: 'La bodega no existe o no pertenece a la sucursal activa.',
+			});
 		return rejectWithValue(extractApiError(error));
 	}
 });
@@ -410,15 +418,18 @@ const warehouseSlice = createSlice({
 				state.loading = false;
 				state.error = defaultError(action, 'No se pudieron cargar las bodegas');
 			})
-			.addCase(fetchWarehouseDetail.pending, (state) => {
+			.addCase(fetchWarehouseDetail.pending, (state, action) => {
+				state.detailRequestId = action.meta.requestId;
 				state.warehouseDetailLoading = true;
 				state.warehouseDetailError = null;
 			})
 			.addCase(fetchWarehouseDetail.fulfilled, (state, action) => {
+				if (state.detailRequestId !== action.meta.requestId) return;
 				state.warehouseDetailLoading = false;
 				state.warehouseDetail = action.payload;
 			})
 			.addCase(fetchWarehouseDetail.rejected, (state, action) => {
+				if (state.detailRequestId !== action.meta.requestId) return;
 				state.warehouseDetailLoading = false;
 				state.warehouseDetailError = defaultError(action, 'No se pudo obtener el detalle');
 			})

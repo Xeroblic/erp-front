@@ -59,3 +59,31 @@ export const CREATE_WAREHOUSE_INITIAL_VALUES: ICreateWarehouseForm = {
 	is_active: true,
 	requires_serial_tracking: false,
 };
+
+// ==================== Listado ====================
+
+/** «Todas» no es una opción: es la ausencia de filtro (`null`). */
+export type TBodegaEstadoFiltro = 'active' | 'inactive';
+
+export const BODEGA_ESTADO_LABELS: Record<TBodegaEstadoFiltro, string> = {
+	active: 'Activas',
+	inactive: 'Inactivas',
+};
+
+/** KPI del listado, calculados sobre todas las bodegas de la sucursal (sin filtros). */
+export interface IBodegasResumen {
+	total: number;
+	actives: number;
+	units: number;
+	nearCapacity: number;
+}
+
+// ==================== Ficha ====================
+
+/** KPI de la ficha de bodega, sobre los productos asociados a ella. */
+export interface IFichaBodegaResumen {
+	products: number;
+	units: number;
+	synced: number;
+	manual: number;
+}

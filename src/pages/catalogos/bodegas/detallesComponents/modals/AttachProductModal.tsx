@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
+import Modal, {
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+	ModalHeader,
+} from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import Card, { CardBody } from '@/components/ui/Card';
 import Checkbox from '@/components/form/Checkbox';
 import Input from '@/components/form/Input';
 import { IWarehouseProduct } from '@/interface/warehouse.interface';
@@ -74,47 +80,79 @@ const AttachProductModal: React.FC<AttachProductModalProps> = ({
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='sm'>
-			<ModalHeader>
-				<h3 className='text-lg font-semibold'>Asociar producto</h3>
+		<Modal
+			isOpen={isOpen}
+			setIsOpen={() => {
+				if (!isLoading) onClose();
+			}}
+			size='sm'
+			isCentered
+			isStaticBackdrop={isLoading}>
+			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+				<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+					Asociar producto
+				</h2>
 			</ModalHeader>
 			<ModalBody>
-				<p className='text-sm'>
-					Producto: <strong>{product.name}</strong>
-				</p>
-				<div className='mt-3 flex items-center gap-3'>
-					<Checkbox
-						id='attach-sync'
-						variant='switch'
-						checked={sync}
-						onChange={(e) => setSync(e.target.checked)}
-					/>
-					<label htmlFor='attach-sync' className='text-sm'>
-						Sincronizar
-					</label>
-				</div>
-				{!sync && (
-					<div className='mt-3'>
-						<label className='mb-1 block text-sm'>Cantidad</label>
-						<Input
-							name='cantidad'
-							type='number'
-							min='1'
-							value={quantity}
-							onChange={(e) => setQuantity(parseInt(e.target.value || '0'))}
-						/>
-					</div>
-				)}
+				<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
+					<CardBody className='space-y-4'>
+						<div>
+							<p className='text-lg font-semibold'>{product.name}</p>
+							<p className='font-mono text-sm text-zinc-500'>SKU {product.sku}</p>
+						</div>
+						<div className='flex items-start gap-3'>
+							<Checkbox
+								id='attach-sync'
+								variant='switch'
+								checked={sync}
+								onChange={(e) => setSync(e.target.checked)}
+							/>
+							<label htmlFor='attach-sync' className='text-sm'>
+								<span className='font-medium'>Sincronizar con el stock</span>
+								<span className='block text-zinc-500'>
+									{sync
+										? 'La bodega toma el stock de la sucursal.'
+										: 'Indicas a mano cuántas unidades guarda la bodega.'}
+								</span>
+							</label>
+						</div>
+						{!sync && (
+							<div className='space-y-1'>
+								<label
+									htmlFor='attach-quantity'
+									className='block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+									Cantidad
+								</label>
+								<Input
+									id='attach-quantity'
+									name='cantidad'
+									type='number'
+									min='1'
+									value={quantity}
+									onChange={(e) => setQuantity(parseInt(e.target.value || '0'))}
+								/>
+							</div>
+						)}
+					</CardBody>
+				</Card>
 			</ModalBody>
-			<ModalFooter>
-				<div className='flex justify-end gap-2'>
-					<Button variant='outline' onClick={onClose}>
+			<ModalFooter className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+				<ModalFooterChild>
+					<Button variant='outline' onClick={onClose} isDisable={isLoading}>
 						Cancelar
 					</Button>
-					<Button color='blue' onClick={handleConfirm} isLoading={isLoading}>
-						Confirmar
+				</ModalFooterChild>
+				<ModalFooterChild>
+					<Button
+						variant='solid'
+						color='blue'
+						icon='HeroPlus'
+						onClick={handleConfirm}
+						isDisable={isLoading}
+						isLoading={isLoading}>
+						Asociar
 					</Button>
-				</div>
+				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>
 	);

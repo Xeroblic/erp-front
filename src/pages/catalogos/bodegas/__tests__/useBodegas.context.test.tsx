@@ -5,12 +5,11 @@ import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IWarehouse } from '@/interface/warehouse.interface';
 // eslint-disable-next-line import/extensions
-import ApiService from '@/services/ApiService';
-// eslint-disable-next-line import/extensions
 import warehouseReducer from '@/store/slices/warehouses/warehouseSlice';
 import { useBodegas } from '../hooks/useBodegas';
 
 const branchContext = vi.hoisted(() => ({ branchId: 1 as number | null }));
+const fetchData = vi.hoisted(() => vi.fn());
 
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({
@@ -20,7 +19,7 @@ vi.mock('@/hooks/useCurrentBranch', () => ({
 		visibleBranches: [],
 	}),
 }));
-vi.mock('@/services/ApiService', () => ({ default: { fetchData: vi.fn() } }));
+vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
 vi.mock('@/store', async () => {
 	const reactRedux = await vi.importActual<typeof import('react-redux')>('react-redux');
 	return { useAppDispatch: reactRedux.useDispatch, useAppSelector: reactRedux.useSelector };
@@ -40,7 +39,7 @@ const warehouse: IWarehouse = {
 describe('useBodegas con cambio de sucursal', () => {
 	beforeEach(() => {
 		branchContext.branchId = 1;
-		vi.mocked(ApiService.fetchData).mockResolvedValue({
+		fetchData.mockResolvedValue({
 			data: {
 				data: [warehouse],
 				meta: { total: 1, current_page: 1, per_page: 15, last_page: 1 },
@@ -92,5 +91,64 @@ describe('useBodegas con cambio de sucursal', () => {
 			expect(store.getState().warehouse.listBranchId).toBe(2);
 			expect(hook.result.current.state.loading).toBe(false);
 		});
+	});
+});
+
+describe('useBodegas filtros y resumen', () => {
+	const central: IWarehouse = {
+		...warehouse,
+		id: 1,
+		name: 'Bodega Central',
+		code: 'BOD-001',
+		warehouse_type: 'Principal',
+		current_capacity: 12,
+	};
+	const sala: IWarehouse = {
+		...warehouse,
+		id: 2,
+		name: 'Sala de ventas',
+		code: 'SALA-1',
+		warehouse_type: 'Sala de ventas',
+		current_capacity: 3,
+		is_active: false,
+	};
+
+	beforeEach(() => {
+		branchContext.branchId = 1;
+		fetchData.mockResolvedValue({
+			data: {
+				data: [central, sala],
+				meta: { total: 2, current_page: 1, per_page: 15, last_page: 1 },
+			},
+		} as never);
+	});
+
+	it('filtra por búsqueda, tipo y estado sin alterar el resumen de la sucursal', async () => {
+		const store = configureStore({ reducer: { warehouse: warehouseReducer } });
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
+		const hook = renderHook(() => useBodegas(), { wrapper: Wrapper });
+
+		await waitFor(() => expect(hook.result.current.state.warehouses).toHaveLength(2));
+		const expectedSummary = { total: 2, actives: 1, units: 15, nearCapacity: 0 };
+		expect(hook.result.current.state.summary).toEqual(expectedSummary);
+		expect(hook.result.current.state.typeOptions).toEqual(['Principal', 'Sala de ventas']);
+
+		act(() => hook.result.current.actions.setStatusFilter('inactive'));
+		expect(hook.result.current.state.warehouses.map((w) => w.id)).toEqual([2]);
+
+		act(() => hook.result.current.actions.setTypeFilter('Principal'));
+		expect(hook.result.current.state.warehouses).toEqual([]);
+		expect(hook.result.current.state.hasFilters).toBe(true);
+		expect(hook.result.current.state.summary).toEqual(expectedSummary);
+
+		act(() => hook.result.current.actions.clearFilters());
+		act(() => hook.result.current.actions.setGlobalFilter('sala-1'));
+		expect(hook.result.current.state.warehouses.map((w) => w.id)).toEqual([2]);
+
+		act(() => hook.result.current.actions.clearFilters());
+		expect(hook.result.current.state.hasFilters).toBe(false);
+		expect(hook.result.current.state.warehouses).toHaveLength(2);
 	});
 });

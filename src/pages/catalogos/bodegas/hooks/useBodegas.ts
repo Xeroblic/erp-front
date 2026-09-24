@@ -22,7 +22,11 @@ import {
 	WarehouseSchema,
 	CREATE_WAREHOUSE_INITIAL_VALUES,
 	type ICreateWarehouseForm,
+	type IBodegasResumen,
+	type TBodegaEstadoFiltro,
 } from '../types';
+
+const LIST_PARAMS: IFetchWarehousesParams = { page: 1, per_page: 15 };
 
 export const useBodegas = () => {
 	const dispatch = useAppDispatch();
@@ -31,11 +35,16 @@ export const useBodegas = () => {
 	latestBranchIdRef.current = branchId;
 
 	const warehouseState = useAppSelector((s) => s.warehouse);
-	const warehouses = warehouseState.listBranchId === branchId ? warehouseState.warehouses : [];
+	const warehouses = useMemo(
+		() => (warehouseState.listBranchId === branchId ? warehouseState.warehouses : []),
+		[warehouseState.listBranchId, warehouseState.warehouses, branchId],
+	);
 	const { stats, loading, error, deleting } = warehouseState;
 
 	// UI state
 	const [globalFilter, setGlobalFilter] = useState('');
+	const [typeFilter, setTypeFilter] = useState<string | null>(null);
+	const [statusFilter, setStatusFilter] = useState<TBodegaEstadoFiltro | null>(null);
 	const [editModalOpen, setEditModalOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const branchContext = useMemo(
@@ -58,11 +67,8 @@ export const useBodegas = () => {
 	const loadWarehouses = useCallback(
 		async (params?: IFetchWarehousesParams) => {
 			if (!branchId) return;
-			try {
-				await dispatch(fetchWarehouses({ branchId, params })).unwrap();
-			} catch (e: unknown) {
-				toast.error((e as IWarehouseApiError).message || 'Error al cargar bodegas');
-			}
+			// El error queda en `state.error` y la vista lo muestra con «Reintentar».
+			await dispatch(fetchWarehouses({ branchId, params }));
 		},
 		[dispatch, branchId],
 	);
@@ -139,7 +145,7 @@ export const useBodegas = () => {
 			if (success) {
 				resetForm();
 				createSelection.clear();
-				loadWarehouses({ page: 1, per_page: 15 });
+				void loadWarehouses(LIST_PARAMS);
 			}
 		},
 	});
@@ -165,7 +171,7 @@ export const useBodegas = () => {
 			if (success) {
 				setEditModalOpen(false);
 				selection.clear();
-				loadWarehouses({ page: 1, per_page: 15 });
+				void loadWarehouses(LIST_PARAMS);
 			}
 		},
 	});
@@ -173,7 +179,7 @@ export const useBodegas = () => {
 	// Load data
 	useEffect(() => {
 		if (branchId) {
-			loadWarehouses({ page: 1, per_page: 15 });
+			void loadWarehouses(LIST_PARAMS);
 		}
 	}, [branchId, loadWarehouses]);
 
@@ -186,14 +192,49 @@ export const useBodegas = () => {
 
 	// Filtered warehouses
 	const filteredWarehouses = useMemo(() => {
-		if (!globalFilter) return warehouses;
-		const searchLower = globalFilter.toLowerCase();
-		return warehouses.filter(
-			(w) =>
-				w.name.toLowerCase().includes(searchLower) ||
-				w.code.toLowerCase().includes(searchLower),
-		);
-	}, [warehouses, globalFilter]);
+		const searchLower = globalFilter.trim().toLowerCase();
+		return warehouses.filter((w) => {
+			if (
+				searchLower &&
+				!w.name.toLowerCase().includes(searchLower) &&
+				!w.code.toLowerCase().includes(searchLower)
+			)
+				return false;
+			if (typeFilter !== null && w.warehouse_type !== typeFilter) return false;
+			if (statusFilter === 'active' && !w.is_active) return false;
+			if (statusFilter === 'inactive' && w.is_active) return false;
+			return true;
+		});
+	}, [warehouses, globalFilter, typeFilter, statusFilter]);
+
+	const typeOptions = useMemo(
+		() =>
+			Array.from(new Set(warehouses.map((w) => w.warehouse_type).filter(Boolean))).sort(
+				(a, b) => a.localeCompare(b, 'es'),
+			),
+		[warehouses],
+	);
+
+	// El listado no trae `products`: las unidades salen de `current_capacity`.
+	const summary = useMemo<IBodegasResumen>(
+		() => ({
+			total: warehouses.length,
+			actives: warehouses.filter((w) => w.is_active).length,
+			units: warehouses.reduce((sum, w) => sum + (w.current_capacity ?? 0), 0),
+			nearCapacity: stats.near_capacity,
+		}),
+		[warehouses, stats.near_capacity],
+	);
+
+	const hasFilters = globalFilter.trim() !== '' || typeFilter !== null || statusFilter !== null;
+	const clearFilters = useCallback(() => {
+		setGlobalFilter('');
+		setTypeFilter(null);
+		setStatusFilter(null);
+	}, []);
+	const refresh = useCallback(() => {
+		void loadWarehouses(LIST_PARAMS);
+	}, [loadWarehouses]);
 
 	// Actions
 	const handleEdit = useCallback(
@@ -230,7 +271,7 @@ export const useBodegas = () => {
 		const success = await handleDeleteWarehouse(selectedWarehouse.id);
 		if (success) {
 			selection.clear();
-			loadWarehouses({ page: 1, per_page: 15 });
+			void loadWarehouses(LIST_PARAMS);
 		}
 		return success;
 	}, [selectedWarehouse, handleDeleteWarehouse, loadWarehouses, selection]);
@@ -254,11 +295,15 @@ export const useBodegas = () => {
 	const state = useMemo(
 		() => ({
 			warehouses: filteredWarehouses,
-			stats,
+			summary,
+			typeOptions,
 			loading,
 			deleting,
 			error,
 			globalFilter,
+			typeFilter,
+			statusFilter,
+			hasFilters,
 			createModalOpen: createSelection.isOpen,
 			editModalOpen: editModalOpen && selection.isOpen,
 			deleteModalOpen: deleteModalOpen && selection.isOpen,
@@ -267,11 +312,15 @@ export const useBodegas = () => {
 		}),
 		[
 			filteredWarehouses,
-			stats,
+			summary,
+			typeOptions,
 			loading,
 			deleting,
 			error,
 			globalFilter,
+			typeFilter,
+			statusFilter,
+			hasFilters,
 			createSelection.isOpen,
 			editModalOpen,
 			deleteModalOpen,
@@ -292,6 +341,10 @@ export const useBodegas = () => {
 	const actions = useMemo(
 		() => ({
 			setGlobalFilter,
+			setTypeFilter,
+			setStatusFilter,
+			clearFilters,
+			refresh,
 			openCreateModal,
 			setCreateModalOpen,
 			setEditModalOpen,
@@ -303,6 +356,8 @@ export const useBodegas = () => {
 		}),
 		[
 			setGlobalFilter,
+			clearFilters,
+			refresh,
 			openCreateModal,
 			setCreateModalOpen,
 			setEditModalOpen,
