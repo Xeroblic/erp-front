@@ -13,7 +13,6 @@ import ProveedorFormModal from '../components/modals/ProveedorFormModal';
 import DeactivateSupplierModal from '../components/modals/DeactivateSupplierModal';
 import SupplierStatusBadge from '../components/parts/SupplierStatusBadge';
 import useProveedoresDetalle from './hooks/useProveedoresDetalle';
-import useSupplierPhoto from './hooks/useSupplierPhoto';
 import useSupplierSuppliedProducts from './hooks/useSupplierSuppliedProducts';
 import SupplierAvatar from './components/parts/SupplierAvatar';
 import SupplierPurchaseSummaryCard from './components/parts/SupplierPurchaseSummaryCard';
@@ -46,10 +45,6 @@ const ProveedoresDetalleView = () => {
 		billingCommuneName,
 		shippingCommuneName,
 	} = useProveedoresDetalle();
-	const { photoUrl, uploadPhoto, isUploading } = useSupplierPhoto({
-		subsidiaryId,
-		supplierId: id,
-	});
 	const suppliedProducts = useSupplierSuppliedProducts({ subsidiaryId, supplierId: id });
 
 	return (
@@ -118,12 +113,7 @@ const ProveedoresDetalleView = () => {
 					<>
 						<Card>
 							<CardBody className='flex flex-col gap-6 sm:flex-row sm:items-center'>
-								<SupplierAvatar
-									photoUrl={photoUrl}
-									displayName={supplier.display_name}
-									isUploading={isUploading}
-									onUpload={uploadPhoto}
-								/>
+								<SupplierAvatar displayName={supplier.display_name} />
 								<div className='min-w-0 flex-1'>
 									<div className='flex flex-wrap items-center gap-3'>
 										<h1 className='truncate text-xl font-semibold text-zinc-900 dark:text-white'>

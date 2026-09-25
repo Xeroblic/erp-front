@@ -39,6 +39,7 @@ import useDocumentoCompraForm from '../../hooks/useDocumentoCompraForm';
 import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
 import useSupplierInlineEdit from '../../hooks/useSupplierInlineEdit';
 import ProductoCompraFormModal from './ProductoCompraFormModal';
+import SupplierOptionsNotice from '../parts/SupplierOptionsNotice';
 import { EMPTY_DOCUMENTO_LINE } from '../../types';
 import { focusFirstInvalidDocumentoCompraField } from '../../utils/documentoCompraFieldFocus';
 
@@ -122,6 +123,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 	const {
 		suppliers,
 		loading: loadingSuppliers,
+		unavailableReason: suppliersUnavailableReason,
 		addSupplier,
 		reload: reloadSuppliers,
 	} = useActiveSupplierOptions(subsidiaryId, isOpen);
@@ -405,6 +407,10 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 												isValid={!formik.errors.supplier_id}
 												isTouched={Boolean(formik.touched.supplier_id)}
 												invalidFeedback={formik.errors.supplier_id}
+											/>
+											<SupplierOptionsNotice
+												reason={suppliersUnavailableReason}
+												onRetry={reloadSuppliers}
 											/>
 											{formik.values.document_type === 'receipt' && (
 												<p className='text-xs text-zinc-500'>

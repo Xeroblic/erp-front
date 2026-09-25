@@ -23,8 +23,9 @@ import SelectReact from '@/components/form/SelectReact';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import type { IStockReceipt } from '@/interface/procurement.interface';
+import useActiveSupplierOptions from '@/pages/inventario/abastecimiento/DocumentosCompra/hooks/useActiveSupplierOptions';
+import SupplierOptionsNotice from '@/pages/inventario/abastecimiento/DocumentosCompra/components/parts/SupplierOptionsNotice';
 import useRecepcionForm from '../../hooks/useRecepcionForm';
-import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
 import usePurchaseDocumentPicker from '../../hooks/usePurchaseDocumentPicker';
 import { EMPTY_RECEPCION_LINE } from '../../types';
 import type { TRecepcionFormMode } from '../../types';
@@ -110,10 +111,12 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 	const isManual = formik.values.mode === 'manual';
 	/** Con proveedor conocido el costo unitario pasa a ser obligatorio. */
 	const hasKnownSupplier = formik.values.supplier_id !== '';
-	const { suppliers, loading: loadingSuppliers } = useActiveSupplierOptions(
-		subsidiaryId,
-		isOpen && isManual,
-	);
+	const {
+		suppliers,
+		loading: loadingSuppliers,
+		unavailableReason: suppliersUnavailableReason,
+		reload: reloadSuppliers,
+	} = useActiveSupplierOptions(subsidiaryId, isOpen && isManual);
 	const supplierOptions = suppliers.map((supplier) => ({
 		value: String(supplier.id),
 		label: `${supplier.display_name} · ${supplier.rut}`,
@@ -444,6 +447,10 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 													isValid={!formik.errors.supplier_id}
 													isTouched={Boolean(formik.touched.supplier_id)}
 													invalidFeedback={formik.errors.supplier_id}
+												/>
+												<SupplierOptionsNotice
+													reason={suppliersUnavailableReason}
+													onRetry={reloadSuppliers}
 												/>
 												<p className='text-xs text-zinc-500'>
 													Con proveedor conocido, el costo unitario es
