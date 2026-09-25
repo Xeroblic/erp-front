@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import { getStockReceipt, listStockReceipts } from '@/services/procurement/stockReceipts.service';
 import { PROCUREMENT_PER_PAGE_MAX } from '@/interface/procurement.interface';
@@ -27,6 +28,10 @@ import type { ISupplierSuppliedProductRow } from '../types';
  * (patrón ZF-12): al navegar a otro proveedor, el render intermedio ya no
  * muestra las filas ni el error del anterior, sin esperar al efecto de
  * limpieza.
+ *
+ * Las recepciones todavía son mock y el proveedor ya es real: sin
+ * `VITE_INVENTORY_STOCK_USE_MOCKS` no se pide nada (`available: false`), para
+ * que un proveedor real no muestre compras de la semilla con su mismo id.
  */
 
 const DETAIL_CONCURRENCY = 4;
@@ -157,8 +162,9 @@ const useSupplierSuppliedProducts = ({
 	const canRead =
 		!checkingAccess &&
 		authorize({ permission: 'view-product', subsidiaryId, scope: 'visible' });
+	const available = INVENTORY_STOCK_USE_MOCKS;
 	const ownerKey =
-		canRead && subsidiaryId !== null && supplierId !== null
+		available && canRead && subsidiaryId !== null && supplierId !== null
 			? `${subsidiaryId}:${supplierId}`
 			: null;
 
@@ -196,6 +202,7 @@ const useSupplierSuppliedProducts = ({
 	const ownState = ownerKey !== null && state?.ownerKey === ownerKey ? state : null;
 
 	return {
+		available,
 		canRead,
 		checkingAccess,
 		rows: ownState?.rows ?? EMPTY_ROWS,

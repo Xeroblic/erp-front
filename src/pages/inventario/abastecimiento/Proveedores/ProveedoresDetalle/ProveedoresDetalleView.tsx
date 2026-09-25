@@ -13,7 +13,6 @@ import ProveedorFormModal from '../components/modals/ProveedorFormModal';
 import DeactivateSupplierModal from '../components/modals/DeactivateSupplierModal';
 import SupplierStatusBadge from '../components/parts/SupplierStatusBadge';
 import useProveedoresDetalle from './hooks/useProveedoresDetalle';
-import useSupplierPhoto from './hooks/useSupplierPhoto';
 import useSupplierSuppliedProducts from './hooks/useSupplierSuppliedProducts';
 import SupplierAvatar from './components/parts/SupplierAvatar';
 import SupplierPurchaseSummaryCard from './components/parts/SupplierPurchaseSummaryCard';
@@ -43,12 +42,9 @@ const ProveedoresDetalleView = () => {
 		goToSupplier,
 		goToList,
 		retry,
-		resolveCommuneName,
+		billingCommuneName,
+		shippingCommuneName,
 	} = useProveedoresDetalle();
-	const { photoUrl, uploadPhoto, isUploading } = useSupplierPhoto({
-		subsidiaryId,
-		supplierId: id,
-	});
 	const suppliedProducts = useSupplierSuppliedProducts({ subsidiaryId, supplierId: id });
 
 	return (
@@ -79,7 +75,6 @@ const ProveedoresDetalleView = () => {
 			</Subheader>
 
 			<Container className='space-y-4'>
-				<ProcurementMockNotice />
 				{id === null && (
 					<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
 						El proveedor solicitado no es válido.
@@ -118,12 +113,7 @@ const ProveedoresDetalleView = () => {
 					<>
 						<Card>
 							<CardBody className='flex flex-col gap-6 sm:flex-row sm:items-center'>
-								<SupplierAvatar
-									photoUrl={photoUrl}
-									displayName={supplier.display_name}
-									isUploading={isUploading}
-									onUpload={uploadPhoto}
-								/>
+								<SupplierAvatar displayName={supplier.display_name} />
 								<div className='min-w-0 flex-1'>
 									<div className='flex flex-wrap items-center gap-3'>
 										<h1 className='truncate text-xl font-semibold text-zinc-900 dark:text-white'>
@@ -180,39 +170,25 @@ const ProveedoresDetalleView = () => {
 									<p className='text-xs uppercase text-zinc-500'>
 										Dirección de facturación
 									</p>
-									<p>
-										{supplier.billing_address ?? '—'}
-										{supplier.billing_address &&
-											supplier.billing_commune_id !== null && (
-												<span className='text-zinc-500'>
-													{' '}
-													(
-													{resolveCommuneName(
-														supplier.billing_commune_id,
-													) ?? 'comuna'}
-													)
-												</span>
-											)}
+									<p>{supplier.billing_address ?? '—'}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>
+										Comuna de facturación
 									</p>
+									<p>{billingCommuneName ?? '—'}</p>
 								</div>
 								<div>
 									<p className='text-xs uppercase text-zinc-500'>
 										Dirección de despacho
 									</p>
-									<p>
-										{supplier.shipping_address ?? '—'}
-										{supplier.shipping_address &&
-											supplier.shipping_commune_id !== null && (
-												<span className='text-zinc-500'>
-													{' '}
-													(
-													{resolveCommuneName(
-														supplier.shipping_commune_id,
-													) ?? 'comuna'}
-													)
-												</span>
-											)}
+									<p>{supplier.shipping_address ?? '—'}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>
+										Comuna de despacho
 									</p>
+									<p>{shippingCommuneName ?? '—'}</p>
 								</div>
 								<div>
 									<p className='text-xs uppercase text-zinc-500'>Creado</p>
@@ -234,21 +210,38 @@ const ProveedoresDetalleView = () => {
 						 * del `view-procurement-supplier` de esta ruta: sin él se dice
 						 * por qué no hay tabla, en vez de mostrarla vacía.
 						 */}
-						{!suppliedProducts.checkingAccess && suppliedProducts.canRead && (
-							<SupplierSuppliedProductsTable
-								rows={suppliedProducts.rows}
-								loading={suppliedProducts.loading}
-								error={suppliedProducts.error}
-								subsidiaryId={subsidiaryId}
-								onRetry={suppliedProducts.retry}
-							/>
-						)}
-						{!suppliedProducts.checkingAccess && !suppliedProducts.canRead && (
-							<Alert color='amber' variant='outline' title='Productos suministrados'>
-								No tienes permiso para consultar recepciones, así que no podemos
-								mostrar los productos que entrega este proveedor.
+						{!suppliedProducts.available && (
+							<Alert color='zinc' variant='outline' title='Productos suministrados'>
+								Estarán disponibles cuando se habiliten las recepciones de
+								mercadería.
 							</Alert>
 						)}
+						{suppliedProducts.available &&
+							!suppliedProducts.checkingAccess &&
+							suppliedProducts.canRead && (
+								<>
+									{/* Las recepciones siguen simuladas aunque el proveedor sea real. */}
+									<ProcurementMockNotice />
+									<SupplierSuppliedProductsTable
+										rows={suppliedProducts.rows}
+										loading={suppliedProducts.loading}
+										error={suppliedProducts.error}
+										subsidiaryId={subsidiaryId}
+										onRetry={suppliedProducts.retry}
+									/>
+								</>
+							)}
+						{suppliedProducts.available &&
+							!suppliedProducts.checkingAccess &&
+							!suppliedProducts.canRead && (
+								<Alert
+									color='amber'
+									variant='outline'
+									title='Productos suministrados'>
+									No tienes permiso para consultar recepciones, así que no podemos
+									mostrar los productos que entrega este proveedor.
+								</Alert>
+							)}
 					</>
 				)}
 			</Container>

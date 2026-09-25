@@ -39,6 +39,7 @@ import useDocumentoCompraForm from '../../hooks/useDocumentoCompraForm';
 import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
 import useSupplierInlineEdit from '../../hooks/useSupplierInlineEdit';
 import ProductoCompraFormModal from './ProductoCompraFormModal';
+import SupplierOptionsNotice from '../parts/SupplierOptionsNotice';
 import { EMPTY_DOCUMENTO_LINE } from '../../types';
 import { focusFirstInvalidDocumentoCompraField } from '../../utils/documentoCompraFieldFocus';
 
@@ -103,6 +104,14 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 	onStaleVersion,
 }) => {
 	const {
+		suppliers,
+		loading: loadingSuppliers,
+		unavailableReason: suppliersUnavailableReason,
+		canList: canListSuppliers,
+		addSupplier,
+		reload: reloadSuppliers,
+	} = useActiveSupplierOptions(subsidiaryId, isOpen);
+	const {
 		formik,
 		isEdit,
 		isSubmitting,
@@ -114,17 +123,20 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 		subsidiaryId,
 		document,
 		etag,
+		// Sin lista de proveedores no hay cómo elegir el que exige la factura.
+		defaultDocumentType: canListSuppliers ? 'invoice' : 'receipt',
 		onSuccess: (result) => {
 			setIsOpen(false);
 			onSuccess?.(result);
 		},
 	});
-	const {
-		suppliers,
-		loading: loadingSuppliers,
-		addSupplier,
-		reload: reloadSuppliers,
-	} = useActiveSupplierOptions(subsidiaryId, isOpen);
+	/**
+	 * Crear una factura exige `view-procurement-supplier` además de
+	 * `create-purchase-document`: el backend no ofrece otra forma de conocer el
+	 * `supplier_id`. Al editar, el tipo ya está fijo y el proveedor actual se
+	 * conserva aunque no se pueda listar.
+	 */
+	const isInvoiceUnavailable = !canListSuppliers && !isEdit;
 	/**
 	 * Alta de proveedor en línea: `ProveedorFormModal` se apila sobre este
 	 * modal y, al crear o restaurar, el proveedor queda seleccionado sin perder
@@ -137,7 +149,15 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 		formik.values.supplier_id === '' ? null : Number(formik.values.supplier_id);
 	// `useHref` respeta el `basename` del router al abrir la ficha en otra pestaña.
 	const suppliersHref = useHref('/inventario/abastecimiento/proveedores');
-	const supplierOptions = suppliers.map((supplier) => ({
+	// El proveedor actual del documento sigue visible aunque no esté en la lista:
+	// sin permiso para listar, o desactivado después de elegirlo.
+	const currentSupplier = document?.supplier ?? null;
+	const supplierOptions = [
+		...suppliers,
+		...(currentSupplier && !suppliers.some((supplier) => supplier.id === currentSupplier.id)
+			? [currentSupplier]
+			: []),
+	].map((supplier) => ({
 		value: String(supplier.id),
 		label: `${supplier.display_name} · ${supplier.rut}`,
 	}));
@@ -313,9 +333,20 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 												onChange={formik.handleChange}
 												onBlur={formik.handleBlur}
 												disabled={isEdit}>
-												<option value='invoice'>Factura</option>
+												<option
+													value='invoice'
+													disabled={isInvoiceUnavailable}>
+													Factura
+												</option>
 												<option value='receipt'>Boleta</option>
 											</Select>
+											{isInvoiceUnavailable && (
+												<p className='text-xs text-amber-700 dark:text-amber-400'>
+													Para registrar una factura necesitas también
+													permiso para ver proveedores
+													(view-procurement-supplier).
+												</p>
+											)}
 											{isEdit && (
 												<p className='text-xs text-zinc-500'>
 													El tipo de documento no se cambia al editar.
@@ -383,6 +414,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 													formik.values.document_type === 'receipt'
 												}
 												isLoading={loadingSuppliers}
+												isDisabled={!canListSuppliers}
 												options={supplierOptions}
 												placeholder='Selecciona un proveedor…'
 												value={
@@ -405,6 +437,10 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 												isValid={!formik.errors.supplier_id}
 												isTouched={Boolean(formik.touched.supplier_id)}
 												invalidFeedback={formik.errors.supplier_id}
+											/>
+											<SupplierOptionsNotice
+												reason={suppliersUnavailableReason}
+												onRetry={reloadSuppliers}
 											/>
 											{formik.values.document_type === 'receipt' && (
 												<p className='text-xs text-zinc-500'>

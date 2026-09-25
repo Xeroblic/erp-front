@@ -11,6 +11,13 @@ vi.mock('@/services/procurement/procurementSuppliers.service', () => ({
 	listProcurementSuppliers: vi.fn(),
 }));
 
+const authorizeMock = vi.hoisted(() =>
+	vi.fn<(options: { permission?: string }) => boolean>(() => true),
+);
+vi.mock('@/hooks/useAuthorization', () => ({
+	default: () => ({ authorize: authorizeMock }),
+}));
+
 const listMock = vi.mocked(listProcurementSuppliers);
 
 const row = (id: number, displayName: string, isActive = true): IProcurementSupplierListRow => ({
@@ -42,9 +49,17 @@ const envelope = (
 	},
 });
 
+/** Carga que nunca responde: deja la petición en vuelo durante la prueba. */
+const neverResolves = (): Promise<IApiCollectionEnvelope<IProcurementSupplierListRow>> =>
+	new Promise(() => {
+		// Sin resolver a propósito.
+	});
+
 describe('useActiveSupplierOptions — alta en línea', () => {
 	beforeEach(() => {
 		listMock.mockReset();
+		authorizeMock.mockReset();
+		authorizeMock.mockReturnValue(true);
 	});
 
 	it('suma el proveedor creado, ordenado por nombre, y una carga tardía no lo borra', async () => {
@@ -100,5 +115,163 @@ describe('useActiveSupplierOptions — alta en línea', () => {
 			expect(result.current.suppliers.map((supplier) => supplier.id)).toEqual([7]),
 		);
 		expect(listMock).toHaveBeenCalledTimes(2);
+	});
+});
+
+describe('useActiveSupplierOptions — propiedad de filial', () => {
+	beforeEach(() => {
+		listMock.mockReset();
+		authorizeMock.mockReset();
+		authorizeMock.mockReturnValue(true);
+	});
+
+	it('oculta los proveedores de la filial anterior desde el primer render del cambio', async () => {
+		listMock.mockResolvedValueOnce(envelope([row(7, 'PCExpress')]));
+		listMock.mockImplementationOnce(neverResolves);
+		const renders: number[][] = [];
+		const { result, rerender } = renderHook(
+			({ subsidiaryId }) => {
+				const options = useActiveSupplierOptions(subsidiaryId, true);
+				renders.push(options.suppliers.map((supplier) => supplier.id));
+				return options;
+			},
+			{ initialProps: { subsidiaryId: 2 } },
+		);
+		await waitFor(() => expect(result.current.suppliers.map((s) => s.id)).toEqual([7]));
+
+		renders.length = 0;
+		rerender({ subsidiaryId: 4 });
+
+		expect(renders.every((ids) => ids.length === 0)).toBe(true);
+		expect(result.current.suppliers).toEqual([]);
+		expect(result.current.loading).toBe(true);
+	});
+
+	it('al reabrir en otra filial no muestra la lista de la anterior mientras carga', async () => {
+		listMock.mockResolvedValueOnce(envelope([row(7, 'PCExpress')]));
+		listMock.mockImplementationOnce(neverResolves);
+		const { result, rerender } = renderHook(
+			({ subsidiaryId, isOpen }) => useActiveSupplierOptions(subsidiaryId, isOpen),
+			{ initialProps: { subsidiaryId: 2, isOpen: true } },
+		);
+		await waitFor(() => expect(result.current.suppliers.map((s) => s.id)).toEqual([7]));
+
+		rerender({ subsidiaryId: 2, isOpen: false });
+		rerender({ subsidiaryId: 4, isOpen: false });
+		rerender({ subsidiaryId: 4, isOpen: true });
+
+		expect(result.current.suppliers).toEqual([]);
+		expect(result.current.loading).toBe(true);
+	});
+
+	it('una respuesta tardía de la filial anterior no se muestra en la nueva', async () => {
+		let resolveFirst: (
+			value: IApiCollectionEnvelope<IProcurementSupplierListRow>,
+		) => void = () => undefined;
+		listMock.mockImplementationOnce(
+			() =>
+				new Promise((resolve) => {
+					resolveFirst = resolve;
+				}),
+		);
+		listMock.mockImplementationOnce(neverResolves);
+		const { result, rerender } = renderHook(
+			({ subsidiaryId }) => useActiveSupplierOptions(subsidiaryId, true),
+			{ initialProps: { subsidiaryId: 2 } },
+		);
+
+		rerender({ subsidiaryId: 4 });
+		await act(async () => {
+			resolveFirst(envelope([row(7, 'PCExpress')]));
+			await Promise.resolve();
+		});
+
+		expect(result.current.suppliers).toEqual([]);
+		expect(result.current.loading).toBe(true);
+	});
+});
+
+describe('useActiveSupplierOptions — lista no disponible', () => {
+	beforeEach(() => {
+		listMock.mockReset();
+		authorizeMock.mockReset();
+		authorizeMock.mockReturnValue(true);
+	});
+
+	it('distingue un 403 de una lista vacía', async () => {
+		listMock.mockRejectedValue({ response: { status: 403, data: { message: 'Forbidden' } } });
+		const { result } = renderHook(() => useActiveSupplierOptions(2, true));
+
+		await waitFor(() => expect(result.current.unavailableReason).toBe('forbidden'));
+		expect(result.current.suppliers).toEqual([]);
+		expect(result.current.loading).toBe(false);
+	});
+
+	it('marca como fallo cualquier otro error y reload lo recupera', async () => {
+		listMock.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+		listMock.mockResolvedValueOnce(envelope([row(7, 'PCExpress')]));
+		const { result } = renderHook(() => useActiveSupplierOptions(2, true));
+		await waitFor(() => expect(result.current.unavailableReason).toBe('failed'));
+
+		act(() => result.current.reload());
+		expect(result.current.unavailableReason).toBeNull();
+
+		await waitFor(() =>
+			expect(result.current.suppliers.map((supplier) => supplier.id)).toEqual([7]),
+		);
+		expect(result.current.unavailableReason).toBeNull();
+	});
+
+	it('el 403 de una filial no se arrastra a otra', async () => {
+		listMock.mockRejectedValueOnce({ response: { status: 403, data: {} } });
+		listMock.mockImplementationOnce(neverResolves);
+		const { result, rerender } = renderHook(
+			({ subsidiaryId }) => useActiveSupplierOptions(subsidiaryId, true),
+			{ initialProps: { subsidiaryId: 2 } },
+		);
+		await waitFor(() => expect(result.current.unavailableReason).toBe('forbidden'));
+
+		rerender({ subsidiaryId: 4 });
+
+		expect(result.current.unavailableReason).toBeNull();
+		expect(result.current.loading).toBe(true);
+	});
+});
+
+describe('useActiveSupplierOptions — sin permiso para listar', () => {
+	beforeEach(() => {
+		listMock.mockReset();
+		authorizeMock.mockReset();
+		authorizeMock.mockImplementation(
+			({ permission }) => permission !== 'view-procurement-supplier',
+		);
+	});
+
+	it('no pide la lista y lo informa como falta de permiso', () => {
+		const { result } = renderHook(() => useActiveSupplierOptions(2, true));
+
+		expect(listMock).not.toHaveBeenCalled();
+		expect(result.current.canList).toBe(false);
+		expect(result.current.unavailableReason).toBe('forbidden');
+		expect(result.current.loading).toBe(false);
+		expect(result.current.suppliers).toEqual([]);
+	});
+
+	it('reload tampoco la pide', () => {
+		const { result } = renderHook(() => useActiveSupplierOptions(2, true));
+
+		act(() => result.current.reload());
+
+		expect(listMock).not.toHaveBeenCalled();
+	});
+
+	it('consulta el permiso en el scope de la filial', () => {
+		renderHook(() => useActiveSupplierOptions(2, true));
+
+		expect(authorizeMock).toHaveBeenCalledWith({
+			permission: 'view-procurement-supplier',
+			subsidiaryId: 2,
+			scope: 'access',
+		});
 	});
 });
