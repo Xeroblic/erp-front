@@ -241,4 +241,56 @@ describe('DeferredPaymentsTable', () => {
 		// vencimiento muestra su badge de días.
 		expect(screen.getAllByText('—')).toHaveLength(1);
 	});
+
+	it('mantiene la tabla disponible cuando la API omite la fecha de pago', () => {
+		const row = {
+			...DEFERRED_PAYMENT_LIST_FIXTURES[0],
+			paid_at: undefined,
+			purchase_order: 'OC-202601',
+		};
+
+		render(
+			<DeferredPaymentsTable
+				rows={[row]}
+				meta={null}
+				loading={false}
+				hasError={false}
+				hasFilters={false}
+				sort={null}
+				onSort={vi.fn()}
+				onPaginationChange={vi.fn()}
+				onRowClick={vi.fn()}
+			/>,
+		);
+
+		expect(screen.getByText(row.document_number)).toBeInTheDocument();
+		expect(screen.getAllByText('—')).toHaveLength(1);
+	});
+
+	it('mantiene la tabla disponible cuando la API entrega fechas inválidas', () => {
+		const row = {
+			...DEFERRED_PAYMENT_LIST_FIXTURES[0],
+			issue_date: 'fecha-invalida',
+			due_date: '2026-02-30',
+			paid_at: '2026-02-30T10:30:00-03:00',
+			purchase_order: 'OC-202601',
+		};
+
+		render(
+			<DeferredPaymentsTable
+				rows={[row]}
+				meta={null}
+				loading={false}
+				hasError={false}
+				hasFilters={false}
+				sort={null}
+				onSort={vi.fn()}
+				onPaginationChange={vi.fn()}
+				onRowClick={vi.fn()}
+			/>,
+		);
+
+		expect(screen.getByText(row.document_number)).toBeInTheDocument();
+		expect(screen.getAllByText('—')).toHaveLength(3);
+	});
 });

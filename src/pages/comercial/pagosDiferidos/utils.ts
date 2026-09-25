@@ -26,7 +26,30 @@ export const getDaysUntilDueText = (daysUntilDue: number): string => {
 	return `Vence en ${daysUntilDue} ${daysUntilDue === 1 ? 'día' : 'días'}`;
 };
 
-export const formatDeferredPaymentDate = (date: string): string => formatDate(date, 'es-CL');
+const ISO_DATE_PREFIX_PATTERN = /^(\d{4})-(\d{2})-(\d{2})(?:$|T)/;
+
+const isValidDeferredPaymentDate = (value: string): boolean => {
+	const dateParts = ISO_DATE_PREFIX_PATTERN.exec(value);
+	if (!dateParts) return false;
+
+	const [, year, month, day] = dateParts;
+	const calendarDate = `${year}-${month}-${day}`;
+	const parsedCalendarDate = new Date(`${calendarDate}T00:00:00.000Z`);
+	const hasValidCalendarDate =
+		Number.isFinite(parsedCalendarDate.getTime()) &&
+		parsedCalendarDate.getUTCFullYear() === Number(year) &&
+		parsedCalendarDate.getUTCMonth() + 1 === Number(month) &&
+		parsedCalendarDate.getUTCDate() === Number(day);
+	if (!hasValidCalendarDate) return false;
+
+	return value.length === calendarDate.length || Number.isFinite(new Date(value).getTime());
+};
+
+export const formatDeferredPaymentDate = (date: string | null | undefined): string => {
+	const normalizedDate = date?.trim();
+	if (!normalizedDate || !isValidDeferredPaymentDate(normalizedDate)) return '—';
+	return formatDate(normalizedDate, 'es-CL');
+};
 
 export const formatDeferredPaymentAmount = (amount: string | number): string =>
 	formatCLP(amount, 2);
