@@ -17,6 +17,7 @@ import type {
 	IPurchaseDocument,
 	IPurchaseDocumentCreatePayload,
 	IPurchaseDocumentLineInput,
+	IPurchaseDocumentUpdatePayload,
 	TPurchaseDocumentType,
 } from '@/interface/procurement.interface';
 import { EMPTY_DOCUMENTO_LINE, EMPTY_DOCUMENTO_VALUES, documentoCompraFormSchema } from '../types';
@@ -40,7 +41,7 @@ const toOptionalDecimal = (value: string): string | null => {
 	return cents === null ? null : formatDecimalCents(cents);
 };
 
-const toFormValues = (
+export const toFormValues = (
 	document: IPurchaseDocument | null,
 	defaultDocumentType: TPurchaseDocumentType,
 ): IDocumentoCompraFormValues =>
@@ -95,6 +96,23 @@ const toPayload = (values: IDocumentoCompraFormValues): IPurchaseDocumentCreateP
 	notes: values.notes.trim() || null,
 	items: values.items.map(toLineInput),
 });
+
+/**
+ * En edición, un proveedor que no cambió no se reenvía. Enviarlo obliga a
+ * resolverlo de nuevo, y quien puede editar el documento sin
+ * `view-procurement-supplier` terminaba con «El proveedor no existe» aunque
+ * no lo hubiera tocado. El backend completa el `supplier_id` guardado cuando
+ * sólo llega `document_type`, así que omitirlo no rompe la regla de factura.
+ */
+export const toUpdatePayload = (
+	values: IDocumentoCompraFormValues,
+	document: IPurchaseDocument,
+): IPurchaseDocumentUpdatePayload => {
+	const { supplier_id: supplierId, ...payload } = toPayload(values);
+	return supplierId === (document.supplier?.id ?? null)
+		? payload
+		: { ...payload, supplier_id: supplierId };
+};
 
 const FORM_FIELD_BY_API_FIELD: Partial<Record<string, keyof IDocumentoCompraFormValues>> = {
 	supplier_id: 'supplier_id',
@@ -151,21 +169,20 @@ const useDocumentoCompraForm = ({
 		enableReinitialize: true,
 		validationSchema: documentoCompraFormSchema,
 		onSubmit: async (values, { resetForm }) => {
-			const payload = toPayload(values);
 			const result = await idempotentWrite.submit((headers) =>
 				isEdit && document
 					? dispatch(
 							updatePurchaseDocumentThunk({
 								subsidiaryId,
 								id: document.id,
-								payload,
+								payload: toUpdatePayload(values, document),
 								headers: { idempotencyKey: headers['Idempotency-Key'], etag },
 							}),
 						).unwrap()
 					: dispatch(
 							createPurchaseDocumentThunk({
 								subsidiaryId,
-								payload,
+								payload: toPayload(values),
 								headers: { idempotencyKey: headers['Idempotency-Key'] },
 							}),
 						).unwrap(),

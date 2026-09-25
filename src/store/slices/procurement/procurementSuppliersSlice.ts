@@ -35,6 +35,13 @@ export interface ProcurementSuppliersState {
 	listError: string | null;
 	/** `requestId` de la última petición de listado en curso o resuelta. */
 	listRequestId: string | null;
+	/**
+	 * Filial a la que pertenecen `items`, `meta` y `listError`. La pantalla
+	 * compara con la filial vigente: al cambiarla, lo cargado para la
+	 * anterior deja de mostrarse desde el primer render, sin esperar la
+	 * nueva respuesta.
+	 */
+	listSubsidiaryId: number | null;
 	current: IProcurementSupplier | null;
 	currentLoading: boolean;
 	currentError: string | null;
@@ -58,6 +65,7 @@ const initialState: ProcurementSuppliersState = {
 	listLoading: false,
 	listError: null,
 	listRequestId: null,
+	listSubsidiaryId: null,
 	current: null,
 	currentLoading: false,
 	currentError: null,
@@ -242,10 +250,17 @@ const procurementSuppliersSlice = createSlice({
 				state.listLoading = false;
 				state.items = action.payload.data;
 				state.meta = action.payload.meta;
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchProcurementSuppliers.rejected, (state, action) => {
 				if (action.meta.requestId !== state.listRequestId) return;
 				state.listLoading = false;
+				// Un fallo en otra filial no deja a la vista las filas de la anterior.
+				if (state.listSubsidiaryId !== action.meta.arg.subsidiaryId) {
+					state.items = [];
+					state.meta = null;
+				}
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 				state.listError = getProcurementErrorMessage(
 					action.payload,
 					'No se pudo cargar el listado.',
@@ -338,6 +353,8 @@ export const selectProcurementSuppliersListLoading = (state: RootState) =>
 	state.procurementSuppliers.listLoading;
 export const selectProcurementSuppliersListError = (state: RootState) =>
 	state.procurementSuppliers.listError;
+export const selectProcurementSuppliersListSubsidiaryId = (state: RootState) =>
+	state.procurementSuppliers.listSubsidiaryId;
 export const selectProcurementSupplierCurrent = (state: RootState) =>
 	state.procurementSuppliers.current;
 export const selectProcurementSupplierCurrentLoading = (state: RootState) =>

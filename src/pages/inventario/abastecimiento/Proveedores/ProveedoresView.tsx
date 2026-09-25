@@ -44,12 +44,12 @@ const ProveedoresView = () => {
 		onPaginationChange,
 		refresh,
 		refreshAfterMutation,
+		deactivateTarget,
+		openDeactivate,
+		closeDeactivate,
 	} = useProveedores();
 
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-	const [deactivateTarget, setDeactivateTarget] = useState<IProcurementSupplierListRow | null>(
-		null,
-	);
 
 	const handleView = (id: number) => navigate(`/inventario/abastecimiento/proveedores/${id}`);
 
@@ -116,7 +116,7 @@ const ProveedoresView = () => {
 					hasSearch={hasSearch}
 					onPaginationChange={onPaginationChange}
 					onView={handleView}
-					onDeactivate={setDeactivateTarget}
+					onDeactivate={openDeactivate}
 					onRestore={handleRestore}
 					branchId={branchId}
 					subsidiaryId={subsidiaryId}
@@ -136,7 +136,7 @@ const ProveedoresView = () => {
 			<DeactivateSupplierModal
 				isOpen={deactivateTarget !== null}
 				setIsOpen={(isOpen) => {
-					if (!isOpen) setDeactivateTarget(null);
+					if (!isOpen) closeDeactivate();
 				}}
 				supplier={deactivateTarget}
 				subsidiaryId={subsidiaryId}

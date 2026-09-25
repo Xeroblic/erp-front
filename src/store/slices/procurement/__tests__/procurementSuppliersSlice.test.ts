@@ -61,6 +61,19 @@ describe('fetchProcurementSuppliers', () => {
 		expect(store.getState().listError).toBe('No se pudo determinar la filial activa.');
 		expect(store.getState().items).toEqual([]);
 	});
+
+	it('registra la filial del listado y un fallo en otra no deja las filas anteriores', async () => {
+		const store = createStore();
+		await store.dispatch(fetchProcurementSuppliers({ subsidiaryId: 4 }));
+		expect(store.getState().listSubsidiaryId).toBe(4);
+		expect(store.getState().items.length).toBeGreaterThan(0);
+
+		await store.dispatch(fetchProcurementSuppliers({ subsidiaryId: null }));
+
+		expect(store.getState().listSubsidiaryId).toBeNull();
+		expect(store.getState().items).toEqual([]);
+		expect(store.getState().meta).toBeNull();
+	});
 });
 
 describe('fetchProcurementSupplierDetail', () => {
