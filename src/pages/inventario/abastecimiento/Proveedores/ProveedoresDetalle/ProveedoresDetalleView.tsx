@@ -170,31 +170,25 @@ const ProveedoresDetalleView = () => {
 									<p className='text-xs uppercase text-zinc-500'>
 										Dirección de facturación
 									</p>
-									<p>
-										{supplier.billing_address ?? '—'}
-										{supplier.billing_address &&
-											supplier.billing_commune_id !== null && (
-												<span className='text-zinc-500'>
-													{' '}
-													({billingCommuneName ?? 'comuna'})
-												</span>
-											)}
+									<p>{supplier.billing_address ?? '—'}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>
+										Comuna de facturación
 									</p>
+									<p>{billingCommuneName ?? '—'}</p>
 								</div>
 								<div>
 									<p className='text-xs uppercase text-zinc-500'>
 										Dirección de despacho
 									</p>
-									<p>
-										{supplier.shipping_address ?? '—'}
-										{supplier.shipping_address &&
-											supplier.shipping_commune_id !== null && (
-												<span className='text-zinc-500'>
-													{' '}
-													({shippingCommuneName ?? 'comuna'})
-												</span>
-											)}
+									<p>{supplier.shipping_address ?? '—'}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>
+										Comuna de despacho
 									</p>
+									<p>{shippingCommuneName ?? '—'}</p>
 								</div>
 								<div>
 									<p className='text-xs uppercase text-zinc-500'>Creado</p>

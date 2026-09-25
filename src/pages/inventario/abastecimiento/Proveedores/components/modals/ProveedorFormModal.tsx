@@ -8,6 +8,7 @@ import Modal, {
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
+import Validation from '@/components/form/Validation';
 import Button from '@/components/ui/Button';
 import { SelectComune } from '@/components/utils/selects/SelectComune';
 import type {
@@ -15,6 +16,7 @@ import type {
 	IProcurementSupplierRutConflict,
 } from '@/interface/procurement.interface';
 import useProveedorForm from '../../hooks/useProveedorForm';
+import { PHONE_CL_MAX_LENGTH } from '../../types';
 import SupplierCompletenessNotice from '../parts/SupplierCompletenessNotice';
 import SupplierRutConflictNotice from '../parts/SupplierRutConflictNotice';
 
@@ -64,6 +66,8 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 		isRestoring,
 		restoreConflicting,
 		handleRutChange,
+		handlePhoneChange,
+		handlePhonePaste,
 		reset,
 	} = useProveedorForm({
 		subsidiaryId,
@@ -133,57 +137,63 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 								<Label htmlFor='proveedor-rut'>
 									RUT <span className='text-red-500'>*</span>
 								</Label>
-								<Input
-									id='proveedor-rut'
-									name='rut'
-									placeholder='76123456-0'
-									value={formik.values.rut}
-									onChange={(event) => handleRutChange(event.target.value)}
-									onBlur={formik.handleBlur}
-									isTouched={!!formik.touched.rut}
+								<Validation
 									isValid={!formik.errors.rut}
+									isTouched={!!formik.touched.rut}
 									invalidFeedback={
 										formik.touched.rut ? formik.errors.rut : undefined
-									}
-								/>
+									}>
+									<Input
+										id='proveedor-rut'
+										name='rut'
+										placeholder='76123456-0'
+										value={formik.values.rut}
+										onChange={(event) => handleRutChange(event.target.value)}
+										onBlur={formik.handleBlur}
+									/>
+								</Validation>
 							</div>
 
 							<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
 								<div className='space-y-1'>
 									<Label htmlFor='proveedor-company'>Razón social</Label>
-									<Input
-										id='proveedor-company'
-										name='company_name'
-										placeholder='PCExpress SpA'
-										value={formik.values.company_name}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-										isTouched={!!formik.touched.company_name}
+									<Validation
 										isValid={!formik.errors.company_name}
+										isTouched={!!formik.touched.company_name}
 										invalidFeedback={
 											formik.touched.company_name
 												? formik.errors.company_name
 												: undefined
-										}
-									/>
+										}>
+										<Input
+											id='proveedor-company'
+											name='company_name'
+											placeholder='PCExpress SpA'
+											value={formik.values.company_name}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+										/>
+									</Validation>
 								</div>
 								<div className='space-y-1'>
 									<Label htmlFor='proveedor-contact'>Nombre de contacto</Label>
-									<Input
-										id='proveedor-contact'
-										name='contact_name'
-										placeholder='Ana Soto'
-										value={formik.values.contact_name}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-										isTouched={!!formik.touched.contact_name}
+									<Validation
 										isValid={!formik.errors.contact_name}
+										isTouched={!!formik.touched.contact_name}
 										invalidFeedback={
 											formik.touched.contact_name
 												? formik.errors.contact_name
 												: undefined
-										}
-									/>
+										}>
+										<Input
+											id='proveedor-contact'
+											name='contact_name'
+											placeholder='Ana Soto'
+											value={formik.values.contact_name}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+										/>
+									</Validation>
 								</div>
 							</div>
 							<p className='-mt-2 text-xs text-zinc-500 dark:text-zinc-400'>
@@ -193,55 +203,66 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 
 							<div className='space-y-1'>
 								<Label htmlFor='proveedor-activity'>Giro</Label>
-								<Input
-									id='proveedor-activity'
-									name='business_activity'
-									placeholder='Venta de insumos informáticos'
-									value={formik.values.business_activity}
-									onChange={formik.handleChange}
-									onBlur={formik.handleBlur}
-									isTouched={!!formik.touched.business_activity}
+								<Validation
 									isValid={!formik.errors.business_activity}
+									isTouched={!!formik.touched.business_activity}
 									invalidFeedback={
 										formik.touched.business_activity
 											? formik.errors.business_activity
 											: undefined
-									}
-								/>
+									}>
+									<Input
+										id='proveedor-activity'
+										name='business_activity'
+										placeholder='Venta de insumos informáticos'
+										value={formik.values.business_activity}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+									/>
+								</Validation>
 							</div>
 
 							<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
 								<div className='space-y-1'>
 									<Label htmlFor='proveedor-phone'>Teléfono</Label>
-									<Input
-										id='proveedor-phone'
-										name='phone'
-										placeholder='+56912345678'
-										value={formik.values.phone}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-										isTouched={!!formik.touched.phone}
+									<Validation
 										isValid={!formik.errors.phone}
+										isTouched={!!formik.touched.phone}
 										invalidFeedback={
 											formik.touched.phone ? formik.errors.phone : undefined
-										}
-									/>
+										}>
+										<Input
+											id='proveedor-phone'
+											name='phone'
+											type='tel'
+											placeholder='+56912345678'
+											maxLength={PHONE_CL_MAX_LENGTH}
+											value={formik.values.phone}
+											onChange={(event) =>
+												handlePhoneChange(event.target.value)
+											}
+											onPaste={handlePhonePaste}
+											onBlur={formik.handleBlur}
+										/>
+									</Validation>
 								</div>
 								<div className='space-y-1'>
 									<Label htmlFor='proveedor-email'>Email</Label>
-									<Input
-										id='proveedor-email'
-										name='email'
-										placeholder='ventas@example.test'
-										value={formik.values.email}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-										isTouched={!!formik.touched.email}
+									<Validation
 										isValid={!formik.errors.email}
+										isTouched={!!formik.touched.email}
 										invalidFeedback={
 											formik.touched.email ? formik.errors.email : undefined
-										}
-									/>
+										}>
+										<Input
+											id='proveedor-email'
+											name='email'
+											placeholder='ventas@example.test'
+											value={formik.values.email}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+										/>
+									</Validation>
 								</div>
 							</div>
 						</CardBody>
@@ -262,21 +283,23 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 									<Label htmlFor='proveedor-billing-address'>
 										Dirección de facturación
 									</Label>
-									<Input
-										id='proveedor-billing-address'
-										name='billing_address'
-										placeholder='Av. Central 1200'
-										value={formik.values.billing_address}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-										isTouched={!!formik.touched.billing_address}
+									<Validation
 										isValid={!formik.errors.billing_address}
+										isTouched={!!formik.touched.billing_address}
 										invalidFeedback={
 											formik.touched.billing_address
 												? formik.errors.billing_address
 												: undefined
-										}
-									/>
+										}>
+										<Input
+											id='proveedor-billing-address'
+											name='billing_address'
+											placeholder='Av. Central 1200'
+											value={formik.values.billing_address}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+										/>
+									</Validation>
 								</div>
 								{/* Mismo `<div className='space-y-1'><Label/>...</div>` que el campo de
 								    dirección: `hideLabel` saca el rótulo propio de `SelectComune`
@@ -306,21 +329,23 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 									<Label htmlFor='proveedor-shipping-address'>
 										Dirección de despacho
 									</Label>
-									<Input
-										id='proveedor-shipping-address'
-										name='shipping_address'
-										placeholder='Camino Industrial 80'
-										value={formik.values.shipping_address}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-										isTouched={!!formik.touched.shipping_address}
+									<Validation
 										isValid={!formik.errors.shipping_address}
+										isTouched={!!formik.touched.shipping_address}
 										invalidFeedback={
 											formik.touched.shipping_address
 												? formik.errors.shipping_address
 												: undefined
-										}
-									/>
+										}>
+										<Input
+											id='proveedor-shipping-address'
+											name='shipping_address'
+											placeholder='Camino Industrial 80'
+											value={formik.values.shipping_address}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+										/>
+									</Validation>
 								</div>
 								<div className='space-y-1'>
 									<Label htmlFor='proveedor-shipping-commune'>

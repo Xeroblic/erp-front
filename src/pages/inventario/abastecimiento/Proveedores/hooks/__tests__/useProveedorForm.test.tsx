@@ -1,10 +1,11 @@
 import React, { type PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resetProcurementSuppliersStoreForTests } from '@/mocks/services/procurementSuppliers.mock';
 import procurementSuppliersReducer from '@/store/slices/procurement/procurementSuppliersSlice';
+import { PHONE_CL_MAX_LENGTH } from '../../types';
 import type { IProveedorFormValues } from '../../types';
 import useProveedorForm from '../useProveedorForm';
 
@@ -162,4 +163,56 @@ describe('useProveedorForm — renovación de Idempotency-Key tras un error defi
 	// renovación de clave para esa rama del efecto es la misma línea de código
 	// que ejercita el caso de conflicto de arriba — no hay una segunda ruta que
 	// probar por separado.
+});
+
+/**
+ * Campo real con `maxLength`, como en la modal: el recorte del navegador al
+ * pegar sólo aparece con un `<input>` de verdad, no llamando al schema.
+ */
+const PhoneField = () => {
+	const { formik, handlePhoneChange, handlePhonePaste } = useProveedorForm({ subsidiaryId: 4 });
+	return (
+		<input
+			aria-label='Teléfono'
+			maxLength={PHONE_CL_MAX_LENGTH}
+			value={formik.values.phone}
+			onChange={(event) => handlePhoneChange(event.target.value)}
+			onPaste={handlePhonePaste}
+		/>
+	);
+};
+
+const pasteInto = (input: HTMLElement, text: string) =>
+	fireEvent.paste(input, { clipboardData: { getData: () => text } });
+
+describe('useProveedorForm — teléfono', () => {
+	it('pegar un número con espacios lo guarda completo y sin espacios', async () => {
+		render(<PhoneField />, { wrapper: createWrapper() });
+		const input = screen.getByLabelText<HTMLInputElement>('Teléfono');
+
+		pasteInto(input, '+56 9 1234 5678');
+
+		await waitFor(() => expect(input.value).toBe('+56912345678'));
+	});
+
+	it('pegar sobre una selección reemplaza sólo lo seleccionado', async () => {
+		render(<PhoneField />, { wrapper: createWrapper() });
+		const input = screen.getByLabelText<HTMLInputElement>('Teléfono');
+		fireEvent.change(input, { target: { value: '+56900000000' } });
+		await waitFor(() => expect(input.value).toBe('+56900000000'));
+
+		input.setSelectionRange(4, 12);
+		pasteInto(input, '1234 5678');
+
+		await waitFor(() => expect(input.value).toBe('+56912345678'));
+	});
+
+	it('teclear espacios no consume caracteres del largo máximo', async () => {
+		render(<PhoneField />, { wrapper: createWrapper() });
+		const input = screen.getByLabelText<HTMLInputElement>('Teléfono');
+
+		fireEvent.change(input, { target: { value: '+56 9 1234 5678' } });
+
+		await waitFor(() => expect(input.value).toBe('+56912345678'));
+	});
 });
