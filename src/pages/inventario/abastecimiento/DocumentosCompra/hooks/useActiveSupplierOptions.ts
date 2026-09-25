@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import useAuthorization from '@/hooks/useAuthorization';
 import { listProcurementSuppliers } from '@/services/procurement/procurementSuppliers.service';
 import { resolveProcurementError } from '@/utils/procurementErrors.util';
 import type { IProcurementSupplierListRow } from '@/interface/procurement.interface';
@@ -20,9 +21,11 @@ import type { IProcurementSupplierListRow } from '@/interface/procurement.interf
  * pida la nueva lista. Lo mismo vale al reabrir el modal en otra filial.
  *
  * El listado exige `view-procurement-supplier`, un permiso distinto del de
- * crear documentos o recepciones. Un 403 no se disfraza de lista vacía:
- * `unavailableReason` lo distingue de un fallo común para que el formulario
- * explique por qué no hay proveedores que elegir.
+ * crear documentos o recepciones, y el backend no ofrece otra ruta para
+ * elegir proveedor. Sin ese permiso no se pide la lista: `canList` queda en
+ * `false` y `unavailableReason` en `'forbidden'`, para que el formulario
+ * explique por qué no hay proveedores que elegir. Si igual responde 403
+ * (permisos desfasados), se trata del mismo modo; nunca como lista vacía.
  *
  * `addSupplier` suma un proveedor creado o restaurado desde el propio
  * formulario (alta en línea). Se guarda aparte, con la filial en que se
@@ -57,9 +60,16 @@ const useActiveSupplierOptions = (subsidiaryId: number | null, isEnabled: boolea
 	const [pendingSubsidiaryId, setPendingSubsidiaryId] = useState<number | null>(null);
 	const [added, setAdded] = useState<IAddedSupplier[]>([]);
 	const [reloadToken, setReloadToken] = useState(0);
+	const { authorize } = useAuthorization();
+	const canList = authorize({
+		permission: 'view-procurement-supplier',
+		subsidiaryId,
+		scope: 'access',
+	});
+	const shouldFetch = isEnabled && canList;
 
 	useEffect(() => {
-		if (!isEnabled || subsidiaryId === null) return undefined;
+		if (!shouldFetch || subsidiaryId === null) return undefined;
 
 		let cancelled = false;
 		setPendingSubsidiaryId(subsidiaryId);
@@ -84,16 +94,19 @@ const useActiveSupplierOptions = (subsidiaryId: number | null, isEnabled: boolea
 		return () => {
 			cancelled = true;
 		};
-	}, [subsidiaryId, isEnabled, reloadToken]);
+	}, [subsidiaryId, shouldFetch, reloadToken]);
 
 	const currentResult =
 		subsidiaryId !== null && result?.subsidiaryId === subsidiaryId ? result : null;
 	const loading =
-		isEnabled &&
+		shouldFetch &&
 		subsidiaryId !== null &&
 		(pendingSubsidiaryId === subsidiaryId || currentResult === null);
 	// Mientras se reintenta, el motivo anterior ya no describe lo que se ve.
-	const unavailableReason = loading ? null : (currentResult?.unavailableReason ?? null);
+	const fetchedReason = loading ? null : (currentResult?.unavailableReason ?? null);
+	const unavailableReason: TSupplierOptionsUnavailableReason | null = canList
+		? fetchedReason
+		: 'forbidden';
 
 	const suppliers = useMemo(() => {
 		if (subsidiaryId === null) return [];
@@ -123,7 +136,7 @@ const useActiveSupplierOptions = (subsidiaryId: number | null, isEnabled: boolea
 
 	const reload = useCallback(() => setReloadToken((token) => token + 1), []);
 
-	return { suppliers, loading, unavailableReason, addSupplier, reload };
+	return { suppliers, loading, unavailableReason, canList, addSupplier, reload };
 };
 
 export default useActiveSupplierOptions;

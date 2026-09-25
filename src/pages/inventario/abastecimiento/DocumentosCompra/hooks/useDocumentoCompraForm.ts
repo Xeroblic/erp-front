@@ -17,6 +17,7 @@ import type {
 	IPurchaseDocument,
 	IPurchaseDocumentCreatePayload,
 	IPurchaseDocumentLineInput,
+	TPurchaseDocumentType,
 } from '@/interface/procurement.interface';
 import { EMPTY_DOCUMENTO_LINE, EMPTY_DOCUMENTO_VALUES, documentoCompraFormSchema } from '../types';
 import type { IDocumentoCompraFormValues, IDocumentoCompraLineFormValues } from '../types';
@@ -39,9 +40,12 @@ const toOptionalDecimal = (value: string): string | null => {
 	return cents === null ? null : formatDecimalCents(cents);
 };
 
-const toFormValues = (document: IPurchaseDocument | null): IDocumentoCompraFormValues =>
+const toFormValues = (
+	document: IPurchaseDocument | null,
+	defaultDocumentType: TPurchaseDocumentType,
+): IDocumentoCompraFormValues =>
 	document === null
-		? EMPTY_DOCUMENTO_VALUES
+		? { ...EMPTY_DOCUMENTO_VALUES, document_type: defaultDocumentType }
 		: {
 				document_type: document.document_type,
 				supplier_id: document.supplier?.id ?? '',
@@ -105,6 +109,11 @@ interface IUseDocumentoCompraFormArgs {
 	document?: IPurchaseDocument | null;
 	/** `ETag` vigente de `document`, para `If-Match`. Sólo hace falta en edición. */
 	etag?: string | null;
+	/**
+	 * Tipo con que abre un alta. Quien no puede listar proveedores no puede
+	 * elegir el que exige la factura, así que su alta abre como boleta.
+	 */
+	defaultDocumentType?: TPurchaseDocumentType;
 	onSuccess?: (document: IPurchaseDocument) => void;
 }
 
@@ -112,6 +121,7 @@ const useDocumentoCompraForm = ({
 	subsidiaryId,
 	document = null,
 	etag = null,
+	defaultDocumentType = 'invoice',
 	onSuccess,
 }: IUseDocumentoCompraFormArgs) => {
 	const dispatch = useAppDispatch();
@@ -137,7 +147,7 @@ const useDocumentoCompraForm = ({
 		[],
 	);
 	const formik = useFormik<IDocumentoCompraFormValues>({
-		initialValues: toFormValues(document),
+		initialValues: toFormValues(document, defaultDocumentType),
 		enableReinitialize: true,
 		validationSchema: documentoCompraFormSchema,
 		onSubmit: async (values, { resetForm }) => {
@@ -168,7 +178,11 @@ const useDocumentoCompraForm = ({
 				// reabriría con las líneas del envío anterior.
 				if (!isEdit)
 					resetForm({
-						values: { ...EMPTY_DOCUMENTO_VALUES, items: [{ ...EMPTY_DOCUMENTO_LINE }] },
+						values: {
+							...EMPTY_DOCUMENTO_VALUES,
+							document_type: defaultDocumentType,
+							items: [{ ...EMPTY_DOCUMENTO_LINE }],
+						},
 					});
 				onSuccess?.(result.data);
 			}

@@ -11,6 +11,13 @@ vi.mock('@/services/procurement/procurementSuppliers.service', () => ({
 	listProcurementSuppliers: vi.fn(),
 }));
 
+const authorizeMock = vi.hoisted(() =>
+	vi.fn<(options: { permission?: string }) => boolean>(() => true),
+);
+vi.mock('@/hooks/useAuthorization', () => ({
+	default: () => ({ authorize: authorizeMock }),
+}));
+
 const listMock = vi.mocked(listProcurementSuppliers);
 
 const row = (id: number, displayName: string, isActive = true): IProcurementSupplierListRow => ({
@@ -51,6 +58,8 @@ const neverResolves = (): Promise<IApiCollectionEnvelope<IProcurementSupplierLis
 describe('useActiveSupplierOptions — alta en línea', () => {
 	beforeEach(() => {
 		listMock.mockReset();
+		authorizeMock.mockReset();
+		authorizeMock.mockReturnValue(true);
 	});
 
 	it('suma el proveedor creado, ordenado por nombre, y una carga tardía no lo borra', async () => {
@@ -112,6 +121,8 @@ describe('useActiveSupplierOptions — alta en línea', () => {
 describe('useActiveSupplierOptions — propiedad de filial', () => {
 	beforeEach(() => {
 		listMock.mockReset();
+		authorizeMock.mockReset();
+		authorizeMock.mockReturnValue(true);
 	});
 
 	it('oculta los proveedores de la filial anterior desde el primer render del cambio', async () => {
@@ -183,6 +194,8 @@ describe('useActiveSupplierOptions — propiedad de filial', () => {
 describe('useActiveSupplierOptions — lista no disponible', () => {
 	beforeEach(() => {
 		listMock.mockReset();
+		authorizeMock.mockReset();
+		authorizeMock.mockReturnValue(true);
 	});
 
 	it('distingue un 403 de una lista vacía', async () => {
@@ -222,5 +235,43 @@ describe('useActiveSupplierOptions — lista no disponible', () => {
 
 		expect(result.current.unavailableReason).toBeNull();
 		expect(result.current.loading).toBe(true);
+	});
+});
+
+describe('useActiveSupplierOptions — sin permiso para listar', () => {
+	beforeEach(() => {
+		listMock.mockReset();
+		authorizeMock.mockReset();
+		authorizeMock.mockImplementation(
+			({ permission }) => permission !== 'view-procurement-supplier',
+		);
+	});
+
+	it('no pide la lista y lo informa como falta de permiso', () => {
+		const { result } = renderHook(() => useActiveSupplierOptions(2, true));
+
+		expect(listMock).not.toHaveBeenCalled();
+		expect(result.current.canList).toBe(false);
+		expect(result.current.unavailableReason).toBe('forbidden');
+		expect(result.current.loading).toBe(false);
+		expect(result.current.suppliers).toEqual([]);
+	});
+
+	it('reload tampoco la pide', () => {
+		const { result } = renderHook(() => useActiveSupplierOptions(2, true));
+
+		act(() => result.current.reload());
+
+		expect(listMock).not.toHaveBeenCalled();
+	});
+
+	it('consulta el permiso en el scope de la filial', () => {
+		renderHook(() => useActiveSupplierOptions(2, true));
+
+		expect(authorizeMock).toHaveBeenCalledWith({
+			permission: 'view-procurement-supplier',
+			subsidiaryId: 2,
+			scope: 'access',
+		});
 	});
 });
