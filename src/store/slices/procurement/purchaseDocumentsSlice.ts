@@ -7,7 +7,6 @@ import {
 	listPurchaseDocuments,
 	updatePurchaseDocument,
 } from '@/services/procurement/purchaseDocuments.service';
-import { readEtagHeader } from '@/utils/procurementWrite.util';
 import { getProcurementErrorMessage } from '@/utils/procurementErrors.util';
 import type { RootState } from '@/store';
 import type {
@@ -21,10 +20,9 @@ import type {
 } from '@/interface/procurement.interface';
 
 /**
- * Store de documentos de compra (card 03, sección 6 del contrato). Mismo
- * patrón que `procurementSuppliersSlice`: los thunks llaman al servicio mock
- * de `@/services/procurement/purchaseDocuments.service`, particionado por
- * filial.
+ * Store de documentos de compra (sección 6 del contrato). Mismo patrón que
+ * `procurementSuppliersSlice`: los thunks llaman al servicio real
+ * `@/services/procurement/purchaseDocuments.service` (backend PR #84/#92).
  *
  * A diferencia de proveedores, acá se guarda el `ETag` del recurso junto con
  * `current`: la edición (`PATCH`) lo necesita para `If-Match`, y sólo la
@@ -38,10 +36,9 @@ export interface PurchaseDocumentsState {
 	listError: string | null;
 	listRequestId: string | null;
 	/**
-	 * Filial dueña de `items`/`meta` (propiedad de contexto, ZF-12). Los IDs de
-	 * documento **no son únicos entre filiales** — el mock siembra cada una con
-	 * los mismos fixtures — así que una mutación resuelta para la filial
-	 * equivocada no puede parchear una fila que coincide sólo por número.
+	 * Filial dueña de `items`/`meta` (propiedad de contexto, ZF-12): una
+	 * mutación resuelta para otra filial no puede parchear la lista que se
+	 * está viendo, aunque el usuario haya cambiado de filial mientras volaba.
 	 */
 	listSubsidiaryId: number | null;
 	current: IPurchaseDocument | null;
@@ -77,9 +74,14 @@ const initialState: PurchaseDocumentsState = {
 	cancelling: false,
 };
 
+/** La `Idempotency-Key` es obligatoria: el backend rechaza escrituras sin ella. */
 interface IWriteHeaders {
-	idempotencyKey?: string;
-	etag?: string | null;
+	idempotencyKey: string;
+}
+
+/** El PATCH además necesita el `ETag` de la ficha que se editó. */
+interface IUpdateHeaders extends IWriteHeaders {
+	etag: string | null;
 }
 
 const MISSING_SUBSIDIARY_MESSAGE = 'No se pudo determinar la filial activa.';
@@ -105,7 +107,7 @@ export const fetchPurchaseDocumentDetail = createAsyncThunk(
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
 		try {
 			const response = await getPurchaseDocument(args.subsidiaryId, args.id);
-			return { data: response.data, etag: readEtagHeader(response.headers) };
+			return { data: response.data, etag: response.headers.etag };
 		} catch (error) {
 			return rejectWithValue(error);
 		}
@@ -118,7 +120,7 @@ export const createPurchaseDocumentThunk = createAsyncThunk(
 		args: {
 			subsidiaryId: number | null;
 			payload: IPurchaseDocumentCreatePayload;
-			headers?: IWriteHeaders;
+			headers: IWriteHeaders;
 		},
 		{ rejectWithValue },
 	) => {
@@ -131,7 +133,7 @@ export const createPurchaseDocumentThunk = createAsyncThunk(
 			);
 			return {
 				data: response.data,
-				etag: readEtagHeader(response.headers),
+				etag: response.headers.etag,
 				subsidiaryId: args.subsidiaryId,
 			};
 		} catch (error) {
@@ -147,7 +149,7 @@ export const updatePurchaseDocumentThunk = createAsyncThunk(
 			subsidiaryId: number | null;
 			id: number;
 			payload: IPurchaseDocumentUpdatePayload;
-			headers: IWriteHeaders;
+			headers: IUpdateHeaders;
 		},
 		{ rejectWithValue },
 	) => {
@@ -161,7 +163,7 @@ export const updatePurchaseDocumentThunk = createAsyncThunk(
 			);
 			return {
 				data: response.data,
-				etag: readEtagHeader(response.headers),
+				etag: response.headers.etag,
 				subsidiaryId: args.subsidiaryId,
 			};
 		} catch (error) {
@@ -173,7 +175,7 @@ export const updatePurchaseDocumentThunk = createAsyncThunk(
 export const confirmPurchaseDocumentThunk = createAsyncThunk(
 	'purchaseDocuments/confirm',
 	async (
-		args: { subsidiaryId: number | null; id: number; headers?: IWriteHeaders },
+		args: { subsidiaryId: number | null; id: number; headers: IWriteHeaders },
 		{ rejectWithValue },
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
@@ -185,7 +187,7 @@ export const confirmPurchaseDocumentThunk = createAsyncThunk(
 			);
 			return {
 				data: response.data,
-				etag: readEtagHeader(response.headers),
+				etag: response.headers.etag,
 				subsidiaryId: args.subsidiaryId,
 			};
 		} catch (error) {
@@ -201,7 +203,7 @@ export const cancelPurchaseDocumentThunk = createAsyncThunk(
 			subsidiaryId: number | null;
 			id: number;
 			payload: IPurchaseDocumentCancelPayload;
-			headers?: IWriteHeaders;
+			headers: IWriteHeaders;
 		},
 		{ rejectWithValue },
 	) => {
@@ -215,7 +217,7 @@ export const cancelPurchaseDocumentThunk = createAsyncThunk(
 			);
 			return {
 				data: response.data,
-				etag: readEtagHeader(response.headers),
+				etag: response.headers.etag,
 				subsidiaryId: args.subsidiaryId,
 			};
 		} catch (error) {
@@ -241,10 +243,9 @@ const toListRow = (document: IPurchaseDocument): IPurchaseDocumentListRow => ({
 
 /**
  * Refleja en `items` y `current` el resultado de una escritura, sin refetch.
- * `subsidiaryId` es el de la propia mutación: los IDs de documento se
- * repiten entre filiales (cada una siembra los mismos fixtures), así que sin
- * comparar la filial una escritura resuelta para la B podría parchear una
- * fila o pisar la ficha de la A sólo porque el número de ID coincide.
+ * `subsidiaryId` es el de la propia mutación: sin compararlo, una escritura
+ * resuelta después de cambiar de filial podría pisar la lista o la ficha de
+ * la filial nueva.
  */
 const applyDocumentMutation = (
 	state: PurchaseDocumentsState,

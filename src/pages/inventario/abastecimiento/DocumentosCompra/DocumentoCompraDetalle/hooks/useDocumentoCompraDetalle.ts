@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -74,23 +74,24 @@ const useDocumentoCompraDetalle = () => {
 	 */
 	const attachmentsCardRef = useRef<IDocumentAttachmentsCardHandle>(null);
 
-	/** Traduce el click de `AllowedActionsToolbar` a la interacción de esta pantalla. */
-	const handleAction = useCallback(
-		(action: TProcurementAllowedAction) => {
-			if (action === 'update') setIsFormModalOpen(true);
-			else if (action === 'confirm') setIsConfirmModalOpen(true);
-			else if (action === 'cancel') setIsCancelModalOpen(true);
-			else if (action === 'add_attachment') attachmentsCardRef.current?.openFilePicker();
-			// `create_receipt` (card 05, sección 7): no hay alta de recepción acá
-			// — navega al módulo de Recepciones con este documento preseleccionado
-			// en el alta «con documento», en vez de duplicar ese formulario.
-			else if (action === 'create_receipt' && document)
-				navigate(
-					`/inventario/abastecimiento/recepciones?purchase_document_id=${document.id}`,
-				);
-		},
-		[document, navigate],
+	/**
+	 * `create_receipt` se retira aunque el backend la ofrezca: Recepciones sigue
+	 * contra datos simulados, que no conocen este documento real. Vuelve cuando
+	 * Recepciones consuma la API (su alta «con documento» ya lee
+	 * `?purchase_document_id=`).
+	 */
+	const allowedActions = useMemo(
+		() => (document?.allowed_actions ?? []).filter((action) => action !== 'create_receipt'),
+		[document],
 	);
+
+	/** Traduce el click de `AllowedActionsToolbar` a la interacción de esta pantalla. */
+	const handleAction = useCallback((action: TProcurementAllowedAction) => {
+		if (action === 'update') setIsFormModalOpen(true);
+		else if (action === 'confirm') setIsConfirmModalOpen(true);
+		else if (action === 'cancel') setIsCancelModalOpen(true);
+		else if (action === 'add_attachment') attachmentsCardRef.current?.openFilePicker();
+	}, []);
 
 	return {
 		id,
@@ -106,6 +107,7 @@ const useDocumentoCompraDetalle = () => {
 		setIsConfirmModalOpen,
 		isCancelModalOpen,
 		setIsCancelModalOpen,
+		allowedActions,
 		attachmentsCardRef,
 		handleAction,
 		goToList,

@@ -582,6 +582,7 @@ export const pcExpressInvoiceDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 1, initial_stock_allocations: 0, attachments: 1 },
 	confirmed_at: '2026-09-04T11:30:00-03:00',
 	cancelled_at: null,
+	shipping_cost: null,
 	cancellation_reason: null,
 	updated_at: '2026-09-04T11:30:00-03:00',
 };
@@ -626,6 +627,7 @@ export const draftReceiptDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
 	confirmed_at: null,
 	cancelled_at: null,
+	shipping_cost: null,
 	cancellation_reason: null,
 	updated_at: '2026-09-06T10:00:00-03:00',
 };
@@ -684,6 +686,7 @@ export const draftInvoiceDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
 	confirmed_at: null,
 	cancelled_at: null,
+	shipping_cost: null,
 	cancellation_reason: null,
 	updated_at: '2026-09-07T15:20:00-03:00',
 };
@@ -726,6 +729,7 @@ export const cancelledInvoiceDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
 	confirmed_at: null,
 	cancelled_at: '2026-08-21T09:00:00-03:00',
+	shipping_cost: null,
 	cancellation_reason: 'Folio ingresado por error, se re-emitió con el proveedor.',
 	updated_at: '2026-08-21T09:00:00-03:00',
 };
@@ -795,6 +799,7 @@ export const pcExpressKeyboardInvoiceDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 1, initial_stock_allocations: 0, attachments: 0 },
 	confirmed_at: '2026-08-28T09:30:00-03:00',
 	cancelled_at: null,
+	shipping_cost: null,
 	cancellation_reason: null,
 	updated_at: '2026-08-29T10:20:00-03:00',
 };
@@ -848,6 +853,7 @@ export const cableProductInitialStockDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
 	confirmed_at: '2026-08-31T09:30:00-03:00',
 	cancelled_at: null,
+	shipping_cost: null,
 	cancellation_reason: null,
 	updated_at: '2026-08-31T09:30:00-03:00',
 };

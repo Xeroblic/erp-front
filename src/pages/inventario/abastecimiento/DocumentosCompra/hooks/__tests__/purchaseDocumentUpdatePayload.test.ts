@@ -3,7 +3,7 @@ import {
 	getPurchaseDocument,
 	resetPurchaseDocumentsStoreForTests,
 	updatePurchaseDocument,
-} from '@/services/procurement/purchaseDocuments.service';
+} from '@/mocks/services/purchaseDocuments.mock';
 import { getProcurementSupplier } from '@/services/procurement/procurementSuppliers.service';
 import { toFormValues, toUpdatePayload } from '../usePurchaseDocumentForm';
 
@@ -11,7 +11,8 @@ import { toFormValues, toUpdatePayload } from '../usePurchaseDocumentForm';
  * Quien edita un documento sin `view-procurement-supplier` recibe 403 al
  * consultar un proveedor. Si la edición reenvía el proveedor que no cambió,
  * el servicio lo vuelve a resolver y la edición termina en «El proveedor no
- * existe». Acá la consulta de proveedores siempre responde 403.
+ * existe». Se prueba contra el doble de documentos, que vuelve a resolver el
+ * proveedor que recibe; la consulta de proveedores siempre responde 403.
  */
 
 vi.mock('@/services/procurement/procurementSuppliers.service', async () => {

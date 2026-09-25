@@ -6,10 +6,9 @@ import type { IPurchaseDocumentRelatedCounts } from '@/interface/procurement.int
 
 /**
  * `related_counts` del detalle (sección 6): recepciones, asignaciones de
- * stock inicial y adjuntos. Resumen numérico rápido; las listas completas
- * paginadas de recepciones y asignaciones viven en `RelatedListCard`, y la
- * de adjuntos —con subida y baja— en `DocumentAttachmentsCard`, todas justo
- * debajo en el detalle.
+ * stock inicial y adjuntos. Resumen numérico rápido; la lista de adjuntos
+ * —con subida y baja— vive en `DocumentAttachmentsCard`, justo debajo. Las
+ * de recepciones y asignaciones vuelven cuando esos módulos usen la API.
  *
  * Mismo formato de caja+ícono que `DeferredPaymentsKpis`/`StockSummaryKpis`
  * (pagos diferidos y stock por ubicación): sin ese formato, tres números

@@ -1,11 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as purchaseDocumentAttachmentsService from '@/services/procurement/purchaseDocumentAttachments.service';
-import {
-	resetPurchaseDocumentAttachmentsStoreForTests,
-	uploadPurchaseDocumentAttachment,
-} from '@/services/procurement/purchaseDocumentAttachments.service';
-import { resetPurchaseDocumentsStoreForTests } from '@/services/procurement/purchaseDocuments.service';
+import { uploadPurchaseDocumentAttachment } from '@/services/procurement/purchaseDocumentAttachments.service';
+import { resetPurchaseDocumentAttachmentsStoreForTests } from '@/mocks/services/purchaseDocumentAttachments.mock';
+import { resetPurchaseDocumentsStoreForTests } from '@/mocks/services/purchaseDocuments.mock';
 import { PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT } from '@/interface/procurement.interface';
 import useDocumentAttachments from '../useDocumentAttachments';
 
@@ -15,8 +13,20 @@ import useDocumentAttachments from '../useDocumentAttachments';
  * 6: «los límites se muestran antes de intentar subir, no sólo cuando el
  * servidor rechaza»). Estas pruebas verifican esa decisión y el ciclo
  * subir/descargar/eliminar, no las reglas del servicio — esas ya las cubre
- * `purchaseDocumentAttachments.service.test.ts`.
+ * `purchaseDocumentAttachments.mock.test.ts`.
  */
+
+// El servicio de adjuntos ya es real: estas pruebas ejercen el hook contra su
+// doble en memoria, que valida estado y cupo como el backend. Los documentos
+// mock validan `supplier_id` contra el maestro, también sustituido.
+vi.mock(
+	'@/services/procurement/purchaseDocumentAttachments.service',
+	() => import('@/mocks/services/purchaseDocumentAttachments.mock'),
+);
+vi.mock(
+	'@/services/procurement/procurementSuppliers.service',
+	() => import('@/mocks/services/procurementSuppliers.mock'),
+);
 
 const toastSpies = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('react-toastify', () => ({ toast: toastSpies }));
@@ -284,6 +294,7 @@ describe('useDocumentAttachments', () => {
 				SUBSIDIARY_A,
 				DRAFT_INVOICE_ID,
 				pdfFile(`adjunto-${index}.pdf`),
+				{ idempotencyKey: `cupo-${index}` },
 			);
 		}
 

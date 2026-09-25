@@ -1,529 +1,145 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	cancelPurchaseDocument,
 	confirmPurchaseDocument,
 	createPurchaseDocument,
 	getPurchaseDocument,
 	listPurchaseDocuments,
-	resetPurchaseDocumentsStoreForTests,
-	simulatePurchaseDocumentsReloadForTests,
+	MISSING_ETAG_MESSAGE,
 	updatePurchaseDocument,
 } from '@/services/procurement/purchaseDocuments.service';
+import { resolveProcurementError } from '@/utils/procurementErrors.util';
 import type { IPurchaseDocumentCreatePayload } from '@/interface/procurement.interface';
 
-// Estos servicios siguen siendo mock y validan `supplier_id` contra el
-// maestro, que ya es real: se sustituye por su doble en memoria para no
-// depender de la red.
-vi.mock(
-	'@/services/procurement/procurementSuppliers.service',
-	() => import('@/mocks/services/procurementSuppliers.mock'),
-);
-
 /**
- * El servicio simula `/api/subsidiaries/{subsidiary}/procurement/
- * purchase-documents` (sección 6 del contrato). Estas pruebas verifican la
- * simulación de las reglas del contrato — factura exige proveedor, `ETag`/
- * `If-Match`, reemplazo de líneas, confirmar/anular — no el fixture en sí,
- * que ya cubre `procurement.db.test.ts`.
+ * Cableado HTTP de documentos de compra contra el contrato del backend
+ * (`routes/apis/procurement.php`, PR #84/#92): URL por filial, método,
+ * `Idempotency-Key` en cada escritura, `If-Match` sólo en el PATCH y el
+ * `ETag` de la respuesta. Las reglas de negocio las prueba el backend; el
+ * doble en memoria las cubre en `purchaseDocuments.mock.test.ts`.
  */
 
-const SUBSIDIARY_A = 4;
-const SUBSIDIARY_B = 9;
+const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn() }));
 
-// IDs literales de `procurement.db.ts`.
-const CONFIRMED_WITH_RECEIPT_ID = 24; // pcExpressInvoiceDocument
-const DRAFT_RECEIPT_NO_SUPPLIER_ID = 31; // draftReceiptDocument
-const DRAFT_INVOICE_ID = 42; // draftInvoiceDocument
-const CANCELLED_ID = 50; // cancelledInvoiceDocument
+vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
 
-const MOUSE_PRODUCT_ID = 31;
-const NOTEBOOK_SERIALIZED_PRODUCT_ID = 44;
-const PC_EXPRESS_SUPPLIER_ID = 7; // completo: giro + ambas direcciones
-const CONTRERAS_SUPPLIER_ID = 15; // activo pero incompleto para facturar
+const BASE = '/subsidiaries/4/procurement/purchase-documents';
+const KEY = '3f2a7c1e-9b4d-4e8a-a1c2-5d6e7f8a9b0c';
+const ETAG = '"purchase_documents-9-v3"';
 
-const readErrorData = async (promise: Promise<unknown>) => {
-	try {
-		await promise;
-		throw new Error('Se esperaba que la promesa rechazara');
-	} catch (error) {
-		return (error as { response: { status: number; data: Record<string, unknown> } }).response;
-	}
-};
-
-const basePayload: IPurchaseDocumentCreatePayload = {
-	document_type: 'receipt',
-	supplier_id: null,
-	document_number: 'TEST-001',
-	issue_date: '2026-09-01',
+const payload: IPurchaseDocumentCreatePayload = {
+	document_type: 'invoice',
+	supplier_id: 7,
+	document_number: 'F-100',
+	issue_date: '2026-09-25',
 	currency_code: 'CLP',
 	total_amount: null,
+	shipping_cost: null,
+	shipping_cost_basis: null,
 	notes: null,
 	items: [
-		{
-			product_id: MOUSE_PRODUCT_ID,
-			quantity: 2,
-			unit_cost: '5000.00',
-			unit_cost_basis: 'gross',
-			notes: null,
-		},
+		{ product_id: 11, quantity: 2, unit_cost: '1000.00', unit_cost_basis: 'net', notes: null },
 	],
 };
 
-afterEach(() => {
-	resetPurchaseDocumentsStoreForTests();
+beforeEach(() => {
+	apiSpies.fetchData.mockReset();
+	apiSpies.fetchData.mockResolvedValue({ data: { data: { id: 9 } }, headers: { etag: ETAG } });
 });
 
-// Documento agregado por la card 05 (recepciones): confirmado, con
-// capacidad parcial, para que las recepciones «con documento» tengan un
-// destino real sin consumir de inmediato `CONFIRMED_WITH_RECEIPT_ID`.
-const CONFIRMED_PARTIAL_ID = 61; // pcExpressKeyboardInvoiceDocument
-// Documento agregado por la card 07 (documentar después, sección 8):
-// confirmado, sin proveedor, con capacidad sin consumir para `cableProduct`.
-const CONFIRMED_INITIAL_STOCK_ID = 90; // cableProductInitialStockDocument
+describe('lecturas', () => {
+	it('lista con los filtros como query params y devuelve el envoltorio paginado', async () => {
+		const envelope = { data: [], links: {}, meta: { total: 0 } };
+		apiSpies.fetchData.mockResolvedValueOnce({ data: envelope, headers: {} });
 
-describe('listPurchaseDocuments', () => {
-	it('lista los seis documentos semilla ordenados por emisión DESC', async () => {
-		const result = await listPurchaseDocuments(SUBSIDIARY_A);
-		expect(result.data.map((row) => row.id)).toEqual([
-			DRAFT_INVOICE_ID,
-			DRAFT_RECEIPT_NO_SUPPLIER_ID,
-			CONFIRMED_WITH_RECEIPT_ID,
-			CONFIRMED_INITIAL_STOCK_ID,
-			CONFIRMED_PARTIAL_ID,
-			CANCELLED_ID,
-		]);
-	});
+		const result = await listPurchaseDocuments(4, { status: 'confirmed', per_page: 100 });
 
-	it('filtra por document_type, status, reception_status y supplier_id', async () => {
-		const invoices = await listPurchaseDocuments(SUBSIDIARY_A, { document_type: 'invoice' });
-		expect(invoices.data.every((row) => row.document_type === 'invoice')).toBe(true);
-
-		const drafts = await listPurchaseDocuments(SUBSIDIARY_A, { status: 'draft' });
-		expect(drafts.data.map((row) => row.id).sort()).toEqual([31, 42]);
-
-		const partial = await listPurchaseDocuments(SUBSIDIARY_A, {
-			reception_status: 'partially_received',
+		expect(apiSpies.fetchData).toHaveBeenCalledWith({
+			url: BASE,
+			method: 'get',
+			params: { status: 'confirmed', per_page: 100 },
 		});
-		expect(partial.data.map((row) => row.id).sort()).toEqual(
-			[CONFIRMED_WITH_RECEIPT_ID, CONFIRMED_PARTIAL_ID].sort(),
-		);
-
-		const bySupplier = await listPurchaseDocuments(SUBSIDIARY_A, {
-			supplier_id: PC_EXPRESS_SUPPLIER_ID,
-		});
-		expect(bySupplier.data.every((row) => row.supplier?.id === PC_EXPRESS_SUPPLIER_ID)).toBe(
-			true,
-		);
+		expect(result).toBe(envelope);
 	});
 
-	it('busca por folio, proveedor y RUT', async () => {
-		// «55012» sólo aparece como folio (draftReceiptDocument, sin proveedor):
-		// a diferencia de «1234», no coincide además con el RUT de PCExpress.
-		const byFolio = await listPurchaseDocuments(SUBSIDIARY_A, { search: '55012' });
-		expect(byFolio.data.map((row) => row.id)).toEqual([DRAFT_RECEIPT_NO_SUPPLIER_ID]);
+	it('desempaqueta la ficha y conserva el ETag de la respuesta', async () => {
+		const result = await getPurchaseDocument(4, 9);
 
-		// «1234» coincide con el folio del documento 24 y con el RUT de
-		// PCExpress (76123456-0), proveedor también de los documentos 42, 50 y
-		// del agregado por la card 05 (61, mismo proveedor).
-		const byFolioOrSupplierRut = await listPurchaseDocuments(SUBSIDIARY_A, { search: '1234' });
-		expect(byFolioOrSupplierRut.data.map((row) => row.id).sort()).toEqual([
-			24,
-			42,
-			50,
-			CONFIRMED_PARTIAL_ID,
-		]);
-
-		const byRut = await listPurchaseDocuments(SUBSIDIARY_A, { search: '76123456' });
-		expect(byRut.data.length).toBeGreaterThan(0);
+		expect(apiSpies.fetchData).toHaveBeenCalledWith({ url: `${BASE}/9`, method: 'get' });
+		expect(result).toEqual({ data: { id: 9 }, headers: { etag: ETAG } });
 	});
 
-	it('aísla el store por filial: crear en una no aparece en la otra', async () => {
-		await createPurchaseDocument(SUBSIDIARY_A, basePayload);
-		const otherSubsidiaryList = await listPurchaseDocuments(SUBSIDIARY_B);
-		expect(otherSubsidiaryList.data.some((row) => row.document_number === 'TEST-001')).toBe(
-			false,
-		);
+	it('sin ETag legible (CORS) informa null en vez de inventar uno', async () => {
+		apiSpies.fetchData.mockResolvedValueOnce({ data: { data: { id: 9 } }, headers: {} });
+
+		const result = await getPurchaseDocument(4, 9);
+
+		expect(result.headers.etag).toBeNull();
 	});
 });
 
-describe('getPurchaseDocument', () => {
-	it('entrega el detalle con ETag', async () => {
-		const { data, headers } = await getPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID);
-		expect(data.id).toBe(DRAFT_INVOICE_ID);
-		expect(headers.etag).toMatch(/^W\/"pd-42-v\d+"$/);
+describe('escrituras', () => {
+	it('crear es POST con el payload y la Idempotency-Key, sin If-Match', async () => {
+		await createPurchaseDocument(4, payload, { idempotencyKey: KEY });
+
+		expect(apiSpies.fetchData).toHaveBeenCalledWith({
+			url: BASE,
+			method: 'post',
+			data: payload,
+			headers: { 'Idempotency-Key': KEY },
+		});
 	});
 
-	it('404 si el documento no existe', async () => {
-		const { status, data } = await readErrorData(getPurchaseDocument(SUBSIDIARY_A, 9999));
-		expect(status).toBe(404);
-		expect(data.code).toBe('PURCHASE_DOCUMENT_NOT_FOUND');
+	it('editar es PATCH con If-Match del ETag vigente', async () => {
+		await updatePurchaseDocument(4, 9, { notes: 'x' }, { idempotencyKey: KEY, etag: ETAG });
+
+		expect(apiSpies.fetchData).toHaveBeenCalledWith({
+			url: `${BASE}/9`,
+			method: 'patch',
+			data: { notes: 'x' },
+			headers: { 'Idempotency-Key': KEY, 'If-Match': ETAG },
+		});
+	});
+
+	it('editar sin ETag no llega al backend y se rechaza como 428', async () => {
+		const error = await updatePurchaseDocument(
+			4,
+			9,
+			{ notes: 'x' },
+			{ idempotencyKey: KEY, etag: null },
+		).catch((reason: unknown) => reason);
+
+		expect(apiSpies.fetchData).not.toHaveBeenCalled();
+		const resolved = resolveProcurementError(error);
+		expect(resolved.status).toBe(428);
+		expect(resolved.message).toBe(MISSING_ETAG_MESSAGE);
+		expect(resolved.action).toBe('reload_resource');
+	});
+
+	it('confirmar es POST a /confirm sin cuerpo ni If-Match', async () => {
+		await confirmPurchaseDocument(4, 9, { idempotencyKey: KEY });
+
+		expect(apiSpies.fetchData).toHaveBeenCalledWith({
+			url: `${BASE}/9/confirm`,
+			method: 'post',
+			headers: { 'Idempotency-Key': KEY },
+		});
+	});
+
+	it('anular es POST a /cancel con el motivo', async () => {
+		const result = await cancelPurchaseDocument(
+			4,
+			9,
+			{ reason: 'Folio duplicado' },
+			{ idempotencyKey: KEY },
+		);
+
+		expect(apiSpies.fetchData).toHaveBeenCalledWith({
+			url: `${BASE}/9/cancel`,
+			method: 'post',
+			data: { reason: 'Folio duplicado' },
+			headers: { 'Idempotency-Key': KEY },
+		});
+		expect(result.headers.etag).toBe(ETAG);
 	});
 });
-
-describe('createPurchaseDocument', () => {
-	it('conserva el envío separado de productos al recargar y permite quitarlo del borrador', async () => {
-		const created = await createPurchaseDocument(SUBSIDIARY_A, {
-			...basePayload,
-			shipping_cost: '1190.00',
-			shipping_cost_basis: 'gross',
-		});
-		expect(created.data.items).toHaveLength(1);
-		expect(created.data.shipping_cost?.entered_unit_amount).toBe('1190.00');
-		expect(created.data.shipping_cost?.entered_basis).toBe('gross');
-		simulatePurchaseDocumentsReloadForTests();
-		const reloaded = await getPurchaseDocument(SUBSIDIARY_A, created.data.id);
-		expect(reloaded.data.shipping_cost).toEqual(created.data.shipping_cost);
-		const updated = await updatePurchaseDocument(
-			SUBSIDIARY_A,
-			created.data.id,
-			{ shipping_cost: null, shipping_cost_basis: null },
-			{ etag: reloaded.headers.etag },
-		);
-		expect(updated.data.shipping_cost).toBeNull();
-		expect(updated.data.items).toEqual(created.data.items);
-		simulatePurchaseDocumentsReloadForTests();
-		expect(
-			(await getPurchaseDocument(SUBSIDIARY_A, created.data.id)).data.shipping_cost,
-		).toBeNull();
-	});
-
-	it('la factura sin proveedor es 422 INVOICE_SUPPLIER_REQUIRED', async () => {
-		const { status, data } = await readErrorData(
-			createPurchaseDocument(SUBSIDIARY_A, { ...basePayload, document_type: 'invoice' }),
-		);
-		expect(status).toBe(422);
-		expect(data.code).toBe('INVOICE_SUPPLIER_REQUIRED');
-	});
-
-	it('la boleta permite proveedor null', async () => {
-		const { data } = await createPurchaseDocument(SUBSIDIARY_A, basePayload);
-		expect(data.status).toBe('draft');
-		expect(data.supplier).toBeNull();
-		expect(data.allowed_actions).toEqual(['update', 'confirm', 'cancel', 'add_attachment']);
-	});
-
-	it('items vacíos es 422 PURCHASE_DOCUMENT_ITEMS_EMPTY', async () => {
-		const { status, data } = await readErrorData(
-			createPurchaseDocument(SUBSIDIARY_A, { ...basePayload, items: [] }),
-		);
-		expect(status).toBe(422);
-		expect(data.code).toBe('PURCHASE_DOCUMENT_ITEMS_EMPTY');
-	});
-
-	it('un producto serializado es 422 PURCHASE_DOCUMENT_PRODUCT_INVALID', async () => {
-		const { status, data } = await readErrorData(
-			createPurchaseDocument(SUBSIDIARY_A, {
-				...basePayload,
-				items: [
-					{
-						product_id: NOTEBOOK_SERIALIZED_PRODUCT_ID,
-						quantity: 1,
-						unit_cost: '100.00',
-						unit_cost_basis: 'gross',
-						notes: null,
-					},
-				],
-			}),
-		);
-		expect(status).toBe(422);
-		expect(data.code).toBe('PURCHASE_DOCUMENT_PRODUCT_INVALID');
-	});
-
-	it('varias líneas del mismo producto son válidas, cada una con su costo', async () => {
-		const { data } = await createPurchaseDocument(SUBSIDIARY_A, {
-			...basePayload,
-			items: [
-				{ ...basePayload.items[0], unit_cost: '5000.00' },
-				{ ...basePayload.items[0], unit_cost: '5200.00' },
-			],
-		});
-		expect(data.items).toHaveLength(2);
-		expect(data.items[0].cost.entered_unit_amount).toBe('5000.00');
-		expect(data.items[1].cost.entered_unit_amount).toBe('5200.00');
-	});
-
-	it('el costo efectivo es neto en factura y bruto en boleta, sin importar la base ingresada', async () => {
-		const { data: invoiceDoc } = await createPurchaseDocument(SUBSIDIARY_A, {
-			...basePayload,
-			document_type: 'invoice',
-			supplier_id: PC_EXPRESS_SUPPLIER_ID,
-		});
-		expect(invoiceDoc.items[0].cost.effective_basis).toBe('net');
-
-		const { data: receiptDoc } = await createPurchaseDocument(SUBSIDIARY_A, basePayload);
-		expect(receiptDoc.items[0].cost.effective_basis).toBe('gross');
-	});
-
-	it('misma Idempotency-Key y mismo payload devuelve el mismo resultado', async () => {
-		const headers = { idempotencyKey: 'key-create-1' };
-		const first = await createPurchaseDocument(SUBSIDIARY_A, basePayload, headers);
-		const second = await createPurchaseDocument(SUBSIDIARY_A, basePayload, headers);
-		expect(second.data.id).toBe(first.data.id);
-
-		const listed = await listPurchaseDocuments(SUBSIDIARY_A, { search: 'TEST-001' });
-		expect(listed.data).toHaveLength(1);
-	});
-
-	it('misma Idempotency-Key con otro payload es 409 IDEMPOTENCY_KEY_REUSED', async () => {
-		const headers = { idempotencyKey: 'key-create-2' };
-		await createPurchaseDocument(SUBSIDIARY_A, basePayload, headers);
-		const { status, data } = await readErrorData(
-			createPurchaseDocument(
-				SUBSIDIARY_A,
-				{ ...basePayload, document_number: 'OTRO' },
-				headers,
-			),
-		);
-		expect(status).toBe(409);
-		expect(data.code).toBe('IDEMPOTENCY_KEY_REUSED');
-	});
-
-	it('dos creaciones concurrentes con la misma clave: una gana, la otra ve OPERATION_IN_PROGRESS', async () => {
-		const headers = { idempotencyKey: 'key-concurrent-create' };
-		const [first, second] = await Promise.allSettled([
-			createPurchaseDocument(SUBSIDIARY_A, basePayload, headers),
-			createPurchaseDocument(SUBSIDIARY_A, basePayload, headers),
-		]);
-
-		const fulfilled = [first, second].filter(
-			(
-				outcome,
-			): outcome is PromiseFulfilledResult<
-				Awaited<ReturnType<typeof createPurchaseDocument>>
-			> => outcome.status === 'fulfilled',
-		);
-		const rejected = [first, second].filter(
-			(outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected',
-		);
-		expect(fulfilled).toHaveLength(1);
-		expect(rejected).toHaveLength(1);
-		const { response } = rejected[0].reason as {
-			response: { status: number; data: Record<string, unknown> };
-		};
-		expect(response.status).toBe(409);
-		expect(response.data.code).toBe('OPERATION_IN_PROGRESS');
-
-		// La concurrencia no duplicó la escritura: sólo un documento se creó.
-		const listed = await listPurchaseDocuments(SUBSIDIARY_A, { search: 'TEST-001' });
-		expect(listed.data).toHaveLength(1);
-	});
-});
-
-describe('updatePurchaseDocument', () => {
-	it('sin If-Match es 428', async () => {
-		const { status } = await readErrorData(
-			updatePurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID, { document_number: 'X' }, {}),
-		);
-		expect(status).toBe(428);
-	});
-
-	it('con ETag obsoleto es 412 RESOURCE_VERSION_CONFLICT', async () => {
-		const { status, data } = await readErrorData(
-			updatePurchaseDocument(
-				SUBSIDIARY_A,
-				DRAFT_INVOICE_ID,
-				{ document_number: 'X' },
-				{ etag: 'W/"pd-42-v0"' },
-			),
-		);
-		expect(status).toBe(412);
-		expect(data.code).toBe('RESOURCE_VERSION_CONFLICT');
-	});
-
-	it('un documento confirmado es 409 PURCHASE_DOCUMENT_IMMUTABLE', async () => {
-		const { headers } = await getPurchaseDocument(SUBSIDIARY_A, CONFIRMED_WITH_RECEIPT_ID);
-		const { status, data } = await readErrorData(
-			updatePurchaseDocument(
-				SUBSIDIARY_A,
-				CONFIRMED_WITH_RECEIPT_ID,
-				{ notes: 'intento' },
-				{ etag: headers.etag },
-			),
-		);
-		expect(status).toBe(409);
-		expect(data.code).toBe('PURCHASE_DOCUMENT_IMMUTABLE');
-	});
-
-	it('items: [] es 422 PURCHASE_DOCUMENT_ITEMS_EMPTY', async () => {
-		const { headers } = await getPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID);
-		const { status, data } = await readErrorData(
-			updatePurchaseDocument(
-				SUBSIDIARY_A,
-				DRAFT_INVOICE_ID,
-				{ items: [] },
-				{ etag: headers.etag },
-			),
-		);
-		expect(status).toBe(422);
-		expect(data.code).toBe('PURCHASE_DOCUMENT_ITEMS_EMPTY');
-	});
-
-	it('un id de línea ajeno es 422 DOCUMENT_LINE_MISMATCH', async () => {
-		const { headers } = await getPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID);
-		const { status, data } = await readErrorData(
-			updatePurchaseDocument(
-				SUBSIDIARY_A,
-				DRAFT_INVOICE_ID,
-				{
-					items: [
-						{
-							id: 999999,
-							product_id: MOUSE_PRODUCT_ID,
-							quantity: 1,
-							unit_cost: '100.00',
-							unit_cost_basis: 'gross',
-							notes: null,
-						},
-					],
-				},
-				{ etag: headers.etag },
-			),
-		);
-		expect(status).toBe(422);
-		expect(data.code).toBe('DOCUMENT_LINE_MISMATCH');
-	});
-
-	it('items ausente conserva las líneas; presente reemplaza la colección', async () => {
-		const before = await getPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID);
-		expect(before.data.items).toHaveLength(2);
-
-		const kept = await updatePurchaseDocument(
-			SUBSIDIARY_A,
-			DRAFT_INVOICE_ID,
-			{ notes: 'sólo cambio la nota' },
-			{ etag: before.headers.etag },
-		);
-		expect(kept.data.items).toHaveLength(2);
-		expect(kept.data.items.map((item) => item.id)).toEqual(
-			before.data.items.map((item) => item.id),
-		);
-
-		const firstLineId = before.data.items[0].id;
-		const replaced = await updatePurchaseDocument(
-			SUBSIDIARY_A,
-			DRAFT_INVOICE_ID,
-			{
-				items: [
-					{
-						id: firstLineId,
-						product_id: MOUSE_PRODUCT_ID,
-						quantity: 99,
-						unit_cost: '100.00',
-						unit_cost_basis: 'gross',
-						notes: null,
-					},
-				],
-			},
-			{ etag: kept.headers.etag },
-		);
-		// La línea con id actualiza; la que no vino en el reemplazo queda fuera.
-		expect(replaced.data.items).toHaveLength(1);
-		expect(replaced.data.items[0].id).toBe(firstLineId);
-		expect(replaced.data.items[0].quantity).toBe(99);
-	});
-});
-
-describe('confirmPurchaseDocument', () => {
-	it('proveedor incompleto es 422 INVOICE_SUPPLIER_INCOMPLETE', async () => {
-		const { data: created } = await createPurchaseDocument(SUBSIDIARY_A, {
-			...basePayload,
-			document_type: 'invoice',
-			supplier_id: CONTRERAS_SUPPLIER_ID,
-		});
-		const { status, data } = await readErrorData(
-			confirmPurchaseDocument(SUBSIDIARY_A, created.id),
-		);
-		expect(status).toBe(422);
-		expect(data.code).toBe('INVOICE_SUPPLIER_INCOMPLETE');
-	});
-
-	it('confirmar un documento que ya no es draft es 409 PURCHASE_DOCUMENT_NOT_DRAFT', async () => {
-		const { status, data } = await readErrorData(
-			confirmPurchaseDocument(SUBSIDIARY_A, CONFIRMED_WITH_RECEIPT_ID),
-		);
-		expect(status).toBe(409);
-		expect(data.code).toBe('PURCHASE_DOCUMENT_NOT_DRAFT');
-	});
-
-	it('confirma una boleta sin proveedor: pending, sin snapshot', async () => {
-		const { data } = await confirmPurchaseDocument(SUBSIDIARY_A, DRAFT_RECEIPT_NO_SUPPLIER_ID);
-		expect(data.status).toBe('confirmed');
-		expect(data.reception_status).toBe('pending');
-		expect(data.supplier_snapshot).toBeNull();
-		// `create_receipt` (card 05, sección 7): un documento confirmado
-		// siempre la ofrece, aunque su capacidad restante sea baja.
-		expect(data.allowed_actions).toEqual(['create_receipt', 'cancel', 'add_attachment']);
-	});
-
-	it('confirma una factura con proveedor completo: fija el snapshot histórico', async () => {
-		const { data } = await confirmPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID);
-		expect(data.status).toBe('confirmed');
-		expect(data.supplier_snapshot?.id).toBe(PC_EXPRESS_SUPPLIER_ID);
-		expect(data.supplier_snapshot?.business_activity).not.toBeNull();
-		expect(data.confirmed_at).not.toBeNull();
-	});
-});
-
-describe('cancelPurchaseDocument', () => {
-	it('sin motivo es 422 CANCELLATION_REASON_REQUIRED', async () => {
-		const { status, data } = await readErrorData(
-			cancelPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID, { reason: '' }),
-		);
-		expect(status).toBe(422);
-		expect(data.code).toBe('CANCELLATION_REASON_REQUIRED');
-	});
-
-	it('anular un documento ya anulado es 409 PURCHASE_DOCUMENT_ALREADY_CANCELLED', async () => {
-		const { status, data } = await readErrorData(
-			cancelPurchaseDocument(SUBSIDIARY_A, CANCELLED_ID, { reason: 'otra vez' }),
-		);
-		expect(status).toBe(409);
-		expect(data.code).toBe('PURCHASE_DOCUMENT_ALREADY_CANCELLED');
-	});
-
-	it('con recepciones activas es 409 PURCHASE_DOCUMENT_HAS_ACTIVE_RECEIPTS', async () => {
-		const { status, data } = await readErrorData(
-			cancelPurchaseDocument(SUBSIDIARY_A, CONFIRMED_WITH_RECEIPT_ID, { reason: 'motivo' }),
-		);
-		expect(status).toBe(409);
-		expect(data.code).toBe('PURCHASE_DOCUMENT_HAS_ACTIVE_RECEIPTS');
-	});
-
-	it('anula un borrador sin recepciones: libera el folio, sin acciones', async () => {
-		const { data } = await cancelPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID, {
-			reason: 'folio ingresado por error',
-		});
-		expect(data.status).toBe('cancelled');
-		expect(data.cancellation_reason).toBe('folio ingresado por error');
-		expect(data.reception_status).toBeNull();
-		expect(data.allowed_actions).toEqual([]);
-	});
-
-	it('confirmar y anular en paralelo sobre el mismo borrador se encolan: ninguna pisa a la otra', async () => {
-		// `confirmPurchaseDocument` espera a `getProcurementSupplier` antes de
-		// escribir; `cancelPurchaseDocument` no espera nada. Sin encolar por
-		// documento, `cancel` terminaría primero (estado aún `draft`) y
-		// `confirm` la pisaría al resolver después, revirtiendo la anulación en
-		// silencio. Encoladas, `confirm` corre entera primero (llegó primero a
-		// la cola) y `cancel` corre después sobre el documento ya confirmado.
-		const [confirmOutcome, cancelOutcome] = await Promise.allSettled([
-			confirmPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID),
-			cancelPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID, { reason: 'motivo carrera' }),
-		]);
-
-		expect(confirmOutcome.status).toBe('fulfilled');
-		expect(cancelOutcome.status).toBe('fulfilled');
-
-		const { data: finalState } = await getPurchaseDocument(SUBSIDIARY_A, DRAFT_INVOICE_ID);
-		expect(finalState.status).toBe('cancelled');
-		expect(finalState.cancellation_reason).toBe('motivo carrera');
-	});
-});
-
-// «listas relacionadas»: ni las recepciones vinculadas
-// (`listStockReceiptsForPurchaseDocument`, hallazgo 9) ni las asignaciones de
-// stock inicial (`listInitialStockAllocationsForPurchaseDocument`, card 07,
-// ZF-112) viven en este servicio — ambas se cubren en
-// `stockReceipts.service.test.ts` e `inventoryStock.service.test.ts`
-// respectivamente: esos stores son la fuente real, no un stub de este
-// archivo.

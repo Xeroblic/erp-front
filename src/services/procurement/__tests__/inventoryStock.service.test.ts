@@ -18,7 +18,7 @@ import {
 	createPurchaseDocument,
 	findPurchaseDocumentForReceipts,
 	resetPurchaseDocumentsStoreForTests,
-} from '@/services/procurement/purchaseDocuments.service';
+} from '@/mocks/services/purchaseDocuments.mock';
 import { notebookProduct, inventoryStockEnvelope } from '@/mocks/db/procurement.db';
 import { inventoryOrigins } from '@/mocks/db/inventoryStock.db';
 import type { IInventoryStockListParams } from '@/interface/procurement.interface';

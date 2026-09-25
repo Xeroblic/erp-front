@@ -31,6 +31,11 @@ import useProcurementProductForm from '../../hooks/useProcurementProductForm';
  * Se apila sobre `PurchaseDocumentFormModal` y, al crear, el producto queda
  * seleccionado en la línea que abrió el modal (salvo si lleva serie: las
  * líneas de compra sólo admiten productos no serializados).
+ *
+ * **Hoy sin montar.** Los documentos de compra ya usan el catálogo real y este
+ * alta todavía crea en el mock (`procurementProducts.service`): un producto
+ * creado acá no existiría para el backend. Vuelve cuando use
+ * `POST /subsidiaries/{subsidiary}/products`.
  */
 
 interface IProcurementProductFormModalProps {

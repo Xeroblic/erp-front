@@ -20,11 +20,14 @@ const CANCEL_DOCUMENTO_CARD_CLASSNAME =
 	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
 
 /**
- * Anulación de `cancel` (sección 6): motivo obligatorio, sólo sin
- * recepciones posted ni asignaciones activas — el mock lo valida y el 409
- * `PURCHASE_DOCUMENT_HAS_ACTIVE_RECEIPTS` se muestra inline. Libera el folio
+ * Anulación de `cancel` (sección 6): motivo obligatorio de hasta 500
+ * caracteres, sólo sin recepciones ni asignaciones de stock inicial. El 409
+ * del backend (sin `code`) se muestra inline con su `message`. Libera el folio
  * para reutilizarlo.
  */
+
+/** Máximo de `reason` en `CancelPurchaseDocumentRequest`. */
+const CANCELLATION_REASON_MAX_LENGTH = 500;
 
 interface ICancelPurchaseDocumentModalProps {
 	isOpen: boolean;
@@ -105,6 +108,7 @@ const CancelPurchaseDocumentModal: React.FC<ICancelPurchaseDocumentModalProps> =
 								id='cancel-documento-reason'
 								name='reason'
 								rows={3}
+								maxLength={CANCELLATION_REASON_MAX_LENGTH}
 								value={reason}
 								onChange={(event) => setReason(event.target.value)}
 								isValid={reason.trim().length > 0}

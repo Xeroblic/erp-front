@@ -583,15 +583,53 @@ export interface IPurchaseDocumentListRow {
 }
 
 /**
+ * Envío del documento (`ShippingCostResource` del backend). No es un costo
+ * unitario: sus montos no llevan `_unit_` y no tiene `source`/`calculation`.
+ * `effective_*` sigue la premisa del tipo documental, igual que las líneas:
+ * factura → neto, boleta → bruto.
+ */
+export interface IPurchaseDocumentShippingCost {
+	currency_code: string;
+	entered_amount: TDecimalString;
+	entered_basis: TCostEntryBasis;
+	vat_rate_percent: TDecimalString;
+	net_amount: TDecimalString;
+	vat_amount: TDecimalString;
+	gross_amount: TDecimalString;
+	effective_amount: TDecimalString;
+	effective_basis: TCostEntryBasis;
+}
+
+/**
+ * Ficha del proveedor congelada al confirmar (`ProcurementSupplier::snapshot()`
+ * del backend). Es un subconjunto de la ficha: sin estado, fechas, comunas
+ * anidadas ni `allowed_actions`.
+ */
+export interface IPurchaseDocumentSupplierSnapshot {
+	id: number;
+	rut: string;
+	display_name: string;
+	company_name: string | null;
+	contact_name: string | null;
+	business_activity: string | null;
+	billing_address: string | null;
+	billing_commune_id: number | null;
+	shipping_address: string | null;
+	shipping_commune_id: number | null;
+	phone: string | null;
+	email: string | null;
+}
+
+/**
  * Ficha completa. `supplier_snapshot` es la ficha **histórica** del
  * proveedor al momento de confirmar — no sus datos actuales — y por eso vive
  * separada de `supplier` (compacto, vigente, heredado de la fila). En
  * `draft` es siempre `null`: el snapshot se fija recién al confirmar.
  */
 export interface IPurchaseDocument extends IPurchaseDocumentListRow {
-	supplier_snapshot: IProcurementSupplier | null;
-	/** Extensión del mock: envío separado de productos; pendiente de contrato backend. */
-	shipping_cost?: IProcurementCost | null;
+	supplier_snapshot: IPurchaseDocumentSupplierSnapshot | null;
+	/** `null` cuando el documento no declara envío. */
+	shipping_cost: IPurchaseDocumentShippingCost | null;
 	notes: string | null;
 	items: IPurchaseDocumentLine[];
 	related_counts: IPurchaseDocumentRelatedCounts;
@@ -627,7 +665,7 @@ export interface IPurchaseDocumentCreatePayload {
 	issue_date: TBusinessDate;
 	currency_code: string;
 	total_amount: TDecimalString | null;
-	/** Extensión exclusiva del mock, aún no definida por el contrato backend. */
+	/** Monto y base van juntos: ambos `null` significa «sin envío». */
 	shipping_cost?: TDecimalString | null;
 	shipping_cost_basis?: TCostEntryBasis | null;
 	notes: string | null;

@@ -23,7 +23,7 @@ import {
 	findPurchaseDocumentForReceipts,
 	resetPurchaseDocumentsStoreForTests,
 	simulatePurchaseDocumentsReloadForTests,
-} from '@/services/procurement/purchaseDocuments.service';
+} from '@/mocks/services/purchaseDocuments.mock';
 import {
 	createInventoryAdjustment,
 	getInventoryAdjustableProducts,
