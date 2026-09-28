@@ -7,15 +7,18 @@ export interface IAjusteItemDraft {
 	/** Delta firmado: negativo es egreso, positivo es ingreso. Nunca cero. */
 	quantityDelta: string;
 	condition: TStockCondition;
-	/** Sólo admisible en egresos; vacío significa «consumir FIFO». */
-	originId: number | '';
 }
 
+/**
+ * El ajuste corrige el saldo de **una ubicación**: la elegida en el primer paso.
+ * No se enlaza a una recepción ni se elige de qué compra descontar; un egreso
+ * consume lo más antiguo primero (FIFO) y un ingreso entra como origen de
+ * ajuste. Las diferencias de una recepción se corrigen en la recepción.
+ */
 export interface IAjusteFormValues {
 	location: string;
 	reason: string;
 	notes: string;
-	relatedStockReceiptId: number | '';
 	items: IAjusteItemDraft[];
 }
 
@@ -23,22 +26,7 @@ export const emptyAjusteItem = (): IAjusteItemDraft => ({
 	productId: '',
 	quantityDelta: '',
 	condition: 'fit',
-	originId: '',
 });
-
-/**
- * «Sin selección» en un `<select>` de id llega de dos formas: `''` desde
- * Formik y `undefined` desde el esquema, porque `prepareDataForValidation`
- * convierte la cadena vacía antes de validar. Las dos significan lo mismo, y
- * confundirlas invierte la regla: comparar sólo contra `''` daba por elegido
- * un origen que nadie eligió.
- */
-export const hasId = (value: number | '' | null | undefined): value is number =>
-	typeof value === 'number' && Number.isFinite(value);
-
-/** Sin selección → `null` en el payload, nunca `NaN` ni `undefined`. */
-export const optionalId = (value: number | '' | null | undefined): number | null =>
-	hasId(value) ? value : null;
 
 export const AjusteSchema = Yup.object({
 	location: Yup.string()
@@ -55,7 +43,6 @@ export const AjusteSchema = Yup.object({
 	// `.defined()` acá rechazaría el formulario recién abierto, con el campo
 	// simplemente en blanco.
 	notes: Yup.string().max(1000, 'Las notas no pueden superar los 1000 caracteres.'),
-	relatedStockReceiptId: Yup.mixed<number | ''>(),
 	items: Yup.array()
 		.of(
 			Yup.object({
@@ -66,15 +53,16 @@ export const AjusteSchema = Yup.object({
 					.required('Selecciona un producto.'),
 				quantityDelta: Yup.number()
 					.typeError(
-						'Escribe un número entero: positivo para sumar, negativo para restar.',
+						'Ingresa una cantidad entera: positiva para ingreso, negativa para egreso.',
 					)
-					.integer('Escribe un número entero: positivo para sumar, negativo para restar.')
-					.notOneOf([0], 'La cantidad a sumar o restar no puede ser cero.')
-					.required('Indica cuánto sumar o restar.'),
+					.integer(
+						'Ingresa una cantidad entera: positiva para ingreso, negativa para egreso.',
+					)
+					.notOneOf([0], 'La cantidad de ajuste no puede ser cero.')
+					.required('Indica la cantidad de ajuste.'),
 				condition: Yup.string()
 					.oneOf(['fit', 'unfit'], 'Indica si las unidades son aptas o no aptas.')
 					.required('Indica si las unidades son aptas o no aptas.'),
-				originId: Yup.mixed<number | ''>(),
 			}).defined(),
 		)
 		.min(1, 'Agrega al menos un producto al ajuste.')
@@ -84,40 +72,5 @@ export const AjusteSchema = Yup.object({
 				.map((item) => `${String(item.productId)}:${String(item.condition)}`);
 			return new Set(keys).size === keys.length;
 		})
-		// «Un ingreso positivo no permite elegir un origen viejo»: crea un origen
-		// desconocido de ajuste. El servicio devuelve 422
-		// `ADJUSTMENT_ORIGIN_NOT_ALLOWED`; acá se atrapa antes de escribir.
-		//
-		// El error se ancla en `items[i].originId` con `createError`: un mensaje
-		// colgado del arreglo no tiene control junto al que mostrarse, y el
-		// usuario no sabría cuál de las líneas corregir.
-		.test(
-			'ingreso-sin-origen',
-			'Lo que sumas no se descuenta de una compra anterior.',
-			function ingresoSinOrigen(items) {
-				const offending = (items ?? []).findIndex(
-					(item) => Number(item.quantityDelta) > 0 && hasId(item.originId),
-				);
-				if (offending === -1) return true;
-				return this.createError({
-					path: `${this.path}[${offending}].originId`,
-					message: 'Lo que sumas no se descuenta de una compra anterior.',
-				});
-			},
-		)
 		.defined(),
-}).test(
-	'egreso-con-origen-de-la-recepcion',
-	'Con una recepción enlazada, cada línea que resta debe indicar de qué compra descontar.',
-	function egresoConOrigenDeLaRecepcion(values) {
-		if (!hasId(values.relatedStockReceiptId)) return true;
-		const offending = (values.items ?? []).findIndex(
-			(item) => Number(item.quantityDelta) < 0 && !hasId(item.originId),
-		);
-		if (offending === -1) return true;
-		return this.createError({
-			path: `items[${offending}].originId`,
-			message: 'Con una recepción enlazada, elige de qué compra descontar.',
-		});
-	},
-);
+});
