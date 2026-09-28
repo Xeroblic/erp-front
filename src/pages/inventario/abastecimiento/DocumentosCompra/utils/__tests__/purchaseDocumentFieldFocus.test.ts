@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	collectValidationErrorPaths,
-	focusFirstInvalidDocumentoCompraField,
-	getFirstInvalidDocumentoCompraFieldId,
-} from '../documentoCompraFieldFocus';
+	focusFirstInvalidPurchaseDocumentField,
+	getFirstInvalidPurchaseDocumentFieldId,
+} from '../purchaseDocumentFieldFocus';
 
 afterEach(() => {
 	document.body.innerHTML = '';
 });
 
-describe('documentoCompraFieldFocus', () => {
+describe('purchaseDocumentFieldFocus', () => {
 	it('recorre errores anidados de líneas como rutas con punto', () => {
 		expect(
 			collectValidationErrorPaths({
@@ -21,7 +21,7 @@ describe('documentoCompraFieldFocus', () => {
 
 	it('prioriza los datos del documento en orden visual y devuelve su id del DOM', () => {
 		expect(
-			getFirstInvalidDocumentoCompraFieldId({
+			getFirstInvalidPurchaseDocumentFieldId({
 				issue_date: 'Indica la fecha de emisión.',
 				supplier_id: 'La factura requiere proveedor.',
 				items: [{ product_id: 'Selecciona un producto.' }],
@@ -31,7 +31,7 @@ describe('documentoCompraFieldFocus', () => {
 
 	it('con el documento válido, elige la primera línea y su primer campo en orden visual', () => {
 		expect(
-			getFirstInvalidDocumentoCompraFieldId({
+			getFirstInvalidPurchaseDocumentFieldId({
 				items: [
 					undefined,
 					{
@@ -46,12 +46,12 @@ describe('documentoCompraFieldFocus', () => {
 
 	it('deja el envío para el final y no enfoca nada sin errores', () => {
 		expect(
-			getFirstInvalidDocumentoCompraFieldId({ shipping_cost: 'Indica el costo de envío.' }),
+			getFirstInvalidPurchaseDocumentFieldId({ shipping_cost: 'Indica el costo de envío.' }),
 		).toBe('shipping-cost');
-		expect(getFirstInvalidDocumentoCompraFieldId({})).toBeNull();
+		expect(getFirstInvalidPurchaseDocumentFieldId({})).toBeNull();
 		// El error de la colección (sin líneas) no corresponde a un campo enfocable.
 		expect(
-			getFirstInvalidDocumentoCompraFieldId({ items: 'Agrega al menos una línea.' }),
+			getFirstInvalidPurchaseDocumentFieldId({ items: 'Agrega al menos una línea.' }),
 		).toBeNull();
 	});
 
@@ -61,7 +61,7 @@ describe('documentoCompraFieldFocus', () => {
 		const scrollIntoView = vi.fn();
 		field.scrollIntoView = scrollIntoView;
 
-		focusFirstInvalidDocumentoCompraField({ document_number: 'Indica el folio.' });
+		focusFirstInvalidPurchaseDocumentField({ document_number: 'Indica el folio.' });
 
 		expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
 		expect(document.activeElement).toBe(field);

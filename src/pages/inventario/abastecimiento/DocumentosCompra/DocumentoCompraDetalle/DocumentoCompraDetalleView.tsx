@@ -25,7 +25,7 @@ import DocumentTypeBadge from '../components/parts/DocumentTypeBadge';
 import DocumentStatusBadge from '../components/parts/DocumentStatusBadge';
 import ReceptionStatusBadge from '../components/parts/ReceptionStatusBadge';
 import PurchaseDocumentLinesTable from '../components/parts/PurchaseDocumentLinesTable';
-import DocumentoCompraFormModal from '../components/modals/DocumentoCompraFormModal';
+import PurchaseDocumentFormModal from '../components/modals/PurchaseDocumentFormModal';
 import ConfirmPurchaseDocumentModal from '../components/modals/ConfirmPurchaseDocumentModal';
 import CancelPurchaseDocumentModal from '../components/modals/CancelPurchaseDocumentModal';
 import DocumentAttachmentsCard from './components/parts/DocumentAttachmentsCard';
@@ -429,7 +429,7 @@ const DocumentoCompraDetalleView = () => {
 			</Container>
 
 			{document && document.status === 'draft' && (
-				<DocumentoCompraFormModal
+				<PurchaseDocumentFormModal
 					isOpen={isFormModalOpen}
 					setIsOpen={setIsFormModalOpen}
 					subsidiaryId={subsidiaryId}

@@ -6,8 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resetProcurementSuppliersStoreForTests } from '@/mocks/services/procurementSuppliers.mock';
 import procurementSuppliersReducer from '@/store/slices/procurement/procurementSuppliersSlice';
 import { PHONE_CL_MAX_LENGTH } from '../../types';
-import type { IProveedorFormValues } from '../../types';
-import useProveedorForm from '../useProveedorForm';
+import type { ISupplierFormValues } from '../../types';
+import useSupplierForm from '../useSupplierForm';
 
 /**
  * El conflicto de RUT (409 `SUPPLIER_RUT_ALREADY_EXISTS`) es la regla más
@@ -39,7 +39,7 @@ const createWrapper = () => {
 	return Wrapper;
 };
 
-const validValues: IProveedorFormValues = {
+const validValues: ISupplierFormValues = {
 	rut: '', // se completa por test
 	company_name: 'Nuevo Proveedor de Prueba',
 	contact_name: '',
@@ -58,9 +58,9 @@ afterEach(() => {
 	toastSpies.error.mockReset();
 });
 
-describe('useProveedorForm — conflicto de RUT', () => {
+describe('useSupplierForm — conflicto de RUT', () => {
 	it('un RUT ya usado deja `conflict` sin toastear el error genérico', async () => {
-		const { result } = renderHook(() => useProveedorForm({ subsidiaryId: 4 }), {
+		const { result } = renderHook(() => useSupplierForm({ subsidiaryId: 4 }), {
 			wrapper: createWrapper(),
 		});
 
@@ -82,7 +82,7 @@ describe('useProveedorForm — conflicto de RUT', () => {
 
 	it('el conflicto sobre un proveedor eliminado ofrece restaurar, y restaurar es una acción explícita', async () => {
 		const onSuccess = vi.fn();
-		const { result } = renderHook(() => useProveedorForm({ subsidiaryId: 4, onSuccess }), {
+		const { result } = renderHook(() => useSupplierForm({ subsidiaryId: 4, onSuccess }), {
 			wrapper: createWrapper(),
 		});
 
@@ -106,7 +106,7 @@ describe('useProveedorForm — conflicto de RUT', () => {
 	});
 
 	it('tocar el RUT limpia el conflicto mostrado', async () => {
-		const { result } = renderHook(() => useProveedorForm({ subsidiaryId: 4 }), {
+		const { result } = renderHook(() => useSupplierForm({ subsidiaryId: 4 }), {
 			wrapper: createWrapper(),
 		});
 
@@ -124,7 +124,7 @@ describe('useProveedorForm — conflicto de RUT', () => {
 	});
 });
 
-describe('useProveedorForm — renovación de Idempotency-Key tras un error definitivo', () => {
+describe('useSupplierForm — renovación de Idempotency-Key tras un error definitivo', () => {
 	/**
 	 * Si la clave no se renueva tras un 409/422, el siguiente envío con datos
 	 * corregidos reutiliza la misma `Idempotency-Key` con un payload distinto:
@@ -132,7 +132,7 @@ describe('useProveedorForm — renovación de Idempotency-Key tras un error defi
 	 * segundo envío tenga éxito es la prueba de que sí se renovó.
 	 */
 	it('corregir el RUT tras un conflicto y reenviar no reusa la clave', async () => {
-		const { result } = renderHook(() => useProveedorForm({ subsidiaryId: 4 }), {
+		const { result } = renderHook(() => useSupplierForm({ subsidiaryId: 4 }), {
 			wrapper: createWrapper(),
 		});
 
@@ -170,7 +170,7 @@ describe('useProveedorForm — renovación de Idempotency-Key tras un error defi
  * pegar sólo aparece con un `<input>` de verdad, no llamando al schema.
  */
 const PhoneField = () => {
-	const { formik, handlePhoneChange, handlePhonePaste } = useProveedorForm({ subsidiaryId: 4 });
+	const { formik, handlePhoneChange, handlePhonePaste } = useSupplierForm({ subsidiaryId: 4 });
 	return (
 		<input
 			aria-label='Teléfono'
@@ -185,7 +185,7 @@ const PhoneField = () => {
 const pasteInto = (input: HTMLElement, text: string) =>
 	fireEvent.paste(input, { clipboardData: { getData: () => text } });
 
-describe('useProveedorForm — teléfono', () => {
+describe('useSupplierForm — teléfono', () => {
 	it('pegar un número con espacios lo guarda completo y sin espacios', async () => {
 		render(<PhoneField />, { wrapper: createWrapper() });
 		const input = screen.getByLabelText<HTMLInputElement>('Teléfono');

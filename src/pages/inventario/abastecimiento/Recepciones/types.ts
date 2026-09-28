@@ -43,7 +43,7 @@ export const STOCK_RECEIPT_STATUS_LABELS: Record<TStockReceiptStatus, string> = 
    ================================================= */
 
 /** Dos caminos de alta (sección 7): con documento confirmado, o sin él. */
-export type TRecepcionFormMode = 'with_document' | 'manual';
+export type TStockReceiptFormMode = 'with_document' | 'manual';
 
 /**
  * Una sola forma de línea para los dos modos: Formik no soporta bien un
@@ -63,8 +63,8 @@ export interface IRecepcionLineFormValues {
 	unit_cost_basis: TCostEntryBasis | '';
 }
 
-export interface IRecepcionFormValues {
-	mode: TRecepcionFormMode;
+export interface IStockReceiptFormValues {
+	mode: TStockReceiptFormMode;
 	purchase_document_id: number | '';
 	warehouse_id: number | '';
 	/** Modo `manual`: proveedor conocido, opcional. */
@@ -84,7 +84,7 @@ export const EMPTY_RECEPCION_LINE: IRecepcionLineFormValues = {
 	unit_cost_basis: '',
 };
 
-export const EMPTY_RECEPCION_VALUES: IRecepcionFormValues = {
+export const EMPTY_RECEPCION_VALUES: IStockReceiptFormValues = {
 	mode: 'manual',
 	purchase_document_id: '',
 	warehouse_id: '',
@@ -113,7 +113,7 @@ const withDocumentLineSchema = Yup.object({
  * proveedor es conocido lo valida el servicio mock (`UNIT_COST_REQUIRED`),
  * no este schema — el campo que lo decide (`supplier_id`) vive en la raíz
  * del formulario, no en cada línea, mismo criterio que
- * `documentoCompraFormSchema` deja los errores de línea sólo para el toast.
+ * `purchaseDocumentFormSchema` deja los errores de línea sólo para el toast.
  */
 const manualLineSchema = Yup.object({
 	id: Yup.number().optional(),
@@ -131,7 +131,7 @@ const manualLineSchema = Yup.object({
 const numberOrUndefined = (value: number, originalValue: unknown) =>
 	originalValue === '' ? undefined : value;
 
-export const recepcionFormSchema = Yup.object({
+export const stockReceiptFormSchema = Yup.object({
 	mode: Yup.string().oneOf(['with_document', 'manual']).required(),
 	purchase_document_id: Yup.number()
 		.transform(numberOrUndefined)

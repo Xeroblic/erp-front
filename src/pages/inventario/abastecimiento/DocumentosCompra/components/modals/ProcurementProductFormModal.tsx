@@ -16,7 +16,7 @@ import {
 } from '@/pages/catalogos/productos/constants/products.constant';
 import { PRODUCT_DEVICE_TYPES } from '@/pages/catalogos/productos/constants/product-attributes.constants';
 import type { IProcurementProduct } from '@/interface/procurement.interface';
-import useProductoCompraForm from '../../hooks/useProductoCompraForm';
+import useProcurementProductForm from '../../hooks/useProcurementProductForm';
 
 /**
  * Alta en línea de producto desde una línea del documento de compra, con los
@@ -28,19 +28,19 @@ import useProductoCompraForm from '../../hooks/useProductoCompraForm';
  * mock de abastecimiento exige: sin selector de sucursal (el producto es de la
  * filial) y con el SKU siempre generado.
  *
- * Se apila sobre `DocumentoCompraFormModal` y, al crear, el producto queda
+ * Se apila sobre `PurchaseDocumentFormModal` y, al crear, el producto queda
  * seleccionado en la línea que abrió el modal (salvo si lleva serie: las
  * líneas de compra sólo admiten productos no serializados).
  */
 
-interface IProductoCompraFormModalProps {
+interface IProcurementProductFormModalProps {
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
 	subsidiaryId: number | null;
 	onSuccess?: (product: IProcurementProduct) => void;
 }
 
-const ProductoCompraFormModal: React.FC<IProductoCompraFormModalProps> = ({
+const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> = ({
 	isOpen,
 	setIsOpen,
 	subsidiaryId,
@@ -56,7 +56,7 @@ const ProductoCompraFormModal: React.FC<IProductoCompraFormModalProps> = ({
 		loadingBrands,
 		loadingCategories,
 		sku,
-	} = useProductoCompraForm({
+	} = useProcurementProductForm({
 		isOpen,
 		subsidiaryId,
 		onSuccess: (product) => {
@@ -348,4 +348,4 @@ const ProductoCompraFormModal: React.FC<IProductoCompraFormModalProps> = ({
 	);
 };
 
-export default ProductoCompraFormModal;
+export default ProcurementProductFormModal;

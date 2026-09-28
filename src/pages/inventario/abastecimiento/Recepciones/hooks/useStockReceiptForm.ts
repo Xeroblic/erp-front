@@ -21,13 +21,13 @@ import type {
 	IStockReceiptLineWithDocumentInput,
 	IStockReceiptUpdatePayload,
 } from '@/interface/procurement.interface';
-import { EMPTY_RECEPCION_LINE, EMPTY_RECEPCION_VALUES, recepcionFormSchema } from '../types';
-import type { IRecepcionFormValues, IRecepcionLineFormValues } from '../types';
+import { EMPTY_RECEPCION_LINE, EMPTY_RECEPCION_VALUES, stockReceiptFormSchema } from '../types';
+import type { IStockReceiptFormValues, IRecepcionLineFormValues } from '../types';
 
 /**
  * Formik + `useIdempotentWrite` del alta y corrección de recepción (card 05,
  * sección 7). Un solo hook para las dos, igual que
- * `useDocumentoCompraForm`: el contrato usa el mismo cuerpo de líneas en
+ * `usePurchaseDocumentForm`: el contrato usa el mismo cuerpo de líneas en
  * `POST` y en los campos editables de `PATCH`.
  *
  * La edición sólo se ofrece en `draft`/`failed` (la ficha ya filtra
@@ -47,7 +47,7 @@ export const toFormValues = (
 	receipt: IStockReceipt | null,
 	defaultWarehouseId: number | '',
 	initialDocumentId?: number,
-): IRecepcionFormValues => {
+): IStockReceiptFormValues => {
 	if (receipt === null) {
 		// Llega desde `create_receipt` en la ficha de un documento de compra
 		// confirmado (`DocumentoCompraDetalle`): abre el alta ya en modo «con
@@ -103,7 +103,7 @@ const toManualLineInput = (line: IRecepcionLineFormValues): IStockReceiptLineMan
 	unit_cost_basis: line.unit_cost_basis || null,
 });
 
-const toCreatePayload = (values: IRecepcionFormValues): IStockReceiptCreatePayload =>
+const toCreatePayload = (values: IStockReceiptFormValues): IStockReceiptCreatePayload =>
 	values.mode === 'with_document'
 		? {
 				purchase_document_id: Number(values.purchase_document_id),
@@ -128,7 +128,7 @@ const toCreatePayload = (values: IRecepcionFormValues): IStockReceiptCreatePaylo
  * proveedor no existe» aunque el usuario no lo hubiera tocado.
  */
 const toSupplierUpdate = (
-	values: IRecepcionFormValues,
+	values: IStockReceiptFormValues,
 	receipt: IStockReceipt,
 ): Pick<IStockReceiptUpdatePayload, 'supplier_id'> => {
 	const supplierId = values.supplier_id === '' ? null : Number(values.supplier_id);
@@ -136,7 +136,7 @@ const toSupplierUpdate = (
 };
 
 export const toUpdatePayload = (
-	values: IRecepcionFormValues,
+	values: IStockReceiptFormValues,
 	receipt: IStockReceipt,
 ): IStockReceiptUpdatePayload => ({
 	warehouse_id: Number(values.warehouse_id),
@@ -151,7 +151,7 @@ export const toUpdatePayload = (
 		: { items: values.items.map(toWithDocumentLineInput) }),
 });
 
-const FORM_FIELD_BY_API_FIELD: Partial<Record<string, keyof IRecepcionFormValues>> = {
+const FORM_FIELD_BY_API_FIELD: Partial<Record<string, keyof IStockReceiptFormValues>> = {
 	warehouse_id: 'warehouse_id',
 	received_on: 'received_on',
 	reason: 'reason',
@@ -159,7 +159,7 @@ const FORM_FIELD_BY_API_FIELD: Partial<Record<string, keyof IRecepcionFormValues
 	purchase_document_id: 'purchase_document_id',
 };
 
-interface IUseRecepcionFormArgs {
+interface IUseStockReceiptFormArgs {
 	subsidiaryId: number | null;
 	branchId: number | null;
 	defaultWarehouseId?: number | '';
@@ -174,7 +174,7 @@ interface IUseRecepcionFormArgs {
 	onSuccess?: (receipt: IStockReceipt) => void;
 }
 
-const useRecepcionForm = ({
+const useStockReceiptForm = ({
 	subsidiaryId,
 	branchId,
 	defaultWarehouseId = '',
@@ -183,7 +183,7 @@ const useRecepcionForm = ({
 	initialDocumentId,
 	authorizedBranchIds,
 	onSuccess,
-}: IUseRecepcionFormArgs) => {
+}: IUseStockReceiptFormArgs) => {
 	const dispatch = useAppDispatch();
 	const { authorize } = useAuthorization();
 	const isEdit = receipt !== null;
@@ -201,10 +201,10 @@ const useRecepcionForm = ({
 			: 'No se pudo crear la recepción.',
 	});
 
-	const formik = useFormik<IRecepcionFormValues>({
+	const formik = useFormik<IStockReceiptFormValues>({
 		initialValues: toFormValues(receipt, defaultWarehouseId, initialDocumentId),
 		enableReinitialize: true,
-		validationSchema: recepcionFormSchema,
+		validationSchema: stockReceiptFormSchema,
 		onSubmit: async (values, { resetForm, setFieldError }) => {
 			// Hallazgo 4: revalida al confirmar, no sólo al abrir — cubre un
 			// permiso o contexto (filial/sucursal) que cambió con el formulario
@@ -297,7 +297,7 @@ const useRecepcionForm = ({
 		},
 	});
 
-	/** Mismo criterio que `useDocumentoCompraForm`: 412 bloquea el formulario. */
+	/** Mismo criterio que `usePurchaseDocumentForm`: 412 bloquea el formulario. */
 	const [hasVersionConflict, setHasVersionConflict] = useState(false);
 
 	useEffect(() => {
@@ -344,4 +344,4 @@ const useRecepcionForm = ({
 	};
 };
 
-export default useRecepcionForm;
+export default useStockReceiptForm;

@@ -2,8 +2,8 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IStockReceipt } from '@/interface/procurement.interface';
 import { EMPTY_RECEPCION_LINE, EMPTY_RECEPCION_VALUES } from '../../types';
-import type { IRecepcionFormValues } from '../../types';
-import useRecepcionForm from '../useRecepcionForm';
+import type { IStockReceiptFormValues } from '../../types';
+import useStockReceiptForm from '../useStockReceiptForm';
 
 /**
  * Dos garantías del envío que no se ven razonando sobre el cierre de
@@ -28,7 +28,7 @@ const SOUTH_BRANCH_WAREHOUSE_ID = 15; // sucursal 6
 
 const createdReceipt = { id: 501 } as IStockReceipt;
 
-const validValues: IRecepcionFormValues = {
+const validValues: IStockReceiptFormValues = {
 	...EMPTY_RECEPCION_VALUES,
 	warehouse_id: MAIN_WAREHOUSE_ID,
 	received_on: '2026-09-04',
@@ -50,7 +50,7 @@ const deferWrite = () => {
 const renderForm = (onSuccess: (receipt: IStockReceipt) => void) =>
 	renderHook(
 		({ subsidiaryId }: { subsidiaryId: number | null }) =>
-			useRecepcionForm({
+			useStockReceiptForm({
 				subsidiaryId,
 				branchId: 4,
 				authorizedBranchIds: [4],
@@ -63,7 +63,7 @@ afterEach(() => {
 	vi.clearAllMocks();
 });
 
-describe('useRecepcionForm — cambio de filial durante el envío', () => {
+describe('useStockReceiptForm — cambio de filial durante el envío', () => {
 	it('una respuesta que llega con otra filial activa no ejecuta onSuccess', async () => {
 		const onSuccess = vi.fn();
 		const resolveWrite = deferWrite();
@@ -111,7 +111,7 @@ describe('useRecepcionForm — cambio de filial durante el envío', () => {
 	});
 });
 
-describe('useRecepcionForm — sucursal de la bodega', () => {
+describe('useStockReceiptForm — sucursal de la bodega', () => {
 	it('rechaza una bodega de una sucursal fuera de las autorizadas, sin enviar', async () => {
 		const { result } = renderForm(vi.fn());
 

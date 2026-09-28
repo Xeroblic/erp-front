@@ -14,8 +14,8 @@ import {
 } from '@/services/procurement/procurementProducts.service';
 import type { IProcurementProductCreatePayload } from '@/services/procurement/procurementProducts.service';
 import type { IProcurementProduct } from '@/interface/procurement.interface';
-import { EMPTY_PRODUCTO_COMPRA_VALUES, productoCompraFormSchema } from '../types';
-import type { IProductoCompraFormValues } from '../types';
+import { EMPTY_PRODUCTO_COMPRA_VALUES, procurementProductFormSchema } from '../types';
+import type { IProcurementProductFormValues } from '../types';
 
 /**
  * Formik + `useIdempotentWrite` del alta en línea de producto desde el
@@ -32,7 +32,7 @@ import type { IProductoCompraFormValues } from '../types';
  * que no choque con otro de la filial.
  */
 
-const FORM_FIELDS: ReadonlyArray<keyof IProductoCompraFormValues> = [
+const FORM_FIELDS: ReadonlyArray<keyof IProcurementProductFormValues> = [
 	'name',
 	'brand_id',
 	'product_type',
@@ -50,7 +50,7 @@ const toSlug = (value: string): string =>
 		.replace(/[\s-]+/g, '-')
 		.replace(/^-+|-+$/g, '');
 
-const emptyValues = (): IProductoCompraFormValues => ({
+const emptyValues = (): IProcurementProductFormValues => ({
 	...EMPTY_PRODUCTO_COMPRA_VALUES,
 	category_ids: [],
 });
@@ -70,13 +70,17 @@ const generateAvailableSku = (
 	return `${generateSmartSKU(params)}${Date.now().toString(36).slice(-3).toUpperCase()}`;
 };
 
-interface IUseProductoCompraFormArgs {
+interface IUseProcurementProductFormArgs {
 	isOpen: boolean;
 	subsidiaryId: number | null;
 	onSuccess?: (product: IProcurementProduct) => void;
 }
 
-const useProductoCompraForm = ({ isOpen, subsidiaryId, onSuccess }: IUseProductoCompraFormArgs) => {
+const useProcurementProductForm = ({
+	isOpen,
+	subsidiaryId,
+	onSuccess,
+}: IUseProcurementProductFormArgs) => {
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
 	const brands = useAppSelector((state) => state.brands.items);
@@ -119,7 +123,7 @@ const useProductoCompraForm = ({ isOpen, subsidiaryId, onSuccess }: IUseProducto
 	});
 
 	const toPayload = (
-		values: IProductoCompraFormValues,
+		values: IProcurementProductFormValues,
 		sku: string,
 	): IProcurementProductCreatePayload => {
 		const brand = brands.find((item) => String(item.id) === values.brand_id);
@@ -148,9 +152,9 @@ const useProductoCompraForm = ({ isOpen, subsidiaryId, onSuccess }: IUseProducto
 	 */
 	const [sku, setSku] = useState('');
 
-	const formik = useFormik<IProductoCompraFormValues>({
+	const formik = useFormik<IProcurementProductFormValues>({
 		initialValues: emptyValues(),
-		validationSchema: productoCompraFormSchema,
+		validationSchema: procurementProductFormSchema,
 		onSubmit: async (values, { resetForm }) => {
 			if (subsidiaryId === null) {
 				toast.error('Necesitas una filial activa para crear un producto.');
@@ -182,7 +186,7 @@ const useProductoCompraForm = ({ isOpen, subsidiaryId, onSuccess }: IUseProducto
 	}, [subsidiaryId, trimmedName, selectedBrandName, productType]);
 
 	/**
-	 * Mismo criterio que `useProveedorForm`: errores de campo sobre el input,
+	 * Mismo criterio que `useSupplierForm`: errores de campo sobre el input,
 	 * siempre toast, clave nueva. Un SKU que chocó igual (otra pestaña creó uno
 	 * con el mismo sufijo) se regenera para el próximo intento.
 	 */
@@ -223,4 +227,4 @@ const useProductoCompraForm = ({ isOpen, subsidiaryId, onSuccess }: IUseProducto
 	};
 };
 
-export default useProductoCompraForm;
+export default useProcurementProductForm;

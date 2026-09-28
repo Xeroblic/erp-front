@@ -20,7 +20,7 @@ import SelectReact from '@/components/form/SelectReact';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import { normalizeCostInput } from '@/components/procurement';
-import ProveedorFormModal from '@/pages/inventario/abastecimiento/Proveedores/components/modals/ProveedorFormModal';
+import SupplierFormModal from '@/pages/inventario/abastecimiento/Proveedores/components/modals/SupplierFormModal';
 import type {
 	IProcurementProduct,
 	IProcurementSupplier,
@@ -35,13 +35,13 @@ import {
 	parseDecimalString,
 	parsePesoInput,
 } from '@/utils/procurementDecimal.util';
-import useDocumentoCompraForm from '../../hooks/useDocumentoCompraForm';
+import usePurchaseDocumentForm from '../../hooks/usePurchaseDocumentForm';
 import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
 import useSupplierInlineEdit from '../../hooks/useSupplierInlineEdit';
-import ProductoCompraFormModal from './ProductoCompraFormModal';
+import ProcurementProductFormModal from './ProcurementProductFormModal';
 import SupplierOptionsNotice from '../parts/SupplierOptionsNotice';
 import { EMPTY_DOCUMENTO_LINE } from '../../types';
-import { focusFirstInvalidDocumentoCompraField } from '../../utils/documentoCompraFieldFocus';
+import { focusFirstInvalidPurchaseDocumentField } from '../../utils/purchaseDocumentFieldFocus';
 
 /** Superficies equivalentes a Proveedor y al listado de ítems de Cotizaciones. */
 const DOCUMENTO_CARD_CLASSNAME =
@@ -75,7 +75,7 @@ const formatGrossTotal = (cents: bigint | null) =>
  * abrir este modal, así que acá no hay que resolver ese caso.
  */
 
-interface IDocumentoCompraFormModalProps {
+interface IPurchaseDocumentFormModalProps {
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
 	subsidiaryId: number | null;
@@ -94,7 +94,7 @@ interface IDocumentoCompraFormModalProps {
 	onStaleVersion?: () => void;
 }
 
-const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
+const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 	isOpen,
 	setIsOpen,
 	subsidiaryId,
@@ -119,7 +119,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 		productOptions,
 		refreshProductOptions,
 		reset,
-	} = useDocumentoCompraForm({
+	} = usePurchaseDocumentForm({
 		subsidiaryId,
 		document,
 		etag,
@@ -138,7 +138,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 	 */
 	const isInvoiceUnavailable = !canListSuppliers && !isEdit;
 	/**
-	 * Alta de proveedor en línea: `ProveedorFormModal` se apila sobre este
+	 * Alta de proveedor en línea: `SupplierFormModal` se apila sobre este
 	 * modal y, al crear o restaurar, el proveedor queda seleccionado sin perder
 	 * el borrador del documento.
 	 */
@@ -177,7 +177,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 	);
 
 	/**
-	 * Alta de producto en línea: guarda qué línea abrió `ProductoCompraFormModal`
+	 * Alta de producto en línea: guarda qué línea abrió `ProcurementProductFormModal`
 	 * para dejar ahí el producto creado. `null` con el modal cerrado.
 	 */
 	const [productLineIndex, setProductLineIndex] = useState<number | null>(null);
@@ -274,7 +274,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 									formik
 										.submitForm()
 										.finally(() =>
-											focusFirstInvalidDocumentoCompraField(errors),
+											focusFirstInvalidPurchaseDocumentField(errors),
 										),
 								)
 								.catch(() => undefined);
@@ -1015,7 +1015,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 			 * lado, y un submit del proveedor no debe llegar al `onSubmit` del
 			 * documento.
 			 */}
-			<ProveedorFormModal
+			<SupplierFormModal
 				isOpen={isOpen && isSupplierModalOpen}
 				setIsOpen={setIsSupplierModalOpen}
 				subsidiaryId={subsidiaryId}
@@ -1023,7 +1023,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 				onUseExistingSupplier={handleUseExistingSupplier}
 				onViewSupplier={openSupplierInNewTab}
 			/>
-			<ProveedorFormModal
+			<SupplierFormModal
 				isOpen={isOpen && editingSupplier !== null}
 				setIsOpen={(open) => {
 					if (!open) closeSupplierEdit();
@@ -1036,7 +1036,7 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 				}}
 				onViewSupplier={openSupplierInNewTab}
 			/>
-			<ProductoCompraFormModal
+			<ProcurementProductFormModal
 				isOpen={isOpen && productLineIndex !== null}
 				setIsOpen={(open) => {
 					if (!open) setProductLineIndex(null);
@@ -1048,4 +1048,4 @@ const DocumentoCompraFormModal: React.FC<IDocumentoCompraFormModalProps> = ({
 	);
 };
 
-export default DocumentoCompraFormModal;
+export default PurchaseDocumentFormModal;

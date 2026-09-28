@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { IProcurementSupplierCommune } from '@/interface/procurement.interface';
-import { formatCommuneWithRegion, normalizePhone, pastePhone, proveedorFormSchema } from '../types';
+import { formatCommuneWithRegion, normalizePhone, pastePhone, supplierFormSchema } from '../types';
 
 /**
  * El teléfono sigue el formato del backend (`+56` y 9 dígitos). Se valida el
@@ -8,14 +8,14 @@ import { formatCommuneWithRegion, normalizePhone, pastePhone, proveedorFormSchem
  */
 const phoneError = (phone: string): string | null => {
 	try {
-		proveedorFormSchema.validateSyncAt('phone', { phone });
+		supplierFormSchema.validateSyncAt('phone', { phone });
 		return null;
 	} catch (error) {
 		return error instanceof Error ? error.message : String(error);
 	}
 };
 
-describe('proveedorFormSchema · teléfono', () => {
+describe('supplierFormSchema · teléfono', () => {
 	it.each(['+56912345678', '+56221234567', '+56322123456', '+56412123456'])(
 		'acepta %s',
 		(phone) => {

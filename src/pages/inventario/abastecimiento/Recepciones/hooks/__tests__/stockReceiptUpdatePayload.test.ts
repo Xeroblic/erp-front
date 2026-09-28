@@ -5,7 +5,7 @@ import {
 	updateStockReceipt,
 } from '@/services/procurement/stockReceipts.service';
 import { getProcurementSupplier } from '@/services/procurement/procurementSuppliers.service';
-import { toFormValues, toUpdatePayload } from '../useRecepcionForm';
+import { toFormValues, toUpdatePayload } from '../useStockReceiptForm';
 
 /**
  * Misma regla que en documentos: corregir una recepción manual sin tocar el

@@ -5,7 +5,7 @@ import {
 	updatePurchaseDocument,
 } from '@/services/procurement/purchaseDocuments.service';
 import { getProcurementSupplier } from '@/services/procurement/procurementSuppliers.service';
-import { toFormValues, toUpdatePayload } from '../useDocumentoCompraForm';
+import { toFormValues, toUpdatePayload } from '../usePurchaseDocumentForm';
 
 /**
  * Quien edita un documento sin `view-procurement-supplier` recibe 403 al

@@ -20,8 +20,8 @@ import type {
 	IPurchaseDocumentUpdatePayload,
 	TPurchaseDocumentType,
 } from '@/interface/procurement.interface';
-import { EMPTY_DOCUMENTO_LINE, EMPTY_DOCUMENTO_VALUES, documentoCompraFormSchema } from '../types';
-import type { IDocumentoCompraFormValues, IDocumentoCompraLineFormValues } from '../types';
+import { EMPTY_DOCUMENTO_LINE, EMPTY_DOCUMENTO_VALUES, purchaseDocumentFormSchema } from '../types';
+import type { IPurchaseDocumentFormValues, IDocumentoCompraLineFormValues } from '../types';
 
 /**
  * Formik + `useIdempotentWrite` del alta y edición de documento de compra
@@ -44,7 +44,7 @@ const toOptionalDecimal = (value: string): string | null => {
 export const toFormValues = (
 	document: IPurchaseDocument | null,
 	defaultDocumentType: TPurchaseDocumentType,
-): IDocumentoCompraFormValues =>
+): IPurchaseDocumentFormValues =>
 	document === null
 		? { ...EMPTY_DOCUMENTO_VALUES, document_type: defaultDocumentType }
 		: {
@@ -84,7 +84,7 @@ const toLineInput = (line: IDocumentoCompraLineFormValues): IPurchaseDocumentLin
 	notes: line.notes.trim() || null,
 });
 
-const toPayload = (values: IDocumentoCompraFormValues): IPurchaseDocumentCreatePayload => ({
+const toPayload = (values: IPurchaseDocumentFormValues): IPurchaseDocumentCreatePayload => ({
 	document_type: values.document_type,
 	supplier_id: values.supplier_id === '' ? null : Number(values.supplier_id),
 	document_number: values.document_number.trim(),
@@ -105,7 +105,7 @@ const toPayload = (values: IDocumentoCompraFormValues): IPurchaseDocumentCreateP
  * sólo llega `document_type`, así que omitirlo no rompe la regla de factura.
  */
 export const toUpdatePayload = (
-	values: IDocumentoCompraFormValues,
+	values: IPurchaseDocumentFormValues,
 	document: IPurchaseDocument,
 ): IPurchaseDocumentUpdatePayload => {
 	const { supplier_id: supplierId, ...payload } = toPayload(values);
@@ -114,14 +114,14 @@ export const toUpdatePayload = (
 		: { ...payload, supplier_id: supplierId };
 };
 
-const FORM_FIELD_BY_API_FIELD: Partial<Record<string, keyof IDocumentoCompraFormValues>> = {
+const FORM_FIELD_BY_API_FIELD: Partial<Record<string, keyof IPurchaseDocumentFormValues>> = {
 	supplier_id: 'supplier_id',
 	document_number: 'document_number',
 	issue_date: 'issue_date',
 	shipping_cost: 'shipping_cost',
 };
 
-interface IUseDocumentoCompraFormArgs {
+interface IUsePurchaseDocumentFormArgs {
 	subsidiaryId: number | null;
 	/** `null`/`undefined`: alta. Con documento: edición de ese `draft`. */
 	document?: IPurchaseDocument | null;
@@ -135,13 +135,13 @@ interface IUseDocumentoCompraFormArgs {
 	onSuccess?: (document: IPurchaseDocument) => void;
 }
 
-const useDocumentoCompraForm = ({
+const usePurchaseDocumentForm = ({
 	subsidiaryId,
 	document = null,
 	etag = null,
 	defaultDocumentType = 'invoice',
 	onSuccess,
-}: IUseDocumentoCompraFormArgs) => {
+}: IUsePurchaseDocumentFormArgs) => {
 	const dispatch = useAppDispatch();
 	const isEdit = document !== null;
 	const idempotentWrite = useIdempotentWrite({
@@ -164,10 +164,10 @@ const useDocumentoCompraForm = ({
 		() => setProductsVersion((version) => version + 1),
 		[],
 	);
-	const formik = useFormik<IDocumentoCompraFormValues>({
+	const formik = useFormik<IPurchaseDocumentFormValues>({
 		initialValues: toFormValues(document, defaultDocumentType),
 		enableReinitialize: true,
-		validationSchema: documentoCompraFormSchema,
+		validationSchema: purchaseDocumentFormSchema,
 		onSubmit: async (values, { resetForm }) => {
 			const result = await idempotentWrite.submit((headers) =>
 				isEdit && document
@@ -216,7 +216,7 @@ const useDocumentoCompraForm = ({
 	const [hasVersionConflict, setHasVersionConflict] = useState(false);
 
 	/**
-	 * Igual criterio que `useProveedorForm`: un 422 con `fieldErrors` se pinta
+	 * Igual criterio que `useSupplierForm`: un 422 con `fieldErrors` se pinta
 	 * sobre el input top-level correspondiente cuando existe, y siempre se
 	 * toastea — el mock no indexa los errores de línea (`items.N.campo`), así
 	 * que un error de una línea sólo llega por el toast. La clave se renueva
@@ -226,7 +226,7 @@ const useDocumentoCompraForm = ({
 	 * renovar la clave, porque lo que quedó obsoleto es el ETag, no la
 	 * `Idempotency-Key`. El formulario se bloquea y `hasVersionConflict`
 	 * le pide al contenedor (el modal) que recargue el documento — ver
-	 * `DocumentoCompraFormModal`.
+	 * `PurchaseDocumentFormModal`.
 	 */
 	useEffect(() => {
 		const resolved = idempotentWrite.error;
@@ -265,4 +265,4 @@ const useDocumentoCompraForm = ({
 	};
 };
 
-export default useDocumentoCompraForm;
+export default usePurchaseDocumentForm;

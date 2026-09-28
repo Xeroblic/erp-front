@@ -13,8 +13,8 @@ import type {
 	IProcurementSupplierPayload,
 	IProcurementSupplierRutConflict,
 } from '@/interface/procurement.interface';
-import { normalizePhone, pastePhone, proveedorFormSchema } from '../types';
-import type { IProveedorFormValues } from '../types';
+import { normalizePhone, pastePhone, supplierFormSchema } from '../types';
+import type { ISupplierFormValues } from '../types';
 import useSupplierRestore from './useSupplierRestore';
 
 /**
@@ -27,7 +27,7 @@ import useSupplierRestore from './useSupplierRestore';
  * (`ProveedoresDetalle`): ambos abren el mismo modal para editar.
  */
 
-const FORM_FIELD_BY_API_FIELD: Record<string, keyof IProveedorFormValues> = {
+const FORM_FIELD_BY_API_FIELD: Record<string, keyof ISupplierFormValues> = {
 	rut: 'rut',
 	company_name: 'company_name',
 	contact_name: 'contact_name',
@@ -40,7 +40,7 @@ const FORM_FIELD_BY_API_FIELD: Record<string, keyof IProveedorFormValues> = {
 	email: 'email',
 };
 
-const EMPTY_VALUES: IProveedorFormValues = {
+const EMPTY_VALUES: ISupplierFormValues = {
 	rut: '',
 	company_name: '',
 	contact_name: '',
@@ -53,7 +53,7 @@ const EMPTY_VALUES: IProveedorFormValues = {
 	email: '',
 };
 
-const toFormValues = (supplier: IProcurementSupplier | null): IProveedorFormValues =>
+const toFormValues = (supplier: IProcurementSupplier | null): ISupplierFormValues =>
 	supplier === null
 		? EMPTY_VALUES
 		: {
@@ -69,7 +69,7 @@ const toFormValues = (supplier: IProcurementSupplier | null): IProveedorFormValu
 				email: supplier.email ?? '',
 			};
 
-const toPayload = (values: IProveedorFormValues): IProcurementSupplierPayload => ({
+const toPayload = (values: ISupplierFormValues): IProcurementSupplierPayload => ({
 	rut: formatRut(values.rut),
 	company_name: values.company_name.trim() || null,
 	contact_name: values.contact_name.trim() || null,
@@ -82,14 +82,14 @@ const toPayload = (values: IProveedorFormValues): IProcurementSupplierPayload =>
 	email: values.email.trim() || null,
 });
 
-interface IUseProveedorFormArgs {
+interface IUseSupplierFormArgs {
 	subsidiaryId: number | null;
 	/** `null`/`undefined`: alta. Con proveedor: edición de ese registro. */
 	supplier?: IProcurementSupplier | null;
 	onSuccess?: (supplier: IProcurementSupplier) => void;
 }
 
-const useProveedorForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseProveedorFormArgs) => {
+const useSupplierForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseSupplierFormArgs) => {
 	const dispatch = useAppDispatch();
 	const isEdit = supplier !== null;
 	const idempotentWrite = useIdempotentWrite({
@@ -112,10 +112,10 @@ const useProveedorForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseProv
 		},
 	});
 
-	const formik = useFormik<IProveedorFormValues>({
+	const formik = useFormik<ISupplierFormValues>({
 		initialValues: toFormValues(supplier),
 		enableReinitialize: true,
-		validationSchema: proveedorFormSchema,
+		validationSchema: supplierFormSchema,
 		onSubmit: async (values, { resetForm }) => {
 			const payload = toPayload(values);
 			const result = await idempotentWrite.submit((headers) =>
@@ -259,4 +259,4 @@ const useProveedorForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseProv
 	};
 };
 
-export default useProveedorForm;
+export default useSupplierForm;

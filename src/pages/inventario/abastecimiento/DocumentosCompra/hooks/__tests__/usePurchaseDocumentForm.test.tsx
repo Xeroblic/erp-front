@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import useDocumentoCompraForm from '../useDocumentoCompraForm';
+import usePurchaseDocumentForm from '../usePurchaseDocumentForm';
 
 /**
  * Quien no puede listar proveedores no puede elegir el que exige la factura:
@@ -13,16 +13,16 @@ vi.mock('@/services/procurement/procurementProducts.service', () => ({
 	listPurchasableProcurementProducts: () => [],
 }));
 
-describe('useDocumentoCompraForm — tipo inicial', () => {
+describe('usePurchaseDocumentForm — tipo inicial', () => {
 	it('un alta abre como factura por defecto', () => {
-		const { result } = renderHook(() => useDocumentoCompraForm({ subsidiaryId: 1 }));
+		const { result } = renderHook(() => usePurchaseDocumentForm({ subsidiaryId: 1 }));
 
 		expect(result.current.formik.values.document_type).toBe('invoice');
 	});
 
 	it('un alta sin acceso a proveedores abre como boleta', () => {
 		const { result } = renderHook(() =>
-			useDocumentoCompraForm({ subsidiaryId: 1, defaultDocumentType: 'receipt' }),
+			usePurchaseDocumentForm({ subsidiaryId: 1, defaultDocumentType: 'receipt' }),
 		);
 
 		expect(result.current.formik.values.document_type).toBe('receipt');

@@ -9,7 +9,7 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import { AllowedActionsToolbar, ProcurementMockNotice } from '@/components/procurement';
 import { formatDate } from '@/utils/format.utils';
-import ProveedorFormModal from '../components/modals/ProveedorFormModal';
+import SupplierFormModal from '../components/modals/SupplierFormModal';
 import DeactivateSupplierModal from '../components/modals/DeactivateSupplierModal';
 import SupplierStatusBadge from '../components/parts/SupplierStatusBadge';
 import useProveedoresDetalle from './hooks/useProveedoresDetalle';
@@ -248,7 +248,7 @@ const ProveedoresDetalleView = () => {
 
 			{supplier && (
 				<>
-					<ProveedorFormModal
+					<SupplierFormModal
 						isOpen={isFormModalOpen}
 						setIsOpen={setIsFormModalOpen}
 						branchId={branchId}

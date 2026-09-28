@@ -80,7 +80,7 @@ export interface IDocumentoCompraLineFormValues {
 	notes: string;
 }
 
-export interface IDocumentoCompraFormValues {
+export interface IPurchaseDocumentFormValues {
 	document_type: TPurchaseDocumentType;
 	supplier_id: number | '';
 	document_number: string;
@@ -101,7 +101,7 @@ export const EMPTY_DOCUMENTO_LINE: IDocumentoCompraLineFormValues = {
 	notes: '',
 };
 
-export const EMPTY_DOCUMENTO_VALUES: IDocumentoCompraFormValues = {
+export const EMPTY_DOCUMENTO_VALUES: IPurchaseDocumentFormValues = {
 	document_type: 'invoice',
 	supplier_id: '',
 	document_number: '',
@@ -138,7 +138,7 @@ const lineSchema = Yup.object({
  * null» (sección 6). El resto de los obligatorios del contrato: folio, fecha
  * de emisión y al menos una línea.
  */
-export const documentoCompraFormSchema = Yup.object({
+export const purchaseDocumentFormSchema = Yup.object({
 	document_type: Yup.string().oneOf(['invoice', 'receipt']).required(),
 	supplier_id: Yup.number()
 		// `''` (sin seleccionar) castea a `NaN`, no a `null`/`undefined`: sin este
@@ -158,7 +158,7 @@ export const documentoCompraFormSchema = Yup.object({
 	issue_date: Yup.string().required('Indica la fecha de emisión.'),
 	// Informativo y opcional (sección 6), pero si se escribe algo tiene que ser
 	// un decimal real: sin esta prueba, un texto no numérico se serializaba
-	// como `null` en silencio (`toOptionalDecimal` en `useDocumentoCompraForm`)
+	// como `null` en silencio (`toOptionalDecimal` en `usePurchaseDocumentForm`)
 	// y el usuario nunca se enteraba de que lo que escribió no se guardó.
 	total_amount: Yup.string()
 		.max(20, 'Monto demasiado largo.')
@@ -198,9 +198,9 @@ export const documentoCompraFormSchema = Yup.object({
 /**
  * Mismas reglas que el alta de producto por filial (`StoreSubsidiaryProductRequest`):
  * nombre y marca obligatorios, categorías opcionales. El SKU no es un campo del
- * formulario: se genera a partir del nombre y la marca (ver `useProductoCompraForm`).
+ * formulario: se genera a partir del nombre y la marca (ver `useProcurementProductForm`).
  */
-export interface IProductoCompraFormValues {
+export interface IProcurementProductFormValues {
 	name: string;
 	brand_id: string;
 	/** Tipo de dispositivo del catálogo (`PRODUCT_TYPES`); también da el código de tipo del SKU. */
@@ -210,7 +210,7 @@ export interface IProductoCompraFormValues {
 	category_ids: string[];
 }
 
-export const EMPTY_PRODUCTO_COMPRA_VALUES: IProductoCompraFormValues = {
+export const EMPTY_PRODUCTO_COMPRA_VALUES: IProcurementProductFormValues = {
 	name: '',
 	brand_id: '',
 	product_type: 'general',
@@ -219,7 +219,7 @@ export const EMPTY_PRODUCTO_COMPRA_VALUES: IProductoCompraFormValues = {
 	category_ids: [],
 };
 
-export const productoCompraFormSchema = Yup.object({
+export const procurementProductFormSchema = Yup.object({
 	name: Yup.string()
 		.trim()
 		.required('Indica el nombre del producto.')

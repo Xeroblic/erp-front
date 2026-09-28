@@ -42,7 +42,7 @@ const SHIPPING_FIELDS: ReadonlyArray<readonly [string, string]> = [
 	['shipping_cost_basis', 'shipping-cost-basis'],
 ];
 
-export const getFirstInvalidDocumentoCompraFieldId = (errors: unknown): string | null => {
+export const getFirstInvalidPurchaseDocumentFieldId = (errors: unknown): string | null => {
 	const errorPaths = collectValidationErrorPaths(errors);
 	const hasErrorAt = (fieldName: string): boolean =>
 		errorPaths.some((path) => path === fieldName || path.startsWith(`${fieldName}.`));
@@ -68,8 +68,8 @@ export const getFirstInvalidDocumentoCompraFieldId = (errors: unknown): string |
 };
 
 /** Desplaza al centro y enfoca el primer campo inválido, si existe en el DOM. */
-export const focusFirstInvalidDocumentoCompraField = (errors: unknown): void => {
-	const fieldId = getFirstInvalidDocumentoCompraFieldId(errors);
+export const focusFirstInvalidPurchaseDocumentField = (errors: unknown): void => {
+	const fieldId = getFirstInvalidPurchaseDocumentFieldId(errors);
 	if (!fieldId) return;
 	const field = document.getElementById(fieldId);
 	if (!(field instanceof HTMLElement)) return;

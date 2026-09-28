@@ -15,7 +15,7 @@ import type {
 	IProcurementSupplier,
 	IProcurementSupplierRutConflict,
 } from '@/interface/procurement.interface';
-import useProveedorForm from '../../hooks/useProveedorForm';
+import useSupplierForm from '../../hooks/useSupplierForm';
 import { PHONE_CL_MAX_LENGTH } from '../../types';
 import SupplierCompletenessNotice from '../parts/SupplierCompletenessNotice';
 import SupplierRutConflictNotice from '../parts/SupplierRutConflictNotice';
@@ -31,7 +31,7 @@ const PROVEEDOR_CARD_CLASSNAME =
 	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
 const PROVEEDOR_SUBTITLE_CLASSNAME = 'text-sm font-normal text-zinc-600 dark:text-zinc-400';
 
-interface IProveedorFormModalProps {
+interface ISupplierFormModalProps {
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
 	branchId?: number | null;
@@ -48,7 +48,7 @@ interface IProveedorFormModalProps {
 	onUseExistingSupplier?: (conflict: IProcurementSupplierRutConflict) => void;
 }
 
-const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
+const SupplierFormModal: React.FC<ISupplierFormModalProps> = ({
 	isOpen,
 	setIsOpen,
 	branchId = null,
@@ -69,7 +69,7 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 		handlePhoneChange,
 		handlePhonePaste,
 		reset,
-	} = useProveedorForm({
+	} = useSupplierForm({
 		subsidiaryId,
 		supplier,
 		onSuccess: (savedSupplier) => {
@@ -394,4 +394,4 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 	);
 };
 
-export default ProveedorFormModal;
+export default SupplierFormModal;

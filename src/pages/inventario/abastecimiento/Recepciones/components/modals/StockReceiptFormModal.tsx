@@ -25,10 +25,10 @@ import Textarea from '@/components/form/Textarea';
 import type { IStockReceipt } from '@/interface/procurement.interface';
 import useActiveSupplierOptions from '@/pages/inventario/abastecimiento/DocumentosCompra/hooks/useActiveSupplierOptions';
 import SupplierOptionsNotice from '@/pages/inventario/abastecimiento/DocumentosCompra/components/parts/SupplierOptionsNotice';
-import useRecepcionForm from '../../hooks/useRecepcionForm';
+import useStockReceiptForm from '../../hooks/useStockReceiptForm';
 import usePurchaseDocumentPicker from '../../hooks/usePurchaseDocumentPicker';
 import { EMPTY_RECEPCION_LINE } from '../../types';
-import type { TRecepcionFormMode } from '../../types';
+import type { TStockReceiptFormMode } from '../../types';
 
 /**
  * Alta (con documento o sin él) y corrección de recepción `draft`/`failed`
@@ -41,13 +41,13 @@ import type { TRecepcionFormMode } from '../../types';
 const existingReceiptIsDraftOnly = (isEdit: boolean, receipt: IStockReceipt | null): boolean =>
 	isEdit && receipt !== null && receipt.status === 'failed';
 
-/** Mismas superficies que `DocumentoCompraFormModal` para que ambos modales luzcan iguales. */
+/** Mismas superficies que `PurchaseDocumentFormModal` para que ambos modales luzcan iguales. */
 const RECEPCION_CARD_CLASSNAME =
 	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
 const RECEPCION_ITEM_CLASSNAME =
 	'rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50';
 const RECEPCION_SUBTITLE_CLASSNAME = 'text-sm font-normal text-zinc-600 dark:text-zinc-400';
-/** Fondo blanco en todos los campos, igual que en `DocumentoCompraFormModal`. */
+/** Fondo blanco en todos los campos, igual que en `PurchaseDocumentFormModal`. */
 const RECEPCION_FIELD_CLASSNAME = '!bg-white dark:!bg-zinc-900';
 /**
  * `SelectReact` ya es blanco en reposo, pero con foco se vuelve transparente y
@@ -57,7 +57,7 @@ const RECEPCION_SELECT_CLASSNAME = 'focus-within:!bg-white dark:focus-within:!bg
 
 const RequiredMark: React.FC = () => <span className='text-red-500'> *</span>;
 
-interface IRecepcionFormModalProps {
+interface IStockReceiptFormModalProps {
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
 	subsidiaryId: number | null;
@@ -75,12 +75,12 @@ interface IRecepcionFormModalProps {
 	/**
 	 * Se llama cuando el `PATCH` responde `412 RESOURCE_VERSION_CONFLICT`: el
 	 * ETag con el que se abrió el formulario quedó obsoleto. Mismo contrato
-	 * que `DocumentoCompraFormModal`.
+	 * que `PurchaseDocumentFormModal`.
 	 */
 	onStaleVersion?: () => void;
 }
 
-const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
+const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 	isOpen,
 	setIsOpen,
 	subsidiaryId,
@@ -93,19 +93,20 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 	onSuccess,
 	onStaleVersion,
 }) => {
-	const { formik, isEdit, isSubmitting, hasVersionConflict, canRetry, reset } = useRecepcionForm({
-		subsidiaryId,
-		branchId,
-		defaultWarehouseId,
-		receipt,
-		etag,
-		initialDocumentId,
-		authorizedBranchIds,
-		onSuccess: (result) => {
-			setIsOpen(false);
-			onSuccess?.(result);
-		},
-	});
+	const { formik, isEdit, isSubmitting, hasVersionConflict, canRetry, reset } =
+		useStockReceiptForm({
+			subsidiaryId,
+			branchId,
+			defaultWarehouseId,
+			receipt,
+			etag,
+			initialDocumentId,
+			authorizedBranchIds,
+			onSuccess: (result) => {
+				setIsOpen(false);
+				onSuccess?.(result);
+			},
+		});
 
 	const warehouseOptions = listWarehousesForStockReceipts(authorizedBranchIds);
 	const isManual = formik.values.mode === 'manual';
@@ -161,7 +162,7 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 		onStaleVersion?.();
 	};
 
-	const handleModeChange = (mode: TRecepcionFormMode) => {
+	const handleModeChange = (mode: TStockReceiptFormMode) => {
 		formik.setFieldValue('mode', mode).catch(() => undefined);
 		formik.setFieldValue('items', [{ ...EMPTY_RECEPCION_LINE }]).catch(() => undefined);
 		if (mode === 'with_document') formik.setFieldValue('reason', '').catch(() => undefined);
@@ -195,7 +196,7 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 			</ModalHeader>
 			{/* `FieldArray` lee su bag de Formik vía contexto: sin `FormikProvider`,
 			    `push`/`remove` no encuentran `items` porque este modal usa `useFormik`
-			    directo. Mismo motivo que en `DocumentoCompraFormModal`. */}
+			    directo. Mismo motivo que en `PurchaseDocumentFormModal`. */}
 			<FormikProvider value={formik}>
 				<form
 					className='flex min-h-0 flex-1 flex-col overflow-hidden'
@@ -896,4 +897,4 @@ const RecepcionFormModal: React.FC<IRecepcionFormModalProps> = ({
 	);
 };
 
-export default RecepcionFormModal;
+export default StockReceiptFormModal;
