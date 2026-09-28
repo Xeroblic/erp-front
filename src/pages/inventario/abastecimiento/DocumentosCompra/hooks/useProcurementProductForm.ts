@@ -2,34 +2,31 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import type { TSelectOption } from '@/components/form/SelectReact';
-import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import { fetchCategories } from '@/store/slices/categories/categoriesSlice';
 import { generateSmartSKU } from '@/pages/catalogos/productos/utils/productForm.utils';
-import {
-	createProcurementProduct,
-	isProcurementProductSkuTaken,
-} from '@/services/procurement/procurementProducts.service';
-import type { IProcurementProductCreatePayload } from '@/services/procurement/procurementProducts.service';
-import type { IProcurementProduct } from '@/interface/procurement.interface';
+import { createPurchasableProduct } from '@/services/procurement/purchasableProducts.service';
+import { resolveProcurementError } from '@/utils/procurementErrors.util';
+import type {
+	ICreatedPurchasableProduct,
+	IPurchasableProductCreatePayload,
+} from '@/services/procurement/purchasableProducts.service';
 import { EMPTY_PRODUCTO_COMPRA_VALUES, procurementProductFormSchema } from '../types';
 import type { IProcurementProductFormValues } from '../types';
 
 /**
- * Formik + `useIdempotentWrite` del alta en línea de producto desde el
- * documento de compra, con las reglas del alta por filial.
- *
- * Marcas, categorías, tipos de dispositivo y los interruptores de serie y
- * estado son los del catálogo (`catalogos/productos`); el producto en sí se
- * crea en el mock de abastecimiento (ver `procurementProducts.service`), así
- * que se llama al servicio directo: no hay estado compartido en Redux que
- * actualizar.
+ * Formik del alta en línea de producto desde el documento de compra. Crea el
+ * producto en el catálogo real (`createPurchasableProduct`), con las marcas,
+ * categorías, tipos de dispositivo e interruptores del alta de
+ * `catalogos/productos`.
  *
  * El SKU no lo escribe el usuario: se genera con el mismo `generateSmartSKU`
- * del catálogo (marca + tipo, modelo y sufijo aleatorio) y se reintenta hasta
- * que no choque con otro de la filial.
+ * del catálogo (marca + tipo, modelo y sufijo aleatorio). El backend lo exige
+ * único en la filial; si el generado ya existe (422 en `sku`), se genera otro
+ * y se reintenta sin que el usuario tenga que volver a enviar. Un 422 no crea
+ * nada, así que reintentar no duplica el producto.
  */
 
 const FORM_FIELDS: ReadonlyArray<keyof IProcurementProductFormValues> = [
@@ -38,42 +35,18 @@ const FORM_FIELDS: ReadonlyArray<keyof IProcurementProductFormValues> = [
 	'product_type',
 	'category_ids',
 ];
-const SKU_MAX_ATTEMPTS = 5;
-
-/** La ficha de abastecimiento exige `slug`; marcas y categorías del catálogo lo traen opcional. */
-const toSlug = (value: string): string =>
-	value
-		.normalize('NFD')
-		.replace(/[^a-zA-Z0-9\s-]/g, '')
-		.toLowerCase()
-		.trim()
-		.replace(/[\s-]+/g, '-')
-		.replace(/^-+|-+$/g, '');
+const SKU_MAX_ATTEMPTS = 3;
+const VALIDATION_STATUS = 422;
 
 const emptyValues = (): IProcurementProductFormValues => ({
 	...EMPTY_PRODUCTO_COMPRA_VALUES,
 	category_ids: [],
 });
 
-/** Mismo criterio que `generateUniqueSmartSKU` del catálogo, verificado contra la filial del mock. */
-const generateAvailableSku = (
-	subsidiaryId: number,
-	name: string,
-	brandName: string,
-	productType: string,
-): string => {
-	const params = { name, brandName, productType };
-	for (let attempt = 0; attempt < SKU_MAX_ATTEMPTS; attempt += 1) {
-		const candidate = generateSmartSKU(params);
-		if (!isProcurementProductSkuTaken(subsidiaryId, candidate)) return candidate;
-	}
-	return `${generateSmartSKU(params)}${Date.now().toString(36).slice(-3).toUpperCase()}`;
-};
-
 interface IUseProcurementProductFormArgs {
 	isOpen: boolean;
 	subsidiaryId: number | null;
-	onSuccess?: (product: IProcurementProduct) => void;
+	onSuccess?: (product: ICreatedPurchasableProduct) => void;
 }
 
 const useProcurementProductForm = ({
@@ -118,56 +91,77 @@ const useProcurementProductForm = ({
 		[categories],
 	);
 
-	const idempotentWrite = useIdempotentWrite({
-		fallbackMessage: 'No se pudo crear el producto.',
-	});
+	/**
+	 * SKU que se mostrará y enviará. Se regenera al cambiar nombre, marca o
+	 * tipo, o cuando el backend rechaza el generado por repetido.
+	 */
+	const [sku, setSku] = useState('');
 
 	const toPayload = (
 		values: IProcurementProductFormValues,
-		sku: string,
-	): IProcurementProductCreatePayload => {
-		const brand = brands.find((item) => String(item.id) === values.brand_id);
-		return {
-			name: values.name.trim(),
-			brand: brand
-				? { id: brand.id, name: brand.name, slug: brand.slug ?? toSlug(brand.name) }
-				: null,
-			sku,
-			categories: categories
-				.filter((category) => values.category_ids.includes(String(category.id)))
-				.map((category) => ({
-					id: category.id,
-					name: category.name,
-					slug: category.slug ?? toSlug(category.name),
-				})),
-			serial_tracking: values.serial_tracking,
-			is_active: values.is_active,
-		};
-	};
-
-	/**
-	 * SKU que se enviará. Se regenera al cambiar nombre, marca o tipo, y queda
-	 * fijo mientras no cambien: una clave idempotente reintentada debe mandar el
-	 * mismo payload, no uno con otro sufijo aleatorio.
-	 */
-	const [sku, setSku] = useState('');
+		productSku: string,
+	): IPurchasableProductCreatePayload => ({
+		name: values.name.trim(),
+		sku: productSku,
+		brand_id: Number(values.brand_id),
+		product_type: values.product_type,
+		serial_tracking: values.serial_tracking,
+		is_active: values.is_active,
+		category_ids: values.category_ids.map(Number),
+	});
 
 	const formik = useFormik<IProcurementProductFormValues>({
 		initialValues: emptyValues(),
 		validationSchema: procurementProductFormSchema,
-		onSubmit: async (values, { resetForm }) => {
+		onSubmit: async (values, { resetForm, setFieldError }) => {
 			if (subsidiaryId === null) {
 				toast.error('Necesitas una filial activa para crear un producto.');
 				return;
 			}
-			const result = await idempotentWrite.submit((headers) =>
-				createProcurementProduct(subsidiaryId, toPayload(values, sku), {
-					idempotencyKey: headers['Idempotency-Key'],
-				}),
-			);
-			if (result) {
-				resetForm({ values: emptyValues() });
-				onSuccess?.(result.data);
+			const brandName =
+				brands.find((item) => String(item.id) === values.brand_id)?.name ?? '';
+			const skuParams = {
+				name: values.name.trim(),
+				brandName,
+				productType: values.product_type,
+			};
+
+			let productSku = sku || generateSmartSKU(skuParams);
+			for (let attempt = 1; attempt <= SKU_MAX_ATTEMPTS; attempt += 1) {
+				try {
+					// eslint-disable-next-line no-await-in-loop
+					const product = await createPurchasableProduct(
+						subsidiaryId,
+						toPayload(values, productSku),
+					);
+					resetForm({ values: emptyValues() });
+					setSku('');
+					onSuccess?.(product);
+					return;
+				} catch (error: unknown) {
+					const resolved = resolveProcurementError(
+						error,
+						'No se pudo crear el producto.',
+					);
+					const fieldErrors = resolved.fieldErrors ?? {};
+					const isSkuTaken =
+						resolved.status === VALIDATION_STATUS &&
+						Object.keys(fieldErrors).length === 1 &&
+						Boolean(fieldErrors.sku);
+					if (isSkuTaken && attempt < SKU_MAX_ATTEMPTS) {
+						productSku = generateSmartSKU(skuParams);
+						setSku(productSku);
+					} else {
+						Object.entries(fieldErrors).forEach(([apiField, messages]) => {
+							// `category_ids.0` se pinta sobre el selector de categorías.
+							const baseField = apiField.split('.')[0];
+							const formField = FORM_FIELDS.find((field) => field === baseField);
+							if (formField && messages[0]) setFieldError(formField, messages[0]);
+						});
+						toast.error(resolved.message);
+						return;
+					}
+				}
 			}
 		},
 	});
@@ -178,45 +172,21 @@ const useProcurementProductForm = ({
 	const productType = formik.values.product_type;
 
 	useEffect(() => {
-		if (subsidiaryId === null || !trimmedName || !selectedBrandName || !productType) {
+		if (!trimmedName || !selectedBrandName || !productType) {
 			setSku('');
 			return;
 		}
-		setSku(generateAvailableSku(subsidiaryId, trimmedName, selectedBrandName, productType));
-	}, [subsidiaryId, trimmedName, selectedBrandName, productType]);
-
-	/**
-	 * Mismo criterio que `useSupplierForm`: errores de campo sobre el input,
-	 * siempre toast, clave nueva. Un SKU que chocó igual (otra pestaña creó uno
-	 * con el mismo sufijo) se regenera para el próximo intento.
-	 */
-	useEffect(() => {
-		const resolved = idempotentWrite.error;
-		if (!resolved) return;
-
-		Object.entries(resolved.fieldErrors ?? {}).forEach(([apiField, messages]) => {
-			const formField = FORM_FIELDS.find((field) => field === apiField);
-			if (formField && messages[0]) formik.setFieldError(formField, messages[0]);
-		});
-		if (resolved.code === 'PRODUCT_SKU_ALREADY_EXISTS' && subsidiaryId !== null) {
-			setSku(generateAvailableSku(subsidiaryId, trimmedName, selectedBrandName, productType));
-		}
-		toast.error(resolved.message);
-
-		if (resolved.action !== 'retry_same_key') idempotentWrite.renewKey();
-		// Sólo reacciona a un error nuevo: `formik` e `idempotentWrite` cambian de identidad en cada render.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [idempotentWrite.error]);
+		setSku(generateSmartSKU({ name: trimmedName, brandName: selectedBrandName, productType }));
+	}, [trimmedName, selectedBrandName, productType]);
 
 	const reset = useCallback(() => {
 		formik.resetForm({ values: emptyValues() });
-		idempotentWrite.clearError();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	return {
 		formik,
-		isSubmitting: idempotentWrite.isSubmitting,
+		isSubmitting: formik.isSubmitting,
 		reset,
 		sku,
 		hasBranch: branchId !== null,

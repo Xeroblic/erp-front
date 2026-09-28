@@ -35,10 +35,12 @@ import {
 	parseDecimalString,
 	parsePesoInput,
 } from '@/utils/procurementDecimal.util';
+import type { ICreatedPurchasableProduct } from '@/services/procurement/purchasableProducts.service';
 import usePurchaseDocumentForm from '../../hooks/usePurchaseDocumentForm';
 import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
 import useSupplierInlineEdit from '../../hooks/useSupplierInlineEdit';
 import usePurchasableProductOptions from '../../hooks/usePurchasableProductOptions';
+import ProcurementProductFormModal from './ProcurementProductFormModal';
 import ProductOptionsNotice from '../parts/ProductOptionsNotice';
 import SupplierOptionsNotice from '../parts/SupplierOptionsNotice';
 import { EMPTY_DOCUMENTO_LINE } from '../../types';
@@ -175,9 +177,25 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 		shippingTotalCents ?? 0n,
 	);
 
+	/**
+	 * Alta de producto en línea: guarda qué línea abrió `ProcurementProductFormModal`
+	 * para dejar ahí el producto creado. `null` con el modal cerrado.
+	 */
+	const [productLineIndex, setProductLineIndex] = useState<number | null>(null);
+
+	const handleProductCreated = (product: ICreatedPurchasableProduct) => {
+		productOptions.addProduct(product);
+		// El producto queda creado en el catálogo, pero una línea de compra sólo admite activos sin serie.
+		if (productLineIndex === null || product.serial_tracking || !product.is_active) return;
+		const field = `items.${productLineIndex}.product_id`;
+		formik.setFieldValue(field, product.id).catch(() => undefined);
+		formik.setFieldTouched(field, true, false).catch(() => undefined);
+	};
+
 	const handleClose = () => {
 		if (isSubmitting) return;
 		setIsSupplierModalOpen(false);
+		setProductLineIndex(null);
 		closeSupplierEdit();
 		setIsOpen(false);
 		reset();
@@ -702,12 +720,39 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 																<div className='space-y-1'>
 																	<div className='relative'>
 																		<Label
-																			htmlFor={`items.${index}.product_id`}>
+																			htmlFor={`items.${index}.product_id`}
+																			className='pe-36'>
 																			Producto{' '}
 																			<span className='text-red-500'>
 																				*
 																			</span>
 																		</Label>
+																		{/* Botón fuera del flujo: la fila del label mide lo mismo que en Cantidad y Costo. */}
+																		<ProtectedButton
+																			type='button'
+																			permission='create-product'
+																			subsidiaryId={
+																				subsidiaryId
+																			}
+																			scope='access'
+																			fallbackMode='hidden'
+																			size='xs'
+																			variant='outline'
+																			color='blue'
+																			icon='HeroPlus'
+																			className='absolute -top-1 right-0 whitespace-nowrap'
+																			isDisable={
+																				isSubmitting ||
+																				hasVersionConflict ||
+																				isMissingEtag
+																			}
+																			onClick={() =>
+																				setProductLineIndex(
+																					index,
+																				)
+																			}>
+																			Nuevo producto
+																		</ProtectedButton>
 																	</div>
 																	<SelectReact
 																		name={`items.${index}.product_id`}
@@ -1028,6 +1073,14 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 					addSupplier(supplier);
 				}}
 				onViewSupplier={openSupplierInNewTab}
+			/>
+			<ProcurementProductFormModal
+				isOpen={isOpen && productLineIndex !== null}
+				setIsOpen={(open) => {
+					if (!open) setProductLineIndex(null);
+				}}
+				subsidiaryId={subsidiaryId}
+				onSuccess={handleProductCreated}
 			/>
 		</>
 	);

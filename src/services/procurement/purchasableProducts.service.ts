@@ -90,3 +90,52 @@ export const searchPurchasableProducts = async (
 		has_more: total > rows.length,
 	};
 };
+
+/**
+ * Alta de producto en el catálogo real desde una línea de compra:
+ * `POST /subsidiaries/{subsidiary}/products` (`SubsidiaryProductsController@store`),
+ * la misma ruta del alta de Catálogos › Productos.
+ *
+ * Contrato verificado contra el backend:
+ * - Exige `create-product` y que el usuario pueda gestionar la filial.
+ * - `name` y `brand_id` son obligatorios; `sku` es único por filial y un
+ *   choque vuelve como 422 en `sku`. No usa `Idempotency-Key`.
+ * - Responde 201 con `ProductResource` envuelto en `data`.
+ */
+export interface IPurchasableProductCreatePayload {
+	name: string;
+	sku: string;
+	brand_id: number;
+	product_type: string;
+	serial_tracking: boolean;
+	is_active: boolean;
+	category_ids: number[];
+}
+
+/** Producto recién creado: además de la opción, si una línea de compra lo admite. */
+export interface ICreatedPurchasableProduct extends IPurchasableProduct {
+	serial_tracking: boolean;
+	is_active: boolean;
+}
+
+export const createPurchasableProduct = async (
+	subsidiaryId: number,
+	payload: IPurchasableProductCreatePayload,
+): Promise<ICreatedPurchasableProduct> => {
+	const response = await ApiService.fetchData<unknown, IPurchasableProductCreatePayload>({
+		url: `/subsidiaries/${subsidiaryId}/products`,
+		method: 'post',
+		data: payload,
+	});
+
+	const body = asRecord(response.data);
+	const row = asRecord(body?.data) ?? body;
+	const product = toPurchasableProduct(row);
+	if (!product) throw new Error('El backend no devolvió el producto creado.');
+
+	return {
+		...product,
+		serial_tracking: row?.serial_tracking === true,
+		is_active: row?.is_active !== false,
+	};
+};

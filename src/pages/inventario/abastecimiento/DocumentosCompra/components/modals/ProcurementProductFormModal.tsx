@@ -15,34 +15,29 @@ import {
 	PRODUCT_TOGGLES,
 } from '@/pages/catalogos/productos/constants/products.constant';
 import { PRODUCT_DEVICE_TYPES } from '@/pages/catalogos/productos/constants/product-attributes.constants';
-import type { IProcurementProduct } from '@/interface/procurement.interface';
+import type { ICreatedPurchasableProduct } from '@/services/procurement/purchasableProducts.service';
 import useProcurementProductForm from '../../hooks/useProcurementProductForm';
 
 /**
- * Alta en línea de producto desde una línea del documento de compra, con los
- * campos y reglas del alta por filial.
+ * Alta en línea de producto desde una línea del documento de compra. El
+ * producto se crea en el catálogo real de la filial
+ * (`POST /subsidiaries/{subsidiary}/products`).
  *
  * Replica el formulario de «Crear producto» de `catalogos/productos`: las mismas
  * dos secciones (`PRODUCT_FORM_SECTIONS`), el mismo orden de campos y los mismos
- * interruptores de serie y estado (`PRODUCT_TOGGLES`). Sólo cambia lo que el
- * mock de abastecimiento exige: sin selector de sucursal (el producto es de la
- * filial) y con el SKU siempre generado.
+ * interruptores de serie y estado (`PRODUCT_TOGGLES`). Sin selector de sucursal
+ * (el producto es de la filial) y con el SKU siempre generado.
  *
  * Se apila sobre `PurchaseDocumentFormModal` y, al crear, el producto queda
- * seleccionado en la línea que abrió el modal (salvo si lleva serie: las
- * líneas de compra sólo admiten productos no serializados).
- *
- * **Hoy sin montar.** Los documentos de compra ya usan el catálogo real y este
- * alta todavía crea en el mock (`procurementProducts.service`): un producto
- * creado acá no existiría para el backend. Vuelve cuando use
- * `POST /subsidiaries/{subsidiary}/products`.
+ * seleccionado en la línea que abrió el modal (salvo si lleva serie o queda
+ * inactivo: las líneas de compra sólo admiten productos activos sin serie).
  */
 
 interface IProcurementProductFormModalProps {
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
 	subsidiaryId: number | null;
-	onSuccess?: (product: IProcurementProduct) => void;
+	onSuccess?: (product: ICreatedPurchasableProduct) => void;
 }
 
 const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> = ({
@@ -105,11 +100,6 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 			</ModalHeader>
 			<ModalBody className='min-h-0 flex-1 overflow-y-auto'>
 				<form onSubmit={formik.handleSubmit} className='space-y-5' noValidate>
-					<Alert color='amber' variant='outline' icon='HeroExclamationTriangle'>
-						El producto se crea en los datos de ejemplo de abastecimiento: no se
-						registra en el catálogo de productos real.
-					</Alert>
-
 					{PRODUCT_FORM_SECTIONS.map((section) => (
 						<Card key={section.key} className={section.cardClass}>
 							<CardHeader className='pb-2'>
@@ -319,11 +309,11 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 						})}
 					</div>
 
-					{formik.values.serial_tracking && (
+					{(formik.values.serial_tracking || !formik.values.is_active) && (
 						<Alert color='amber' variant='outline' icon='HeroInformationCircle'>
-							Los documentos de compra sólo admiten productos sin seguimiento por
-							serie: el producto se creará, pero no quedará seleccionado en esta
-							línea.
+							Los documentos de compra sólo admiten productos activos y sin
+							seguimiento por serie: el producto se creará, pero no quedará
+							seleccionado en esta línea.
 						</Alert>
 					)}
 				</form>

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	PURCHASABLE_PRODUCTS_PER_PAGE,
+	createPurchasableProduct,
 	searchPurchasableProducts,
 } from '@/services/procurement/purchasableProducts.service';
 
@@ -68,5 +69,64 @@ describe('searchPurchasableProducts', () => {
 			],
 			has_more: true,
 		});
+	});
+});
+
+describe('createPurchasableProduct', () => {
+	const payload = {
+		name: 'Mouse inalámbrico',
+		sku: 'LOGN-MOUS-A1B',
+		brand_id: 3,
+		product_type: 'general',
+		serial_tracking: false,
+		is_active: true,
+		category_ids: [12],
+	};
+
+	it('crea en el catálogo real de la filial y lee el `ProductResource` envuelto en `data`', async () => {
+		apiSpies.fetchData.mockResolvedValueOnce({
+			data: {
+				data: {
+					id: 250,
+					sku: 'LOGN-MOUS-A1B',
+					name: 'Mouse inalámbrico',
+					brand: { id: 3, name: 'Logitech' },
+					serial_tracking: false,
+					is_active: true,
+				},
+			},
+		});
+
+		const product = await createPurchasableProduct(4, payload);
+
+		expect(apiSpies.fetchData).toHaveBeenCalledWith({
+			url: '/subsidiaries/4/products',
+			method: 'post',
+			data: payload,
+		});
+		expect(product).toEqual({
+			id: 250,
+			sku: 'LOGN-MOUS-A1B',
+			name: 'Mouse inalámbrico',
+			brand_name: 'Logitech',
+			serial_tracking: false,
+			is_active: true,
+		});
+	});
+
+	it('informa si el producto creado lleva serie, para no seleccionarlo en la línea', async () => {
+		apiSpies.fetchData.mockResolvedValueOnce({
+			data: { data: { id: 251, sku: null, name: 'Notebook', serial_tracking: true } },
+		});
+
+		const product = await createPurchasableProduct(4, { ...payload, serial_tracking: true });
+
+		expect(product.serial_tracking).toBe(true);
+	});
+
+	it('falla si la respuesta no trae el producto', async () => {
+		apiSpies.fetchData.mockResolvedValueOnce({ data: { data: null } });
+
+		await expect(createPurchasableProduct(4, payload)).rejects.toThrow();
 	});
 });

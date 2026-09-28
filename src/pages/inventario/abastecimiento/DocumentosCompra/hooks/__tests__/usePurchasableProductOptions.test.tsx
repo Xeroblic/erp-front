@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import usePurchasableProductOptions from '../usePurchasableProductOptions';
 
@@ -100,5 +100,24 @@ describe('usePurchasableProductOptions', () => {
 		renderHook(() => usePurchasableProductOptions({ subsidiaryId: 4, isEnabled: false }));
 
 		expect(serviceSpies.searchPurchasableProducts).not.toHaveBeenCalled();
+	});
+
+	it('un producto recién creado tiene etiqueta y la búsqueda se repite para traerlo', async () => {
+		serviceSpies.searchPurchasableProducts.mockResolvedValue(page([]));
+
+		const { result } = renderHook(() =>
+			usePurchasableProductOptions({ subsidiaryId: 4, isEnabled: true }),
+		);
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		act(() => result.current.addProduct({ id: 250, sku: 'LOGN-MOUS-A1B', name: 'Mouse' }));
+
+		expect(result.current.getOption(250)).toEqual({
+			value: '250',
+			label: 'LOGN-MOUS-A1B · Mouse',
+		});
+		await waitFor(() =>
+			expect(serviceSpies.searchPurchasableProducts).toHaveBeenCalledTimes(2),
+		);
 	});
 });

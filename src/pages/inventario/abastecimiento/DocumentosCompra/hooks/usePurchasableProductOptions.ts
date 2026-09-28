@@ -162,6 +162,20 @@ const usePurchasableProductOptions = ({
 
 	const reload = useCallback(() => setReloadToken((token) => token + 1), []);
 
+	/**
+	 * Producto recién creado desde el documento: su etiqueta se conoce antes
+	 * de que una búsqueda lo traiga, y la búsqueda vigente se repite para que
+	 * aparezca entre las opciones.
+	 */
+	const addProduct = useCallback(
+		(product: Pick<IPurchasableProduct, 'id' | 'sku' | 'name'>) => {
+			if (subsidiaryId === null) return;
+			rememberLabels(subsidiaryId, [product]);
+			reload();
+		},
+		[subsidiaryId, rememberLabels, reload],
+	);
+
 	return {
 		options,
 		loading,
@@ -171,6 +185,7 @@ const usePurchasableProductOptions = ({
 		onSearchChange: setSearch,
 		getOption,
 		reload,
+		addProduct,
 	};
 };
 
