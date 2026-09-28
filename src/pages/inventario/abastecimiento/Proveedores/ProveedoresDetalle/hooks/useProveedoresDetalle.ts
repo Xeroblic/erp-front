@@ -11,6 +11,7 @@ import {
 } from '@/store/slices/procurement/procurementSuppliersSlice';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
 import useSupplierRestore from '../../hooks/useSupplierRestore';
+import { formatCommuneWithRegion } from '../../types';
 
 /**
  * Ficha de proveedor (sección 5 del contrato). A diferencia del listado, acá
@@ -28,8 +29,8 @@ const useProveedoresDetalle = () => {
 	const error = useAppSelector(selectProcurementSupplierCurrentError);
 
 	// La ficha trae la comuna anidada: no hace falta cargar el catálogo completo.
-	const billingCommuneName = supplier?.billing_commune?.name ?? null;
-	const shippingCommuneName = supplier?.shipping_commune?.name ?? null;
+	const billingCommuneName = formatCommuneWithRegion(supplier?.billing_commune);
+	const shippingCommuneName = formatCommuneWithRegion(supplier?.shipping_commune);
 
 	const parsedId = Number(proveedorId);
 	const id = proveedorId !== undefined && Number.isFinite(parsedId) ? parsedId : null;

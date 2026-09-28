@@ -215,4 +215,24 @@ describe('useProveedorForm — teléfono', () => {
 
 		await waitFor(() => expect(input.value).toBe('+56912345678'));
 	});
+
+	it('teclear sólo los 9 dígitos antepone el +56', async () => {
+		render(<PhoneField />, { wrapper: createWrapper() });
+		const input = screen.getByLabelText<HTMLInputElement>('Teléfono');
+
+		fireEvent.change(input, { target: { value: '9 1234 567' } });
+		await waitFor(() => expect(input.value).toBe('91234567'));
+
+		fireEvent.change(input, { target: { value: '912345678' } });
+		await waitFor(() => expect(input.value).toBe('+56912345678'));
+	});
+
+	it('pegar con 56 sin el + lo completa', async () => {
+		render(<PhoneField />, { wrapper: createWrapper() });
+		const input = screen.getByLabelText<HTMLInputElement>('Teléfono');
+
+		pasteInto(input, '56 9 1234 5678');
+
+		await waitFor(() => expect(input.value).toBe('+56912345678'));
+	});
 });

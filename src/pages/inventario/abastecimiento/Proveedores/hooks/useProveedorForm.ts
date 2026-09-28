@@ -197,8 +197,9 @@ const useProveedorForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseProv
 	);
 
 	/**
-	 * Los espacios se descartan al teclear: con `maxLength` contarían como
-	 * caracteres y truncarían el número.
+	 * Se normaliza al teclear: los separadores se descartan (con `maxLength`
+	 * contarían como caracteres y truncarían el número) y, al completar los 9
+	 * dígitos, se antepone el `+56` sin pedírselo al usuario.
 	 */
 	const handlePhoneChange = useCallback(
 		(value: string) => {

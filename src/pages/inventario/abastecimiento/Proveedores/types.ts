@@ -1,5 +1,6 @@
 import * as Yup from 'yup';
 import { validateRut } from '@/utils/validateRut';
+import type { IProcurementSupplierCommune } from '@/interface/procurement.interface';
 
 /**
  * Tipos y validación de la pantalla de maestro de proveedores (card 02,
@@ -77,13 +78,28 @@ const NOMBRE_UTILIZABLE_MESSAGE = 'Ingresa razón social o nombre de contacto.';
  */
 export const PHONE_CL_REGEX = /^\+56\d{9}$/;
 // Sin «ej.»: `Validation` parte el mensaje en cada punto.
-const PHONE_CL_MESSAGE = 'Formato: +56 y 9 dígitos (por ejemplo +56912345678 o +56221234567).';
+const PHONE_CL_MESSAGE = 'Ingresa 9 dígitos, por ejemplo 9 1234 5678 o 2 2123 4567.';
 
 /** Largo de `+56` y 9 dígitos, ya sin espacios. */
 export const PHONE_CL_MAX_LENGTH = 12;
 
-/** Quita espacios para que `+56 9 1234 5678` no falle por formato. */
-export const normalizePhone = (value: string): string => value.replace(/\s+/g, '');
+/**
+ * Completa el teléfono como lo haría el usuario, igual que
+ * `normalizePhoneInput` del backend: quita espacios, guiones, puntos y
+ * paréntesis, y agrega lo que falte del prefijo.
+ * - `9 1234 5678` o `2 2123 4567` (9 dígitos) → `+56` delante.
+ * - `56 9 1234 5678` (56 y 9 dígitos) → `+` delante.
+ *
+ * Nueve dígitos que empiezan con `56` quedan como están: ningún número
+ * chileno empieza así (no hay código de área 56), así que es alguien
+ * tecleando `56…` a medias y completarlo daría `+5656…`.
+ */
+export const normalizePhone = (value: string): string => {
+	const phone = value.replace(/[\s\-.()]/g, '');
+	if (/^\d{9}$/.test(phone) && !phone.startsWith('56')) return `+56${phone}`;
+	if (/^56\d{9}$/.test(phone)) return `+${phone}`;
+	return phone;
+};
 
 /**
  * Valor del teléfono tras pegar `pasted` sobre la selección `[start, end)`.
@@ -122,6 +138,19 @@ export const proveedorFormSchema = Yup.object({
 		.matches(PHONE_CL_REGEX, { message: PHONE_CL_MESSAGE, excludeEmptyString: true }),
 	email: Yup.string().email('El email no es válido.'),
 });
+
+/**
+ * Comuna con su región (`Mejillones, Antofagasta`): el nombre solo se presta
+ * a confusión cuando coincide con el de una región (la comuna de Valparaíso
+ * no es la región). Sin región resuelta, queda la comuna sola.
+ */
+export const formatCommuneWithRegion = (
+	commune: IProcurementSupplierCommune | null | undefined,
+): string | null => {
+	if (!commune) return null;
+	const region = commune.province?.region?.name;
+	return region ? `${commune.name}, ${region}` : commune.name;
+};
 
 /** `true` cuando falta algo de lo que exige confirmar una factura. */
 export const isIncompleteForInvoicing = (values: IProveedorFormValues): boolean =>

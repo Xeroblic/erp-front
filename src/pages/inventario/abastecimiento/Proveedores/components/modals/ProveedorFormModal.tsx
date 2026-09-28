@@ -235,7 +235,7 @@ const ProveedorFormModal: React.FC<IProveedorFormModalProps> = ({
 											id='proveedor-phone'
 											name='phone'
 											type='tel'
-											placeholder='+56912345678'
+											placeholder='9 1234 5678'
 											maxLength={PHONE_CL_MAX_LENGTH}
 											value={formik.values.phone}
 											onChange={(event) =>
