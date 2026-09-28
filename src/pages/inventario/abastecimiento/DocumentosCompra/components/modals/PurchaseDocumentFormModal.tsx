@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FieldArray, FormikProvider } from 'formik';
 import { useHref } from 'react-router-dom';
 import Modal, {
@@ -114,7 +114,7 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 		addSupplier,
 		reload: reloadSuppliers,
 	} = useActiveSupplierOptions(subsidiaryId, isOpen);
-	const { formik, isEdit, isSubmitting, hasVersionConflict, isMissingEtag, reset } =
+	const { formik, isEdit, isSubmitting, hasVersionConflict, isMissingEtag, reset, discardDraft } =
 		usePurchaseDocumentForm({
 			subsidiaryId,
 			document,
@@ -191,6 +191,24 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 		formik.setFieldValue(field, product.id).catch(() => undefined);
 		formik.setFieldTouched(field, true, false).catch(() => undefined);
 	};
+
+	/**
+	 * El borrador pertenece a la filial en que se escribió: proveedor, líneas y
+	 * productos son de su catálogo. El contenedor cierra el modal al cambiar de
+	 * filial, pero este componente sigue montado con su estado; sin esto, al
+	 * volver a abrir «Nuevo documento» reaparecería el borrador anterior, con
+	 * el alta de producto abierta sobre la línea de entonces.
+	 */
+	const draftSubsidiaryRef = useRef(subsidiaryId);
+	useEffect(() => {
+		if (draftSubsidiaryRef.current === subsidiaryId) return;
+		draftSubsidiaryRef.current = subsidiaryId;
+		setIsSupplierModalOpen(false);
+		setProductLineIndex(null);
+		closeSupplierEdit();
+		discardDraft();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [subsidiaryId]);
 
 	const handleClose = () => {
 		if (isSubmitting) return;

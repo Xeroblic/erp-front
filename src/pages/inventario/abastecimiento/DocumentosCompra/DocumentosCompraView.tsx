@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
@@ -47,9 +47,9 @@ const DocumentosCompraView = () => {
 		setIssuedToValue,
 		onPaginationChange,
 		refresh,
+		isCreateModalOpen,
+		setIsCreateModalOpen,
 	} = useDocumentosCompra();
-
-	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
 	const handleView = (id: number) =>
 		navigate(`/inventario/abastecimiento/documentos-compra/${id}`);

@@ -6,9 +6,11 @@ import {
 	clearPurchaseDocumentCurrent,
 	fetchPurchaseDocumentDetail,
 	selectPurchaseDocumentCurrent,
+	selectPurchaseDocumentCurrentDocumentId,
 	selectPurchaseDocumentCurrentEtag,
 	selectPurchaseDocumentCurrentError,
 	selectPurchaseDocumentCurrentLoading,
+	selectPurchaseDocumentCurrentSubsidiaryId,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
 import type { IDocumentAttachmentsCardHandle } from '../components/parts/DocumentAttachmentsCard';
@@ -19,19 +21,42 @@ import type { IDocumentAttachmentsCardHandle } from '../components/parts/Documen
  * `ETag` — la única pantalla del módulo que los necesita, porque editar
  * exige `If-Match` con el `ETag` de esta misma carga.
  */
+
+type TDocumentModal = 'update' | 'confirm' | 'cancel';
+
+/** Modal abierto y el contexto (filial y documento) en que se abrió. */
+interface IOpenModal {
+	modal: TDocumentModal;
+	subsidiaryId: number | null;
+	id: number | null;
+}
 const useDocumentoCompraDetalle = () => {
 	const { documentoId } = useParams();
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
 
-	const document = useAppSelector(selectPurchaseDocumentCurrent);
-	const etag = useAppSelector(selectPurchaseDocumentCurrentEtag);
-	const loading = useAppSelector(selectPurchaseDocumentCurrentLoading);
-	const error = useAppSelector(selectPurchaseDocumentCurrentError);
+	const storedDocument = useAppSelector(selectPurchaseDocumentCurrent);
+	const storedEtag = useAppSelector(selectPurchaseDocumentCurrentEtag);
+	const storedLoading = useAppSelector(selectPurchaseDocumentCurrentLoading);
+	const storedError = useAppSelector(selectPurchaseDocumentCurrentError);
+	const ownerSubsidiaryId = useAppSelector(selectPurchaseDocumentCurrentSubsidiaryId);
+	const ownerDocumentId = useAppSelector(selectPurchaseDocumentCurrentDocumentId);
 
 	const parsedId = Number(documentoId);
 	const id = documentoId !== undefined && Number.isFinite(parsedId) ? parsedId : null;
+
+	/**
+	 * La ficha del store es la de la última carga que resolvió; la nueva recién
+	 * sale en el efecto y la limpieza del contexto anterior también ocurre
+	 * después del render. Hasta que llegue, lo de otra filial u otro documento
+	 * no se muestra: la vista queda en carga.
+	 */
+	const isCurrentForContext = ownerSubsidiaryId === subsidiaryId && ownerDocumentId === id;
+	const document = isCurrentForContext ? storedDocument : null;
+	const etag = isCurrentForContext ? storedEtag : null;
+	const error = isCurrentForContext ? storedError : null;
+	const loading = storedLoading || (id !== null && !isCurrentForContext);
 
 	useEffect(() => {
 		if (id === null) return undefined;
@@ -41,21 +66,37 @@ const useDocumentoCompraDetalle = () => {
 		};
 	}, [dispatch, subsidiaryId, id]);
 
-	const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-	const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-	const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-
 	/**
-	 * El router reutiliza esta instancia del componente al navegar de un
-	 * documento a otro (mismo `:documentoId` en la ruta): sin esto, un modal
-	 * abierto para el documento anterior seguiría abierto — y su acción
-	 * seguiría apuntando al documento nuevo que acaba de cargar `current`.
+	 * Cada modal queda atado a la filial y al documento en que se abrió. El
+	 * router reutiliza esta instancia al pasar de un documento a otro, y la
+	 * filial puede cambiar con un modal abierto: en ambos casos el modal se
+	 * cierra desde el primer render, en vez de dejar su acción apuntando al
+	 * documento o a la filial nuevos.
 	 */
-	useEffect(() => {
-		setIsFormModalOpen(false);
-		setIsConfirmModalOpen(false);
-		setIsCancelModalOpen(false);
-	}, [id, subsidiaryId]);
+	const [openModal, setOpenModal] = useState<IOpenModal | null>(null);
+	const activeModal =
+		openModal !== null && openModal.subsidiaryId === subsidiaryId && openModal.id === id
+			? openModal.modal
+			: null;
+	// Fuera de su contexto se descarta, para que volver a él no lo reabra.
+	if (openModal !== null && activeModal === null) setOpenModal(null);
+	const setModalOpen = useCallback(
+		(modal: TDocumentModal, open: boolean) =>
+			setOpenModal(open ? { modal, subsidiaryId, id } : null),
+		[subsidiaryId, id],
+	);
+	const setIsFormModalOpen = useCallback(
+		(open: boolean) => setModalOpen('update', open),
+		[setModalOpen],
+	);
+	const setIsConfirmModalOpen = useCallback(
+		(open: boolean) => setModalOpen('confirm', open),
+		[setModalOpen],
+	);
+	const setIsCancelModalOpen = useCallback(
+		(open: boolean) => setModalOpen('cancel', open),
+		[setModalOpen],
+	);
 
 	const goToList = useCallback(
 		() => navigate('/inventario/abastecimiento/documentos-compra'),
@@ -86,12 +127,14 @@ const useDocumentoCompraDetalle = () => {
 	);
 
 	/** Traduce el click de `AllowedActionsToolbar` a la interacción de esta pantalla. */
-	const handleAction = useCallback((action: TProcurementAllowedAction) => {
-		if (action === 'update') setIsFormModalOpen(true);
-		else if (action === 'confirm') setIsConfirmModalOpen(true);
-		else if (action === 'cancel') setIsCancelModalOpen(true);
-		else if (action === 'add_attachment') attachmentsCardRef.current?.openFilePicker();
-	}, []);
+	const handleAction = useCallback(
+		(action: TProcurementAllowedAction) => {
+			if (action === 'update' || action === 'confirm' || action === 'cancel')
+				setModalOpen(action, true);
+			else if (action === 'add_attachment') attachmentsCardRef.current?.openFilePicker();
+		},
+		[setModalOpen],
+	);
 
 	return {
 		id,
@@ -101,11 +144,11 @@ const useDocumentoCompraDetalle = () => {
 		etag,
 		loading,
 		error,
-		isFormModalOpen,
+		isFormModalOpen: activeModal === 'update',
 		setIsFormModalOpen,
-		isConfirmModalOpen,
+		isConfirmModalOpen: activeModal === 'confirm',
 		setIsConfirmModalOpen,
-		isCancelModalOpen,
+		isCancelModalOpen: activeModal === 'cancel',
 		setIsCancelModalOpen,
 		allowedActions,
 		attachmentsCardRef,

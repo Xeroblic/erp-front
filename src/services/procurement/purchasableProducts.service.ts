@@ -116,7 +116,38 @@ export interface IPurchasableProductCreatePayload {
 export interface ICreatedPurchasableProduct extends IPurchasableProduct {
 	serial_tracking: boolean;
 	is_active: boolean;
+	/** Datos con que se creó: permiten reconocer si un producto es el de un alta dada. */
+	brand_id: number | null;
+	product_type: string | null;
+	category_ids: number[];
 }
+
+/**
+ * `ProductResource` devuelve las categorías en `category_ids`, pero como
+ * objetos `{ id, name, slug }`; se aceptan también ids sueltos.
+ */
+const toCategoryIds = (value: unknown): number[] =>
+	Array.isArray(value)
+		? value
+				.map((item) => (typeof item === 'number' ? item : asRecord(item)?.id))
+				.filter((id): id is number => typeof id === 'number')
+		: [];
+
+/** Lee una fila del catálogo con los datos que el alta en línea necesita. */
+const toCreatedPurchasableProduct = (row: unknown): ICreatedPurchasableProduct | null => {
+	const product = toPurchasableProduct(row);
+	if (!product) return null;
+	const record = asRecord(row);
+	const brandId = asRecord(record?.brand)?.id ?? record?.brand_id;
+	return {
+		...product,
+		serial_tracking: record?.serial_tracking === true,
+		is_active: record?.is_active !== false,
+		brand_id: typeof brandId === 'number' ? brandId : null,
+		product_type: asText(record?.product_type),
+		category_ids: toCategoryIds(record?.category_ids),
+	};
+};
 
 export const createPurchasableProduct = async (
 	subsidiaryId: number,
@@ -129,13 +160,52 @@ export const createPurchasableProduct = async (
 	});
 
 	const body = asRecord(response.data);
-	const row = asRecord(body?.data) ?? body;
-	const product = toPurchasableProduct(row);
+	const product = toCreatedPurchasableProduct(asRecord(body?.data) ?? body);
 	if (!product) throw new Error('El backend no devolvió el producto creado.');
+	return product;
+};
 
-	return {
-		...product,
-		serial_tracking: row?.serial_tracking === true,
-		is_active: row?.is_active !== false,
-	};
+/** Páginas del listado que recorre la búsqueda por SKU antes de rendirse. */
+const SKU_LOOKUP_PER_PAGE = 50;
+const SKU_LOOKUP_MAX_PAGES = 20;
+
+/**
+ * Producto de la filial con exactamente ese SKU, o `null`. El alta no admite
+ * `Idempotency-Key`: si la respuesta de un `POST` se pierde, esta consulta
+ * dice si el producto llegó a crearse.
+ *
+ * El backend no filtra por SKU exacto: `q` busca por substring (`ILIKE`) en
+ * nombre, SKU y código de barras, así que puede haber muchas coincidencias.
+ * Se recorren todas las páginas, de la más reciente a la más antigua (el
+ * producto buscado se acaba de crear), hasta dar con el SKU exacto. Sin
+ * filtro de serie ni de estado, porque el producto pudo crearse con
+ * cualquiera. Exige `view-product`; un 403 llega como error al que llama.
+ */
+export const findPurchasableProductBySku = async (
+	subsidiaryId: number,
+	sku: string,
+): Promise<ICreatedPurchasableProduct | null> => {
+	for (let page = 1; page <= SKU_LOOKUP_MAX_PAGES; page += 1) {
+		// eslint-disable-next-line no-await-in-loop
+		const response = await ApiService.fetchData<unknown>({
+			url: `/subsidiaries/${subsidiaryId}/products`,
+			method: 'get',
+			params: {
+				q: sku,
+				order_by: 'id',
+				order_dir: 'desc',
+				per_page: SKU_LOOKUP_PER_PAGE,
+				page,
+			},
+		});
+
+		const body = asRecord(response.data);
+		const rows = Array.isArray(body?.data) ? body.data : [];
+		const match = rows.find((row) => asText(asRecord(row)?.sku) === sku);
+		if (match !== undefined) return toCreatedPurchasableProduct(match);
+
+		const lastPage = asRecord(body?.meta)?.last_page;
+		if (typeof lastPage !== 'number' || page >= lastPage) return null;
+	}
+	throw new Error('Demasiadas coincidencias para comprobar el SKU.');
 };

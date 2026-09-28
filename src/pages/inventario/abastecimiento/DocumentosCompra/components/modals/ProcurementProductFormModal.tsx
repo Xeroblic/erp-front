@@ -54,8 +54,11 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 		brandOptions,
 		categoryOptions,
 		loadingBrands,
+		brandsFailed,
 		loadingCategories,
 		sku,
+		isReconciling,
+		pendingProductName,
 	} = useProcurementProductForm({
 		isOpen,
 		subsidiaryId,
@@ -66,6 +69,9 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 			setIsOpen(false);
 		},
 	});
+
+	/** Con un alta pendiente de conciliar, sus valores no se pueden cambiar. */
+	const isLocked = isSubmitting || isReconciling;
 
 	const closeIfIdle = () => {
 		if (isSubmitting) return;
@@ -80,6 +86,8 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 	let brandPlaceholder = 'Selecciona una marca';
 	if (loadingBrands) brandPlaceholder = 'Cargando marcas...';
 	else if (!hasBranch) brandPlaceholder = 'Selecciona una sucursal activa primero';
+	else if (brandsFailed)
+		brandPlaceholder = 'No se pudieron cargar las marcas: cierra y vuelve a abrir';
 
 	return (
 		<Modal
@@ -100,6 +108,13 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 			</ModalHeader>
 			<ModalBody className='min-h-0 flex-1 overflow-y-auto'>
 				<form onSubmit={formik.handleSubmit} className='space-y-5' noValidate>
+					{isReconciling && (
+						<Alert color='amber' variant='outline' icon='HeroExclamationTriangle'>
+							No se pudo confirmar si «{pendingProductName}» se creó. «Reintentar»
+							comprueba ese envío antes de crear otro, así que sus datos no se pueden
+							cambiar hasta resolverlo.
+						</Alert>
+					)}
 					{PRODUCT_FORM_SECTIONS.map((section) => (
 						<Card key={section.key} className={section.cardClass}>
 							<CardHeader className='pb-2'>
@@ -152,7 +167,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 												value={formik.values.name}
 												onChange={formik.handleChange}
 												onBlur={formik.handleBlur}
-												disabled={isSubmitting}
+												disabled={isLocked}
 												isValid={!formik.errors.name}
 												isTouched={Boolean(formik.touched.name)}
 												invalidFeedback={formik.errors.name}
@@ -166,7 +181,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 												inputId='producto-compra-brand'
 												options={brandOptions}
 												isLoading={loadingBrands}
-												isDisabled={!hasBranch || isSubmitting}
+												isDisabled={!hasBranch || isLocked}
 												placeholder={brandPlaceholder}
 												value={
 													brandOptions.find(
@@ -218,7 +233,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 												value={formik.values.product_type}
 												onChange={formik.handleChange}
 												onBlur={formik.handleBlur}
-												disabled={isSubmitting}
+												disabled={isLocked}
 												isValid={!formik.errors.product_type}
 												isTouched={Boolean(formik.touched.product_type)}
 												invalidFeedback={formik.errors.product_type}>
@@ -232,7 +247,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 
 										<div className='space-y-1 md:col-span-2'>
 											<Label htmlFor='producto-compra-categories'>
-												Categorias
+												Categorías
 											</Label>
 											<SelectReact
 												name='category_ids'
@@ -240,7 +255,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 												isMulti
 												options={categoryOptions}
 												isLoading={loadingCategories}
-												isDisabled={isSubmitting || loadingCategories}
+												isDisabled={isLocked || loadingCategories}
 												placeholder={
 													loadingCategories
 														? 'Cargando categorías...'
@@ -300,7 +315,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 														)
 														.catch(() => undefined);
 												}}
-												disabled={isSubmitting}
+												disabled={isLocked}
 											/>
 										</div>
 									</CardBody>
@@ -331,11 +346,12 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 					<Button
 						type='button'
 						onClick={() => formik.handleSubmit()}
+						variant='solid'
 						color='blue'
 						icon='HeroCheck'
 						isLoading={isSubmitting}
 						isDisable={isSubmitting}>
-						Crear producto
+						{isReconciling ? 'Reintentar' : 'Crear producto'}
 					</Button>
 				</div>
 			</ModalFooter>

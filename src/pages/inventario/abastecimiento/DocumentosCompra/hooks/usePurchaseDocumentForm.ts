@@ -263,6 +263,16 @@ const usePurchaseDocumentForm = ({
 		setHasVersionConflict(false);
 	};
 
+	/**
+	 * Descarta el borrador de otro contexto (filial): además de limpiar,
+	 * renueva la clave, para que el alta en la filial nueva no viaje con la
+	 * `Idempotency-Key` de un envío pensado para la anterior.
+	 */
+	const discardDraft = () => {
+		reset();
+		idempotentWrite.renewKey();
+	};
+
 	return {
 		formik,
 		isEdit,
@@ -270,6 +280,7 @@ const usePurchaseDocumentForm = ({
 		hasVersionConflict,
 		isMissingEtag,
 		reset,
+		discardDraft,
 	};
 };
 

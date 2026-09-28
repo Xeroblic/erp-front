@@ -36,9 +36,10 @@ export interface PurchaseDocumentsState {
 	listError: string | null;
 	listRequestId: string | null;
 	/**
-	 * Filial dueña de `items`/`meta` (propiedad de contexto, ZF-12): una
-	 * mutación resuelta para otra filial no puede parchear la lista que se
-	 * está viendo, aunque el usuario haya cambiado de filial mientras volaba.
+	 * Filial dueña de `items`/`meta`/`listError` (propiedad de contexto,
+	 * ZF-12). Se fija al resolver, no al pedir: mientras la petición de otra
+	 * filial vuela, lo guardado sigue siendo de la anterior y el hook no lo
+	 * muestra. Tampoco deja que una mutación de otra filial parchee la lista.
 	 */
 	listSubsidiaryId: number | null;
 	current: IPurchaseDocument | null;
@@ -47,8 +48,10 @@ export interface PurchaseDocumentsState {
 	currentLoading: boolean;
 	currentError: string | null;
 	currentRequestId: string | null;
-	/** Filial dueña de `current`, mismo criterio que `listSubsidiaryId`. */
+	/** Filial dueña de `current`/`currentError`, mismo criterio que `listSubsidiaryId`. */
 	currentSubsidiaryId: number | null;
+	/** Documento pedido por la carga que dejó `current`/`currentError`. */
+	currentDocumentId: number | null;
 	creating: boolean;
 	updating: boolean;
 	confirming: boolean;
@@ -68,6 +71,7 @@ const initialState: PurchaseDocumentsState = {
 	currentError: null,
 	currentRequestId: null,
 	currentSubsidiaryId: null,
+	currentDocumentId: null,
 	creating: false,
 	updating: false,
 	confirming: false,
@@ -277,6 +281,7 @@ const purchaseDocumentsSlice = createSlice({
 			state.currentEtag = null;
 			state.currentError = null;
 			state.currentSubsidiaryId = null;
+			state.currentDocumentId = null;
 			// Igual que en proveedores: sin esto, una respuesta en vuelo de la
 			// ficha que se abandona podría llegar tarde y repoblar `current`.
 			state.currentRequestId = null;
@@ -288,17 +293,23 @@ const purchaseDocumentsSlice = createSlice({
 				state.listLoading = true;
 				state.listError = null;
 				state.listRequestId = action.meta.requestId;
-				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchPurchaseDocuments.fulfilled, (state, action) => {
 				if (action.meta.requestId !== state.listRequestId) return;
 				state.listLoading = false;
 				state.items = action.payload.data;
 				state.meta = action.payload.meta;
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchPurchaseDocuments.rejected, (state, action) => {
 				if (action.meta.requestId !== state.listRequestId) return;
 				state.listLoading = false;
+				// Un fallo en otra filial no deja guardadas las filas de la anterior.
+				if (state.listSubsidiaryId !== action.meta.arg.subsidiaryId) {
+					state.items = [];
+					state.meta = null;
+				}
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 				state.listError = getProcurementErrorMessage(
 					action.payload,
 					'No se pudo cargar el listado.',
@@ -309,7 +320,6 @@ const purchaseDocumentsSlice = createSlice({
 				state.currentLoading = true;
 				state.currentError = null;
 				state.currentRequestId = action.meta.requestId;
-				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchPurchaseDocumentDetail.fulfilled, (state, action) => {
 				// Propiedad de contexto (ZF-12): una ficha anterior que resuelve
@@ -318,6 +328,8 @@ const purchaseDocumentsSlice = createSlice({
 				state.currentLoading = false;
 				state.current = action.payload.data;
 				state.currentEtag = action.payload.etag;
+				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
+				state.currentDocumentId = action.meta.arg.id;
 			})
 			.addCase(fetchPurchaseDocumentDetail.rejected, (state, action) => {
 				if (action.meta.requestId !== state.currentRequestId) return;
@@ -328,7 +340,8 @@ const purchaseDocumentsSlice = createSlice({
 				);
 				state.current = null;
 				state.currentEtag = null;
-				state.currentSubsidiaryId = null;
+				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
+				state.currentDocumentId = action.meta.arg.id;
 			})
 
 			.addCase(createPurchaseDocumentThunk.pending, (state) => {
@@ -400,6 +413,8 @@ export const selectPurchaseDocumentsListLoading = (state: RootState) =>
 	state.purchaseDocuments.listLoading;
 export const selectPurchaseDocumentsListError = (state: RootState) =>
 	state.purchaseDocuments.listError;
+export const selectPurchaseDocumentsListSubsidiaryId = (state: RootState) =>
+	state.purchaseDocuments.listSubsidiaryId;
 export const selectPurchaseDocumentCurrent = (state: RootState) => state.purchaseDocuments.current;
 export const selectPurchaseDocumentCurrentEtag = (state: RootState) =>
 	state.purchaseDocuments.currentEtag;
@@ -407,5 +422,11 @@ export const selectPurchaseDocumentCurrentLoading = (state: RootState) =>
 	state.purchaseDocuments.currentLoading;
 export const selectPurchaseDocumentCurrentError = (state: RootState) =>
 	state.purchaseDocuments.currentError;
+
+/** Filial y documento de la carga que dejó la ficha (o su error) en el store. */
+export const selectPurchaseDocumentCurrentSubsidiaryId = (state: RootState) =>
+	state.purchaseDocuments.currentSubsidiaryId;
+export const selectPurchaseDocumentCurrentDocumentId = (state: RootState) =>
+	state.purchaseDocuments.currentDocumentId;
 
 export default purchaseDocumentsSlice.reducer;

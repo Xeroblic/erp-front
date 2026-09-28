@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	PURCHASABLE_PRODUCTS_PER_PAGE,
 	createPurchasableProduct,
+	findPurchasableProductBySku,
 	searchPurchasableProducts,
 } from '@/services/procurement/purchasableProducts.service';
 
@@ -91,8 +92,11 @@ describe('createPurchasableProduct', () => {
 					sku: 'LOGN-MOUS-A1B',
 					name: 'Mouse inalámbrico',
 					brand: { id: 3, name: 'Logitech' },
+					product_type: 'general',
 					serial_tracking: false,
 					is_active: true,
+					// `ProductResource` devuelve las categorías como objetos.
+					category_ids: [{ id: 12, name: 'Accesorios', slug: 'accesorios' }],
 				},
 			},
 		});
@@ -111,6 +115,9 @@ describe('createPurchasableProduct', () => {
 			brand_name: 'Logitech',
 			serial_tracking: false,
 			is_active: true,
+			brand_id: 3,
+			product_type: 'general',
+			category_ids: [12],
 		});
 	});
 
@@ -128,5 +135,71 @@ describe('createPurchasableProduct', () => {
 		apiSpies.fetchData.mockResolvedValueOnce({ data: { data: null } });
 
 		await expect(createPurchasableProduct(4, payload)).rejects.toThrow();
+	});
+});
+
+describe('findPurchasableProductBySku', () => {
+	const row = (id: number, sku: string, extra: Record<string, unknown> = {}) => ({
+		id,
+		sku,
+		name: `Producto ${id}`,
+		...extra,
+	});
+	const page = (rows: unknown[], lastPage: number) => ({
+		data: { data: rows, meta: { last_page: lastPage } },
+	});
+
+	it('busca el SKU sin filtrar por serie ni estado, de lo más nuevo a lo más antiguo', async () => {
+		apiSpies.fetchData.mockResolvedValueOnce(
+			page([row(1, 'LOGN-MOUS-A1BX'), row(2, 'LOGN-MOUS-A1B', { is_active: false })], 1),
+		);
+
+		const product = await findPurchasableProductBySku(4, 'LOGN-MOUS-A1B');
+
+		expect(apiSpies.fetchData).toHaveBeenCalledWith({
+			url: '/subsidiaries/4/products',
+			method: 'get',
+			params: {
+				q: 'LOGN-MOUS-A1B',
+				order_by: 'id',
+				order_dir: 'desc',
+				per_page: 50,
+				page: 1,
+			},
+		});
+		expect(product).toEqual({
+			id: 2,
+			sku: 'LOGN-MOUS-A1B',
+			name: 'Producto 2',
+			brand_name: null,
+			serial_tracking: false,
+			is_active: false,
+			brand_id: null,
+			product_type: null,
+			category_ids: [],
+		});
+	});
+
+	it('recorre las páginas siguientes hasta dar con el SKU exacto', async () => {
+		apiSpies.fetchData
+			.mockResolvedValueOnce(page([row(9, 'LOGN-MOUS-A1BX')], 2))
+			.mockResolvedValueOnce(page([row(3, 'LOGN-MOUS-A1B')], 2));
+
+		const product = await findPurchasableProductBySku(4, 'LOGN-MOUS-A1B');
+
+		expect(product?.id).toBe(3);
+		expect(apiSpies.fetchData).toHaveBeenCalledTimes(2);
+		const [, secondCall] = apiSpies.fetchData.mock.calls as [
+			unknown,
+			[{ params: { page: number } }],
+		];
+		expect(secondCall[0].params.page).toBe(2);
+	});
+
+	it('sin coincidencia exacta en ninguna página devuelve null', async () => {
+		apiSpies.fetchData.mockResolvedValueOnce(page([row(1, 'LOGN-MOUS-A1BX')], 1));
+
+		await expect(findPurchasableProductBySku(4, 'LOGN-MOUS-A1B')).resolves.toBeNull();
+		expect(apiSpies.fetchData).toHaveBeenCalledTimes(1);
 	});
 });
