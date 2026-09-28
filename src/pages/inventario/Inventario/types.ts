@@ -102,7 +102,7 @@ export const OPERACION_TIPOS_DOCUMENTALES: readonly string[] = [
 	'initial_stock_document_allocation',
 ];
 
-export interface IInventarioFiltros {
+export interface IInventarioFilters {
 	vista: TInventarioVista;
 	ubicacion: TInventarioUbicacion;
 	estado: TInventoryStockStatusFilter | null;
@@ -119,7 +119,7 @@ export interface IInventarioFiltros {
 
 export const INVENTARIO_PER_PAGE_DEFAULT = 15;
 
-export const DEFAULT_INVENTARIO_FILTROS: IInventarioFiltros = {
+export const DEFAULT_INVENTARIO_FILTROS: IInventarioFilters = {
 	vista: 'general',
 	ubicacion: 'branch',
 	estado: null,
@@ -176,7 +176,7 @@ const positiveInt = (value: string | null, fallback: number): number => {
  * Lee los filtros de la URL. Un valor desconocido cae al valor por defecto en
  * vez de romper la vista: los enlaces viejos o editados a mano siguen abriendo.
  */
-export const parseInventarioFiltros = (params: URLSearchParams): IInventarioFiltros => {
+export const parseInventarioFilters = (params: URLSearchParams): IInventarioFilters => {
 	const bodega = params.get('bodega');
 	let ubicacion: TInventarioUbicacion = 'branch';
 	if (params.get('sin_ubicacion') === '1') ubicacion = 'unlocated';
@@ -204,7 +204,7 @@ export const parseInventarioFiltros = (params: URLSearchParams): IInventarioFilt
 };
 
 /** Escribe sólo lo que difiere del valor por defecto, para URLs cortas y compartibles. */
-export const serializeInventarioFiltros = (filtros: IInventarioFiltros): URLSearchParams => {
+export const serializeInventarioFilters = (filtros: IInventarioFilters): URLSearchParams => {
 	const params = new URLSearchParams();
 	if (filtros.vista !== 'general') params.set('vista', filtros.vista);
 	if (filtros.ubicacion === 'unlocated') params.set('sin_ubicacion', '1');
@@ -237,7 +237,7 @@ export const ubicacionFromWarehouseId = (warehouseId: number | null): TInventari
 /** Filtros de la pestaña Trazabilidad como parámetros del §14, acotados a la sucursal activa. */
 export const trazabilidadParams = (
 	filtros: Pick<
-		IInventarioFiltros,
+		IInventarioFilters,
 		'ubicacion' | 'tipo' | 'busqueda' | 'desde' | 'hasta' | 'page' | 'perPage'
 	>,
 	branchId: number,

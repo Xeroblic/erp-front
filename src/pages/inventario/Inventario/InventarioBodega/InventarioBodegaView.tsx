@@ -12,10 +12,10 @@ import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppSelector } from '@/store';
 import type { IInventoryOverviewRow } from '@/interface/inventoryOverview.interface';
 import useInventario from '@/pages/inventario/Inventario/hooks/useInventario';
-import useInventarioFiltros from '@/pages/inventario/Inventario/hooks/useInventarioFiltros';
-import InventarioFiltros from '@/pages/inventario/Inventario/components/filters/InventarioFiltros';
-import BodegaProductosTable from '@/pages/inventario/Inventario/InventarioBodega/components/BodegaProductosTable';
-import ResumenBodega from '@/pages/inventario/Inventario/InventarioBodega/components/ResumenBodega';
+import useInventarioFilters from '@/pages/inventario/Inventario/hooks/useInventarioFilters';
+import InventarioFilters from '@/pages/inventario/Inventario/components/filters/InventarioFilters';
+import WarehouseProductsTable from '@/pages/inventario/Inventario/InventarioBodega/components/WarehouseProductsTable';
+import WarehouseSummary from '@/pages/inventario/Inventario/InventarioBodega/components/WarehouseSummary';
 import { UNLOCATED_WAREHOUSE_LABEL } from '@/components/procurement';
 import {
 	INVENTARIO_PATH,
@@ -37,7 +37,7 @@ const BodegaSession = ({
 	const navigate = useNavigate();
 	const { pathname, search } = useLocation();
 	const { filtros, hasFilters, setEstado, setBusqueda, setOrden, paginate, limpiar } =
-		useInventarioFiltros();
+		useInventarioFilters();
 	// La ubicación sale de la ruta, no de la URL de filtros: esta ficha es de una sola bodega.
 	const filtrosBodega = useMemo(
 		() => ({ ...filtros, vista: 'general' as const, ubicacion }),
@@ -80,8 +80,8 @@ const BodegaSession = ({
 
 	return (
 		<>
-			<ResumenBodega aggregate={aggregate} />
-			<InventarioFiltros
+			<WarehouseSummary aggregate={aggregate} />
+			<InventarioFilters
 				filtros={filtros}
 				warehouses={data.warehouses}
 				showUbicacion={false}
@@ -90,7 +90,7 @@ const BodegaSession = ({
 				onEstado={setEstado}
 				onLimpiar={limpiar}
 			/>
-			<BodegaProductosTable
+			<WarehouseProductsTable
 				title={`Productos en ${aggregate.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL}`}
 				response={data.list}
 				loading={data.listLoading}

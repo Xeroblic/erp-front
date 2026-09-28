@@ -72,8 +72,8 @@ const BodegasDetailPage = lazy(() => import('@/pages/catalogos/bodegas/Warehouse
 const TransferenciasComercial = lazy(
 	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
 );
-const TrazabilidadSubsidiary = lazy(
-	() => import('@/pages/inventario/trazabilidad-sucursal/TrazabilidadSubsidiary'),
+const TrazabilidadSucursal = lazy(
+	() => import('@/pages/inventario/trazabilidad-sucursal/TrazabilidadSucursal'),
 );
 
 const PagosDiferidos = lazy(() => import('@/pages/comercial/pagosDiferidos'));
@@ -444,7 +444,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{
 		path: `${cfg.inventory.subPages.trazabilidadSubsidiary.to}`,
-		element: <TrazabilidadSubsidiary />,
+		element: <TrazabilidadSucursal />,
 		authority: cfg.inventory.subPages.trazabilidadSubsidiary.authority,
 	},
 

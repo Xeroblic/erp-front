@@ -18,13 +18,13 @@ import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppSelector } from '@/store';
 import type { IInventoryStockDetail } from '@/interface/inventoryOverview.interface';
-import EstadoStockPill from '@/pages/inventario/Inventario/components/parts/EstadoStockPill';
+import StockStatusPill from '@/pages/inventario/Inventario/components/parts/StockStatusPill';
 import InventarioKpis, {
 	type IInventarioKpi,
 } from '@/pages/inventario/Inventario/components/parts/InventarioKpis';
 import InventoryOrigins from '@/pages/inventario/Inventario/InventarioProducto/components/InventoryOrigins';
-import TrazabilidadProducto from '@/pages/inventario/Inventario/InventarioProducto/components/TrazabilidadProducto';
-import UmbralModal from '@/pages/inventario/Inventario/InventarioProducto/components/UmbralModal';
+import ProductTraceability from '@/pages/inventario/Inventario/InventarioProducto/components/ProductTraceability';
+import ThresholdModal from '@/pages/inventario/Inventario/InventarioProducto/components/ThresholdModal';
 import useInventarioProducto from '@/pages/inventario/Inventario/InventarioProducto/hooks/useInventarioProducto';
 import { INVENTARIO_PATH } from '@/pages/inventario/Inventario/types';
 import { formatDecimalAmount } from '@/utils/procurementDecimal.util';
@@ -246,7 +246,7 @@ const ProductoSession = ({
 					</div>
 				</CardBody>
 				<CardFooter>
-					<EstadoStockPill critical={critical} fit />
+					<StockStatusPill critical={critical} fit />
 					{!product.serial_tracking && (
 						<ProtectedButton
 							permission='edit-product'
@@ -360,7 +360,7 @@ const ProductoSession = ({
 
 			{/* Los productos con serie se siguen por su número de serie, no por operaciones. */}
 			{!product.serial_tracking && trazabilidad && (
-				<TrazabilidadProducto
+				<ProductTraceability
 					subsidiaryId={trazabilidad.subsidiaryId}
 					branchId={branchId}
 					branchName={trazabilidad.branchName}
@@ -369,7 +369,7 @@ const ProductoSession = ({
 				/>
 			)}
 
-			<UmbralModal
+			<ThresholdModal
 				isOpen={umbralOpen}
 				onClose={closeUmbral}
 				productName={detail.product.name}

@@ -12,9 +12,9 @@ import type {
 	TInventoryStockSort,
 	TInventoryStockSortField,
 } from '@/interface/inventoryOverview.interface';
-import EstadoStockPill from '@/pages/inventario/Inventario/components/parts/EstadoStockPill';
+import StockStatusPill from '@/pages/inventario/Inventario/components/parts/StockStatusPill';
 import InventarioPagination from '@/pages/inventario/Inventario/components/parts/InventarioPagination';
-import RepartoBodegas from '@/pages/inventario/Inventario/components/parts/RepartoBodegas';
+import WarehouseDistribution from '@/pages/inventario/Inventario/components/parts/WarehouseDistribution';
 import type { TInventarioUbicacion } from '@/pages/inventario/Inventario/types';
 
 const sortState = (orden: TInventoryStockSort): TableSortState<TInventoryStockSortField> =>
@@ -178,7 +178,7 @@ const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 											/>
 										</Td>
 										<Td>
-											<RepartoBodegas
+											<WarehouseDistribution
 												warehouses={row.warehouses}
 												highlighted={highlightedWarehouse(ubicacion)}
 											/>
@@ -219,7 +219,7 @@ const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 											)}
 										</Td>
 										<Td className='text-center'>
-											<EstadoStockPill critical={critical} />
+											<StockStatusPill critical={critical} />
 										</Td>
 										<Td>
 											<div className='flex justify-center'>

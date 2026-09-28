@@ -10,7 +10,7 @@ import {
 import type { IInventoryOverviewParams } from '@/interface/inventoryOverview.interface';
 import {
 	inventoryLocationParams,
-	type IInventarioFiltros,
+	type IInventarioFilters,
 } from '@/pages/inventario/Inventario/types';
 
 /**
@@ -25,7 +25,7 @@ import {
 const useInventario = (
 	branchId: number,
 	owner: string,
-	filtros: IInventarioFiltros,
+	filtros: IInventarioFilters,
 	/** La ficha de bodega no muestra las alertas de la sucursal: no pide A2. */
 	{ withSummary = true }: { withSummary?: boolean } = {},
 ) => {

@@ -12,7 +12,7 @@ import {
 /**
  * Filtros de Reportes › Inventario sincronizados con la URL
  * (`?vista&q&sucursal&estado&orden&page&per_page`), con el mismo criterio que
- * `useInventarioFiltros`: un enlace copiado abre exactamente el mismo reporte
+ * `useInventarioFilters`: un enlace copiado abre exactamente el mismo reporte
  * y «atrás» deshace un filtro. No son un formulario que se envía, así que no
  * usan Formik.
  *

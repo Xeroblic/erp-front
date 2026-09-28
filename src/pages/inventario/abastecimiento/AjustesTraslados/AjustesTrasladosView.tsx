@@ -9,8 +9,8 @@ import Tabs, { Tab } from '@/components/ui/Tabs';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import Pages from '@/config/pages.config';
 import useAjustesTraslados from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useAjustesTraslados';
-import AjustePanel from '@/pages/inventario/abastecimiento/AjustesTraslados/components/ajuste/AjustePanel';
-import TrasladoPanel from '@/pages/inventario/abastecimiento/AjustesTraslados/components/traslado/TrasladoPanel';
+import AdjustmentPanel from '@/pages/inventario/abastecimiento/AjustesTraslados/components/adjustment/AdjustmentPanel';
+import TransferPanel from '@/pages/inventario/abastecimiento/AjustesTraslados/components/transfer/TransferPanel';
 import type { AjustesTrasladosTab } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 
 interface AjustesTrasladosTabsProps {
@@ -70,7 +70,7 @@ const AjustesTrasladosTabs = ({
 					icon='HeroScale'
 					disabled={busy && activeTab !== 'ajuste'}>
 					{activeTab === 'ajuste' && (
-						<AjustePanel
+						<AdjustmentPanel
 							owner={owner}
 							branchId={branchId}
 							subsidiaryId={subsidiaryId}
@@ -84,7 +84,7 @@ const AjustesTrasladosTabs = ({
 					icon='HeroArrowsRightLeft'
 					disabled={busy && activeTab !== 'traslado'}>
 					{activeTab === 'traslado' && (
-						<TrasladoPanel owner={owner} branchId={branchId} onBusyChange={setBusy} />
+						<TransferPanel owner={owner} branchId={branchId} onBusyChange={setBusy} />
 					)}
 				</Tab>
 			</Tabs>

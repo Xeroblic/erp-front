@@ -4,7 +4,7 @@ import ProtectedButton from '@/components/ui/ProtectedButton';
 import { Td, Th, Tr } from '@/components/ui/Table';
 // eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
-import UmbralModal from '@/pages/inventario/Inventario/InventarioProducto/components/UmbralModal';
+import ThresholdModal from '@/pages/inventario/Inventario/InventarioProducto/components/ThresholdModal';
 import type { TInventoryReportFiltersApi } from '@/pages/reportes/inventory-reports/hooks/useInventoryReportFilters';
 import useUmbralesReport from '@/pages/reportes/inventory-reports/hooks/useUmbralesReport';
 import useUmbralEditor from '@/pages/reportes/inventory-reports/hooks/useUmbralEditor';
@@ -210,7 +210,7 @@ const UmbralesReport: React.FC<IUmbralesReportProps> = ({ context, filtersApi })
 					);
 				})}
 			</ReportTableCard>
-			<UmbralModal
+			<ThresholdModal
 				isOpen={editor.target !== null}
 				onClose={editor.close}
 				productName={editor.target?.productName ?? ''}
