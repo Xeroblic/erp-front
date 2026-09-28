@@ -13,7 +13,11 @@ import {
 	getStockReceiptWarehouseBranchId,
 	listWarehousesForStockReceipts,
 } from '@/services/procurement/stockReceipts.service';
-import { formatDecimalCents, parseDecimalString } from '@/utils/procurementDecimal.util';
+import {
+	formatDecimalCents,
+	parseDecimalString,
+	parsePesoInput,
+} from '@/utils/procurementDecimal.util';
 import type {
 	IStockReceipt,
 	IStockReceiptCreatePayload,
@@ -23,6 +27,30 @@ import type {
 } from '@/interface/procurement.interface';
 import { EMPTY_RECEPCION_LINE, EMPTY_RECEPCION_VALUES, stockReceiptFormSchema } from '../types';
 import type { IStockReceiptFormValues, IRecepcionLineFormValues } from '../types';
+
+/**
+ * Base que la pantalla muestra para una línea. Sin base elegida se muestra
+ * neta («Costo neto», «Calcular IVA» marcado), igual que el documento de
+ * compra. La base vacía se conserva en el formulario porque el costo puede
+ * quedar desconocido, y el contrato exige que monto y base viajen juntos.
+ */
+export const displayedCostBasis = (
+	basis: IRecepcionLineFormValues['unit_cost_basis'],
+): 'net' | 'gross' => (basis === 'gross' ? 'gross' : 'net');
+
+/**
+ * Nuevo monto y base de una línea al escribir el costo. Escribir un monto sin
+ * base elegida fija la que se muestra (neta); borrarlo vuelve a dejar ambos
+ * vacíos, para que el costo desconocido siga siendo válido.
+ */
+export const nextLineCost = (
+	line: Pick<IRecepcionLineFormValues, 'unit_cost_basis'>,
+	rawInput: string,
+): Pick<IRecepcionLineFormValues, 'unit_cost' | 'unit_cost_basis'> => {
+	const unitCost = parsePesoInput(rawInput);
+	if (unitCost === '') return { unit_cost: '', unit_cost_basis: '' };
+	return { unit_cost: unitCost, unit_cost_basis: line.unit_cost_basis || 'net' };
+};
 
 /**
  * Formik + `useIdempotentWrite` del alta y corrección de recepción (card 05,
@@ -326,6 +354,16 @@ const useStockReceiptForm = ({
 		setHasVersionConflict(false);
 	};
 
+	const setLineUnitCost = (index: number, rawInput: string) => {
+		const line = formik.values.items[index];
+		if (!line) return;
+		const next = nextLineCost(line, rawInput);
+		formik.setFieldValue(`items.${index}.unit_cost`, next.unit_cost).catch(() => undefined);
+		formik
+			.setFieldValue(`items.${index}.unit_cost_basis`, next.unit_cost_basis)
+			.catch(() => undefined);
+	};
+
 	return {
 		formik,
 		isEdit,
@@ -341,6 +379,7 @@ const useStockReceiptForm = ({
 		 */
 		canRetry: idempotentWrite.canRetry,
 		reset,
+		setLineUnitCost,
 	};
 };
 

@@ -208,6 +208,23 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		expect(screen.getByLabelText('Destino')).toHaveValue('warehouse:8');
 	});
 
+	it('antes de registrar resume qué se mueve, de dónde y a dónde', async () => {
+		renderPage();
+		await chooseRoute();
+		fillLine('31', '5');
+
+		await goToReason();
+
+		const summary = screen.getByTestId('traslado-summary');
+		expect(summary).toHaveTextContent(
+			'Se moverán 5 unidades de Sin ubicación a Bodega Central',
+		);
+		const [line] = within(summary).getAllByRole('listitem');
+		expect(line).toHaveTextContent(/Mouse/);
+		expect(line).toHaveTextContent('Apto');
+		expect(line).toHaveTextContent('5');
+	});
+
 	it('no marca en rojo las líneas en blanco al elegir el origen', async () => {
 		renderPage();
 		fireEvent.change(screen.getByLabelText('Origen'), { target: { value: 'unlocated' } });

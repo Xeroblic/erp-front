@@ -1,10 +1,10 @@
 import type {
 	IInventoryAdjustmentPayload,
 	IProcurementProduct,
-	IWarehouseCompact,
 	IWarehouseStockMovementPayload,
 } from '@/interface/procurement.interface';
 import {
+	ecopcShowroomWarehouse,
 	ecopcWarehouse,
 	invoiceDocument,
 	pcExpressSupplier,
@@ -29,11 +29,8 @@ import type { IInventorySeedOrigin } from '@/mocks/db/inventoryStock.db';
 
 const ECOPC_BRANCH_ID = 1;
 
-/**
- * Segunda ubicación de Ecopc, sólo para Inventario (no recibe mercadería en
- * Recepciones): permite revisar productos repartidos entre varias bodegas.
- */
-export const ecopcShowroomWarehouse: IWarehouseCompact = { id: 21, name: 'Sala de ventas Ecopc' };
+// La sala de ventas vive en `procurement.db` junto a la bodega: también recibe mercadería.
+export { ecopcShowroomWarehouse };
 
 const base = (
 	product: Pick<IProcurementProduct, 'id' | 'sku' | 'name'> & Partial<IProcurementProduct>,

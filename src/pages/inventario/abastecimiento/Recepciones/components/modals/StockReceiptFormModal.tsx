@@ -23,9 +23,10 @@ import SelectReact from '@/components/form/SelectReact';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import type { IStockReceipt } from '@/interface/procurement.interface';
+import { formatPesoInput } from '@/utils/procurementDecimal.util';
 import useActiveSupplierOptions from '@/pages/inventario/abastecimiento/DocumentosCompra/hooks/useActiveSupplierOptions';
 import SupplierOptionsNotice from '@/pages/inventario/abastecimiento/DocumentosCompra/components/parts/SupplierOptionsNotice';
-import useStockReceiptForm from '../../hooks/useStockReceiptForm';
+import useStockReceiptForm, { displayedCostBasis } from '../../hooks/useStockReceiptForm';
 import usePurchaseDocumentPicker from '../../hooks/usePurchaseDocumentPicker';
 import { EMPTY_RECEPCION_LINE } from '../../types';
 import type { TStockReceiptFormMode } from '../../types';
@@ -93,7 +94,7 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 	onSuccess,
 	onStaleVersion,
 }) => {
-	const { formik, isEdit, isSubmitting, hasVersionConflict, canRetry, reset } =
+	const { formik, isEdit, isSubmitting, hasVersionConflict, canRetry, reset, setLineUnitCost } =
 		useStockReceiptForm({
 			subsidiaryId,
 			branchId,
@@ -778,8 +779,9 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 																	<div className='space-y-2'>
 																		<Label
 																			htmlFor={`items.${index}.unit_cost`}>
-																			{line.unit_cost_basis ===
-																			'net'
+																			{displayedCostBasis(
+																				line.unit_cost_basis,
+																			) === 'net'
 																				? 'Costo neto'
 																				: 'Costo bruto c/ IVA'}
 																			{hasKnownSupplier && (
@@ -794,10 +796,17 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 																			name={`items.${index}.unit_cost`}
 																			type='text'
 																			inputMode='decimal'
-																			placeholder='0,00'
-																			value={line.unit_cost}
-																			onChange={
-																				formik.handleChange
+																			placeholder='$0'
+																			// Formato peso como en el documento de compra; Formik guarda el valor sin formato.
+																			value={formatPesoInput(
+																				line.unit_cost,
+																			)}
+																			onChange={(event) =>
+																				setLineUnitCost(
+																					index,
+																					event.target
+																						.value,
+																				)
 																			}
 																			onBlur={
 																				formik.handleBlur
@@ -818,8 +827,9 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 																			id={`items.${index}.unit_cost_basis`}
 																			name={`items.${index}.unit_cost_basis`}
 																			checked={
-																				line.unit_cost_basis ===
-																				'net'
+																				displayedCostBasis(
+																					line.unit_cost_basis,
+																				) === 'net'
 																			}
 																			onChange={(event) =>
 																				formik

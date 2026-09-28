@@ -17,7 +17,12 @@ import type {
 import { SUPPLIER_STATUS_FILTER_OPTIONS } from '../types';
 import type { TSupplierStatusFilter } from '../types';
 
-const DEFAULT_PAGE_SIZE = 15; // Defecto del contrato (sección 1).
+/**
+ * El contrato usa 15 por defecto, pero el paginador estándar sólo ofrece 5,
+ * 10, 20, 30, 40 y 50: con 15 el selector mostraba «Mostrar 5» mientras la
+ * tabla listaba 15. Se pide 20, una de sus opciones.
+ */
+const DEFAULT_PAGE_SIZE = 20;
 const NO_ROWS: IProcurementSupplierListRow[] = [];
 
 interface IDeactivateTarget {

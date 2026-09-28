@@ -256,6 +256,39 @@ export default function useInternalTransfer(branchId: number, context: string) {
 	);
 
 	/**
+	 * Resumen del paso «Motivo y confirmación»: qué se mueve, de dónde y a
+	 * dónde, para revisarlo antes de registrar. Sólo líneas completas.
+	 */
+	const summary = useMemo(() => {
+		const locationName = (token: string): string => {
+			if (token === locationToken(null)) return 'Sin ubicación';
+			return (
+				warehouses.find((warehouse) => locationToken(warehouse.id) === token)?.name ??
+				'Ubicación desconocida'
+			);
+		};
+		const lines = values.items.flatMap((item, index) => {
+			const quantity = Number(item.quantity);
+			if (item.productId === '' || !Number.isInteger(quantity) || quantity <= 0) return [];
+			const product = originRows.find((row) => row.product.id === item.productId)?.product;
+			return [
+				{
+					key: `${item.productId}-${item.condition}-${index}`,
+					name: product?.name ?? `Producto #${item.productId}`,
+					sku: product?.sku ?? null,
+					condition: item.condition,
+					quantity,
+				},
+			];
+		});
+		return {
+			from: values.from ? locationName(values.from) : null,
+			to: values.to ? locationName(values.to) : null,
+			lines,
+		};
+	}, [values.from, values.to, values.items, warehouses, originRows]);
+
+	/**
 	 * Mensaje de Yup para un campo de una línea. Formik guarda los errores de un
 	 * arreglo como `FormikErrors<T>[]` o como una cadena única (la del `test` de
 	 * nivel arreglo); sólo el primer caso tiene mensajes por línea que mostrar
@@ -320,6 +353,7 @@ export default function useInternalTransfer(branchId: number, context: string) {
 		formik,
 		warehouses,
 		destinationOptions,
+		summary,
 		originRows,
 		loadingOrigin,
 		originError,

@@ -119,7 +119,7 @@ export const PRODUCT_TOGGLES = [
 		key: 'serial_tracking',
 		icon: 'HeroQrCode',
 		title: 'Seguimiento por serie',
-		description: 'Activa el control de numeros de serie.',
+		description: 'Activa el control de números de serie.',
 	},
 	{
 		key: 'is_active',
@@ -133,15 +133,15 @@ export const PRODUCT_FORM_SECTIONS = [
 	{
 		key: 'general',
 		icon: 'HeroIdentification',
-		title: 'Informacion general',
+		title: 'Información general',
 		description: 'Define los datos base del producto.',
 		cardClass: '',
 	},
 	{
 		key: 'classification',
 		icon: 'HeroSquares2X2',
-		title: 'Clasificacion y categorias',
-		description: 'Organiza el producto dentro del catalogo.',
+		title: 'Clasificación y categorías',
+		description: 'Organiza el producto dentro del catálogo.',
 		cardClass: '',
 	},
 ] as const;
