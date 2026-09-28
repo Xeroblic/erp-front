@@ -17,12 +17,12 @@ import type {
 	IInventoryWarehouseAggregate,
 } from '@/interface/inventoryOverview.interface';
 import useInventario from '@/pages/inventario/Inventario/hooks/useInventario';
-import useInventarioFiltros from '@/pages/inventario/Inventario/hooks/useInventarioFiltros';
-import ResumenInventario from '@/pages/inventario/Inventario/components/parts/ResumenInventario';
-import InventarioFiltros from '@/pages/inventario/Inventario/components/filters/InventarioFiltros';
+import useInventarioFilters from '@/pages/inventario/Inventario/hooks/useInventarioFilters';
+import InventarioSummary from '@/pages/inventario/Inventario/components/parts/InventarioSummary';
+import InventarioFilters from '@/pages/inventario/Inventario/components/filters/InventarioFilters';
 import InventarioGeneralTable from '@/pages/inventario/Inventario/components/tables/InventarioGeneralTable';
-import BodegasTable from '@/pages/inventario/Inventario/components/tables/BodegasTable';
-import TrazabilidadInventario from '@/pages/inventario/Inventario/components/trazabilidad/TrazabilidadInventario';
+import WarehouseStockTable from '@/pages/inventario/Inventario/components/tables/WarehouseStockTable';
+import InventoryTraceability from '@/pages/inventario/Inventario/components/traceability/InventoryTraceability';
 import {
 	inventarioBodegaPath,
 	inventarioProductoPath,
@@ -52,7 +52,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 		setHasta,
 		paginate,
 		limpiar,
-	} = useInventarioFiltros();
+	} = useInventarioFilters();
 	// Un enlace a Trazabilidad abierto por alguien sin ese permiso cae en la vista General.
 	const filtros = useMemo(
 		() =>
@@ -79,7 +79,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 
 	return (
 		<>
-			<ResumenInventario summary={data.summary} loading={data.summaryLoading} />
+			<InventarioSummary summary={data.summary} loading={data.summaryLoading} />
 			{loadError && (
 				<Alert
 					color='red'
@@ -103,7 +103,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 					{/* Filtros y lista son dos tarjetas separadas, como en Recepciones. */}
 					{filtros.vista === 'general' && (
 						<div className='space-y-4'>
-							<InventarioFiltros
+							<InventarioFilters
 								filtros={filtros}
 								warehouses={data.warehouses}
 								onBusqueda={setBusqueda}
@@ -128,7 +128,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 				</Tab>
 				<Tab id='bodegas' text='Por bodega' icon='HeroBuildingStorefront'>
 					{filtros.vista === 'bodegas' && (
-						<BodegasTable
+						<WarehouseStockTable
 							warehouses={data.warehouses}
 							loading={data.warehousesLoading}
 							hasError={Boolean(data.warehousesError)}
@@ -139,7 +139,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 				{trazabilidad && (
 					<Tab id='trazabilidad' text='Trazabilidad' icon='HeroArrowsRightLeft'>
 						{filtros.vista === 'trazabilidad' && (
-							<TrazabilidadInventario
+							<InventoryTraceability
 								subsidiaryId={trazabilidad.subsidiaryId}
 								branchId={branchId}
 								branchName={trazabilidad.branchName}

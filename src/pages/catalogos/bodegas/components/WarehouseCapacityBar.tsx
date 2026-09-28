@@ -6,7 +6,7 @@ interface WarehouseCapacityBarProps {
 }
 
 /**
- * Capacidad usada de una bodega, con el mismo formato que `CapacidadBodega`
+ * Capacidad usada de una bodega, con el mismo formato que `WarehouseCapacity`
  * de Inventario; «Sin definir» si no tiene máximo configurado.
  */
 const WarehouseCapacityBar: React.FC<WarehouseCapacityBarProps> = ({ current, maximum }) => {

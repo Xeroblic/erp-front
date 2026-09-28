@@ -262,6 +262,14 @@ al crear una página, y `CLAUDE.md` se carga entero en cada sesión.
 - Optional chaining / nullish coalescing siempre (`user?.branch?.id`, `count ?? 0`).
 - Memoiza funciones/objetos retornados por hooks (`useCallback`/`useMemo`).
 - Nombres: Schemas `XSchema`; tipos `X`/`CreateXPayload`; interfaces de dominio `IX`.
+- **Idioma de los nombres de archivo: inglés** (~85 % del repo, sin contar iconos). Aplica
+  también al componente o hook que el archivo exporta y a su interfaz de props
+  (`ThresholdModal.tsx` → `ThresholdModal`, `IThresholdModalProps`). Única excepción: las
+  carpetas de área y módulo (`inventario/`, `Proveedores/`), que son rutas y menú, y los archivos
+  que repiten el nombre de su módulo (`index`, `<Modulo>View`, `use<Modulo>`, `<Modulo>Table`,
+  `<Modulo>Filters`) quedan en español. Los sufijos técnicos (`View`, `Modal`, `Table`,
+  `Filters`, `Card`, `Panel`) van siempre en inglés, y un nombre nunca mezcla idiomas
+  (`AjusteItemsEditor` ✗ → `AdjustmentItemsEditor` ✓).
 - Feedback al usuario con `react-toastify` (ya usado en slices).
 - Accesibilidad: usa `<button>`/componentes UI, no `div` con `onClick`.
 

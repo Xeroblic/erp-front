@@ -11,7 +11,7 @@ import ProtectedButton from '@/components/ui/ProtectedButton';
 import useDocumentosCompra from './hooks/useDocumentosCompra';
 import DocumentosCompraFilters from './components/filters/DocumentosCompraFilters';
 import DocumentosCompraTable from './components/tables/DocumentosCompraTable';
-import DocumentoCompraFormModal from './components/modals/DocumentoCompraFormModal';
+import PurchaseDocumentFormModal from './components/modals/PurchaseDocumentFormModal';
 
 /**
  * Listado de documentos de compra (card 03, sección 6 del contrato de
@@ -124,7 +124,7 @@ const DocumentosCompraView = () => {
 				/>
 			</Container>
 
-			<DocumentoCompraFormModal
+			<PurchaseDocumentFormModal
 				isOpen={isCreateModalOpen}
 				setIsOpen={setIsCreateModalOpen}
 				subsidiaryId={subsidiaryId}

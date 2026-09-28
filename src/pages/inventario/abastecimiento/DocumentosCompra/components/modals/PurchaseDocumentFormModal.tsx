@@ -1,0 +1,1051 @@
+import React, { useState } from 'react';
+import { FieldArray, FormikProvider } from 'formik';
+import { useHref } from 'react-router-dom';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
+import Alert from '@/components/ui/Alert';
+import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
+import Checkbox from '@/components/form/Checkbox';
+import DateInput from '@/components/form/DateInput';
+import Input from '@/components/form/Input';
+import Label from '@/components/form/Label';
+import Select from '@/components/form/Select';
+import SelectReact from '@/components/form/SelectReact';
+import type { TSelectOption } from '@/components/form/SelectReact';
+import Textarea from '@/components/form/Textarea';
+import { normalizeCostInput } from '@/components/procurement';
+import SupplierFormModal from '@/pages/inventario/abastecimiento/Proveedores/components/modals/SupplierFormModal';
+import type {
+	IProcurementProduct,
+	IProcurementSupplier,
+	IProcurementSupplierRutConflict,
+	IPurchaseDocument,
+} from '@/interface/procurement.interface';
+import { previewCostBreakdown } from '@/utils/procurementCost.util';
+import {
+	formatDecimalAmount,
+	formatDecimalCents,
+	formatPesoInput,
+	parseDecimalString,
+	parsePesoInput,
+} from '@/utils/procurementDecimal.util';
+import usePurchaseDocumentForm from '../../hooks/usePurchaseDocumentForm';
+import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
+import useSupplierInlineEdit from '../../hooks/useSupplierInlineEdit';
+import ProcurementProductFormModal from './ProcurementProductFormModal';
+import SupplierOptionsNotice from '../parts/SupplierOptionsNotice';
+import { EMPTY_DOCUMENTO_LINE } from '../../types';
+import { focusFirstInvalidPurchaseDocumentField } from '../../utils/purchaseDocumentFieldFocus';
+
+/** Superficies equivalentes a Proveedor y al listado de ítems de Cotizaciones. */
+const DOCUMENTO_CARD_CLASSNAME =
+	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
+const DOCUMENTO_ITEM_CLASSNAME =
+	'rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50';
+const DOCUMENTO_SUBTITLE_CLASSNAME = 'text-sm font-normal text-zinc-600 dark:text-zinc-400';
+const MAX_DOCUMENT_DATE = new Date(2100, 11, 31);
+const MAX_DOCUMENT_YEAR = 2100;
+const DOCUMENTO_ITEM_GRID_CLASSNAME =
+	'grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 lg:grid-cols-[110px_minmax(0,1fr)_190px_150px]';
+
+const getLineGrossTotalCents = (
+	quantity: string,
+	unitCost: string,
+	basis: 'net' | 'gross' | '',
+): bigint | null => {
+	const parsedQuantity = Number(quantity);
+	if (!Number.isInteger(parsedQuantity) || parsedQuantity <= 0 || basis === '') return null;
+	const preview = previewCostBreakdown(normalizeCostInput(unitCost), basis);
+	const unitCents = preview ? parseDecimalString(preview.gross_unit_amount) : null;
+	return unitCents === null ? null : unitCents * BigInt(parsedQuantity);
+};
+
+const formatGrossTotal = (cents: bigint | null) =>
+	cents === null ? null : formatDecimalAmount(formatDecimalCents(cents), 'CLP');
+
+/**
+ * Alta y edición de documento de compra (card 03, sección 6). La edición
+ * sólo se ofrece en `draft` — la ficha filtra `allowed_actions` antes de
+ * abrir este modal, así que acá no hay que resolver ese caso.
+ */
+
+interface IPurchaseDocumentFormModalProps {
+	isOpen: boolean;
+	setIsOpen: (isOpen: boolean) => void;
+	subsidiaryId: number | null;
+	/** `null`/`undefined`: alta. Con documento: edición de ese `draft`. */
+	document?: IPurchaseDocument | null;
+	/** `ETag` vigente de `document`. Sólo hace falta en edición. */
+	etag?: string | null;
+	onSuccess?: (document: IPurchaseDocument) => void;
+	/**
+	 * Se llama cuando el `PATCH` responde `412 RESOURCE_VERSION_CONFLICT`: el
+	 * ETag con el que se abrió el formulario quedó obsoleto. El contrato
+	 * exige recargar antes de volver a editar, así que el caller debe volver
+	 * a pedir el documento (`retry` de `useDocumentoCompraDetalle`) para que
+	 * la próxima apertura reciba un ETag vigente.
+	 */
+	onStaleVersion?: () => void;
+}
+
+const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
+	isOpen,
+	setIsOpen,
+	subsidiaryId,
+	document = null,
+	etag = null,
+	onSuccess,
+	onStaleVersion,
+}) => {
+	const {
+		suppliers,
+		loading: loadingSuppliers,
+		unavailableReason: suppliersUnavailableReason,
+		canList: canListSuppliers,
+		addSupplier,
+		reload: reloadSuppliers,
+	} = useActiveSupplierOptions(subsidiaryId, isOpen);
+	const {
+		formik,
+		isEdit,
+		isSubmitting,
+		hasVersionConflict,
+		productOptions,
+		refreshProductOptions,
+		reset,
+	} = usePurchaseDocumentForm({
+		subsidiaryId,
+		document,
+		etag,
+		// Sin lista de proveedores no hay cómo elegir el que exige la factura.
+		defaultDocumentType: canListSuppliers ? 'invoice' : 'receipt',
+		onSuccess: (result) => {
+			setIsOpen(false);
+			onSuccess?.(result);
+		},
+	});
+	/**
+	 * Crear una factura exige `view-procurement-supplier` además de
+	 * `create-purchase-document`: el backend no ofrece otra forma de conocer el
+	 * `supplier_id`. Al editar, el tipo ya está fijo y el proveedor actual se
+	 * conserva aunque no se pueda listar.
+	 */
+	const isInvoiceUnavailable = !canListSuppliers && !isEdit;
+	/**
+	 * Alta de proveedor en línea: `SupplierFormModal` se apila sobre este
+	 * modal y, al crear o restaurar, el proveedor queda seleccionado sin perder
+	 * el borrador del documento.
+	 */
+	const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+	const { editingSupplier, isLoadingSupplier, openSupplierEdit, closeSupplierEdit } =
+		useSupplierInlineEdit(subsidiaryId);
+	const selectedSupplierId =
+		formik.values.supplier_id === '' ? null : Number(formik.values.supplier_id);
+	// `useHref` respeta el `basename` del router al abrir la ficha en otra pestaña.
+	const suppliersHref = useHref('/inventario/abastecimiento/proveedores');
+	// El proveedor actual del documento sigue visible aunque no esté en la lista:
+	// sin permiso para listar, o desactivado después de elegirlo.
+	const currentSupplier = document?.supplier ?? null;
+	const supplierOptions = [
+		...suppliers,
+		...(currentSupplier && !suppliers.some((supplier) => supplier.id === currentSupplier.id)
+			? [currentSupplier]
+			: []),
+	].map((supplier) => ({
+		value: String(supplier.id),
+		label: `${supplier.display_name} · ${supplier.rut}`,
+	}));
+	const shippingCalculatesVat = formik.values.shipping_cost_basis === 'net';
+	const shippingTotalCents = formik.values.include_shipping
+		? getLineGrossTotalCents(
+				'1',
+				formik.values.shipping_cost,
+				formik.values.shipping_cost_basis,
+			)
+		: null;
+	const documentTotalCents = formik.values.items.reduce(
+		(total, line) =>
+			total +
+			(getLineGrossTotalCents(line.quantity, line.unit_cost, line.unit_cost_basis) ?? 0n),
+		shippingTotalCents ?? 0n,
+	);
+
+	/**
+	 * Alta de producto en línea: guarda qué línea abrió `ProcurementProductFormModal`
+	 * para dejar ahí el producto creado. `null` con el modal cerrado.
+	 */
+	const [productLineIndex, setProductLineIndex] = useState<number | null>(null);
+
+	const handleProductCreated = (product: IProcurementProduct) => {
+		refreshProductOptions();
+		// Con serie no es elegible para una línea de compra: queda creado, pero no se selecciona.
+		if (productLineIndex === null || product.serial_tracking) return;
+		const field = `items.${productLineIndex}.product_id`;
+		formik.setFieldValue(field, product.id).catch(() => undefined);
+		formik.setFieldTouched(field, true, false).catch(() => undefined);
+	};
+
+	const handleClose = () => {
+		if (isSubmitting) return;
+		setIsSupplierModalOpen(false);
+		closeSupplierEdit();
+		setProductLineIndex(null);
+		setIsOpen(false);
+		reset();
+	};
+
+	const selectSupplier = (supplierId: number) => {
+		formik.setFieldValue('supplier_id', supplierId).catch(() => undefined);
+		formik.setFieldTouched('supplier_id', true, false).catch(() => undefined);
+	};
+
+	const handleSupplierCreated = (supplier: IProcurementSupplier) => {
+		addSupplier(supplier);
+		selectSupplier(supplier.id);
+	};
+
+	/** RUT ya registrado a un proveedor activo: se usa ése; se recarga por si no estaba en la lista. */
+	const handleUseExistingSupplier = (conflict: IProcurementSupplierRutConflict) => {
+		reloadSuppliers();
+		selectSupplier(conflict.id);
+	};
+
+	/** En otra pestaña: navegar desde acá descartaría el borrador del documento. */
+	const openSupplierInNewTab = (supplierId: number) => {
+		window.open(`${suppliersHref}/${supplierId}`, '_blank', 'noopener,noreferrer');
+	};
+
+	const handleReload = () => {
+		setIsOpen(false);
+		reset();
+		onStaleVersion?.();
+	};
+
+	/** Los montos se ven con formato peso, pero Formik guarda el valor sin formato. */
+	const handlePesoChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+		formik.setFieldValue(field, parsePesoInput(event.target.value)).catch(() => undefined);
+	};
+
+	return (
+		<>
+			<Modal
+				isOpen={isOpen}
+				setIsOpen={(open) => {
+					if (!open) handleClose();
+				}}
+				size='xl'
+				isScrollable
+				isStaticBackdrop={isSubmitting}>
+				<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
+					<div>
+						<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
+							{isEdit ? 'Editar documento de compra' : 'Nuevo documento de compra'}
+						</h2>
+						<p className='text-sm font-normal text-zinc-600 dark:text-zinc-400'>
+							Completa los datos del documento y sus líneas de compra.
+						</p>
+					</div>
+				</ModalHeader>
+				{/* `FieldArray` sólo lee su bag de Formik vía contexto (`useFormikContext`):
+			    sin este `FormikProvider`, `push`/`remove` no encuentran `items` porque
+			    este modal usa el hook `useFormik` directo, no el componente `<Formik>`
+			    que lo provee automáticamente. */}
+				<FormikProvider value={formik}>
+					<form
+						className='flex min-h-0 flex-1 flex-col overflow-hidden'
+						onSubmit={(event) => {
+							// Defensa además del botón deshabilitado: Enter en un campo de
+							// texto dispara el submit nativo del `<form>` sin pasar por el
+							// botón, así que el bloqueo tiene que vivir acá también.
+							event.preventDefault();
+							if (hasVersionConflict) return;
+							// Mismo criterio que pagos diferidos: se envía igual (Formik
+							// marca los campos tocados y no llama a `onSubmit` si hay
+							// errores) y después se lleva la vista al primer campo inválido.
+							formik
+								.validateForm()
+								.then((errors) =>
+									formik
+										.submitForm()
+										.finally(() =>
+											focusFirstInvalidPurchaseDocumentField(errors),
+										),
+								)
+								.catch(() => undefined);
+						}}>
+						<ModalBody className='min-h-0 flex-1 space-y-4 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
+							{hasVersionConflict && (
+								<Alert
+									color='amber'
+									variant='outline'
+									icon='HeroExclamationTriangle'
+									title='Alguien más editó este documento'>
+									<div className='flex flex-wrap items-center justify-between gap-3'>
+										<span>
+											Recarga para ver la versión vigente antes de continuar.
+										</span>
+										<Button size='sm' variant='outline' onClick={handleReload}>
+											Recargar
+										</Button>
+									</div>
+								</Alert>
+							)}
+							<Card className={DOCUMENTO_CARD_CLASSNAME}>
+								<CardHeader className='pb-2'>
+									<div>
+										<CardTitle className='text-lg'>
+											Datos del documento
+										</CardTitle>
+										<p className={DOCUMENTO_SUBTITLE_CLASSNAME}>
+											Identificación, proveedor e información de emisión.
+										</p>
+									</div>
+								</CardHeader>
+								<CardBody className='space-y-4'>
+									<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+										<div className='space-y-1'>
+											{/* Misma altura que la fila de Proveedor, que lleva el botón «Nuevo proveedor». */}
+											<div className='flex min-h-6 items-center'>
+												<Label htmlFor='documento-type'>
+													Tipo de documento{' '}
+													<span className='text-red-500'>*</span>
+												</Label>
+											</div>
+											<Select
+												id='documento-type'
+												// `Select` pinta el borde con el color del tema aunque no tenga
+												// foco y parece seleccionado: acá el borde en reposo es gris,
+												// como el de `Input`, y el fondo blanco. Hover y foco no cambian.
+												className='!bg-white dark:!bg-zinc-900'
+												style={
+													{
+														'--select-border': '#d4d4d8',
+													} as React.CSSProperties
+												}
+												name='document_type'
+												value={formik.values.document_type}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+												disabled={isEdit}>
+												<option
+													value='invoice'
+													disabled={isInvoiceUnavailable}>
+													Factura
+												</option>
+												<option value='receipt'>Boleta</option>
+											</Select>
+											{isInvoiceUnavailable && (
+												<p className='text-xs text-amber-700 dark:text-amber-400'>
+													Para registrar una factura necesitas también
+													permiso para ver proveedores
+													(view-procurement-supplier).
+												</p>
+											)}
+											{isEdit && (
+												<p className='text-xs text-zinc-500'>
+													El tipo de documento no se cambia al editar.
+												</p>
+											)}
+										</div>
+
+										<div className='space-y-1'>
+											<div className='flex min-h-6 items-center justify-between gap-2'>
+												<Label htmlFor='documento-supplier'>
+													Proveedor
+													{formik.values.document_type === 'invoice' && (
+														<span className='text-red-500'> *</span>
+													)}
+												</Label>
+												<div className='flex shrink-0 items-center gap-2'>
+													{/* Evita ir a la ficha sólo para completar giro o direcciones. */}
+													{selectedSupplierId !== null && (
+														<ProtectedButton
+															type='button'
+															permission='edit-procurement-supplier'
+															subsidiaryId={subsidiaryId}
+															scope='access'
+															fallbackMode='hidden'
+															size='xs'
+															variant='outline'
+															color='zinc'
+															icon='HeroPencilSquare'
+															className='whitespace-nowrap'
+															isDisable={
+																isSubmitting || isLoadingSupplier
+															}
+															isLoading={isLoadingSupplier}
+															onClick={() => {
+																openSupplierEdit(
+																	selectedSupplierId,
+																).catch(() => undefined);
+															}}>
+															Editar proveedor
+														</ProtectedButton>
+													)}
+													<ProtectedButton
+														type='button'
+														permission='create-procurement-supplier'
+														subsidiaryId={subsidiaryId}
+														scope='access'
+														fallbackMode='hidden'
+														size='xs'
+														variant='outline'
+														color='blue'
+														icon='HeroPlus'
+														className='whitespace-nowrap'
+														isDisable={isSubmitting}
+														onClick={() =>
+															setIsSupplierModalOpen(true)
+														}>
+														Nuevo proveedor
+													</ProtectedButton>
+												</div>
+											</div>
+											<SelectReact
+												name='supplier_id'
+												inputId='documento-supplier'
+												isClearable={
+													formik.values.document_type === 'receipt'
+												}
+												isLoading={loadingSuppliers}
+												isDisabled={!canListSuppliers}
+												options={supplierOptions}
+												placeholder='Selecciona un proveedor…'
+												value={
+													supplierOptions.find(
+														(option) =>
+															option.value ===
+															String(formik.values.supplier_id),
+													) ?? null
+												}
+												onChange={(option) => {
+													const selected = option as TSelectOption | null;
+													if (Array.isArray(selected)) return;
+													formik
+														.setFieldValue(
+															'supplier_id',
+															selected ? Number(selected.value) : '',
+														)
+														.catch(() => undefined);
+												}}
+												isValid={!formik.errors.supplier_id}
+												isTouched={Boolean(formik.touched.supplier_id)}
+												invalidFeedback={formik.errors.supplier_id}
+											/>
+											<SupplierOptionsNotice
+												reason={suppliersUnavailableReason}
+												onRetry={reloadSuppliers}
+											/>
+											{formik.values.document_type === 'receipt' && (
+												<p className='text-xs text-zinc-500'>
+													La boleta permite dejar el proveedor sin
+													especificar.
+												</p>
+											)}
+										</div>
+
+										<div className='space-y-1'>
+											<Label htmlFor='documento-number'>
+												Folio <span className='text-red-500'>*</span>
+											</Label>
+											<Input
+												id='documento-number'
+												className='!bg-white dark:!bg-zinc-900'
+												name='document_number'
+												value={formik.values.document_number}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+												isValid={!formik.errors.document_number}
+												isTouched={Boolean(formik.touched.document_number)}
+												invalidFeedback={formik.errors.document_number}
+											/>
+										</div>
+
+										<div className='space-y-1'>
+											<Label htmlFor='documento-issue-date'>
+												Fecha de emisión{' '}
+												<span className='text-red-500'>*</span>
+											</Label>
+											<DateInput
+												id='documento-issue-date'
+												name='issue_date'
+												className='!bg-white dark:!bg-zinc-900'
+												value={formik.values.issue_date}
+												maxDate={MAX_DOCUMENT_DATE}
+												maxYear={MAX_DOCUMENT_YEAR}
+												onChange={formik.handleChange}
+												onBlur={() =>
+													formik
+														.setFieldTouched('issue_date', true)
+														.catch(() => undefined)
+												}
+												isValid={!formik.errors.issue_date}
+												isTouched={Boolean(formik.touched.issue_date)}
+												invalidFeedback={formik.errors.issue_date}
+											/>
+										</div>
+
+										<div className='space-y-1 sm:col-span-2'>
+											<Label htmlFor='documento-total-amount'>
+												Total informativo (opcional)
+											</Label>
+											<Input
+												id='documento-total-amount'
+												className='!bg-white dark:!bg-zinc-900'
+												name='total_amount'
+												type='text'
+												inputMode='decimal'
+												placeholder='$0'
+												value={formatPesoInput(formik.values.total_amount)}
+												onChange={handlePesoChange('total_amount')}
+												onBlur={formik.handleBlur}
+												isValid={!formik.errors.total_amount}
+												isTouched={Boolean(formik.touched.total_amount)}
+												invalidFeedback={formik.errors.total_amount}
+											/>
+											<p className='text-xs text-zinc-500'>
+												Sólo informativo: no reemplaza la suma de las
+												líneas.
+											</p>
+										</div>
+									</div>
+
+									<div className='space-y-1'>
+										<Label htmlFor='documento-notes'>Notas</Label>
+										<Textarea
+											id='documento-notes'
+											className='!bg-white dark:!bg-zinc-900'
+											name='notes'
+											rows={2}
+											value={formik.values.notes}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+											isValid={!formik.errors.notes}
+											isTouched={Boolean(formik.touched.notes)}
+											invalidFeedback={formik.errors.notes}
+										/>
+									</div>
+									<p className='text-xs text-zinc-500 dark:text-zinc-400'>
+										<span className='text-red-500'>*</span> Campos obligatorios.
+									</p>
+								</CardBody>
+							</Card>
+
+							<Card className={DOCUMENTO_CARD_CLASSNAME}>
+								<FieldArray name='items'>
+									{(arrayHelpers) => (
+										<>
+											<CardHeader className='pb-2'>
+												<CardHeaderChild className='w-full items-start justify-between gap-3'>
+													<div>
+														<CardTitle className='text-lg'>
+															Líneas del documento
+														</CardTitle>
+														<p className={DOCUMENTO_SUBTITLE_CLASSNAME}>
+															Agrega los productos, cantidades y
+															costos de la compra.
+														</p>
+													</div>
+													<div className='flex flex-wrap items-center justify-end gap-3'>
+														<Checkbox
+															id='include-shipping'
+															name='include_shipping'
+															checked={formik.values.include_shipping}
+															onChange={(event) =>
+																formik
+																	.setFieldValue(
+																		'include_shipping',
+																		event.target.checked,
+																	)
+																	.catch(() => undefined)
+															}
+															label='Agregar costo de envío'
+															dimension='sm'
+														/>
+														<Button
+															type='button'
+															variant='outline'
+															size='sm'
+															icon='HeroPlus'
+															onClick={() =>
+																arrayHelpers.push({
+																	...EMPTY_DOCUMENTO_LINE,
+																})
+															}>
+															Agregar línea
+														</Button>
+													</div>
+												</CardHeaderChild>
+											</CardHeader>
+											<CardBody className='space-y-3'>
+												{typeof formik.errors.items === 'string' && (
+													<Alert
+														color='red'
+														variant='outline'
+														icon='HeroExclamationTriangle'>
+														{formik.errors.items}
+													</Alert>
+												)}
+
+												{formik.values.items.map((line, index) => {
+													const lineErrors = Array.isArray(
+														formik.errors.items,
+													)
+														? formik.errors.items[index]
+														: undefined;
+													const lineTouched = Array.isArray(
+														formik.touched.items,
+													)
+														? formik.touched.items[index]
+														: undefined;
+													const errorFor = (
+														field: keyof typeof line,
+													): string | undefined => {
+														if (
+															!lineErrors ||
+															typeof lineErrors === 'string'
+														)
+															return undefined;
+														const value = (
+															lineErrors as Record<string, unknown>
+														)[field];
+														return typeof value === 'string'
+															? value
+															: undefined;
+													};
+													const touchedFor = (
+														field: keyof typeof line,
+													): boolean =>
+														Boolean(
+															lineTouched &&
+																typeof lineTouched === 'object' &&
+																(
+																	lineTouched as Record<
+																		string,
+																		unknown
+																	>
+																)[field],
+														);
+													const calculatesVat =
+														line.unit_cost_basis === 'net';
+													const grossTotal = formatGrossTotal(
+														getLineGrossTotalCents(
+															line.quantity,
+															line.unit_cost,
+															line.unit_cost_basis,
+														),
+													);
+
+													return (
+														<div
+															// eslint-disable-next-line react/no-array-index-key -- las líneas nuevas todavía no tienen id propio.
+															key={index}
+															className={DOCUMENTO_ITEM_CLASSNAME}>
+															<div className='mb-2 flex flex-wrap items-center justify-between gap-2'>
+																<span className='rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:ring-blue-500/30'>
+																	Línea {index + 1}
+																</span>
+																<Button
+																	type='button'
+																	variant='outline'
+																	color='red'
+																	size='xs'
+																	icon='HeroTrash'
+																	onClick={() =>
+																		arrayHelpers.remove(index)
+																	}
+																	isDisable={
+																		formik.values.items
+																			.length === 1
+																	}>
+																	Eliminar
+																</Button>
+															</div>
+															<div
+																className={
+																	DOCUMENTO_ITEM_GRID_CLASSNAME
+																}>
+																<div className='space-y-1'>
+																	<Label
+																		htmlFor={`items.${index}.quantity`}>
+																		Cantidad{' '}
+																		<span className='text-red-500'>
+																			*
+																		</span>
+																	</Label>
+																	<Input
+																		id={`items.${index}.quantity`}
+																		className='!bg-white dark:!bg-zinc-900'
+																		name={`items.${index}.quantity`}
+																		type='number'
+																		min={1}
+																		value={line.quantity}
+																		onChange={
+																			formik.handleChange
+																		}
+																		onBlur={formik.handleBlur}
+																		isValid={
+																			!errorFor('quantity')
+																		}
+																		isTouched={touchedFor(
+																			'quantity',
+																		)}
+																		invalidFeedback={errorFor(
+																			'quantity',
+																		)}
+																	/>
+																</div>
+																<div className='space-y-1'>
+																	<div className='relative'>
+																		<Label
+																			htmlFor={`items.${index}.product_id`}
+																			className='pe-36'>
+																			Producto{' '}
+																			<span className='text-red-500'>
+																				*
+																			</span>
+																		</Label>
+																		{/* Botón fuera del flujo: la fila del label mide lo mismo que en Cantidad y Costo. */}
+																		<ProtectedButton
+																			type='button'
+																			permission='create-product'
+																			subsidiaryId={
+																				subsidiaryId
+																			}
+																			scope='access'
+																			fallbackMode='hidden'
+																			size='xs'
+																			variant='outline'
+																			color='blue'
+																			icon='HeroPlus'
+																			className='absolute -top-1 right-0 whitespace-nowrap'
+																			isDisable={isSubmitting}
+																			onClick={() =>
+																				setProductLineIndex(
+																					index,
+																				)
+																			}>
+																			Nuevo producto
+																		</ProtectedButton>
+																	</div>
+																	<SelectReact
+																		name={`items.${index}.product_id`}
+																		inputId={`items.${index}.product_id`}
+																		options={productOptions}
+																		placeholder='Selecciona un producto…'
+																		value={
+																			productOptions.find(
+																				(option) =>
+																					option.value ===
+																					String(
+																						line.product_id,
+																					),
+																			) ?? null
+																		}
+																		onChange={(option) => {
+																			const selected =
+																				option as TSelectOption | null;
+																			if (
+																				Array.isArray(
+																					selected,
+																				)
+																			)
+																				return;
+																			formik
+																				.setFieldValue(
+																					`items.${index}.product_id`,
+																					selected
+																						? Number(
+																								selected.value,
+																							)
+																						: '',
+																				)
+																				.catch(
+																					() => undefined,
+																				);
+																		}}
+																		isValid={
+																			!errorFor('product_id')
+																		}
+																		isTouched={touchedFor(
+																			'product_id',
+																		)}
+																		invalidFeedback={errorFor(
+																			'product_id',
+																		)}
+																	/>
+																</div>
+																<div className='space-y-1'>
+																	<Label
+																		htmlFor={`items.${index}.unit_cost`}>
+																		{calculatesVat
+																			? 'Costo neto'
+																			: 'Costo bruto c/ IVA'}{' '}
+																		<span className='text-red-500'>
+																			*
+																		</span>
+																	</Label>
+																	<Input
+																		id={`items.${index}.unit_cost`}
+																		name={`items.${index}.unit_cost`}
+																		className='!bg-white dark:!bg-zinc-900'
+																		type='text'
+																		inputMode='decimal'
+																		placeholder='$0'
+																		value={formatPesoInput(
+																			line.unit_cost,
+																		)}
+																		onChange={handlePesoChange(
+																			`items.${index}.unit_cost`,
+																		)}
+																		onBlur={formik.handleBlur}
+																		isValid={
+																			!errorFor('unit_cost')
+																		}
+																		isTouched={touchedFor(
+																			'unit_cost',
+																		)}
+																		invalidFeedback={errorFor(
+																			'unit_cost',
+																		)}
+																	/>
+																	<Checkbox
+																		id={`items.${index}.unit_cost_basis`}
+																		name={`items.${index}.unit_cost_basis`}
+																		checked={calculatesVat}
+																		onChange={(event) =>
+																			formik
+																				.setFieldValue(
+																					`items.${index}.unit_cost_basis`,
+																					event.target
+																						.checked
+																						? 'net'
+																						: 'gross',
+																				)
+																				.catch(
+																					() => undefined,
+																				)
+																		}
+																		label='Calcular IVA'
+																		dimension='sm'
+																	/>
+																	{touchedFor(
+																		'unit_cost_basis',
+																	) &&
+																		errorFor(
+																			'unit_cost_basis',
+																		) && (
+																			<p
+																				role='alert'
+																				className='text-xs text-red-500/70'>
+																				{errorFor(
+																					'unit_cost_basis',
+																				)}
+																			</p>
+																		)}
+																</div>
+																<div className='space-y-1'>
+																	<Label
+																		htmlFor={`items.${index}.total`}>
+																		Total
+																	</Label>
+																	<output
+																		id={`items.${index}.total`}
+																		className='block rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100'>
+																		{grossTotal ?? '—'}
+																	</output>
+																</div>
+															</div>
+														</div>
+													);
+												})}
+
+												{formik.values.include_shipping && (
+													<div className={DOCUMENTO_ITEM_CLASSNAME}>
+														<div className='mb-2'>
+															<span className='rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/15 dark:text-violet-200 dark:ring-violet-500/30'>
+																Envío
+															</span>
+														</div>
+														<div
+															className={
+																DOCUMENTO_ITEM_GRID_CLASSNAME
+															}>
+															<div className='space-y-1'>
+																<Label htmlFor='shipping-quantity'>
+																	Cantidad
+																</Label>
+																<Input
+																	id='shipping-quantity'
+																	name='shipping_quantity'
+																	value='1'
+																	disabled
+																/>
+															</div>
+															<div className='space-y-1'>
+																<Label htmlFor='shipping-description'>
+																	Descripción
+																</Label>
+																<Input
+																	id='shipping-description'
+																	name='shipping_description'
+																	value='Costo de envío'
+																	disabled
+																/>
+															</div>
+															<div className='space-y-1'>
+																<Label htmlFor='shipping-cost'>
+																	{shippingCalculatesVat
+																		? 'Costo neto'
+																		: 'Costo bruto c/ IVA'}{' '}
+																	<span className='text-red-500'>
+																		*
+																	</span>
+																</Label>
+																<Input
+																	id='shipping-cost'
+																	name='shipping_cost'
+																	className='!bg-white dark:!bg-zinc-900'
+																	type='text'
+																	inputMode='decimal'
+																	placeholder='$0'
+																	value={formatPesoInput(
+																		formik.values.shipping_cost,
+																	)}
+																	onChange={handlePesoChange(
+																		'shipping_cost',
+																	)}
+																	onBlur={formik.handleBlur}
+																	isValid={
+																		!formik.errors.shipping_cost
+																	}
+																	isTouched={Boolean(
+																		formik.touched
+																			.shipping_cost,
+																	)}
+																	invalidFeedback={
+																		formik.errors.shipping_cost
+																	}
+																/>
+																<Checkbox
+																	id='shipping-cost-basis'
+																	name='shipping_cost_basis'
+																	checked={shippingCalculatesVat}
+																	onChange={(event) =>
+																		formik
+																			.setFieldValue(
+																				'shipping_cost_basis',
+																				event.target.checked
+																					? 'net'
+																					: 'gross',
+																			)
+																			.catch(() => undefined)
+																	}
+																	label='Calcular IVA'
+																	dimension='sm'
+																/>
+															</div>
+															<div className='space-y-1'>
+																<Label htmlFor='shipping-total'>
+																	Total
+																</Label>
+																<output
+																	id='shipping-total'
+																	className='block rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100'>
+																	{formatGrossTotal(
+																		shippingTotalCents,
+																	) ?? '—'}
+																</output>
+															</div>
+														</div>
+													</div>
+												)}
+
+												<div className='flex justify-end rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900'>
+													<div className='text-right'>
+														<p className='text-xs text-zinc-500 dark:text-zinc-400'>
+															Total calculado
+														</p>
+														<p className='text-lg font-semibold tabular-nums'>
+															{formatGrossTotal(documentTotalCents) ??
+																'$0,00'}
+														</p>
+													</div>
+												</div>
+											</CardBody>
+										</>
+									)}
+								</FieldArray>
+							</Card>
+						</ModalBody>
+						<ModalFooter className='shrink-0 border-t border-zinc-200 bg-white pt-4 dark:border-zinc-700 dark:bg-zinc-950'>
+							<ModalFooterChild>
+								<Button
+									variant='outline'
+									onClick={handleClose}
+									isDisable={isSubmitting}>
+									Cancelar
+								</Button>
+							</ModalFooterChild>
+							<ModalFooterChild>
+								<Button
+									type='submit'
+									variant='solid'
+									color='blue'
+									icon='HeroCheck'
+									isDisable={isSubmitting || hasVersionConflict}
+									isLoading={isSubmitting}>
+									{isEdit ? 'Guardar cambios' : 'Crear documento'}
+								</Button>
+							</ModalFooterChild>
+						</ModalFooter>
+					</form>
+				</FormikProvider>
+			</Modal>
+
+			{/*
+			 * Hermano del modal del documento, no hijo de su `<form>`: los eventos
+			 * de React suben por el árbol de componentes aunque el DOM esté en otro
+			 * lado, y un submit del proveedor no debe llegar al `onSubmit` del
+			 * documento.
+			 */}
+			<SupplierFormModal
+				isOpen={isOpen && isSupplierModalOpen}
+				setIsOpen={setIsSupplierModalOpen}
+				subsidiaryId={subsidiaryId}
+				onSuccess={handleSupplierCreated}
+				onUseExistingSupplier={handleUseExistingSupplier}
+				onViewSupplier={openSupplierInNewTab}
+			/>
+			<SupplierFormModal
+				isOpen={isOpen && editingSupplier !== null}
+				setIsOpen={(open) => {
+					if (!open) closeSupplierEdit();
+				}}
+				subsidiaryId={subsidiaryId}
+				supplier={editingSupplier}
+				onSuccess={(supplier) => {
+					closeSupplierEdit();
+					addSupplier(supplier);
+				}}
+				onViewSupplier={openSupplierInNewTab}
+			/>
+			<ProcurementProductFormModal
+				isOpen={isOpen && productLineIndex !== null}
+				setIsOpen={(open) => {
+					if (!open) setProductLineIndex(null);
+				}}
+				subsidiaryId={subsidiaryId}
+				onSuccess={handleProductCreated}
+			/>
+		</>
+	);
+};
+
+export default PurchaseDocumentFormModal;

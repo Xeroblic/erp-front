@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { documentoCompraFormSchema, EMPTY_DOCUMENTO_LINE } from '../types';
-import type { IDocumentoCompraFormValues } from '../types';
+import { purchaseDocumentFormSchema, EMPTY_DOCUMENTO_LINE } from '../types';
+import type { IPurchaseDocumentFormValues } from '../types';
 
 /**
  * Validación del formulario de documento de compra (sección 6 del
@@ -18,7 +18,7 @@ const validLine = {
 	notes: '',
 };
 
-const baseValues: IDocumentoCompraFormValues = {
+const baseValues: IPurchaseDocumentFormValues = {
 	document_type: 'receipt',
 	supplier_id: '',
 	document_number: '55012',
@@ -31,20 +31,20 @@ const baseValues: IDocumentoCompraFormValues = {
 	items: [validLine],
 };
 
-describe('documentoCompraFormSchema', () => {
+describe('purchaseDocumentFormSchema', () => {
 	it('la boleta es válida sin proveedor', async () => {
-		await expect(documentoCompraFormSchema.validate(baseValues)).resolves.toBeTruthy();
+		await expect(purchaseDocumentFormSchema.validate(baseValues)).resolves.toBeTruthy();
 	});
 
 	it('la factura sin proveedor es inválida', async () => {
 		await expect(
-			documentoCompraFormSchema.validate({ ...baseValues, document_type: 'invoice' }),
+			purchaseDocumentFormSchema.validate({ ...baseValues, document_type: 'invoice' }),
 		).rejects.toThrow(/proveedor/i);
 	});
 
 	it('la factura con proveedor es válida', async () => {
 		await expect(
-			documentoCompraFormSchema.validate({
+			purchaseDocumentFormSchema.validate({
 				...baseValues,
 				document_type: 'invoice',
 				supplier_id: 7,
@@ -54,36 +54,36 @@ describe('documentoCompraFormSchema', () => {
 
 	it('exige folio y fecha de emisión', async () => {
 		await expect(
-			documentoCompraFormSchema.validate({ ...baseValues, document_number: '' }),
+			purchaseDocumentFormSchema.validate({ ...baseValues, document_number: '' }),
 		).rejects.toThrow(/folio/i);
 		await expect(
-			documentoCompraFormSchema.validate({ ...baseValues, issue_date: '' }),
+			purchaseDocumentFormSchema.validate({ ...baseValues, issue_date: '' }),
 		).rejects.toThrow(/emisión/i);
 	});
 
 	it('exige al menos una línea', async () => {
 		await expect(
-			documentoCompraFormSchema.validate({ ...baseValues, items: [] }),
+			purchaseDocumentFormSchema.validate({ ...baseValues, items: [] }),
 		).rejects.toThrow(/línea/i);
 	});
 
 	it('cada línea exige producto, cantidad positiva, costo y base', async () => {
 		await expect(
-			documentoCompraFormSchema.validate({
+			purchaseDocumentFormSchema.validate({
 				...baseValues,
 				items: [{ ...EMPTY_DOCUMENTO_LINE }],
 			}),
 		).rejects.toThrow();
 
 		await expect(
-			documentoCompraFormSchema.validate({
+			purchaseDocumentFormSchema.validate({
 				...baseValues,
 				items: [{ ...validLine, quantity: '0' }],
 			}),
 		).rejects.toThrow(/mayor que cero/i);
 
 		await expect(
-			documentoCompraFormSchema.validate({
+			purchaseDocumentFormSchema.validate({
 				...baseValues,
 				items: [{ ...validLine, unit_cost: '', unit_cost_basis: '' }],
 			}),

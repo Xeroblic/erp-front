@@ -13,7 +13,7 @@ import StockReceiptItemsTable from './components/parts/StockReceiptItemsTable';
 import CancelStockReceiptModal from './components/modals/CancelStockReceiptModal';
 import ReverseStockReceiptModal from './components/modals/ReverseStockReceiptModal';
 import LinkPurchaseDocumentModal from './components/modals/LinkPurchaseDocumentModal';
-import RecepcionFormModal from '../components/modals/RecepcionFormModal';
+import StockReceiptFormModal from '../components/modals/StockReceiptFormModal';
 
 /**
  * Ficha de recepción física (card 05, sección 7 del contrato). El polling
@@ -114,7 +114,7 @@ const RecepcionDetalleView = () => {
 				)}
 			</Container>
 
-			<RecepcionFormModal
+			<StockReceiptFormModal
 				isOpen={isFormModalOpen}
 				setIsOpen={setIsFormModalOpen}
 				subsidiaryId={subsidiaryId}

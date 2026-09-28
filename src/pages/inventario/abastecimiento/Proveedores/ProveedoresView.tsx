@@ -12,7 +12,7 @@ import useProveedores from './hooks/useProveedores';
 import useSupplierRestore from './hooks/useSupplierRestore';
 import ProveedoresFilters from './components/filters/ProveedoresFilters';
 import ProveedoresTable from './components/tables/ProveedoresTable';
-import ProveedorFormModal from './components/modals/ProveedorFormModal';
+import SupplierFormModal from './components/modals/SupplierFormModal';
 import DeactivateSupplierModal from './components/modals/DeactivateSupplierModal';
 
 /**
@@ -123,7 +123,7 @@ const ProveedoresView = () => {
 				/>
 			</Container>
 
-			<ProveedorFormModal
+			<SupplierFormModal
 				isOpen={isCreateModalOpen}
 				setIsOpen={setIsCreateModalOpen}
 				branchId={branchId}

@@ -31,10 +31,10 @@ export const SUPPLIER_STATUS_FILTER_OPTIONS: ISupplierStatusFilterOption[] = [
 /**
  * Valores del formulario de alta/edición. Todo string para que Formik e
  * `Input` trabajen sin controlar/no controlar; `toPayload` en
- * `useProveedorForm` convierte a `IProcurementSupplierPayload` recién al
+ * `useSupplierForm` convierte a `IProcurementSupplierPayload` recién al
  * enviar. Sin `display_name` ni `is_active`: no son campos del formulario.
  */
-export interface IProveedorFormValues {
+export interface ISupplierFormValues {
 	rut: string;
 	company_name: string;
 	contact_name: string;
@@ -118,7 +118,7 @@ export const pastePhone = (current: string, pasted: string, start: number, end: 
  * exige recién para confirmar una factura, no para guardar el proveedor
  * (sección 5). Ese requisito se advierte en la vista, no se bloquea acá.
  */
-export const proveedorFormSchema = Yup.object({
+export const supplierFormSchema = Yup.object({
 	rut: Yup.string()
 		.required('El RUT es obligatorio.')
 		.test('rut-valido', 'El RUT no es válido.', (value) => validateRut(value ?? '')),
@@ -153,7 +153,7 @@ export const formatCommuneWithRegion = (
 };
 
 /** `true` cuando falta algo de lo que exige confirmar una factura. */
-export const isIncompleteForInvoicing = (values: IProveedorFormValues): boolean =>
+export const isIncompleteForInvoicing = (values: ISupplierFormValues): boolean =>
 	!values.business_activity.trim() ||
 	!values.billing_address.trim() ||
 	values.billing_commune_id === null ||

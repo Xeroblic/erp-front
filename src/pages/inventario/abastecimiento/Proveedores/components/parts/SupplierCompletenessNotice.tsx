@@ -1,7 +1,7 @@
 import React from 'react';
 import Alert from '@/components/ui/Alert';
 import { isIncompleteForInvoicing } from '../../types';
-import type { IProveedorFormValues } from '../../types';
+import type { ISupplierFormValues } from '../../types';
 
 /**
  * Aviso de completitud (sección 5 del contrato): giro y ambas direcciones
@@ -11,7 +11,7 @@ import type { IProveedorFormValues } from '../../types';
  */
 
 interface ISupplierCompletenessNoticeProps {
-	values: IProveedorFormValues;
+	values: ISupplierFormValues;
 }
 
 const SupplierCompletenessNotice: React.FC<ISupplierCompletenessNoticeProps> = ({ values }) => {

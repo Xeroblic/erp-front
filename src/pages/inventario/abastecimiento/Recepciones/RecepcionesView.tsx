@@ -12,7 +12,7 @@ import useAuthorization from '@/hooks/useAuthorization';
 import useRecepciones from './hooks/useRecepciones';
 import RecepcionesFilters from './components/filters/RecepcionesFilters';
 import RecepcionesTable from './components/tables/RecepcionesTable';
-import RecepcionFormModal from './components/modals/RecepcionFormModal';
+import StockReceiptFormModal from './components/modals/StockReceiptFormModal';
 
 /**
  * Listado de recepciones físicas (card 05, sección 7 del contrato de
@@ -55,7 +55,7 @@ const RecepcionesView = () => {
 
 	const { authorize } = useAuthorization();
 	/**
-	 * Mismo permiso + scope que exige `useRecepcionForm` al enviar (hallazgo
+	 * Mismo permiso + scope que exige `useStockReceiptForm` al enviar (hallazgo
 	 * 4): la ruta sólo pide `view-product`, así que el alta necesita su propio
 	 * guard — no basta con ocultar el botón «Nueva recepción», porque
 	 * `?purchase_document_id=` puede abrir el mismo formulario por URL directa
@@ -162,7 +162,7 @@ const RecepcionesView = () => {
 				/>
 			</Container>
 
-			<RecepcionFormModal
+			<StockReceiptFormModal
 				isOpen={isCreateModalOpen}
 				setIsOpen={handleCloseCreateModal}
 				subsidiaryId={subsidiaryId}

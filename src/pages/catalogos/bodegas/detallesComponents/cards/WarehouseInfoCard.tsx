@@ -26,7 +26,7 @@ interface WarehouseInfoCardProps {
 }
 
 /**
- * Cabecera de la ficha de bodega, con el mismo formato que `ResumenBodega` de
+ * Cabecera de la ficha de bodega, con el mismo formato que `WarehouseSummary` de
  * Inventario: sus datos, la capacidad usada y los KPI de productos asociados.
  */
 const WarehouseInfoCard: React.FC<WarehouseInfoCardProps> = ({ warehouse, summary }) => {
