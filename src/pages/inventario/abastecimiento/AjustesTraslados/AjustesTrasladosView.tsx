@@ -28,13 +28,11 @@ const AjustesTrasladosTabs = ({
 	activeTab,
 	onTabChange,
 }: AjustesTrasladosTabsProps) => {
-	// Cada pestaña se monta la primera vez que se abre y queda montada: no carga
-	// el stock de un flujo que no se usa, y cambiar de pestaña no descarta un
-	// formulario a medias ni la clave de un reintento incierto.
-	const [visited, setVisited] = useState<ReadonlySet<AjustesTrasladosTab>>(
-		() => new Set([activeTab]),
-	);
-	if (!visited.has(activeTab)) setVisited(new Set([...visited, activeTab]));
+	// Sólo la pestaña activa está montada: cambiar de pestaña reinicia el
+	// asistente de la otra. Mientras una escritura está en curso o espera
+	// reintento, la otra pestaña se bloquea: desmontar el formulario descartaría
+	// la clave de idempotencia y un reintento podría duplicar el movimiento.
+	const [busy, setBusy] = useState(false);
 
 	return (
 		<>
@@ -66,17 +64,28 @@ const AjustesTrasladosTabs = ({
 				onTabChange={onTabChange}
 				variant='pills'
 				className='rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
-				<Tab id='ajuste' text='Ajuste de inventario' icon='HeroScale'>
-					{visited.has('ajuste') && (
+				<Tab
+					id='ajuste'
+					text='Ajuste de inventario'
+					icon='HeroScale'
+					disabled={busy && activeTab !== 'ajuste'}>
+					{activeTab === 'ajuste' && (
 						<AjustePanel
 							owner={owner}
 							branchId={branchId}
 							subsidiaryId={subsidiaryId}
+							onBusyChange={setBusy}
 						/>
 					)}
 				</Tab>
-				<Tab id='traslado' text='Traslados internos' icon='HeroArrowsRightLeft'>
-					{visited.has('traslado') && <TrasladoPanel owner={owner} branchId={branchId} />}
+				<Tab
+					id='traslado'
+					text='Traslados internos'
+					icon='HeroArrowsRightLeft'
+					disabled={busy && activeTab !== 'traslado'}>
+					{activeTab === 'traslado' && (
+						<TrasladoPanel owner={owner} branchId={branchId} onBusyChange={setBusy} />
+					)}
 				</Tab>
 			</Tabs>
 		</>

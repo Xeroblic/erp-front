@@ -9,7 +9,6 @@ import Button from '@/components/ui/Button';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { CONDITION_OPTIONS } from '@/components/procurement';
 import type {
-	IInventoryStockOriginRow,
 	IInventoryStockRow,
 	IProcurementProduct,
 	TStockCondition,
@@ -27,8 +26,6 @@ export interface IAjusteItemsEditorProps {
 	loadingStock: boolean;
 	hasLocation: boolean;
 	disabled: boolean;
-	hasLinkedReceipt: boolean;
-	originsFor: (productId: number | '') => IInventoryStockOriginRow[];
 	totalsFor: (productId: number | '') => IInventoryStockRow | null;
 	/** Mensaje de Yup para un campo de una línea, o `undefined` si está bien. */
 	errorFor: (index: number, field: keyof IAjusteItemDraft) => string | undefined;
@@ -37,21 +34,10 @@ export interface IAjusteItemsEditorProps {
 	onRemoveItem: (index: number) => void;
 }
 
-const originLabel = (origin: IInventoryStockOriginRow): string => {
-	const document = origin.purchase_document
-		? `${origin.purchase_document.document_number}`
-		: 'Sin documento';
-	const supplier = origin.supplier ? ` · ${origin.supplier.display_name}` : '';
-	return `#${origin.origin_id} · ${document}${supplier} (${origin.physical_quantity})`;
-};
-
 /**
- * Líneas de un ajuste.
- *
- * El selector de procedencia sólo existe en los **egresos**: un ingreso
- * positivo no puede atribuirse a un origen viejo, crea un origen desconocido
- * de ajuste (sección 11). Con una recepción enlazada el origen deja de ser
- * opcional y se limita a las procedencias de esa recepción.
+ * Líneas de un ajuste. Todas corrigen el saldo de la ubicación elegida en el
+ * primer paso: un egreso descuenta unidades de esa ubicación (FIFO) y un
+ * ingreso las registra como origen de ajuste.
  *
  * El selector de producto ofrece el **catálogo** de la filial, no el stock de
  * la ubicación: un producto que llegó a cero sigue siendo corregible al alza,
@@ -63,8 +49,6 @@ const AjusteItemsEditor: FC<IAjusteItemsEditorProps> = ({
 	loadingStock,
 	hasLocation,
 	disabled,
-	hasLinkedReceipt,
-	originsFor,
 	totalsFor,
 	errorFor,
 	onChangeItem,
@@ -84,15 +68,14 @@ const AjusteItemsEditor: FC<IAjusteItemsEditorProps> = ({
 	return (
 		<div className='space-y-3'>
 			<div className='overflow-x-auto'>
-				<Table aria-label='Líneas del ajuste' className='min-w-[960px]'>
+				<Table aria-label='Líneas del ajuste' className='min-w-[800px]'>
 					<THead>
 						<Tr>
 							<Th scope='col'>Producto</Th>
 							<Th scope='col'>Condición</Th>
-							<Th scope='col'>Stock actual</Th>
-							<Th scope='col'>Sumar o restar</Th>
-							<Th scope='col'>Quedará</Th>
-							<Th scope='col'>Descontar de</Th>
+							<Th scope='col'>Stock en sistema</Th>
+							<Th scope='col'>Ajuste (±)</Th>
+							<Th scope='col'>Stock resultante</Th>
 							<Th scope='col'>
 								<span className='sr-only'>Acciones</span>
 							</Th>
@@ -124,23 +107,18 @@ const AjusteItemsEditor: FC<IAjusteItemsEditorProps> = ({
 							let balanceLabel = '—';
 							if (balance !== null)
 								balanceLabel = loadingStock ? '…' : String(balance);
-							// «Quedará» sólo es una afirmación con saldo conocido y una
+							// El stock resultante sólo es una afirmación con saldo conocido y una
 							// diferencia entera distinta de cero.
 							const finalBalance =
 								balance !== null && !loadingStock && (isEgress || isEntry)
 									? balance + delta
 									: null;
-							const origins = originsFor(item.productId);
 							const productError = errorFor(index, 'productId');
 							// El saldo bajo cero se avisa al escribir; el resto de los
 							// mensajes de la línea vienen del esquema al enviar.
 							const deltaError = belowZero
-								? `No puedes restar más de lo que hay (${balance ?? 0}).`
+								? `El egreso supera el stock en sistema (${balance ?? 0}).`
 								: errorFor(index, 'quantityDelta');
-							const originError =
-								hasLinkedReceipt && item.originId === ''
-									? 'Con una recepción enlazada, elige de qué compra descontar.'
-									: errorFor(index, 'originId');
 							return (
 								// El índice es la identidad real de una línea en blanco: dos
 								// filas recién agregadas no tienen producto que las distinga.
@@ -174,7 +152,6 @@ const AjusteItemsEditor: FC<IAjusteItemsEditorProps> = ({
 														productId: selected
 															? Number(selected.value)
 															: '',
-														originId: '',
 													});
 												}}
 											/>
@@ -216,7 +193,7 @@ const AjusteItemsEditor: FC<IAjusteItemsEditorProps> = ({
 											invalidFeedback={deltaError}>
 											<Input
 												name={`items[${index}].quantityDelta`}
-												aria-label={`Sumar o restar en la línea ${index + 1}`}
+												aria-label={`Cantidad de ajuste de la línea ${index + 1}`}
 												type='number'
 												step={1}
 												disabled={disabled}
@@ -242,54 +219,9 @@ const AjusteItemsEditor: FC<IAjusteItemsEditorProps> = ({
 										})}>
 										<div
 											className='flex min-h-[2.25rem] items-center'
-											data-testid={`ajuste-quedara-${index}`}>
+											data-testid={`ajuste-stock-resultante-${index}`}>
 											{finalBalance === null ? '—' : finalBalance}
 										</div>
-									</Td>
-									<Td>
-										{isEntry ? (
-											<span className='flex min-h-[2.25rem] items-center text-xs text-zinc-500'>
-												No aplica al sumar: entra como ingreso por ajuste.
-											</span>
-										) : (
-											<Validation
-												isValid={!originError}
-												isTouched={Boolean(originError)}
-												invalidFeedback={originError}>
-												<Select
-													name={`items[${index}].originId`}
-													aria-label={`Origen a descontar en la línea ${index + 1}`}
-													disabled={disabled || item.productId === ''}
-													value={
-														item.originId === ''
-															? ''
-															: String(item.originId)
-													}
-													onChange={(event) =>
-														onChangeItem(index, {
-															originId: event.target.value
-																? Number(event.target.value)
-																: '',
-														})
-													}
-													isValid={!originError}
-													isTouched={Boolean(originError)}
-													invalidFeedback={originError}>
-													<option value=''>
-														{hasLinkedReceipt
-															? 'Selecciona un origen…'
-															: 'Automático (lo más antiguo primero)'}
-													</option>
-													{origins.map((origin) => (
-														<option
-															key={origin.origin_id}
-															value={origin.origin_id}>
-															{originLabel(origin)}
-														</option>
-													))}
-												</Select>
-											</Validation>
-										)}
 									</Td>
 									<Td>
 										<div className='flex min-h-[2.25rem] items-center'>

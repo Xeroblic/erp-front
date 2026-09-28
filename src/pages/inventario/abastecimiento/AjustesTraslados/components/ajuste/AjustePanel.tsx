@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Label from '@/components/form/Label';
 import Validation from '@/components/form/Validation';
 import Select from '@/components/form/Select';
@@ -15,6 +15,8 @@ export interface AjustePanelProps {
 	branchId: number;
 	subsidiaryId: number | null;
 	owner: string;
+	/** Avisa si hay una escritura en curso o pendiente de reintento. */
+	onBusyChange?: (busy: boolean) => void;
 }
 
 const AJUSTE_STEP_CONFIG: readonly IWizardStepConfig[] = [
@@ -23,7 +25,7 @@ const AJUSTE_STEP_CONFIG: readonly IWizardStepConfig[] = [
 		key: 'items',
 		label: 'Productos',
 		icon: 'HeroCube',
-		hint: 'Cantidad positiva para sumar (ej. 3), negativa para restar (ej. -2). «Quedará» muestra el stock resultante.',
+		hint: 'Cantidad positiva para un ingreso por ajuste (ej. 3) y negativa para un egreso (ej. -2). «Stock resultante» muestra el saldo posterior al ajuste.',
 	},
 	{
 		key: 'reason',
@@ -41,7 +43,7 @@ const AJUSTE_STEP_CONFIG: readonly IWizardStepConfig[] = [
  * corregir y motivo. El motivo va al final porque se escribe mejor después de
  * ver las diferencias.
  */
-const AjustePanel = ({ branchId, subsidiaryId, owner }: AjustePanelProps) => {
+const AjustePanel = ({ branchId, subsidiaryId, owner, onBusyChange }: AjustePanelProps) => {
 	const {
 		formik,
 		locationOptions,
@@ -50,12 +52,9 @@ const AjustePanel = ({ branchId, subsidiaryId, owner }: AjustePanelProps) => {
 		loadingStock,
 		stockError,
 		hasLocation,
-		receiptOptions,
-		originsFor,
 		totalsFor,
 		errorFor,
 		setLocation,
-		setRelatedReceipt,
 		setItem,
 		addItem,
 		removeItem,
@@ -67,7 +66,13 @@ const AjustePanel = ({ branchId, subsidiaryId, owner }: AjustePanelProps) => {
 	} = useAjusteInventario(branchId, owner, subsidiaryId);
 
 	const frozen = idempotentWrite.isSubmitting || idempotentWrite.canRetry;
-	const hasLinkedReceipt = formik.values.relatedStockReceiptId !== '';
+
+	useEffect(() => {
+		onBusyChange?.(frozen);
+		return () => onBusyChange?.(false);
+	}, [frozen, onBusyChange]);
+	const locationLabel =
+		locationOptions.find((option) => option.value === formik.values.location)?.label ?? '';
 
 	return (
 		<form
@@ -106,7 +111,9 @@ const AjustePanel = ({ branchId, subsidiaryId, owner }: AjustePanelProps) => {
 								icon='HeroScale'
 								isDisable={idempotentWrite.isSubmitting}
 								isLoading={idempotentWrite.isSubmitting}>
-								{idempotentWrite.canRetry ? 'Reintentar ajuste' : 'Aplicar ajuste'}
+								{idempotentWrite.canRetry
+									? 'Reintentar ajuste'
+									: 'Registrar ajuste'}
 							</Button>
 							{idempotentWrite.canRetry && (
 								<Button
@@ -144,14 +151,19 @@ const AjustePanel = ({ branchId, subsidiaryId, owner }: AjustePanelProps) => {
 								</Select>
 							</Validation>
 							<p className='text-xs text-zinc-500'>
-								«Sin ubicación» agrupa el stock que aún no tiene ubicación asignada.
+								Todas las líneas del ajuste se registran en esta ubicación. «Sin
+								ubicación» agrupa el stock que aún no tiene ubicación asignada.
 							</p>
 						</div>
 					)}
 
 					{wizard.stepKey === 'items' && (
 						<div className='space-y-3'>
-							{!hasLocation && (
+							{hasLocation ? (
+								<p className='text-sm text-zinc-600 dark:text-zinc-300'>
+									Ubicación: <strong>{locationLabel}</strong>
+								</p>
+							) : (
 								<p className='text-sm text-zinc-600 dark:text-zinc-300'>
 									Selecciona la ubicación en el paso 1 para cargar el stock.
 								</p>
@@ -159,7 +171,7 @@ const AjustePanel = ({ branchId, subsidiaryId, owner }: AjustePanelProps) => {
 							{stockError && (
 								<Alert
 									color='red'
-									title='No pudimos cargar el stock de la ubicación'>
+									title='No se pudo cargar el stock de la ubicación'>
 									{stockError}
 								</Alert>
 							)}
@@ -168,8 +180,8 @@ const AjustePanel = ({ branchId, subsidiaryId, owner }: AjustePanelProps) => {
 								!stockError &&
 								stockRows.length === 0 && (
 									<Alert color='amber' title='Sin stock en esta ubicación'>
-										La ubicación no tiene saldo: sólo admite ingresos de
-										unidades encontradas.
+										La ubicación no registra saldo: sólo admite ingresos por
+										ajuste.
 									</Alert>
 								)}
 
@@ -179,8 +191,6 @@ const AjustePanel = ({ branchId, subsidiaryId, owner }: AjustePanelProps) => {
 								loadingStock={loadingStock}
 								hasLocation={hasLocation}
 								disabled={frozen}
-								hasLinkedReceipt={hasLinkedReceipt}
-								originsFor={originsFor}
 								totalsFor={totalsFor}
 								errorFor={errorFor}
 								onChangeItem={setItem}
@@ -198,43 +208,12 @@ const AjustePanel = ({ branchId, subsidiaryId, owner }: AjustePanelProps) => {
 									<strong>Apto</strong>: disponible para la venta.{' '}
 									<strong>No apto</strong>: no disponible para la venta.
 								</li>
+								<li>Los egresos se descuentan por orden de antigüedad (FIFO).</li>
 								<li>
-									El stock no puede quedar bajo cero. Si hay unidades reservadas,
-									la confirmación informa cuántas quedan sin respaldo.
+									El stock resultante no puede ser negativo. Si hay unidades
+									reservadas, la confirmación informa cuántas quedan sin respaldo.
 								</li>
 							</ul>
-
-							<div className='space-y-1 border-t border-zinc-200 pt-3 dark:border-zinc-700 md:max-w-md'>
-								<Label htmlFor='ajuste-receipt'>
-									Recepción enlazada (opcional)
-								</Label>
-								<Select
-									id='ajuste-receipt'
-									name='relatedStockReceiptId'
-									disabled={frozen || receiptOptions.length === 0}
-									value={
-										formik.values.relatedStockReceiptId === ''
-											? ''
-											: String(formik.values.relatedStockReceiptId)
-									}
-									onChange={(event) =>
-										setRelatedReceipt(
-											event.target.value ? Number(event.target.value) : '',
-										)
-									}>
-									<option value=''>Sin recepción enlazada</option>
-									{receiptOptions.map((receiptId) => (
-										<option key={receiptId} value={receiptId}>
-											Recepción #{receiptId}
-										</option>
-									))}
-								</Select>
-								<p className='text-xs text-zinc-500'>
-									{receiptOptions.length === 0
-										? 'Para diferencias originadas en una recepción. Se habilita al elegir productos recibidos en una.'
-										: 'Para diferencias originadas en una recepción. No la modifica, pero las líneas que restan deben descontar de ella.'}
-								</p>
-							</div>
 						</div>
 					)}
 
@@ -257,7 +236,7 @@ const AjustePanel = ({ branchId, subsidiaryId, owner }: AjustePanelProps) => {
 										isValid={!formik.errors.reason}
 										isTouched={formik.touched.reason}
 										invalidFeedback={formik.errors.reason}
-										placeholder='Ej: Conteo físico: faltan dos unidades'
+										placeholder='Ej: Diferencia detectada en conteo físico'
 									/>
 								</Validation>
 							</div>

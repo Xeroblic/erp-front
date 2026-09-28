@@ -146,7 +146,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		);
 	});
 
-	it('cambia de pestaña en la URL sin descartar el formulario de la otra', () => {
+	it('cambia de pestaña en la URL y reinicia el progreso de la otra', () => {
 		renderPage('/?tab=ajuste');
 		fireEvent.change(screen.getByLabelText('Ubicación'), {
 			target: { value: 'unlocated' },
@@ -155,25 +155,25 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		fireEvent.click(screen.getByRole('tab', { name: 'Traslados internos' }));
 		expect(screen.getByTestId('location')).toHaveTextContent('?tab=traslado');
 		expect(screen.getByLabelText('Origen')).toBeInTheDocument();
+		// Sólo la pestaña activa queda montada.
+		expect(screen.queryByLabelText('Ubicación')).not.toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole('tab', { name: 'Ajuste de inventario' }));
 		expect(screen.getByTestId('location')).toHaveTextContent('?tab=ajuste');
-		expect(screen.getByLabelText('Ubicación')).toHaveValue('unlocated');
+		expect(screen.getByLabelText('Ubicación')).toHaveValue('');
 	});
 
-	it('nombra cada paso con su propio título aunque ambas pestañas estén montadas', () => {
+	it('nombra el paso de la pestaña activa con un título dentro de su sección', () => {
 		renderPage('/?tab=ajuste');
 		fireEvent.click(screen.getByRole('tab', { name: 'Traslados internos' }));
 
 		const sections = [...document.querySelectorAll('section[aria-labelledby]')];
-		expect(sections).toHaveLength(2);
-		const titleIds = sections.map((section) => section.getAttribute('aria-labelledby') ?? '');
-		expect(new Set(titleIds).size).toBe(2);
-		sections.forEach((section, index) => {
-			// Cada sección apunta a un título que está dentro de ella misma.
-			expect(section).toContainElement(document.getElementById(titleIds[index]));
-		});
+		expect(sections).toHaveLength(1);
+		const titleId = sections[0].getAttribute('aria-labelledby') ?? '';
+		expect(sections[0]).toContainElement(document.getElementById(titleId));
 		expect(screen.getByRole('region', { name: /Origen y destino/ })).toBeInTheDocument();
-		expect(screen.getByRole('region', { name: /Paso 1 de 3: Ubicación/ })).toBeInTheDocument();
+		expect(
+			screen.queryByRole('region', { name: /Paso 1 de 3: Ubicación/ }),
+		).not.toBeInTheDocument();
 	});
 });

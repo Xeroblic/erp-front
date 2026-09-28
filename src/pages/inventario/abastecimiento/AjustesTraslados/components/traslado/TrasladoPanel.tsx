@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Label from '@/components/form/Label';
 import Validation from '@/components/form/Validation';
 import Select from '@/components/form/Select';
@@ -16,6 +16,8 @@ import { locationToken } from '@/utils/inventoryLocation.util';
 export interface TrasladoPanelProps {
 	branchId: number;
 	owner: string;
+	/** Avisa si hay una escritura en curso o pendiente de reintento. */
+	onBusyChange?: (busy: boolean) => void;
 }
 
 const TRASLADO_STEP_CONFIG: readonly IWizardStepConfig[] = [
@@ -45,7 +47,7 @@ const TRASLADO_STEP_CONFIG: readonly IWizardStepConfig[] = [
  *
  * Se lee en tres pasos: origen y destino, productos, y motivo.
  */
-const TrasladoPanel = ({ branchId, owner }: TrasladoPanelProps) => {
+const TrasladoPanel = ({ branchId, owner, onBusyChange }: TrasladoPanelProps) => {
 	const {
 		formik,
 		warehouses,
@@ -70,6 +72,11 @@ const TrasladoPanel = ({ branchId, owner }: TrasladoPanelProps) => {
 	// Con un resultado incierto (`canRetry`) el formulario se congela: el
 	// reintento tiene que llevar exactamente el mismo comando y la misma clave.
 	const frozen = idempotentWrite.isSubmitting || idempotentWrite.canRetry;
+
+	useEffect(() => {
+		onBusyChange?.(frozen);
+		return () => onBusyChange?.(false);
+	}, [frozen, onBusyChange]);
 	const hasOrigin = Boolean(formik.values.from);
 
 	return (

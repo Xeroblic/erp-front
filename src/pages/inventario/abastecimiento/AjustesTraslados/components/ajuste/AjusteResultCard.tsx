@@ -22,11 +22,8 @@ const conditionAdjective = (condition: TStockCondition, count: number): string =
 	return count === 1 ? base : `${base}s`;
 };
 
-/** Frase de una línea: «Se restaron 2 unidades aptas de …». */
-const lineVerb = (added: boolean, count: number): string => {
-	if (added) return count === 1 ? 'Se sumó' : 'Se sumaron';
-	return count === 1 ? 'Se restó' : 'Se restaron';
-};
+/** Frase de una línea: «Egreso de 2 unidades aptas de …». */
+const lineVerb = (added: boolean): string => (added ? 'Ingreso de' : 'Egreso de');
 
 /**
  * Confirmación de lo aplicado, con los saldos que devuelve la 201 del contrato
@@ -50,7 +47,7 @@ const AjusteResultCard: FC<IAjusteResultCardProps> = ({ result, onDismiss }) => 
 						<Icon icon='HeroCheckCircle' className='h-6 w-6 text-emerald-600' />
 					</span>
 					<div>
-						<CardTitle className='text-xl'>Ajuste aplicado</CardTitle>
+						<CardTitle className='text-xl'>Ajuste registrado</CardTitle>
 						<p className='text-sm text-zinc-500 dark:text-zinc-400'>
 							{locationLabel} · {adjustment.reason}
 							{adjustment.related_stock_receipt_id !== null &&
@@ -84,7 +81,7 @@ const AjusteResultCard: FC<IAjusteResultCardProps> = ({ result, onDismiss }) => 
 									)}
 								/>
 								<span>
-									{lineVerb(added, count)}{' '}
+									{lineVerb(added)}{' '}
 									<strong>
 										{units(count)} {conditionAdjective(item.condition, count)}
 									</strong>{' '}
@@ -105,10 +102,10 @@ const AjusteResultCard: FC<IAjusteResultCardProps> = ({ result, onDismiss }) => 
 								<Tr>
 									<Th scope='col'>Producto</Th>
 									<Th scope='col'>Condición</Th>
-									<Th scope='col'>Cambio</Th>
-									<Th scope='col'>Antes</Th>
-									<Th scope='col'>Ahora</Th>
-									<Th scope='col'>Total en la ubicación</Th>
+									<Th scope='col'>Ajuste</Th>
+									<Th scope='col'>Stock anterior</Th>
+									<Th scope='col'>Stock final</Th>
+									<Th scope='col'>Total ubicación</Th>
 								</Tr>
 							</THead>
 							<TBody>
@@ -166,8 +163,8 @@ const AjusteResultCard: FC<IAjusteResultCardProps> = ({ result, onDismiss }) => 
 						</Table>
 					</div>
 					<p className='text-xs text-zinc-500'>
-						«Antes» y «Ahora» son de la condición ajustada. El total suma apto y no
-						apto.
+						«Stock anterior» y «Stock final» corresponden a la condición ajustada. El
+						total incluye apto y no apto.
 					</p>
 				</section>
 
@@ -178,12 +175,12 @@ const AjusteResultCard: FC<IAjusteResultCardProps> = ({ result, onDismiss }) => 
 				 * comprometidas que no existen.
 				 */}
 				<section className='space-y-2'>
-					<h3 className='text-sm font-semibold'>Disponible para vender en la sucursal</h3>
+					<h3 className='text-sm font-semibold'>Disponible para venta en la sucursal</h3>
 					{shortages.length > 0 && (
 						<Alert
 							color='red'
 							icon='HeroExclamationTriangle'
-							title='Faltan unidades reservadas'>
+							title='Reservas sin respaldo de stock'>
 							<ul className='list-disc pl-5'>
 								{shortages.map((row) => (
 									<li key={row.product_id} role='alert'>
@@ -191,7 +188,7 @@ const AjusteResultCard: FC<IAjusteResultCardProps> = ({ result, onDismiss }) => 
 										{Math.abs(row.available_quantity) === 1
 											? '1 unidad reservada no tiene stock que la respalde.'
 											: `${Math.abs(row.available_quantity)} unidades reservadas no tienen stock que las respalde.`}{' '}
-										Hay que reponer stock o liberar la reserva.
+										Se requiere reponer stock o liberar la reserva.
 									</li>
 								))}
 							</ul>

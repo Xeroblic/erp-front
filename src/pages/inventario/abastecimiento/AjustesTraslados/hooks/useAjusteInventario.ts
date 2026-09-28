@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -13,7 +12,6 @@ import {
 	getInventoryAdjustableProducts,
 	getInventoryStockAvailability,
 	getInventoryWarehouses,
-	listInventoryOrigins,
 } from '@/services/procurement/inventoryStock.service';
 import type { IInventoryStockAvailability } from '@/services/procurement/inventoryStock.service';
 import {
@@ -24,7 +22,6 @@ import {
 import {
 	AjusteSchema,
 	emptyAjusteItem,
-	optionalId,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/ajuste.types';
 import type {
 	IAjusteFormValues,
@@ -38,7 +35,6 @@ import {
 import type {
 	IInventoryAdjustment,
 	IInventoryAdjustmentPayload,
-	IInventoryStockOriginRow,
 	IInventoryStockRow,
 	IProcurementProduct,
 } from '@/interface/procurement.interface';
@@ -56,12 +52,10 @@ export interface IAjusteResult {
 /**
  * Lógica del ajuste por conteo (card 08, sección 11).
  *
- * Las procedencias se piden **por producto elegido**, con el mismo
- * `GET B/inventory-stock/{product}/origins` del contrato, y no por un thunk:
- * el slice modela una única consulta de procedencias con `ownerContext` —
- * pensada para la fila expandida de `StockPorUbicacion` —, y un formulario con
- * varias líneas necesita varias a la vez. La llamada directa queda detrás del
- * mismo flag que los thunks para no escaparse de la puerta de mocks.
+ * El ajuste corrige el saldo de la ubicación elegida: no se enlaza a una
+ * recepción ni atribuye egresos a una compra. El servicio consume lo más
+ * antiguo primero (FIFO), que es lo que el usuario espera al «quitar de la
+ * ubicación».
  */
 export default function useAjusteInventario(
 	branchId: number,
@@ -76,9 +70,6 @@ export default function useAjusteInventario(
 	// Las líneas muestran sus errores tras intentar avanzar del paso de
 	// productos, no sólo tras un envío: el asistente valida antes de confirmar.
 	const [itemsChecked, setItemsChecked] = useState(false);
-	const [originsByProduct, setOriginsByProduct] = useState<
-		Record<number, IInventoryStockOriginRow[]>
-	>({});
 
 	const warehouses = useMemo(() => getInventoryWarehouses(branchId), [branchId]);
 	/**
@@ -118,7 +109,6 @@ export default function useAjusteInventario(
 			location: '',
 			reason: '',
 			notes: '',
-			relatedStockReceiptId: '',
 			items: [emptyAjusteItem()],
 		},
 		validationSchema: AjusteSchema,
@@ -127,12 +117,10 @@ export default function useAjusteInventario(
 				warehouse_id: warehouseIdFromToken(formValues.location),
 				reason: formValues.reason.trim(),
 				notes: formValues.notes.trim() || null,
-				related_stock_receipt_id: optionalId(formValues.relatedStockReceiptId),
 				items: formValues.items.map((item) => ({
 					product_id: Number(item.productId),
 					quantity_delta: Number(item.quantityDelta),
 					condition: item.condition,
-					origin_id: optionalId(item.originId),
 				})),
 			};
 			const names: TProductNames = {};
@@ -163,17 +151,15 @@ export default function useAjusteInventario(
 				(productId) => getInventoryStockAvailability(branchId, productId),
 			);
 			setResult({ adjustment, products: names, locationLabel, availability });
-			toast.success(`Ajuste aplicado en ${locationLabel}.`);
+			toast.success(`Ajuste registrado en ${locationLabel}.`);
 			helpers.resetForm({
 				values: {
 					location: formValues.location,
 					reason: '',
 					notes: '',
-					relatedStockReceiptId: '',
 					items: [emptyAjusteItem()],
 				},
 			});
-			setOriginsByProduct({});
 			setItemsChecked(false);
 			setRetry((value) => value + 1);
 		},
@@ -214,85 +200,6 @@ export default function useAjusteInventario(
 	);
 	stockRowsRef.current = stockRows;
 
-	/* Procedencias de cada producto elegido, para atribuir egresos. */
-	const chosenProductIds = useMemo(
-		() =>
-			[
-				...new Set(
-					values.items
-						.map((item) => item.productId)
-						.filter((productId): productId is number => productId !== ''),
-				),
-			].sort((a, b) => a - b),
-		[values.items],
-	);
-	const locationKey = values.location;
-
-	useEffect(() => {
-		if (!INVENTORY_STOCK_USE_MOCKS || !locationKey || chosenProductIds.length === 0)
-			return undefined;
-		const controller = new AbortController();
-		const missing = chosenProductIds.filter((productId) => !(productId in originsByProduct));
-		if (missing.length === 0) return undefined;
-
-		void Promise.all(
-			missing.map(async (productId) => {
-				try {
-					const response = await listInventoryOrigins(
-						branchId,
-						productId,
-						{ ...locationStockParams(locationKey), page: 1, per_page: 100 },
-						controller.signal,
-					);
-					return [productId, response.data] as const;
-				} catch {
-					// Una procedencia que no se pudo leer deja la línea en FIFO
-					// automático, que es un ajuste válido: no bloquea el formulario.
-					return [productId, [] as IInventoryStockOriginRow[]] as const;
-				}
-			}),
-		).then((entries) => {
-			if (controller.signal.aborted) return;
-			const loaded: Record<number, IInventoryStockOriginRow[]> = {};
-			entries.forEach(([productId, origins]) => {
-				loaded[productId] = origins;
-			});
-			setOriginsByProduct((current) => ({ ...current, ...loaded }));
-		});
-
-		return () => {
-			controller.abort();
-		};
-	}, [branchId, locationKey, chosenProductIds, originsByProduct]);
-
-	/**
-	 * Recepciones enlazables: las que respaldan alguna procedencia de los
-	 * productos ya elegidos. Enlazar a una recepción que no puso stock acá
-	 * produciría un ajuste imposible de auditar (422 en el servicio).
-	 */
-	const receiptOptions = useMemo(() => {
-		const ids = new Set<number>();
-		Object.values(originsByProduct).forEach((origins) =>
-			origins.forEach((origin) => {
-				if (origin.stock_receipt_id !== null) ids.add(origin.stock_receipt_id);
-			}),
-		);
-		return [...ids].sort((a, b) => a - b);
-	}, [originsByProduct]);
-
-	/** Procedencias elegibles para una línea, filtradas por la recepción enlazada. */
-	const originsFor = useCallback(
-		(productId: number | ''): IInventoryStockOriginRow[] => {
-			if (productId === '') return [];
-			const origins = originsByProduct[productId] ?? [];
-			if (values.relatedStockReceiptId === '') return origins;
-			return origins.filter(
-				(origin) => origin.stock_receipt_id === values.relatedStockReceiptId,
-			);
-		},
-		[originsByProduct, values.relatedStockReceiptId],
-	);
-
 	const totalsFor = useCallback(
 		(productId: number | ''): IInventoryStockRow | null =>
 			productId === ''
@@ -306,12 +213,7 @@ export default function useAjusteInventario(
 			void setFieldValue(
 				'items',
 				values.items.map((item, position) => {
-					if (position !== index) return item;
-					const next = { ...item, ...patch };
-					// Un ingreso no admite origen: cambiar el signo lo descarta en
-					// vez de dejar un valor que el servicio rechazaría.
-					if (Number(next.quantityDelta) > 0) next.originId = '';
-					return next;
+					return position === index ? { ...item, ...patch } : item;
 				}),
 			);
 		},
@@ -331,7 +233,7 @@ export default function useAjusteInventario(
 	);
 
 	/**
-	 * Cambiar de ubicación invalida líneas, procedencias y recepción enlazada.
+	 * Cambiar de ubicación invalida las líneas: el saldo que muestran era de la otra.
 	 *
 	 * Un único `setValues` valida con los valores nuevos. Encadenar
 	 * `setFieldValue` + `setFieldTouched` hacía que cada llamada validara con el
@@ -343,29 +245,14 @@ export default function useAjusteInventario(
 				{
 					...values,
 					location: token,
-					relatedStockReceiptId: '',
 					items: [emptyAjusteItem()],
 				},
 				true,
 			);
 			void setTouched({ ...touched, location: true }, false);
-			setOriginsByProduct({});
 			setItemsChecked(false);
 		},
 		[setValues, setTouched, values, touched],
-	);
-
-	const setRelatedReceipt = useCallback(
-		(value: number | '') => {
-			void setFieldValue('relatedStockReceiptId', value);
-			// Las procedencias elegibles cambian con la recepción: un origen de
-			// otra recepción dejaría de ser válido y hay que volver a elegirlo.
-			void setFieldValue(
-				'items',
-				values.items.map((item) => ({ ...item, originId: '' as number | '' })),
-			);
-		},
-		[setFieldValue, values.items],
 	);
 
 	/**
@@ -447,12 +334,9 @@ export default function useAjusteInventario(
 		loadingStock,
 		stockError,
 		hasLocation,
-		receiptOptions,
-		originsFor,
 		totalsFor,
 		errorFor,
 		setLocation,
-		setRelatedReceipt,
 		setItem,
 		addItem,
 		removeItem,

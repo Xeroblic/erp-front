@@ -3,7 +3,6 @@ import { configureStore, createSlice } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { toast } from 'react-toastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
@@ -160,7 +159,7 @@ const fillLine = (productId: string, delta: string) => {
 	fireEvent.change(screen.getByLabelText('Producto de la línea 1'), {
 		target: { value: productId },
 	});
-	fireEvent.change(screen.getByLabelText('Sumar o restar en la línea 1'), {
+	fireEvent.change(screen.getByLabelText('Cantidad de ajuste de la línea 1'), {
 		target: { value: delta },
 	});
 };
@@ -181,20 +180,20 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		await chooseMainWarehouse();
 		fillLine('58', '-2');
 		await goToReason('Conteo físico: faltan dos unidades');
-		fireEvent.click(screen.getByRole('button', { name: 'Aplicar ajuste' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 
 		const table = await screen.findByRole('table', {
 			name: 'Saldos antes y después del ajuste',
 		});
-		expect(screen.getByText(/Se restaron/)).toHaveTextContent(
-			'Se restaron 2 unidades aptas de Cable HDMI 2 m.',
+		expect(screen.getByText(/Egreso de/)).toHaveTextContent(
+			'Egreso de 2 unidades aptas de Cable HDMI 2 m.',
 		);
 
 		const row = within(table).getAllByRole('row')[1];
 		const cells = within(row).getAllByRole('cell');
 		expect(cells[2]).toHaveTextContent('-2');
 		// El fixture canónico del cable son 100 físicos aptos en la bodega principal:
-		// «Antes» y «Ahora» son de la condición ajustada (apto).
+		// «Stock anterior» y «Stock final» son de la condición ajustada (apto).
 		expect(cells[3]).toHaveTextContent('100');
 		expect(cells[4]).toHaveTextContent('98');
 		// El total de la ubicación: el no apto no se movió, no hay reclasificación.
@@ -217,7 +216,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		await chooseMainWarehouse();
 		fillLine('58', '3');
 		await goToReason('Conteo: aparecen tres unidades');
-		fireEvent.click(screen.getByRole('button', { name: 'Aplicar ajuste' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 
 		const table = await screen.findByRole('table', {
 			name: 'Saldos antes y después del ajuste',
@@ -225,8 +224,8 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
 		expect(cells[2]).toHaveTextContent('+3');
 		expect(cells[4]).toHaveTextContent('103');
-		expect(screen.getByText(/Se sumaron/)).toHaveTextContent(
-			'Se sumaron 3 unidades aptas de Cable HDMI 2 m.',
+		expect(screen.getByText(/Ingreso de/)).toHaveTextContent(
+			'Ingreso de 3 unidades aptas de Cable HDMI 2 m.',
 		);
 	});
 
@@ -238,7 +237,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		fillLine('58', '3');
 		await goToReason('Conteo: aparecen tres sin ubicar');
 
-		fireEvent.click(screen.getByRole('button', { name: 'Aplicar ajuste' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 
 		const table = await screen.findByRole('table', {
 			name: 'Saldos antes y después del ajuste',
@@ -257,10 +256,10 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		await chooseLocation('unlocated');
 
 		expect(screen.queryByText('Selecciona un producto.')).not.toBeInTheDocument();
-		expect(screen.queryByText('Indica cuánto sumar o restar.')).not.toBeInTheDocument();
+		expect(screen.queryByText('Indica la cantidad de ajuste.')).not.toBeInTheDocument();
 		// La ubicación recién elegida tampoco se valida como vacía.
 		expect(screen.queryByText('Indica la ubicación del ajuste.')).not.toBeInTheDocument();
-		expect(screen.getByLabelText('Sumar o restar en la línea 1')).not.toHaveClass(
+		expect(screen.getByLabelText('Cantidad de ajuste de la línea 1')).not.toHaveClass(
 			'!border-red-500',
 		);
 	});
@@ -270,7 +269,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		await chooseLocation('unlocated');
 		fillLine('31', '-3');
 		await goToReason('Conteo físico: faltan tres mouse');
-		fireEvent.click(screen.getByRole('button', { name: 'Aplicar ajuste' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 
 		// El fixture reserva 16 de los 17 aptos de la sucursal: restar 3 deja el
 		// disponible en −2, y eso se muestra.
@@ -284,32 +283,6 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		});
 		const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
 		expect(cells[2]).toHaveTextContent('16');
-	});
-
-	it('no avanza con un egreso enlazado a una recepción sin indicar su origen', async () => {
-		const toastError = vi.spyOn(toast, 'error');
-		renderPage();
-		await chooseLocation('unlocated');
-		fillLine('31', '-1');
-		// La recepción enlazable aparece cuando cargan las procedencias del mouse.
-		const receipt = screen.getByLabelText('Recepción enlazada (opcional)');
-		await waitFor(() =>
-			expect(within(receipt).getByRole('option', { name: 'Recepción #80' })).toBeEnabled(),
-		);
-		fireEvent.change(receipt, { target: { value: '80' } });
-
-		await clickNext();
-
-		await waitFor(() =>
-			expect(toastError).toHaveBeenCalledWith(
-				'Revisa las líneas marcadas antes de continuar.',
-			),
-		);
-		expect(
-			screen.getByText('Con una recepción enlazada, elige de qué compra descontar.'),
-		).toBeInTheDocument();
-		// El esquema lo detiene antes de escribir: el paso no avanza.
-		expect(screen.queryByLabelText('Motivo')).not.toBeInTheDocument();
 	});
 
 	it('deriva a Recepciones en vez de ofrecer ingresar una compra', () => {
@@ -378,15 +351,15 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		fillLine('58', '0');
 		await clickNext();
 		expect(
-			await screen.findByText('La cantidad a sumar o restar no puede ser cero.'),
+			await screen.findByText('La cantidad de ajuste no puede ser cero.'),
 		).toBeInTheDocument();
 		expect(screen.queryByLabelText('Motivo')).not.toBeInTheDocument();
 
-		fireEvent.change(screen.getByLabelText('Sumar o restar en la línea 1'), {
+		fireEvent.change(screen.getByLabelText('Cantidad de ajuste de la línea 1'), {
 			target: { value: '-1' },
 		});
 		await goToReason();
-		fireEvent.click(screen.getByRole('button', { name: 'Aplicar ajuste' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 		expect(await screen.findByText('Indica el motivo del ajuste.')).toBeInTheDocument();
 
 		expect(
@@ -401,11 +374,11 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 
 		// Aviso en la línea antes de intentar escribir.
 		expect(
-			await screen.findByText('No puedes restar más de lo que hay (100).'),
+			await screen.findByText('El egreso supera el stock en sistema (100).'),
 		).toBeInTheDocument();
 
 		await goToReason('Conteo');
-		fireEvent.click(screen.getByRole('button', { name: 'Aplicar ajuste' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 		const alert = await screen.findByRole('alert');
 		expect(alert).not.toHaveTextContent('No se pudo registrar el ajuste.');
 		expect(
@@ -413,39 +386,34 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		).not.toBeInTheDocument();
 	});
 
-	it('muestra cuánto quedará en la ubicación al sumar o restar', async () => {
+	it('muestra el stock resultante de la ubicación según la cantidad de ajuste', async () => {
 		renderPage();
 		await chooseMainWarehouse();
-		const finalBalance = screen.getByTestId('ajuste-quedara-0');
+		const finalBalance = screen.getByTestId('ajuste-stock-resultante-0');
 		expect(finalBalance).toHaveTextContent('—');
 
 		fillLine('58', '-2');
 		await waitFor(() => expect(finalBalance).toHaveTextContent('98'));
 
-		fireEvent.change(screen.getByLabelText('Sumar o restar en la línea 1'), {
+		fireEvent.change(screen.getByLabelText('Cantidad de ajuste de la línea 1'), {
 			target: { value: '-101' },
 		});
 		await waitFor(() => expect(finalBalance).toHaveTextContent('-1'));
 		expect(finalBalance.parentElement).toHaveClass('text-red-600');
 	});
 
-	it('no ofrece elegir una procedencia para un ingreso positivo', async () => {
+	it('no ofrece enlazar una recepción ni elegir de qué compra descontar', async () => {
 		renderPage();
-		await chooseMainWarehouse();
-		fillLine('58', '-1');
-		expect(screen.getByLabelText('Origen a descontar en la línea 1')).toBeInTheDocument();
+		await chooseLocation('unlocated');
+		// El mouse tiene stock respaldado por una recepción en «Sin ubicación».
+		fillLine('31', '-1');
 
-		fireEvent.change(screen.getByLabelText('Sumar o restar en la línea 1'), {
-			target: { value: '3' },
-		});
-		await waitFor(() =>
-			expect(
-				screen.queryByLabelText('Origen a descontar en la línea 1'),
-			).not.toBeInTheDocument(),
-		);
+		expect(screen.getByText(/Ubicación:/)).toHaveTextContent('Ubicación: Sin ubicación');
+		expect(screen.queryByLabelText(/Recepción enlazada/)).not.toBeInTheDocument();
+		expect(screen.queryByLabelText(/Origen a descontar/)).not.toBeInTheDocument();
 		expect(
-			screen.getByText(/No aplica al sumar: entra como ingreso por ajuste/),
-		).toBeInTheDocument();
+			screen.queryByRole('columnheader', { name: 'Descontar de' }),
+		).not.toBeInTheDocument();
 	});
 
 	it('bloquea la pantalla sin `edit-product` y con los mocks apagados', () => {
