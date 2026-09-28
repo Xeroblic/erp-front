@@ -1,11 +1,7 @@
 import React from 'react';
-import { ProcurementMockGate } from '@/components/procurement';
 import ProveedoresView from './ProveedoresView';
 
-const Proveedores = () => (
-	<ProcurementMockGate title='Proveedores' icon='HeroBuildingStorefront'>
-		<ProveedoresView />
-	</ProcurementMockGate>
-);
+// Sin `ProcurementMockGate`: el maestro de proveedores ya consume el backend real.
+const Proveedores = () => <ProveedoresView />;
 
 export default Proveedores;

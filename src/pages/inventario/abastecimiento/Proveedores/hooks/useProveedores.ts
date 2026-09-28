@@ -7,13 +7,23 @@ import {
 	selectProcurementSuppliersItems,
 	selectProcurementSuppliersListError,
 	selectProcurementSuppliersListLoading,
+	selectProcurementSuppliersListSubsidiaryId,
 	selectProcurementSuppliersMeta,
 } from '@/store/slices/procurement/procurementSuppliersSlice';
-import type { IProcurementSupplierListParams } from '@/interface/procurement.interface';
+import type {
+	IProcurementSupplierListParams,
+	IProcurementSupplierListRow,
+} from '@/interface/procurement.interface';
 import { SUPPLIER_STATUS_FILTER_OPTIONS } from '../types';
 import type { TSupplierStatusFilter } from '../types';
 
 const DEFAULT_PAGE_SIZE = 15; // Defecto del contrato (sección 1).
+const NO_ROWS: IProcurementSupplierListRow[] = [];
+
+interface IDeactivateTarget {
+	subsidiaryId: number | null;
+	supplier: IProcurementSupplierListRow;
+}
 
 /**
  * `is_active` e `include_inactive` son excluyentes por contrato: modelarlos
@@ -31,16 +41,48 @@ const buildStatusParams = (
 const useProveedores = () => {
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
-	const items = useAppSelector(selectProcurementSuppliersItems);
-	const meta = useAppSelector(selectProcurementSuppliersMeta);
+	const storedItems = useAppSelector(selectProcurementSuppliersItems);
+	const storedMeta = useAppSelector(selectProcurementSuppliersMeta);
 	const listLoading = useAppSelector(selectProcurementSuppliersListLoading);
-	const error = useAppSelector(selectProcurementSuppliersListError);
+	const storedError = useAppSelector(selectProcurementSuppliersListError);
+	const listSubsidiaryId = useAppSelector(selectProcurementSuppliersListSubsidiaryId);
+
+	/**
+	 * El listado del store es de la última filial que respondió; la nueva
+	 * petición recién sale en el efecto. Hasta que llegue, lo de la filial
+	 * anterior no se muestra: la vista queda vacía y en carga.
+	 */
+	const isListForSubsidiary = listSubsidiaryId === subsidiaryId;
+	const items = isListForSubsidiary ? storedItems : NO_ROWS;
+	const meta = isListForSubsidiary ? storedMeta : null;
+	const error = isListForSubsidiary ? storedError : null;
 
 	const [search, setSearch] = useState('');
 	const [debouncedSearch] = useDebounce(search, 300);
 	const [status, setStatus] = useState<TSupplierStatusFilter>('active');
 	const [page, setPage] = useState(1);
 	const [perPage, setPerPage] = useState(DEFAULT_PAGE_SIZE);
+	const [deactivateRequest, setDeactivateRequest] = useState<IDeactivateTarget | null>(null);
+
+	// Otra filial es otro listado: se vuelve a la página 1 en el mismo render,
+	// para no pedir una página que puede no existir en la nueva.
+	const [pageSubsidiaryId, setPageSubsidiaryId] = useState(subsidiaryId);
+	if (pageSubsidiaryId !== subsidiaryId) {
+		setPageSubsidiaryId(subsidiaryId);
+		setPage(1);
+	}
+
+	/**
+	 * El proveedor a desactivar queda atado a la filial en que se eligió: si
+	 * cambia, el modal se cierra en vez de enviar ese ID a la filial nueva.
+	 */
+	const deactivateTarget =
+		deactivateRequest?.subsidiaryId === subsidiaryId ? deactivateRequest.supplier : null;
+	const openDeactivate = useCallback(
+		(supplier: IProcurementSupplierListRow) => setDeactivateRequest({ subsidiaryId, supplier }),
+		[subsidiaryId],
+	);
+	const closeDeactivate = useCallback(() => setDeactivateRequest(null), []);
 
 	const isSearchDebouncing = search !== debouncedSearch;
 	const normalizedSearch = debouncedSearch.trim();
@@ -102,7 +144,7 @@ const useProveedores = () => {
 		subsidiaryId,
 		items,
 		meta,
-		loading: listLoading || isSearchDebouncing,
+		loading: listLoading || isSearchDebouncing || !isListForSubsidiary,
 		error,
 		search,
 		status,
@@ -114,6 +156,9 @@ const useProveedores = () => {
 		onPaginationChange,
 		refresh,
 		refreshAfterMutation,
+		deactivateTarget,
+		openDeactivate,
+		closeDeactivate,
 	};
 };
 

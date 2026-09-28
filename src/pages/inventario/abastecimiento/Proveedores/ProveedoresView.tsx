@@ -6,7 +6,6 @@ import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
-import { ProcurementMockNotice } from '@/components/procurement';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import type { IProcurementSupplierListRow } from '@/interface/procurement.interface';
 import useProveedores from './hooks/useProveedores';
@@ -45,12 +44,12 @@ const ProveedoresView = () => {
 		onPaginationChange,
 		refresh,
 		refreshAfterMutation,
+		deactivateTarget,
+		openDeactivate,
+		closeDeactivate,
 	} = useProveedores();
 
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-	const [deactivateTarget, setDeactivateTarget] = useState<IProcurementSupplierListRow | null>(
-		null,
-	);
 
 	const handleView = (id: number) => navigate(`/inventario/abastecimiento/proveedores/${id}`);
 
@@ -87,7 +86,6 @@ const ProveedoresView = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
-				<ProcurementMockNotice />
 				<ProveedoresFilters
 					search={search}
 					onSearchChange={setSearchValue}
@@ -118,7 +116,7 @@ const ProveedoresView = () => {
 					hasSearch={hasSearch}
 					onPaginationChange={onPaginationChange}
 					onView={handleView}
-					onDeactivate={setDeactivateTarget}
+					onDeactivate={openDeactivate}
 					onRestore={handleRestore}
 					branchId={branchId}
 					subsidiaryId={subsidiaryId}
@@ -138,7 +136,7 @@ const ProveedoresView = () => {
 			<DeactivateSupplierModal
 				isOpen={deactivateTarget !== null}
 				setIsOpen={(isOpen) => {
-					if (!isOpen) setDeactivateTarget(null);
+					if (!isOpen) closeDeactivate();
 				}}
 				supplier={deactivateTarget}
 				subsidiaryId={subsidiaryId}

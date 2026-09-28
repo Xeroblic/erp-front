@@ -17,6 +17,8 @@ import type {
 	IPurchaseDocument,
 	IPurchaseDocumentCreatePayload,
 	IPurchaseDocumentLineInput,
+	IPurchaseDocumentUpdatePayload,
+	TPurchaseDocumentType,
 } from '@/interface/procurement.interface';
 import { EMPTY_DOCUMENTO_LINE, EMPTY_DOCUMENTO_VALUES, documentoCompraFormSchema } from '../types';
 import type { IDocumentoCompraFormValues, IDocumentoCompraLineFormValues } from '../types';
@@ -39,9 +41,12 @@ const toOptionalDecimal = (value: string): string | null => {
 	return cents === null ? null : formatDecimalCents(cents);
 };
 
-const toFormValues = (document: IPurchaseDocument | null): IDocumentoCompraFormValues =>
+export const toFormValues = (
+	document: IPurchaseDocument | null,
+	defaultDocumentType: TPurchaseDocumentType,
+): IDocumentoCompraFormValues =>
 	document === null
-		? EMPTY_DOCUMENTO_VALUES
+		? { ...EMPTY_DOCUMENTO_VALUES, document_type: defaultDocumentType }
 		: {
 				document_type: document.document_type,
 				supplier_id: document.supplier?.id ?? '',
@@ -92,6 +97,23 @@ const toPayload = (values: IDocumentoCompraFormValues): IPurchaseDocumentCreateP
 	items: values.items.map(toLineInput),
 });
 
+/**
+ * En edición, un proveedor que no cambió no se reenvía. Enviarlo obliga a
+ * resolverlo de nuevo, y quien puede editar el documento sin
+ * `view-procurement-supplier` terminaba con «El proveedor no existe» aunque
+ * no lo hubiera tocado. El backend completa el `supplier_id` guardado cuando
+ * sólo llega `document_type`, así que omitirlo no rompe la regla de factura.
+ */
+export const toUpdatePayload = (
+	values: IDocumentoCompraFormValues,
+	document: IPurchaseDocument,
+): IPurchaseDocumentUpdatePayload => {
+	const { supplier_id: supplierId, ...payload } = toPayload(values);
+	return supplierId === (document.supplier?.id ?? null)
+		? payload
+		: { ...payload, supplier_id: supplierId };
+};
+
 const FORM_FIELD_BY_API_FIELD: Partial<Record<string, keyof IDocumentoCompraFormValues>> = {
 	supplier_id: 'supplier_id',
 	document_number: 'document_number',
@@ -105,6 +127,11 @@ interface IUseDocumentoCompraFormArgs {
 	document?: IPurchaseDocument | null;
 	/** `ETag` vigente de `document`, para `If-Match`. Sólo hace falta en edición. */
 	etag?: string | null;
+	/**
+	 * Tipo con que abre un alta. Quien no puede listar proveedores no puede
+	 * elegir el que exige la factura, así que su alta abre como boleta.
+	 */
+	defaultDocumentType?: TPurchaseDocumentType;
 	onSuccess?: (document: IPurchaseDocument) => void;
 }
 
@@ -112,6 +139,7 @@ const useDocumentoCompraForm = ({
 	subsidiaryId,
 	document = null,
 	etag = null,
+	defaultDocumentType = 'invoice',
 	onSuccess,
 }: IUseDocumentoCompraFormArgs) => {
 	const dispatch = useAppDispatch();
@@ -137,25 +165,24 @@ const useDocumentoCompraForm = ({
 		[],
 	);
 	const formik = useFormik<IDocumentoCompraFormValues>({
-		initialValues: toFormValues(document),
+		initialValues: toFormValues(document, defaultDocumentType),
 		enableReinitialize: true,
 		validationSchema: documentoCompraFormSchema,
 		onSubmit: async (values, { resetForm }) => {
-			const payload = toPayload(values);
 			const result = await idempotentWrite.submit((headers) =>
 				isEdit && document
 					? dispatch(
 							updatePurchaseDocumentThunk({
 								subsidiaryId,
 								id: document.id,
-								payload,
+								payload: toUpdatePayload(values, document),
 								headers: { idempotencyKey: headers['Idempotency-Key'], etag },
 							}),
 						).unwrap()
 					: dispatch(
 							createPurchaseDocumentThunk({
 								subsidiaryId,
-								payload,
+								payload: toPayload(values),
 								headers: { idempotencyKey: headers['Idempotency-Key'] },
 							}),
 						).unwrap(),
@@ -168,7 +195,11 @@ const useDocumentoCompraForm = ({
 				// reabriría con las líneas del envío anterior.
 				if (!isEdit)
 					resetForm({
-						values: { ...EMPTY_DOCUMENTO_VALUES, items: [{ ...EMPTY_DOCUMENTO_LINE }] },
+						values: {
+							...EMPTY_DOCUMENTO_VALUES,
+							document_type: defaultDocumentType,
+							items: [{ ...EMPTY_DOCUMENTO_LINE }],
+						},
 					});
 				onSuccess?.(result.data);
 			}

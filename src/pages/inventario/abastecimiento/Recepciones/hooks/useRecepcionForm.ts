@@ -43,7 +43,7 @@ const toOptionalDecimal = (value: string): string | null => {
 	return cents === null ? null : formatDecimalCents(cents);
 };
 
-const toFormValues = (
+export const toFormValues = (
 	receipt: IStockReceipt | null,
 	defaultWarehouseId: number | '',
 	initialDocumentId?: number,
@@ -122,14 +122,30 @@ const toCreatePayload = (values: IRecepcionFormValues): IStockReceiptCreatePaylo
 				items: values.items.map(toManualLineInput),
 			};
 
-const toUpdatePayload = (values: IRecepcionFormValues): IStockReceiptUpdatePayload => ({
+/**
+ * Un proveedor que no cambió no se reenvía: enviarlo obliga a resolverlo de
+ * nuevo, y sin `view-procurement-supplier` la corrección terminaba en «El
+ * proveedor no existe» aunque el usuario no lo hubiera tocado.
+ */
+const toSupplierUpdate = (
+	values: IRecepcionFormValues,
+	receipt: IStockReceipt,
+): Pick<IStockReceiptUpdatePayload, 'supplier_id'> => {
+	const supplierId = values.supplier_id === '' ? null : Number(values.supplier_id);
+	return supplierId === (receipt.supplier?.id ?? null) ? {} : { supplier_id: supplierId };
+};
+
+export const toUpdatePayload = (
+	values: IRecepcionFormValues,
+	receipt: IStockReceipt,
+): IStockReceiptUpdatePayload => ({
 	warehouse_id: Number(values.warehouse_id),
 	received_on: values.received_on,
 	notes: values.notes.trim() || null,
 	...(values.mode === 'manual'
 		? {
 				reason: values.reason.trim(),
-				supplier_id: values.supplier_id === '' ? null : Number(values.supplier_id),
+				...toSupplierUpdate(values, receipt),
 				items: values.items.map(toManualLineInput),
 			}
 		: { items: values.items.map(toWithDocumentLineInput) }),
@@ -241,7 +257,7 @@ const useRecepcionForm = ({
 							updateStockReceiptThunk({
 								subsidiaryId,
 								id: receipt.id,
-								payload: toUpdatePayload(values),
+								payload: toUpdatePayload(values, receipt),
 								headers: { idempotencyKey: headers['Idempotency-Key'], etag },
 								authorizedBranchIds,
 							}),

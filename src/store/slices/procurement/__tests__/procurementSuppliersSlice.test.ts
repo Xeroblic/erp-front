@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { afterEach, describe, expect, it } from 'vitest';
-import { resetProcurementSuppliersStoreForTests } from '@/services/procurement/procurementSuppliers.service';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { resetProcurementSuppliersStoreForTests } from '@/mocks/services/procurementSuppliers.mock';
 import procurementSuppliersReducer, {
 	createProcurementSupplierThunk,
 	deactivateProcurementSupplierThunk,
@@ -12,10 +12,15 @@ import procurementSuppliersReducer, {
 import type { IProcurementSupplierPayload } from '@/interface/procurement.interface';
 
 /**
- * El servicio mock ya está probado en `procurementSuppliers.service.test.ts`.
- * Estas pruebas verifican el cableado del slice: qué flags mueve cada thunk y
- * que una escritura exitosa se refleje en `items`/`current` sin refetch.
+ * El servicio real se sustituye por el doble en memoria, que ya está probado
+ * en `procurementSuppliers.mock.test.ts`. Estas pruebas verifican el cableado
+ * del slice: qué flags mueve cada thunk y que una escritura exitosa se refleje
+ * en `items`/`current` sin refetch.
  */
+vi.mock(
+	'@/services/procurement/procurementSuppliers.service',
+	() => import('@/mocks/services/procurementSuppliers.mock'),
+);
 
 const createStore = () => configureStore({ reducer: procurementSuppliersReducer });
 
@@ -56,6 +61,19 @@ describe('fetchProcurementSuppliers', () => {
 		expect(store.getState().listError).toBe('No se pudo determinar la filial activa.');
 		expect(store.getState().items).toEqual([]);
 	});
+
+	it('registra la filial del listado y un fallo en otra no deja las filas anteriores', async () => {
+		const store = createStore();
+		await store.dispatch(fetchProcurementSuppliers({ subsidiaryId: 4 }));
+		expect(store.getState().listSubsidiaryId).toBe(4);
+		expect(store.getState().items.length).toBeGreaterThan(0);
+
+		await store.dispatch(fetchProcurementSuppliers({ subsidiaryId: null }));
+
+		expect(store.getState().listSubsidiaryId).toBeNull();
+		expect(store.getState().items).toEqual([]);
+		expect(store.getState().meta).toBeNull();
+	});
 });
 
 describe('fetchProcurementSupplierDetail', () => {
@@ -80,7 +98,11 @@ describe('mutaciones', () => {
 	it('crear levanta y baja creating sin tocar items (el hook refresca la lista)', async () => {
 		const store = createStore();
 		const request = store.dispatch(
-			createProcurementSupplierThunk({ subsidiaryId: 4, payload: newSupplierPayload }),
+			createProcurementSupplierThunk({
+				subsidiaryId: 4,
+				payload: newSupplierPayload,
+				headers: { idempotencyKey: 'clave-alta' },
+			}),
 		);
 		expect(store.getState().creating).toBe(true);
 
@@ -103,6 +125,7 @@ describe('mutaciones', () => {
 					rut: '76123456-0',
 					company_name: 'PCExpress Renovado',
 				},
+				headers: { idempotencyKey: 'clave-edicion' },
 			}),
 		);
 
@@ -117,11 +140,23 @@ describe('mutaciones', () => {
 		await store.dispatch(fetchProcurementSuppliers({ subsidiaryId: 4 }));
 		await store.dispatch(fetchProcurementSupplierDetail({ subsidiaryId: 4, id: 7 }));
 
-		await store.dispatch(deactivateProcurementSupplierThunk({ subsidiaryId: 4, id: 7 }));
+		await store.dispatch(
+			deactivateProcurementSupplierThunk({
+				subsidiaryId: 4,
+				id: 7,
+				headers: { idempotencyKey: 'clave-desactivar' },
+			}),
+		);
 		expect(store.getState().current?.is_active).toBe(false);
 		expect(store.getState().items.find((row) => row.id === 7)?.is_active).toBe(false);
 
-		await store.dispatch(restoreProcurementSupplierThunk({ subsidiaryId: 4, id: 7 }));
+		await store.dispatch(
+			restoreProcurementSupplierThunk({
+				subsidiaryId: 4,
+				id: 7,
+				headers: { idempotencyKey: 'clave-restaurar' },
+			}),
+		);
 		expect(store.getState().current?.is_active).toBe(true);
 		expect(store.getState().items.find((row) => row.id === 7)?.is_active).toBe(true);
 	});

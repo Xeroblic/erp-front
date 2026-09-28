@@ -354,7 +354,7 @@ const CatalogoContratoView = () => {
 					<CatalogSection
 						id='catalogo-simulado'
 						title='Aviso de datos simulados'
-						summary='Proveedores, documentos de compra, recepciones e inventario comparten la bandera VITE_INVENTORY_STOCK_USE_MOCKS: el módulo se enciende o se apaga entero.'>
+						summary='Documentos de compra, recepciones e inventario comparten la bandera VITE_INVENTORY_STOCK_USE_MOCKS: el módulo se enciende o se apaga entero. Proveedores ya usa el backend real y no depende de ella.'>
 						<div className='grid gap-3 md:grid-cols-2'>
 							<CatalogSample
 								title='Bandera encendida'

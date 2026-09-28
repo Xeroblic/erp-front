@@ -3,7 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { act, renderHook } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resetProcurementSuppliersStoreForTests } from '@/services/procurement/procurementSuppliers.service';
+import { resetProcurementSuppliersStoreForTests } from '@/mocks/services/procurementSuppliers.mock';
 import procurementSuppliersReducer from '@/store/slices/procurement/procurementSuppliersSlice';
 import useSupplierRestore from '../useSupplierRestore';
 
@@ -13,6 +13,11 @@ import useSupplierRestore from '../useSupplierRestore';
  * tres lugares que restauran (fila del listado, ficha, banner de conflicto)
  * la omitían.
  */
+
+vi.mock(
+	'@/services/procurement/procurementSuppliers.service',
+	() => import('@/mocks/services/procurementSuppliers.mock'),
+);
 
 vi.mock('@/store', async () => {
 	const reactRedux = await vi.importActual<typeof import('react-redux')>('react-redux');

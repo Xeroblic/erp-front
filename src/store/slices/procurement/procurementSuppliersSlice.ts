@@ -19,15 +19,13 @@ import type {
 
 /**
  * Store del maestro de proveedores (card 02 del módulo de abastecimiento,
- * sección 5 del contrato). Los thunks llaman al servicio mock de
- * `@/services/procurement/procurementSuppliers.service`: el día que el
- * endpoint exista, sólo ese servicio cambia.
+ * sección 5 del contrato). Los thunks llaman al servicio real de
+ * `@/services/procurement/procurementSuppliers.service`.
  *
  * `subsidiaryId` viaja en cada thunk y se reenvía al servicio: el contrato
  * ata el RUT único a la filial
- * (`/api/subsidiaries/{subsidiary}/procurement/suppliers`), y el mock
- * particiona su store por filial por la misma razón — dos filiales no ven ni
- * pisan los proveedores de la otra.
+ * (`/api/subsidiaries/{subsidiary}/procurement/suppliers`). Las escrituras
+ * exigen `headers.idempotencyKey`: el backend rechaza una escritura sin ella.
  */
 
 export interface ProcurementSuppliersState {
@@ -37,6 +35,13 @@ export interface ProcurementSuppliersState {
 	listError: string | null;
 	/** `requestId` de la última petición de listado en curso o resuelta. */
 	listRequestId: string | null;
+	/**
+	 * Filial a la que pertenecen `items`, `meta` y `listError`. La pantalla
+	 * compara con la filial vigente: al cambiarla, lo cargado para la
+	 * anterior deja de mostrarse desde el primer render, sin esperar la
+	 * nueva respuesta.
+	 */
+	listSubsidiaryId: number | null;
 	current: IProcurementSupplier | null;
 	currentLoading: boolean;
 	currentError: string | null;
@@ -60,6 +65,7 @@ const initialState: ProcurementSuppliersState = {
 	listLoading: false,
 	listError: null,
 	listRequestId: null,
+	listSubsidiaryId: null,
 	current: null,
 	currentLoading: false,
 	currentError: null,
@@ -71,7 +77,7 @@ const initialState: ProcurementSuppliersState = {
 };
 
 interface IWriteHeaders {
-	idempotencyKey?: string;
+	idempotencyKey: string;
 }
 
 const MISSING_SUBSIDIARY_MESSAGE = 'No se pudo determinar la filial activa.';
@@ -110,7 +116,7 @@ export const createProcurementSupplierThunk = createAsyncThunk(
 		args: {
 			subsidiaryId: number | null;
 			payload: IProcurementSupplierPayload;
-			headers?: IWriteHeaders;
+			headers: IWriteHeaders;
 		},
 		{ rejectWithValue },
 	) => {
@@ -135,7 +141,7 @@ export const updateProcurementSupplierThunk = createAsyncThunk(
 			subsidiaryId: number | null;
 			id: number;
 			payload: IProcurementSupplierPayload;
-			headers?: IWriteHeaders;
+			headers: IWriteHeaders;
 		},
 		{ rejectWithValue },
 	) => {
@@ -163,7 +169,7 @@ export const updateProcurementSupplierThunk = createAsyncThunk(
 export const deactivateProcurementSupplierThunk = createAsyncThunk(
 	'procurementSuppliers/deactivate',
 	async (
-		args: { subsidiaryId: number | null; id: number; headers?: IWriteHeaders },
+		args: { subsidiaryId: number | null; id: number; headers: IWriteHeaders },
 		{ rejectWithValue },
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
@@ -179,7 +185,7 @@ export const deactivateProcurementSupplierThunk = createAsyncThunk(
 export const restoreProcurementSupplierThunk = createAsyncThunk(
 	'procurementSuppliers/restore',
 	async (
-		args: { subsidiaryId: number | null; id: number; headers?: IWriteHeaders },
+		args: { subsidiaryId: number | null; id: number; headers: IWriteHeaders },
 		{ rejectWithValue },
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
@@ -244,10 +250,17 @@ const procurementSuppliersSlice = createSlice({
 				state.listLoading = false;
 				state.items = action.payload.data;
 				state.meta = action.payload.meta;
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchProcurementSuppliers.rejected, (state, action) => {
 				if (action.meta.requestId !== state.listRequestId) return;
 				state.listLoading = false;
+				// Un fallo en otra filial no deja a la vista las filas de la anterior.
+				if (state.listSubsidiaryId !== action.meta.arg.subsidiaryId) {
+					state.items = [];
+					state.meta = null;
+				}
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 				state.listError = getProcurementErrorMessage(
 					action.payload,
 					'No se pudo cargar el listado.',
@@ -340,6 +353,8 @@ export const selectProcurementSuppliersListLoading = (state: RootState) =>
 	state.procurementSuppliers.listLoading;
 export const selectProcurementSuppliersListError = (state: RootState) =>
 	state.procurementSuppliers.listError;
+export const selectProcurementSuppliersListSubsidiaryId = (state: RootState) =>
+	state.procurementSuppliers.listSubsidiaryId;
 export const selectProcurementSupplierCurrent = (state: RootState) =>
 	state.procurementSuppliers.current;
 export const selectProcurementSupplierCurrentLoading = (state: RootState) =>

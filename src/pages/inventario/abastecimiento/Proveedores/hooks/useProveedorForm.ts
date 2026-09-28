@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { type ClipboardEvent, useCallback, useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
@@ -13,7 +13,7 @@ import type {
 	IProcurementSupplierPayload,
 	IProcurementSupplierRutConflict,
 } from '@/interface/procurement.interface';
-import { proveedorFormSchema } from '../types';
+import { normalizePhone, pastePhone, proveedorFormSchema } from '../types';
 import type { IProveedorFormValues } from '../types';
 import useSupplierRestore from './useSupplierRestore';
 
@@ -78,7 +78,7 @@ const toPayload = (values: IProveedorFormValues): IProcurementSupplierPayload =>
 	billing_commune_id: values.billing_commune_id,
 	shipping_address: values.shipping_address.trim() || null,
 	shipping_commune_id: values.shipping_commune_id,
-	phone: values.phone.trim() || null,
+	phone: normalizePhone(values.phone) || null,
 	email: values.email.trim() || null,
 });
 
@@ -197,6 +197,36 @@ const useProveedorForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseProv
 	);
 
 	/**
+	 * Se normaliza al teclear: los separadores se descartan (con `maxLength`
+	 * contarían como caracteres y truncarían el número) y, al completar los 9
+	 * dígitos, se antepone el `+56` sin pedírselo al usuario.
+	 */
+	const handlePhoneChange = useCallback(
+		(value: string) => {
+			formik.setFieldValue('phone', normalizePhone(value)).catch(() => undefined);
+		},
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[],
+	);
+
+	/**
+	 * El navegador aplica `maxLength` al texto pegado antes de `onChange`: pegar
+	 * `+56 9 1234 5678` dejaría `+56 9 1234 5`. Se toma el pegado a mano.
+	 */
+	const handlePhonePaste = useCallback(
+		(event: ClipboardEvent<HTMLInputElement>) => {
+			event.preventDefault();
+			const input = event.currentTarget;
+			const end = input.selectionEnd ?? input.value.length;
+			const start = input.selectionStart ?? end;
+			const next = pastePhone(input.value, event.clipboardData.getData('text'), start, end);
+			formik.setFieldValue('phone', next).catch(() => undefined);
+		},
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[],
+	);
+
+	/**
 	 * Restaurar desde el conflicto es una decisión explícita del usuario,
 	 * nunca un efecto lateral de guardar: acción propia, separada del submit.
 	 * El contrato es explícito en que nunca se restaura solo. Delegada en
@@ -223,6 +253,8 @@ const useProveedorForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseProv
 		isRestoring,
 		restoreConflicting,
 		handleRutChange,
+		handlePhoneChange,
+		handlePhonePaste,
 		reset,
 	};
 };
