@@ -120,4 +120,36 @@ describe('usePurchasableProductOptions', () => {
 			expect(serviceSpies.searchPurchasableProducts).toHaveBeenCalledTimes(2),
 		);
 	});
+
+	it('limpiar el término vuelve al catálogo sin filtrar, sin esperar el debounce', async () => {
+		serviceSpies.searchPurchasableProducts.mockImplementation((_id: number, query: string) =>
+			Promise.resolve(
+				page(
+					query === 'cable'
+						? [{ id: 11, sku: 'CAB-1', name: 'Cable HDMI' }]
+						: [
+								{ id: 11, sku: 'CAB-1', name: 'Cable HDMI' },
+								{ id: 12, sku: 'MOU-1', name: 'Mouse' },
+							],
+				),
+			),
+		);
+		const { result } = renderHook(() =>
+			usePurchasableProductOptions({ subsidiaryId: 4, isEnabled: true }),
+		);
+		await waitFor(() => expect(result.current.options).toHaveLength(2));
+
+		act(() => result.current.onSearchChange('cable'));
+		await waitFor(() => expect(result.current.options).toHaveLength(1));
+
+		act(() => result.current.clearSearch());
+
+		// Sin debounce: los cables dejan de ofrecerse en el mismo render, así que
+		// el menú de la línea siguiente no se abre filtrado por «cable».
+		expect(result.current.search).toBe('');
+		expect(result.current.options).toEqual([]);
+		expect(result.current.loading).toBe(true);
+		await waitFor(() => expect(result.current.options).toHaveLength(2));
+		expect(serviceSpies.searchPurchasableProducts).toHaveBeenLastCalledWith(4, '');
+	});
 });

@@ -781,6 +781,7 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 																		placeholder='Busca por nombre o SKU…'
 																		// La búsqueda la hace el servidor: filtrar otra vez acá escondería coincidencias por código de barras.
 																		filterOption={null}
+																		// Elegir o cerrar el menú vacía la caja: el término compartido se vacía con ella.
 																		onInputChange={(
 																			text: string,
 																			meta: InputActionMeta,
@@ -792,6 +793,8 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 																				productOptions.onSearchChange(
 																					text,
 																				);
+																			else
+																				productOptions.clearSearch();
 																		}}
 																		isLoading={
 																			productOptions.loading

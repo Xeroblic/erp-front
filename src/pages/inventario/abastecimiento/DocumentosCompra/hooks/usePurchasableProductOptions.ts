@@ -16,6 +16,9 @@ import type { IProcurementProduct } from '@/interface/procurement.interface';
  * abierto a la vez, y el `Select` de cada línea resuelve su valor con
  * `getOption`, no con las opciones de la búsqueda vigente — así una línea no
  * pierde la etiqueta de su producto cuando se busca otro en la siguiente.
+ * Por eso mismo el término se limpia al elegir o al cerrar el menú
+ * (`clearSearch`): si sobreviviera, el menú de la línea siguiente se abriría
+ * filtrado por una búsqueda que su caja ya no muestra.
  *
  * Mismo criterio de contexto que `useActiveSupplierOptions`: cada resultado
  * queda asociado a la filial y al término que lo pidieron, y sólo se expone
@@ -162,6 +165,12 @@ const usePurchasableProductOptions = ({
 
 	const reload = useCallback(() => setReloadToken((token) => token + 1), []);
 
+	/** Sin esperar el debounce: el próximo menú no debe abrir con el término anterior. */
+	const clearSearch = useCallback(() => {
+		setSearch('');
+		setQuery('');
+	}, []);
+
 	/**
 	 * Producto recién creado desde el documento: su etiqueta se conoce antes
 	 * de que una búsqueda lo traiga, y la búsqueda vigente se repite para que
@@ -183,6 +192,7 @@ const usePurchasableProductOptions = ({
 		unavailableReason,
 		search,
 		onSearchChange: setSearch,
+		clearSearch,
 		getOption,
 		reload,
 		addProduct,

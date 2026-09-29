@@ -79,6 +79,7 @@ vi.mock('../../../hooks/useSupplierInlineEdit', () => ({
 		closeSupplierEdit: vi.fn(),
 	}),
 }));
+const productSearch = vi.hoisted(() => ({ onSearchChange: vi.fn(), clearSearch: vi.fn() }));
 vi.mock('../../../hooks/usePurchasableProductOptions', () => ({
 	default: () => ({
 		options: [],
@@ -86,7 +87,8 @@ vi.mock('../../../hooks/usePurchasableProductOptions', () => ({
 		hasMore: false,
 		unavailableReason: null,
 		search: '',
-		onSearchChange: vi.fn(),
+		onSearchChange: productSearch.onSearchChange,
+		clearSearch: productSearch.clearSearch,
 		getOption: () => null,
 		reload: vi.fn(),
 		addProduct: vi.fn(),
@@ -143,5 +145,25 @@ describe('PurchaseDocumentFormModal — cambio de filial', () => {
 		rerender(renderModal({ isOpen: true, subsidiaryId: 4 }));
 
 		expect(folioInput().value).toBe('F-4410');
+	});
+});
+
+describe('PurchaseDocumentFormModal — búsqueda de productos', () => {
+	it('al salir del selector de una línea se limpia el término compartido', () => {
+		const { container } = render(renderModal({ isOpen: true, subsidiaryId: 4 }));
+		const productInput = container.querySelector<HTMLInputElement>(
+			'input[id="items.0.product_id"]',
+		);
+		if (!productInput) throw new Error('No se encontró el selector de producto.');
+
+		fireEvent.focus(productInput);
+		fireEvent.change(productInput, { target: { value: 'cable' } });
+		expect(productSearch.onSearchChange).toHaveBeenLastCalledWith('cable');
+		expect(productSearch.clearSearch).not.toHaveBeenCalled();
+
+		// react-select vacía la caja al salir (y al elegir o cerrar el menú).
+		fireEvent.blur(productInput);
+
+		expect(productSearch.clearSearch).toHaveBeenCalled();
 	});
 });
