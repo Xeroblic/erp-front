@@ -6,6 +6,7 @@ import { resolveProcurementError } from '@/utils/procurementErrors.util';
 import type { IProcurementResolvedError } from '@/utils/procurementErrors.util';
 import type {
 	ICreatedPurchasableProduct,
+	IPendingProductAttempt,
 	IPurchasableProductCreatePayload,
 } from '@/services/procurement/purchasableProducts.service';
 
@@ -33,11 +34,6 @@ import type {
  *    - 422 sin error de `sku`: el SKU estaba libre, así que nada se creó.
  *    - otro fallo incierto: sigue pendiente.
  */
-
-export interface IPendingProductAttempt {
-	subsidiaryId: number;
-	payload: IPurchasableProductCreatePayload;
-}
 
 export type TProductAttemptOutcome =
 	| { kind: 'found'; product: ICreatedPurchasableProduct }

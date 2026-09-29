@@ -112,6 +112,16 @@ export interface IPurchasableProductCreatePayload {
 	category_ids: number[];
 }
 
+/**
+ * Alta cuyo resultado no se supo (red, timeout o 5xx): la filial y el payload
+ * exactos del `POST`, SKU incluido. Es lo que se concilia antes de arriesgar
+ * otro alta.
+ */
+export interface IPendingProductAttempt {
+	subsidiaryId: number;
+	payload: IPurchasableProductCreatePayload;
+}
+
 /** Producto recién creado: además de la opción, si una línea de compra lo admite. */
 export interface ICreatedPurchasableProduct extends IPurchasableProduct {
 	serial_tracking: boolean;

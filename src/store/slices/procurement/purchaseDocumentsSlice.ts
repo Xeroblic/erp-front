@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import {
 	cancelPurchaseDocument,
 	confirmPurchaseDocument,
@@ -8,6 +9,10 @@ import {
 	updatePurchaseDocument,
 } from '@/services/procurement/purchaseDocuments.service';
 import { getProcurementErrorMessage } from '@/utils/procurementErrors.util';
+import type {
+	ICreatedPurchasableProduct,
+	IPendingProductAttempt,
+} from '@/services/procurement/purchasableProducts.service';
 import type { RootState } from '@/store';
 import type {
 	IApiPaginationMeta,
@@ -28,6 +33,17 @@ import type {
  * `current`: la edición (`PATCH`) lo necesita para `If-Match`, y sólo la
  * ficha ya cargada lo tiene — no hay otro lugar del store de donde sacarlo.
  */
+
+/**
+ * Alta de producto en línea que todavía no se puede dar por cerrada:
+ * - `in_flight`: el `POST` (o su conciliación) está en curso.
+ * - `uncertain`: falló sin decir qué pasó; «Reintentar» lo concilia.
+ * - `created`: se creó después de que el modal que lo pidió se desmontara;
+ *   queda para entregarlo en la línea cuando el modal vuelva a abrirse.
+ */
+export type TProductAttemptRecord =
+	| (IPendingProductAttempt & { status: 'in_flight' | 'uncertain' })
+	| (IPendingProductAttempt & { status: 'created'; product: ICreatedPurchasableProduct });
 
 export interface PurchaseDocumentsState {
 	items: IPurchaseDocumentListRow[];
@@ -56,6 +72,13 @@ export interface PurchaseDocumentsState {
 	updating: boolean;
 	confirming: boolean;
 	cancelling: boolean;
+	/**
+	 * Altas de producto en línea sin cerrar, una por filial, desde que empieza
+	 * el `POST`. Viven acá y no en el modal que las hizo: el modal se desmonta
+	 * (cambio de filial en la ficha, salida de la página) y, si el intento se
+	 * perdiera con él, al volver se podría enviar otro y duplicar el producto.
+	 */
+	pendingProductAttempts: Record<number, TProductAttemptRecord>;
 }
 
 const initialState: PurchaseDocumentsState = {
@@ -76,6 +99,7 @@ const initialState: PurchaseDocumentsState = {
 	updating: false,
 	confirming: false,
 	cancelling: false,
+	pendingProductAttempts: {},
 };
 
 /** La `Idempotency-Key` es obligatoria: el backend rechaza escrituras sin ella. */
@@ -286,6 +310,35 @@ const purchaseDocumentsSlice = createSlice({
 			// ficha que se abandona podría llegar tarde y repoblar `current`.
 			state.currentRequestId = null;
 		},
+		/** Empieza el `POST` de un alta o su conciliación. */
+		startProductAttempt(state, action: PayloadAction<IPendingProductAttempt>) {
+			state.pendingProductAttempts[action.payload.subsidiaryId] = {
+				...action.payload,
+				status: 'in_flight',
+			};
+		},
+		markProductAttemptUncertain(state, action: PayloadAction<number>) {
+			const attempt = state.pendingProductAttempts[action.payload];
+			if (attempt?.status === 'in_flight') attempt.status = 'uncertain';
+		},
+		/** Se creó sin un modal montado que lo reciba. */
+		completeProductAttempt(
+			state,
+			action: PayloadAction<{ subsidiaryId: number; product: ICreatedPurchasableProduct }>,
+		) {
+			const attempt = state.pendingProductAttempts[action.payload.subsidiaryId];
+			if (!attempt) return;
+			state.pendingProductAttempts[action.payload.subsidiaryId] = {
+				subsidiaryId: attempt.subsidiaryId,
+				payload: attempt.payload,
+				status: 'created',
+				product: action.payload.product,
+			};
+		},
+		/** Se cerró: la filial del intento, no la activa. */
+		clearPendingProductAttempt(state, action: PayloadAction<number>) {
+			delete state.pendingProductAttempts[action.payload];
+		},
 	},
 	extraReducers: (builder) => {
 		builder
@@ -405,7 +458,13 @@ const purchaseDocumentsSlice = createSlice({
 	},
 });
 
-export const { clearPurchaseDocumentCurrent } = purchaseDocumentsSlice.actions;
+export const {
+	clearPurchaseDocumentCurrent,
+	startProductAttempt,
+	markProductAttemptUncertain,
+	completeProductAttempt,
+	clearPendingProductAttempt,
+} = purchaseDocumentsSlice.actions;
 
 export const selectPurchaseDocumentsItems = (state: RootState) => state.purchaseDocuments.items;
 export const selectPurchaseDocumentsMeta = (state: RootState) => state.purchaseDocuments.meta;
@@ -428,5 +487,14 @@ export const selectPurchaseDocumentCurrentSubsidiaryId = (state: RootState) =>
 	state.purchaseDocuments.currentSubsidiaryId;
 export const selectPurchaseDocumentCurrentDocumentId = (state: RootState) =>
 	state.purchaseDocuments.currentDocumentId;
+
+/** Alta de producto sin cerrar en la filial dada, si la hay. */
+export const selectPendingProductAttempt = (
+	state: RootState,
+	subsidiaryId: number | null,
+): TProductAttemptRecord | null =>
+	subsidiaryId === null
+		? null
+		: (state.purchaseDocuments.pendingProductAttempts[subsidiaryId] ?? null);
 
 export default purchaseDocumentsSlice.reducer;

@@ -48,7 +48,10 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 }) => {
 	const {
 		formik,
+		submit,
 		isSubmitting,
+		isAwaitingAttempt,
+		isLocked,
 		reset,
 		hasBranch,
 		brandOptions,
@@ -58,6 +61,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 		loadingCategories,
 		sku,
 		isReconciling,
+		recoveredProduct,
 		pendingProductName,
 	} = useProcurementProductForm({
 		isOpen,
@@ -69,9 +73,6 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 			setIsOpen(false);
 		},
 	});
-
-	/** Con un alta pendiente de conciliar, sus valores no se pueden cambiar. */
-	const isLocked = isSubmitting || isReconciling;
 
 	const closeIfIdle = () => {
 		if (isSubmitting) return;
@@ -107,7 +108,25 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 				</div>
 			</ModalHeader>
 			<ModalBody className='min-h-0 flex-1 overflow-y-auto'>
-				<form onSubmit={formik.handleSubmit} className='space-y-5' noValidate>
+				<form
+					onSubmit={(event) => {
+						event.preventDefault();
+						void submit();
+					}}
+					className='space-y-5'
+					noValidate>
+					{isAwaitingAttempt && (
+						<Alert color='blue' variant='outline' icon='HeroArrowPath'>
+							Hay un envío de «{pendingProductName}» en curso. Espera su respuesta:
+							sus datos no se pueden cambiar ni volver a enviar mientras tanto.
+						</Alert>
+					)}
+					{recoveredProduct && (
+						<Alert color='emerald' variant='outline' icon='HeroCheckCircle'>
+							«{recoveredProduct.name}» ({recoveredProduct.sku}) se creó después de
+							cerrar esta pantalla. «Usar producto» lo agrega a esta línea.
+						</Alert>
+					)}
 					{isReconciling && (
 						<Alert color='amber' variant='outline' icon='HeroExclamationTriangle'>
 							No se pudo confirmar si «{pendingProductName}» se creó. «Reintentar»
@@ -345,13 +364,16 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 					</Button>
 					<Button
 						type='button'
-						onClick={() => formik.handleSubmit()}
+						onClick={() => {
+							void submit();
+						}}
 						variant='solid'
 						color='blue'
 						icon='HeroCheck'
 						isLoading={isSubmitting}
 						isDisable={isSubmitting}>
-						{isReconciling ? 'Reintentar' : 'Crear producto'}
+						{recoveredProduct && 'Usar producto'}
+						{!recoveredProduct && (isReconciling ? 'Reintentar' : 'Crear producto')}
 					</Button>
 				</div>
 			</ModalFooter>
