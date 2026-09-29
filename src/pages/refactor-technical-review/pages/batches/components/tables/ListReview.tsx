@@ -485,6 +485,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 					onExportFetchAll={fetchAllForExport}
 					batchDate={batch?.entry_date}
 					customerName={batch?.customer_supplier?.name}
+					batchNotes={batch?.notes}
 				/>
 
 				{isPrintLabelOpen && itemToPrint && (
