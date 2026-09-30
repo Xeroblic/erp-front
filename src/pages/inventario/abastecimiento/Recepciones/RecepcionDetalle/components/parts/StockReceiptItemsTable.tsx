@@ -1,22 +1,28 @@
 import React from 'react';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { ProductCard, CostBlock } from '@/components/procurement';
 import type { IStockReceiptItem } from '@/interface/procurement.interface';
 
 interface IStockReceiptItemsTableProps {
 	items: IStockReceiptItem[];
+	/** Número del documento vinculado, para nombrar el origen de cada línea. */
+	documentNumber: string | null;
 }
 
 /**
  * Líneas de la recepción (sección 7). `purchase_document_line_id` nulo es
  * el alta sin documento; presente, la línea del documento de la que se
- * derivó producto y costo — nunca sobrescribibles.
+ * derivó producto y costo — nunca sobrescribibles. Se nombra por el número
+ * del documento: el id interno de la línea no le dice nada a quien recibe.
  */
-const StockReceiptItemsTable: React.FC<IStockReceiptItemsTableProps> = ({ items }) => (
+const StockReceiptItemsTable: React.FC<IStockReceiptItemsTableProps> = ({
+	items,
+	documentNumber,
+}) => (
 	<Card>
 		<CardHeader>
-			<CardTitle className='text-lg'>Líneas</CardTitle>
+			<CardTitle className='text-lg'>Productos recibidos</CardTitle>
 			<span className='text-sm text-zinc-500'>
 				{items.length} línea{items.length === 1 ? '' : 's'}
 			</span>
@@ -48,7 +54,9 @@ const StockReceiptItemsTable: React.FC<IStockReceiptItemsTableProps> = ({ items 
 							<Td>
 								{item.purchase_document_line_id !== null ? (
 									<span className='text-sm text-zinc-500'>
-										Línea del documento #{item.purchase_document_line_id}
+										{documentNumber
+											? `Documento ${documentNumber}`
+											: 'Documento de compra'}
 									</span>
 								) : (
 									<span className='text-sm text-zinc-500'>

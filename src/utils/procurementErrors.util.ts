@@ -109,13 +109,13 @@ export const PROCUREMENT_ERROR_DEFINITIONS: Record<string, IProcurementErrorDefi
 	RECEIPT_ALREADY_POSTED: define(
 		'RECEIPT_ALREADY_POSTED',
 		409,
-		'La recepción ya fue contabilizada.',
+		'La recepción ya fue ingresada al stock.',
 		'reload_resource',
 	),
 	RECEIPT_NOT_POSTED: define(
 		'RECEIPT_NOT_POSTED',
 		409,
-		'La recepción todavía no está contabilizada.',
+		'La recepción todavía no ingresa al stock.',
 		'reload_resource',
 	),
 	RECEIPT_ALREADY_CONSUMED: define(

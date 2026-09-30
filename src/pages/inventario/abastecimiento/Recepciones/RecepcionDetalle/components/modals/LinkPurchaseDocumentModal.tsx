@@ -180,9 +180,9 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 							variant='outline'
 							icon='HeroInformationCircle'
 							title='Esto no mueve stock'>
-							No cambia la fecha de recepción, no genera movimiento físico y no crea
-							una compra más reciente: sólo respalda documentalmente unidades que ya
-							están en bodega.
+							No cambia la fecha de llegada, no genera movimiento físico y no crea una
+							compra más reciente: sólo respalda documentalmente unidades que ya están
+							en bodega.
 						</Alert>
 
 						<div className='space-y-1'>

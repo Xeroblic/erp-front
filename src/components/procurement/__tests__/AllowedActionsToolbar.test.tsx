@@ -125,7 +125,7 @@ describe('AllowedActionsToolbar', () => {
 			/>,
 		);
 
-		expect(screen.getByRole('button', { name: /Contabilizar/ })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: /Ingresar al stock/ })).toBeInTheDocument();
 		expect(screen.queryByRole('button', { name: /Confirmar/ })).not.toBeInTheDocument();
 	});
 
