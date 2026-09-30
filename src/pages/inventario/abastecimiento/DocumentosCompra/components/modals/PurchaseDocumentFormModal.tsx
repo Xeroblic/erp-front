@@ -523,7 +523,7 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 
 										<div className='space-y-1 sm:col-span-2'>
 											<Label htmlFor='documento-total-amount'>
-												Total informativo (opcional)
+												Total informativo (con IVA, opcional)
 											</Label>
 											<Input
 												id='documento-total-amount'
@@ -540,8 +540,8 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 												invalidFeedback={formik.errors.total_amount}
 											/>
 											<p className='text-xs text-zinc-500'>
-												Sólo informativo: no reemplaza la suma de las
-												líneas.
+												El total impreso en el documento, IVA incluido. Sólo
+												informativo: no reemplaza la suma de las líneas.
 											</p>
 										</div>
 									</div>

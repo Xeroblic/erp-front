@@ -180,7 +180,7 @@ const DocumentosCompraTable: React.FC<IDocumentosCompraTableProps> = ({
 								align='center'
 							/>
 							<SortableTableHeader
-								label='Total'
+								label='Total informativo (con IVA)'
 								sortKey='total_amount'
 								sort={sort}
 								onSort={handleSort}

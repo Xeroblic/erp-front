@@ -176,7 +176,7 @@ const DocumentoCompraDetalleView = () => {
 									</div>
 									<div>
 										<p className='text-xs uppercase text-zinc-500'>
-											Total informativo
+											Total informativo (con IVA)
 										</p>
 										<p>
 											{formatDecimalAmount(
