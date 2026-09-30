@@ -19,7 +19,8 @@ import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import PrintLabel from '../PrintLabel';
 import { extractValue, formatDateTime, resolveEquipmentTypeMeta } from '../utils/utilsItems';
-import { handleDelete as handleDeleteItem, exportItemsToExcel } from './hooks/Item_list';
+import { exportItemsToExcel } from '../ExcelExport/exportExcel';
+import handleDeleteItem from './hooks/Item_list';
 
 type ExportMode = 'serials' | 'details';
 

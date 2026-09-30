@@ -93,7 +93,11 @@ export interface IItem {
 	customer_supplier?: {
 		id: number;
 		name: string;
-	};
+	} | null;
+	supplier?: {
+		id: number;
+		name: string;
+	} | null;
 	equipment_type: EquipmentType;
 	review_status: ReviewStatus;
 	current_status: CommercialStatus;

@@ -68,7 +68,7 @@ export const normalizeDetailValue = (value: unknown): string => {
 	return String(value);
 };
 
-const resolveColumnValue = (item: IItem, key: string): string => {
+export const resolveColumnValue = (item: IItem, key: string): string => {
 	switch (key) {
 		case '__serial':
 			return item.serial_number ?? '';
@@ -78,9 +78,9 @@ const resolveColumnValue = (item: IItem, key: string): string => {
 			return normalizeDetailValue(g);
 		}
 		case '__customer':
-			return (item as any).customer_supplier?.name ?? '';
+			return item.customer_supplier?.name ?? '';
 		case '__supplier':
-			return (item as any).supplier?.name ?? '';
+			return item.supplier?.name ?? '';
 		case '__barcode':
 			return item.serial_number ? `*${item.serial_number}*` : '';
 		case '__created_by':
@@ -512,6 +512,8 @@ export const exportItemsToExcel = async (
 						'Nº',
 						'Serial Number',
 						...orderedKeys.map((k) => formatAttributeLabel(k)),
+						'Cliente',
+						'Proveedor',
 					];
 					applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`);
 
@@ -523,6 +525,8 @@ export const exportItemsToExcel = async (
 								idx + 1,
 								item.serial_number || '',
 								...orderedKeys.map((k) => resolveColumnValue(item, k)),
+								resolveColumnValue(item, '__customer'),
+								resolveColumnValue(item, '__supplier'),
 							];
 							const excelRow = sheet.addRow(rowValues);
 							const isEven = idx % 2 === 0;
