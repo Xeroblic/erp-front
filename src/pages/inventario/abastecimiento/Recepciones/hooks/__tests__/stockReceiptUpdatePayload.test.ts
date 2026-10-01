@@ -4,7 +4,7 @@ import {
 	resetStockReceiptsStoreForTests,
 	updateStockReceipt,
 } from '@/services/procurement/stockReceipts.service';
-import { getProcurementSupplier } from '@/services/procurement/procurementSuppliers.service';
+import { getProcurementSupplier } from '@/mocks/services/procurementSuppliers.mock';
 import { toFormValues, toUpdatePayload } from '../useStockReceiptForm';
 
 /**
@@ -14,8 +14,9 @@ import { toFormValues, toUpdatePayload } from '../useStockReceiptForm';
  * Acá la consulta de proveedores siempre responde 403.
  */
 
-vi.mock('@/services/procurement/procurementSuppliers.service', async () => {
-	const mock = await import('@/mocks/services/procurementSuppliers.mock');
+vi.mock('@/mocks/services/procurementSuppliers.mock', async (importOriginal) => {
+	const mock =
+		await importOriginal<typeof import('@/mocks/services/procurementSuppliers.mock')>();
 	return { ...mock, getProcurementSupplier: vi.fn(mock.getProcurementSupplier) };
 });
 

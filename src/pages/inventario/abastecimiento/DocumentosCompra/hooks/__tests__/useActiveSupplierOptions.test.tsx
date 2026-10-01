@@ -275,3 +275,31 @@ describe('useActiveSupplierOptions — sin permiso para listar', () => {
 		});
 	});
 });
+
+describe('useActiveSupplierOptions — origen de la lista', () => {
+	beforeEach(() => {
+		listMock.mockReset();
+		authorizeMock.mockReset();
+		authorizeMock.mockReturnValue(true);
+	});
+
+	it('con otra fuente (Recepciones simulada) lista desde ella y no llama a la API real', async () => {
+		const listTestSuppliers = vi.fn(() => Promise.resolve(envelope([row(7, 'PCExpress')])));
+
+		const { result } = renderHook(() => useActiveSupplierOptions(2, true, listTestSuppliers));
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		expect(result.current.suppliers.map((supplier) => supplier.id)).toEqual([7]);
+		expect(listTestSuppliers).toHaveBeenCalledWith(2, { per_page: 100 });
+		expect(listMock).not.toHaveBeenCalled();
+	});
+
+	it('sin otra fuente sigue usando la API real', async () => {
+		listMock.mockResolvedValue(envelope([row(3, 'Distribuidora Recorrido SpA')]));
+
+		const { result } = renderHook(() => useActiveSupplierOptions(2, true));
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		expect(result.current.suppliers.map((supplier) => supplier.id)).toEqual([3]);
+	});
+});

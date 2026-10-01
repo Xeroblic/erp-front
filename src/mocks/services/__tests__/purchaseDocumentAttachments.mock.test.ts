@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
 	deletePurchaseDocumentAttachment,
 	downloadPurchaseDocumentAttachment,
@@ -13,14 +13,6 @@ import {
 	updatePurchaseDocument,
 } from '@/mocks/services/purchaseDocuments.mock';
 import { PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT } from '@/interface/procurement.interface';
-
-// Estos servicios siguen siendo mock y validan `supplier_id` contra el
-// maestro, que ya es real: se sustituye por su doble en memoria para no
-// depender de la red.
-vi.mock(
-	'@/services/procurement/procurementSuppliers.service',
-	() => import('@/mocks/services/procurementSuppliers.mock'),
-);
 
 /**
  * El servicio simula la subsección «Adjuntos privados» de la sección 6 del

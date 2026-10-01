@@ -184,7 +184,9 @@ const INVENTORY_STOCK_STORAGE_NAMESPACE = 'inventory-stock';
  * migración que escribir, pero el bump es obligatorio para no hidratar un
  * objeto al que le faltan los arreglos nuevos.
  */
-const INVENTORY_STOCK_STORAGE_VERSION = 5; // v3: `stockReceiptEffects`. v4: ejemplos de Ecopc. v5: su historial.
+// v3: `stockReceiptEffects`. v4: ejemplos de Ecopc. v5: su historial. v6: se
+// descartan orígenes de recepciones con proveedores reales (recepciones v3).
+const INVENTORY_STOCK_STORAGE_VERSION = 6;
 
 interface IIdempotencyLogEntry {
 	payloadHash: string;

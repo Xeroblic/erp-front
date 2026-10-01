@@ -7,7 +7,7 @@ import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
-import { AllowedActionsToolbar, ProcurementMockNotice } from '@/components/procurement';
+import { AllowedActionsToolbar } from '@/components/procurement';
 import { formatDate } from '@/utils/format.utils';
 import SupplierFormModal from '../components/modals/SupplierFormModal';
 import DeactivateSupplierModal from '../components/modals/DeactivateSupplierModal';
@@ -206,30 +206,33 @@ const ProveedoresDetalleView = () => {
 						<SupplierPurchaseSummaryCard summary={supplier.purchase_summary} />
 
 						{/*
-						 * Leer recepciones exige `view-product` (sección 15), distinto
-						 * del `view-procurement-supplier` de esta ruta: sin él se dice
-						 * por qué no hay tabla, en vez de mostrarla vacía.
+						 * La lista sale de Recepciones, que sigue con proveedores de
+						 * prueba: no se cruza con este proveedor real. Leer recepciones
+						 * además exige `view-product` (sección 15), distinto del
+						 * `view-procurement-supplier` de esta ruta: sin él se dice por
+						 * qué no hay tabla, en vez de mostrarla vacía.
 						 */}
 						{!suppliedProducts.available && (
-							<Alert color='zinc' variant='outline' title='Productos suministrados'>
-								Estarán disponibles cuando se habiliten las recepciones de
-								mercadería.
+							<Alert
+								color='zinc'
+								variant='outline'
+								icon='HeroInformationCircle'
+								title='Productos suministrados'>
+								Esta lista se arma con las recepciones de mercadería. Recepciones
+								todavía trabaja con datos y proveedores de prueba, así que aquí no
+								se muestra nada hasta que se conecte con el sistema real.
 							</Alert>
 						)}
 						{suppliedProducts.available &&
 							!suppliedProducts.checkingAccess &&
 							suppliedProducts.canRead && (
-								<>
-									{/* Las recepciones siguen simuladas aunque el proveedor sea real. */}
-									<ProcurementMockNotice />
-									<SupplierSuppliedProductsTable
-										rows={suppliedProducts.rows}
-										loading={suppliedProducts.loading}
-										error={suppliedProducts.error}
-										subsidiaryId={subsidiaryId}
-										onRetry={suppliedProducts.retry}
-									/>
-								</>
+								<SupplierSuppliedProductsTable
+									rows={suppliedProducts.rows}
+									loading={suppliedProducts.loading}
+									error={suppliedProducts.error}
+									subsidiaryId={subsidiaryId}
+									onRetry={suppliedProducts.retry}
+								/>
 							)}
 						{suppliedProducts.available &&
 							!suppliedProducts.checkingAccess &&
