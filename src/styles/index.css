@@ -76,6 +76,9 @@
 
 @layer base {
 	:root {
+		/* Los controles nativos (desplegable de select, botón de archivo, scrollbars) siguen
+		   el tema de la app y no el del sistema operativo, que declara el meta del index.html. */
+		color-scheme: light;
 		--header-height: 0px;
 		--subheader-height: 0px;
 
@@ -99,6 +102,7 @@
 	}
 
 	html.dark {
+		color-scheme: dark;
 		@apply bg-[#1e2124];
 	}
 

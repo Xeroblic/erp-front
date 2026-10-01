@@ -918,9 +918,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											id='notes'
 											name='notes'
 											rows={3}
-											color='zinc'
-											colorIntensity='300'
-											className='bg-zinc-50 dark:bg-zinc-900'
+											className='dark:bg-zinc-900'
 											value={formik.values.notes ?? ''}
 											onChange={formik.handleChange}
 											onBlur={formik.handleBlur}
