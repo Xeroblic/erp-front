@@ -8,7 +8,7 @@ import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import { AllowedActionsToolbar, ProcurementMockNotice } from '@/components/procurement';
 import useRecepcionDetalle from './hooks/useRecepcionDetalle';
 import StockReceiptSummaryCard from './components/parts/StockReceiptSummaryCard';
-import StockReceiptProcessingCard from './components/parts/StockReceiptProcessingCard';
+import StockReceiptProgressCard from './components/parts/StockReceiptProgressCard';
 import StockReceiptItemsTable from './components/parts/StockReceiptItemsTable';
 import CancelStockReceiptModal from './components/modals/CancelStockReceiptModal';
 import ReverseStockReceiptModal from './components/modals/ReverseStockReceiptModal';
@@ -56,7 +56,7 @@ const RecepcionDetalleView = () => {
 					<SubheaderTitle
 						icon='HeroInboxArrowDown'
 						title='Recepciones'
-						description='Detalle, procesamiento y líneas de la recepción'
+						description='Estado, siguiente paso y productos de la recepción'
 					/>
 				</SubheaderLeft>
 				<SubheaderRight>
@@ -107,9 +107,12 @@ const RecepcionDetalleView = () => {
 							/>
 						</div>
 
+						<StockReceiptProgressCard receipt={receipt} />
 						<StockReceiptSummaryCard receipt={receipt} />
-						<StockReceiptProcessingCard receipt={receipt} />
-						<StockReceiptItemsTable items={receipt.items} />
+						<StockReceiptItemsTable
+							items={receipt.items}
+							documentNumber={receipt.purchase_document?.document_number ?? null}
+						/>
 					</>
 				)}
 			</Container>
@@ -122,7 +125,13 @@ const RecepcionDetalleView = () => {
 				authorizedBranchIds={visibleBranches.map((branch) => branch.id)}
 				receipt={receipt}
 				etag={etag}
-				onSuccess={() => setIsFormModalOpen(false)}
+				onSuccess={() => {
+					setIsFormModalOpen(false);
+					// Recarga la ficha: si el ingreso quedó incierto o fue rechazado, el
+					// `GET` es lo que muestra el estado real (y activa el polling en
+					// `queued`).
+					retry();
+				}}
 				onStaleVersion={retry}
 			/>
 			<CancelStockReceiptModal

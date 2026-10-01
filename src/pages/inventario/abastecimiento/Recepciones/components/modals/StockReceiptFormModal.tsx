@@ -1,5 +1,5 @@
 import React from 'react';
-import { FieldArray, FormikProvider } from 'formik';
+import { FormikProvider } from 'formik';
 import {
 	formatProcurementProductLabel,
 	listPurchasableProcurementProducts,
@@ -13,8 +13,7 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
-import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
-import Checkbox from '@/components/form/Checkbox';
+import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import DateInput from '@/components/form/DateInput';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
@@ -22,12 +21,16 @@ import Select from '@/components/form/Select';
 import SelectReact from '@/components/form/SelectReact';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
+import Validation from '@/components/form/Validation';
 import type { IStockReceipt } from '@/interface/procurement.interface';
-import { formatPesoInput } from '@/utils/procurementDecimal.util';
 import useActiveSupplierOptions from '@/pages/inventario/abastecimiento/DocumentosCompra/hooks/useActiveSupplierOptions';
 import SupplierOptionsNotice from '@/pages/inventario/abastecimiento/DocumentosCompra/components/parts/SupplierOptionsNotice';
-import useStockReceiptForm, { displayedCostBasis } from '../../hooks/useStockReceiptForm';
+import useStockReceiptForm from '../../hooks/useStockReceiptForm';
 import usePurchaseDocumentPicker from '../../hooks/usePurchaseDocumentPicker';
+import useDocumentLinesSync from '../../hooks/useDocumentLinesSync';
+import ReceiptOriginSelector from '../parts/ReceiptOriginSelector';
+import DocumentLinesEditor from '../parts/DocumentLinesEditor';
+import ManualLinesEditor from '../parts/ManualLinesEditor';
 import { EMPTY_RECEPCION_LINE } from '../../types';
 import type { TStockReceiptFormMode } from '../../types';
 
@@ -36,6 +39,10 @@ import type { TStockReceiptFormMode } from '../../types';
  * (card 05, sección 7). La corrección sólo se ofrece desde `allowed_actions`
  * de la ficha, así que acá no hay que resolver ese caso; el `mode` queda
  * fijo al abrir en edición.
+ *
+ * Orden pensado para quien recibe en bodega: 1) de dónde viene la mercadería,
+ * 2) documento/bodega/fecha, 3) qué llegó, 4) guardar como borrador o guardar
+ * e ingresar al stock en el mismo paso.
  */
 
 /** `received_on` sólo se cambia en `draft` (sección 7); en `failed` la corrección la vuelve `draft` recién al guardar. */
@@ -94,20 +101,33 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 	onSuccess,
 	onStaleVersion,
 }) => {
-	const { formik, isEdit, isSubmitting, hasVersionConflict, canRetry, reset, setLineUnitCost } =
-		useStockReceiptForm({
-			subsidiaryId,
-			branchId,
-			defaultWarehouseId,
-			receipt,
-			etag,
-			initialDocumentId,
-			authorizedBranchIds,
-			onSuccess: (result) => {
-				setIsOpen(false);
-				onSuccess?.(result);
-			},
-		});
+	const {
+		formik,
+		isEdit,
+		isSubmitting,
+		submitIntent,
+		submitWith,
+		hasVersionConflict,
+		canRetry,
+		pendingIngress,
+		isPendingIngressForeign,
+		retryIngress,
+		leavePendingIngress,
+		discardPendingIngress,
+		reset,
+	} = useStockReceiptForm({
+		subsidiaryId,
+		branchId,
+		defaultWarehouseId,
+		receipt,
+		etag,
+		initialDocumentId,
+		authorizedBranchIds,
+		onSuccess: (result) => {
+			setIsOpen(false);
+			onSuccess?.(result);
+		},
+	});
 
 	const warehouseOptions = listWarehousesForStockReceipts(authorizedBranchIds);
 	const isManual = formik.values.mode === 'manual';
@@ -130,13 +150,11 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 			isOpen && !isManual,
 			formik.values.purchase_document_id,
 		);
+	// Al corregir se conservan las filas y cantidades de la recepción.
+	useDocumentLinesSync(formik, selectedDocument, isEdit);
 	const documentOptions = documents.map((document) => ({
 		value: String(document.id),
 		label: `${document.document_number} · ${document.supplier?.display_name ?? 'Sin proveedor'}`,
-	}));
-	const documentLineOptions = (selectedDocument?.items ?? []).map((line) => ({
-		value: String(line.id),
-		label: `${line.sku_snapshot} · ${line.name_snapshot} (quedan ${line.remaining_quantity})`,
 	}));
 
 	const productOptions = listPurchasableProcurementProducts(subsidiaryId).map((product) => ({
@@ -144,8 +162,26 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 		label: formatProcurementProductLabel(product),
 	}));
 
+	/**
+	 * Bloquea el formulario mientras hay un resultado incierto: del guardado
+	 * (`canRetry`) o del ingreso al stock de una recepción ya guardada
+	 * (`pendingIngress`). En ambos casos sólo vale reintentar lo mismo.
+	 */
+	const isLocked = canRetry || pendingIngress !== null;
+
 	const handleClose = () => {
 		if (isSubmitting) return;
+		// Con el ingreso incierto, cerrar lleva a la ficha: la recepción ya
+		// existe y su `GET` es la única fuente que resuelve si el ingreso se
+		// aplicó. Desde otra filial no se navega (abriría la recepción bajo un
+		// contexto ajeno): cerrar descarta y avisa dónde quedó la recepción.
+		if (pendingIngress) {
+			if (isPendingIngressForeign) {
+				discardPendingIngress();
+				setIsOpen(false);
+			} else leavePendingIngress();
+			return;
+		}
 		setIsOpen(false);
 		// Hallazgo 8: con un resultado incierto pendiente (`canRetry`), cerrar
 		// no debe perder el comando — `reset()` limpia el formulario y la
@@ -164,17 +200,34 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 	};
 
 	const handleModeChange = (mode: TStockReceiptFormMode) => {
-		formik.setFieldValue('mode', mode).catch(() => undefined);
-		formik.setFieldValue('items', [{ ...EMPTY_RECEPCION_LINE }]).catch(() => undefined);
-		if (mode === 'with_document') formik.setFieldValue('reason', '').catch(() => undefined);
-		else formik.setFieldValue('purchase_document_id', '').catch(() => undefined);
+		if (mode === formik.values.mode) return;
+		// Un solo `setValues`: varios `setFieldValue` seguidos validaban con el
+		// modo anterior y podían dejar su error de líneas en el modo nuevo.
+		// Con documento las líneas se precargan al elegirlo; sin documento se
+		// parte con una línea vacía para completar.
+		formik
+			.setValues(
+				mode === 'manual'
+					? {
+							...formik.values,
+							mode,
+							purchase_document_id: '',
+							items: [{ ...EMPTY_RECEPCION_LINE }],
+						}
+					: { ...formik.values, mode, reason: '', supplier_id: '', items: [] },
+				false,
+			)
+			.catch(() => undefined);
+		formik.setErrors({});
 	};
 
-	// Hallazgo 8: mismo botón para reintentar (con el comando bloqueado) que
-	// para el envío normal — evita un "Reintentar" separado que invitaría a
-	// tocar los datos por otra vía.
-	let submitLabel = isEdit ? 'Guardar corrección' : 'Crear recepción';
-	if (canRetry) submitLabel = 'Reintentar';
+	let linesSubtitle = 'Viene cargado todo lo pendiente. Ajusta sólo lo que llegó incompleto.';
+	if (isManual) linesSubtitle = 'Cada producto que entra, su cantidad y su costo.';
+	else if (isEdit) linesSubtitle = 'Ajusta la cantidad que llegó de cada línea.';
+
+	const saveLabel = isEdit ? 'Guardar corrección' : 'Guardar borrador';
+	const retryLabel =
+		submitIntent === 'save_and_post' ? 'Reintentar guardar e ingresar' : 'Reintentar guardar';
 
 	return (
 		<Modal
@@ -188,10 +241,12 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 			<ModalHeader className='border-b border-zinc-200 pb-4 dark:border-zinc-700'>
 				<div>
 					<h2 className='text-xl font-bold text-zinc-900 dark:text-white'>
-						{isEdit ? 'Corregir recepción' : 'Nueva recepción'}
+						{isEdit && receipt
+							? `Corregir recepción #${receipt.id}`
+							: 'Nueva recepción'}
 					</h2>
 					<p className='text-sm font-normal text-zinc-600 dark:text-zinc-400'>
-						Completa la bodega, las líneas recibidas y el respaldo documental.
+						Registra la mercadería que llegó a bodega.
 					</p>
 				</div>
 			</ModalHeader>
@@ -202,11 +257,11 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 				<form
 					className='flex min-h-0 flex-1 flex-col overflow-hidden'
 					onSubmit={(event) => {
-						if (hasVersionConflict) {
-							event.preventDefault();
-							return;
-						}
-						formik.handleSubmit(event);
+						// Enter en un campo: guarda como borrador, la opción que no
+						// mueve stock. Ingresar al stock exige su botón explícito.
+						event.preventDefault();
+						if (hasVersionConflict || isLocked) return;
+						submitWith('save');
 					}}>
 					<ModalBody className='min-h-0 flex-1 space-y-4 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
 						{hasVersionConflict && (
@@ -226,6 +281,31 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 							</Alert>
 						)}
 
+						{pendingIngress && !isPendingIngressForeign && (
+							<Alert
+								color='amber'
+								variant='outline'
+								icon='HeroExclamationTriangle'
+								title={`La recepción #${pendingIngress.receipt.id} se guardó`}>
+								Pero no pudimos confirmar si ingresó al stock: la respuesta no
+								llegó. Pulsa «Reintentar ingreso al stock» para repetir la misma
+								operación — no se duplica — o ve a la recepción para ver su estado
+								real.
+							</Alert>
+						)}
+
+						{pendingIngress && isPendingIngressForeign && (
+							<Alert
+								color='red'
+								variant='outline'
+								icon='HeroExclamationTriangle'
+								title={`La recepción #${pendingIngress.receipt.id} es de otra filial`}>
+								Su ingreso al stock quedó sin confirmar y se envió desde la filial
+								anterior. Vuelve a esa filial para reintentarlo o ver la recepción,
+								o descártalo: la recepción sigue guardada allí.
+							</Alert>
+						)}
+
 						{canRetry && (
 							<Alert
 								color='amber'
@@ -233,9 +313,9 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 								icon='HeroExclamationTriangle'
 								title='No pudimos confirmar el envío anterior'>
 								No sabemos si llegó al servidor. Los datos quedaron bloqueados para
-								evitar duplicar la operación: vuelve a pulsar «
-								{isEdit ? 'Guardar corrección' : 'Reintentar'}» sin cambiar nada, o
-								cierra este formulario — al reabrirlo seguirá listo para reintentar.
+								evitar duplicar la operación: pulsa «{retryLabel}» sin cambiar nada,
+								o cierra este formulario — al reabrirlo seguirá listo para
+								reintentar.
 							</Alert>
 						)}
 
@@ -244,7 +324,17 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 						    deshabilita inputs, selects nativos y botones descendientes de
 						    una sola vez, así que un reintento reenvía exactamente lo que
 						    ya se había enviado. */}
-						<fieldset disabled={canRetry} className='m-0 space-y-4 border-0 p-0'>
+						<fieldset
+							disabled={isLocked}
+							className='m-0 min-w-0 space-y-4 border-0 p-0'>
+							{!isEdit && (
+								<ReceiptOriginSelector
+									value={formik.values.mode}
+									onChange={handleModeChange}
+									disabled={isLocked}
+								/>
+							)}
+
 							<Card className={RECEPCION_CARD_CLASSNAME}>
 								<CardHeader className='pb-2'>
 									<div>
@@ -252,64 +342,121 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 											Datos de la recepción
 										</CardTitle>
 										<p className={RECEPCION_SUBTITLE_CLASSNAME}>
-											Bodega, fecha y respaldo documental.
+											{isManual
+												? 'Dónde y cuándo llegó, y por qué entra sin documento.'
+												: 'Qué documento respalda la entrega, dónde y cuándo llegó.'}
 										</p>
 									</div>
 								</CardHeader>
 								<CardBody className='space-y-4'>
-									{!isEdit && (
-										<div className='flex gap-2 rounded-xl border border-zinc-200 p-1 dark:border-zinc-700'>
-											<Button
-												type='button'
-												variant={isManual ? 'solid' : 'outline'}
-												color='blue'
-												size='sm'
-												className='flex-1'
-												onClick={() => handleModeChange('manual')}>
-												Sin documento
-											</Button>
-											<Button
-												type='button'
-												variant={!isManual ? 'solid' : 'outline'}
-												color='blue'
-												size='sm'
-												className='flex-1'
-												onClick={() => handleModeChange('with_document')}>
-												Con documento
-											</Button>
-										</div>
-									)}
-
 									<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+										{!isManual && (
+											<div className='space-y-1 sm:col-span-2'>
+												<Label htmlFor='recepcion-document'>
+													Documento de compra
+													<RequiredMark />
+												</Label>
+												<Validation
+													isValid={!formik.errors.purchase_document_id}
+													isTouched={Boolean(
+														formik.touched.purchase_document_id,
+													)}
+													invalidFeedback={
+														formik.errors.purchase_document_id
+													}>
+													<SelectReact
+														className={RECEPCION_SELECT_CLASSNAME}
+														name='purchase_document_id'
+														inputId='recepcion-document'
+														isDisabled={isEdit || isLocked}
+														isLoading={loadingDocuments}
+														options={documentOptions}
+														placeholder='Busca por número o proveedor…'
+														noOptionsMessage={() =>
+															'No hay documentos confirmados con saldo por recibir.'
+														}
+														value={
+															documentOptions.find(
+																(option) =>
+																	option.value ===
+																	String(
+																		formik.values
+																			.purchase_document_id,
+																	),
+															) ?? null
+														}
+														onChange={(option) => {
+															const selected =
+																option as TSelectOption | null;
+															if (Array.isArray(selected)) return;
+															formik
+																.setFieldValue(
+																	'purchase_document_id',
+																	selected
+																		? Number(selected.value)
+																		: '',
+																)
+																.catch(() => undefined);
+															// Otro documento, otras líneas: se precargan
+															// de nuevo al llegar su ficha.
+															formik
+																.setFieldValue('items', [])
+																.catch(() => undefined);
+														}}
+														isValid={
+															!formik.errors.purchase_document_id
+														}
+														isTouched={Boolean(
+															formik.touched.purchase_document_id,
+														)}
+														invalidFeedback={
+															formik.errors.purchase_document_id
+														}
+													/>
+												</Validation>
+												<p className='text-xs text-zinc-500'>
+													Sólo aparecen documentos confirmados. Proveedor
+													y costos se toman del documento.
+												</p>
+											</div>
+										)}
+
 										<div className='space-y-1'>
 											<Label htmlFor='recepcion-warehouse'>
-												Bodega
+												Bodega de destino
 												<RequiredMark />
 											</Label>
-											<Select
-												id='recepcion-warehouse'
-												// Borde gris en reposo, como `Input`: sin esto `Select`
-												// usa el color del tema y parece seleccionado.
-												className={RECEPCION_FIELD_CLASSNAME}
-												style={
-													{
-														'--select-border': '#d4d4d8',
-													} as React.CSSProperties
-												}
-												name='warehouse_id'
-												value={formik.values.warehouse_id}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
+											<Validation
 												isValid={!formik.errors.warehouse_id}
 												isTouched={Boolean(formik.touched.warehouse_id)}
 												invalidFeedback={formik.errors.warehouse_id}>
-												<option value=''>Selecciona…</option>
-												{warehouseOptions.map((warehouse) => (
-													<option key={warehouse.id} value={warehouse.id}>
-														{warehouse.name}
-													</option>
-												))}
-											</Select>
+												<Select
+													id='recepcion-warehouse'
+													// Borde gris en reposo, como `Input`: sin esto `Select`
+													// usa el color del tema y parece seleccionado.
+													className={RECEPCION_FIELD_CLASSNAME}
+													style={
+														{
+															'--select-border': '#d4d4d8',
+														} as React.CSSProperties
+													}
+													name='warehouse_id'
+													value={formik.values.warehouse_id}
+													onChange={formik.handleChange}
+													onBlur={formik.handleBlur}
+													isValid={!formik.errors.warehouse_id}
+													isTouched={Boolean(formik.touched.warehouse_id)}
+													invalidFeedback={formik.errors.warehouse_id}>
+													<option value=''>Selecciona…</option>
+													{warehouseOptions.map((warehouse) => (
+														<option
+															key={warehouse.id}
+															value={warehouse.id}>
+															{warehouse.name}
+														</option>
+													))}
+												</Select>
+											</Validation>
 											{warehouseOptions.length === 0 && (
 												<p className='text-xs text-zinc-500'>
 													Tus sucursales autorizadas no tienen bodegas de
@@ -320,32 +467,37 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 
 										<div className='space-y-1'>
 											<Label htmlFor='recepcion-received-on'>
-												Fecha de recepción
+												Fecha de llegada
 												<RequiredMark />
 											</Label>
-											<DateInput
-												id='recepcion-received-on'
-												className={RECEPCION_FIELD_CLASSNAME}
-												name='received_on'
-												// Hallazgo 6: `received_on` es inmutable en `failed`
-												// (sección 7) — se corrige el resto del formulario, y
-												// recién al guardar (que vuelve la recepción a
-												// `draft`) la fecha vuelve a ser editable.
-												disabled={existingReceiptIsDraftOnly(
-													isEdit,
-													receipt,
-												)}
-												value={formik.values.received_on}
-												onChange={formik.handleChange}
-												onBlur={() =>
-													formik
-														.setFieldTouched('received_on', true)
-														.catch(() => undefined)
-												}
+											<Validation
 												isValid={!formik.errors.received_on}
 												isTouched={Boolean(formik.touched.received_on)}
-												invalidFeedback={formik.errors.received_on}
-											/>
+												invalidFeedback={formik.errors.received_on}>
+												<DateInput
+													id='recepcion-received-on'
+													className={RECEPCION_FIELD_CLASSNAME}
+													name='received_on'
+													// Hallazgo 6: `received_on` es inmutable en `failed`
+													// (sección 7) — se corrige el resto del formulario, y
+													// recién al guardar (que vuelve la recepción a
+													// `draft`) la fecha vuelve a ser editable.
+													disabled={existingReceiptIsDraftOnly(
+														isEdit,
+														receipt,
+													)}
+													value={formik.values.received_on}
+													onChange={formik.handleChange}
+													onBlur={() =>
+														formik
+															.setFieldTouched('received_on', true)
+															.catch(() => undefined)
+													}
+													isValid={!formik.errors.received_on}
+													isTouched={Boolean(formik.touched.received_on)}
+													invalidFeedback={formik.errors.received_on}
+												/>
+											</Validation>
 											{existingReceiptIsDraftOnly(isEdit, receipt) && (
 												<p className='text-xs text-zinc-500'>
 													No se puede cambiar mientras la recepción tiene
@@ -355,108 +507,60 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 											)}
 										</div>
 
-										{!isManual && (
-											<div className='space-y-1 sm:col-span-2'>
-												<Label htmlFor='recepcion-document'>
-													Documento confirmado
-													<RequiredMark />
-												</Label>
-												<SelectReact
-													className={RECEPCION_SELECT_CLASSNAME}
-													name='purchase_document_id'
-													inputId='recepcion-document'
-													isDisabled={isEdit || canRetry}
-													isLoading={loadingDocuments}
-													options={documentOptions}
-													placeholder='Selecciona un documento…'
-													value={
-														documentOptions.find(
-															(option) =>
-																option.value ===
-																String(
-																	formik.values
-																		.purchase_document_id,
-																),
-														) ?? null
-													}
-													onChange={(option) => {
-														const selected =
-															option as TSelectOption | null;
-														if (Array.isArray(selected)) return;
-														formik
-															.setFieldValue(
-																'purchase_document_id',
-																selected
-																	? Number(selected.value)
-																	: '',
-															)
-															.catch(() => undefined);
-														formik
-															.setFieldValue('items', [
-																{ ...EMPTY_RECEPCION_LINE },
-															])
-															.catch(() => undefined);
-													}}
-													isValid={!formik.errors.purchase_document_id}
-													isTouched={Boolean(
-														formik.touched.purchase_document_id,
-													)}
-													invalidFeedback={
-														formik.errors.purchase_document_id
-													}
-												/>
-												<p className='text-xs text-zinc-500'>
-													Producto, proveedor y costo se derivan del
-													documento: no se pueden sobrescribir.
-												</p>
-											</div>
-										)}
-
 										{isManual && (
 											<div className='space-y-1'>
 												<Label htmlFor='recepcion-supplier'>
 													Proveedor (opcional)
 												</Label>
-												<SelectReact
-													className={RECEPCION_SELECT_CLASSNAME}
-													name='supplier_id'
-													inputId='recepcion-supplier'
-													isClearable
-													isDisabled={canRetry}
-													isLoading={loadingSuppliers}
-													options={supplierOptions}
-													placeholder='Sin proveedor conocido…'
-													value={
-														supplierOptions.find(
-															(option) =>
-																option.value ===
-																String(formik.values.supplier_id),
-														) ?? null
-													}
-													onChange={(option) => {
-														const selected =
-															option as TSelectOption | null;
-														if (Array.isArray(selected)) return;
-														formik
-															.setFieldValue(
-																'supplier_id',
-																selected
-																	? Number(selected.value)
-																	: '',
-															)
-															.catch(() => undefined);
-													}}
+												<Validation
 													isValid={!formik.errors.supplier_id}
 													isTouched={Boolean(formik.touched.supplier_id)}
-													invalidFeedback={formik.errors.supplier_id}
-												/>
+													invalidFeedback={formik.errors.supplier_id}>
+													<SelectReact
+														className={RECEPCION_SELECT_CLASSNAME}
+														name='supplier_id'
+														inputId='recepcion-supplier'
+														isClearable
+														isDisabled={isLocked}
+														isLoading={loadingSuppliers}
+														options={supplierOptions}
+														placeholder='Sin proveedor conocido…'
+														value={
+															supplierOptions.find(
+																(option) =>
+																	option.value ===
+																	String(
+																		formik.values.supplier_id,
+																	),
+															) ?? null
+														}
+														onChange={(option) => {
+															const selected =
+																option as TSelectOption | null;
+															if (Array.isArray(selected)) return;
+															formik
+																.setFieldValue(
+																	'supplier_id',
+																	selected
+																		? Number(selected.value)
+																		: '',
+																)
+																.catch(() => undefined);
+														}}
+														isValid={!formik.errors.supplier_id}
+														isTouched={Boolean(
+															formik.touched.supplier_id,
+														)}
+														invalidFeedback={formik.errors.supplier_id}
+													/>
+												</Validation>
 												<SupplierOptionsNotice
 													reason={suppliersUnavailableReason}
 													onRetry={reloadSuppliers}
 												/>
 												<p className='text-xs text-zinc-500'>
-													Con proveedor conocido, el costo unitario es
-													obligatorio.
+													Si lo indicas, el costo de cada producto pasa a
+													ser obligatorio.
 												</p>
 											</div>
 										)}
@@ -464,38 +568,49 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 										{isManual && (
 											<div className='space-y-1'>
 												<Label htmlFor='recepcion-reason'>
-													Motivo
+													Motivo del ingreso
 													<RequiredMark />
 												</Label>
-												<Input
-													id='recepcion-reason'
-													className={RECEPCION_FIELD_CLASSNAME}
-													name='reason'
-													value={formik.values.reason}
-													onChange={formik.handleChange}
-													onBlur={formik.handleBlur}
+												<Validation
 													isValid={!formik.errors.reason}
 													isTouched={Boolean(formik.touched.reason)}
-													invalidFeedback={formik.errors.reason}
-												/>
+													invalidFeedback={formik.errors.reason}>
+													<Input
+														id='recepcion-reason'
+														className={RECEPCION_FIELD_CLASSNAME}
+														name='reason'
+														placeholder='Ej.: factura pendiente, devolución de cliente…'
+														value={formik.values.reason}
+														onChange={formik.handleChange}
+														onBlur={formik.handleBlur}
+														isValid={!formik.errors.reason}
+														isTouched={Boolean(formik.touched.reason)}
+														invalidFeedback={formik.errors.reason}
+													/>
+												</Validation>
 											</div>
 										)}
 									</div>
 
 									<div className='space-y-1'>
-										<Label htmlFor='recepcion-notes'>Notas</Label>
-										<Textarea
-											id='recepcion-notes'
-											className={RECEPCION_FIELD_CLASSNAME}
-											name='notes'
-											rows={2}
-											value={formik.values.notes}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
+										<Label htmlFor='recepcion-notes'>Notas (opcional)</Label>
+										<Validation
 											isValid={!formik.errors.notes}
 											isTouched={Boolean(formik.touched.notes)}
-											invalidFeedback={formik.errors.notes}
-										/>
+											invalidFeedback={formik.errors.notes}>
+											<Textarea
+												id='recepcion-notes'
+												className={RECEPCION_FIELD_CLASSNAME}
+												name='notes'
+												rows={2}
+												value={formik.values.notes}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+												isValid={!formik.errors.notes}
+												isTouched={Boolean(formik.touched.notes)}
+												invalidFeedback={formik.errors.notes}
+											/>
+										</Validation>
 									</div>
 									<p className='text-xs text-zinc-500 dark:text-zinc-400'>
 										<span className='text-red-500'>*</span> Campos obligatorios.
@@ -504,401 +619,120 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 							</Card>
 
 							<Card className={RECEPCION_CARD_CLASSNAME}>
-								<FieldArray name='items'>
-									{(arrayHelpers) => (
-										<>
-											<CardHeader className='pb-2'>
-												<CardHeaderChild className='w-full items-start justify-between gap-3'>
-													<div>
-														<CardTitle className='text-lg'>
-															Líneas
-														</CardTitle>
-														<p className={RECEPCION_SUBTITLE_CLASSNAME}>
-															{isManual
-																? 'Productos recibidos y su costo.'
-																: 'Líneas del documento y las cantidades recibidas.'}
-														</p>
-													</div>
-													<Button
-														type='button'
-														variant='outline'
-														size='sm'
-														icon='HeroPlus'
-														isDisable={!isManual && !selectedDocument}
-														onClick={() =>
-															arrayHelpers.push({
-																...EMPTY_RECEPCION_LINE,
-															})
-														}>
-														Agregar línea
-													</Button>
-												</CardHeaderChild>
-											</CardHeader>
-											<CardBody className='space-y-3'>
-												{!isManual && loadingSelectedDocument && (
-													<p className='text-sm text-zinc-500'>
-														Cargando líneas del documento…
-													</p>
-												)}
-												{typeof formik.errors.items === 'string' && (
-													<Alert
-														color='red'
-														variant='outline'
-														icon='HeroExclamationTriangle'>
-														{formik.errors.items}
-													</Alert>
-												)}
-
-												{formik.values.items.map((line, index) => {
-													const lineErrors = Array.isArray(
-														formik.errors.items,
-													)
-														? formik.errors.items[index]
-														: undefined;
-													const lineTouched = Array.isArray(
-														formik.touched.items,
-													)
-														? formik.touched.items[index]
-														: undefined;
-													const errorFor = (
-														field: keyof typeof line,
-													): string | undefined => {
-														if (
-															!lineErrors ||
-															typeof lineErrors === 'string'
-														)
-															return undefined;
-														const value = (
-															lineErrors as Record<string, unknown>
-														)[field];
-														return typeof value === 'string'
-															? value
-															: undefined;
-													};
-													const touchedFor = (
-														field: keyof typeof line,
-													): boolean =>
-														Boolean(
-															lineTouched &&
-																typeof lineTouched === 'object' &&
-																(
-																	lineTouched as Record<
-																		string,
-																		unknown
-																	>
-																)[field],
-														);
-
-													return (
-														<div
-															// eslint-disable-next-line react/no-array-index-key -- las líneas nuevas todavía no tienen id propio.
-															key={index}
-															className={RECEPCION_ITEM_CLASSNAME}>
-															<div className='mb-2 flex flex-wrap items-center justify-between gap-2'>
-																<span className='rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:ring-blue-500/30'>
-																	Línea {index + 1}
-																</span>
-																<Button
-																	type='button'
-																	variant='outline'
-																	color='red'
-																	size='xs'
-																	icon='HeroTrash'
-																	onClick={() =>
-																		arrayHelpers.remove(index)
-																	}
-																	isDisable={
-																		formik.values.items
-																			.length === 1
-																	}>
-																	Eliminar
-																</Button>
-															</div>
-															<div className='grid grid-cols-1 gap-3 lg:grid-cols-[100px_minmax(0,2fr)_minmax(0,1.5fr)]'>
-																<div className='space-y-1'>
-																	<Label
-																		htmlFor={`items.${index}.quantity`}>
-																		Cantidad
-																		<RequiredMark />
-																	</Label>
-																	<Input
-																		id={`items.${index}.quantity`}
-																		className={
-																			RECEPCION_FIELD_CLASSNAME
-																		}
-																		name={`items.${index}.quantity`}
-																		type='number'
-																		min={1}
-																		value={line.quantity}
-																		onChange={
-																			formik.handleChange
-																		}
-																		onBlur={formik.handleBlur}
-																		isValid={
-																			!errorFor('quantity')
-																		}
-																		isTouched={touchedFor(
-																			'quantity',
-																		)}
-																		invalidFeedback={errorFor(
-																			'quantity',
-																		)}
-																	/>
-																</div>
-
-																{isManual ? (
-																	<div className='space-y-1'>
-																		<Label
-																			htmlFor={`items.${index}.product_id`}>
-																			Producto
-																			<RequiredMark />
-																		</Label>
-																		<SelectReact
-																			className={
-																				RECEPCION_SELECT_CLASSNAME
-																			}
-																			name={`items.${index}.product_id`}
-																			inputId={`items.${index}.product_id`}
-																			isDisabled={canRetry}
-																			options={productOptions}
-																			placeholder='Selecciona un producto…'
-																			value={
-																				productOptions.find(
-																					(option) =>
-																						option.value ===
-																						String(
-																							line.product_id,
-																						),
-																				) ?? null
-																			}
-																			onChange={(option) => {
-																				const selected =
-																					option as TSelectOption | null;
-																				if (
-																					Array.isArray(
-																						selected,
-																					)
-																				)
-																					return;
-																				formik
-																					.setFieldValue(
-																						`items.${index}.product_id`,
-																						selected
-																							? Number(
-																									selected.value,
-																								)
-																							: '',
-																					)
-																					.catch(
-																						() =>
-																							undefined,
-																					);
-																			}}
-																			isValid={
-																				!errorFor(
-																					'product_id',
-																				)
-																			}
-																			isTouched={touchedFor(
-																				'product_id',
-																			)}
-																			invalidFeedback={errorFor(
-																				'product_id',
-																			)}
-																		/>
-																	</div>
-																) : (
-																	<div className='space-y-1'>
-																		<Label
-																			htmlFor={`items.${index}.purchase_document_line_id`}>
-																			Línea del documento
-																			<RequiredMark />
-																		</Label>
-																		<SelectReact
-																			className={
-																				RECEPCION_SELECT_CLASSNAME
-																			}
-																			name={`items.${index}.purchase_document_line_id`}
-																			inputId={`items.${index}.purchase_document_line_id`}
-																			isDisabled={
-																				!selectedDocument ||
-																				canRetry
-																			}
-																			options={
-																				documentLineOptions
-																			}
-																			placeholder='Selecciona una línea…'
-																			value={
-																				documentLineOptions.find(
-																					(option) =>
-																						option.value ===
-																						String(
-																							line.purchase_document_line_id,
-																						),
-																				) ?? null
-																			}
-																			onChange={(option) => {
-																				const selected =
-																					option as TSelectOption | null;
-																				if (
-																					Array.isArray(
-																						selected,
-																					)
-																				)
-																					return;
-																				formik
-																					.setFieldValue(
-																						`items.${index}.purchase_document_line_id`,
-																						selected
-																							? Number(
-																									selected.value,
-																								)
-																							: '',
-																					)
-																					.catch(
-																						() =>
-																							undefined,
-																					);
-																			}}
-																			isValid={
-																				!errorFor(
-																					'purchase_document_line_id',
-																				)
-																			}
-																			isTouched={touchedFor(
-																				'purchase_document_line_id',
-																			)}
-																			invalidFeedback={errorFor(
-																				'purchase_document_line_id',
-																			)}
-																		/>
-																	</div>
-																)}
-
-																{isManual ? (
-																	<div className='space-y-2'>
-																		<Label
-																			htmlFor={`items.${index}.unit_cost`}>
-																			{displayedCostBasis(
-																				line.unit_cost_basis,
-																			) === 'net'
-																				? 'Costo neto'
-																				: 'Costo bruto c/ IVA'}
-																			{hasKnownSupplier && (
-																				<RequiredMark />
-																			)}
-																		</Label>
-																		<Input
-																			id={`items.${index}.unit_cost`}
-																			className={
-																				RECEPCION_FIELD_CLASSNAME
-																			}
-																			name={`items.${index}.unit_cost`}
-																			type='text'
-																			inputMode='decimal'
-																			placeholder='$0'
-																			// Formato peso como en el documento de compra; Formik guarda el valor sin formato.
-																			value={formatPesoInput(
-																				line.unit_cost,
-																			)}
-																			onChange={(event) =>
-																				setLineUnitCost(
-																					index,
-																					event.target
-																						.value,
-																				)
-																			}
-																			onBlur={
-																				formik.handleBlur
-																			}
-																			isValid={
-																				!errorFor(
-																					'unit_cost',
-																				)
-																			}
-																			isTouched={touchedFor(
-																				'unit_cost',
-																			)}
-																			invalidFeedback={errorFor(
-																				'unit_cost',
-																			)}
-																		/>
-																		<Checkbox
-																			id={`items.${index}.unit_cost_basis`}
-																			name={`items.${index}.unit_cost_basis`}
-																			checked={
-																				displayedCostBasis(
-																					line.unit_cost_basis,
-																				) === 'net'
-																			}
-																			onChange={(event) =>
-																				formik
-																					.setFieldValue(
-																						`items.${index}.unit_cost_basis`,
-																						event.target
-																							.checked
-																							? 'net'
-																							: 'gross',
-																					)
-																					.catch(
-																						() =>
-																							undefined,
-																					)
-																			}
-																			label='Calcular IVA'
-																			dimension='sm'
-																		/>
-																		{touchedFor(
-																			'unit_cost_basis',
-																		) &&
-																			errorFor(
-																				'unit_cost_basis',
-																			) && (
-																				<p
-																					role='alert'
-																					className='text-xs text-red-500/70'>
-																					{errorFor(
-																						'unit_cost_basis',
-																					)}
-																				</p>
-																			)}
-																	</div>
-																) : (
-																	<p className='self-center text-xs text-zinc-500'>
-																		El costo se deriva del
-																		documento.
-																	</p>
-																)}
-															</div>
-														</div>
-													);
-												})}
-											</CardBody>
-										</>
+								<CardHeader className='pb-2'>
+									<div>
+										<CardTitle className='text-lg'>
+											{isManual ? 'Productos recibidos' : '¿Qué llegó?'}
+										</CardTitle>
+										<p className={RECEPCION_SUBTITLE_CLASSNAME}>
+											{linesSubtitle}
+										</p>
+									</div>
+								</CardHeader>
+								<CardBody>
+									{isManual ? (
+										<ManualLinesEditor
+											formik={formik}
+											productOptions={productOptions}
+											isCostRequired={hasKnownSupplier}
+											disabled={isLocked}
+											fieldClassName={RECEPCION_FIELD_CLASSNAME}
+											selectClassName={RECEPCION_SELECT_CLASSNAME}
+											itemClassName={RECEPCION_ITEM_CLASSNAME}
+										/>
+									) : (
+										<DocumentLinesEditor
+											formik={formik}
+											selectedDocument={selectedDocument}
+											loading={loadingSelectedDocument}
+											disabled={isLocked}
+											fieldClassName={RECEPCION_FIELD_CLASSNAME}
+										/>
 									)}
-								</FieldArray>
+								</CardBody>
 							</Card>
 						</fieldset>
 					</ModalBody>
 					<ModalFooter className='shrink-0 border-t border-zinc-200 bg-white pt-4 dark:border-zinc-700 dark:bg-zinc-950'>
 						<ModalFooterChild>
-							<Button
-								variant='outline'
-								onClick={handleClose}
-								isDisable={isSubmitting}>
-								Cancelar
-							</Button>
+							<p className='hidden max-w-xs text-xs text-zinc-500 dark:text-zinc-400 md:block'>
+								El borrador no mueve stock. «Guardar e ingresar» lo suma a la bodega
+								en cuanto termina de procesarse.
+							</p>
 						</ModalFooterChild>
-						<ModalFooterChild>
-							<Button
-								type='submit'
-								variant='solid'
-								color='blue'
-								icon='HeroCheck'
-								isDisable={isSubmitting || hasVersionConflict}
-								isLoading={isSubmitting}>
-								{submitLabel}
-							</Button>
+						<ModalFooterChild className='flex-wrap justify-end'>
+							{pendingIngress ? (
+								<>
+									{isPendingIngressForeign && (
+										<Button
+											variant='outline'
+											color='red'
+											icon='HeroXMark'
+											isDisable={isSubmitting}
+											onClick={handleClose}>
+											Descartar
+										</Button>
+									)}
+									<Button
+										variant='outline'
+										icon='HeroArrowTopRightOnSquare'
+										isDisable={isSubmitting || isPendingIngressForeign}
+										onClick={leavePendingIngress}>
+										Ver la recepción #{pendingIngress.receipt.id}
+									</Button>
+									<Button
+										variant='solid'
+										color='emerald'
+										icon='HeroArrowPath'
+										isDisable={isSubmitting || isPendingIngressForeign}
+										isLoading={isSubmitting}
+										onClick={() => {
+											retryIngress().catch(() => undefined);
+										}}>
+										Reintentar ingreso al stock
+									</Button>
+								</>
+							) : (
+								<Button
+									variant='outline'
+									onClick={handleClose}
+									isDisable={isSubmitting}>
+									Cancelar
+								</Button>
+							)}
+							{!pendingIngress && canRetry && (
+								<Button
+									variant='solid'
+									color='blue'
+									icon='HeroArrowPath'
+									isDisable={isSubmitting || hasVersionConflict}
+									isLoading={isSubmitting}
+									onClick={() => submitWith(submitIntent)}>
+									{retryLabel}
+								</Button>
+							)}
+							{!pendingIngress && !canRetry && (
+								<>
+									<Button
+										variant='outline'
+										color='blue'
+										icon='HeroDocumentCheck'
+										isDisable={isSubmitting || hasVersionConflict}
+										isLoading={isSubmitting && submitIntent === 'save'}
+										onClick={() => submitWith('save')}>
+										{saveLabel}
+									</Button>
+									<Button
+										variant='solid'
+										color='emerald'
+										icon='HeroArrowDownTray'
+										isDisable={isSubmitting || hasVersionConflict}
+										isLoading={isSubmitting && submitIntent === 'save_and_post'}
+										onClick={() => submitWith('save_and_post')}>
+										Guardar e ingresar al stock
+									</Button>
+								</>
+							)}
 						</ModalFooterChild>
 					</ModalFooter>
 				</form>

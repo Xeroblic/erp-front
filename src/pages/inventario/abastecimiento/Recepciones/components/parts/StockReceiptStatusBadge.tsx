@@ -20,7 +20,7 @@ interface IStockReceiptStatusBadgeProps {
  * Ciclo de estados de una recepción (sección 7): `draft` → `queued` →
  * `posted`/`failed`, más `cancelled` y `reversed`. `queued` en azul, no en
  * verde ni en rojo: todavía no hay stock, no es un éxito ni un error. Ancho
- * fijo para «Contabilizada», la más larga de esta columna.
+ * fijo para «Ingresando», la más larga de esta columna.
  */
 const StockReceiptStatusBadge: React.FC<IStockReceiptStatusBadgeProps> = ({ status }) => (
 	<StatusPill color={COLOR_BY_STATUS[status]} width={8.5}>
