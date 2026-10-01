@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
@@ -7,10 +7,6 @@ import {
 	createPurchaseDocumentThunk,
 	updatePurchaseDocumentThunk,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
-import {
-	formatProcurementProductLabel,
-	listPurchasableProcurementProducts,
-} from '@/services/procurement/procurementProducts.service';
 import { normalizeCostInput } from '@/components/procurement';
 import { formatDecimalCents, parseDecimalString } from '@/utils/procurementDecimal.util';
 import type {
@@ -53,14 +49,9 @@ export const toFormValues = (
 				document_number: document.document_number,
 				issue_date: document.issue_date,
 				total_amount: document.total_amount ?? '',
-				include_shipping:
-					document.shipping_cost !== null && document.shipping_cost !== undefined,
-				shipping_cost: document.shipping_cost?.entered_unit_amount ?? '',
-				shipping_cost_basis:
-					document.shipping_cost?.entered_basis &&
-					document.shipping_cost.entered_basis !== 'unknown'
-						? document.shipping_cost.entered_basis
-						: 'net',
+				include_shipping: document.shipping_cost !== null,
+				shipping_cost: document.shipping_cost?.entered_amount ?? '',
+				shipping_cost_basis: document.shipping_cost?.entered_basis ?? 'net',
 				notes: document.notes ?? '',
 				items: document.items.map((item) => ({
 					id: item.id,
@@ -115,10 +106,36 @@ export const toUpdatePayload = (
 };
 
 const FORM_FIELD_BY_API_FIELD: Partial<Record<string, keyof IPurchaseDocumentFormValues>> = {
+	document_type: 'document_type',
 	supplier_id: 'supplier_id',
 	document_number: 'document_number',
 	issue_date: 'issue_date',
+	total_amount: 'total_amount',
 	shipping_cost: 'shipping_cost',
+	shipping_cost_basis: 'shipping_cost_basis',
+	notes: 'notes',
+};
+
+const LINE_FIELDS: readonly (keyof IDocumentoCompraLineFormValues)[] = [
+	'product_id',
+	'quantity',
+	'unit_cost',
+	'unit_cost_basis',
+	'notes',
+];
+
+/**
+ * Campo de Formik para un error del backend. Laravel indexa los de línea como
+ * `items.N.campo`, que Formik acepta tal cual como ruta.
+ */
+const toFormFieldPath = (apiField: string): string | null => {
+	const topLevel = FORM_FIELD_BY_API_FIELD[apiField];
+	if (topLevel) return topLevel;
+
+	const lineMatch = /^items\.(\d+)\.(\w+)$/.exec(apiField);
+	if (!lineMatch) return null;
+	const field = lineMatch[2] as keyof IDocumentoCompraLineFormValues;
+	return LINE_FIELDS.includes(field) ? apiField : null;
 };
 
 interface IUsePurchaseDocumentFormArgs {
@@ -152,18 +169,11 @@ const usePurchaseDocumentForm = ({
 	});
 
 	/**
-	 * El store mock no es reactivo: se relee en cada render, y crear un producto
-	 * en línea sube esta versión sólo para forzar ese render.
+	 * Editar sin `ETag` no se envía (ver `updatePurchaseDocument`): pasa cuando
+	 * el backend no publica ese encabezado en CORS. El modal lo avisa antes de
+	 * que el usuario llene el formulario.
 	 */
-	const [, setProductsVersion] = useState(0);
-	const productOptions = listPurchasableProcurementProducts(subsidiaryId).map((product) => ({
-		value: String(product.id),
-		label: formatProcurementProductLabel(product),
-	}));
-	const refreshProductOptions = useCallback(
-		() => setProductsVersion((version) => version + 1),
-		[],
-	);
+	const isMissingEtag = isEdit && !etag;
 	const formik = useFormik<IPurchaseDocumentFormValues>({
 		initialValues: toFormValues(document, defaultDocumentType),
 		enableReinitialize: true,
@@ -217,10 +227,9 @@ const usePurchaseDocumentForm = ({
 
 	/**
 	 * Igual criterio que `useSupplierForm`: un 422 con `fieldErrors` se pinta
-	 * sobre el input top-level correspondiente cuando existe, y siempre se
-	 * toastea — el mock no indexa los errores de línea (`items.N.campo`), así
-	 * que un error de una línea sólo llega por el toast. La clave se renueva
-	 * salvo que el error admita reintentar con la misma.
+	 * sobre el input correspondiente —también los de línea, `items.N.campo`— y
+	 * siempre se toastea. La clave se renueva salvo que el error admita
+	 * reintentar con la misma.
 	 *
 	 * `RESOURCE_VERSION_CONFLICT` es la excepción: acá no alcanza con
 	 * renovar la clave, porque lo que quedó obsoleto es el ETag, no la
@@ -239,7 +248,7 @@ const usePurchaseDocumentForm = ({
 		}
 
 		Object.entries(resolved.fieldErrors ?? {}).forEach(([apiField, messages]) => {
-			const formField = FORM_FIELD_BY_API_FIELD[apiField];
+			const formField = toFormFieldPath(apiField);
 			if (formField && messages[0]) formik.setFieldError(formField, messages[0]);
 		});
 		toast.error(resolved.message);
@@ -254,14 +263,24 @@ const usePurchaseDocumentForm = ({
 		setHasVersionConflict(false);
 	};
 
+	/**
+	 * Descarta el borrador de otro contexto (filial): además de limpiar,
+	 * renueva la clave, para que el alta en la filial nueva no viaje con la
+	 * `Idempotency-Key` de un envío pensado para la anterior.
+	 */
+	const discardDraft = () => {
+		reset();
+		idempotentWrite.renewKey();
+	};
+
 	return {
 		formik,
 		isEdit,
 		isSubmitting: idempotentWrite.isSubmitting,
 		hasVersionConflict,
-		productOptions,
-		refreshProductOptions,
+		isMissingEtag,
 		reset,
+		discardDraft,
 	};
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FieldArray, FormikProvider } from 'formik';
 import { useHref } from 'react-router-dom';
 import Modal, {
@@ -17,12 +17,12 @@ import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import Select from '@/components/form/Select';
 import SelectReact from '@/components/form/SelectReact';
+import type { InputActionMeta } from 'react-select';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import { normalizeCostInput } from '@/components/procurement';
 import SupplierFormModal from '@/pages/inventario/abastecimiento/Proveedores/components/modals/SupplierFormModal';
 import type {
-	IProcurementProduct,
 	IProcurementSupplier,
 	IProcurementSupplierRutConflict,
 	IPurchaseDocument,
@@ -35,10 +35,13 @@ import {
 	parseDecimalString,
 	parsePesoInput,
 } from '@/utils/procurementDecimal.util';
+import type { ICreatedPurchasableProduct } from '@/services/procurement/purchasableProducts.service';
 import usePurchaseDocumentForm from '../../hooks/usePurchaseDocumentForm';
 import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
 import useSupplierInlineEdit from '../../hooks/useSupplierInlineEdit';
+import usePurchasableProductOptions from '../../hooks/usePurchasableProductOptions';
 import ProcurementProductFormModal from './ProcurementProductFormModal';
+import ProductOptionsNotice from '../parts/ProductOptionsNotice';
 import SupplierOptionsNotice from '../parts/SupplierOptionsNotice';
 import { EMPTY_DOCUMENTO_LINE } from '../../types';
 import { focusFirstInvalidPurchaseDocumentField } from '../../utils/purchaseDocumentFieldFocus';
@@ -111,24 +114,22 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 		addSupplier,
 		reload: reloadSuppliers,
 	} = useActiveSupplierOptions(subsidiaryId, isOpen);
-	const {
-		formik,
-		isEdit,
-		isSubmitting,
-		hasVersionConflict,
-		productOptions,
-		refreshProductOptions,
-		reset,
-	} = usePurchaseDocumentForm({
+	const { formik, isEdit, isSubmitting, hasVersionConflict, isMissingEtag, reset, discardDraft } =
+		usePurchaseDocumentForm({
+			subsidiaryId,
+			document,
+			etag,
+			// Sin lista de proveedores no hay cómo elegir el que exige la factura.
+			defaultDocumentType: canListSuppliers ? 'invoice' : 'receipt',
+			onSuccess: (result) => {
+				setIsOpen(false);
+				onSuccess?.(result);
+			},
+		});
+	const productOptions = usePurchasableProductOptions({
 		subsidiaryId,
-		document,
-		etag,
-		// Sin lista de proveedores no hay cómo elegir el que exige la factura.
-		defaultDocumentType: canListSuppliers ? 'invoice' : 'receipt',
-		onSuccess: (result) => {
-			setIsOpen(false);
-			onSuccess?.(result);
-		},
+		isEnabled: isOpen,
+		initialProducts: document?.items.map((item) => item.product),
 	});
 	/**
 	 * Crear una factura exige `view-procurement-supplier` además de
@@ -182,20 +183,38 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 	 */
 	const [productLineIndex, setProductLineIndex] = useState<number | null>(null);
 
-	const handleProductCreated = (product: IProcurementProduct) => {
-		refreshProductOptions();
-		// Con serie no es elegible para una línea de compra: queda creado, pero no se selecciona.
-		if (productLineIndex === null || product.serial_tracking) return;
+	const handleProductCreated = (product: ICreatedPurchasableProduct) => {
+		productOptions.addProduct(product);
+		// El producto queda creado en el catálogo, pero una línea de compra sólo admite activos sin serie.
+		if (productLineIndex === null || product.serial_tracking || !product.is_active) return;
 		const field = `items.${productLineIndex}.product_id`;
 		formik.setFieldValue(field, product.id).catch(() => undefined);
 		formik.setFieldTouched(field, true, false).catch(() => undefined);
 	};
 
+	/**
+	 * El borrador pertenece a la filial en que se escribió: proveedor, líneas y
+	 * productos son de su catálogo. El contenedor cierra el modal al cambiar de
+	 * filial, pero este componente sigue montado con su estado; sin esto, al
+	 * volver a abrir «Nuevo documento» reaparecería el borrador anterior, con
+	 * el alta de producto abierta sobre la línea de entonces.
+	 */
+	const draftSubsidiaryRef = useRef(subsidiaryId);
+	useEffect(() => {
+		if (draftSubsidiaryRef.current === subsidiaryId) return;
+		draftSubsidiaryRef.current = subsidiaryId;
+		setIsSupplierModalOpen(false);
+		setProductLineIndex(null);
+		closeSupplierEdit();
+		discardDraft();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [subsidiaryId]);
+
 	const handleClose = () => {
 		if (isSubmitting) return;
 		setIsSupplierModalOpen(false);
-		closeSupplierEdit();
 		setProductLineIndex(null);
+		closeSupplierEdit();
 		setIsOpen(false);
 		reset();
 	};
@@ -264,7 +283,7 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 							// texto dispara el submit nativo del `<form>` sin pasar por el
 							// botón, así que el bloqueo tiene que vivir acá también.
 							event.preventDefault();
-							if (hasVersionConflict) return;
+							if (hasVersionConflict || isMissingEtag) return;
 							// Mismo criterio que pagos diferidos: se envía igual (Formik
 							// marca los campos tocados y no llama a `onSubmit` si hay
 							// errores) y después se lleva la vista al primer campo inválido.
@@ -280,6 +299,17 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 								.catch(() => undefined);
 						}}>
 						<ModalBody className='min-h-0 flex-1 space-y-4 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
+							{isMissingEtag && (
+								<Alert
+									color='red'
+									variant='outline'
+									icon='HeroExclamationTriangle'
+									title='No se puede editar este documento'>
+									No pudimos leer la versión vigente del documento, así que
+									guardar podría pisar cambios de otra persona. Recarga la página;
+									si el aviso persiste, avisa al equipo de sistemas.
+								</Alert>
+							)}
 							{hasVersionConflict && (
 								<Alert
 									color='amber'
@@ -493,7 +523,7 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 
 										<div className='space-y-1 sm:col-span-2'>
 											<Label htmlFor='documento-total-amount'>
-												Total informativo (opcional)
+												Total informativo (con IVA, opcional)
 											</Label>
 											<Input
 												id='documento-total-amount'
@@ -510,8 +540,8 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 												invalidFeedback={formik.errors.total_amount}
 											/>
 											<p className='text-xs text-zinc-500'>
-												Sólo informativo: no reemplaza la suma de las
-												líneas.
+												El total impreso en el documento, IVA incluido. Sólo
+												informativo: no reemplaza la suma de las líneas.
 											</p>
 										</div>
 									</div>
@@ -584,6 +614,10 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 												</CardHeaderChild>
 											</CardHeader>
 											<CardBody className='space-y-3'>
+												<ProductOptionsNotice
+													reason={productOptions.unavailableReason}
+													onRetry={productOptions.reload}
+												/>
 												{typeof formik.errors.items === 'string' && (
 													<Alert
 														color='red'
@@ -725,7 +759,11 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 																			color='blue'
 																			icon='HeroPlus'
 																			className='absolute -top-1 right-0 whitespace-nowrap'
-																			isDisable={isSubmitting}
+																			isDisable={
+																				isSubmitting ||
+																				hasVersionConflict ||
+																				isMissingEtag
+																			}
 																			onClick={() =>
 																				setProductLineIndex(
 																					index,
@@ -737,17 +775,38 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 																	<SelectReact
 																		name={`items.${index}.product_id`}
 																		inputId={`items.${index}.product_id`}
-																		options={productOptions}
-																		placeholder='Selecciona un producto…'
-																		value={
-																			productOptions.find(
-																				(option) =>
-																					option.value ===
-																					String(
-																						line.product_id,
-																					),
-																			) ?? null
+																		options={
+																			productOptions.options
 																		}
+																		placeholder='Busca por nombre o SKU…'
+																		// La búsqueda la hace el servidor: filtrar otra vez acá escondería coincidencias por código de barras.
+																		filterOption={null}
+																		// Elegir o cerrar el menú vacía la caja: el término compartido se vacía con ella.
+																		onInputChange={(
+																			text: string,
+																			meta: InputActionMeta,
+																		) => {
+																			if (
+																				meta.action ===
+																				'input-change'
+																			)
+																				productOptions.onSearchChange(
+																					text,
+																				);
+																			else
+																				productOptions.clearSearch();
+																		}}
+																		isLoading={
+																			productOptions.loading
+																		}
+																		noOptionsMessage={() =>
+																			productOptions.loading
+																				? 'Buscando…'
+																				: 'Sin productos no serializados que coincidan.'
+																		}
+																		value={productOptions.getOption(
+																			line.product_id,
+																		)}
 																		onChange={(option) => {
 																			const selected =
 																				option as TSelectOption | null;
@@ -999,7 +1058,7 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 									variant='solid'
 									color='blue'
 									icon='HeroCheck'
-									isDisable={isSubmitting || hasVersionConflict}
+									isDisable={isSubmitting || hasVersionConflict || isMissingEtag}
 									isLoading={isSubmitting}>
 									{isEdit ? 'Guardar cambios' : 'Crear documento'}
 								</Button>

@@ -52,6 +52,7 @@ const TransferPanel = ({ branchId, owner, onBusyChange }: TransferPanelProps) =>
 		formik,
 		warehouses,
 		destinationOptions,
+		summary,
 		originRows,
 		loadingOrigin,
 		originError,
@@ -252,6 +253,40 @@ const TransferPanel = ({ branchId, owner, onBusyChange }: TransferPanelProps) =>
 
 					{wizard.stepKey === 'reason' && (
 						<div className='space-y-4'>
+							<section
+								aria-labelledby='traslado-summary-title'
+								data-testid='traslado-summary'
+								className='rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-800/50'>
+								<h3
+									id='traslado-summary-title'
+									className='text-sm font-semibold text-zinc-900 dark:text-white'>
+									Se moverán {totalUnits}{' '}
+									{totalUnits === 1 ? 'unidad' : 'unidades'} de{' '}
+									{summary.from ?? '—'} a {summary.to ?? '—'}
+								</h3>
+								<ul className='mt-2 space-y-1'>
+									{summary.lines.map((line) => (
+										<li
+											key={line.key}
+											className='flex items-baseline justify-between gap-3'>
+											<span className='min-w-0 truncate' title={line.name}>
+												{line.name}
+												{line.sku && (
+													<span className='ms-1 text-xs text-zinc-500'>
+														({line.sku})
+													</span>
+												)}
+												<span className='ms-2 text-xs text-zinc-500'>
+													{line.condition === 'fit' ? 'Apto' : 'No apto'}
+												</span>
+											</span>
+											<span className='shrink-0 font-semibold tabular-nums'>
+												{line.quantity}
+											</span>
+										</li>
+									))}
+								</ul>
+							</section>
 							<div className='space-y-1'>
 								<Label htmlFor='traslado-reason'>Motivo</Label>
 								<Validation

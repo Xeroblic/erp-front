@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import {
 	cancelPurchaseDocument,
 	confirmPurchaseDocument,
@@ -7,8 +8,11 @@ import {
 	listPurchaseDocuments,
 	updatePurchaseDocument,
 } from '@/services/procurement/purchaseDocuments.service';
-import { readEtagHeader } from '@/utils/procurementWrite.util';
 import { getProcurementErrorMessage } from '@/utils/procurementErrors.util';
+import type {
+	ICreatedPurchasableProduct,
+	IPendingProductAttempt,
+} from '@/services/procurement/purchasableProducts.service';
 import type { RootState } from '@/store';
 import type {
 	IApiPaginationMeta,
@@ -21,15 +25,25 @@ import type {
 } from '@/interface/procurement.interface';
 
 /**
- * Store de documentos de compra (card 03, sección 6 del contrato). Mismo
- * patrón que `procurementSuppliersSlice`: los thunks llaman al servicio mock
- * de `@/services/procurement/purchaseDocuments.service`, particionado por
- * filial.
+ * Store de documentos de compra (sección 6 del contrato). Mismo patrón que
+ * `procurementSuppliersSlice`: los thunks llaman al servicio real
+ * `@/services/procurement/purchaseDocuments.service` (backend PR #84/#92).
  *
  * A diferencia de proveedores, acá se guarda el `ETag` del recurso junto con
  * `current`: la edición (`PATCH`) lo necesita para `If-Match`, y sólo la
  * ficha ya cargada lo tiene — no hay otro lugar del store de donde sacarlo.
  */
+
+/**
+ * Alta de producto en línea que todavía no se puede dar por cerrada:
+ * - `in_flight`: el `POST` (o su conciliación) está en curso.
+ * - `uncertain`: falló sin decir qué pasó; «Reintentar» lo concilia.
+ * - `created`: se creó después de que el modal que lo pidió se desmontara;
+ *   queda para entregarlo en la línea cuando el modal vuelva a abrirse.
+ */
+export type TProductAttemptRecord =
+	| (IPendingProductAttempt & { status: 'in_flight' | 'uncertain' })
+	| (IPendingProductAttempt & { status: 'created'; product: ICreatedPurchasableProduct });
 
 export interface PurchaseDocumentsState {
 	items: IPurchaseDocumentListRow[];
@@ -38,10 +52,10 @@ export interface PurchaseDocumentsState {
 	listError: string | null;
 	listRequestId: string | null;
 	/**
-	 * Filial dueña de `items`/`meta` (propiedad de contexto, ZF-12). Los IDs de
-	 * documento **no son únicos entre filiales** — el mock siembra cada una con
-	 * los mismos fixtures — así que una mutación resuelta para la filial
-	 * equivocada no puede parchear una fila que coincide sólo por número.
+	 * Filial dueña de `items`/`meta`/`listError` (propiedad de contexto,
+	 * ZF-12). Se fija al resolver, no al pedir: mientras la petición de otra
+	 * filial vuela, lo guardado sigue siendo de la anterior y el hook no lo
+	 * muestra. Tampoco deja que una mutación de otra filial parchee la lista.
 	 */
 	listSubsidiaryId: number | null;
 	current: IPurchaseDocument | null;
@@ -50,12 +64,21 @@ export interface PurchaseDocumentsState {
 	currentLoading: boolean;
 	currentError: string | null;
 	currentRequestId: string | null;
-	/** Filial dueña de `current`, mismo criterio que `listSubsidiaryId`. */
+	/** Filial dueña de `current`/`currentError`, mismo criterio que `listSubsidiaryId`. */
 	currentSubsidiaryId: number | null;
+	/** Documento pedido por la carga que dejó `current`/`currentError`. */
+	currentDocumentId: number | null;
 	creating: boolean;
 	updating: boolean;
 	confirming: boolean;
 	cancelling: boolean;
+	/**
+	 * Altas de producto en línea sin cerrar, una por filial, desde que empieza
+	 * el `POST`. Viven acá y no en el modal que las hizo: el modal se desmonta
+	 * (cambio de filial en la ficha, salida de la página) y, si el intento se
+	 * perdiera con él, al volver se podría enviar otro y duplicar el producto.
+	 */
+	pendingProductAttempts: Record<number, TProductAttemptRecord>;
 }
 
 const initialState: PurchaseDocumentsState = {
@@ -71,15 +94,22 @@ const initialState: PurchaseDocumentsState = {
 	currentError: null,
 	currentRequestId: null,
 	currentSubsidiaryId: null,
+	currentDocumentId: null,
 	creating: false,
 	updating: false,
 	confirming: false,
 	cancelling: false,
+	pendingProductAttempts: {},
 };
 
+/** La `Idempotency-Key` es obligatoria: el backend rechaza escrituras sin ella. */
 interface IWriteHeaders {
-	idempotencyKey?: string;
-	etag?: string | null;
+	idempotencyKey: string;
+}
+
+/** El PATCH además necesita el `ETag` de la ficha que se editó. */
+interface IUpdateHeaders extends IWriteHeaders {
+	etag: string | null;
 }
 
 const MISSING_SUBSIDIARY_MESSAGE = 'No se pudo determinar la filial activa.';
@@ -105,7 +135,7 @@ export const fetchPurchaseDocumentDetail = createAsyncThunk(
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
 		try {
 			const response = await getPurchaseDocument(args.subsidiaryId, args.id);
-			return { data: response.data, etag: readEtagHeader(response.headers) };
+			return { data: response.data, etag: response.headers.etag };
 		} catch (error) {
 			return rejectWithValue(error);
 		}
@@ -118,7 +148,7 @@ export const createPurchaseDocumentThunk = createAsyncThunk(
 		args: {
 			subsidiaryId: number | null;
 			payload: IPurchaseDocumentCreatePayload;
-			headers?: IWriteHeaders;
+			headers: IWriteHeaders;
 		},
 		{ rejectWithValue },
 	) => {
@@ -131,7 +161,7 @@ export const createPurchaseDocumentThunk = createAsyncThunk(
 			);
 			return {
 				data: response.data,
-				etag: readEtagHeader(response.headers),
+				etag: response.headers.etag,
 				subsidiaryId: args.subsidiaryId,
 			};
 		} catch (error) {
@@ -147,7 +177,7 @@ export const updatePurchaseDocumentThunk = createAsyncThunk(
 			subsidiaryId: number | null;
 			id: number;
 			payload: IPurchaseDocumentUpdatePayload;
-			headers: IWriteHeaders;
+			headers: IUpdateHeaders;
 		},
 		{ rejectWithValue },
 	) => {
@@ -161,7 +191,7 @@ export const updatePurchaseDocumentThunk = createAsyncThunk(
 			);
 			return {
 				data: response.data,
-				etag: readEtagHeader(response.headers),
+				etag: response.headers.etag,
 				subsidiaryId: args.subsidiaryId,
 			};
 		} catch (error) {
@@ -173,7 +203,7 @@ export const updatePurchaseDocumentThunk = createAsyncThunk(
 export const confirmPurchaseDocumentThunk = createAsyncThunk(
 	'purchaseDocuments/confirm',
 	async (
-		args: { subsidiaryId: number | null; id: number; headers?: IWriteHeaders },
+		args: { subsidiaryId: number | null; id: number; headers: IWriteHeaders },
 		{ rejectWithValue },
 	) => {
 		if (args.subsidiaryId === null) return rejectWithValue(MISSING_SUBSIDIARY_MESSAGE);
@@ -185,7 +215,7 @@ export const confirmPurchaseDocumentThunk = createAsyncThunk(
 			);
 			return {
 				data: response.data,
-				etag: readEtagHeader(response.headers),
+				etag: response.headers.etag,
 				subsidiaryId: args.subsidiaryId,
 			};
 		} catch (error) {
@@ -201,7 +231,7 @@ export const cancelPurchaseDocumentThunk = createAsyncThunk(
 			subsidiaryId: number | null;
 			id: number;
 			payload: IPurchaseDocumentCancelPayload;
-			headers?: IWriteHeaders;
+			headers: IWriteHeaders;
 		},
 		{ rejectWithValue },
 	) => {
@@ -215,7 +245,7 @@ export const cancelPurchaseDocumentThunk = createAsyncThunk(
 			);
 			return {
 				data: response.data,
-				etag: readEtagHeader(response.headers),
+				etag: response.headers.etag,
 				subsidiaryId: args.subsidiaryId,
 			};
 		} catch (error) {
@@ -241,10 +271,9 @@ const toListRow = (document: IPurchaseDocument): IPurchaseDocumentListRow => ({
 
 /**
  * Refleja en `items` y `current` el resultado de una escritura, sin refetch.
- * `subsidiaryId` es el de la propia mutación: los IDs de documento se
- * repiten entre filiales (cada una siembra los mismos fixtures), así que sin
- * comparar la filial una escritura resuelta para la B podría parchear una
- * fila o pisar la ficha de la A sólo porque el número de ID coincide.
+ * `subsidiaryId` es el de la propia mutación: sin compararlo, una escritura
+ * resuelta después de cambiar de filial podría pisar la lista o la ficha de
+ * la filial nueva.
  */
 const applyDocumentMutation = (
 	state: PurchaseDocumentsState,
@@ -276,9 +305,39 @@ const purchaseDocumentsSlice = createSlice({
 			state.currentEtag = null;
 			state.currentError = null;
 			state.currentSubsidiaryId = null;
+			state.currentDocumentId = null;
 			// Igual que en proveedores: sin esto, una respuesta en vuelo de la
 			// ficha que se abandona podría llegar tarde y repoblar `current`.
 			state.currentRequestId = null;
+		},
+		/** Empieza el `POST` de un alta o su conciliación. */
+		startProductAttempt(state, action: PayloadAction<IPendingProductAttempt>) {
+			state.pendingProductAttempts[action.payload.subsidiaryId] = {
+				...action.payload,
+				status: 'in_flight',
+			};
+		},
+		markProductAttemptUncertain(state, action: PayloadAction<number>) {
+			const attempt = state.pendingProductAttempts[action.payload];
+			if (attempt?.status === 'in_flight') attempt.status = 'uncertain';
+		},
+		/** Se creó sin quien lo reciba: el modal se desmontó o su borrador se descartó. */
+		completeProductAttempt(
+			state,
+			action: PayloadAction<{ subsidiaryId: number; product: ICreatedPurchasableProduct }>,
+		) {
+			const attempt = state.pendingProductAttempts[action.payload.subsidiaryId];
+			if (!attempt) return;
+			state.pendingProductAttempts[action.payload.subsidiaryId] = {
+				subsidiaryId: attempt.subsidiaryId,
+				payload: attempt.payload,
+				status: 'created',
+				product: action.payload.product,
+			};
+		},
+		/** Se cerró: la filial del intento, no la activa. */
+		clearPendingProductAttempt(state, action: PayloadAction<number>) {
+			delete state.pendingProductAttempts[action.payload];
 		},
 	},
 	extraReducers: (builder) => {
@@ -287,17 +346,23 @@ const purchaseDocumentsSlice = createSlice({
 				state.listLoading = true;
 				state.listError = null;
 				state.listRequestId = action.meta.requestId;
-				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchPurchaseDocuments.fulfilled, (state, action) => {
 				if (action.meta.requestId !== state.listRequestId) return;
 				state.listLoading = false;
 				state.items = action.payload.data;
 				state.meta = action.payload.meta;
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchPurchaseDocuments.rejected, (state, action) => {
 				if (action.meta.requestId !== state.listRequestId) return;
 				state.listLoading = false;
+				// Un fallo en otra filial no deja guardadas las filas de la anterior.
+				if (state.listSubsidiaryId !== action.meta.arg.subsidiaryId) {
+					state.items = [];
+					state.meta = null;
+				}
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 				state.listError = getProcurementErrorMessage(
 					action.payload,
 					'No se pudo cargar el listado.',
@@ -308,7 +373,6 @@ const purchaseDocumentsSlice = createSlice({
 				state.currentLoading = true;
 				state.currentError = null;
 				state.currentRequestId = action.meta.requestId;
-				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchPurchaseDocumentDetail.fulfilled, (state, action) => {
 				// Propiedad de contexto (ZF-12): una ficha anterior que resuelve
@@ -317,6 +381,8 @@ const purchaseDocumentsSlice = createSlice({
 				state.currentLoading = false;
 				state.current = action.payload.data;
 				state.currentEtag = action.payload.etag;
+				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
+				state.currentDocumentId = action.meta.arg.id;
 			})
 			.addCase(fetchPurchaseDocumentDetail.rejected, (state, action) => {
 				if (action.meta.requestId !== state.currentRequestId) return;
@@ -327,7 +393,8 @@ const purchaseDocumentsSlice = createSlice({
 				);
 				state.current = null;
 				state.currentEtag = null;
-				state.currentSubsidiaryId = null;
+				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
+				state.currentDocumentId = action.meta.arg.id;
 			})
 
 			.addCase(createPurchaseDocumentThunk.pending, (state) => {
@@ -391,7 +458,13 @@ const purchaseDocumentsSlice = createSlice({
 	},
 });
 
-export const { clearPurchaseDocumentCurrent } = purchaseDocumentsSlice.actions;
+export const {
+	clearPurchaseDocumentCurrent,
+	startProductAttempt,
+	markProductAttemptUncertain,
+	completeProductAttempt,
+	clearPendingProductAttempt,
+} = purchaseDocumentsSlice.actions;
 
 export const selectPurchaseDocumentsItems = (state: RootState) => state.purchaseDocuments.items;
 export const selectPurchaseDocumentsMeta = (state: RootState) => state.purchaseDocuments.meta;
@@ -399,6 +472,8 @@ export const selectPurchaseDocumentsListLoading = (state: RootState) =>
 	state.purchaseDocuments.listLoading;
 export const selectPurchaseDocumentsListError = (state: RootState) =>
 	state.purchaseDocuments.listError;
+export const selectPurchaseDocumentsListSubsidiaryId = (state: RootState) =>
+	state.purchaseDocuments.listSubsidiaryId;
 export const selectPurchaseDocumentCurrent = (state: RootState) => state.purchaseDocuments.current;
 export const selectPurchaseDocumentCurrentEtag = (state: RootState) =>
 	state.purchaseDocuments.currentEtag;
@@ -406,5 +481,20 @@ export const selectPurchaseDocumentCurrentLoading = (state: RootState) =>
 	state.purchaseDocuments.currentLoading;
 export const selectPurchaseDocumentCurrentError = (state: RootState) =>
 	state.purchaseDocuments.currentError;
+
+/** Filial y documento de la carga que dejó la ficha (o su error) en el store. */
+export const selectPurchaseDocumentCurrentSubsidiaryId = (state: RootState) =>
+	state.purchaseDocuments.currentSubsidiaryId;
+export const selectPurchaseDocumentCurrentDocumentId = (state: RootState) =>
+	state.purchaseDocuments.currentDocumentId;
+
+/** Alta de producto sin cerrar en la filial dada, si la hay. */
+export const selectPendingProductAttempt = (
+	state: RootState,
+	subsidiaryId: number | null,
+): TProductAttemptRecord | null =>
+	subsidiaryId === null
+		? null
+		: (state.purchaseDocuments.pendingProductAttempts[subsidiaryId] ?? null);
 
 export default purchaseDocumentsSlice.reducer;

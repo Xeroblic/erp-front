@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
 	getPurchaseDocument,
 	listPurchaseDocuments,
-} from '@/services/procurement/purchaseDocuments.service';
+} from '@/mocks/services/purchaseDocuments.mock';
 import type {
 	IPurchaseDocument,
 	IPurchaseDocumentListRow,

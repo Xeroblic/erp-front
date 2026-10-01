@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
-import Icon from '@/components/icon/Icon';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Alert from '@/components/ui/Alert';
 import Tabs, { Tab } from '@/components/ui/Tabs';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
@@ -133,21 +133,14 @@ const AjustesTrasladosView = () => {
 
 	return (
 		<PageWrapper isProtectedRoute title='Ajustes y traslados'>
-			{/* Encabezado con el formato de `ProductsHeader` del catálogo de productos. */}
+			{/* Mismo encabezado que el resto del módulo (Proveedores, Documentos, Recepciones). */}
 			<Subheader>
 				<SubheaderLeft>
-					<div className='flex items-center gap-3'>
-						<div className='flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800'>
-							<Icon icon='HeroArrowsRightLeft' className='h-5 w-5' />
-						</div>
-						<div>
-							<h1 className='text-2xl font-semibold'>Ajustes y traslados</h1>
-							<p className='text-sm text-neutral-500 dark:text-neutral-400'>
-								Corrige diferencias de conteo o reubica productos dentro de la
-								sucursal activa.
-							</p>
-						</div>
-					</div>
+					<SubheaderTitle
+						icon='HeroArrowsRightLeft'
+						title='Ajustes y traslados'
+						description='Corrige diferencias de conteo o reubica productos dentro de la sucursal activa.'
+					/>
 				</SubheaderLeft>
 			</Subheader>
 			{/* Fondo blanco en todos los campos de la página. El selector de

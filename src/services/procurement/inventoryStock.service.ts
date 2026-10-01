@@ -38,7 +38,7 @@ import {
 	bumpPurchaseDocumentInitialStockAllocationsCount,
 	findPurchaseDocumentByLineId,
 	findPurchaseDocumentForReceipts,
-} from '@/services/procurement/purchaseDocuments.service';
+} from '@/mocks/services/purchaseDocuments.mock';
 import {
 	clearAllPersistedMockState,
 	loadPersistedMockState,

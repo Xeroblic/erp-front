@@ -23,7 +23,7 @@ import {
 	findPurchaseDocumentForReceipts,
 	resetPurchaseDocumentsStoreForTests,
 	simulatePurchaseDocumentsReloadForTests,
-} from '@/services/procurement/purchaseDocuments.service';
+} from '@/mocks/services/purchaseDocuments.mock';
 import {
 	createInventoryAdjustment,
 	getInventoryAdjustableProducts,
@@ -73,6 +73,7 @@ const SHELF_WAREHOUSE_ID = 12; // misma sucursal (4) que MAIN_WAREHOUSE_ID
 const SOUTH_BRANCH_WAREHOUSE_ID = 15; // sucursal 6, hallazgo 5
 const SOUTH_BRANCH_ID = 6;
 const ECOPC_WAREHOUSE_ID = 20; // sucursal 1
+const ECOPC_SHOWROOM_WAREHOUSE_ID = 21; // sucursal 1, también recibe mercadería
 const PC_EXPRESS_SUPPLIER_ID = 7;
 const CONTRERAS_SUPPLIER_ID = 15; // Marcelo Contreras (contrerasSupplierFull)
 const MOUSE_PRODUCT_ID = 31;
@@ -813,8 +814,15 @@ describe('Hallazgo 5: la bodega elegida deriva la sucursal, no la sucursal activ
 				SHELF_WAREHOUSE_ID,
 				SOUTH_BRANCH_WAREHOUSE_ID,
 				ECOPC_WAREHOUSE_ID,
+				ECOPC_SHOWROOM_WAREHOUSE_ID,
 			].sort(),
 		);
+
+		expect(
+			listWarehousesForStockReceipts([1])
+				.map((warehouse) => warehouse.id)
+				.sort(),
+		).toEqual([ECOPC_WAREHOUSE_ID, ECOPC_SHOWROOM_WAREHOUSE_ID].sort());
 
 		expect(
 			listWarehousesForStockReceipts([BRANCH_ID])

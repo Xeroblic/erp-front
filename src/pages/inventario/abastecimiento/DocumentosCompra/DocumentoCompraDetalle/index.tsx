@@ -1,11 +1,6 @@
 import React from 'react';
-import { ProcurementMockGate } from '@/components/procurement';
 import DocumentoCompraDetalleView from './DocumentoCompraDetalleView';
 
-const DocumentoCompraDetalle = () => (
-	<ProcurementMockGate title='Documento de compra' icon='HeroDocumentText'>
-		<DocumentoCompraDetalleView />
-	</ProcurementMockGate>
-);
+const DocumentoCompraDetalle = () => <DocumentoCompraDetalleView />;
 
 export default DocumentoCompraDetalle;

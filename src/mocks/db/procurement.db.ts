@@ -222,6 +222,13 @@ export const southBranchWarehouse: IWarehouseCompact = { id: 15, name: 'Bodega S
 export const ecopcWarehouse: IWarehouseCompact = { id: 20, name: 'Bodega Ecopc' };
 
 /**
+ * Segunda ubicación de Ecopc. Recibe mercadería igual que `ecopcWarehouse`
+ * (en el sistema real cualquier bodega de la sucursal puede recibir) y
+ * permite revisar productos repartidos entre varias bodegas en Inventario.
+ */
+export const ecopcShowroomWarehouse: IWarehouseCompact = { id: 21, name: 'Sala de ventas Ecopc' };
+
+/**
  * Catálogo completo de bodegas conocidas por el mock, sin filtrar por
  * contexto. **No** es lo que se ofrece en un selector de la UI —
  * `getProcurementWarehousesForBranchContext` filtra por sucursal autorizada;
@@ -234,6 +241,7 @@ export const procurementWarehouses: IWarehouseCompact[] = [
 	shelfWarehouse,
 	southBranchWarehouse,
 	ecopcWarehouse,
+	ecopcShowroomWarehouse,
 ];
 
 /* =================================================
@@ -582,6 +590,7 @@ export const pcExpressInvoiceDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 1, initial_stock_allocations: 0, attachments: 1 },
 	confirmed_at: '2026-09-04T11:30:00-03:00',
 	cancelled_at: null,
+	shipping_cost: null,
 	cancellation_reason: null,
 	updated_at: '2026-09-04T11:30:00-03:00',
 };
@@ -626,6 +635,7 @@ export const draftReceiptDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
 	confirmed_at: null,
 	cancelled_at: null,
+	shipping_cost: null,
 	cancellation_reason: null,
 	updated_at: '2026-09-06T10:00:00-03:00',
 };
@@ -684,6 +694,7 @@ export const draftInvoiceDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
 	confirmed_at: null,
 	cancelled_at: null,
+	shipping_cost: null,
 	cancellation_reason: null,
 	updated_at: '2026-09-07T15:20:00-03:00',
 };
@@ -726,6 +737,7 @@ export const cancelledInvoiceDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
 	confirmed_at: null,
 	cancelled_at: '2026-08-21T09:00:00-03:00',
+	shipping_cost: null,
 	cancellation_reason: 'Folio ingresado por error, se re-emitió con el proveedor.',
 	updated_at: '2026-08-21T09:00:00-03:00',
 };
@@ -795,6 +807,7 @@ export const pcExpressKeyboardInvoiceDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 1, initial_stock_allocations: 0, attachments: 0 },
 	confirmed_at: '2026-08-28T09:30:00-03:00',
 	cancelled_at: null,
+	shipping_cost: null,
 	cancellation_reason: null,
 	updated_at: '2026-08-29T10:20:00-03:00',
 };
@@ -848,6 +861,7 @@ export const cableProductInitialStockDocument: IPurchaseDocument = {
 	related_counts: { stock_receipts: 0, initial_stock_allocations: 0, attachments: 0 },
 	confirmed_at: '2026-08-31T09:30:00-03:00',
 	cancelled_at: null,
+	shipping_cost: null,
 	cancellation_reason: null,
 	updated_at: '2026-08-31T09:30:00-03:00',
 };
@@ -941,6 +955,7 @@ export const PROCUREMENT_WAREHOUSE_BRANCH_BY_ID: Record<number, number> = {
 	[shelfWarehouse.id]: STOCK_RECEIPT_BRANCH_ID,
 	[southBranchWarehouse.id]: STOCK_RECEIPT_SOUTH_BRANCH_ID,
 	[ecopcWarehouse.id]: ECOPC_BRANCH_ID,
+	[ecopcShowroomWarehouse.id]: ECOPC_BRANCH_ID,
 };
 
 /**

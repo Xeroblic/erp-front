@@ -1,6 +1,6 @@
 import React from 'react';
 import Alert from '@/components/ui/Alert';
-import { isIncompleteForInvoicing } from '../../types';
+import { getMissingInvoicingFields } from '../../types';
 import type { ISupplierFormValues } from '../../types';
 
 /**
@@ -15,12 +15,12 @@ interface ISupplierCompletenessNoticeProps {
 }
 
 const SupplierCompletenessNotice: React.FC<ISupplierCompletenessNoticeProps> = ({ values }) => {
-	if (!isIncompleteForInvoicing(values)) return null;
+	const missing = getMissingInvoicingFields(values);
+	if (missing.length === 0) return null;
 
 	return (
 		<Alert color='blue' variant='outline' icon='HeroInformationCircle'>
-			Falta giro y/o alguna dirección. El proveedor se guarda igual — sólo hacen falta para
-			confirmar una factura.
+			Para confirmar una factura falta: {missing.join(', ')}. El proveedor se guarda igual.
 		</Alert>
 	);
 };

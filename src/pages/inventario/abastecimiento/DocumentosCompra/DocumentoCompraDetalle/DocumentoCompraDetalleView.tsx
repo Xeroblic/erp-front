@@ -1,7 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
@@ -9,18 +7,9 @@ import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
-import PermissionGuard from '@/components/authorization/PermissionGuard';
-import { AllowedActionsToolbar, ProcurementMockNotice } from '@/components/procurement';
+import { AllowedActionsToolbar } from '@/components/procurement';
 import { formatDate } from '@/utils/format.utils';
 import { formatDecimalAmount } from '@/utils/procurementDecimal.util';
-import { listInitialStockAllocationsForPurchaseDocument } from '@/services/procurement/inventoryStock.service';
-import { listStockReceiptsForPurchaseDocument } from '@/services/procurement/stockReceipts.service';
-import type {
-	IInventoryDocumentAllocation,
-	IStockReceiptListRow,
-	TStockReceiptStatus,
-} from '@/interface/procurement.interface';
-import type { TColors } from '@/types/colors.type';
 import DocumentTypeBadge from '../components/parts/DocumentTypeBadge';
 import DocumentStatusBadge from '../components/parts/DocumentStatusBadge';
 import ReceptionStatusBadge from '../components/parts/ReceptionStatusBadge';
@@ -30,33 +19,7 @@ import ConfirmPurchaseDocumentModal from '../components/modals/ConfirmPurchaseDo
 import CancelPurchaseDocumentModal from '../components/modals/CancelPurchaseDocumentModal';
 import DocumentAttachmentsCard from './components/parts/DocumentAttachmentsCard';
 import RelatedCountsCard from './components/parts/RelatedCountsCard';
-import RelatedListCard from './components/parts/RelatedListCard';
 import useDocumentoCompraDetalle from './hooks/useDocumentoCompraDetalle';
-
-/**
- * Colores de estado de recepción para la fila del resumen (hallazgo 9): sin
- * importar el badge propio de `Recepciones` — cada página del módulo maneja
- * su propia presentación, y esta lista sólo necesita distinguir de un
- * vistazo `posted`/`failed` del resto.
- */
-const STOCK_RECEIPT_STATUS_COLOR: Record<TStockReceiptStatus, TColors> = {
-	draft: 'zinc',
-	queued: 'blue',
-	posted: 'emerald',
-	failed: 'red',
-	reversed: 'amber',
-	cancelled: 'zinc',
-};
-
-/** Mismo vocabulario que `Recepciones/types.ts` (Borrador → Ingresando → En stock). */
-const STOCK_RECEIPT_STATUS_LABEL: Record<TStockReceiptStatus, string> = {
-	draft: 'Borrador',
-	queued: 'Ingresando',
-	posted: 'En stock',
-	failed: 'Con error',
-	reversed: 'Revertida',
-	cancelled: 'Anulada',
-};
 
 /**
  * Ficha de documento de compra: lista + `supplier_snapshot`, `notes`,
@@ -79,66 +42,12 @@ const DocumentoCompraDetalleView = () => {
 		setIsConfirmModalOpen,
 		isCancelModalOpen,
 		setIsCancelModalOpen,
+		allowedActions,
 		attachmentsCardRef,
 		handleAction,
 		goToList,
 		retry,
 	} = useDocumentoCompraDetalle();
-
-	/**
-	 * Fila de resumen de recepción (hallazgo 9): navega a la ficha completa
-	 * sólo con `view-product` — el permiso de lectura de recepciones
-	 * (sección 15), no `view-purchase-document` (el de esta pantalla), que es
-	 * un permiso distinto. Sin ese permiso, la fila queda sin enlace en vez
-	 * de ofrecer una navegación que el destino igual rechazaría.
-	 */
-	const renderStockReceiptRow = (row: IStockReceiptListRow): React.ReactNode => (
-		<div className='flex flex-wrap items-center justify-between gap-2 text-sm'>
-			<div className='flex items-center gap-2'>
-				<Badge color={STOCK_RECEIPT_STATUS_COLOR[row.status]} variant='solid'>
-					{STOCK_RECEIPT_STATUS_LABEL[row.status]}
-				</Badge>
-				<span>{row.warehouse.name}</span>
-				<span className='text-zinc-500'>
-					· {row.total_quantity} u. · {formatDate(row.received_on)}
-				</span>
-			</div>
-			<PermissionGuard
-				permission='view-product'
-				branchId={row.branch_id}
-				subsidiaryId={subsidiaryId}
-				scope='visible'>
-				<Link
-					to={`/inventario/abastecimiento/recepciones/${row.id}`}
-					className='text-blue-600 hover:underline dark:text-blue-400'>
-					Ver recepción #{row.id}
-				</Link>
-			</PermissionGuard>
-		</div>
-	);
-
-	/**
-	 * Fila de asignación de stock inicial (card 07, sección 8): documental,
-	 * `physical_stock_delta` siempre `0` — el texto lo dice explícitamente para
-	 * que esta lista nunca se confunda con «ingresó mercadería».
-	 */
-	const renderInitialStockAllocationRow = (
-		row: IInventoryDocumentAllocation,
-	): React.ReactNode => (
-		<div className='flex flex-wrap items-center justify-between gap-2 text-sm'>
-			<div className='flex items-center gap-2'>
-				<Badge color='blue' variant='solid'>
-					Sin movimiento físico
-				</Badge>
-				<span>{row.quantity} u. documentadas</span>
-				<span className='text-zinc-500'>· {formatDate(row.created_at)}</span>
-			</div>
-			<span className='text-xs text-zinc-500'>
-				Origin #{row.original_origin_id} → #{row.documented_origin_id} · quedan{' '}
-				{row.remaining_undocumented_quantity} sin documento
-			</span>
-		</div>
-	);
 
 	return (
 		<PageWrapper isProtectedRoute title={document?.document_number ?? 'Documento de compra'}>
@@ -156,7 +65,7 @@ const DocumentoCompraDetalleView = () => {
 					</Button>
 					{document && (
 						<AllowedActionsToolbar
-							allowedActions={document.allowed_actions}
+							allowedActions={allowedActions}
 							resource='purchase_document'
 							onAction={handleAction}
 							branchId={branchId}
@@ -167,7 +76,6 @@ const DocumentoCompraDetalleView = () => {
 			</Subheader>
 
 			<Container className='space-y-4'>
-				<ProcurementMockNotice />
 				{id === null && (
 					<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
 						El documento solicitado no es válido.
@@ -268,7 +176,7 @@ const DocumentoCompraDetalleView = () => {
 									</div>
 									<div>
 										<p className='text-xs uppercase text-zinc-500'>
-											Total informativo
+											Total informativo (con IVA)
 										</p>
 										<p>
 											{formatDecimalAmount(
@@ -393,8 +301,17 @@ const DocumentoCompraDetalleView = () => {
 							<CardHeader>
 								<CardTitle className='text-lg'>Relacionados</CardTitle>
 							</CardHeader>
-							<CardBody>
+							<CardBody className='space-y-3'>
 								<RelatedCountsCard relatedCounts={document.related_counts} />
+								{/*
+								 * Los conteos son reales; el detalle de cada recepción o
+								 * asignación todavía no: esos módulos siguen sin backend y
+								 * sus datos simulados usan otros ids de documento.
+								 */}
+								<p className='text-sm text-zinc-500 dark:text-zinc-400'>
+									El detalle de recepciones y asignaciones de stock inicial estará
+									disponible cuando se habiliten las recepciones de mercadería.
+								</p>
 							</CardBody>
 						</Card>
 
@@ -406,25 +323,6 @@ const DocumentoCompraDetalleView = () => {
 							branchId={branchId}
 							onChanged={retry}
 						/>
-
-						<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-							<RelatedListCard<IStockReceiptListRow>
-								title='Recepciones'
-								emptyLabel='Sin recepciones registradas todavía.'
-								subsidiaryId={subsidiaryId}
-								documentId={document.id}
-								fetcher={listStockReceiptsForPurchaseDocument}
-								renderRow={renderStockReceiptRow}
-							/>
-							<RelatedListCard<IInventoryDocumentAllocation>
-								title='Asignaciones de stock inicial'
-								emptyLabel='Sin asignaciones de stock inicial todavía.'
-								subsidiaryId={subsidiaryId}
-								documentId={document.id}
-								fetcher={listInitialStockAllocationsForPurchaseDocument}
-								renderRow={renderInitialStockAllocationRow}
-							/>
-						</div>
 					</>
 				)}
 			</Container>

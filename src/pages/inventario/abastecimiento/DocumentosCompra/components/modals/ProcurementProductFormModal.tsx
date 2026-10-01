@@ -15,29 +15,29 @@ import {
 	PRODUCT_TOGGLES,
 } from '@/pages/catalogos/productos/constants/products.constant';
 import { PRODUCT_DEVICE_TYPES } from '@/pages/catalogos/productos/constants/product-attributes.constants';
-import type { IProcurementProduct } from '@/interface/procurement.interface';
+import type { ICreatedPurchasableProduct } from '@/services/procurement/purchasableProducts.service';
 import useProcurementProductForm from '../../hooks/useProcurementProductForm';
 
 /**
- * Alta en línea de producto desde una línea del documento de compra, con los
- * campos y reglas del alta por filial.
+ * Alta en línea de producto desde una línea del documento de compra. El
+ * producto se crea en el catálogo real de la filial
+ * (`POST /subsidiaries/{subsidiary}/products`).
  *
  * Replica el formulario de «Crear producto» de `catalogos/productos`: las mismas
  * dos secciones (`PRODUCT_FORM_SECTIONS`), el mismo orden de campos y los mismos
- * interruptores de serie y estado (`PRODUCT_TOGGLES`). Sólo cambia lo que el
- * mock de abastecimiento exige: sin selector de sucursal (el producto es de la
- * filial) y con el SKU siempre generado.
+ * interruptores de serie y estado (`PRODUCT_TOGGLES`). Sin selector de sucursal
+ * (el producto es de la filial) y con el SKU siempre generado.
  *
  * Se apila sobre `PurchaseDocumentFormModal` y, al crear, el producto queda
- * seleccionado en la línea que abrió el modal (salvo si lleva serie: las
- * líneas de compra sólo admiten productos no serializados).
+ * seleccionado en la línea que abrió el modal (salvo si lleva serie o queda
+ * inactivo: las líneas de compra sólo admiten productos activos sin serie).
  */
 
 interface IProcurementProductFormModalProps {
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
 	subsidiaryId: number | null;
-	onSuccess?: (product: IProcurementProduct) => void;
+	onSuccess?: (product: ICreatedPurchasableProduct) => void;
 }
 
 const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> = ({
@@ -48,14 +48,21 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 }) => {
 	const {
 		formik,
+		submit,
 		isSubmitting,
+		isAwaitingAttempt,
+		isLocked,
 		reset,
 		hasBranch,
 		brandOptions,
 		categoryOptions,
 		loadingBrands,
+		brandsFailed,
 		loadingCategories,
 		sku,
+		isReconciling,
+		recoveredProduct,
+		pendingProductName,
 	} = useProcurementProductForm({
 		isOpen,
 		subsidiaryId,
@@ -80,6 +87,8 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 	let brandPlaceholder = 'Selecciona una marca';
 	if (loadingBrands) brandPlaceholder = 'Cargando marcas...';
 	else if (!hasBranch) brandPlaceholder = 'Selecciona una sucursal activa primero';
+	else if (brandsFailed)
+		brandPlaceholder = 'No se pudieron cargar las marcas: cierra y vuelve a abrir';
 
 	return (
 		<Modal
@@ -99,12 +108,32 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 				</div>
 			</ModalHeader>
 			<ModalBody className='min-h-0 flex-1 overflow-y-auto'>
-				<form onSubmit={formik.handleSubmit} className='space-y-5' noValidate>
-					<Alert color='amber' variant='outline' icon='HeroExclamationTriangle'>
-						El producto se crea en los datos de ejemplo de abastecimiento: no se
-						registra en el catálogo de productos real.
-					</Alert>
-
+				<form
+					onSubmit={(event) => {
+						event.preventDefault();
+						void submit();
+					}}
+					className='space-y-5'
+					noValidate>
+					{isAwaitingAttempt && (
+						<Alert color='blue' variant='outline' icon='HeroArrowPath'>
+							Hay un envío de «{pendingProductName}» en curso. Espera su respuesta:
+							sus datos no se pueden cambiar ni volver a enviar mientras tanto.
+						</Alert>
+					)}
+					{recoveredProduct && (
+						<Alert color='emerald' variant='outline' icon='HeroCheckCircle'>
+							«{recoveredProduct.name}» ({recoveredProduct.sku}) se creó después de
+							cerrar esta pantalla. «Usar producto» lo agrega a esta línea.
+						</Alert>
+					)}
+					{isReconciling && (
+						<Alert color='amber' variant='outline' icon='HeroExclamationTriangle'>
+							No se pudo confirmar si «{pendingProductName}» se creó. «Reintentar»
+							comprueba ese envío antes de crear otro, así que sus datos no se pueden
+							cambiar hasta resolverlo.
+						</Alert>
+					)}
 					{PRODUCT_FORM_SECTIONS.map((section) => (
 						<Card key={section.key} className={section.cardClass}>
 							<CardHeader className='pb-2'>
@@ -157,7 +186,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 												value={formik.values.name}
 												onChange={formik.handleChange}
 												onBlur={formik.handleBlur}
-												disabled={isSubmitting}
+												disabled={isLocked}
 												isValid={!formik.errors.name}
 												isTouched={Boolean(formik.touched.name)}
 												invalidFeedback={formik.errors.name}
@@ -171,7 +200,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 												inputId='producto-compra-brand'
 												options={brandOptions}
 												isLoading={loadingBrands}
-												isDisabled={!hasBranch || isSubmitting}
+												isDisabled={!hasBranch || isLocked}
 												placeholder={brandPlaceholder}
 												value={
 													brandOptions.find(
@@ -223,7 +252,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 												value={formik.values.product_type}
 												onChange={formik.handleChange}
 												onBlur={formik.handleBlur}
-												disabled={isSubmitting}
+												disabled={isLocked}
 												isValid={!formik.errors.product_type}
 												isTouched={Boolean(formik.touched.product_type)}
 												invalidFeedback={formik.errors.product_type}>
@@ -237,7 +266,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 
 										<div className='space-y-1 md:col-span-2'>
 											<Label htmlFor='producto-compra-categories'>
-												Categorias
+												Categorías
 											</Label>
 											<SelectReact
 												name='category_ids'
@@ -245,7 +274,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 												isMulti
 												options={categoryOptions}
 												isLoading={loadingCategories}
-												isDisabled={isSubmitting || loadingCategories}
+												isDisabled={isLocked || loadingCategories}
 												placeholder={
 													loadingCategories
 														? 'Cargando categorías...'
@@ -305,7 +334,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 														)
 														.catch(() => undefined);
 												}}
-												disabled={isSubmitting}
+												disabled={isLocked}
 											/>
 										</div>
 									</CardBody>
@@ -314,11 +343,11 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 						})}
 					</div>
 
-					{formik.values.serial_tracking && (
+					{(formik.values.serial_tracking || !formik.values.is_active) && (
 						<Alert color='amber' variant='outline' icon='HeroInformationCircle'>
-							Los documentos de compra sólo admiten productos sin seguimiento por
-							serie: el producto se creará, pero no quedará seleccionado en esta
-							línea.
+							Los documentos de compra sólo admiten productos activos y sin
+							seguimiento por serie: el producto se creará, pero no quedará
+							seleccionado en esta línea.
 						</Alert>
 					)}
 				</form>
@@ -335,12 +364,16 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 					</Button>
 					<Button
 						type='button'
-						onClick={() => formik.handleSubmit()}
+						onClick={() => {
+							void submit();
+						}}
+						variant='solid'
 						color='blue'
 						icon='HeroCheck'
 						isLoading={isSubmitting}
 						isDisable={isSubmitting}>
-						Crear producto
+						{recoveredProduct && 'Usar producto'}
+						{!recoveredProduct && (isReconciling ? 'Reintentar' : 'Crear producto')}
 					</Button>
 				</div>
 			</ModalFooter>

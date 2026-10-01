@@ -152,10 +152,16 @@ export const formatCommuneWithRegion = (
 	return region ? `${commune.name}, ${region}` : commune.name;
 };
 
+/** Datos que exige confirmar una factura y faltan, en el orden del formulario. */
+export const getMissingInvoicingFields = (values: ISupplierFormValues): string[] =>
+	[
+		!values.business_activity.trim() && 'giro',
+		!values.billing_address.trim() && 'dirección de facturación',
+		values.billing_commune_id === null && 'comuna de facturación',
+		!values.shipping_address.trim() && 'dirección de despacho',
+		values.shipping_commune_id === null && 'comuna de despacho',
+	].filter((field): field is string => typeof field === 'string');
+
 /** `true` cuando falta algo de lo que exige confirmar una factura. */
 export const isIncompleteForInvoicing = (values: ISupplierFormValues): boolean =>
-	!values.business_activity.trim() ||
-	!values.billing_address.trim() ||
-	values.billing_commune_id === null ||
-	!values.shipping_address.trim() ||
-	values.shipping_commune_id === null;
+	getMissingInvoicingFields(values).length > 0;

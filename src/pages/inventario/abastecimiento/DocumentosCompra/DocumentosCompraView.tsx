@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
@@ -6,7 +6,6 @@ import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
-import { ProcurementMockNotice } from '@/components/procurement';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import useDocumentosCompra from './hooks/useDocumentosCompra';
 import DocumentosCompraFilters from './components/filters/DocumentosCompraFilters';
@@ -48,9 +47,9 @@ const DocumentosCompraView = () => {
 		setIssuedToValue,
 		onPaginationChange,
 		refresh,
+		isCreateModalOpen,
+		setIsCreateModalOpen,
 	} = useDocumentosCompra();
-
-	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
 	const handleView = (id: number) =>
 		navigate(`/inventario/abastecimiento/documentos-compra/${id}`);
@@ -80,7 +79,6 @@ const DocumentosCompraView = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
-				<ProcurementMockNotice />
 				<DocumentosCompraFilters
 					search={search}
 					onSearchChange={setSearchValue}

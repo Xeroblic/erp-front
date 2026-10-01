@@ -1,11 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as purchaseDocumentAttachmentsService from '@/services/procurement/purchaseDocumentAttachments.service';
-import {
-	resetPurchaseDocumentAttachmentsStoreForTests,
-	uploadPurchaseDocumentAttachment,
-} from '@/services/procurement/purchaseDocumentAttachments.service';
-import { resetPurchaseDocumentsStoreForTests } from '@/services/procurement/purchaseDocuments.service';
+import { uploadPurchaseDocumentAttachment } from '@/services/procurement/purchaseDocumentAttachments.service';
+import { resetPurchaseDocumentAttachmentsStoreForTests } from '@/mocks/services/purchaseDocumentAttachments.mock';
+import { resetPurchaseDocumentsStoreForTests } from '@/mocks/services/purchaseDocuments.mock';
 import { PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT } from '@/interface/procurement.interface';
 import useDocumentAttachments from '../useDocumentAttachments';
 
@@ -15,10 +13,22 @@ import useDocumentAttachments from '../useDocumentAttachments';
  * 6: «los límites se muestran antes de intentar subir, no sólo cuando el
  * servidor rechaza»). Estas pruebas verifican esa decisión y el ciclo
  * subir/descargar/eliminar, no las reglas del servicio — esas ya las cubre
- * `purchaseDocumentAttachments.service.test.ts`.
+ * `purchaseDocumentAttachments.mock.test.ts`.
  */
 
-const toastSpies = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+// El servicio de adjuntos ya es real: estas pruebas ejercen el hook contra su
+// doble en memoria, que valida estado y cupo como el backend. Los documentos
+// mock validan `supplier_id` contra el maestro, también sustituido.
+vi.mock(
+	'@/services/procurement/purchaseDocumentAttachments.service',
+	() => import('@/mocks/services/purchaseDocumentAttachments.mock'),
+);
+vi.mock(
+	'@/services/procurement/procurementSuppliers.service',
+	() => import('@/mocks/services/procurementSuppliers.mock'),
+);
+
+const toastSpies = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
 vi.mock('react-toastify', () => ({ toast: toastSpies }));
 
 const SUBSIDIARY_A = 4;
@@ -42,6 +52,7 @@ afterEach(() => {
 	resetPurchaseDocumentsStoreForTests();
 	toastSpies.success.mockReset();
 	toastSpies.error.mockReset();
+	toastSpies.info.mockReset();
 });
 
 describe('useDocumentAttachments', () => {
@@ -284,6 +295,7 @@ describe('useDocumentAttachments', () => {
 				SUBSIDIARY_A,
 				DRAFT_INVOICE_ID,
 				pdfFile(`adjunto-${index}.pdf`),
+				{ idempotencyKey: `cupo-${index}` },
 			);
 		}
 
@@ -352,6 +364,60 @@ describe('useDocumentAttachments', () => {
 		await waitFor(() => expect(result.current.attachments).toEqual([]));
 
 		expect(onChanged).toHaveBeenCalledTimes(2);
+	});
+
+	it('si el borrado se aplicó pero su respuesta se perdió, el 404 del reintento quita el adjunto y refresca', async () => {
+		const onChanged = vi.fn();
+		const { result } = renderHook(() =>
+			useDocumentAttachments({
+				subsidiaryId: SUBSIDIARY_A,
+				documentId: DRAFT_INVOICE_ID,
+				canUpload: true,
+				canDelete: true,
+				onChanged,
+			}),
+		);
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		await act(async () => {
+			await result.current.addFiles(asFileList([pdfFile('perdido.pdf')]));
+		});
+		await waitFor(() => expect(result.current.attachments).toHaveLength(1));
+		const [uploaded] = result.current.attachments;
+		onChanged.mockClear();
+
+		// El servidor elimina el archivo, pero la respuesta no llega al navegador.
+		const originalDelete = purchaseDocumentAttachmentsService.deletePurchaseDocumentAttachment;
+		const deleteSpy = vi.spyOn(
+			purchaseDocumentAttachmentsService,
+			'deletePurchaseDocumentAttachment',
+		);
+		deleteSpy.mockImplementationOnce((...args) =>
+			originalDelete(...args).then(() =>
+				Promise.reject(
+					Object.assign(new Error('Network Error'), {
+						isAxiosError: true,
+						code: 'ERR_NETWORK',
+					}),
+				),
+			),
+		);
+		await act(async () => {
+			await result.current.removeAttachment(uploaded);
+		});
+		expect(toastSpies.error).toHaveBeenCalledTimes(1);
+		expect(result.current.attachments).toHaveLength(1);
+
+		await act(async () => {
+			await result.current.removeAttachment(uploaded);
+		});
+
+		await waitFor(() => expect(result.current.attachments).toEqual([]));
+		expect(result.current.remainingQuota).toBe(PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT);
+		expect(onChanged).toHaveBeenCalledTimes(1);
+		expect(toastSpies.error).toHaveBeenCalledTimes(1);
+		expect(toastSpies.info).toHaveBeenCalledWith('El adjunto ya se había eliminado.');
+		expect(result.current.deletingId).toBeNull();
+		deleteSpy.mockRestore();
 	});
 
 	it('no elimina cuando canDelete es false (documento confirmed)', async () => {

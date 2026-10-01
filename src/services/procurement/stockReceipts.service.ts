@@ -16,7 +16,7 @@ import {
 	applyStockReceiptCoverageDelta,
 	bumpPurchaseDocumentStockReceiptsCount,
 	findPurchaseDocumentForReceipts,
-} from '@/services/procurement/purchaseDocuments.service';
+} from '@/mocks/services/purchaseDocuments.mock';
 import { getProcurementSupplier } from '@/services/procurement/procurementSuppliers.service';
 import {
 	clearAllPersistedMockState,

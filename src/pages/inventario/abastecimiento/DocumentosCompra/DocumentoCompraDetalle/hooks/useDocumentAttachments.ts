@@ -20,9 +20,8 @@ import type {
 
 /**
  * Adjuntos privados del detalle de documento de compra (subsección de la
- * sección 6). A diferencia de `useRelatedDocumentList` (recepciones y
- * asignaciones, siempre vacías en este mock) éste sí muta: sube, descarga y
- * elimina. Estado local del componente, no del store global — el mismo
+ * sección 6): lista, sube, descarga y elimina contra la API real (backend
+ * PR #85). Estado local del componente, no del store global — el mismo
  * criterio que `useDeferredPaymentAttachments` en pagos diferidos: los
  * adjuntos sólo importan mientras esta ficha está abierta.
  *
@@ -42,13 +41,14 @@ import type {
  */
 
 const PER_PAGE = PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT;
+const NOT_FOUND_STATUS = 404;
 
 const ALLOWED_MIME_TYPES: readonly string[] = PURCHASE_DOCUMENT_ATTACHMENT_ALLOWED_MIME_TYPES;
 
 /**
  * Los límites se muestran **antes** de intentar subir (criterio de
  * aceptación de la card): un archivo de tipo o tamaño inválido se rechaza
- * acá, en español, sin llegar a golpear el servicio mock.
+ * acá, en español, sin llegar a golpear el backend.
  */
 const getClientFileError = (file: File): string | null => {
 	if (!ALLOWED_MIME_TYPES.includes(file.type)) return `${file.name}: debe ser PDF, JPG o PNG.`;
@@ -76,7 +76,7 @@ export type TAttachmentUploadStatus = 'pending' | 'uploading' | 'error';
  * reintento reenvía la misma clave con el mismo archivo, nunca una nueva:
  * regenerarla en cada intento le quita a la `Idempotency-Key` su propósito
  * (ante un timeout con resultado incierto, reintentar con clave nueva puede
- * duplicar la subida en el backend real que este mock simula).
+ * duplicar la subida en el backend).
  */
 export interface IPendingAttachmentUpload {
 	localId: string;
@@ -206,7 +206,7 @@ const useDocumentAttachments = ({
 
 	/**
 	 * Procesa los pendientes de la cola, uno por uno y en orden — igual que
-	 * antes, para no leer el cupo del store mock desactualizado entre dos
+	 * antes, para no leer un cupo desactualizado del backend entre dos
 	 * archivos de la misma tanda. A diferencia de la versión anterior, un
 	 * archivo que falla ya **no aborta el resto de la tanda**: queda marcado
 	 * `error` (con su mismo archivo y clave, listo para reintentar) y el
@@ -267,7 +267,7 @@ const useDocumentAttachments = ({
 			}
 
 			// Corre también si algún archivo de la tanda falló: los anteriores
-			// que sí se subieron ya están de verdad en el store mock, así que la
+			// que sí se subieron ya están en el backend, así que la
 			// lista y el conteo del documento se refrescan igual — dejarlos sin
 			// refrescar escondería adjuntos que sí existen.
 			if (hadSuccess && generationRef.current === generation) {
@@ -381,9 +381,17 @@ const useDocumentAttachments = ({
 				onChanged();
 			} catch (error) {
 				if (generationRef.current !== generation) return;
-				toast.error(
-					resolveProcurementError(error, 'No se pudo eliminar el adjunto.').message,
-				);
+				const resolved = resolveProcurementError(error, 'No se pudo eliminar el adjunto.');
+				// Un 404 dice que el adjunto ya no existe: lo borró un intento
+				// anterior cuya respuesta se perdió, u otra persona. La lista y el
+				// contador se reconcilian igual que tras borrarlo.
+				if (resolved.status === NOT_FOUND_STATUS) {
+					toast.info('El adjunto ya se había eliminado.');
+					refetch();
+					onChanged();
+					return;
+				}
+				toast.error(resolved.message);
 			} finally {
 				if (generationRef.current === generation) setDeletingId(null);
 			}
@@ -398,7 +406,7 @@ const useDocumentAttachments = ({
 
 			setDownloadingId(attachment.id);
 			try {
-				const { blob, fileName } = await downloadPurchaseDocumentAttachment(
+				const { blob } = await downloadPurchaseDocumentAttachment(
 					subsidiaryId,
 					documentId,
 					attachment.id,
@@ -406,7 +414,9 @@ const useDocumentAttachments = ({
 				// La descarga en sí no depende del contexto que sigue visible —
 				// dispararla igual no corrompe nada — pero el toast de error sí
 				// hablaría de un documento que el usuario ya no está mirando.
-				triggerBrowserDownload(blob, fileName);
+				// El nombre sale de la fila: es el original que el usuario subió,
+				// aunque el navegador no pueda leer `Content-Disposition`.
+				triggerBrowserDownload(blob, attachment.file_name);
 			} catch (error) {
 				if (generationRef.current === generation) {
 					toast.error(

@@ -7,9 +7,13 @@ import {
 	selectPurchaseDocumentsItems,
 	selectPurchaseDocumentsListError,
 	selectPurchaseDocumentsListLoading,
+	selectPurchaseDocumentsListSubsidiaryId,
 	selectPurchaseDocumentsMeta,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
-import type { IPurchaseDocumentListParams } from '@/interface/procurement.interface';
+import type {
+	IPurchaseDocumentListParams,
+	IPurchaseDocumentListRow,
+} from '@/interface/procurement.interface';
 import {
 	DOCUMENT_RECEPTION_STATUS_FILTER_OPTIONS,
 	DOCUMENT_STATUS_FILTER_OPTIONS,
@@ -21,15 +25,32 @@ import type {
 	TDocumentTypeFilter,
 } from '../types';
 
-const DEFAULT_PAGE_SIZE = 15; // Defecto del contrato (sección 1).
+/**
+ * El contrato usa 15 por defecto, pero el paginador estándar sólo ofrece 5,
+ * 10, 20, 30, 40 y 50: con 15 el selector mostraba «Mostrar 5» mientras la
+ * tabla listaba 15. Se pide 20, una de sus opciones.
+ */
+const DEFAULT_PAGE_SIZE = 20;
+const NO_ROWS: IPurchaseDocumentListRow[] = [];
 
 const useDocumentosCompra = () => {
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
-	const items = useAppSelector(selectPurchaseDocumentsItems);
-	const meta = useAppSelector(selectPurchaseDocumentsMeta);
+	const storedItems = useAppSelector(selectPurchaseDocumentsItems);
+	const storedMeta = useAppSelector(selectPurchaseDocumentsMeta);
 	const listLoading = useAppSelector(selectPurchaseDocumentsListLoading);
-	const error = useAppSelector(selectPurchaseDocumentsListError);
+	const storedError = useAppSelector(selectPurchaseDocumentsListError);
+	const listSubsidiaryId = useAppSelector(selectPurchaseDocumentsListSubsidiaryId);
+
+	/**
+	 * Mismo criterio que `useProveedores`: el listado del store es de la última
+	 * filial que respondió y la petición nueva recién sale en el efecto. Hasta
+	 * que llegue, lo de la filial anterior no se muestra: vacío y en carga.
+	 */
+	const isListForSubsidiary = listSubsidiaryId === subsidiaryId;
+	const items = isListForSubsidiary ? storedItems : NO_ROWS;
+	const meta = isListForSubsidiary ? storedMeta : null;
+	const error = isListForSubsidiary ? storedError : null;
 
 	const [search, setSearch] = useState('');
 	const [debouncedSearch] = useDebounce(search, 300);
@@ -40,6 +61,28 @@ const useDocumentosCompra = () => {
 	const [issuedTo, setIssuedTo] = useState('');
 	const [page, setPage] = useState(1);
 	const [perPage, setPerPage] = useState(DEFAULT_PAGE_SIZE);
+
+	// Otra filial es otro listado: se vuelve a la página 1 en el mismo render,
+	// para no pedir una página que puede no existir en la nueva.
+	const [pageSubsidiaryId, setPageSubsidiaryId] = useState(subsidiaryId);
+	if (pageSubsidiaryId !== subsidiaryId) {
+		setPageSubsidiaryId(subsidiaryId);
+		setPage(1);
+	}
+
+	/**
+	 * El alta queda atada a la filial en que se abrió: si cambia, el modal se
+	 * cierra en vez de crear en la filial nueva con proveedor y productos
+	 * elegidos en la anterior.
+	 */
+	const [createModalSubsidiaryId, setCreateModalSubsidiaryId] = useState<number | null>(null);
+	const isCreateModalOpen = subsidiaryId !== null && createModalSubsidiaryId === subsidiaryId;
+	// Fuera de su filial se descarta, para que volver a ella no lo reabra.
+	if (createModalSubsidiaryId !== null && !isCreateModalOpen) setCreateModalSubsidiaryId(null);
+	const setIsCreateModalOpen = useCallback(
+		(open: boolean) => setCreateModalSubsidiaryId(open ? subsidiaryId : null),
+		[subsidiaryId],
+	);
 
 	const isSearchDebouncing = search !== debouncedSearch;
 	const normalizedSearch = debouncedSearch.trim();
@@ -145,7 +188,7 @@ const useDocumentosCompra = () => {
 		subsidiaryId,
 		items,
 		meta,
-		loading: listLoading || isSearchDebouncing,
+		loading: listLoading || isSearchDebouncing || !isListForSubsidiary,
 		error,
 		search,
 		documentType,
@@ -167,6 +210,8 @@ const useDocumentosCompra = () => {
 		onPaginationChange,
 		refresh,
 		refreshAfterMutation,
+		isCreateModalOpen,
+		setIsCreateModalOpen,
 	};
 };
 
