@@ -23,8 +23,13 @@ import type {
  * SKU pudo pertenecer ya a otro producto (la respuesta perdida pudo ser un
  * 422 por SKU ocupado). Un producto con ese SKU sólo se entrega si coincide
  * con el payload del intento (nombre, marca, tipo, serie, estado y
- * categorías). Si no coincide, el SKU es de otro producto y, como es único en
- * la filial, el intento no creó nada. Si no se puede leer, sigue incierto.
+ * categorías). Si no se puede leer, sigue incierto.
+ *
+ * Que no coincida tampoco prueba que el intento no creó nada: el backend
+ * guarda el producto y después sus categorías, sin una transacción que
+ * englobe ambos pasos, así que un alta que falló a mitad deja el producto con
+ * este SKU y sin sus categorías. También pudo editarse después. Liberar el
+ * formulario con otro SKU podría duplicarlo, así que también sigue incierto.
  *
  * 1. Se busca el SKU (exige `view-product`; sin ese permiso se salta).
  * 2. Si no aparece, se reenvía el mismo payload con el mismo SKU:
@@ -38,8 +43,6 @@ import type {
 export type TProductAttemptOutcome =
 	| { kind: 'found'; product: ICreatedPurchasableProduct }
 	| { kind: 'created'; product: ICreatedPurchasableProduct }
-	/** El SKU es de otro producto: el intento no creó nada y necesita otro SKU. */
-	| { kind: 'sku_collision' }
 	/** Rechazo definitivo sin error de `sku`: nada se creó. */
 	| { kind: 'not_created'; error: IProcurementResolvedError }
 	| { kind: 'still_uncertain'; message: string };
@@ -52,6 +55,8 @@ const LOOKUP_FAILED_MESSAGE =
 	'No se pudo comprobar si el producto ya se había creado. Vuelve a intentarlo.';
 const UNREADABLE_MESSAGE =
 	'El SKU ya está ocupado y, sin permiso para ver productos, no se puede comprobar si es el que se intentó crear. Pide a alguien con ese permiso que lo revise en el catálogo.';
+const MISMATCH_MESSAGE =
+	'Ya existe un producto con el SKU de este envío, pero con otros datos: puede ser este mismo producto guardado a medias. Revísalo en el catálogo antes de crear otro; si es el tuyo, búscalo en la línea.';
 const STILL_UNCERTAIN_MESSAGE =
 	'Sigue sin poder confirmarse si el producto se creó. Vuelve a intentarlo.';
 
@@ -83,7 +88,8 @@ export const matchesProductAttempt = (
 
 type TLookup =
 	| { kind: 'found'; product: ICreatedPurchasableProduct }
-	| { kind: 'other_product' }
+	/** Con el SKU, pero otros datos: puede ser este intento a medias o editado después. */
+	| { kind: 'mismatch' }
 	| { kind: 'absent' }
 	| { kind: 'forbidden' }
 	| { kind: 'failed' };
@@ -97,7 +103,7 @@ const lookUp = async (attempt: IPendingProductAttempt): Promise<TLookup> => {
 		if (!product) return { kind: 'absent' };
 		return matchesProductAttempt(product, attempt.payload)
 			? { kind: 'found', product }
-			: { kind: 'other_product' };
+			: { kind: 'mismatch' };
 	} catch (error: unknown) {
 		return resolveProcurementError(error).status === FORBIDDEN_STATUS
 			? { kind: 'forbidden' }
@@ -105,7 +111,7 @@ const lookUp = async (attempt: IPendingProductAttempt): Promise<TLookup> => {
 	}
 };
 
-/** Tras un 422 en `sku` el SKU está ocupado: hay que leer de quién es. */
+/** Tras un 422 en `sku` el SKU está ocupado: hay que leer si es el de este intento. */
 const afterSkuTaken = async (
 	attempt: IPendingProductAttempt,
 	canLookUp: boolean,
@@ -113,7 +119,7 @@ const afterSkuTaken = async (
 	if (!canLookUp) return { kind: 'still_uncertain', message: UNREADABLE_MESSAGE };
 	const lookup = await lookUp(attempt);
 	if (lookup.kind === 'found') return lookup;
-	if (lookup.kind === 'other_product') return { kind: 'sku_collision' };
+	if (lookup.kind === 'mismatch') return { kind: 'still_uncertain', message: MISMATCH_MESSAGE };
 	if (lookup.kind === 'forbidden') {
 		return { kind: 'still_uncertain', message: UNREADABLE_MESSAGE };
 	}
@@ -125,7 +131,7 @@ export const reconcileProductAttempt = async (
 ): Promise<TProductAttemptOutcome> => {
 	const lookup = await lookUp(attempt);
 	if (lookup.kind === 'found') return lookup;
-	if (lookup.kind === 'other_product') return { kind: 'sku_collision' };
+	if (lookup.kind === 'mismatch') return { kind: 'still_uncertain', message: MISMATCH_MESSAGE };
 	if (lookup.kind === 'failed') {
 		return { kind: 'still_uncertain', message: LOOKUP_FAILED_MESSAGE };
 	}

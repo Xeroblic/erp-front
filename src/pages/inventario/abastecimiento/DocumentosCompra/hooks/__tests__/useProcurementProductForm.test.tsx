@@ -339,21 +339,27 @@ describe('useProcurementProductForm — respuesta perdida', () => {
 		expect(result.current.formik.values.name).toBe('Mouse');
 	});
 
-	it('si el SKU era de otro producto, libera el formulario con otro SKU sin entregarlo', async () => {
+	it('un alta guardada sin sus categorías sigue pendiente: no libera el formulario ni cambia el SKU', async () => {
 		createMock.mockRejectedValueOnce(networkError);
 		const onSuccess = vi.fn();
 		const { result } = await renderForm(onSuccess);
 		await fill(result);
 		await submit(result);
-		const collidingSku = createMock.mock.calls[0][1].sku;
+		const originalSku = createMock.mock.calls[0][1].sku;
 
-		findMock.mockResolvedValueOnce({ ...created, sku: collidingSku, name: 'Teclado' });
+		// El backend guardó el producto, pero falló al asignarle las categorías.
+		findMock.mockResolvedValueOnce({ ...created, sku: originalSku, category_ids: [] });
 		await submit(result);
 
 		expect(onSuccess).not.toHaveBeenCalled();
-		expect(result.current.isReconciling).toBe(false);
-		expect(result.current.sku).not.toBe(collidingSku);
-		expect(result.current.formik.values.name).toBe('Mouse');
+		expect(createMock).toHaveBeenCalledTimes(1);
+		expect(result.current.isReconciling).toBe(true);
+		expect(result.current.isLocked).toBe(true);
+		expect(result.current.sku).toBe(originalSku);
+		expect(store.getState().purchaseDocuments.pendingProductAttempts[4]).toMatchObject({
+			status: 'uncertain',
+			payload: { sku: originalSku },
+		});
 	});
 
 	it('si nada se creó, libera el formulario con los errores del backend', async () => {
@@ -502,6 +508,71 @@ describe('useProcurementProductForm — cambio de filial', () => {
 		await waitFor(() => expect(result.current.formik.values.name).toBe(''));
 		expect(result.current.formik.values.brand_id).toBe('');
 		expect(result.current.sku).toBe('');
+	});
+
+	it('volver A → B → A con el alta en vuelo no la entrega al borrador nuevo: queda para «Usar producto»', async () => {
+		const request = deferred<typeof created>();
+		createMock.mockReturnValueOnce(request.promise);
+		const staleOnSuccess = vi.fn();
+		const { result, rerender } = renderHook(
+			({ subsidiaryId, onSuccess }: { subsidiaryId: number; onSuccess: () => void }) =>
+				useProcurementProductForm({ isOpen: true, subsidiaryId, onSuccess }),
+			{ initialProps: { subsidiaryId: 4, onSuccess: staleOnSuccess }, wrapper },
+		);
+		await waitFor(() => expect(result.current.brandOptions.length).toBeGreaterThan(0));
+		await fill(result);
+		act(() => {
+			void result.current.submit();
+		});
+		await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1));
+		const [, payload] = createMock.mock.calls[0];
+
+		// El documento descarta su borrador al cambiar de filial; al volver es otro.
+		rerender({ subsidiaryId: 7, onSuccess: staleOnSuccess });
+		const freshOnSuccess = vi.fn();
+		rerender({ subsidiaryId: 4, onSuccess: freshOnSuccess });
+		await act(async () => {
+			request.resolve({ ...created, sku: payload.sku });
+			await request.promise;
+		});
+
+		await waitFor(() => expect(result.current.recoveredProduct).not.toBeNull());
+		expect(staleOnSuccess).not.toHaveBeenCalled();
+		expect(freshOnSuccess).not.toHaveBeenCalled();
+
+		await submit(result);
+
+		expect(freshOnSuccess).toHaveBeenCalledWith({ ...created, sku: payload.sku });
+		expect(staleOnSuccess).not.toHaveBeenCalled();
+		expect(createMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('si el documento cierra el modal con el alta en vuelo, no la entrega a la línea de entonces', async () => {
+		const request = deferred<typeof created>();
+		createMock.mockReturnValueOnce(request.promise);
+		const onSuccess = vi.fn();
+		const { result, rerender } = renderHook(
+			({ isOpen }: { isOpen: boolean }) =>
+				useProcurementProductForm({ isOpen, subsidiaryId: 4, onSuccess }),
+			{ initialProps: { isOpen: true }, wrapper },
+		);
+		await waitFor(() => expect(result.current.brandOptions.length).toBeGreaterThan(0));
+		await fill(result);
+		act(() => {
+			void result.current.submit();
+		});
+		await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1));
+		const [, payload] = createMock.mock.calls[0];
+
+		rerender({ isOpen: false });
+		rerender({ isOpen: true });
+		await act(async () => {
+			request.resolve({ ...created, sku: payload.sku });
+			await request.promise;
+		});
+
+		await waitFor(() => expect(result.current.recoveredProduct).not.toBeNull());
+		expect(onSuccess).not.toHaveBeenCalled();
 	});
 });
 

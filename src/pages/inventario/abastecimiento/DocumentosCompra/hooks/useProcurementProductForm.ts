@@ -204,9 +204,24 @@ const useProcurementProductForm = ({
 		};
 	}, []);
 
-	/** Si la filial cambió o el modal se desmontó, el formulario ya no es el del envío. */
-	const isStillHere = (attemptSubsidiaryId: number) =>
-		mountedRef.current && activeSubsidiaryRef.current === attemptSubsidiaryId;
+	/**
+	 * Identidad del borrador que abrió el modal. Cambia al cambiar de filial y
+	 * al cerrarse el modal desde afuera: con eso el documento descarta su
+	 * borrador y la línea que lo abrió. Volver A → B → A deja la misma filial,
+	 * pero no el mismo borrador, así que la filial sola no alcanza.
+	 */
+	const draftRef = useRef({ subsidiaryId, isOpen, id: 0 });
+	if (draftRef.current.subsidiaryId !== subsidiaryId || (draftRef.current.isOpen && !isOpen)) {
+		draftRef.current = { subsidiaryId, isOpen, id: draftRef.current.id + 1 };
+	} else if (draftRef.current.isOpen !== isOpen) {
+		draftRef.current = { ...draftRef.current, isOpen };
+	}
+
+	/** Si el borrador cambió o el modal se desmontó, el formulario ya no es el del envío. */
+	const isStillHere = (attemptSubsidiaryId: number, draftId: number) =>
+		mountedRef.current &&
+		activeSubsidiaryRef.current === attemptSubsidiaryId &&
+		draftRef.current.id === draftId;
 
 	const toPayload = (
 		values: IProcurementProductFormValues,
@@ -222,24 +237,31 @@ const useProcurementProductForm = ({
 	});
 
 	/**
-	 * Cierra un alta que creó el producto y lo entrega sólo a la filial en que
-	 * se pidió. Sin un modal montado que lo reciba, queda en el store para
-	 * entregarlo cuando se vuelva a abrir.
+	 * Cierra un alta que creó el producto y lo entrega sólo al borrador que lo
+	 * pidió. Sin un modal montado que lo reciba, o si ese borrador ya se
+	 * descartó aunque se haya vuelto a su filial, queda en el store para
+	 * «Usar producto»: el callback del envío apunta a una línea que ya no existe.
 	 */
 	const finish = (
 		product: ICreatedPurchasableProduct,
 		attemptSubsidiaryId: number,
+		draftId: number,
 		resetForm: TResetForm,
 	) => {
 		if (!mountedRef.current) {
 			dispatch(completeProductAttempt({ subsidiaryId: attemptSubsidiaryId, product }));
 			return;
 		}
-		dispatch(clearPendingProductAttempt(attemptSubsidiaryId));
 		if (activeSubsidiaryRef.current !== attemptSubsidiaryId) {
+			dispatch(clearPendingProductAttempt(attemptSubsidiaryId));
 			toast.info('El producto se creó en la filial anterior; no se agrega a esta línea.');
 			return;
 		}
+		if (draftRef.current.id !== draftId) {
+			dispatch(completeProductAttempt({ subsidiaryId: attemptSubsidiaryId, product }));
+			return;
+		}
+		dispatch(clearPendingProductAttempt(attemptSubsidiaryId));
 		resetForm({ values: emptyValues() });
 		setSku('');
 		onSuccess?.(product);
@@ -268,6 +290,7 @@ const useProcurementProductForm = ({
 				productType: values.product_type,
 			};
 
+			const draftId = draftRef.current.id;
 			let productSku = sku || generateSmartSKU(skuParams);
 			for (let attempt = 1; attempt <= SKU_MAX_ATTEMPTS; attempt += 1) {
 				const payload = toPayload(values, productSku);
@@ -277,7 +300,7 @@ const useProcurementProductForm = ({
 				try {
 					// eslint-disable-next-line no-await-in-loop
 					const product = await createPurchasableProduct(subsidiaryId, payload);
-					finish(product, subsidiaryId, resetForm);
+					finish(product, subsidiaryId, draftId, resetForm);
 					return;
 				} catch (error: unknown) {
 					const resolved = resolveProcurementError(
@@ -302,7 +325,8 @@ const useProcurementProductForm = ({
 						setSku(productSku);
 					} else {
 						dispatch(clearPendingProductAttempt(subsidiaryId));
-						paintFieldErrors(resolved, setFieldError);
+						if (isStillHere(subsidiaryId, draftId))
+							paintFieldErrors(resolved, setFieldError);
 						toast.error(resolved.message);
 						return;
 					}
@@ -317,36 +341,18 @@ const useProcurementProductForm = ({
 	 * muestre el formulario.
 	 */
 	const reconcile = async (attempt: IPendingProductAttempt) => {
+		const draftId = draftRef.current.id;
 		dispatch(startProductAttempt(attempt));
 		const outcome = await reconcileProductAttempt(attempt);
 		if (outcome.kind === 'found') {
 			toast.info('El producto ya se había creado: se usa ese.');
-			finish(outcome.product, attempt.subsidiaryId, formik.resetForm);
+			finish(outcome.product, attempt.subsidiaryId, draftId, formik.resetForm);
 		} else if (outcome.kind === 'created') {
-			finish(outcome.product, attempt.subsidiaryId, formik.resetForm);
-		} else if (outcome.kind === 'sku_collision') {
-			// El SKU era de otro producto, así que el intento no creó nada: se
-			// libera con otro SKU para que el usuario vuelva a crear.
-			dispatch(clearPendingProductAttempt(attempt.subsidiaryId));
-			if (!isStillHere(attempt.subsidiaryId)) return;
-			const brandName =
-				brands.find((item) => item.id === attempt.payload.brand_id)?.name ?? '';
-			let nextSku = attempt.payload.sku;
-			while (nextSku === attempt.payload.sku) {
-				nextSku = generateSmartSKU({
-					name: attempt.payload.name,
-					brandName,
-					productType: attempt.payload.product_type,
-				});
-			}
-			setSku(nextSku);
-			toast.info(
-				'El SKU generado ya era de otro producto, así que no se creó nada. Se generó otro SKU: vuelve a crear el producto.',
-			);
+			finish(outcome.product, attempt.subsidiaryId, draftId, formik.resetForm);
 		} else if (outcome.kind === 'not_created') {
 			// Nada se creó: el formulario se libera con sus valores para corregirlos.
 			dispatch(clearPendingProductAttempt(attempt.subsidiaryId));
-			if (isStillHere(attempt.subsidiaryId))
+			if (isStillHere(attempt.subsidiaryId, draftId))
 				paintFieldErrors(outcome.error, formik.setFieldError);
 			toast.error(outcome.error.message);
 		} else {

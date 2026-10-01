@@ -45,7 +45,7 @@ const product = {
 	category_ids: [12],
 };
 
-/** Otro producto que ya tenía el SKU: el sufijo aleatorio colisionó. */
+/** Con el SKU del intento pero otros datos: otro producto, o el mismo editado o a medias. */
 const otherProduct = { ...product, id: 99, name: 'Teclado', brand_id: 5, category_ids: [] };
 
 const httpError = (status: number, errors?: Record<string, string[]>) => ({
@@ -116,22 +116,34 @@ describe('reconcileProductAttempt', () => {
 		expect(createMock).toHaveBeenCalledTimes(1);
 	});
 
-	it('un producto con ese SKU pero otros datos es una colisión: no se entrega ni se reenvía', async () => {
+	it('un producto con ese SKU pero otros datos no se entrega ni se reenvía: sigue incierto', async () => {
 		findMock.mockResolvedValueOnce(otherProduct);
 
-		await expect(reconcileProductAttempt(attempt)).resolves.toEqual({
-			kind: 'sku_collision',
-		});
+		const outcome = await reconcileProductAttempt(attempt);
+
+		expect(outcome.kind).toBe('still_uncertain');
 		expect(createMock).not.toHaveBeenCalled();
 	});
 
-	it('si el 422 en sku es de otro producto, se informa la colisión en vez de entregarlo', async () => {
+	it('si tras el 422 en sku el producto tiene otros datos, sigue incierto en vez de entregarlo', async () => {
 		findMock.mockResolvedValueOnce(null).mockResolvedValueOnce(otherProduct);
 		createMock.mockRejectedValueOnce(skuTaken);
 
-		await expect(reconcileProductAttempt(attempt)).resolves.toEqual({
-			kind: 'sku_collision',
-		});
+		const outcome = await reconcileProductAttempt(attempt);
+
+		expect(outcome.kind).toBe('still_uncertain');
+		expect(createMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('un alta que guardó el producto pero no sus categorías sigue incierta: liberarla lo duplicaría', async () => {
+		// El backend crea el producto y después sincroniza las categorías, sin
+		// una transacción: si lo segundo falla, queda el producto sin ellas.
+		findMock.mockResolvedValueOnce({ ...product, category_ids: [] });
+
+		const outcome = await reconcileProductAttempt(attempt);
+
+		expect(outcome.kind).toBe('still_uncertain');
+		expect(createMock).not.toHaveBeenCalled();
 	});
 
 	it.each([
@@ -141,13 +153,17 @@ describe('reconcileProductAttempt', () => {
 		['serie', { serial_tracking: true }],
 		['estado', { is_active: false }],
 		['categorías', { category_ids: [12, 13] }],
-	])('una diferencia de %s basta para no reconocerlo', async (_field, change) => {
-		findMock.mockResolvedValueOnce({ ...product, ...change });
+	])(
+		'una diferencia de %s basta para no entregarlo, sin dar el alta por fallida',
+		async (_field, change) => {
+			findMock.mockResolvedValueOnce({ ...product, ...change });
 
-		const outcome = await reconcileProductAttempt(attempt);
+			const outcome = await reconcileProductAttempt(attempt);
 
-		expect(outcome.kind).toBe('sku_collision');
-	});
+			expect(outcome.kind).toBe('still_uncertain');
+			expect(createMock).not.toHaveBeenCalled();
+		},
+	);
 
 	it('si la búsqueda falla, no envía nada y sigue pendiente', async () => {
 		findMock.mockRejectedValueOnce(networkError);

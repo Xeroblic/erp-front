@@ -321,7 +321,7 @@ const purchaseDocumentsSlice = createSlice({
 			const attempt = state.pendingProductAttempts[action.payload];
 			if (attempt?.status === 'in_flight') attempt.status = 'uncertain';
 		},
-		/** Se creó sin un modal montado que lo reciba. */
+		/** Se creó sin quien lo reciba: el modal se desmontó o su borrador se descartó. */
 		completeProductAttempt(
 			state,
 			action: PayloadAction<{ subsidiaryId: number; product: ICreatedPurchasableProduct }>,
