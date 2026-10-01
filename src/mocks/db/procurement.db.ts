@@ -946,7 +946,7 @@ export const ECOPC_BRANCH_ID = 1;
  * Relación bodega → sucursal (hallazgo 5, revisión ZF-110). El compacto
  * `IWarehouseCompact` de respuesta se mantiene `{id, name}` — esta relación
  * es un dato **interno** del mock, nunca se serializa tal cual en una
- * respuesta; `stockReceipts.service` la usa para derivar `branch_id` de la
+ * respuesta; `stockReceipts.mock` la usa para derivar `branch_id` de la
  * bodega elegida en vez de asignarlo desde la sucursal activa de quien
  * opera, y para rechazar una bodega fuera de las sucursales autorizadas.
  */
@@ -1094,7 +1094,7 @@ export const draftUnknownCostStockReceipt: IStockReceipt = {
  * `queued`: publicada y sin stock todavía. Nace en este estado en el seed a
  * propósito — simula que el worker ya estaba procesándola antes de esta
  * carga de página — para ejercer «el estado sobrevive a recargar». El
- * servicio mock (`stockReceipts.service`) le programa su propia resolución
+ * servicio mock (`stockReceipts.mock`) le programa su propia resolución
  * la primera vez que se siembra el store de una filial, igual que si
  * `post` acabara de encolarla.
  */
@@ -1295,7 +1295,7 @@ export const reversedStockReceipt: IStockReceipt = {
  * mismo id `80` del ejemplo canónico de la sección 3/12 del contrato. Cubre 8
  * de los 20 teclados — coincide con `received_quantity`/`received_distribution`
  * de esa línea — y queda **marcada como consumida** en el store del servicio
- * mock (`stockReceipts.service`) para poder ejercer `409
+ * mock (`stockReceipts.mock`) para poder ejercer `409
  * RECEIPT_ALREADY_CONSUMED` al revertir, tal como pide la card: el contrato no
  * modela consumo real (eso vive en ventas, fuera de este módulo), así que el
  * mock lo simula marcando este id a propósito.

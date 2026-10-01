@@ -59,7 +59,7 @@ import { normalizePageParams } from '@/utils/procurementPagination.util';
  * este servicio era de sólo lectura sobre los fixtures estáticos de
  * `inventoryStock.db`. Ahora mantiene un store mutable de procedencias
  * (`origins`), particionado por **sucursal** — a diferencia de
- * `stockReceipts.service`/`purchaseDocuments.service`, que particionan por
+ * `stockReceipts.mock`/`purchaseDocuments.mock`, que particionan por
  * filial, porque `GET/POST B/inventory-stock/...` es un prefijo `B`
  * (sucursal), no `P` (filial) — con la misma disciplina de idempotencia y
  * persistencia en `localStorage` que el resto del módulo
@@ -69,7 +69,7 @@ import { normalizePageParams } from '@/utils/procurementPagination.util';
  * `document-allocations` (sección 8) sí necesita `subsidiaryId` como
  * parámetro explícito además de `branchId`: el documento de compra que
  * respalda la asignación vive en el store de `purchaseDocuments.service`,
- * particionado por filial — mismo criterio que `stockReceipts.service`
+ * particionado por filial — mismo criterio que `stockReceipts.mock`
  * necesitando `subsidiaryId` para resolver un documento aunque sus propias
  * recepciones sean de sucursal.
  */
@@ -691,7 +691,7 @@ interface IMockWriteHeaders {
  *   — el contrato exige rechazar «cantidad superior a saldo sin documentar»,
  *   y un origin ya documentado o inexistente tiene saldo `0`.
  * - **Capacidad de línea excedida**: se reutiliza `RECEIPT_EXCEEDS_DOCUMENT`
- *   — mismo código que usa `stockReceipts.service` para «la recepción supera
+ *   — mismo código que usa `stockReceipts.mock` para «la recepción supera
  *   lo pendiente del documento»; acá es la comprobación análoga para una
  *   asignación documental.
  * - **No documentar lo ya vendido**: este mock sólo modela stock físico
@@ -1641,7 +1641,7 @@ const applySeededHistory = (store: IInventoryStockBranchStore, branchId: number)
    Efecto físico de las recepciones — sección 7
 
    No son endpoints: son la mitad física de `post`/`reverse`/
-   `link_purchase_document` de `stockReceipts.service`, que las llama. Viven
+   `link_purchase_document` de `stockReceipts.mock`, que las llama. Viven
    acá por la misma razón que traslados y ajustes: una recepción que no
    moviera estos `origins` dejaría stock, traslados y ajustes sin ver lo que
    se recibió.

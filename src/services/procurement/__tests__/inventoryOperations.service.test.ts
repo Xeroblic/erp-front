@@ -13,7 +13,7 @@ import {
 import {
 	resetStockReceiptsStoreForTests,
 	setStockReceiptForcedOutcomeForTests,
-} from '@/services/procurement/stockReceipts.service';
+} from '@/mocks/services/stockReceipts.mock';
 import type { IInventoryOverviewParams } from '@/interface/inventoryOverview.interface';
 import type {
 	IInventoryOperationDetail,

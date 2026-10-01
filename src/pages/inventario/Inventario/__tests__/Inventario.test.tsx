@@ -8,7 +8,7 @@ import inventoryOverview from '@/store/slices/procurement/inventoryOverviewSlice
 import InventarioView from '@/pages/inventario/Inventario/InventarioView';
 import * as service from '@/services/procurement/inventoryOverview.service';
 import { resetInventoryStockStoreForTests } from '@/services/procurement/inventoryStock.service';
-import { resetStockReceiptsStoreForTests } from '@/services/procurement/stockReceipts.service';
+import { resetStockReceiptsStoreForTests } from '@/mocks/services/stockReceipts.mock';
 import type { IInventoryOverviewResponse } from '@/interface/inventoryOverview.interface';
 
 const context = vi.hoisted(() => ({

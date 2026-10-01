@@ -41,7 +41,7 @@ import type {
  * real `@/services/procurement/purchaseDocuments.service` (backend PR #84/#92).
  *
  * Se conserva porque Recepciones e Inventario siguen sin backend: sus
- * servicios mock (`stockReceipts.service`, `inventoryStock.service`) leen y
+ * servicios mock (`stockReceipts.mock`, `inventoryStock.service`) leen y
  * escriben la cobertura de estos documentos (`findPurchaseDocumentForReceipts`,
  * `applyStockReceiptCoverageDelta`, …), y el selector de documentos del alta
  * de recepción lista desde acá. Por eso los ids de este store son los de la

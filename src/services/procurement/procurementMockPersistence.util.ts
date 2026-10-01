@@ -2,7 +2,7 @@
  * Persistencia local del store autoritativo de un servicio mock de
  * abastecimiento (hallazgo 1, revisión ZF-110).
  *
- * Los stores de `stockReceipts.service` y `purchaseDocuments.service` viven
+ * Los stores de `stockReceipts.mock` y `purchaseDocuments.mock` viven
  * en `Map`/temporizadores de **módulo**: sobreviven a un cambio de pantalla
  * (SPA) pero no a una recarga real de la pestaña, que reinstancia el módulo
  * desde cero. Sin esto, crear/publicar una recepción y recargar hace que el

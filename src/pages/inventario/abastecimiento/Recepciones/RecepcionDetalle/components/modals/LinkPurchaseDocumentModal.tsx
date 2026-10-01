@@ -27,7 +27,7 @@ import type {
  * un documento confirmado a una recepción `posted` que se creó sin uno.
  * Vínculo único, no sustituible — este modal sólo se abre desde
  * `allowed_actions`, que ya deja de ofrecer la acción en cuanto la recepción
- * tiene un documento (`stockReceipts.service`,
+ * tiene un documento (`stockReceipts.mock`,
  * `computeAllowedActionsForStatus`).
  *
  * Mirror estructural de `ReverseStockReceiptModal`: mismo patrón de

@@ -25,7 +25,7 @@ import {
 	resolveInventoryStockProduct,
 	type IInventoryBranchLedger,
 } from '@/services/procurement/inventoryStock.service';
-import { readStockReceiptsForTraceability } from '@/services/procurement/stockReceipts.service';
+import { readStockReceiptsForTraceability } from '@/mocks/services/stockReceipts.mock';
 
 /**
  * Servicio mock de la trazabilidad agrupada — §14 del contrato de
