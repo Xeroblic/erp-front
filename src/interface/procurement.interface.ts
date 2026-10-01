@@ -306,6 +306,21 @@ export type IInventoryOriginsParams = IInventoryLocationParams &
 		supplier_id?: number;
 	};
 
+/**
+ * Disponible de un producto en la sucursal completa, frente a las reservas
+ * vigentes. No es un endpoint del contrato: lo devolvería un backend real junto
+ * al stock. `available_quantity` puede ser negativo (faltante frente a reservas).
+ */
+export interface IInventoryStockAvailability {
+	product_id: number;
+	/** Físico de la sucursal completa, sumando todas sus ubicaciones. */
+	physical_quantity: number;
+	fit_quantity: number;
+	reserved_quantity: number;
+	/** `fit - reserved`. Negativo significa faltante frente a lo reservado. */
+	available_quantity: number;
+}
+
 export type IInventoryStockResponse = IApiCollectionEnvelope<
 	IInventoryStockRow,
 	IInventoryLocationContext

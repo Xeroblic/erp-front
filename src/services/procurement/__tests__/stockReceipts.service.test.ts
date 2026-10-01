@@ -83,15 +83,30 @@ describe('stockReceipts.service (fachada)', () => {
 	});
 
 	it('sin datos simulados el selector de proveedores usa el maestro real', async () => {
+		const realSuppliers = { data: [], links: {}, meta: {} };
+		const listProcurementSuppliers = vi.fn().mockResolvedValue(realSuppliers);
+		vi.doMock('@/services/procurement/procurementSuppliers.service', () => ({
+			listProcurementSuppliers,
+		}));
 		const facade = await loadFacade(false);
-		const real = await import('@/services/procurement/procurementSuppliers.service');
 
-		expect(facade.listStockReceiptSuppliers).toBe(real.listProcurementSuppliers);
+		const result = await facade.listStockReceiptSuppliers(1, { per_page: 100 });
+
+		expect(listProcurementSuppliers).toHaveBeenCalledWith(1, { per_page: 100 });
+		expect(result).toBe(realSuppliers);
+		vi.doUnmock('@/services/procurement/procurementSuppliers.service');
 	});
 
-	it('Recepciones sigue con proveedores de prueba mientras la rama real no tenga rutas', async () => {
-		const facade = await loadFacade(false);
+	it('cargar la fachada no arrastra el maestro real de proveedores', async () => {
+		const loadedSuppliers = vi.fn();
+		vi.doMock('@/services/procurement/procurementSuppliers.service', () => {
+			loadedSuppliers();
+			return { listProcurementSuppliers: vi.fn() };
+		});
 
-		expect(facade.STOCK_RECEIPTS_USE_TEST_SUPPLIERS).toBe(true);
+		await loadFacade(false);
+
+		expect(loadedSuppliers).not.toHaveBeenCalled();
+		vi.doUnmock('@/services/procurement/procurementSuppliers.service');
 	});
 });

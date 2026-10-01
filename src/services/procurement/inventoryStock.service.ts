@@ -5,7 +5,7 @@ import {
 	throwEndpointNotPublished,
 } from '@/utils/procurementEndpoint.util';
 
-export type { IInventoryStockAvailability } from '@/mocks/services/inventoryStock.mock';
+export type { IInventoryStockAvailability } from '@/interface/procurement.interface';
 
 /**
  * Stock por ubicación, traslados, ajustes y documentación posterior —

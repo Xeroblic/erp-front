@@ -10,6 +10,7 @@ import type {
 	IInventoryLocationContext,
 	IInventoryOriginsParams,
 	IInventoryOriginsResponse,
+	IInventoryStockAvailability,
 	IInventoryStockListParams,
 	IInventoryStockResponse,
 	IInventoryStockRow,
@@ -484,16 +485,6 @@ export const getInventoryAdjustableProducts = (
  * - **El ajuste no las modifica.** Corrige el físico; cancelar compromisos es
  *   otra operación, fuera del alcance de esta card.
  */
-export interface IInventoryStockAvailability {
-	product_id: number;
-	/** Físico de la sucursal completa, sumando todas sus ubicaciones. */
-	physical_quantity: number;
-	fit_quantity: number;
-	reserved_quantity: number;
-	/** `fit - reserved`. Negativo significa faltante frente a lo reservado. */
-	available_quantity: number;
-}
-
 export const getInventoryStockAvailability = (
 	branchId: number,
 	productId: number,

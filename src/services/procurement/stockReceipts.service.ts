@@ -1,6 +1,5 @@
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import * as stockReceiptsMock from '@/mocks/services/stockReceipts.mock';
-import { listProcurementSuppliers } from '@/services/procurement/procurementSuppliers.service';
 import {
 	rejectEndpointNotPublished,
 	throwEndpointNotPublished,
@@ -78,8 +77,15 @@ const apiStockReceipts: TStockReceiptsService = {
 	// se publiquen las recepciones; hasta entonces no se ofrece la semilla.
 	listWarehousesForStockReceipts: () => throwNotPublished('catálogo de bodegas de recepción'),
 	getStockReceiptWarehouseBranchId: () => throwNotPublished('catálogo de bodegas de recepción'),
-	// El maestro de proveedores sí está publicado.
-	listStockReceiptSuppliers: listProcurementSuppliers,
+	// El maestro de proveedores sí está publicado. Se carga al usarlo: importarlo
+	// arriba arrastraría `ApiService` y el store al cargar la fachada, y cerraría
+	// un ciclo con `stockReceiptsSlice`.
+	listStockReceiptSuppliers: async (...args) => {
+		const { listProcurementSuppliers } = await import(
+			'@/services/procurement/procurementSuppliers.service'
+		);
+		return listProcurementSuppliers(...args);
+	},
 };
 
 const stockReceipts: TStockReceiptsService = INVENTORY_STOCK_USE_MOCKS
