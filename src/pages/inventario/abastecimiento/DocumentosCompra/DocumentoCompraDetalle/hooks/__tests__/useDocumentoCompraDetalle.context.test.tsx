@@ -130,3 +130,24 @@ describe('useDocumentoCompraDetalle — cambio de contexto', () => {
 		expect(result.current.isCancelModalOpen).toBe(false);
 	});
 });
+
+describe('useDocumentoCompraDetalle — recepción diferida', () => {
+	it('retira create_receipt de la botonera y lo marca como diferido para avisar', async () => {
+		routeParams.documentoId = String(OTHER_DOCUMENT_ID);
+		const { result } = renderHook(() => useDocumentoCompraDetalle(), {
+			wrapper: createWrapper(),
+		});
+		await waitFor(() => expect(result.current.document?.id).toBe(OTHER_DOCUMENT_ID));
+
+		expect(result.current.document?.allowed_actions).toContain('create_receipt');
+		expect(result.current.allowedActions).not.toContain('create_receipt');
+		expect(result.current.isReceiptDeferred).toBe(true);
+	});
+
+	it('sin create_receipt del backend no hay nada que avisar', async () => {
+		const { result } = await renderLoaded();
+
+		expect(result.current.document?.allowed_actions).not.toContain('create_receipt');
+		expect(result.current.isReceiptDeferred).toBe(false);
+	});
+});
