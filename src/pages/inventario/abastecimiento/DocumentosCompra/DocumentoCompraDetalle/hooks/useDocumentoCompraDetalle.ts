@@ -119,12 +119,14 @@ const useDocumentoCompraDetalle = () => {
 	 * `create_receipt` se retira aunque el backend la ofrezca: Recepciones sigue
 	 * contra datos simulados, que no conocen este documento real. Vuelve cuando
 	 * Recepciones consuma la API (su alta «con documento» ya lee
-	 * `?purchase_document_id=`).
+	 * `?purchase_document_id=`). Mientras tanto la vista lo explica con
+	 * `isReceiptDeferred`, en vez de dejar al usuario sin la acción y sin aviso.
 	 */
 	const allowedActions = useMemo(
 		() => (document?.allowed_actions ?? []).filter((action) => action !== 'create_receipt'),
 		[document],
 	);
+	const isReceiptDeferred = (document?.allowed_actions ?? []).includes('create_receipt');
 
 	/** Traduce el click de `AllowedActionsToolbar` a la interacción de esta pantalla. */
 	const handleAction = useCallback(
@@ -151,6 +153,7 @@ const useDocumentoCompraDetalle = () => {
 		isCancelModalOpen: activeModal === 'cancel',
 		setIsCancelModalOpen,
 		allowedActions,
+		isReceiptDeferred,
 		attachmentsCardRef,
 		handleAction,
 		goToList,

@@ -43,6 +43,7 @@ const DocumentoCompraDetalleView = () => {
 		isCancelModalOpen,
 		setIsCancelModalOpen,
 		allowedActions,
+		isReceiptDeferred,
 		attachmentsCardRef,
 		handleAction,
 		goToList,
@@ -130,6 +131,23 @@ const DocumentoCompraDetalleView = () => {
 								icon='HeroXCircle'
 								title='Documento anulado'>
 								{document.cancellation_reason}
+							</Alert>
+						)}
+
+						{/*
+						 * El backend ofrece `create_receipt`, pero el hook la retira
+						 * porque Recepciones sigue sobre datos simulados. Se explica
+						 * en vez de mostrar un botón deshabilitado.
+						 */}
+						{isReceiptDeferred && (
+							<Alert
+								color='blue'
+								variant='outline'
+								icon='HeroInformationCircle'
+								title='Recepción aún no disponible'>
+								Recepciones todavía trabaja con datos de prueba, así que este
+								documento no puede ingresar al stock desde aquí. Su recepción se
+								habilitará cuando el sistema publique las recepciones de mercadería.
 							</Alert>
 						)}
 

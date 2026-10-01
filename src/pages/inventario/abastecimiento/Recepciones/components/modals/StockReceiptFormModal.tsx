@@ -335,6 +335,21 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 								/>
 							)}
 
+							{/* `usePurchaseDocumentPicker` lee el mock, no la API real que
+							    ya usa Documentos de compra: los documentos no coinciden. Se
+							    muestra sin depender de la bandera porque el selector lee el
+							    mock siempre, y con el estilo de los demás avisos del modal. */}
+							{!isManual && (
+								<Alert
+									color='amber'
+									variant='outline'
+									icon='HeroExclamationTriangle'
+									title='Documentos de prueba'>
+									Los documentos de esta lista son de prueba, no los registrados
+									en Documentos de compra.
+								</Alert>
+							)}
+
 							<Card className={RECEPCION_CARD_CLASSNAME}>
 								<CardHeader className='pb-2'>
 									<div>

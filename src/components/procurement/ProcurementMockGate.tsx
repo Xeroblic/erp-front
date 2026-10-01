@@ -9,8 +9,8 @@ import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import type { TIcons } from '@/types/icons.type';
 
 /**
- * Documentos de compra y recepciones corren sólo contra servicios mock
- * (Proveedores ya consume el backend real y no pasa por aquí). Comparten la
+ * Recepciones corre sólo contra servicios mock (Proveedores y Documentos de
+ * compra ya consumen el backend real y no pasan por aquí). Comparte la
  * bandera de Inventario y Ajustes y traslados —las recepciones publicadas
  * escriben en ese mismo stock simulado—, así que el módulo se enciende o se
  * apaga entero: nunca queda una pantalla operando con datos ficticios en un
