@@ -51,11 +51,11 @@ const StockReceiptSummaryCard: React.FC<IStockReceiptSummaryCardProps> = ({ rece
 						<span className='text-zinc-400'>Sin documento</span>
 					)}
 				</Field>
-				<Field label='Fecha de recepción'>{formatDate(receipt.received_on)}</Field>
+				<Field label='Fecha de llegada'>{formatDate(receipt.received_on)}</Field>
 				{receipt.reason && <Field label='Motivo'>{receipt.reason}</Field>}
 				{receipt.notes && <Field label='Notas'>{receipt.notes}</Field>}
 				{receipt.posted_at && (
-					<Field label='Contabilizada'>
+					<Field label='Ingresada al stock'>
 						{formatDateTime(receipt.posted_at)}
 						{receipt.posted_by && ` · ${receipt.posted_by.name}`}
 					</Field>

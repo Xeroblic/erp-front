@@ -154,7 +154,7 @@ const SupplierSuppliedProductsTable: React.FC<ISupplierSuppliedProductsTableProp
 				<div>
 					<CardTitle className='text-lg'>Productos suministrados</CardTitle>
 					<p className='text-sm text-zinc-500'>
-						Según recepciones contabilizadas; las revertidas no cuentan.
+						Según recepciones ingresadas al stock; las revertidas no cuentan.
 					</p>
 				</div>
 				{!loading && !error && (
@@ -228,7 +228,7 @@ const SupplierSuppliedProductsTable: React.FC<ISupplierSuppliedProductsTableProp
 							<Tr>
 								<Td colSpan={COLUMN_COUNT} className='py-12 text-center'>
 									<p className='font-medium text-zinc-700 dark:text-zinc-200'>
-										Este proveedor aún no tiene recepciones contabilizadas
+										Este proveedor aún no tiene recepciones ingresadas al stock
 									</p>
 									<p className='mt-1 text-sm text-zinc-500'>
 										Los productos aparecerán aquí cuando se contabilice una

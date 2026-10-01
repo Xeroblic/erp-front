@@ -48,10 +48,11 @@ const STOCK_RECEIPT_STATUS_COLOR: Record<TStockReceiptStatus, TColors> = {
 	cancelled: 'zinc',
 };
 
+/** Mismo vocabulario que `Recepciones/types.ts` (Borrador → Ingresando → En stock). */
 const STOCK_RECEIPT_STATUS_LABEL: Record<TStockReceiptStatus, string> = {
 	draft: 'Borrador',
-	queued: 'Procesando',
-	posted: 'Contabilizada',
+	queued: 'Ingresando',
+	posted: 'En stock',
 	failed: 'Con error',
 	reversed: 'Revertida',
 	cancelled: 'Anulada',

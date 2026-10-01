@@ -22,8 +22,8 @@ export const STOCK_RECEIPT_STATUS_FILTER_OPTIONS: {
 }[] = [
 	{ value: 'all', label: 'Todos' },
 	{ value: 'draft', label: 'Borrador' },
-	{ value: 'queued', label: 'Procesando' },
-	{ value: 'posted', label: 'Contabilizada' },
+	{ value: 'queued', label: 'Ingresando' },
+	{ value: 'posted', label: 'En stock' },
 	{ value: 'failed', label: 'Con error' },
 	{ value: 'reversed', label: 'Revertida' },
 	{ value: 'cancelled', label: 'Anulada' },
@@ -31,8 +31,8 @@ export const STOCK_RECEIPT_STATUS_FILTER_OPTIONS: {
 
 export const STOCK_RECEIPT_STATUS_LABELS: Record<TStockReceiptStatus, string> = {
 	draft: 'Borrador',
-	queued: 'Procesando',
-	posted: 'Contabilizada',
+	queued: 'Ingresando',
+	posted: 'En stock',
 	failed: 'Con error',
 	reversed: 'Revertida',
 	cancelled: 'Anulada',
@@ -46,6 +46,13 @@ export const STOCK_RECEIPT_STATUS_LABELS: Record<TStockReceiptStatus, string> = 
 export type TStockReceiptFormMode = 'with_document' | 'manual';
 
 /**
+ * Qué hace el formulario después de guardar: dejar la recepción en borrador,
+ * o además pedir su ingreso al stock (`POST /{id}/post`). El contrato no ofrece
+ * un alta atómica que ingrese stock, así que la segunda es una llamada aparte.
+ */
+export type TStockReceiptSubmitIntent = 'save' | 'save_and_post';
+
+/**
  * Una sola forma de línea para los dos modos: Formik no soporta bien un
  * `items` con forma distinta según otro campo del mismo formulario, así que
  * cada línea trae ambos grupos de campos y sólo se envían los que
@@ -56,6 +63,11 @@ export interface IRecepcionLineFormValues {
 	id?: number;
 	/** Modo `with_document`. */
 	purchase_document_line_id: number | '';
+	/**
+	 * Modo `with_document`: saldo pendiente de la línea del documento al
+	 * cargarlo. Sólo de apoyo (tope de «Recibido»); nunca se envía.
+	 */
+	pending_quantity?: number;
 	/** Modo `manual`. */
 	product_id: number | '';
 	quantity: string;
@@ -84,8 +96,12 @@ export const EMPTY_RECEPCION_LINE: IRecepcionLineFormValues = {
 	unit_cost_basis: '',
 };
 
+/**
+ * El alta abre «con documento»: es el caso habitual (llega una factura o guía)
+ * y sus líneas se precargan. Sin documento es la excepción.
+ */
 export const EMPTY_RECEPCION_VALUES: IStockReceiptFormValues = {
-	mode: 'manual',
+	mode: 'with_document',
 	purchase_document_id: '',
 	warehouse_id: '',
 	supplier_id: '',
@@ -95,17 +111,60 @@ export const EMPTY_RECEPCION_VALUES: IStockReceiptFormValues = {
 	items: [{ ...EMPTY_RECEPCION_LINE }],
 };
 
+/**
+ * Con documento, todas sus líneas pendientes se precargan: una cantidad `0`
+ * significa «no llegó» y esa línea no se envía (`hasReceivedQuantity`). El
+ * tope es el pendiente de la línea; el backend lo vuelve a validar al ingresar.
+ */
 const withDocumentLineSchema = Yup.object({
 	id: Yup.number().optional(),
 	purchase_document_line_id: Yup.number()
 		.typeError('Selecciona una línea del documento.')
 		.required('Selecciona una línea del documento.'),
+	pending_quantity: Yup.number().optional(),
 	quantity: Yup.number()
 		.typeError('Indica una cantidad válida.')
 		.integer('La cantidad debe ser un entero.')
-		.positive('La cantidad debe ser mayor que cero.')
-		.required('Indica la cantidad.'),
+		.min(0, 'La cantidad no puede ser negativa.')
+		.required('Indica la cantidad.')
+		.test('max-pending', 'Supera lo pendiente del documento.', function maxPending(value) {
+			const { parent }: { parent: unknown } = this;
+			const pending =
+				typeof parent === 'object' && parent !== null && 'pending_quantity' in parent
+					? parent.pending_quantity
+					: undefined;
+			return typeof pending !== 'number' || value === undefined || value <= pending;
+		}),
 });
+
+/**
+ * Una recepción corregida puede traer varias filas contra la misma línea del
+ * documento: el tope por fila no alcanza, la suma de esas filas tampoco puede
+ * superar lo pendiente de la línea.
+ */
+const withinPendingPerDocumentLine = (
+	items: { purchase_document_line_id?: number; pending_quantity?: number; quantity?: number }[],
+): boolean => {
+	const totals = new Map<number, { sum: number; pending: number | undefined }>();
+	items.forEach((line) => {
+		if (line.purchase_document_line_id === undefined) return;
+		const current = totals.get(line.purchase_document_line_id) ?? {
+			sum: 0,
+			pending: line.pending_quantity,
+		};
+		totals.set(line.purchase_document_line_id, {
+			sum: current.sum + (line.quantity ?? 0),
+			pending: current.pending ?? line.pending_quantity,
+		});
+	});
+	return [...totals.values()].every(
+		({ sum, pending }) => pending === undefined || sum <= pending,
+	);
+};
+
+/** Una línea con documento sólo viaja si se recibió algo de ella. */
+export const hasReceivedQuantity = (line: IRecepcionLineFormValues): boolean =>
+	Number(line.quantity) > 0;
 
 /**
  * Reusa `optionalCostEntrySchema` (`@/components/procurement`): monto y base
@@ -142,7 +201,7 @@ export const stockReceiptFormSchema = Yup.object({
 		}),
 	warehouse_id: Yup.number().transform(numberOrUndefined).required('Selecciona una bodega.'),
 	supplier_id: Yup.number().transform(numberOrUndefined).nullable(),
-	received_on: Yup.string().required('Indica la fecha de recepción.'),
+	received_on: Yup.string().required('Indica la fecha de llegada.'),
 	reason: Yup.string().when('mode', {
 		is: 'manual',
 		then: (schema) =>
@@ -153,7 +212,22 @@ export const stockReceiptFormSchema = Yup.object({
 	notes: Yup.string().max(1000, 'Máximo 1000 caracteres.'),
 	items: Yup.array().when('mode', {
 		is: 'with_document',
-		then: () => Yup.array().of(withDocumentLineSchema).min(1, 'Agrega al menos una línea.'),
+		then: () =>
+			Yup.array()
+				.of(withDocumentLineSchema)
+				.test(
+					'some-received',
+					'Indica la cantidad recibida de al menos una línea.',
+					(items) =>
+						(items ?? []).some(
+							(line) => typeof line.quantity === 'number' && line.quantity > 0,
+						),
+				)
+				.test(
+					'lines-within-pending',
+					'Varias filas de la misma línea del documento suman más que lo pendiente.',
+					(items) => withinPendingPerDocumentLine(items ?? []),
+				),
 		otherwise: () => Yup.array().of(manualLineSchema).min(1, 'Agrega al menos una línea.'),
 	}),
 });

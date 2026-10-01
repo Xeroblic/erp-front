@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
@@ -14,10 +14,8 @@ import {
 	selectStockReceiptCurrentError,
 	selectStockReceiptCurrentLoading,
 } from '@/store/slices/procurement/stockReceiptsSlice';
-import type {
-	IProcurementActorCompact,
-	TProcurementAllowedAction,
-} from '@/interface/procurement.interface';
+import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
+import useReceiptActor from '../../hooks/useReceiptActor';
 
 /** Cada cuánto se vuelve a pedir el detalle mientras está `queued` (polling). */
 const POLLING_INTERVAL_MS = 1500;
@@ -39,7 +37,7 @@ const useRecepcionDetalle = () => {
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId, visibleBranches } = useCurrentBranch();
-	const authUser = useAppSelector((state) => state.auth.user);
+	const actor = useReceiptActor();
 
 	const receipt = useAppSelector(selectStockReceiptCurrent);
 	const etag = useAppSelector(selectStockReceiptCurrentEtag);
@@ -103,16 +101,11 @@ const useRecepcionDetalle = () => {
 		void dispatch(fetchStockReceiptDetail({ subsidiaryId, id }));
 	}, [dispatch, subsidiaryId, id]);
 
-	/** «Quien solicitó contabilizar», nunca un worker anónimo (sección 7). */
-	const actor = useMemo<IProcurementActorCompact | null>(() => {
-		if (!authUser) return null;
-		const name = [authUser.first_name, authUser.last_name].filter(Boolean).join(' ').trim();
-		return { id: authUser.id, name: name || authUser.email };
-	}, [authUser]);
-
-	const postWrite = useIdempotentWrite({ fallbackMessage: 'No se pudo publicar la recepción.' });
+	const postWrite = useIdempotentWrite({
+		fallbackMessage: 'No se pudo ingresar la recepción al stock.',
+	});
 	const retryWrite = useIdempotentWrite({
-		fallbackMessage: 'No se pudo reintentar la recepción.',
+		fallbackMessage: 'No se pudo reintentar el ingreso al stock.',
 	});
 
 	/**
@@ -137,7 +130,7 @@ const useRecepcionDetalle = () => {
 				).unwrap(),
 			{ onError: (writeError) => toast.error(writeError.message) },
 		);
-		if (result) toast.success('Recepción enviada a publicar. Sigue el estado en la pantalla.');
+		if (result) toast.success('Ingresando al stock. Esta pantalla se actualiza sola.');
 	}, [id, actor, postWrite, dispatch, subsidiaryId]);
 
 	const handleRetry = useCallback(async () => {
@@ -154,7 +147,8 @@ const useRecepcionDetalle = () => {
 				).unwrap(),
 			{ onError: (writeError) => toast.error(writeError.message) },
 		);
-		if (result) toast.success('Recepción reencolada. Sigue el estado en la pantalla.');
+		if (result)
+			toast.success('Reintentando el ingreso al stock. Esta pantalla se actualiza sola.');
 	}, [id, actor, retryWrite, dispatch, subsidiaryId]);
 
 	/** Traduce el click de `AllowedActionsToolbar` a la interacción de esta pantalla. */

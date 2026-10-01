@@ -116,8 +116,8 @@ export const PROCUREMENT_ACTION_DEFINITIONS: Record<
 			color: 'zinc',
 		},
 		post: {
-			label: 'Contabilizar',
-			icon: 'HeroPaperAirplane',
+			label: 'Ingresar al stock',
+			icon: 'HeroArrowDownTray',
 			permissions: ['edit-product'],
 			color: 'emerald',
 		},
