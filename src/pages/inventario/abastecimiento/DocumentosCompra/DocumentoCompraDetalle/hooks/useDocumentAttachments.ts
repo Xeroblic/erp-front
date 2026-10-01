@@ -41,6 +41,7 @@ import type {
  */
 
 const PER_PAGE = PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT;
+const NOT_FOUND_STATUS = 404;
 
 const ALLOWED_MIME_TYPES: readonly string[] = PURCHASE_DOCUMENT_ATTACHMENT_ALLOWED_MIME_TYPES;
 
@@ -380,9 +381,17 @@ const useDocumentAttachments = ({
 				onChanged();
 			} catch (error) {
 				if (generationRef.current !== generation) return;
-				toast.error(
-					resolveProcurementError(error, 'No se pudo eliminar el adjunto.').message,
-				);
+				const resolved = resolveProcurementError(error, 'No se pudo eliminar el adjunto.');
+				// Un 404 dice que el adjunto ya no existe: lo borró un intento
+				// anterior cuya respuesta se perdió, u otra persona. La lista y el
+				// contador se reconcilian igual que tras borrarlo.
+				if (resolved.status === NOT_FOUND_STATUS) {
+					toast.info('El adjunto ya se había eliminado.');
+					refetch();
+					onChanged();
+					return;
+				}
+				toast.error(resolved.message);
 			} finally {
 				if (generationRef.current === generation) setDeletingId(null);
 			}
