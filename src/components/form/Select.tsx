@@ -27,6 +27,11 @@ interface ISelectProps
 	variant?: TSelectVariants;
 	placeholder?: string;
 }
+// `appearance-none` quita la flecha nativa; se repone con un chevron neutro (zinc-400)
+// legible en tema claro y oscuro.
+const SELECT_CHEVRON =
+	"url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a1a1aa' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")";
+
 const Select: FC<ISelectProps> = (props) => {
 	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
 		useReactiveThemeConfig();
@@ -49,8 +54,11 @@ const Select: FC<ISelectProps> = (props) => {
 		...rest
 	} = props;
 
-	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
+	// Borde neutro en reposo (como Input): el color del tema queda para hover y foco,
+	// así el select no parece enfocado sin estarlo.
+	const resolvedBorderColor = '#d4d4d8';
 	const resolvedBorderHoverColor = resolveTailwindColor(color, colorIntensity);
+	const showsChevron = !rest.multiple && !rest.size;
 
 	const selectVariants: {
 		[key in TSelectVariants]: { general: string; validation: string };
@@ -59,14 +67,15 @@ const Select: FC<ISelectProps> = (props) => {
 			general: classNames(
 				// Default
 				[`${borderWidth} border-[color:var(--select-border)] dark:border-zinc-800`],
-				'bg-zinc-100 dark:bg-zinc-800',
+				'bg-zinc-50 dark:bg-zinc-800',
 				// Hover
 				'hover:border-[color:var(--select-border-hover)]',
 				'dark:hover:border-[color:var(--select-border-hover)]',
 				'disabled:!border-zinc-500',
 				// Focus
-				'focus:border-zinc-300 dark:focus:border-zinc-800',
-				'focus:bg-transparent dark:focus:bg-zinc-800',
+				'focus:border-[color:var(--select-border-hover)] dark:focus:border-[color:var(--select-border-hover)]',
+				'focus:bg-white dark:focus:bg-zinc-800',
+				'focus:ring-1 focus:ring-[color:var(--select-border-hover)]',
 			),
 			validation: classNames({
 				'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
@@ -107,6 +116,7 @@ const Select: FC<ISelectProps> = (props) => {
 		themeConfig.transition,
 		selectVariantClasses,
 		selectDimensionClasses,
+		{ 'bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-8': showsChevron },
 		rounded,
 		selectValidationsClasses,
 		className,
@@ -121,6 +131,7 @@ const Select: FC<ISelectProps> = (props) => {
 				{
 					'--select-border': resolvedBorderColor,
 					'--select-border-hover': resolvedBorderHoverColor,
+					...(showsChevron && { backgroundImage: SELECT_CHEVRON }),
 					...(style as React.CSSProperties),
 				} as React.CSSProperties
 			}
