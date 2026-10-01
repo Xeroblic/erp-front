@@ -95,7 +95,7 @@ const products = [
 
 /**
  * Resuelve un producto por id contra el mismo catálogo que arma
- * `inventoryStockRows` (card 07, ZF-112): `inventoryStock.service` lo
+ * `inventoryStockRows` (card 07, ZF-112): `inventoryStock.mock` lo
  * necesita para reconstruir filas agregadas dinámicamente desde el store
  * mutable de procedencias (`origins`), que sólo guarda `product_id` — nunca
  * el producto completo — igual criterio que el resto del mock: el fixture es

@@ -1,6 +1,10 @@
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import * as stockReceiptsMock from '@/mocks/services/stockReceipts.mock';
 import { listProcurementSuppliers } from '@/services/procurement/procurementSuppliers.service';
+import {
+	rejectEndpointNotPublished,
+	throwEndpointNotPublished,
+} from '@/utils/procurementEndpoint.util';
 
 /**
  * Recepciones físicas — sección 7 del contrato de abastecimiento,
@@ -14,7 +18,7 @@ import { listProcurementSuppliers } from '@/services/procurement/procurementSupp
  *
  * **El backend todavía no publica estas rutas** (Laravel Boost, 01-10-2026:
  * bajo `procurement` sólo existen `suppliers` y `purchase-documents`). Mientras
- * tanto, la rama real rechaza con `StockReceiptsEndpointNotPublishedError` en
+ * tanto, la rama real rechaza con `ProcurementEndpointNotPublishedError` en
  * vez de inventar datos. Las rutas anotadas en cada función salen del contrato
  * (`frontend-guide.md` §7–§8, PR #67 del backend) y quedan **pendientes de
  * confirmar** —método, campos, nulabilidad y permiso efectivo— el día que se
@@ -30,33 +34,14 @@ import { listProcurementSuppliers } from '@/services/procurement/procurementSupp
  */
 export const STOCK_RECEIPTS_USE_TEST_SUPPLIERS = true;
 
-/** Código estable del rechazo local: no es un código del contrato. */
-export const STOCK_RECEIPTS_ENDPOINT_NOT_PUBLISHED = 'ENDPOINT_NOT_PUBLISHED';
-
-/**
- * La rama real se invocó antes de que el backend publique la ruta. Lleva
- * `code` y `message` propios para que `getProcurementErrorMessage` muestre el
- * motivo en vez del genérico.
- */
-export class StockReceiptsEndpointNotPublishedError extends Error {
-	readonly code = STOCK_RECEIPTS_ENDPOINT_NOT_PUBLISHED;
-
-	constructor(readonly endpoint: string) {
-		super(
-			`El servidor todavía no publica las recepciones (${endpoint}). Esta pantalla sólo funciona con datos simulados.`,
-		);
-		this.name = 'StockReceiptsEndpointNotPublishedError';
-	}
-}
-
+const RESOURCE = 'las recepciones';
 const P = '/subsidiaries/{subsidiary}/procurement';
 
 const rejectNotPublished = (endpoint: string): Promise<never> =>
-	Promise.reject(new StockReceiptsEndpointNotPublishedError(endpoint));
+	rejectEndpointNotPublished(RESOURCE, endpoint);
 
-const throwNotPublished = (endpoint: string): never => {
-	throw new StockReceiptsEndpointNotPublishedError(endpoint);
-};
+const throwNotPublished = (endpoint: string): never =>
+	throwEndpointNotPublished(RESOURCE, endpoint);
 
 type TStockReceiptsService = Pick<
 	typeof stockReceiptsMock,

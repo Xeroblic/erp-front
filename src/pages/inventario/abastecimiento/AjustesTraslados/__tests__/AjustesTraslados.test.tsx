@@ -6,7 +6,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
-import { resetInventoryStockStoreForTests } from '@/services/procurement/inventoryStock.service';
+import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
 vi.mock('@/hooks/useCurrentBranch', () => ({

@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryOverview from '@/store/slices/procurement/inventoryOverviewSlice';
 import InventarioBodegaView from '@/pages/inventario/Inventario/InventarioBodega/InventarioBodegaView';
 import * as service from '@/services/procurement/inventoryOverview.service';
-import { resetInventoryStockStoreForTests } from '@/services/procurement/inventoryStock.service';
+import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 
 const context = vi.hoisted(() => ({
 	branchId: 4 as number | null,

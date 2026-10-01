@@ -10,7 +10,7 @@ import {
 	applyStockReceiptToInventory,
 	linkStockReceiptDocumentInInventory,
 	reverseStockReceiptInInventory,
-} from '@/services/procurement/inventoryStock.service';
+} from '@/mocks/services/inventoryStock.mock';
 import { findPurchasableProcurementProduct } from '@/services/procurement/procurementProducts.service';
 import {
 	applyStockReceiptCoverageDelta,
@@ -65,7 +65,7 @@ import type {
  * Hace de backend también en los efectos cruzados: publicar, revertir y
  * vincular un documento descuentan lo pendiente del documento de prueba
  * (`purchaseDocuments.mock`) y escriben en el stock simulado
- * (`inventoryStock.service`). Esos efectos sólo existen aquí; con la API real
+ * (`inventoryStock.mock`). Esos efectos sólo existen aquí; con la API real
  * los resuelve el servidor.
  *
  * **Ninguno de estos endpoints existe todavía.** Simula

@@ -516,6 +516,6 @@ describe('cancelPurchaseDocument', () => {
 // (`listStockReceiptsForPurchaseDocument`, hallazgo 9) ni las asignaciones de
 // stock inicial (`listInitialStockAllocationsForPurchaseDocument`, card 07,
 // ZF-112) viven en este servicio — ambas se cubren en
-// `stockReceipts.mock.test.ts` e `inventoryStock.service.test.ts`
+// `stockReceipts.mock.test.ts` e `inventoryStock.mock.test.ts`
 // respectivamente: esos stores son la fuente real, no un stub de este
 // archivo.

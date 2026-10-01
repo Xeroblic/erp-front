@@ -7,9 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryOverview from '@/store/slices/procurement/inventoryOverviewSlice';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import InventarioProductoView from '@/pages/inventario/Inventario/InventarioProducto/InventarioProductoView';
-import { resetInventoryStockStoreForTests } from '@/services/procurement/inventoryStock.service';
+import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 import { resetStockReceiptsStoreForTests } from '@/mocks/services/stockReceipts.mock';
-import { resetInventoryCriticalThresholdsForTests } from '@/services/procurement/inventoryOverview.service';
+import { resetInventoryCriticalThresholdsForTests } from '@/mocks/services/inventoryOverview.mock';
 import { clearAllPersistedMockState } from '@/services/procurement/procurementMockPersistence.util';
 
 const context = vi.hoisted(() => ({

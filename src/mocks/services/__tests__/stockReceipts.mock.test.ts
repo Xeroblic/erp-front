@@ -31,7 +31,7 @@ import {
 	listInventoryOrigins,
 	listInventoryStock,
 	resetInventoryStockStoreForTests,
-} from '@/services/procurement/inventoryStock.service';
+} from '@/mocks/services/inventoryStock.mock';
 import {
 	createProcurementProduct,
 	resetProcurementProductsStoreForTests,

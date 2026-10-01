@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getProcurementErrorMessage } from '@/utils/procurementErrors.util';
+import { PROCUREMENT_ENDPOINT_NOT_PUBLISHED } from '@/utils/procurementEndpoint.util';
 
 /**
  * La fachada no simula nada: elige el doble o la API real según la bandera.
@@ -12,7 +13,12 @@ vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
 const loadFacade = async (useMocks: boolean) => {
 	vi.resetModules();
 	vi.doMock('@/config/inventoryStock.config', () => ({ default: useMocks }));
-	return import('@/services/procurement/stockReceipts.service');
+	const facade = await import('@/services/procurement/stockReceipts.service');
+	// Tras resetModules, la clase del error es la del registro nuevo, no la de arriba.
+	const { ProcurementEndpointNotPublishedError } = await import(
+		'@/utils/procurementEndpoint.util'
+	);
+	return { ...facade, ProcurementEndpointNotPublishedError };
 };
 
 afterEach(() => {
@@ -50,15 +56,15 @@ describe('stockReceipts.service (fachada)', () => {
 		results.forEach((result) => {
 			expect(result.status).toBe('rejected');
 			if (result.status === 'rejected') {
-				expect(result.reason).toBeInstanceOf(facade.StockReceiptsEndpointNotPublishedError);
+				expect(result.reason).toBeInstanceOf(facade.ProcurementEndpointNotPublishedError);
 			}
 		});
 		expect(fetchData).not.toHaveBeenCalled();
 		expect(() => facade.listWarehousesForStockReceipts([4])).toThrow(
-			facade.StockReceiptsEndpointNotPublishedError,
+			facade.ProcurementEndpointNotPublishedError,
 		);
 		expect(() => facade.getStockReceiptWarehouseBranchId(8)).toThrow(
-			facade.StockReceiptsEndpointNotPublishedError,
+			facade.ProcurementEndpointNotPublishedError,
 		);
 	});
 
@@ -68,7 +74,7 @@ describe('stockReceipts.service (fachada)', () => {
 		const error = await facade.getStockReceipt(1, 80).catch((reason: unknown) => reason);
 
 		expect(error).toMatchObject({
-			code: facade.STOCK_RECEIPTS_ENDPOINT_NOT_PUBLISHED,
+			code: PROCUREMENT_ENDPOINT_NOT_PUBLISHED,
 			endpoint: 'GET /subsidiaries/{subsidiary}/procurement/stock-receipts/{receipt}',
 		});
 		expect(getProcurementErrorMessage(error, 'genérico')).toMatch(

@@ -6,7 +6,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
-import { resetInventoryStockStoreForTests } from '@/services/procurement/inventoryStock.service';
+import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 
 const context = vi.hoisted(() => ({
 	branchId: 4 as number | null,
