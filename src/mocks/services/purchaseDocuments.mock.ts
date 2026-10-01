@@ -1,6 +1,6 @@
 import { purchaseDocuments as documentSeed } from '@/mocks/db/procurement.db';
 import { findPurchasableProcurementProduct } from '@/services/procurement/procurementProducts.service';
-import { getProcurementSupplier } from '@/services/procurement/procurementSuppliers.service';
+import { getProcurementSupplier } from '@/mocks/services/procurementSuppliers.mock';
 import {
 	clearAllPersistedMockState,
 	loadPersistedMockState,
@@ -49,8 +49,9 @@ import type {
  *
  * Simula `/api/subsidiaries/{subsidiary}/procurement/purchase-documents`
  * contra un store en memoria particionado por filial, con `ETag`/`If-Match`
- * e `Idempotency-Key`. Resuelve el proveedor con `getProcurementSupplier`:
- * las pruebas lo sustituyen por su doble con `vi.mock`.
+ * e `Idempotency-Key`. Resuelve el proveedor contra el maestro de prueba
+ * (`procurementSuppliers.mock`), nunca contra la API real: los ids de
+ * proveedor de este store son los de la semilla.
  */
 
 const MOCK_LATENCY_MS = 220;
@@ -107,7 +108,8 @@ const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subs
  * alcanza si el documento vinculado vuelve a nacer desde cero.
  */
 const PURCHASE_DOCUMENTS_STORAGE_NAMESPACE = 'purchase-documents';
-const PURCHASE_DOCUMENTS_STORAGE_VERSION = 1;
+/** v2: el proveedor pasó a resolverse contra el maestro de prueba. */
+const PURCHASE_DOCUMENTS_STORAGE_VERSION = 2;
 
 interface IPersistedPurchaseDocumentsState {
 	documents: IPurchaseDocument[];

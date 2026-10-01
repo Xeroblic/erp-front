@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import useAuthorization from '@/hooks/useAuthorization';
 import { listProcurementSuppliers } from '@/services/procurement/procurementSuppliers.service';
 import { resolveProcurementError } from '@/utils/procurementErrors.util';
-import type { IProcurementSupplierListRow } from '@/interface/procurement.interface';
+import type {
+	IApiCollectionEnvelope,
+	IProcurementSupplierListParams,
+	IProcurementSupplierListRow,
+} from '@/interface/procurement.interface';
 
 /**
  * Proveedores activos para el `Select` de los formularios de documento de
@@ -31,6 +35,11 @@ import type { IProcurementSupplierListRow } from '@/interface/procurement.interf
  * formulario (alta en línea). Se guarda aparte, con la filial en que se
  * creó, y se mezcla al render en vez de escribir sobre la lista cargada: así
  * una carga que resuelva después no lo borra, y otra filial no lo ve.
+ *
+ * `listSuppliers` cambia de dónde sale la lista. Por omisión es la API real;
+ * Recepciones, que sigue simulada, pasa su propio maestro de prueba
+ * (`listStockReceiptSuppliers`) para no ofrecer proveedores que su servicio no
+ * reconoce. Debe ser una referencia estable (una función de módulo).
  */
 
 export type TSupplierOptionsUnavailableReason = 'forbidden' | 'failed';
@@ -55,7 +64,16 @@ const bySupplierName = (
 	left.display_name.localeCompare(right.display_name, 'es', { sensitivity: 'base' }) ||
 	left.id - right.id;
 
-const useActiveSupplierOptions = (subsidiaryId: number | null, isEnabled: boolean) => {
+type TListSuppliers = (
+	subsidiaryId: number,
+	params: IProcurementSupplierListParams,
+) => Promise<IApiCollectionEnvelope<IProcurementSupplierListRow>>;
+
+const useActiveSupplierOptions = (
+	subsidiaryId: number | null,
+	isEnabled: boolean,
+	listSuppliers: TListSuppliers = listProcurementSuppliers,
+) => {
 	const [result, setResult] = useState<ISupplierOptionsResult | null>(null);
 	const [pendingSubsidiaryId, setPendingSubsidiaryId] = useState<number | null>(null);
 	const [added, setAdded] = useState<IAddedSupplier[]>([]);
@@ -73,7 +91,7 @@ const useActiveSupplierOptions = (subsidiaryId: number | null, isEnabled: boolea
 
 		let cancelled = false;
 		setPendingSubsidiaryId(subsidiaryId);
-		listProcurementSuppliers(subsidiaryId, { per_page: 100 })
+		listSuppliers(subsidiaryId, { per_page: 100 })
 			.then((response) => {
 				if (cancelled) return;
 				setResult({ subsidiaryId, rows: response.data, unavailableReason: null });
@@ -94,7 +112,7 @@ const useActiveSupplierOptions = (subsidiaryId: number | null, isEnabled: boolea
 		return () => {
 			cancelled = true;
 		};
-	}, [subsidiaryId, shouldFetch, reloadToken]);
+	}, [subsidiaryId, shouldFetch, reloadToken, listSuppliers]);
 
 	const currentResult =
 		subsidiaryId !== null && result?.subsidiaryId === subsidiaryId ? result : null;

@@ -6,6 +6,7 @@ import {
 	linkStockReceiptPurchaseDocument,
 	listStockReceipts,
 	listStockReceiptsForPurchaseDocument,
+	listStockReceiptSuppliers,
 	listWarehousesForStockReceipts,
 	postStockReceipt,
 	resetStockReceiptsStoreForTests,
@@ -35,15 +36,20 @@ import {
 	createProcurementProduct,
 	resetProcurementProductsStoreForTests,
 } from '@/services/procurement/procurementProducts.service';
+import {
+	getProcurementSupplier as getRealProcurementSupplier,
+	listProcurementSuppliers as listRealProcurementSuppliers,
+} from '@/services/procurement/procurementSuppliers.service';
+import { pcExpressSupplierFull } from '@/mocks/db/procurement.db';
 import type { IStockReceipt, IStockReceiptCreatePayload } from '@/interface/procurement.interface';
 
-// Estos servicios siguen siendo mock y validan `supplier_id` contra el
-// maestro, que ya es real: se sustituye por su doble en memoria para no
-// depender de la red.
-vi.mock(
-	'@/services/procurement/procurementSuppliers.service',
-	() => import('@/mocks/services/procurementSuppliers.mock'),
-);
+// El maestro real de proveedores no debe tocarse desde estos servicios
+// simulados: validan `supplier_id` contra el maestro de prueba. Si alguno
+// volviera a llamar a la API real, recibiría `undefined` y fallaría.
+vi.mock('@/services/procurement/procurementSuppliers.service', () => ({
+	getProcurementSupplier: vi.fn(),
+	listProcurementSuppliers: vi.fn(),
+}));
 
 /**
  * El servicio simula `/api/subsidiaries/{subsidiary}/procurement/
@@ -76,6 +82,8 @@ const ECOPC_WAREHOUSE_ID = 20; // sucursal 1
 const ECOPC_SHOWROOM_WAREHOUSE_ID = 21; // sucursal 1, también recibe mercadería
 const PC_EXPRESS_SUPPLIER_ID = 7;
 const CONTRERAS_SUPPLIER_ID = 15; // Marcelo Contreras (contrerasSupplierFull)
+/** Id de un proveedor que sólo existe en la API real (no en la semilla). */
+const REAL_ONLY_SUPPLIER_ID = 3;
 const MOUSE_PRODUCT_ID = 31;
 const KEYBOARD_PRODUCT_ID = 67;
 const KEYBOARD_DOCUMENT_ID = 61; // pcExpressKeyboardInvoiceDocument, confirmado
@@ -205,6 +213,8 @@ const createPostedManualReceipt = async (
 };
 
 afterEach(() => {
+	vi.mocked(getRealProcurementSupplier).mockReset();
+	vi.mocked(listRealProcurementSuppliers).mockReset();
 	resetStockReceiptsStoreForTests();
 	resetPurchaseDocumentsStoreForTests();
 	resetInventoryStockStoreForTests();
@@ -357,6 +367,80 @@ describe('createStockReceipt — sin documento', () => {
 		});
 		expect(data.items[0].cost.source).toBe('declared');
 		expect(data.items[0].cost.effective_basis).toBe('net');
+	});
+});
+
+describe('Proveedores de prueba, nunca los de la API real', () => {
+	const knownCostItem = {
+		product_id: MOUSE_PRODUCT_ID,
+		quantity: 3,
+		unit_cost: '5000.00',
+		unit_cost_basis: 'net' as const,
+	};
+	/** La API real conoce al proveedor 3; el maestro de prueba, no. */
+	const realApiKnowsSupplier = () =>
+		vi.mocked(getRealProcurementSupplier).mockResolvedValue({
+			data: {
+				...pcExpressSupplierFull,
+				id: REAL_ONLY_SUPPLIER_ID,
+				display_name: 'Distribuidora Recorrido SpA',
+			},
+		});
+
+	it('el alta resuelve el proveedor contra el maestro de prueba', async () => {
+		const { data } = await createStockReceipt(SUBSIDIARY_A, {
+			...manualPayload,
+			supplier_id: PC_EXPRESS_SUPPLIER_ID,
+			items: [knownCostItem],
+		});
+
+		expect(data.supplier).toMatchObject({
+			id: PC_EXPRESS_SUPPLIER_ID,
+			display_name: 'PCExpress',
+		});
+		expect(getRealProcurementSupplier).not.toHaveBeenCalled();
+	});
+
+	it('el alta rechaza un proveedor que sólo existe en la API real', async () => {
+		realApiKnowsSupplier();
+
+		const response = await readErrorData(
+			createStockReceipt(SUBSIDIARY_A, {
+				...manualPayload,
+				supplier_id: REAL_ONLY_SUPPLIER_ID,
+				items: [knownCostItem],
+			}),
+		);
+
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('SUPPLIER_NOT_FOUND');
+		expect(getRealProcurementSupplier).not.toHaveBeenCalled();
+	});
+
+	it('la edición rechaza un proveedor que sólo existe en la API real', async () => {
+		realApiKnowsSupplier();
+		const { headers } = await getStockReceipt(SUBSIDIARY_A, DRAFT_MANUAL_ID);
+
+		const response = await readErrorData(
+			updateStockReceipt(
+				SUBSIDIARY_A,
+				DRAFT_MANUAL_ID,
+				{ supplier_id: REAL_ONLY_SUPPLIER_ID },
+				{ etag: headers.etag },
+			),
+		);
+
+		expect(response.status).toBe(422);
+		expect(response.data.code).toBe('SUPPLIER_NOT_FOUND');
+		expect(getRealProcurementSupplier).not.toHaveBeenCalled();
+	});
+
+	it('el selector del alta lista el maestro de prueba, no la API real', async () => {
+		const { data } = await listStockReceiptSuppliers(SUBSIDIARY_A, { per_page: 100 });
+
+		expect(data.map((supplier) => supplier.id)).toContain(PC_EXPRESS_SUPPLIER_ID);
+		expect(data.map((supplier) => supplier.id)).not.toContain(REAL_ONLY_SUPPLIER_ID);
+		expect(listRealProcurementSuppliers).not.toHaveBeenCalled();
 	});
 });
 

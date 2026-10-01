@@ -17,7 +17,10 @@ import {
 	bumpPurchaseDocumentStockReceiptsCount,
 	findPurchaseDocumentForReceipts,
 } from '@/mocks/services/purchaseDocuments.mock';
-import { getProcurementSupplier } from '@/services/procurement/procurementSuppliers.service';
+import {
+	getProcurementSupplier,
+	listProcurementSuppliers,
+} from '@/mocks/services/procurementSuppliers.mock';
 import {
 	clearAllPersistedMockState,
 	loadPersistedMockState,
@@ -72,6 +75,12 @@ import type {
  * cola por documento, no dos» que ya resolvió `purchaseDocumentAttachments.service`
  * para adjuntos (ZF-109): acá no hace falta cola porque la mutación de
  * cobertura es síncrona (ver `applyStockReceiptCoverageDelta`).
+ *
+ * El proveedor se resuelve contra el **maestro de prueba**
+ * (`procurementSuppliers.mock`), no contra la API real: los documentos de
+ * prueba y la semilla usan esos ids, y mezclarlos con ids reales dejaba
+ * recepciones simuladas colgando de proveedores reales (ver
+ * `STOCK_RECEIPTS_USE_TEST_SUPPLIERS`).
  */
 
 const MOCK_LATENCY_MS = 220;
@@ -82,6 +91,20 @@ const MOCK_LATENCY_MS = 220;
  * tiempo perceptible, no un parpadeo que nadie alcanza a ver ni a probar.
  */
 export const STOCK_RECEIPT_WORKER_DELAY_MS = 900;
+
+/**
+ * Recepciones trabaja con proveedores de prueba mientras no tenga backend.
+ * Quien muestre datos de recepciones junto a un proveedor real (la ficha de
+ * Proveedores) lo consulta para no cruzar un id real con la semilla. Pasa a
+ * `false` el día que este servicio llame a la API real.
+ */
+export const STOCK_RECEIPTS_USE_TEST_SUPPLIERS = true;
+
+/**
+ * Proveedores que acepta este servicio, para el selector del alta sin
+ * documento: los del maestro de prueba, no los de la API real.
+ */
+export const listStockReceiptSuppliers = listProcurementSuppliers;
 
 interface IStockReceiptVersionedStore {
 	receipts: IStockReceipt[];
@@ -112,8 +135,11 @@ const STOCK_RECEIPTS_STORAGE_NAMESPACE = 'stock-receipts';
  * v2: la semilla sumó el historial de compras de proveedores
  * (`supplierPurchaseHistoryReceipts`). Un store v1 ya persistido hidrataría
  * sin esas recepciones y la ficha de proveedor seguiría vacía.
+ *
+ * v3: el proveedor pasó a resolverse contra el maestro de prueba. Un store v2
+ * puede traer recepciones con ids de proveedores reales.
  */
-const STOCK_RECEIPTS_STORAGE_VERSION = 2;
+const STOCK_RECEIPTS_STORAGE_VERSION = 3;
 
 interface IPersistedStockReceiptsState {
 	receipts: IStockReceipt[];

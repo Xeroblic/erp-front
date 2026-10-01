@@ -30,16 +30,18 @@ const authorizeMock = vi.fn<(options?: { permission?: string }) => boolean>();
 vi.mock('@/hooks/useAuthorization', () => ({
 	default: () => ({ authorize: authorizeMock, isLoading: false }),
 }));
-// Las recepciones siguen siendo mock: el hook sólo las pide con la bandera encendida.
-const mockFlag = vi.hoisted(() => ({ enabled: true }));
-vi.mock('@/config/inventoryStock.config', () => ({
-	get default() {
-		return mockFlag.enabled;
-	},
-}));
+// Datos simulados encendidos, como en `.env.development`: la bandera no debe
+// bastar para cruzar un proveedor real con las recepciones de prueba.
+vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
+// `testSuppliers` modela `STOCK_RECEIPTS_USE_TEST_SUPPLIERS`. Hoy es `true`;
+// las pruebas de carga lo apagan para ejercer el día en que Recepciones sea real.
+const receiptsSource = vi.hoisted(() => ({ testSuppliers: false }));
 vi.mock('@/services/procurement/stockReceipts.service', () => ({
 	listStockReceipts: vi.fn(),
 	getStockReceipt: vi.fn(),
+	get STOCK_RECEIPTS_USE_TEST_SUPPLIERS() {
+		return receiptsSource.testSuppliers;
+	},
 }));
 
 const listMock = vi.mocked(listStockReceipts);
@@ -133,11 +135,19 @@ describe('useSupplierSuppliedProducts', () => {
 		authorizeMock.mockReset();
 		listMock.mockReset();
 		detailMock.mockReset();
-		mockFlag.enabled = true;
+		receiptsSource.testSuppliers = false;
 	});
 
-	it('sin la bandera de datos simulados no consulta recepciones aunque tenga permiso', () => {
-		mockFlag.enabled = false;
+	it('Recepciones trabaja hoy con proveedores de prueba', async () => {
+		const actual = await vi.importActual<
+			typeof import('@/services/procurement/stockReceipts.service')
+		>('@/services/procurement/stockReceipts.service');
+
+		expect(actual.STOCK_RECEIPTS_USE_TEST_SUPPLIERS).toBe(true);
+	});
+
+	it('con proveedores de prueba no consulta recepciones aunque haya datos simulados y permiso', () => {
+		receiptsSource.testSuppliers = true;
 		authorizeMock.mockReturnValue(true);
 
 		const { result } = renderHook(() =>

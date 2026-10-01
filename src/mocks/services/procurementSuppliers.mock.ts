@@ -12,15 +12,15 @@ import type {
 } from '@/interface/procurement.interface';
 
 /**
- * Doble de pruebas del maestro de proveedores — sección 5 del contrato de
- * abastecimiento. **La app ya no lo usa**: consume el servicio real
- * `@/services/procurement/procurementSuppliers.service` (backend PR #93).
+ * Maestro de proveedores **de prueba** — sección 5 del contrato de
+ * abastecimiento. La pantalla de Proveedores no lo usa: consume el servicio
+ * real `@/services/procurement/procurementSuppliers.service` (backend PR #93).
  *
- * Se conserva para las pruebas de los servicios mock que todavía no tienen
- * backend (documentos de compra, recepciones, stock), que validan
- * `supplier_id` contra el maestro: las pruebas lo inyectan con
- * `vi.mock('@/services/procurement/procurementSuppliers.service', ...)` para
- * no depender de la red. Simula las seis rutas contra un store en memoria,
+ * Lo usan, en la app y en las pruebas, los servicios simulados que todavía no
+ * tienen backend (recepciones y el doble de documentos de compra): validan
+ * `supplier_id` contra este maestro y el alta de recepción sin documento lista
+ * desde acá. Así sus ids de proveedor son siempre los de la semilla y nunca
+ * se cruzan con los de la API real. Simula las seis rutas contra un store en memoria,
  * con la misma forma de éxito y de error — mismo envoltorio
  * `{data}`/`{data,links,meta}`, mismos códigos de la sección 16, misma
  * garantía de `Idempotency-Key`. No modela las comunas anidadas de la ficha

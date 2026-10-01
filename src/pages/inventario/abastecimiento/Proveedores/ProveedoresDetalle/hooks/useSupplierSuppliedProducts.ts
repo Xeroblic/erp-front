@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import useAuthorization from '@/hooks/useAuthorization';
-import { getStockReceipt, listStockReceipts } from '@/services/procurement/stockReceipts.service';
+import {
+	getStockReceipt,
+	listStockReceipts,
+	STOCK_RECEIPTS_USE_TEST_SUPPLIERS,
+} from '@/services/procurement/stockReceipts.service';
 import { PROCUREMENT_PER_PAGE_MAX } from '@/interface/procurement.interface';
 import type {
 	IStockReceipt,
@@ -29,9 +32,12 @@ import type { ISupplierSuppliedProductRow } from '../types';
  * muestra las filas ni el error del anterior, sin esperar al efecto de
  * limpieza.
  *
- * Las recepciones todavía son mock y el proveedor ya es real: sin
- * `VITE_INVENTORY_STOCK_USE_MOCKS` no se pide nada (`available: false`), para
- * que un proveedor real no muestre compras de la semilla con su mismo id.
+ * El proveedor de la ficha es real y Recepciones todavía trabaja con
+ * proveedores de prueba (`STOCK_RECEIPTS_USE_TEST_SUPPLIERS`): mientras sea
+ * así no se pide nada (`available: false`), ni siquiera con los datos
+ * simulados encendidos. Si se pidiera, un proveedor real vería compras de la
+ * semilla que comparten su id, o recepciones que no cuadran con su
+ * `purchase_summary`.
  */
 
 const DETAIL_CONCURRENCY = 4;
@@ -162,7 +168,7 @@ const useSupplierSuppliedProducts = ({
 	const canRead =
 		!checkingAccess &&
 		authorize({ permission: 'view-product', subsidiaryId, scope: 'visible' });
-	const available = INVENTORY_STOCK_USE_MOCKS;
+	const available = !STOCK_RECEIPTS_USE_TEST_SUPPLIERS;
 	const ownerKey =
 		available && canRead && subsidiaryId !== null && supplierId !== null
 			? `${subsidiaryId}:${supplierId}`

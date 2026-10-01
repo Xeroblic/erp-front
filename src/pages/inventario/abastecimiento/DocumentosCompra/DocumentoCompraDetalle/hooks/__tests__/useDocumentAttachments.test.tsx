@@ -17,15 +17,10 @@ import useDocumentAttachments from '../useDocumentAttachments';
  */
 
 // El servicio de adjuntos ya es real: estas pruebas ejercen el hook contra su
-// doble en memoria, que valida estado y cupo como el backend. Los documentos
-// mock validan `supplier_id` contra el maestro, también sustituido.
+// doble en memoria, que valida estado y cupo como el backend.
 vi.mock(
 	'@/services/procurement/purchaseDocumentAttachments.service',
 	() => import('@/mocks/services/purchaseDocumentAttachments.mock'),
-);
-vi.mock(
-	'@/services/procurement/procurementSuppliers.service',
-	() => import('@/mocks/services/procurementSuppliers.mock'),
 );
 
 const toastSpies = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));

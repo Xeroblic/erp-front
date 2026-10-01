@@ -4,7 +4,10 @@ import {
 	formatProcurementProductLabel,
 	listPurchasableProcurementProducts,
 } from '@/services/procurement/procurementProducts.service';
-import { listWarehousesForStockReceipts } from '@/services/procurement/stockReceipts.service';
+import {
+	listStockReceiptSuppliers,
+	listWarehousesForStockReceipts,
+} from '@/services/procurement/stockReceipts.service';
 import Modal, {
 	ModalHeader,
 	ModalBody,
@@ -133,12 +136,14 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 	const isManual = formik.values.mode === 'manual';
 	/** Con proveedor conocido el costo unitario pasa a ser obligatorio. */
 	const hasKnownSupplier = formik.values.supplier_id !== '';
+	// Recepciones sigue simulada: su servicio sólo reconoce el maestro de
+	// prueba, así que el selector no ofrece los proveedores reales.
 	const {
 		suppliers,
 		loading: loadingSuppliers,
 		unavailableReason: suppliersUnavailableReason,
 		reload: reloadSuppliers,
-	} = useActiveSupplierOptions(subsidiaryId, isOpen && isManual);
+	} = useActiveSupplierOptions(subsidiaryId, isOpen && isManual, listStockReceiptSuppliers);
 	const supplierOptions = suppliers.map((supplier) => ({
 		value: String(supplier.id),
 		label: `${supplier.display_name} · ${supplier.rut}`,
@@ -575,7 +580,8 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 												/>
 												<p className='text-xs text-zinc-500'>
 													Si lo indicas, el costo de cada producto pasa a
-													ser obligatorio.
+													ser obligatorio. Son proveedores de prueba, no
+													los registrados en Proveedores.
 												</p>
 											</div>
 										)}
