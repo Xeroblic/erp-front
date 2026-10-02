@@ -77,15 +77,11 @@ const apiStockReceipts: TStockReceiptsService = {
 	// se publiquen las recepciones; hasta entonces no se ofrece la semilla.
 	listWarehousesForStockReceipts: () => throwNotPublished('catálogo de bodegas de recepción'),
 	getStockReceiptWarehouseBranchId: () => throwNotPublished('catálogo de bodegas de recepción'),
-	// El maestro de proveedores sí está publicado. Se carga al usarlo: importarlo
-	// arriba arrastraría `ApiService` y el store al cargar la fachada, y cerraría
-	// un ciclo con `stockReceiptsSlice`.
-	listStockReceiptSuppliers: async (...args) => {
-		const { listProcurementSuppliers } = await import(
-			'@/services/procurement/procurementSuppliers.service'
-		);
-		return listProcurementSuppliers(...args);
-	},
+	// El maestro real de proveedores sí está publicado, pero este selector sólo
+	// sirve para crear una recepción, que no lo está. Llamarlo desde aquí, aun
+	// con import dinámico, cierra el ciclo `ApiService → store →
+	// stockReceiptsSlice → fachada`. Se conecta junto con la rama real.
+	listStockReceiptSuppliers: () => rejectNotPublished(`POST ${P}/stock-receipts`),
 };
 
 const stockReceipts: TStockReceiptsService = INVENTORY_STOCK_USE_MOCKS

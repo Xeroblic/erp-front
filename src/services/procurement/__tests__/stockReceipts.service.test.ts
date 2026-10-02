@@ -82,30 +82,20 @@ describe('stockReceipts.service (fachada)', () => {
 		);
 	});
 
-	it('sin datos simulados el selector de proveedores usa el maestro real', async () => {
-		const realSuppliers = { data: [], links: {}, meta: {} };
-		const listProcurementSuppliers = vi.fn().mockResolvedValue(realSuppliers);
-		vi.doMock('@/services/procurement/procurementSuppliers.service', () => ({
-			listProcurementSuppliers,
-		}));
-		const facade = await loadFacade(false);
-
-		const result = await facade.listStockReceiptSuppliers(1, { per_page: 100 });
-
-		expect(listProcurementSuppliers).toHaveBeenCalledWith(1, { per_page: 100 });
-		expect(result).toBe(realSuppliers);
-		vi.doUnmock('@/services/procurement/procurementSuppliers.service');
-	});
-
-	it('cargar la fachada no arrastra el maestro real de proveedores', async () => {
+	it('sin datos simulados el selector de proveedores rechaza sin cargar el maestro real', async () => {
 		const loadedSuppliers = vi.fn();
 		vi.doMock('@/services/procurement/procurementSuppliers.service', () => {
 			loadedSuppliers();
 			return { listProcurementSuppliers: vi.fn() };
 		});
+		const facade = await loadFacade(false);
 
-		await loadFacade(false);
+		const error = await facade
+			.listStockReceiptSuppliers(1, { per_page: 100 })
+			.catch((reason: unknown) => reason);
 
+		expect(error).toBeInstanceOf(facade.ProcurementEndpointNotPublishedError);
+		// Cargarlo cerraría el ciclo ApiService → store → stockReceiptsSlice → fachada.
 		expect(loadedSuppliers).not.toHaveBeenCalled();
 		vi.doUnmock('@/services/procurement/procurementSuppliers.service');
 	});
