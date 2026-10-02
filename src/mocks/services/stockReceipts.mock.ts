@@ -6,6 +6,7 @@ import {
 	STOCK_RECEIPT_CONSUMED_IDS,
 	stockReceipts as stockReceiptSeed,
 } from '@/mocks/db/procurement.db';
+import { extraStockReceiptsForSubsidiary } from '@/mocks/db/ecopcDemoProcurement.db';
 import {
 	applyStockReceiptToInventory,
 	linkStockReceiptDocumentInInventory,
@@ -138,8 +139,11 @@ const STOCK_RECEIPTS_STORAGE_NAMESPACE = 'stock-receipts';
  *
  * v3: el proveedor pasó a resolverse contra el maestro de prueba. Un store v2
  * puede traer recepciones con ids de proveedores reales.
+ *
+ * v4: la filial de Ecopc siembra las recepciones que nombran sus procedencias
+ * (`ecopcDemoProcurement.db`). Un store v3 hidrataría sin ellas.
  */
-const STOCK_RECEIPTS_STORAGE_VERSION = 3;
+const STOCK_RECEIPTS_STORAGE_VERSION = 4;
 
 interface IPersistedStockReceiptsState {
 	receipts: IStockReceipt[];
@@ -617,9 +621,12 @@ function scheduleWorker(subsidiaryId: number, receiptId: number): void {
 }
 
 const seedStore = (subsidiaryId: number): IStockReceiptVersionedStore => {
+	// Cada filial clona la semilla común; Ecopc suma las recepciones que
+	// nombran sus procedencias de ejemplo (`ecopcDemoProcurement.db`).
+	const seed = [...stockReceiptSeed, ...extraStockReceiptsForSubsidiary(subsidiaryId)];
 	const store: IStockReceiptVersionedStore = {
-		receipts: stockReceiptSeed.map(cloneReceipt),
-		versions: new Map(stockReceiptSeed.map((receipt) => [receipt.id, 1])),
+		receipts: seed.map(cloneReceipt),
+		versions: new Map(seed.map((receipt) => [receipt.id, 1])),
 	};
 	// La recepción sembrada en `queued` necesita un solicitante histórico
 	// coherente: `posted_by` no representa a un worker anónimo (sección 7), y

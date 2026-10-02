@@ -276,9 +276,9 @@ export const pcExpressSupplierFull: IProcurementSupplier = {
 	allowed_actions: ['update', 'deactivate'],
 	purchase_summary: {
 		last_purchase_on: '2026-09-04',
-		received_units: 128,
+		received_units: 138,
 		products_supplied_count: 6,
-		receipt_count: 14,
+		receipt_count: 15,
 	},
 };
 
@@ -766,7 +766,7 @@ export const keyboardInvoiceLineCost: IProcurementCost = {
 
 /**
  * Factura confirmada con capacidad **parcialmente** cubierta: de 20
- * teclados, 8 ya llegaron por `postedKeyboardStockReceipt` (recepción 80,
+ * teclados, 8 ya llegaron por `postedKeyboardStockReceipt` (recepción 76,
  * `procurement.db.ts` recepciones) y quedan 12 por recibir
  * (`remaining_quantity`). Existe para que la card 05 tenga un documento real
  * contra el que dar de alta recepciones «con documento» sin agotar su
@@ -1291,8 +1291,10 @@ export const reversedStockReceipt: IStockReceipt = {
 };
 
 /**
- * `posted` **con documento** (`pcExpressKeyboardInvoiceDocument`, línea 601):
- * mismo id `80` del ejemplo canónico de la sección 3/12 del contrato. Cubre 8
+ * `posted` **con documento** (`pcExpressKeyboardInvoiceDocument`, línea 601).
+ * Antes usaba el id `80`, que en el contrato es la recepción del mouse con la
+ * factura #1234 (`postedMouseInvoiceStockReceipt`): la procedencia 51 enlazaba
+ * a una recepción de teclados con otra factura. Cubre 8
  * de los 20 teclados — coincide con `received_quantity`/`received_distribution`
  * de esa línea — y queda **marcada como consumida** en el store del servicio
  * mock (`stockReceipts.mock`) para poder ejercer `409
@@ -1301,7 +1303,7 @@ export const reversedStockReceipt: IStockReceipt = {
  * mock lo simula marcando este id a propósito.
  */
 export const postedKeyboardStockReceipt: IStockReceipt = {
-	id: 80,
+	id: 76,
 	subsidiary_id: STOCK_RECEIPT_SUBSIDIARY_ID,
 	branch_id: STOCK_RECEIPT_BRANCH_ID,
 	status: 'posted',
@@ -1353,6 +1355,58 @@ export const postedKeyboardStockReceipt: IStockReceipt = {
 	},
 	posted_by: bodegaActor,
 	updated_at: '2026-08-29T10:15:00-03:00',
+};
+
+/**
+ * Recepción #80 del ejemplo canónico de la sección 3/12 del contrato: los 10
+ * mouse de la factura #1234 (`pcExpressInvoiceDocument`, línea 101). Es la que
+ * nombra la procedencia 51 y la única recepción que cuenta el documento
+ * (`related_counts.stock_receipts: 1`, `received_quantity: 10` ingresados en
+ * Bodega Central según `received_distribution`).
+ */
+export const postedMouseInvoiceStockReceipt: IStockReceipt = {
+	id: 80,
+	subsidiary_id: STOCK_RECEIPT_SUBSIDIARY_ID,
+	branch_id: STOCK_RECEIPT_BRANCH_ID,
+	status: 'posted',
+	warehouse: mainWarehouse,
+	supplier: pcExpressSupplier,
+	purchase_document: invoiceDocument,
+	received_on: '2026-09-04',
+	items_count: 1,
+	total_quantity: 10,
+	created_at: '2026-09-04T11:40:00-03:00',
+	posted_at: '2026-09-04T12:05:00-03:00',
+	allowed_actions: ['reverse'],
+	reason: null,
+	notes: null,
+	items: [
+		{
+			id: 907,
+			product: mouseProduct,
+			sku_snapshot: mouseProduct.sku,
+			name_snapshot: mouseProduct.name,
+			purchase_document_line_id: 101,
+			quantity: 10,
+			cost: grossEnteredCost,
+		},
+	],
+	inventory_operation_id: 'd4f4fbf5-9b4e-4e4d-8f5d-5c9e4b0acd34',
+	reversal_operation_id: null,
+	queued_at: '2026-09-04T11:41:00-03:00',
+	failed_at: null,
+	reversed_at: null,
+	cancellation_reason: null,
+	reversal_reason: null,
+	failure_code: null,
+	failure_message: null,
+	processing: {
+		attempt_count: 1,
+		last_attempt_at: '2026-09-04T12:05:00-03:00',
+		next_retry_at: null,
+	},
+	posted_by: bodegaActor,
+	updated_at: '2026-09-04T12:05:00-03:00',
 };
 
 /* =================================================
@@ -1504,8 +1558,9 @@ const buildPostedSupplierReceipt = (
  * de proveedor. Cuadra con el `purchase_summary` de cada ficha, que cuenta
  * sólo recepciones `posted`:
  *
- * - PCExpress: estas 13 + `postedKeyboardStockReceipt` = 14 recepciones, 128
- *   unidades, 6 productos, última compra `2026-09-04`. `queuedStockReceipt`
+ * - PCExpress: estas 13 + `postedKeyboardStockReceipt` +
+ *   `postedMouseInvoiceStockReceipt` = 15 recepciones, 138 unidades, 6
+ *   productos, última compra `2026-09-04`. `queuedStockReceipt`
  *   suma una más cuando el worker la publica, igual que en el backend.
  * - Marcelo Contreras: 3 recepciones, 30 unidades, 2 productos, última compra
  *   `2026-07-01` (`failedStockReceipt` no cuenta).
@@ -1577,6 +1632,7 @@ export const stockReceipts: IStockReceipt[] = [
 	cancelledStockReceipt,
 	reversedStockReceipt,
 	postedKeyboardStockReceipt,
+	postedMouseInvoiceStockReceipt,
 	...supplierPurchaseHistoryReceipts,
 ];
 

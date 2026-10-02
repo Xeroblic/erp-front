@@ -1,4 +1,5 @@
 import { purchaseDocuments as documentSeed } from '@/mocks/db/procurement.db';
+import { extraPurchaseDocumentsForSubsidiary } from '@/mocks/db/ecopcDemoProcurement.db';
 import { findPurchasableProcurementProduct } from '@/services/procurement/procurementProducts.service';
 import { getProcurementSupplier } from '@/mocks/services/procurementSuppliers.mock';
 import {
@@ -77,10 +78,14 @@ const cloneDocument = (document: IPurchaseDocument): IPurchaseDocument => ({
 	})),
 });
 
-const seedStore = (): IPurchaseDocumentVersionedStore => ({
-	documents: documentSeed.map(cloneDocument),
-	versions: new Map(documentSeed.map((document) => [document.id, 1])),
-});
+/** Cada filial clona la semilla común; Ecopc suma los documentos de su demo. */
+const seedStore = (subsidiaryId: number): IPurchaseDocumentVersionedStore => {
+	const seed = [...documentSeed, ...extraPurchaseDocumentsForSubsidiary(subsidiaryId)];
+	return {
+		documents: seed.map(cloneDocument),
+		versions: new Map(seed.map((document) => [document.id, 1])),
+	};
+};
 
 const storesBySubsidiary = new Map<number, IPurchaseDocumentVersionedStore>();
 const nextDocumentIdBySubsidiary = new Map<number, number>();
@@ -108,8 +113,13 @@ const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subs
  * alcanza si el documento vinculado vuelve a nacer desde cero.
  */
 const PURCHASE_DOCUMENTS_STORAGE_NAMESPACE = 'purchase-documents';
-/** v2: el proveedor pasó a resolverse contra el maestro de prueba. */
-const PURCHASE_DOCUMENTS_STORAGE_VERSION = 2;
+/**
+ * v2: el proveedor pasó a resolverse contra el maestro de prueba.
+ * v3: acompaña a recepciones v4, para no conservar la cobertura de
+ * recepciones que el store nuevo ya no tiene, y siembra los documentos de la
+ * demo de Ecopc.
+ */
+const PURCHASE_DOCUMENTS_STORAGE_VERSION = 3;
 
 interface IPersistedPurchaseDocumentsState {
 	documents: IPurchaseDocument[];
@@ -165,7 +175,7 @@ const persistSubsidiaryState = (subsidiaryId: number): void => {
 const getStore = (subsidiaryId: number): IPurchaseDocumentVersionedStore => {
 	let store = storesBySubsidiary.get(subsidiaryId);
 	if (store === undefined) {
-		store = hydrateStoreFromStorage(subsidiaryId) ?? seedStore();
+		store = hydrateStoreFromStorage(subsidiaryId) ?? seedStore(subsidiaryId);
 		storesBySubsidiary.set(subsidiaryId, store);
 	}
 	return store;

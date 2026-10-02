@@ -142,7 +142,8 @@ describe('Ficha de inventario', () => {
 		expect(await kpi('Disponibles para vender')).toHaveTextContent('1');
 		expect(await kpi('Reservadas')).toHaveTextContent('16');
 		expect(await kpi('No vendibles')).toHaveTextContent('2');
-		expect(await kpi('Sin documento de compra')).toHaveTextContent('5');
+		// 5 del conteo inicial + 4 del estante, que llegaron sin documento (#211).
+		expect(await kpi('Sin documento de compra')).toHaveTextContent('9');
 		expect(screen.getByText('Bajo el umbral')).toBeInTheDocument();
 		expect(screen.getByText('Avisa con 10 unidades o menos')).toBeInTheDocument();
 		// Precio en pesos, sin decimales.
@@ -164,12 +165,12 @@ describe('Ficha de inventario', () => {
 				'true',
 			),
 		);
+		// El estante sólo tiene lo que queda de la recepción #211, sin documento:
+		// cambia la lista y se ofrece documentarlo.
 		const shelf = await screen.findByRole('region', { name: 'Procedencias del producto' });
-		await waitFor(() =>
-			expect(
-				within(shelf).queryByRole('button', { name: 'Documentar' }),
-			).not.toBeInTheDocument(),
-		);
+		await within(shelf).findByText('Recepción #211');
+		expect(within(shelf).queryByText('Recepción #80')).not.toBeInTheDocument();
+		expect(within(shelf).getByRole('button', { name: 'Documentar' })).toBeInTheDocument();
 	});
 
 	it('cambiar el umbral actualiza el estado; vaciarlo lo desactiva', async () => {

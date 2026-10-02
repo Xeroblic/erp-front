@@ -72,7 +72,7 @@ const QUEUED_ID = 72;
 const FAILED_ID = 73;
 const CANCELLED_ID = 74;
 const REVERSED_ID = 75;
-const POSTED_CONSUMED_ID = 80; // postedKeyboardStockReceipt, marcada consumida
+const POSTED_CONSUMED_ID = 76; // postedKeyboardStockReceipt, marcada consumida
 
 const MAIN_WAREHOUSE_ID = 8;
 const SHELF_WAREHOUSE_ID = 12; // misma sucursal (4) que MAIN_WAREHOUSE_ID
@@ -223,9 +223,9 @@ afterEach(() => {
 
 describe('listStockReceipts', () => {
 	it('lista las recepciones semilla ordenadas por received_on DESC, ID DESC', async () => {
-		// 7 de estados + 16 del historial de compras de proveedores.
+		// 8 de estados (con la #80 del contrato) + 16 del historial de compras.
 		const result = await listStockReceipts(SUBSIDIARY_A, { per_page: 100 });
-		expect(result.data).toHaveLength(23);
+		expect(result.data).toHaveLength(24);
 		const sorted = [...result.data];
 		expect(result.data).toEqual(sorted);
 	});
@@ -552,7 +552,7 @@ describe('Ciclo de estados: draft → queued → posted', () => {
 
 		const document = findPurchaseDocumentForReceipts(SUBSIDIARY_A, KEYBOARD_DOCUMENT_ID)!;
 		const line = document.items.find((item) => item.id === KEYBOARD_DOCUMENT_LINE_ID)!;
-		// 8 ya recibidos por el fixture posted (id 80) + 4 de esta recepción.
+		// 8 ya recibidos por el fixture posted (id 76) + 4 de esta recepción.
 		expect(line.received_quantity).toBe(12);
 		expect(line.remaining_quantity).toBe(8);
 		expect(document.reception_status).toBe('partially_received');
@@ -672,7 +672,7 @@ describe('reverse', () => {
 
 		const document = findPurchaseDocumentForReceipts(SUBSIDIARY_A, KEYBOARD_DOCUMENT_ID)!;
 		const line = document.items.find((item) => item.id === KEYBOARD_DOCUMENT_LINE_ID)!;
-		// Vuelve a los 8 originales del fixture posted (id 80): la reversión
+		// Vuelve a los 8 originales del fixture posted (id 76): la reversión
 		// libera exactamente lo que esta recepción había aportado.
 		expect(line.received_quantity).toBe(8);
 		expect(line.remaining_quantity).toBe(12);
@@ -727,7 +727,7 @@ describe('Hallazgo 1: persistencia y reanudación tras recargar (revisión ZF-11
 
 		const document = findPurchaseDocumentForReceipts(SUBSIDIARY_A, KEYBOARD_DOCUMENT_ID)!;
 		const line = document.items.find((item) => item.id === KEYBOARD_DOCUMENT_LINE_ID)!;
-		// 8 del fixture posted (id 80) + 4 de esta recepción: ni se duplicó ni
+		// 8 del fixture posted (id 76) + 4 de esta recepción: ni se duplicó ni
 		// se perdió la cobertura al reconciliar tras la recarga.
 		expect(line.received_quantity).toBe(12);
 	});
@@ -819,7 +819,7 @@ describe('Hallazgo 2: capacidad agregada y vigente del documento', () => {
 		const lineAfterFail = documentAfterFail.items.find(
 			(item) => item.id === KEYBOARD_DOCUMENT_LINE_ID,
 		)!;
-		// 8 del fixture (id 80) + 8 de `first` = 16; nunca 24 (el exceso de
+		// 8 del fixture (id 76) + 8 de `first` = 16; nunca 24 (el exceso de
 		// `second` no se aplicó), y el saldo nunca queda negativo.
 		expect(lineAfterFail.received_quantity).toBe(16);
 		expect(lineAfterFail.remaining_quantity).toBe(4);
