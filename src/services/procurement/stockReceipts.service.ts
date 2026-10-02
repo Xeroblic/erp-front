@@ -28,7 +28,10 @@ import {
 /**
  * Recepciones trabaja con proveedores de prueba mientras no tenga backend.
  * Quien muestre datos de recepciones junto a un proveedor real (la ficha de
- * Proveedores) lo consulta para no cruzar un id real con la semilla. Pasa a
+ * Proveedores) lo consulta para no cruzar un id real con la semilla. Lo mismo
+ * vale para sus documentos vinculados, que salen de la semilla de documentos:
+ * las fichas de recepción e inventario no enlazan proveedor ni documento a las
+ * fichas reales mientras sea `true` (`@/config/procurementLinks`). Pasa a
  * `false` el día que la rama real de esta fachada llame a rutas publicadas.
  */
 export const STOCK_RECEIPTS_USE_TEST_SUPPLIERS = true;

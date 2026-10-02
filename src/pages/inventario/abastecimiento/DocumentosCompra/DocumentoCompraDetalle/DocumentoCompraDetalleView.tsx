@@ -19,6 +19,7 @@ import ConfirmPurchaseDocumentModal from '../components/modals/ConfirmPurchaseDo
 import CancelPurchaseDocumentModal from '../components/modals/CancelPurchaseDocumentModal';
 import DocumentAttachmentsCard from './components/parts/DocumentAttachmentsCard';
 import RelatedCountsCard from './components/parts/RelatedCountsCard';
+import PurchaseDocumentSupplierField from './components/parts/PurchaseDocumentSupplierField';
 import useDocumentoCompraDetalle from './hooks/useDocumentoCompraDetalle';
 
 /**
@@ -44,6 +45,7 @@ const DocumentoCompraDetalleView = () => {
 		setIsCancelModalOpen,
 		allowedActions,
 		isReceiptDeferred,
+		supplierLink,
 		attachmentsCardRef,
 		handleAction,
 		goToList,
@@ -173,19 +175,10 @@ const DocumentoCompraDetalleView = () => {
 							</CardHeader>
 							<CardBody className='space-y-4'>
 								<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-									<div>
-										<p className='text-xs uppercase text-zinc-500'>Proveedor</p>
-										{document.supplier ? (
-											<p>
-												{document.supplier.display_name}{' '}
-												<span className='font-mono text-xs text-zinc-500'>
-													({document.supplier.rut})
-												</span>
-											</p>
-										) : (
-											<p className='text-zinc-400'>Sin proveedor</p>
-										)}
-									</div>
+									<PurchaseDocumentSupplierField
+										supplier={document.supplier}
+										supplierLink={supplierLink}
+									/>
 									<div>
 										<p className='text-xs uppercase text-zinc-500'>
 											Fecha de emisión

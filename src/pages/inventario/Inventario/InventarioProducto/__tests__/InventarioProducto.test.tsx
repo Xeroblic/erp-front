@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryOverview from '@/store/slices/procurement/inventoryOverviewSlice';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import InventarioProductoView from '@/pages/inventario/Inventario/InventarioProducto/InventarioProductoView';
+import InventoryOrigins from '@/pages/inventario/Inventario/InventarioProducto/components/InventoryOrigins';
 import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 import { resetStockReceiptsStoreForTests } from '@/mocks/services/stockReceipts.mock';
 import { resetInventoryCriticalThresholdsForTests } from '@/mocks/services/inventoryOverview.mock';
@@ -65,6 +66,8 @@ vi.mock('@/components/form/SelectReact', () => ({
 }));
 
 const MOUSE_ID = 31;
+/** Ubicación de la procedencia 51 (recepción #80) del mouse en la sucursal 4. */
+const UNLOCATED = { unlocated: 1 } as const;
 const CABLE_ID = 58;
 
 const auth = createSlice({
@@ -81,6 +84,9 @@ const auth = createSlice({
 	reducers: {
 		grant(state, action: { payload: string }) {
 			state.user.permisos.push(action.payload);
+		},
+		revoke(state, action: { payload: string }) {
+			state.user.permisos = state.user.permisos.filter((p) => p !== action.payload);
 		},
 	},
 });
@@ -171,6 +177,51 @@ describe('Ficha de inventario', () => {
 		await within(shelf).findByText('Recepción #211');
 		expect(within(shelf).queryByText('Recepción #80')).not.toBeInTheDocument();
 		expect(within(shelf).getByRole('button', { name: 'Documentar' })).toBeInTheDocument();
+	});
+
+	describe('Enlaces de las procedencias', () => {
+		it('con `view-product` la recepción enlaza a su ficha', async () => {
+			renderFicha(MOUSE_ID, ['view-procurement-supplier']);
+			const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+
+			expect(
+				await within(region).findByRole('link', {
+					name: 'Ficha de la recepción: Recepción #80',
+				}),
+			).toHaveAttribute('href', '/inventario/abastecimiento/recepciones/80');
+			// Proveedor y documento salen de la semilla de prueba mientras
+			// Recepciones sea simulada: no se enlazan a las fichas reales aunque
+			// quien mira tenga los permisos.
+			expect(within(region).queryByRole('link', { name: /PCExpress/ })).toBeNull();
+			expect(within(region).queryByRole('link', { name: /Factura/ })).toBeNull();
+		});
+
+		// La ficha entera exige `view-product`; el componente se monta solo para
+		// ejercer su rama sin permiso, por si se reutiliza en otra pantalla.
+		it('sin `view-product` la recepción queda como texto', async () => {
+			const store = configureStore({
+				reducer: { inventoryOverview, inventoryStock, auth: auth.reducer },
+			});
+			store.dispatch(auth.actions.revoke('view-product'));
+			render(
+				<Provider store={store}>
+					<MemoryRouter>
+						<InventoryOrigins
+							branchId={4}
+							subsidiaryId={2}
+							productId={MOUSE_ID}
+							owner='sin-permiso'
+							location={UNLOCATED}
+							onDocumented={() => undefined}
+						/>
+					</MemoryRouter>
+				</Provider>,
+			);
+			const region = screen.getByRole('region', { name: 'Procedencias del producto' });
+
+			await within(region).findByText('Recepción #80');
+			expect(within(region).queryByRole('link')).not.toBeInTheDocument();
+		});
 	});
 
 	it('cambiar el umbral actualiza el estado; vaciarlo lo desactiva', async () => {

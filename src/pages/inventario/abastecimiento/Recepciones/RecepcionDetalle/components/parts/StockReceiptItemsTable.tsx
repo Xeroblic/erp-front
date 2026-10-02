@@ -1,13 +1,16 @@
 import React from 'react';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-import { ProductCard, CostBlock } from '@/components/procurement';
+import { CostBlock, DetailLink, ProductCard } from '@/components/procurement';
+import type { IPageLink } from '@/config/procurementLinks';
 import type { IStockReceiptItem } from '@/interface/procurement.interface';
 
 interface IStockReceiptItemsTableProps {
 	items: IStockReceiptItem[];
 	/** Número del documento vinculado, para nombrar el origen de cada línea. */
 	documentNumber: string | null;
+	/** Ficha del documento vinculado, o `null` si no hay una real a la que ir. */
+	documentLink: IPageLink | null;
 }
 
 /**
@@ -19,6 +22,7 @@ interface IStockReceiptItemsTableProps {
 const StockReceiptItemsTable: React.FC<IStockReceiptItemsTableProps> = ({
 	items,
 	documentNumber,
+	documentLink,
 }) => (
 	<Card>
 		<CardHeader>
@@ -54,9 +58,13 @@ const StockReceiptItemsTable: React.FC<IStockReceiptItemsTableProps> = ({
 							<Td>
 								{item.purchase_document_line_id !== null ? (
 									<span className='text-sm text-zinc-500'>
-										{documentNumber
-											? `Documento ${documentNumber}`
-											: 'Documento de compra'}
+										<DetailLink
+											link={documentLink}
+											srLabel='Ficha del documento de compra'>
+											{documentNumber
+												? `Documento ${documentNumber}`
+												: 'Documento de compra'}
+										</DetailLink>
 									</span>
 								) : (
 									<span className='text-sm text-zinc-500'>
