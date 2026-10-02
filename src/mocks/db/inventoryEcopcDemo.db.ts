@@ -266,7 +266,7 @@ export const ecopcDemoOrigins: IInventorySeedOrigin[] = [
 
 /**
  * Operación ya confirmada en la sucursal después de sus procedencias.
- * `inventoryStock.service` las aplica al sembrar la sucursal con la misma
+ * `inventoryStock.mock` las aplica al sembrar la sucursal con la misma
  * lógica que los traslados y ajustes reales, así que el stock de Inventario y
  * la trazabilidad cuentan la misma historia.
  */

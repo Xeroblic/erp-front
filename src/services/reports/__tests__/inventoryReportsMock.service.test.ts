@@ -6,8 +6,8 @@ import {
 import {
 	resetInventoryCriticalThresholdsForTests,
 	updateInventoryCriticalThreshold,
-} from '@/services/procurement/inventoryOverview.service';
-import { resetInventoryStockStoreForTests } from '@/services/procurement/inventoryStock.service';
+} from '@/mocks/services/inventoryOverview.mock';
+import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 import { clearAllPersistedMockState } from '@/services/procurement/procurementMockPersistence.util';
 import type { IInventoryReportBranch } from '@/interface/inventoryReports.interface';
 

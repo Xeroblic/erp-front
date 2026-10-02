@@ -41,7 +41,7 @@ import type {
  * real `@/services/procurement/purchaseDocuments.service` (backend PR #84/#92).
  *
  * Se conserva porque Recepciones e Inventario siguen sin backend: sus
- * servicios mock (`stockReceipts.service`, `inventoryStock.service`) leen y
+ * servicios mock (`stockReceipts.mock`, `inventoryStock.mock`) leen y
  * escriben la cobertura de estos documentos (`findPurchaseDocumentForReceipts`,
  * `applyStockReceiptCoverageDelta`, …), y el selector de documentos del alta
  * de recepción lista desde acá. Por eso los ids de este store son los de la
@@ -1134,12 +1134,12 @@ export const cancelPurchaseDocument = (
 
 /**
  * `GET .../initial-stock-allocations` (sección 6) ya no vive acá: las
- * asignaciones reales viven en `inventoryStock.service` (el store que las
+ * asignaciones reales viven en `inventoryStock.mock` (el store que las
  * posee, sección 8), que las expone como
  * `listInitialStockAllocationsForPurchaseDocument` — mismo criterio que
  * `GET .../stock-receipts` (hallazgo 9, revisión ZF-110): importarlo desde
  * este archivo crearía el ciclo que ese servicio evita a propósito, porque
- * `inventoryStock.service` sí importa de acá (`findPurchaseDocumentForReceipts`)
+ * `inventoryStock.mock` sí importa de acá (`findPurchaseDocumentForReceipts`)
  * para resolver el documento y su línea al documentar.
  */
 
@@ -1202,7 +1202,7 @@ export const findPurchaseDocumentForReceipts = (
 };
 
 /**
- * Sólo para `inventoryStock.service` (card 07, sección 8): el payload de
+ * Sólo para `inventoryStock.mock` (card 07, sección 8): el payload de
  * `document-allocations` sólo trae `purchase_document_line_id` — a
  * diferencia de vincular un documento a una recepción (mismo endpoint 1 de
  * la sección 8), acá no viaja `purchase_document_id` — así que resolver el

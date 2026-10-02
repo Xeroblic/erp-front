@@ -14,7 +14,8 @@ Cada punto se marca como:
 
 Estado del frontend: el módulo existe en `src/pages/inventario/Inventario/` y funciona con datos
 simulados (`VITE_INVENTORY_STOCK_USE_MOCKS=true`) sobre el mismo mock de
-`inventoryStock.service`. Al publicarse el backend sólo cambia el servicio.
+`src/mocks/services/inventoryStock.mock.ts`. La UI pasa por las fachadas de
+`src/services/procurement/`: al publicarse el backend sólo cambia su rama real.
 
 ---
 
@@ -40,7 +41,7 @@ serie) y exige `view-inventory-movements`. La pestaña lista las operaciones de 
 filtros de tipo, ubicación, fechas y búsqueda; la ficha de producto muestra las mismas filtradas
 por `product_id`. Cada operación se despliega con su detalle y marca los ítems que coinciden.
 Tipos en `src/interface/inventoryOperations.interface.ts`; mientras el endpoint no exista, el mock
-`src/services/procurement/inventoryOperations.service.ts` la reconstruye del stock simulado.
+`src/mocks/services/inventoryOperations.mock.ts` la reconstruye del stock simulado.
 Preguntas 23–26 de `Docs/abastecimiento-preguntas-backend.md`.
 
 Reportes › Inventario (`S/reports`) concentra umbrales, estadísticas y sugerencias (R1–R4). La

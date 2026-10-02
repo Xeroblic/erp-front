@@ -28,8 +28,9 @@ import type {
 
 /**
  * Store de recepciones físicas (card 05, sección 7 del contrato). Mismo
- * patrón que `purchaseDocumentsSlice`: los thunks llaman al servicio mock de
- * `@/services/procurement/stockReceipts.service`, particionado por filial, y
+ * patrón que `purchaseDocumentsSlice`: los thunks llaman a la fachada
+ * `@/services/procurement/stockReceipts.service` (hoy, el doble simulado
+ * mientras el backend no publique las rutas), particionada por filial, y
  * guardan el `ETag` de `current` junto con la ficha para el `If-Match` de
  * `update`.
  *

@@ -34,6 +34,8 @@ vi.mock('@/hooks/useAuthorization', () => ({
 	default: () => ({ authorize: mocks.authorize }),
 }));
 vi.mock('react-toastify', () => ({ toast: mocks.toast }));
+// Recepciones sólo opera con datos simulados: la bodega se resuelve contra el doble.
+vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
 
 const MAIN_WAREHOUSE_ID = 8; // sucursal 4
 const SOUTH_BRANCH_WAREHOUSE_ID = 15; // sucursal 6

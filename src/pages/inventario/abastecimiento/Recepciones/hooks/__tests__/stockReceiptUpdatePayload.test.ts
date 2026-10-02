@@ -3,7 +3,7 @@ import {
 	getStockReceipt,
 	resetStockReceiptsStoreForTests,
 	updateStockReceipt,
-} from '@/services/procurement/stockReceipts.service';
+} from '@/mocks/services/stockReceipts.mock';
 import { getProcurementSupplier } from '@/mocks/services/procurementSuppliers.mock';
 import { toFormValues, toUpdatePayload } from '../useStockReceiptForm';
 

@@ -14,12 +14,12 @@ import type { IInventorySeedOrigin } from '@/mocks/db/inventoryStock.db';
 import {
 	getInventoryCriticalThreshold,
 	readInventoryBranchRows,
-} from '@/services/procurement/inventoryOverview.service';
+} from '@/mocks/services/inventoryOverview.mock';
 import {
 	inventoryMockDelay,
 	inventoryMockError,
 	readInventoryBranchOrigins,
-} from '@/services/procurement/inventoryStock.service';
+} from '@/mocks/services/inventoryStock.mock';
 
 /**
  * Mock de R1–R3 de Reportes › Inventario (`GET S/reports/{type}`,
