@@ -292,7 +292,8 @@ export const privatePages = {
 			proveedores: {
 				id: 'proveedores',
 				to: '/inventario/abastecimiento/proveedores',
-				text: 'Proveedores',
+				// «de compras» lo distingue de Catálogos › Proveedores (revisión técnica).
+				text: 'Proveedores de compras',
 				icon: 'HeroBuildingStorefront',
 				// Card 02 del módulo de abastecimiento (mock, PR #67 del backend):
 				// maestro de proveedores comerciales de compras. Permiso propio de la
