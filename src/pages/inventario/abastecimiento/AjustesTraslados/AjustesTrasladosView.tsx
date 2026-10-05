@@ -11,7 +11,10 @@ import Pages from '@/config/pages.config';
 import useAjustesTraslados from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useAjustesTraslados';
 import AdjustmentPanel from '@/pages/inventario/abastecimiento/AjustesTraslados/components/adjustment/AdjustmentPanel';
 import TransferPanel from '@/pages/inventario/abastecimiento/AjustesTraslados/components/transfer/TransferPanel';
-import type { AjustesTrasladosTab } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
+import type {
+	AjustesTrasladosTab,
+	IAjustesTrasladosPreselection,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 
 interface AjustesTrasladosTabsProps {
 	branchId: number;
@@ -19,6 +22,7 @@ interface AjustesTrasladosTabsProps {
 	owner: string;
 	activeTab: AjustesTrasladosTab;
 	onTabChange: (tabId: string) => void;
+	preselection: IAjustesTrasladosPreselection;
 }
 
 const AjustesTrasladosTabs = ({
@@ -27,6 +31,7 @@ const AjustesTrasladosTabs = ({
 	owner,
 	activeTab,
 	onTabChange,
+	preselection,
 }: AjustesTrasladosTabsProps) => {
 	// Sólo la pestaña activa está montada: cambiar de pestaña reinicia el
 	// asistente de la otra. Mientras una escritura está en curso o espera
@@ -74,6 +79,7 @@ const AjustesTrasladosTabs = ({
 							owner={owner}
 							branchId={branchId}
 							subsidiaryId={subsidiaryId}
+							preselection={preselection}
 							onBusyChange={setBusy}
 						/>
 					)}
@@ -84,7 +90,12 @@ const AjustesTrasladosTabs = ({
 					icon='HeroArrowsRightLeft'
 					disabled={busy && activeTab !== 'traslado'}>
 					{activeTab === 'traslado' && (
-						<TransferPanel owner={owner} branchId={branchId} onBusyChange={setBusy} />
+						<TransferPanel
+							owner={owner}
+							branchId={branchId}
+							preselection={preselection}
+							onBusyChange={setBusy}
+						/>
 					)}
 				</Tab>
 			</Tabs>
@@ -93,7 +104,8 @@ const AjustesTrasladosTabs = ({
 };
 
 const AjustesTrasladosView = () => {
-	const { access, branchId, subsidiaryId, owner, activeTab, changeTab } = useAjustesTraslados();
+	const { access, branchId, subsidiaryId, owner, activeTab, changeTab, preselection } =
+		useAjustesTraslados();
 
 	let content;
 	if (access === 'loading') content = <p role='status'>Comprobando acceso…</p>;
@@ -128,6 +140,7 @@ const AjustesTrasladosView = () => {
 				subsidiaryId={subsidiaryId}
 				activeTab={activeTab}
 				onTabChange={changeTab}
+				preselection={preselection}
 			/>
 		);
 

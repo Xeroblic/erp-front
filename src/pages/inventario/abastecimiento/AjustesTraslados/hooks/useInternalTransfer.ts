@@ -8,7 +8,10 @@ import {
 	fetchInventoryStock,
 	inventoryStockQueryKey,
 } from '@/store/slices/procurement/inventoryStockSlice';
-import { getInventoryWarehouses } from '@/services/procurement/inventoryStock.service';
+import {
+	getInventoryWarehouses,
+	listInventoryStock,
+} from '@/services/procurement/inventoryStock.service';
 import {
 	locationStockParams,
 	locationToken,
@@ -24,18 +27,58 @@ import type {
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/transfer.types';
 import useStepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useStepWizard';
 import {
+	NO_PRESELECTION,
+	resolvePreselectedLocation,
 	TRASLADO_STEPS,
+	type IAjustesTrasladosPreselection,
 	type TTrasladoStep,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
-import type {
-	IInventoryStockRow,
-	IWarehouseStockMovement,
-	IWarehouseStockMovementPayload,
-	TStockCondition,
+import {
+	PROCUREMENT_PER_PAGE_MAX,
+	type IInventoryStockRow,
+	type IWarehouseStockMovement,
+	type IWarehouseStockMovementPayload,
+	type TStockCondition,
 } from '@/interface/procurement.interface';
 
 /** Nombre y SKU de lo trasladado, para que el resultado siga legible tras limpiar el formulario. */
 export type TProductNames = Record<number, { name: string; sku: string }>;
+
+/** Productos del origen por página: el máximo del contrato. */
+const ORIGIN_PAGE_SIZE = PROCUREMENT_PER_PAGE_MAX;
+
+/** Búsqueda del producto preseleccionado más allá de la primera página del origen. */
+interface IPreselectedProductLookup {
+	from: string;
+	productId: number;
+	lastPage: number;
+}
+
+/**
+ * Recorre las páginas 2…`lastPage` del stock del origen hasta encontrar el
+ * producto. El contrato de `GET B/inventory-stock` no filtra por producto y
+ * `per_page` ya está en su máximo, así que es la única forma de resolverlo sin
+ * adivinar por nombre.
+ */
+const findOriginRow = async (
+	branchId: number,
+	{ from, productId, lastPage }: IPreselectedProductLookup,
+	signal: AbortSignal,
+): Promise<IInventoryStockRow | null> => {
+	for (let page = 2; page <= lastPage; page += 1) {
+		// Secuencial a propósito: se detiene en la página que lo trae.
+		// eslint-disable-next-line no-await-in-loop
+		const response = await listInventoryStock(
+			branchId,
+			{ ...locationStockParams(from), page, per_page: ORIGIN_PAGE_SIZE },
+			signal,
+		);
+		const row = response.data.find((candidate) => candidate.product.id === productId);
+		if (row) return row;
+		if (page >= response.meta.last_page) break;
+	}
+	return null;
+};
 
 export interface ITrasladoResult {
 	movement: IWarehouseStockMovement;
@@ -51,7 +94,11 @@ export interface ITrasladoResult {
  * `StockPorUbicacion`: un cambio de contexto desmonta el formulario en vez de
  * dejar que un efecto de limpieza alcance a borrarlo.
  */
-export default function useInternalTransfer(branchId: number, context: string) {
+export default function useInternalTransfer(
+	branchId: number,
+	context: string,
+	preselection: IAjustesTrasladosPreselection = NO_PRESELECTION,
+) {
 	const session = useId();
 	const dispatch = useAppDispatch();
 	const raw = useAppSelector((state) => state.inventoryStock.list);
@@ -62,6 +109,28 @@ export default function useInternalTransfer(branchId: number, context: string) {
 	const [itemsChecked, setItemsChecked] = useState(false);
 
 	const warehouses = useMemo(() => getInventoryWarehouses(branchId), [branchId]);
+	/** Origen que trae la URL, sólo si es una ubicación de la sucursal activa. */
+	const [initialOrigin] = useState(
+		() => resolvePreselectedLocation(preselection.location, warehouses) ?? '',
+	);
+	/**
+	 * Producto que trae la URL, a la espera del stock del origen: sólo se
+	 * elige si el origen lo tiene. Se consume una vez — aplicado o descartado —
+	 * y cambiar el origen antes de resolverlo lo descarta.
+	 */
+	const pendingProductRef = useRef<number | null>(initialOrigin ? preselection.productId : null);
+	/**
+	 * Si el producto no viene en la primera página del origen, se busca en las
+	 * siguientes (`productLookup`) y su fila se suma al catálogo del origen
+	 * (`resolvedRow`): sin ella tampoco podría mostrarse en el selector.
+	 */
+	const lookupStartedRef = useRef(false);
+	const [productLookup, setProductLookup] = useState<IPreselectedProductLookup | null>(null);
+	const [resolvedRow, setResolvedRow] = useState<{
+		from: string;
+		row: IInventoryStockRow;
+	} | null>(null);
+
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo registrar el traslado.',
 		renewKeyOnDefinitiveError: true,
@@ -86,7 +155,7 @@ export default function useInternalTransfer(branchId: number, context: string) {
 	);
 
 	const formik = useFormik<ITrasladoFormValues>({
-		initialValues: { from: '', to: '', reason: '', items: [emptyTrasladoItem()] },
+		initialValues: { from: initialOrigin, to: '', reason: '', items: [emptyTrasladoItem()] },
 		validationSchema: TrasladoSchema,
 		onSubmit: async (formValues, helpers) => {
 			const payload: IWarehouseStockMovementPayload = {
@@ -121,6 +190,8 @@ export default function useInternalTransfer(branchId: number, context: string) {
 			);
 			if (!movement) return;
 
+			// Su saldo quedó viejo tras el traslado; el origen se vuelve a pedir.
+			setResolvedRow(null);
 			setResult({ movement, products, fromLabel, toLabel });
 			const units = movement.items.reduce((total, item) => total + item.quantity, 0);
 			toast.success(
@@ -150,7 +221,7 @@ export default function useInternalTransfer(branchId: number, context: string) {
 			branchId,
 			ownerContext: `traslado:${context}:${session}`,
 			params: values.from
-				? { ...locationStockParams(values.from), page: 1, per_page: 100 }
+				? { ...locationStockParams(values.from), page: 1, per_page: ORIGIN_PAGE_SIZE }
 				: {},
 		}),
 		[branchId, context, session, values.from],
@@ -159,7 +230,10 @@ export default function useInternalTransfer(branchId: number, context: string) {
 	const isCurrent = raw.ownerContext === queryKey;
 	const originResponse = isCurrent ? raw.response : null;
 	const originError = isCurrent ? raw.error : null;
-	const loadingOrigin = Boolean(values.from) && (!isCurrent || raw.loading);
+	const loadingFirstPage = Boolean(values.from) && (!isCurrent || raw.loading);
+	// Mientras se busca el producto preseleccionado el selector sigue «cargando»:
+	// así nadie elige otro producto que la búsqueda luego pisaría.
+	const loadingOrigin = loadingFirstPage || productLookup !== null;
 
 	const hasOrigin = Boolean(values.from);
 	useEffect(() => {
@@ -170,11 +244,65 @@ export default function useInternalTransfer(branchId: number, context: string) {
 		};
 	}, [dispatch, request, retry, hasOrigin]);
 
-	const originRows: IInventoryStockRow[] = useMemo(
-		() => originResponse?.data ?? [],
-		[originResponse],
-	);
+	const originRows: IInventoryStockRow[] = useMemo(() => {
+		const rows = originResponse?.data ?? [];
+		if (
+			!resolvedRow ||
+			resolvedRow.from !== values.from ||
+			rows.some((row) => row.product.id === resolvedRow.row.product.id)
+		)
+			return rows;
+		return [...rows, resolvedRow.row];
+	}, [originResponse, resolvedRow, values.from]);
 	originRowsRef.current = originRows;
+
+	/* Aplica el producto preseleccionado o, si no está en la primera página, lo busca. */
+	useEffect(() => {
+		const pending = pendingProductRef.current;
+		if (pending === null || loadingFirstPage || productLookup !== null) return;
+		if (originRows.some((row) => row.product.id === pending)) {
+			pendingProductRef.current = null;
+			const [first, ...rest] = values.items;
+			// Sólo sobre la línea en blanco con que abre el asistente.
+			if (rest.length === 0 && first && first.productId === '')
+				void setFieldValue('items', [{ ...first, productId: pending }]);
+			return;
+		}
+		const lastPage = originResponse?.meta.last_page ?? 1;
+		if (originError || lookupStartedRef.current || lastPage <= 1) {
+			pendingProductRef.current = null;
+			return;
+		}
+		lookupStartedRef.current = true;
+		setProductLookup({ from: values.from, productId: pending, lastPage });
+	}, [
+		loadingFirstPage,
+		productLookup,
+		originRows,
+		originResponse,
+		originError,
+		values.from,
+		values.items,
+		setFieldValue,
+	]);
+
+	useEffect(() => {
+		if (!productLookup) return undefined;
+		const controller = new AbortController();
+		findOriginRow(branchId, productLookup, controller.signal).then(
+			(row) => {
+				if (controller.signal.aborted) return;
+				if (row) setResolvedRow({ from: productLookup.from, row });
+				setProductLookup(null);
+			},
+			() => {
+				// Un error al buscar deja el asistente como si el origen no lo
+				// tuviera: el producto se descarta y el traslado sigue disponible.
+				if (!controller.signal.aborted) setProductLookup(null);
+			},
+		);
+		return () => controller.abort();
+	}, [branchId, productLookup]);
 
 	/** Saldo de la condición elegida en el origen, para el aviso por línea. */
 	const balanceFor = useCallback(
@@ -222,6 +350,9 @@ export default function useInternalTransfer(branchId: number, context: string) {
 	 */
 	const setOrigin = useCallback(
 		(token: string) => {
+			pendingProductRef.current = null;
+			setProductLookup(null);
+			setResolvedRow(null);
 			void setValues({ ...values, from: token, items: [emptyTrasladoItem()] }, true);
 			void setTouched({ ...touched, from: true }, false);
 			setItemsChecked(false);

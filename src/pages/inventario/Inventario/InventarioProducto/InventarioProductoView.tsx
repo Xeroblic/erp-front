@@ -27,6 +27,10 @@ import ProductTraceability from '@/pages/inventario/Inventario/InventarioProduct
 import ThresholdModal from '@/pages/inventario/Inventario/InventarioProducto/components/ThresholdModal';
 import useInventarioProducto from '@/pages/inventario/Inventario/InventarioProducto/hooks/useInventarioProducto';
 import { INVENTARIO_PATH } from '@/pages/inventario/Inventario/types';
+import {
+	ajustesTrasladosLink,
+	type AjustesTrasladosTab,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import { formatDecimalAmount } from '@/utils/procurementDecimal.util';
 
 const plural = (count: number, singular: string, pluralForm: string): string =>
@@ -155,6 +159,21 @@ const ProductoSession = ({
 	/** Filial y nombre de la sucursal para Trazabilidad; `null` sin permiso o sin filial. */
 	trazabilidad: { subsidiaryId: number; branchName: string | null } | null;
 }) => {
+	const navigate = useNavigate();
+	const { authorize } = useAuthorization();
+	// Mismo permiso y alcance que la página de ajustes y traslados (§15). Decide
+	// sólo si se dibuja la columna; cada botón vuelve a comprobarlo.
+	const canMoveStock = authorize({
+		permission: 'edit-product',
+		branchId,
+		subsidiaryId,
+		scope: 'access',
+	});
+	const openMovement = useCallback(
+		(tab: AjustesTrasladosTab, warehouseId: number | null) =>
+			navigate(ajustesTrasladosLink({ tab, productId, warehouseId }).to),
+		[navigate, productId],
+	);
 	const {
 		detail,
 		loading,
@@ -188,6 +207,9 @@ const ProductoSession = ({
 	const { product } = detail;
 	const threshold = product.critical_stock_threshold;
 	const hasUnfit = detail.warehouses.some((location) => location.unfit_quantity > 0);
+	// Ajustes y traslados mueven sólo stock por cantidad: los productos con
+	// serie no aparecen en sus asistentes.
+	const showMovements = canMoveStock && !product.serial_tracking;
 
 	return (
 		<>
@@ -274,7 +296,9 @@ const ProductoSession = ({
 							No hay unidades de este producto en la sucursal.
 						</p>
 					) : (
-						<Table aria-label='Unidades por ubicación' className='min-w-[520px]'>
+						<Table
+							aria-label='Unidades por ubicación'
+							className={showMovements ? 'min-w-[760px]' : 'min-w-[520px]'}>
 							<THead>
 								<Tr>
 									<Th scope='col'>Ubicación</Th>
@@ -289,6 +313,11 @@ const ProductoSession = ({
 									<Th scope='col' className='text-right'>
 										Sin documento
 									</Th>
+									{showMovements && (
+										<Th scope='col' className='text-center'>
+											Acciones
+										</Th>
+									)}
 								</Tr>
 							</THead>
 							<TBody>
@@ -313,6 +342,46 @@ const ProductoSession = ({
 										<Td className='text-right tabular-nums'>
 											{location.undocumented_quantity}
 										</Td>
+										{showMovements && (
+											<Td>
+												<div className='flex justify-center gap-2'>
+													<ProtectedButton
+														permission='edit-product'
+														branchId={branchId}
+														subsidiaryId={subsidiaryId}
+														scope='access'
+														size='sm'
+														variant='outline'
+														icon='HeroScale'
+														aria-label={`Ajustar ${product.name} en ${location.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL}`}
+														onClick={() =>
+															openMovement(
+																'ajuste',
+																location.warehouse?.id ?? null,
+															)
+														}>
+														Ajustar
+													</ProtectedButton>
+													<ProtectedButton
+														permission='edit-product'
+														branchId={branchId}
+														subsidiaryId={subsidiaryId}
+														scope='access'
+														size='sm'
+														variant='outline'
+														icon='HeroArrowsRightLeft'
+														aria-label={`Trasladar ${product.name} desde ${location.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL}`}
+														onClick={() =>
+															openMovement(
+																'traslado',
+																location.warehouse?.id ?? null,
+															)
+														}>
+														Trasladar
+													</ProtectedButton>
+												</div>
+											</Td>
+										)}
 									</Tr>
 								))}
 							</TBody>

@@ -2,11 +2,42 @@ import type { ReactNode } from 'react';
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
 import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
+import type * as InventoryStockService from '@/services/procurement/inventoryStock.service';
+import type {
+	IInventoryStockListParams,
+	IInventoryStockResponse,
+} from '@/interface/procurement.interface';
+
+type TListInventoryStock = (
+	branchId: number,
+	params?: IInventoryStockListParams,
+	signal?: AbortSignal,
+) => Promise<IInventoryStockResponse>;
+
+/**
+ * El stock pasa por el servicio real salvo que una prueba instale un doble
+ * (`stockDouble.list`): así se simula un origen con más de una página sin
+ * sembrar cien productos en el mock compartido.
+ */
+const stockDouble = vi.hoisted(() => ({
+	list: null as TListInventoryStock | null,
+	calls: [] as IInventoryStockListParams[],
+}));
+vi.mock('@/services/procurement/inventoryStock.service', async (importOriginal) => {
+	const actual = await importOriginal<typeof InventoryStockService>();
+	const listInventoryStock: TListInventoryStock = (branchId, params, signal) => {
+		stockDouble.calls.push(params ?? {});
+		return stockDouble.list
+			? stockDouble.list(branchId, params, signal)
+			: actual.listInventoryStock(branchId, params, signal);
+	};
+	return { ...actual, listInventoryStock };
+});
 
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
@@ -113,6 +144,8 @@ const renderPage = (entry: string) => {
 };
 
 afterEach(() => {
+	stockDouble.list = null;
+	stockDouble.calls = [];
 	resetInventoryStockStoreForTests();
 	vi.restoreAllMocks();
 });
@@ -175,5 +208,224 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		expect(
 			screen.queryByRole('region', { name: /Paso 1 de 3: Ubicación/ }),
 		).not.toBeInTheDocument();
+	});
+	describe('preselección por URL', () => {
+		const MOUSE_ID = 31;
+		/** Estante A3, bodega de la sucursal 4 con stock del mouse. */
+		const SHELF_ID = 12;
+		/** Bodega Sucursal Sur: existe, pero es de la sucursal 6. */
+		const SOUTH_BRANCH_WAREHOUSE_ID = 15;
+
+		it('abre el ajuste en «Productos» con la ubicación y el producto elegidos', async () => {
+			renderPage(`/?tab=ajuste&warehouse_id=${SHELF_ID}&product_id=${MOUSE_ID}`);
+
+			expect(
+				await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ }),
+			).toBeInTheDocument();
+			expect(screen.getByText('Estante A3')).toBeInTheDocument();
+			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(MOUSE_ID));
+		});
+
+		it('«Sin ubicación» viaja como `warehouse_id=unlocated`', async () => {
+			renderPage(`/?tab=ajuste&warehouse_id=unlocated&product_id=${MOUSE_ID}`);
+
+			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+			expect(screen.getByText('Sin ubicación')).toBeInTheDocument();
+			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(MOUSE_ID));
+		});
+
+		it.each([
+			['un id que no es numérico', 'warehouse_id=abc&product_id=31'],
+			['un id con signo o decimales', 'warehouse_id=-12&product_id=31.5'],
+			[
+				'una bodega de otra sucursal',
+				`warehouse_id=${SOUTH_BRANCH_WAREHOUSE_ID}&product_id=31`,
+			],
+			['un producto sin ubicación', `product_id=${MOUSE_ID}`],
+		])('ignora %s y abre el asistente vacío', (_caso, query) => {
+			renderPage(`/?tab=ajuste&${query}`);
+
+			expect(
+				screen.getByRole('heading', { name: /Paso 1 de 3: Ubicación/ }),
+			).toBeInTheDocument();
+			expect(screen.getByLabelText('Ubicación')).toHaveValue('');
+		});
+
+		it('conserva la ubicación válida e ignora un producto que no está en el catálogo', async () => {
+			renderPage(`/?tab=ajuste&warehouse_id=${SHELF_ID}&product_id=999999`);
+
+			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue('');
+		});
+
+		it('el traslado toma la bodega como origen y elige el producto cuando el origen lo tiene', async () => {
+			renderPage(`/?tab=traslado&warehouse_id=${SHELF_ID}&product_id=${MOUSE_ID}`);
+
+			expect(screen.getByLabelText('Origen')).toHaveValue(`warehouse:${SHELF_ID}`);
+			fireEvent.change(screen.getByLabelText('Destino'), {
+				target: { value: 'warehouse:8' },
+			});
+			const next = screen.getByRole('button', { name: 'Siguiente' });
+			await waitFor(() => expect(next).toBeEnabled());
+			fireEvent.click(next);
+
+			const product = await screen.findByLabelText('Producto de la línea 1');
+			await waitFor(() => expect(product).toHaveValue(String(MOUSE_ID)));
+		});
+
+		it('el traslado descarta un producto que el origen no tiene', async () => {
+			renderPage(`/?tab=traslado&warehouse_id=${SHELF_ID}&product_id=999999`);
+
+			fireEvent.change(screen.getByLabelText('Destino'), {
+				target: { value: 'warehouse:8' },
+			});
+			const next = screen.getByRole('button', { name: 'Siguiente' });
+			await waitFor(() => expect(next).toBeEnabled());
+			fireEvent.click(next);
+
+			const product = await screen.findByLabelText('Producto de la línea 1');
+			// Espera a que cargue el stock del origen antes de afirmar que quedó vacío.
+			await waitFor(() => expect(product).toBeEnabled());
+			expect(product).toHaveValue('');
+		});
+
+		it('el traslado ignora un origen de otra sucursal', async () => {
+			renderPage(`/?tab=traslado&warehouse_id=${SOUTH_BRANCH_WAREHOUSE_ID}&product_id=31`);
+
+			// El `<select>` no tiene opción para esa bodega y se vería vacío aunque
+			// el formulario la guardara: lo que prueba que se ignoró es que el
+			// asistente no avanza sin origen.
+			fireEvent.change(screen.getByLabelText('Destino'), {
+				target: { value: 'warehouse:8' },
+			});
+			const next = screen.getByRole('button', { name: 'Siguiente' });
+			await waitFor(() => expect(next).toBeEnabled());
+			fireEvent.click(next);
+			await waitFor(() => expect(next).toBeEnabled());
+
+			expect(
+				screen.getByRole('heading', { name: /Paso 1 de 3: Origen y destino/ }),
+			).toBeInTheDocument();
+			expect(screen.getByLabelText('Origen')).toHaveValue('');
+		});
+
+		it('cambiar de pestaña descarta la preselección', async () => {
+			renderPage(`/?tab=ajuste&warehouse_id=${SHELF_ID}&product_id=${MOUSE_ID}`);
+			// Deja terminar la carga del stock del ajuste antes de desmontarlo: el
+			// saldo de la línea pasa de «—» a una cifra.
+			const lines = await screen.findByRole('table', { name: 'Líneas del ajuste' });
+			await waitFor(() =>
+				expect(within(lines).getAllByRole('cell')[2]).toHaveTextContent(/^\d+$/),
+			);
+
+			fireEvent.click(screen.getByRole('tab', { name: 'Traslados internos' }));
+			expect(screen.getByTestId('location')).toHaveTextContent(/^\?tab=traslado$/);
+			expect(screen.getByLabelText('Origen')).toHaveValue('');
+		});
+	});
+	describe('preselección de traslado con el origen paginado', () => {
+		const SHELF_ID = 12;
+		/** 150 productos en el origen: con 100 por página, el 130 cae en la página 2. */
+		const PAGED_PRODUCT_ID = 5130;
+
+		/**
+		 * Origen simulado de 150 productos, paginado como el servicio: parte de
+		 * una respuesta real del Estante A3 y sólo reemplaza filas y `meta`.
+		 */
+		const installPagedOrigin = async () => {
+			const { listInventoryStock } = await vi.importActual<typeof InventoryStockService>(
+				'@/services/procurement/inventoryStock.service',
+			);
+			const base = await listInventoryStock(4, { warehouse_id: SHELF_ID });
+			const template = base.data[0];
+			const rows = Array.from({ length: 150 }, (_, index) => ({
+				...template,
+				product: {
+					...template.product,
+					id: 5001 + index,
+					name: `Producto ${String(index + 1).padStart(3, '0')}`,
+					sku: `PAG-${5001 + index}`,
+				},
+			}));
+			stockDouble.list = (_branchId, params) => {
+				const perPage = params?.per_page ?? 15;
+				const lastPage = Math.ceil(rows.length / perPage);
+				const current = Math.min(params?.page ?? 1, lastPage);
+				const data = rows.slice((current - 1) * perPage, current * perPage);
+				return Promise.resolve({
+					...base,
+					data,
+					meta: {
+						...base.meta,
+						current_page: current,
+						last_page: lastPage,
+						per_page: perPage,
+						total: rows.length,
+					},
+				});
+			};
+		};
+
+		const goToItems = async () => {
+			fireEvent.change(screen.getByLabelText('Destino'), {
+				target: { value: 'warehouse:8' },
+			});
+			const next = screen.getByRole('button', { name: 'Siguiente' });
+			await waitFor(() => expect(next).toBeEnabled());
+			fireEvent.click(next);
+			return screen.findByLabelText('Producto de la línea 1');
+		};
+
+		it('busca en las páginas siguientes un producto que no está en la primera', async () => {
+			await installPagedOrigin();
+			renderPage(`/?tab=traslado&warehouse_id=${SHELF_ID}&product_id=${PAGED_PRODUCT_ID}`);
+
+			const product = await goToItems();
+			await waitFor(() => expect(product).toHaveValue(String(PAGED_PRODUCT_ID)));
+			// También se ofrece en el selector, con su saldo de la página 2.
+			expect(
+				within(product).getByRole('option', {
+					name: `PAG-${PAGED_PRODUCT_ID} · Producto 130`,
+				}),
+			).toBeInTheDocument();
+			expect(stockDouble.calls).toContainEqual(
+				expect.objectContaining({ warehouse_id: SHELF_ID, page: 2, per_page: 100 }),
+			);
+		});
+
+		it('cambiar el origen mientras se busca descarta el producto', async () => {
+			await installPagedOrigin();
+			const paged = stockDouble.list;
+			let releasePage2: () => void = () => {};
+			const page2Gate = new Promise<void>((resolve) => {
+				releasePage2 = resolve;
+			});
+			stockDouble.list = async (branchId, params, signal) => {
+				if (params?.page === 2) await page2Gate;
+				if (!paged) throw new Error('Falta el origen paginado.');
+				return paged(branchId, params, signal);
+			};
+			renderPage(`/?tab=traslado&warehouse_id=${SHELF_ID}&product_id=${PAGED_PRODUCT_ID}`);
+
+			await waitFor(() =>
+				expect(stockDouble.calls).toContainEqual(expect.objectContaining({ page: 2 })),
+			);
+			fireEvent.change(screen.getByLabelText('Origen'), { target: { value: 'unlocated' } });
+			releasePage2();
+
+			const product = await goToItems();
+			await waitFor(() => expect(product).toBeEnabled());
+			expect(product).toHaveValue('');
+		});
+
+		it('recorre todas las páginas antes de descartar un producto que el origen no tiene', async () => {
+			await installPagedOrigin();
+			renderPage(`/?tab=traslado&warehouse_id=${SHELF_ID}&product_id=999999`);
+
+			const product = await goToItems();
+			await waitFor(() => expect(product).toBeEnabled());
+			expect(product).toHaveValue('');
+			expect(stockDouble.calls).toContainEqual(expect.objectContaining({ page: 2 }));
+		});
 	});
 });

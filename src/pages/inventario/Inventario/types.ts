@@ -1,4 +1,6 @@
 import * as Yup from 'yup';
+import Pages from '@/config/pages.config';
+import type { IPageLink } from '@/config/procurementLinks';
 import type { IInventoryStockListParams } from '@/interface/procurement.interface';
 import type {
 	IInventoryCriticalStock,
@@ -20,6 +22,21 @@ export const SIN_UBICACION_SLUG = 'sin-ubicacion';
 
 export const inventarioBodegaPath = (warehouseId: number | null): string =>
 	`${INVENTARIO_PATH}/bodegas/${warehouseId ?? SIN_UBICACION_SLUG}`;
+
+/**
+ * Destinos con el `authority` de la ruta de Inventario, para que quien enlaza
+ * desde otra pantalla compruebe el mismo permiso que `AuthorityCheck`. Se lee
+ * la configuración al llamar, no al cargar el módulo.
+ */
+export const inventarioProductoLink = (productId: number): IPageLink => ({
+	to: inventarioProductoPath(productId),
+	authority: Pages.inventory.subPages.inventario.authority,
+});
+
+export const inventarioBodegaLink = (warehouseId: number | null): IPageLink => ({
+	to: inventarioBodegaPath(warehouseId),
+	authority: Pages.inventory.subPages.inventario.authority,
+});
 
 /** Lee el segmento de la ficha de bodega: `null` si no es una ubicación válida. */
 export const parseBodegaParam = (param: string | undefined): TInventarioUbicacion | null => {

@@ -3,6 +3,8 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { ConditionLabel } from '@/components/procurement';
+import PageLinkButton from '@/components/procurement/PageLinkButton';
+import { inventarioBodegaLink, inventarioProductoLink } from '@/pages/inventario/Inventario/types';
 import type { ITrasladoResult } from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useInternalTransfer';
 
 export interface ITransferResultCardProps {
@@ -20,19 +22,30 @@ export interface ITransferResultCardProps {
 const TransferResultCard: FC<ITransferResultCardProps> = ({ result, onDismiss }) => {
 	const { movement, products, fromLabel, toLabel } = result;
 	const units = movement.items.reduce((total, item) => total + item.quantity, 0);
+	// Un solo producto: su ficha. Varios: la bodega de destino, donde quedaron.
+	const productIds = [...new Set(movement.items.map((item) => item.product_id))];
+	const inventoryLink =
+		productIds.length === 1
+			? inventarioProductoLink(productIds[0])
+			: inventarioBodegaLink(movement.to_warehouse_id);
 
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>Traslado registrado</CardTitle>
-				<Button
-					type='button'
-					variant='solid'
-					color='blue'
-					icon='HeroPlus'
-					onClick={onDismiss}>
-					Nuevo traslado
-				</Button>
+				<div className='flex flex-wrap gap-2'>
+					<PageLinkButton link={inventoryLink} variant='outline' icon='HeroCube'>
+						Ver en inventario
+					</PageLinkButton>
+					<Button
+						type='button'
+						variant='solid'
+						color='blue'
+						icon='HeroPlus'
+						onClick={onDismiss}>
+						Nuevo traslado
+					</Button>
+				</div>
 			</CardHeader>
 			<CardBody className='space-y-4'>
 				<div className='flex flex-wrap items-center gap-x-6 gap-y-2'>

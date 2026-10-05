@@ -30,6 +30,9 @@ import type {
 import useStepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useStepWizard';
 import {
 	AJUSTE_STEPS,
+	NO_PRESELECTION,
+	resolvePreselectedLocation,
+	type IAjustesTrasladosPreselection,
 	type TAjusteStep,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import type {
@@ -61,6 +64,7 @@ export default function useInventoryAdjustment(
 	branchId: number,
 	context: string,
 	subsidiaryId: number | null = null,
+	preselection: IAjustesTrasladosPreselection = NO_PRESELECTION,
 ) {
 	const session = useId();
 	const dispatch = useAppDispatch();
@@ -83,6 +87,22 @@ export default function useInventoryAdjustment(
 		() => getInventoryAdjustableProducts(subsidiaryId),
 		[subsidiaryId],
 	);
+	/**
+	 * Ubicación y producto que trae la URL, sólo si son de la sucursal activa y
+	 * del catálogo corregible. Se resuelven una vez, al montar: son los valores
+	 * iniciales del formulario, no un filtro que lo siga.
+	 */
+	const [initialSelection] = useState(() => {
+		const location = resolvePreselectedLocation(preselection.location, warehouses);
+		const productId: number | '' =
+			location !== null &&
+			preselection.productId !== null &&
+			products.some((product) => product.id === preselection.productId)
+				? preselection.productId
+				: '';
+		return { location: location ?? '', productId };
+	});
+
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo registrar el ajuste.',
 		renewKeyOnDefinitiveError: true,
@@ -106,10 +126,10 @@ export default function useInventoryAdjustment(
 
 	const formik = useFormik<IAjusteFormValues>({
 		initialValues: {
-			location: '',
+			location: initialSelection.location,
 			reason: '',
 			notes: '',
-			items: [emptyAjusteItem()],
+			items: [{ ...emptyAjusteItem(), productId: initialSelection.productId }],
 		},
 		validationSchema: AjusteSchema,
 		onSubmit: async (formValues, helpers) => {
@@ -300,7 +320,8 @@ export default function useInventoryAdjustment(
 		[validateForm, setFieldTouched],
 	);
 
-	const wizard = useStepWizard(AJUSTE_STEPS, validateStep);
+	// Con la ubicación ya elegida desde la URL, el asistente abre en «Productos».
+	const wizard = useStepWizard(AJUSTE_STEPS, validateStep, initialSelection.location ? 1 : 0);
 	const { restartAt, finish } = wizard;
 
 	const { submitForm } = formik;

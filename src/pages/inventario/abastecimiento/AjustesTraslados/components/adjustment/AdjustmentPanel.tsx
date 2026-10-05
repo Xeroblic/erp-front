@@ -10,11 +10,14 @@ import AdjustmentItemsEditor from '@/pages/inventario/abastecimiento/AjustesTras
 import AdjustmentResultCard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/adjustment/AdjustmentResultCard';
 import StepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
 import type { IWizardStepConfig } from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
+import type { IAjustesTrasladosPreselection } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 
 export interface AdjustmentPanelProps {
 	branchId: number;
 	subsidiaryId: number | null;
 	owner: string;
+	/** Ubicación y producto con que abre el asistente (de la URL). */
+	preselection?: IAjustesTrasladosPreselection;
 	/** Avisa si hay una escritura en curso o pendiente de reintento. */
 	onBusyChange?: (busy: boolean) => void;
 }
@@ -43,7 +46,13 @@ const AJUSTE_STEP_CONFIG: readonly IWizardStepConfig[] = [
  * corregir y motivo. El motivo va al final porque se escribe mejor después de
  * ver las diferencias.
  */
-const AdjustmentPanel = ({ branchId, subsidiaryId, owner, onBusyChange }: AdjustmentPanelProps) => {
+const AdjustmentPanel = ({
+	branchId,
+	subsidiaryId,
+	owner,
+	preselection,
+	onBusyChange,
+}: AdjustmentPanelProps) => {
 	const {
 		formik,
 		locationOptions,
@@ -63,7 +72,7 @@ const AdjustmentPanel = ({ branchId, subsidiaryId, owner, onBusyChange }: Adjust
 		clearResult,
 		wizard,
 		submit,
-	} = useInventoryAdjustment(branchId, owner, subsidiaryId);
+	} = useInventoryAdjustment(branchId, owner, subsidiaryId, preselection);
 
 	const frozen = idempotentWrite.isSubmitting || idempotentWrite.canRetry;
 

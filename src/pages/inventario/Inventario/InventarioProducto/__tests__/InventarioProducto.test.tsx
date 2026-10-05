@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryOverview from '@/store/slices/procurement/inventoryOverviewSlice';
@@ -103,6 +103,35 @@ const renderFicha = (productId: number | string, permisos: string[] = []) => {
 					<Route
 						path='/inventario/stock/:productId'
 						element={<InventarioProductoView />}
+					/>
+				</Routes>
+			</MemoryRouter>
+		</Provider>,
+	);
+};
+
+const AjustesTrasladosProbe = () => {
+	const location = useLocation();
+	return <output data-testid='ajustes-url'>{`${location.pathname}${location.search}`}</output>;
+};
+
+/** Ficha con la ruta de Ajustes y traslados montada, para seguir sus atajos. */
+const renderFichaConAtajos = (revocar: string[] = []) => {
+	const store = configureStore({
+		reducer: { inventoryOverview, inventoryStock, auth: auth.reducer },
+	});
+	revocar.forEach((permiso) => store.dispatch(auth.actions.revoke(permiso)));
+	return render(
+		<Provider store={store}>
+			<MemoryRouter initialEntries={[`/inventario/stock/${MOUSE_ID}`]}>
+				<Routes>
+					<Route
+						path='/inventario/stock/:productId'
+						element={<InventarioProductoView />}
+					/>
+					<Route
+						path='/inventario/abastecimiento/ajustes-traslados'
+						element={<AjustesTrasladosProbe />}
 					/>
 				</Routes>
 			</MemoryRouter>
@@ -299,6 +328,39 @@ describe('Ficha de inventario', () => {
 
 			await screen.findByRole('table', { name: 'Unidades por ubicación' });
 			expect(screen.queryByRole('table', { name: 'Trazabilidad' })).not.toBeInTheDocument();
+		});
+	});
+	describe('atajos a Ajustes y traslados', () => {
+		it('abre el ajuste y el traslado con el producto y la ubicación de la fila', async () => {
+			renderFichaConAtajos();
+			await screen.findByRole('table', { name: 'Unidades por ubicación' });
+
+			fireEvent.click(
+				await screen.findByRole('button', { name: 'Ajustar Mouse USB en Sin ubicación' }),
+			);
+			expect(screen.getByTestId('ajustes-url')).toHaveTextContent(
+				`/inventario/abastecimiento/ajustes-traslados?tab=ajuste&warehouse_id=unlocated&product_id=${MOUSE_ID}`,
+			);
+		});
+
+		it('el traslado usa la ubicación de la fila como origen', async () => {
+			renderFichaConAtajos();
+			fireEvent.click(
+				await screen.findByRole('button', { name: 'Trasladar Mouse USB desde Estante A3' }),
+			);
+			expect(screen.getByTestId('ajustes-url')).toHaveTextContent(
+				`?tab=traslado&warehouse_id=12&product_id=${MOUSE_ID}`,
+			);
+		});
+
+		it('sin edit-product no dibuja la columna ni los botones', async () => {
+			renderFichaConAtajos(['edit-product']);
+			const table = await screen.findByRole('table', { name: 'Unidades por ubicación' });
+			expect(
+				within(table).queryByRole('columnheader', { name: 'Acciones' }),
+			).not.toBeInTheDocument();
+			expect(screen.queryByRole('button', { name: /^Ajustar / })).not.toBeInTheDocument();
+			expect(screen.queryByRole('button', { name: /^Trasladar / })).not.toBeInTheDocument();
 		});
 	});
 });

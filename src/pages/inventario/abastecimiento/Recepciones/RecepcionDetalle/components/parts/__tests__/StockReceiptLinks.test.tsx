@@ -5,7 +5,10 @@ import { describe, expect, it } from 'vitest';
 import { buildAuthState, withStore } from '@/test-utils/renderWithStore';
 import { postedKeyboardStockReceipt as receipt } from '@/mocks/db/procurement.db';
 import { purchaseDocumentDetailLink, supplierDetailLink } from '@/config/procurementLinks';
+import { inventarioBodegaLink } from '@/pages/inventario/Inventario/types';
 import StockReceiptItemsTable from '../StockReceiptItemsTable';
+import StockReceiptProgressCard from '../StockReceiptProgressCard';
+import { receiptInventoryLink } from '../../../hooks/useRecepcionDetalle';
 import StockReceiptSummaryCard from '../StockReceiptSummaryCard';
 
 const renderAs = (ui: ReactElement, permisos: string[]) => {
@@ -85,5 +88,43 @@ describe('StockReceiptItemsTable', () => {
 
 		expect(screen.queryByRole('link')).not.toBeInTheDocument();
 		expect(screen.getByText('Documento 1500')).toBeInTheDocument();
+	});
+});
+
+describe('StockReceiptProgressCard', () => {
+	it('«En stock» ofrece ver la bodega de la recepción en Inventario', () => {
+		renderAs(
+			<StockReceiptProgressCard
+				receipt={receipt}
+				inventoryLink={inventarioBodegaLink(receipt.warehouse.id)}
+			/>,
+			['view-product'],
+		);
+
+		expect(screen.getByText('Ingresada al stock')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Ver en inventario' })).toBeInTheDocument();
+	});
+
+	it('sin destino (otra sucursal) no ofrece el atajo', () => {
+		renderAs(<StockReceiptProgressCard receipt={receipt} inventoryLink={null} />, [
+			'view-product',
+		]);
+
+		expect(screen.getByText('Ingresada al stock')).toBeInTheDocument();
+		expect(screen.queryByRole('button', { name: 'Ver en inventario' })).not.toBeInTheDocument();
+	});
+});
+
+describe('receiptInventoryLink', () => {
+	it('enlaza la bodega sólo si la recepción está en stock y es de la sucursal activa', () => {
+		expect(receiptInventoryLink(receipt, receipt.branch_id)?.to).toBe(
+			`/inventario/stock/bodegas/${receipt.warehouse.id}`,
+		);
+		expect(receiptInventoryLink(receipt, receipt.branch_id + 1)).toBeNull();
+		expect(receiptInventoryLink(receipt, null)).toBeNull();
+		expect(
+			receiptInventoryLink({ ...receipt, status: 'queued' }, receipt.branch_id),
+		).toBeNull();
+		expect(receiptInventoryLink(null, receipt.branch_id)).toBeNull();
 	});
 });

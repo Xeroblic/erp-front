@@ -28,6 +28,7 @@ const RecepcionDetalleView = () => {
 		visibleBranches,
 		receipt,
 		links,
+		inventoryLink,
 		etag,
 		loading,
 		error,
@@ -108,7 +109,7 @@ const RecepcionDetalleView = () => {
 							/>
 						</div>
 
-						<StockReceiptProgressCard receipt={receipt} />
+						<StockReceiptProgressCard receipt={receipt} inventoryLink={inventoryLink} />
 						<StockReceiptSummaryCard
 							receipt={receipt}
 							supplierLink={links.supplier}
