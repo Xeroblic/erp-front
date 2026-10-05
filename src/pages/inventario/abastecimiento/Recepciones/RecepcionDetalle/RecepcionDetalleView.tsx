@@ -17,7 +17,8 @@ import StockReceiptFormModal from '../components/modals/StockReceiptFormModal';
 
 /**
  * Ficha de recepción física (card 05, sección 7 del contrato). El polling
- * mientras está `queued` vive en `useRecepcionDetalle`; acá sólo se pinta lo
+ * mientras está `queued` (espera creciente, tope y pausa con la pestaña
+ * oculta) vive en `useRecepcionDetalle`; acá sólo se pinta lo
  * que el store tiene en cada momento — la pantalla nunca afirma que hay
  * stock disponible mientras el estado siga siendo `queued`.
  */
@@ -29,6 +30,8 @@ const RecepcionDetalleView = () => {
 		receipt,
 		links,
 		inventoryLink,
+		isPollingStalled,
+		resumePolling,
 		etag,
 		loading,
 		error,
@@ -109,7 +112,12 @@ const RecepcionDetalleView = () => {
 							/>
 						</div>
 
-						<StockReceiptProgressCard receipt={receipt} inventoryLink={inventoryLink} />
+						<StockReceiptProgressCard
+							receipt={receipt}
+							inventoryLink={inventoryLink}
+							isPollingStalled={isPollingStalled}
+							onRefresh={resumePolling}
+						/>
 						<StockReceiptSummaryCard
 							receipt={receipt}
 							supplierLink={links.supplier}

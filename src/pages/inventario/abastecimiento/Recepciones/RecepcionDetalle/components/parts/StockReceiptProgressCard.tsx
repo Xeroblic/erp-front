@@ -1,6 +1,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import Alert from '@/components/ui/Alert';
+import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import PageLinkButton from '@/components/procurement/PageLinkButton';
@@ -12,6 +13,13 @@ interface IStockReceiptProgressCardProps {
 	receipt: IStockReceipt;
 	/** Ficha de la bodega en Inventario, o `null` si no corresponde ofrecerla. */
 	inventoryLink?: IPageLink | null;
+	/**
+	 * La ficha dejó de actualizarse sola (tope de la consulta automática) con
+	 * la recepción todavía en `queued`.
+	 */
+	isPollingStalled?: boolean;
+	/** Vuelve a consultar el estado y reanuda la actualización automática. */
+	onRefresh?: () => void;
 }
 
 type TStepState = 'done' | 'current' | 'error' | 'pending';
@@ -102,6 +110,8 @@ const STEP_STATE_LABEL: Record<TStepState, string> = {
 const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
 	receipt,
 	inventoryLink = null,
+	isPollingStalled = false,
+	onRefresh,
 }) => {
 	if (receipt.status === 'cancelled') {
 		return (
@@ -184,7 +194,7 @@ const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
 					</Alert>
 				)}
 
-				{receipt.status === 'queued' && (
+				{receipt.status === 'queued' && !isPollingStalled && (
 					<Alert
 						color='blue'
 						variant='outline'
@@ -192,6 +202,33 @@ const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
 						title='Ingresando al stock'>
 						Se está procesando en segundo plano. El stock todavía <strong>no</strong>{' '}
 						está disponible — esta pantalla se actualiza sola cuando termine.
+					</Alert>
+				)}
+
+				{receipt.status === 'queued' && isPollingStalled && (
+					<Alert
+						color='amber'
+						variant='outline'
+						icon='HeroClock'
+						title='Sigue ingresando'
+						role='status'>
+						<div className='flex flex-wrap items-center justify-between gap-3'>
+							<span>
+								Está tardando más de lo normal y esta pantalla dejó de actualizarse
+								sola. Actualiza para ver el estado; el stock todavía{' '}
+								<strong>no</strong> está disponible.
+							</span>
+							{onRefresh && (
+								<Button
+									size='sm'
+									variant='outline'
+									color='amber'
+									icon='HeroArrowPath'
+									onClick={onRefresh}>
+									Actualizar
+								</Button>
+							)}
+						</div>
 					</Alert>
 				)}
 
