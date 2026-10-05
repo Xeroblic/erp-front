@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_RECEPCION_LINE, stockReceiptFormSchema } from '../types';
-import type { IStockReceiptFormValues } from '../types';
+import {
+	DEFAULT_RECEPCIONES_FILTERS,
+	EMPTY_RECEPCION_LINE,
+	parseRecepcionesFilters,
+	serializeRecepcionesFilters,
+	stockReceiptFormSchema,
+} from '../types';
+import type { IRecepcionesFilters, IStockReceiptFormValues } from '../types';
 
 /**
  * Validación del formulario de recepción (sección 7 del contrato). Dos
@@ -212,5 +218,37 @@ describe('stockReceiptFormSchema — varias filas de la misma línea del documen
 				items: [row(1, '3'), row(2, '3')],
 			}),
 		).rejects.toThrow(/suman más que lo pendiente/i);
+	});
+});
+
+describe('Filtros del listado en la URL', () => {
+	it('sin parámetros son los valores por defecto y no escriben nada', () => {
+		const filters = parseRecepcionesFilters(new URLSearchParams());
+		expect(filters).toEqual(DEFAULT_RECEPCIONES_FILTERS);
+		expect(serializeRecepcionesFilters(filters).toString()).toBe('');
+	});
+
+	it('ida y vuelta conserva todos los filtros con las claves del contrato', () => {
+		const filters: IRecepcionesFilters = {
+			search: 'mouse',
+			status: 'posted',
+			warehouseId: 8,
+			receivedFrom: '2026-09-01',
+			receivedTo: '2026-09-30',
+			page: 3,
+			perPage: 10,
+		};
+		const params = serializeRecepcionesFilters(filters);
+		expect(params.toString()).toBe(
+			'search=mouse&status=posted&warehouse_id=8&received_from=2026-09-01&received_to=2026-09-30&page=3&per_page=10',
+		);
+		expect(parseRecepcionesFilters(params)).toEqual(filters);
+	});
+
+	it('valores desconocidos caen al defecto y purchase_document_id no es un filtro', () => {
+		const params = new URLSearchParams(
+			'status=borrado&warehouse_id=-1&received_to=2026-13-01&page=x&purchase_document_id=24',
+		);
+		expect(parseRecepcionesFilters(params)).toEqual(DEFAULT_RECEPCIONES_FILTERS);
 	});
 });

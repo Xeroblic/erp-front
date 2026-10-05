@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Container from '@/components/layouts/Container/Container';
@@ -9,6 +9,7 @@ import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import { ProcurementMockNotice } from '@/components/procurement';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import useAuthorization from '@/hooks/useAuthorization';
+import { listReturnState } from '@/utils/listSearchParams.util';
 import useRecepciones from './hooks/useRecepciones';
 import RecepcionesFilters from './components/filters/RecepcionesFilters';
 import RecepcionesTable from './components/tables/RecepcionesTable';
@@ -27,6 +28,7 @@ import StockReceiptFormModal from './components/modals/StockReceiptFormModal';
  */
 const RecepcionesView = () => {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const {
 		branchId,
@@ -71,13 +73,32 @@ const RecepcionesView = () => {
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const preselectedDocumentId = searchParams.get('purchase_document_id');
 
-	const handleView = (id: number) => navigate(`/inventario/abastecimiento/recepciones/${id}`);
+	/**
+	 * La ficha recibe la query del listado para que «Volver al listado» la
+	 * conserve, sin `purchase_document_id`: volver no debe reabrir el alta
+	 * desde la que se acaba de crear la recepción.
+	 */
+	const handleView = (id: number) => {
+		const listParams = new URLSearchParams(location.search);
+		listParams.delete('purchase_document_id');
+		const listSearch = listParams.toString();
+		navigate(`/inventario/abastecimiento/recepciones/${id}`, {
+			state: listReturnState(listSearch ? `?${listSearch}` : ''),
+		});
+	};
 
+	// Quita sólo `purchase_document_id`: los filtros del listado comparten la query.
 	const handleCloseCreateModal = (open: boolean) => {
 		setIsCreateModalOpen(open);
 		if (!open && preselectedDocumentId) {
-			searchParams.delete('purchase_document_id');
-			setSearchParams(searchParams, { replace: true });
+			setSearchParams(
+				(previous) => {
+					const next = new URLSearchParams(previous);
+					next.delete('purchase_document_id');
+					return next;
+				},
+				{ replace: true },
+			);
 		}
 	};
 

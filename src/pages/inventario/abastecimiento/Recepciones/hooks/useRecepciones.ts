@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -10,22 +11,22 @@ import {
 	selectStockReceiptsListSubsidiaryId,
 	selectStockReceiptsMeta,
 } from '@/store/slices/procurement/stockReceiptsSlice';
+import { mergeListParams } from '@/utils/listSearchParams.util';
 import type { IStockReceiptListParams } from '@/interface/procurement.interface';
-import { STOCK_RECEIPT_STATUS_FILTER_OPTIONS } from '../types';
-import type { TStockReceiptStatusFilter } from '../types';
-
-/**
- * El contrato usa 15 por defecto, pero el paginador estándar sólo ofrece 5,
- * 10, 20, 30, 40 y 50: con 15 el selector mostraba «Mostrar 5» mientras la
- * tabla listaba 15. Se pide 20, una de sus opciones.
- */
-const DEFAULT_PAGE_SIZE = 20;
+import {
+	parseRecepcionesFilters,
+	RECEPCIONES_FILTER_KEYS,
+	serializeRecepcionesFilters,
+	STOCK_RECEIPT_STATUS_FILTER_OPTIONS,
+} from '../types';
+import type { IRecepcionesFilters, TStockReceiptStatusFilter } from '../types';
 
 /**
  * Listado de recepciones (card 05, sección 7). Mismo patrón que
- * `useDocumentosCompra`: filtros locales debounced, `params` memoizado y
- * `refreshAfterMutation` para no dejar una página vacía tras anular/revertir
- * la última fila visible.
+ * `useDocumentosCompra`: filtros y paginación en la URL (con `replace`, sin
+ * tocar `?purchase_document_id=`, que abre el alta), búsqueda debounced,
+ * `params` memoizado y `refreshAfterMutation` para no dejar una página vacía
+ * tras anular/revertir la última fila visible.
  */
 const useRecepciones = () => {
 	const dispatch = useAppDispatch();
@@ -48,14 +49,32 @@ const useRecepciones = () => {
 	const meta = isCurrentSubsidiaryData ? rawMeta : null;
 	const error = isCurrentSubsidiaryData ? rawError : null;
 
-	const [search, setSearch] = useState('');
+	const [searchParams, setSearchParams] = useSearchParams();
+	const { search, status, warehouseId, receivedFrom, receivedTo, page, perPage } = useMemo(
+		() => parseRecepcionesFilters(searchParams),
+		[searchParams],
+	);
 	const [debouncedSearch] = useDebounce(search, 300);
-	const [status, setStatus] = useState<TStockReceiptStatusFilter>('all');
-	const [warehouseId, setWarehouseId] = useState<number | ''>('');
-	const [receivedFrom, setReceivedFrom] = useState('');
-	const [receivedTo, setReceivedTo] = useState('');
-	const [page, setPage] = useState(1);
-	const [perPage, setPerPage] = useState(DEFAULT_PAGE_SIZE);
+
+	/** Cualquier cambio de filtro vuelve a la página 1; sólo paginar la conserva. */
+	const update = useCallback(
+		(patch: Partial<IRecepcionesFilters>) => {
+			setSearchParams(
+				(previous) =>
+					mergeListParams(
+						previous,
+						RECEPCIONES_FILTER_KEYS,
+						serializeRecepcionesFilters({
+							...parseRecepcionesFilters(previous),
+							page: 1,
+							...patch,
+						}),
+					),
+				{ replace: true },
+			);
+		},
+		[setSearchParams],
+	);
 
 	const isSearchDebouncing = search !== debouncedSearch;
 	const normalizedSearch = debouncedSearch.trim();
@@ -93,44 +112,44 @@ const useRecepciones = () => {
 		const isLastRowOnLastPage =
 			items.length === 1 && page > 1 && meta !== null && meta.current_page === meta.last_page;
 		if (isLastRowOnLastPage) {
-			setPage((current) => Math.max(1, current - 1));
+			update({ page: Math.max(1, page - 1) });
 			return undefined;
 		}
 		return refresh();
-	}, [items.length, meta, page, refresh]);
+	}, [items.length, meta, page, refresh, update]);
 
-	const setSearchValue = useCallback((value: string) => {
-		setSearch(value);
-		setPage(1);
-	}, []);
-	const clearFilters = useCallback(() => {
-		setSearch('');
-		setStatus('all');
-		setWarehouseId('');
-		setReceivedFrom('');
-		setReceivedTo('');
-		setPage(1);
-	}, []);
-	const setStatusValue = useCallback((value: TStockReceiptStatusFilter) => {
-		setStatus(value);
-		setPage(1);
-	}, []);
-	const setWarehouseIdValue = useCallback((value: number | '') => {
-		setWarehouseId(value);
-		setPage(1);
-	}, []);
-	const setReceivedFromValue = useCallback((value: string) => {
-		setReceivedFrom(value);
-		setPage(1);
-	}, []);
-	const setReceivedToValue = useCallback((value: string) => {
-		setReceivedTo(value);
-		setPage(1);
-	}, []);
-	const onPaginationChange = useCallback((nextPage: number, nextPerPage: number) => {
-		setPage(nextPage);
-		setPerPage(nextPerPage);
-	}, []);
+	const setSearchValue = useCallback((value: string) => update({ search: value }), [update]);
+	const clearFilters = useCallback(
+		() =>
+			update({
+				search: '',
+				status: 'all',
+				warehouseId: '',
+				receivedFrom: '',
+				receivedTo: '',
+			}),
+		[update],
+	);
+	const setStatusValue = useCallback(
+		(value: TStockReceiptStatusFilter) => update({ status: value }),
+		[update],
+	);
+	const setWarehouseIdValue = useCallback(
+		(value: number | '') => update({ warehouseId: value }),
+		[update],
+	);
+	const setReceivedFromValue = useCallback(
+		(value: string) => update({ receivedFrom: value }),
+		[update],
+	);
+	const setReceivedToValue = useCallback(
+		(value: string) => update({ receivedTo: value }),
+		[update],
+	);
+	const onPaginationChange = useCallback(
+		(nextPage: number, nextPerPage: number) => update({ page: nextPage, perPage: nextPerPage }),
+		[update],
+	);
 
 	const hasActiveFilters = Boolean(
 		normalizedSearch || status !== 'all' || warehouseId !== '' || receivedFrom || receivedTo,

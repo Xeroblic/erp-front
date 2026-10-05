@@ -1,5 +1,12 @@
 import * as Yup from 'yup';
 import { optionalCostEntrySchema } from '@/components/procurement';
+import {
+	LIST_MAX_PER_PAGE,
+	parseBusinessDateParam,
+	parseIdParam,
+	parseOptionParam,
+	parsePageParam,
+} from '@/utils/listSearchParams.util';
 import type { TCostEntryBasis, TStockReceiptStatus } from '@/interface/procurement.interface';
 
 /**
@@ -36,6 +43,81 @@ export const STOCK_RECEIPT_STATUS_LABELS: Record<TStockReceiptStatus, string> = 
 	failed: 'Con error',
 	reversed: 'Revertida',
 	cancelled: 'Anulada',
+};
+
+/**
+ * El contrato usa 15 por defecto, pero el paginador estándar sólo ofrece 5,
+ * 10, 20, 30, 40 y 50: con 15 el selector mostraba «Mostrar 5» mientras la
+ * tabla listaba 15. Se pide 20, una de sus opciones.
+ */
+export const RECEPCIONES_PER_PAGE_DEFAULT = 20;
+
+/**
+ * Filtros y paginación del listado, tal como viven en la URL, con las claves
+ * del contrato (`?status=posted&warehouse_id=8`). `purchase_document_id` no es
+ * uno de ellos: en esta pantalla abre el alta con ese documento, no filtra.
+ */
+export interface IRecepcionesFilters {
+	search: string;
+	status: TStockReceiptStatusFilter;
+	warehouseId: number | '';
+	/** Rango de recepción `AAAA-MM-DD`; vacío = sin límite. */
+	receivedFrom: string;
+	receivedTo: string;
+	page: number;
+	perPage: number;
+}
+
+export const DEFAULT_RECEPCIONES_FILTERS: IRecepcionesFilters = {
+	search: '',
+	status: 'all',
+	warehouseId: '',
+	receivedFrom: '',
+	receivedTo: '',
+	page: 1,
+	perPage: RECEPCIONES_PER_PAGE_DEFAULT,
+};
+
+/** Claves de la query que son del listado; cualquier otra se deja intacta. */
+export const RECEPCIONES_FILTER_KEYS = [
+	'search',
+	'status',
+	'warehouse_id',
+	'received_from',
+	'received_to',
+	'page',
+	'per_page',
+] as const;
+
+const STATUS_FILTER_VALUES = STOCK_RECEIPT_STATUS_FILTER_OPTIONS.map((option) => option.value);
+
+/** Lee los filtros de la URL; un valor desconocido cae a su valor por defecto. */
+export const parseRecepcionesFilters = (params: URLSearchParams): IRecepcionesFilters => ({
+	search: params.get('search') ?? '',
+	status: parseOptionParam(params.get('status'), STATUS_FILTER_VALUES, 'all'),
+	warehouseId: parseIdParam(params.get('warehouse_id')) ?? '',
+	receivedFrom: parseBusinessDateParam(params.get('received_from')),
+	receivedTo: parseBusinessDateParam(params.get('received_to')),
+	page: parsePageParam(params.get('page'), 1),
+	perPage: parsePageParam(
+		params.get('per_page'),
+		RECEPCIONES_PER_PAGE_DEFAULT,
+		LIST_MAX_PER_PAGE,
+	),
+});
+
+/** Escribe sólo lo que difiere del valor por defecto, para URLs cortas y compartibles. */
+export const serializeRecepcionesFilters = (filters: IRecepcionesFilters): URLSearchParams => {
+	const params = new URLSearchParams();
+	if (filters.search.trim()) params.set('search', filters.search);
+	if (filters.status !== 'all') params.set('status', filters.status);
+	if (filters.warehouseId !== '') params.set('warehouse_id', String(filters.warehouseId));
+	if (filters.receivedFrom) params.set('received_from', filters.receivedFrom);
+	if (filters.receivedTo) params.set('received_to', filters.receivedTo);
+	if (filters.page !== 1) params.set('page', String(filters.page));
+	if (filters.perPage !== RECEPCIONES_PER_PAGE_DEFAULT)
+		params.set('per_page', String(filters.perPage));
+	return params;
 };
 
 /* =================================================

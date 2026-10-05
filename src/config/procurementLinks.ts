@@ -34,3 +34,12 @@ export const purchaseDocumentDetailLink = (documentId: number): IPageLink =>
 /** Ficha de la recepción (`view-product`). */
 export const stockReceiptDetailLink = (receiptId: number): IPageLink =>
 	detailLink(subPages.recepcionDetalle, 'recepcionId', receiptId);
+
+/**
+ * Listado de documentos de compra filtrado por proveedor
+ * (`view-purchase-document`). El listado lee `supplier_id` de la URL.
+ */
+export const supplierPurchaseDocumentsLink = (supplierId: number): IPageLink => ({
+	to: `${subPages.documentosCompra.to}?supplier_id=${encodeURIComponent(String(supplierId))}`,
+	authority: subPages.documentosCompra.authority,
+});

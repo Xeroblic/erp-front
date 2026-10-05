@@ -25,9 +25,11 @@ vi.mock('@/hooks/useCurrentBranch', () => ({
 }));
 
 const routeParams = vi.hoisted(() => ({ documentoId: '42' }));
+const router = vi.hoisted(() => ({ navigate: vi.fn(), state: null as unknown }));
 vi.mock('react-router-dom', () => ({
 	useParams: () => ({ ...routeParams }),
-	useNavigate: () => vi.fn(),
+	useNavigate: () => router.navigate,
+	useLocation: () => ({ state: router.state }),
 }));
 
 vi.mock('@/store', async () => {
@@ -74,6 +76,8 @@ const renderLoaded = async () => {
 };
 
 afterEach(() => {
+	router.navigate.mockClear();
+	router.state = null;
 	resetPurchaseDocumentsStoreForTests();
 	branchContext.branchId = 4;
 	branchContext.subsidiaryId = 4;
@@ -149,5 +153,28 @@ describe('useDocumentoCompraDetalle — recepción diferida', () => {
 
 		expect(result.current.document?.allowed_actions).not.toContain('create_receipt');
 		expect(result.current.isReceiptDeferred).toBe(false);
+	});
+});
+
+describe('useDocumentoCompraDetalle — volver al listado', () => {
+	it('vuelve con los filtros del listado del que se abrió la ficha', async () => {
+		router.state = { listSearch: '?status=draft&supplier_id=3&page=2' };
+		const { result } = await renderLoaded();
+
+		act(() => result.current.goToList());
+
+		expect(router.navigate).toHaveBeenCalledWith(
+			'/inventario/abastecimiento/documentos-compra?status=draft&supplier_id=3&page=2',
+		);
+	});
+
+	it('si se llegó por otro camino vuelve al listado sin filtros', async () => {
+		const { result } = await renderLoaded();
+
+		act(() => result.current.goToList());
+
+		expect(router.navigate).toHaveBeenCalledWith(
+			'/inventario/abastecimiento/documentos-compra',
+		);
 	});
 });

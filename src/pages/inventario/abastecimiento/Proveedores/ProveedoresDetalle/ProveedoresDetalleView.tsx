@@ -9,6 +9,7 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import { AllowedActionsToolbar } from '@/components/procurement';
 import { formatDate } from '@/utils/format.utils';
+import { supplierPurchaseDocumentsLink } from '@/config/procurementLinks';
 import SupplierFormModal from '../components/modals/SupplierFormModal';
 import DeactivateSupplierModal from '../components/modals/DeactivateSupplierModal';
 import SupplierStatusBadge from '../components/parts/SupplierStatusBadge';
@@ -203,7 +204,10 @@ const ProveedoresDetalleView = () => {
 							</CardBody>
 						</Card>
 
-						<SupplierPurchaseSummaryCard summary={supplier.purchase_summary} />
+						<SupplierPurchaseSummaryCard
+							summary={supplier.purchase_summary}
+							documentsLink={supplierPurchaseDocumentsLink(supplier.id)}
+						/>
 
 						{/*
 						 * La lista sale de Recepciones, que sigue con proveedores de
