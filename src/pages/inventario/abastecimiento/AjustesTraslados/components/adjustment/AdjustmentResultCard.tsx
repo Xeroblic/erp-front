@@ -6,6 +6,8 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { ConditionLabel } from '@/components/procurement';
+import PageLinkButton from '@/components/procurement/PageLinkButton';
+import { inventarioBodegaLink, inventarioProductoLink } from '@/pages/inventario/Inventario/types';
 import type { TStockCondition } from '@/interface/procurement.interface';
 import type { IAjusteResult } from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useInventoryAdjustment';
 
@@ -38,6 +40,12 @@ const AdjustmentResultCard: FC<IAdjustmentResultCardProps> = ({ result, onDismis
 	const productName = (productId: number): string =>
 		products[productId]?.name ?? `Producto #${productId}`;
 	const shortages = availability.filter((row) => row.available_quantity < 0);
+	// Un solo producto: su ficha. Varios: la bodega ajustada, donde se ven todos.
+	const productIds = [...new Set(adjustment.items.map((item) => item.product_id))];
+	const inventoryLink =
+		productIds.length === 1
+			? inventarioProductoLink(productIds[0])
+			: inventarioBodegaLink(adjustment.warehouse_id);
 
 	return (
 		<Card>
@@ -55,14 +63,19 @@ const AdjustmentResultCard: FC<IAdjustmentResultCardProps> = ({ result, onDismis
 						</p>
 					</div>
 				</div>
-				<Button
-					type='button'
-					variant='solid'
-					color='blue'
-					icon='HeroPlus'
-					onClick={onDismiss}>
-					Nuevo ajuste
-				</Button>
+				<div className='flex flex-wrap gap-2'>
+					<PageLinkButton link={inventoryLink} variant='outline' icon='HeroCube'>
+						Ver en inventario
+					</PageLinkButton>
+					<Button
+						type='button'
+						variant='solid'
+						color='blue'
+						icon='HeroPlus'
+						onClick={onDismiss}>
+						Nuevo ajuste
+					</Button>
+				</div>
 			</CardHeader>
 			<CardBody className='space-y-6'>
 				<ul className='space-y-1 text-sm' aria-label='Resumen del ajuste'>

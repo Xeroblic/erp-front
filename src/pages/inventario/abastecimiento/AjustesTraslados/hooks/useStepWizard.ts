@@ -13,8 +13,12 @@ export type TValidateStep<K extends string> = (key: K) => Promise<string | undef
 export default function useStepWizard<K extends string>(
 	keys: readonly K[],
 	validateStep: TValidateStep<K>,
+	/** Paso con que arranca, p. ej. cuando la URL ya trae completo el primero. */
+	initialStep = 0,
 ) {
-	const [step, setStep] = useState(0);
+	const [step, setStep] = useState(() =>
+		Math.min(Math.max(initialStep, 0), Math.max(keys.length - 1, 0)),
+	);
 	const [direction, setDirection] = useState(1);
 	const lastStep = keys.length - 1;
 

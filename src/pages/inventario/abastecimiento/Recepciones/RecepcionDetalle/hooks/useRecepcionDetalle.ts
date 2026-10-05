@@ -20,8 +20,22 @@ import {
 	supplierDetailLink,
 	type IPageLink,
 } from '@/config/procurementLinks';
-import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
+import type { IStockReceipt, TProcurementAllowedAction } from '@/interface/procurement.interface';
+import { inventarioBodegaLink } from '@/pages/inventario/Inventario/types';
 import useReceiptActor from '../../hooks/useReceiptActor';
+
+/**
+ * «Ver en inventario» de una recepción ingresada: la ficha de su bodega.
+ * Inventario muestra la sucursal activa, así que sólo se ofrece cuando la
+ * recepción es de esa sucursal; si no, la bodega no aparecería allí.
+ */
+export const receiptInventoryLink = (
+	receipt: IStockReceipt | null,
+	branchId: number | null,
+): IPageLink | null =>
+	receipt?.status === 'posted' && branchId !== null && receipt.branch_id === branchId
+		? inventarioBodegaLink(receipt.warehouse.id)
+		: null;
 
 /** Cada cuánto se vuelve a pedir el detalle mientras está `queued` (polling). */
 const POLLING_INTERVAL_MS = 1500;
@@ -188,6 +202,11 @@ const useRecepcionDetalle = () => {
 		};
 	}, [receipt]);
 
+	const inventoryLink = useMemo(
+		() => receiptInventoryLink(receipt, branchId),
+		[receipt, branchId],
+	);
+
 	return {
 		id,
 		branchId,
@@ -195,6 +214,7 @@ const useRecepcionDetalle = () => {
 		visibleBranches,
 		receipt,
 		links,
+		inventoryLink,
 		etag,
 		loading,
 		error,

@@ -5,9 +5,12 @@ import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppSelector } from '@/store';
 import {
+	AJUSTES_TRASLADOS_PRODUCT_PARAM,
 	AJUSTES_TRASLADOS_TAB_PARAM,
+	AJUSTES_TRASLADOS_WAREHOUSE_PARAM,
 	DEFAULT_AJUSTES_TRASLADOS_TAB,
 	isAjustesTrasladosTab,
+	parsePreselection,
 	type AjustesTrasladosAccess,
 	type AjustesTrasladosTab,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
@@ -43,6 +46,15 @@ const useAjustesTraslados = () => {
 		? requestedTab
 		: DEFAULT_AJUSTES_TRASLADOS_TAB;
 
+	// Producto y ubicación con que se abrió la página (p. ej. desde la ficha de
+	// inventario). Sólo se usan al montar el formulario de la pestaña activa.
+	const rawWarehouse = searchParams.get(AJUSTES_TRASLADOS_WAREHOUSE_PARAM);
+	const rawProduct = searchParams.get(AJUSTES_TRASLADOS_PRODUCT_PARAM);
+	const preselection = useMemo(
+		() => parsePreselection(rawWarehouse, rawProduct),
+		[rawWarehouse, rawProduct],
+	);
+
 	const changeTab = useCallback(
 		(tabId: string) => {
 			if (!isAjustesTrasladosTab(tabId)) return;
@@ -50,6 +62,10 @@ const useAjustesTraslados = () => {
 				(prev) => {
 					const next = new URLSearchParams(prev);
 					next.set(AJUSTES_TRASLADOS_TAB_PARAM, tabId);
+					// Cambiar de pestaña reinicia el progreso: la otra pestaña se
+					// monta vacía, sin heredar la preselección de la anterior.
+					next.delete(AJUSTES_TRASLADOS_PRODUCT_PARAM);
+					next.delete(AJUSTES_TRASLADOS_WAREHOUSE_PARAM);
 					return next;
 				},
 				{ replace: true },
@@ -66,8 +82,9 @@ const useAjustesTraslados = () => {
 			owner: `${userId}:${subsidiaryId}:${branchId}`,
 			activeTab,
 			changeTab,
+			preselection,
 		}),
-		[access, branchId, subsidiaryId, userId, activeTab, changeTab],
+		[access, branchId, subsidiaryId, userId, activeTab, changeTab, preselection],
 	);
 };
 

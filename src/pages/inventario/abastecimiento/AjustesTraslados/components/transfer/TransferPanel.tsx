@@ -12,10 +12,13 @@ import TransferResultCard from '@/pages/inventario/abastecimiento/AjustesTraslad
 import StepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
 import type { IWizardStepConfig } from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
 import { locationToken } from '@/utils/inventoryLocation.util';
+import type { IAjustesTrasladosPreselection } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 
 export interface TransferPanelProps {
 	branchId: number;
 	owner: string;
+	/** Origen (`location`) y producto con que abre el asistente (de la URL). */
+	preselection?: IAjustesTrasladosPreselection;
 	/** Avisa si hay una escritura en curso o pendiente de reintento. */
 	onBusyChange?: (busy: boolean) => void;
 }
@@ -47,7 +50,7 @@ const TRASLADO_STEP_CONFIG: readonly IWizardStepConfig[] = [
  *
  * Se lee en tres pasos: origen y destino, productos, y motivo.
  */
-const TransferPanel = ({ branchId, owner, onBusyChange }: TransferPanelProps) => {
+const TransferPanel = ({ branchId, owner, preselection, onBusyChange }: TransferPanelProps) => {
 	const {
 		formik,
 		warehouses,
@@ -68,7 +71,7 @@ const TransferPanel = ({ branchId, owner, onBusyChange }: TransferPanelProps) =>
 		clearResult,
 		wizard,
 		submit,
-	} = useInternalTransfer(branchId, owner);
+	} = useInternalTransfer(branchId, owner, preselection);
 
 	// Con un resultado incierto (`canRetry`) el formulario se congela: el
 	// reintento tiene que llevar exactamente el mismo comando y la misma clave.

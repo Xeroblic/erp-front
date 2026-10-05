@@ -3,11 +3,15 @@ import classNames from 'classnames';
 import Alert from '@/components/ui/Alert';
 import Card, { CardBody } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
+import PageLinkButton from '@/components/procurement/PageLinkButton';
+import type { IPageLink } from '@/config/procurementLinks';
 import { formatDateTime } from '@/utils/format.utils';
 import type { IStockReceipt } from '@/interface/procurement.interface';
 
 interface IStockReceiptProgressCardProps {
 	receipt: IStockReceipt;
+	/** Ficha de la bodega en Inventario, o `null` si no corresponde ofrecerla. */
+	inventoryLink?: IPageLink | null;
 }
 
 type TStepState = 'done' | 'current' | 'error' | 'pending';
@@ -95,7 +99,10 @@ const STEP_STATE_LABEL: Record<TStepState, string> = {
  * `failure_message` (texto seguro en español), nunca una traza técnica. Los
  * datos de intentos sólo aparecen cuando hay un error que diagnosticar.
  */
-const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({ receipt }) => {
+const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
+	receipt,
+	inventoryLink = null,
+}) => {
 	if (receipt.status === 'cancelled') {
 		return (
 			<Alert
@@ -194,8 +201,24 @@ const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({ re
 						variant='outline'
 						icon='HeroCheckCircle'
 						title='Ingresada al stock'>
-						Las unidades ya están disponibles en la bodega
-						{receipt.posted_at && ` desde el ${formatDateTime(receipt.posted_at)}`}.
+						<div className='flex flex-wrap items-center justify-between gap-3'>
+							<span>
+								Las unidades ya están disponibles en la bodega
+								{receipt.posted_at &&
+									` desde el ${formatDateTime(receipt.posted_at)}`}
+								.
+							</span>
+							{inventoryLink && (
+								<PageLinkButton
+									link={inventoryLink}
+									size='sm'
+									variant='outline'
+									color='emerald'
+									icon='HeroCube'>
+									Ver en inventario
+								</PageLinkButton>
+							)}
+						</div>
 					</Alert>
 				)}
 
