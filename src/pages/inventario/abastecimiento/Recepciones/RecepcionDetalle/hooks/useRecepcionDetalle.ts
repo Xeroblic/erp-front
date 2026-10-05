@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
+import usePollingWhile from '@/hooks/usePollingWhile';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { STOCK_RECEIPTS_USE_TEST_SUPPLIERS } from '@/services/procurement/stockReceipts.service';
 import {
@@ -38,9 +39,6 @@ export const receiptInventoryLink = (
 		? inventarioBodegaLink(receipt.warehouse.id)
 		: null;
 
-/** Cada cuánto se vuelve a pedir el detalle mientras está `queued` (polling). */
-const POLLING_INTERVAL_MS = 1500;
-
 /**
  * Ficha de recepción (sección 7 del contrato). A diferencia del listado, acá
  * viajan `items`, `reason`, `processing` y el `ETag` — la única pantalla del
@@ -48,10 +46,11 @@ const POLLING_INTERVAL_MS = 1500;
  * esta misma carga.
  *
  * El polling es el corazón de esta card: mientras `current.status ===
- * 'queued'`, un intervalo vuelve a pedir el detalle hasta que el worker
- * simulado del mock resuelva a `posted` o `failed`. Se limpia al desmontar,
- * al cambiar de recepción y en cuanto el estado deja de ser `queued` — nunca
- * sigue pidiendo de más.
+ * 'queued'`, `usePollingWhile` vuelve a pedir el detalle con espera creciente
+ * (1,5 s → … → 15 s) hasta que el worker resuelva a `posted` o `failed`. A los
+ * 2 minutos se rinde y la card ofrece «Actualizar»; con la pestaña oculta no
+ * consulta. Se limpia al desmontar, al cambiar de recepción o de filial y en
+ * cuanto el estado deja de ser `queued` — nunca sigue pidiendo de más.
  */
 const useRecepcionDetalle = () => {
 	const { recepcionId } = useParams();
@@ -77,15 +76,18 @@ const useRecepcionDetalle = () => {
 		};
 	}, [dispatch, subsidiaryId, id]);
 
-	useEffect(() => {
-		if (id === null || receipt?.status !== 'queued') return undefined;
+	/** Recurso que se está mirando: al cambiar, se reinicia todo lo que dependía del anterior. */
+	const resourceKey = `${subsidiaryId ?? 'null'}:${id ?? 'null'}`;
 
-		const interval = setInterval(() => {
-			void dispatch(fetchStockReceiptDetail({ subsidiaryId, id }));
-		}, POLLING_INTERVAL_MS);
-
-		return () => clearInterval(interval);
-	}, [dispatch, subsidiaryId, id, receipt?.status]);
+	const pollDetail = useCallback(
+		() => (id === null ? undefined : dispatch(fetchStockReceiptDetail({ subsidiaryId, id }))),
+		[dispatch, subsidiaryId, id],
+	);
+	const { isExhausted: isPollingStalled, resume: resumePolling } = usePollingWhile({
+		active: id !== null && receipt?.status === 'queued',
+		poll: pollDetail,
+		resetKey: resourceKey,
+	});
 
 	const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 	const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -103,7 +105,6 @@ const useRecepcionDetalle = () => {
 	 * el estado ya corregido antes de pintar — nunca llega a verse el frame
 	 * intermedio.
 	 */
-	const resourceKey = `${subsidiaryId ?? 'null'}:${id ?? 'null'}`;
 	const lastResourceKeyRef = useRef(resourceKey);
 	if (lastResourceKeyRef.current !== resourceKey) {
 		lastResourceKeyRef.current = resourceKey;
@@ -219,6 +220,8 @@ const useRecepcionDetalle = () => {
 		receipt,
 		links,
 		inventoryLink,
+		isPollingStalled,
+		resumePolling,
 		etag,
 		loading,
 		error,
