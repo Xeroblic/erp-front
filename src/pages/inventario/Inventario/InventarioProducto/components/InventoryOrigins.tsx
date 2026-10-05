@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Select from '@/components/form/Select';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import { DetailLink } from '@/components/procurement';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import InventarioPagination from '@/pages/inventario/Inventario/components/parts/InventarioPagination';
 import type {
@@ -9,7 +10,9 @@ import type {
 	IInventoryStockOriginRow,
 	TInventoryOriginType,
 } from '@/interface/procurement.interface';
-import useInventoryOrigins from '@/pages/inventario/Inventario/InventarioProducto/hooks/useInventoryOrigins';
+import useInventoryOrigins, {
+	inventoryOriginLinks,
+} from '@/pages/inventario/Inventario/InventarioProducto/hooks/useInventoryOrigins';
 import DocumentInitialStockModal from '@/pages/inventario/Inventario/InventarioProducto/components/DocumentInitialStockModal';
 
 const ORIGIN_LABELS: Record<TInventoryOriginType, string> = {
@@ -151,57 +154,82 @@ const InventoryOrigins = ({
 									</Td>
 								</Tr>
 							)}
-							{response.data.map((origin) => (
-								<Tr key={origin.origin_id}>
-									<Td>
-										{/* Una recepción se nombra por su número, que es lo que el usuario
+							{response.data.map((origin) => {
+								const links = inventoryOriginLinks(origin);
+								const document = documentLabel(origin);
+								return (
+									<Tr key={origin.origin_id}>
+										<Td>
+											{/* Una recepción se nombra por su número, que es lo que el usuario
 										    busca en Recepciones; el resto no tiene otro identificador. */}
-										<p className='font-medium'>
-											{ORIGIN_LABELS[origin.origin_type]} #
-											{origin.stock_receipt_id ?? origin.origin_id}
-										</p>
-										<p className='text-sm text-zinc-500'>
-											{origin.received_on ?? 'Fecha desconocida'}
-										</p>
-									</Td>
-									<Td>{origin.supplier?.display_name ?? 'Desconocido'}</Td>
-									<Td>
-										{documentLabel(origin) ?? (
-											<span className='text-zinc-500'>Sin documento</span>
-										)}
-									</Td>
-									<Td>
-										<p className='font-semibold tabular-nums'>
-											{origin.physical_quantity}
-										</p>
-										{origin.unfit_quantity > 0 && (
-											<p className='text-sm font-medium text-amber-700 dark:text-amber-300'>
-												{origin.unfit_quantity} no vendible
-												{origin.unfit_quantity === 1 ? '' : 's'}
+											<p className='font-medium'>
+												<DetailLink
+													link={links.receipt}
+													srLabel='Ficha de la recepción'>
+													{ORIGIN_LABELS[origin.origin_type]} #
+													{origin.stock_receipt_id ?? origin.origin_id}
+												</DetailLink>
 											</p>
-										)}
-									</Td>
-									<Td className='text-right'>
-										{/* La UI no ofrece crear una recepción para respaldar
+											<p className='text-sm text-zinc-500'>
+												{origin.received_on ?? 'Fecha desconocida'}
+											</p>
+										</Td>
+										<Td>
+											{origin.supplier ? (
+												<DetailLink
+													link={links.supplier}
+													srLabel='Ficha del proveedor'>
+													{origin.supplier.display_name}
+												</DetailLink>
+											) : (
+												'Desconocido'
+											)}
+										</Td>
+										<Td>
+											{document ? (
+												<DetailLink
+													link={links.document}
+													srLabel='Ficha del documento de compra'>
+													{document}
+												</DetailLink>
+											) : (
+												<span className='text-zinc-500'>Sin documento</span>
+											)}
+										</Td>
+										<Td>
+											<p className='font-semibold tabular-nums'>
+												{origin.physical_quantity}
+											</p>
+											{origin.unfit_quantity > 0 && (
+												<p className='text-sm font-medium text-amber-700 dark:text-amber-300'>
+													{origin.unfit_quantity} no vendible
+													{origin.unfit_quantity === 1 ? '' : 's'}
+												</p>
+											)}
+										</Td>
+										<Td className='text-right'>
+											{/* La UI no ofrece crear una recepción para respaldar
 										    unidades que ya están en bodega: sólo este botón
 										    documental, nunca un enlace a «nueva recepción». */}
-										{!origin.purchase_document && canDocumentHere && (
-											<Button
-												type='button'
-												size='sm'
-												variant='outline'
-												onClick={() =>
-													setDocumentingOrigin({
-														origin_id: origin.origin_id,
-														physical_quantity: origin.physical_quantity,
-													})
-												}>
-												Documentar
-											</Button>
-										)}
-									</Td>
-								</Tr>
-							))}
+											{!origin.purchase_document && canDocumentHere && (
+												<Button
+													type='button'
+													size='sm'
+													variant='outline'
+													onClick={() =>
+														setDocumentingOrigin({
+															origin_id: origin.origin_id,
+															physical_quantity:
+																origin.physical_quantity,
+														})
+													}>
+													Documentar
+												</Button>
+											)}
+										</Td>
+									</Tr>
+								);
+							})}
 						</TBody>
 					</Table>
 					<InventarioPagination

@@ -6,7 +6,47 @@ import {
 	inventoryOriginsQueryKey,
 } from '@/store/slices/procurement/inventoryStockSlice';
 import { getInventoryOriginFilterOptions } from '@/services/procurement/inventoryStock.service';
-import type { IInventoryStockListParams } from '@/interface/procurement.interface';
+import { STOCK_RECEIPTS_USE_TEST_SUPPLIERS } from '@/services/procurement/stockReceipts.service';
+import {
+	purchaseDocumentDetailLink,
+	stockReceiptDetailLink,
+	supplierDetailLink,
+	type IPageLink,
+} from '@/config/procurementLinks';
+import type {
+	IInventoryStockListParams,
+	IInventoryStockOriginRow,
+} from '@/interface/procurement.interface';
+
+export interface IInventoryOriginLinks {
+	receipt: IPageLink | null;
+	supplier: IPageLink | null;
+	document: IPageLink | null;
+}
+
+/**
+ * Destinos de una procedencia. La recepción vive en el mismo mundo que el
+ * inventario (las dos fachadas cambian juntas con
+ * `VITE_INVENTORY_STOCK_USE_MOCKS`), así que su ficha siempre existe. El
+ * proveedor y el documento, en cambio, salen de la semilla de prueba mientras
+ * Recepciones sea simulada (`STOCK_RECEIPTS_USE_TEST_SUPPLIERS`), y sus fichas
+ * leen la API real: hasta entonces quedan como texto.
+ */
+export const inventoryOriginLinks = (origin: IInventoryStockOriginRow): IInventoryOriginLinks => {
+	const linksToMasterData = !STOCK_RECEIPTS_USE_TEST_SUPPLIERS;
+	return {
+		receipt:
+			origin.origin_type === 'stock_receipt' && origin.stock_receipt_id !== null
+				? stockReceiptDetailLink(origin.stock_receipt_id)
+				: null,
+		supplier:
+			linksToMasterData && origin.supplier ? supplierDetailLink(origin.supplier.id) : null,
+		document:
+			linksToMasterData && origin.purchase_document
+				? purchaseDocumentDetailLink(origin.purchase_document.id)
+				: null,
+	};
+};
 
 export default function useInventoryOrigins(
 	branchId: number,

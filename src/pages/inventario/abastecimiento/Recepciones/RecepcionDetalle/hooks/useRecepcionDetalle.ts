@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch, useAppSelector } from '@/store';
+import { STOCK_RECEIPTS_USE_TEST_SUPPLIERS } from '@/services/procurement/stockReceipts.service';
 import {
 	clearStockReceiptCurrent,
 	fetchStockReceiptDetail,
@@ -14,6 +15,11 @@ import {
 	selectStockReceiptCurrentError,
 	selectStockReceiptCurrentLoading,
 } from '@/store/slices/procurement/stockReceiptsSlice';
+import {
+	purchaseDocumentDetailLink,
+	supplierDetailLink,
+	type IPageLink,
+} from '@/config/procurementLinks';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
 import useReceiptActor from '../../hooks/useReceiptActor';
 
@@ -164,12 +170,31 @@ const useRecepcionDetalle = () => {
 		[handlePost, handleRetry],
 	);
 
+	/**
+	 * Destinos de las referencias cruzadas de la ficha. Mientras Recepciones
+	 * sea simulada, su proveedor y su documento salen de la semilla de prueba
+	 * (`STOCK_RECEIPTS_USE_TEST_SUPPLIERS`), pero las fichas de Proveedores y
+	 * Documentos de compra leen la API real: el mismo id no existe allí, o es
+	 * otro registro. Hasta que Recepciones tenga backend se dejan como texto.
+	 */
+	const links = useMemo<{ supplier: IPageLink | null; document: IPageLink | null }>(() => {
+		if (STOCK_RECEIPTS_USE_TEST_SUPPLIERS || !receipt)
+			return { supplier: null, document: null };
+		return {
+			supplier: receipt.supplier ? supplierDetailLink(receipt.supplier.id) : null,
+			document: receipt.purchase_document
+				? purchaseDocumentDetailLink(receipt.purchase_document.id)
+				: null,
+		};
+	}, [receipt]);
+
 	return {
 		id,
 		branchId,
 		subsidiaryId,
 		visibleBranches,
 		receipt,
+		links,
 		etag,
 		loading,
 		error,

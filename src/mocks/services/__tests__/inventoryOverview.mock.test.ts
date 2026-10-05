@@ -56,8 +56,8 @@ describe('A1 · listInventoryOverview', () => {
 			physical_quantity: 19,
 			fit_quantity: 17,
 			unfit_quantity: 2,
-			documented_quantity: 14,
-			undocumented_quantity: 5,
+			documented_quantity: 10,
+			undocumented_quantity: 9,
 		});
 		// Sin ubicación primero, luego por nombre.
 		expect(

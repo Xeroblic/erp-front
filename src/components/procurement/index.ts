@@ -43,3 +43,6 @@ export type { ICostEntryFormValues } from './costEntry.schema';
 
 export { default as ProcurementMockGate, ProcurementMockNotice } from './ProcurementMockGate';
 export type { IProcurementMockGateProps } from './ProcurementMockGate';
+
+export { default as DetailLink } from './DetailLink';
+export type { IDetailLinkProps } from './DetailLink';

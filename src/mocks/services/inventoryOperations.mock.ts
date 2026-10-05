@@ -49,8 +49,12 @@ import { readStockReceiptsForTraceability } from '@/mocks/services/stockReceipts
  */
 const seededAt = (businessDate: string, time = '10:00'): string =>
 	new Date(`${businessDate}T${time}:00`).toISOString();
-/** Momento de las procedencias sembradas sin fecha: el saldo con que parte el historial. */
-const OPENING_BALANCE_AT = seededAt('2026-09-01', '08:00');
+/**
+ * Momento de las procedencias sembradas sin fecha: el saldo con que parte el
+ * historial. Va antes de la procedencia fechada más antigua (la recepción #211,
+ * del 21-08-2026), para que ninguna operación quede antes de su punto de partida.
+ */
+const OPENING_BALANCE_AT = seededAt('2026-08-01', '08:00');
 
 /**
  * Tipo legado para el saldo inicial. El §14 conserva los tipos legados con su

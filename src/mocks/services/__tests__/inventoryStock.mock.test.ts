@@ -37,6 +37,7 @@ const MIXED_CONDITION_ORIGIN_ID = 54; // keyboardProduct, southBranchWarehouse, 
 const SOUTH_BRANCH_WAREHOUSE_ID = 15;
 const CABLE_DOCUMENT_ID = 90; // cableProductInitialStockDocument, confirmado, línea 950, remaining 40
 const CABLE_DOCUMENT_LINE_ID = 950;
+const KEYBOARD_DOCUMENT_ID = 61; // pcExpressKeyboardInvoiceDocument: factura #1500 de la recepción #76
 const KEYBOARD_DOCUMENT_LINE_ID = 601; // pcExpressKeyboardInvoiceDocument (61), confirmado, remaining 12
 const DRAFT_DOCUMENT_LINE_ID = 201; // draftReceiptDocument, sin confirmar
 
@@ -118,13 +119,13 @@ describe('inventoryStock mock', () => {
 	it('filtra origins y conserva opciones de documento/proveedor antes de paginar', async () => {
 		const options = getInventoryOriginFilterOptions(BRANCH_ID, 67, { warehouse_id: 8 });
 		expect(options.suppliers.map((item) => item.id)).toContain(7);
-		expect(options.documents.map((item) => item.id)).toContain(24);
+		expect(options.documents.map((item) => item.id)).toContain(KEYBOARD_DOCUMENT_ID);
 		const filtered = await listInventoryOrigins(BRANCH_ID, 67, {
 			warehouse_id: 8,
 			supplier_id: 7,
 		});
 		expect(filtered.data).toHaveLength(1);
-		expect(filtered.data[0].purchase_document?.id).toBe(24);
+		expect(filtered.data[0].purchase_document?.id).toBe(KEYBOARD_DOCUMENT_ID);
 	});
 
 	it('cancela la latencia del mock con AbortSignal', async () => {
@@ -141,8 +142,8 @@ describe('inventoryStock mock', () => {
 			physical_quantity: 19,
 			fit_quantity: 17,
 			unfit_quantity: 2,
-			documented_quantity: 14,
-			undocumented_quantity: 5,
+			documented_quantity: 10,
+			undocumented_quantity: 9,
 		});
 		const page2 = await listInventoryStock(4, { page: 2 });
 		expect(page2.data.map((row) => row.product.id)).toEqual(
@@ -247,7 +248,7 @@ describe('inventoryStock mock', () => {
 		const filtered = await listInventoryOrigins(4, 67, {
 			warehouse_id: 8,
 			supplier_id: 7,
-			purchase_document_id: 24,
+			purchase_document_id: KEYBOARD_DOCUMENT_ID,
 		});
 		expect(filtered.data.map((origin) => origin.origin_id)).toEqual([115]);
 		expect(

@@ -1,12 +1,17 @@
 import React from 'react';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import { WarehouseLabel } from '@/components/procurement';
+import { DetailLink, WarehouseLabel } from '@/components/procurement';
 import { formatDate, formatDateTime } from '@/utils/format.utils';
+import type { IPageLink } from '@/config/procurementLinks';
 import type { IStockReceipt } from '@/interface/procurement.interface';
 import StockReceiptStatusBadge from '../../../components/parts/StockReceiptStatusBadge';
 
 interface IStockReceiptSummaryCardProps {
 	receipt: IStockReceipt;
+	/** Ficha del proveedor, o `null` si no hay una real a la que ir. */
+	supplierLink: IPageLink | null;
+	/** Ficha del documento vinculado, o `null` si no hay una real a la que ir. */
+	documentLink: IPageLink | null;
 }
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
@@ -19,9 +24,14 @@ const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, 
 /**
  * Encabezado de la ficha (sección 7): bodega, proveedor, documento vinculado
  * (o motivo, si no lo hay), fecha de recepción y estado. `posted_by` se
- * muestra tal como llega — nunca un worker anónimo.
+ * muestra tal como llega — nunca un worker anónimo. Proveedor y documento
+ * enlazan a su ficha cuando `useRecepcionDetalle` entrega un destino.
  */
-const StockReceiptSummaryCard: React.FC<IStockReceiptSummaryCardProps> = ({ receipt }) => (
+const StockReceiptSummaryCard: React.FC<IStockReceiptSummaryCardProps> = ({
+	receipt,
+	supplierLink,
+	documentLink,
+}) => (
 	<Card>
 		<CardHeader>
 			<CardTitle className='text-lg'>Recepción #{receipt.id}</CardTitle>
@@ -35,8 +45,10 @@ const StockReceiptSummaryCard: React.FC<IStockReceiptSummaryCardProps> = ({ rece
 				<Field label='Proveedor'>
 					{receipt.supplier ? (
 						<span>
-							{receipt.supplier.display_name} ·{' '}
-							<span className='font-mono'>{receipt.supplier.rut}</span>
+							<DetailLink link={supplierLink} srLabel='Ficha del proveedor'>
+								{receipt.supplier.display_name}
+							</DetailLink>{' '}
+							· <span className='font-mono'>{receipt.supplier.rut}</span>
 						</span>
 					) : (
 						<span className='text-zinc-400'>Sin proveedor</span>
@@ -44,9 +56,11 @@ const StockReceiptSummaryCard: React.FC<IStockReceiptSummaryCardProps> = ({ rece
 				</Field>
 				<Field label='Documento vinculado'>
 					{receipt.purchase_document ? (
-						<span className='font-mono'>
-							{receipt.purchase_document.document_number}
-						</span>
+						<DetailLink link={documentLink} srLabel='Ficha del documento de compra'>
+							<span className='font-mono'>
+								{receipt.purchase_document.document_number}
+							</span>
+						</DetailLink>
 					) : (
 						<span className='text-zinc-400'>Sin documento</span>
 					)}

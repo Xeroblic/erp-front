@@ -188,7 +188,9 @@ const INVENTORY_STOCK_STORAGE_NAMESPACE = 'inventory-stock';
  */
 // v3: `stockReceiptEffects`. v4: ejemplos de Ecopc. v5: su historial. v6: se
 // descartan orígenes de recepciones con proveedores reales (recepciones v3).
-const INVENTORY_STOCK_STORAGE_VERSION = 6;
+// v7: acompaña a recepciones v4, para no conservar procedencias de recepciones
+// que el store nuevo ya no tiene.
+const INVENTORY_STOCK_STORAGE_VERSION = 7;
 
 interface IIdempotencyLogEntry {
 	payloadHash: string;

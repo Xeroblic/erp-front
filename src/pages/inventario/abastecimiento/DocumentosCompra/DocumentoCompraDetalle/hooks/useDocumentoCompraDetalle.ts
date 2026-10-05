@@ -12,6 +12,7 @@ import {
 	selectPurchaseDocumentCurrentLoading,
 	selectPurchaseDocumentCurrentSubsidiaryId,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
+import { supplierDetailLink } from '@/config/procurementLinks';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
 import type { IDocumentAttachmentsCardHandle } from '../components/parts/DocumentAttachmentsCard';
 
@@ -128,6 +129,12 @@ const useDocumentoCompraDetalle = () => {
 	);
 	const isReceiptDeferred = (document?.allowed_actions ?? []).includes('create_receipt');
 
+	/** Documento y proveedor salen de la API real: su ficha siempre existe. */
+	const supplierLink = useMemo(
+		() => (document?.supplier ? supplierDetailLink(document.supplier.id) : null),
+		[document],
+	);
+
 	/** Traduce el click de `AllowedActionsToolbar` a la interacción de esta pantalla. */
 	const handleAction = useCallback(
 		(action: TProcurementAllowedAction) => {
@@ -154,6 +161,7 @@ const useDocumentoCompraDetalle = () => {
 		setIsCancelModalOpen,
 		allowedActions,
 		isReceiptDeferred,
+		supplierLink,
 		attachmentsCardRef,
 		handleAction,
 		goToList,

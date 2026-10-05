@@ -1,14 +1,13 @@
 import type {
 	IInventoryAdjustmentPayload,
 	IProcurementProduct,
+	IPurchaseDocumentCompact,
 	IWarehouseStockMovementPayload,
 } from '@/interface/procurement.interface';
 import {
 	ecopcShowroomWarehouse,
 	ecopcWarehouse,
-	invoiceDocument,
 	pcExpressSupplier,
-	receiptDocument,
 } from '@/mocks/db/procurement.db';
 import type { IInventorySeedOrigin } from '@/mocks/db/inventoryStock.db';
 
@@ -170,11 +169,38 @@ const origin = (seed: TOriginSeed): IInventorySeedOrigin => {
 	};
 };
 
+/**
+ * Documentos de prueba de Ecopc. Sus líneas y su cobertura se derivan de las
+ * procedencias que los citan (`ecopcDemoProcurement.db`): antes estas
+ * procedencias citaban la factura #1234 y la boleta #55012 de la sucursal 4,
+ * que no traen ninguno de estos productos.
+ */
+export const ecopcMouseInvoice: IPurchaseDocumentCompact = {
+	id: 701,
+	document_type: 'invoice',
+	document_number: '3101',
+	issue_date: '2026-09-05',
+};
+
+export const ecopcAccessoriesInvoice: IPurchaseDocumentCompact = {
+	id: 702,
+	document_type: 'invoice',
+	document_number: '3150',
+	issue_date: '2026-09-10',
+};
+
+export const ecopcAudioReceiptDocument: IPurchaseDocumentCompact = {
+	id: 703,
+	document_type: 'receipt',
+	document_number: '55890',
+	issue_date: '2026-09-10',
+};
+
 const recibido = {
 	origin_type: 'stock_receipt' as const,
 	received_on: '2026-09-10',
 	supplier: pcExpressSupplier,
-	purchase_document: invoiceDocument,
+	purchase_document: ecopcAccessoriesInvoice,
 };
 
 export const ecopcDemoOrigins: IInventorySeedOrigin[] = [
@@ -199,7 +225,7 @@ export const ecopcDemoOrigins: IInventorySeedOrigin[] = [
 	origin({
 		...recibido,
 		stock_receipt_id: 96,
-		purchase_document: receiptDocument,
+		purchase_document: ecopcAudioReceiptDocument,
 		product_id: 2002,
 		warehouse_id: ecopcShowroomWarehouse.id,
 		physical_quantity: 4,
@@ -285,7 +311,7 @@ export type TInventoryDemoEvent =
 	  };
 
 /** Filial de Ecopc: la de `/perfil` en desarrollo. */
-const ECOPC_SUBSIDIARY_ID = 1;
+export const ECOPC_SUBSIDIARY_ID = 1;
 
 /** Fecha y hora local, como las demás semillas de la trazabilidad. */
 const at = (businessDate: string, time: string): string =>

@@ -15,6 +15,7 @@ import {
 	mouseProduct,
 	notebookProduct,
 	pcExpressSupplier,
+	postedKeyboardStockReceipt,
 	shelfWarehouse,
 	southBranchWarehouse,
 } from '@/mocks/db/procurement.db';
@@ -22,6 +23,7 @@ import {
 	ecopcDemoHolds,
 	ecopcShowroomWarehouse,
 	ecopcDemoOrigins,
+	ecopcMouseInvoice,
 	ecopcDemoProducts,
 	ecopcDemoThresholds,
 } from '@/mocks/db/inventoryEcopcDemo.db';
@@ -162,9 +164,17 @@ export const inventoryCriticalThresholdSeed: Record<number, number> = {
 export const inventoryOrigins: IInventorySeedOrigin[] = [
 	unknownOrigin,
 	inventoryOrigin51,
+	/**
+	 * Lo que queda en el estante de la recepción #211 (8 mouse sin documento,
+	 * `supplierPurchaseHistoryReceipts`). Antes copiaba la 51 y decía venir de
+	 * la #80 con la factura #1234, que sólo cubre 10 mouse.
+	 */
 	{
 		...inventoryOrigin51,
 		origin_id: 53,
+		stock_receipt_id: 211,
+		received_on: '2026-08-21',
+		purchase_document: null,
 		warehouse_id: shelfWarehouse.id,
 		physical_quantity: 4,
 		fit_quantity: 4,
@@ -181,8 +191,10 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 		fit_quantity: 5,
 		unfit_quantity: 1,
 	},
+	// Notebook serializado: existe para probar que el inventario por cantidad
+	// lo excluye. Conteo inicial: ninguna recepción sembrada trae notebooks.
 	{
-		...inventoryOrigin51,
+		...unknownOrigin,
 		origin_id: 55,
 		warehouse_id: mainWarehouse.id,
 		product_id: notebookProduct.id,
@@ -190,15 +202,23 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 		fit_quantity: 1,
 		unfit_quantity: 0,
 	},
-	...Array.from(
-		{ length: 16 },
-		(_, index): IInventorySeedOrigin => ({
+	/**
+	 * 16 teclados en Bodega Central para paginar. El último es lo que queda de
+	 * la recepción #76 (8 teclados con la factura #1500), que por eso el mock
+	 * trata como ya consumida; es la única procedencia con proveedor y
+	 * documento, para ejercer los filtros.
+	 */
+	...Array.from({ length: 16 }, (_, index): IInventorySeedOrigin => {
+		const fromReceipt = index === 15;
+		return {
 			origin_id: 100 + index,
-			origin_type: 'inventory_adjustment',
-			stock_receipt_id: null,
-			received_on: ['2026-09-08', '2026-09-01'][index] ?? null,
-			supplier: index === 15 ? pcExpressSupplier : null,
-			purchase_document: index === 15 ? invoiceDocument : null,
+			origin_type: fromReceipt ? 'stock_receipt' : 'inventory_adjustment',
+			stock_receipt_id: fromReceipt ? postedKeyboardStockReceipt.id : null,
+			received_on: fromReceipt
+				? postedKeyboardStockReceipt.received_on
+				: (['2026-09-08', '2026-09-01'][index] ?? null),
+			supplier: fromReceipt ? pcExpressSupplier : null,
+			purchase_document: fromReceipt ? postedKeyboardStockReceipt.purchase_document : null,
 			physical_quantity: 1,
 			fit_quantity: 1,
 			unfit_quantity: 0,
@@ -207,8 +227,8 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 			warehouse_id: mainWarehouse.id,
 			// Last two deliberately share priority: origin_id breaks the tie.
 			fifo_at: 10 + Math.min(index, 14),
-		}),
-	),
+		};
+	}),
 	...paginatedProducts.map(
 		(product, index): IInventorySeedOrigin => ({
 			...unknownOrigin,
@@ -258,7 +278,7 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 		stock_receipt_id: 90,
 		received_on: '2026-09-05',
 		supplier: pcExpressSupplier,
-		purchase_document: invoiceDocument,
+		purchase_document: ecopcMouseInvoice,
 		physical_quantity: 8,
 		fit_quantity: 7,
 		unfit_quantity: 1,
