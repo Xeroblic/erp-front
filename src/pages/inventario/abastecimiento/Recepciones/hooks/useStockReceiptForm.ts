@@ -9,32 +9,16 @@ import {
 	postStockReceiptThunk,
 	updateStockReceiptThunk,
 } from '@/store/slices/procurement/stockReceiptsSlice';
-import { normalizeCostInput } from '@/components/procurement';
 import {
 	getStockReceiptWarehouseBranchId,
 	listWarehousesForStockReceipts,
 } from '@/services/procurement/stockReceipts.service';
-import { formatDecimalCents, parseDecimalString } from '@/utils/procurementDecimal.util';
-import type {
-	IPurchaseDocument,
-	IStockReceipt,
-	IStockReceiptCreatePayload,
-	IStockReceiptLineManualInput,
-	IStockReceiptLineWithDocumentInput,
-	IStockReceiptUpdatePayload,
-} from '@/interface/procurement.interface';
+import type { IStockReceipt } from '@/interface/procurement.interface';
 import useReceiptActor from './useReceiptActor';
-import {
-	EMPTY_RECEPCION_LINE,
-	EMPTY_RECEPCION_VALUES,
-	hasReceivedQuantity,
-	stockReceiptFormSchema,
-} from '../types';
-import type {
-	IStockReceiptFormValues,
-	IRecepcionLineFormValues,
-	TStockReceiptSubmitIntent,
-} from '../types';
+import { stockReceiptFormSchema } from '../types';
+import type { IStockReceiptFormValues, TStockReceiptSubmitIntent } from '../types';
+import { toFormValues } from '../utils/stockReceiptFormValues';
+import { toCreatePayload, toUpdatePayload } from '../utils/stockReceiptPayload';
 
 /**
  * Resultado del segundo paso de «Guardar e ingresar al stock».
@@ -79,174 +63,6 @@ export interface IPendingIngress {
  * se sigue igual a la ficha, donde «Ingresar al stock» sigue disponible — el
  * usuario nunca queda sin salida.
  */
-
-const toOptionalDecimal = (value: string): string | null => {
-	const normalized = normalizeCostInput(value);
-	if (!normalized) return null;
-	const cents = parseDecimalString(normalized);
-	return cents === null ? null : formatDecimalCents(cents);
-};
-
-export const toFormValues = (
-	receipt: IStockReceipt | null,
-	defaultWarehouseId: number | '',
-	initialDocumentId?: number,
-): IStockReceiptFormValues => {
-	if (receipt === null) {
-		// Llega desde `create_receipt` en la ficha de un documento de compra
-		// confirmado (`DocumentoCompraDetalle`): abre el alta ya en modo «con
-		// documento» y con ese documento seleccionado, en vez de obligar a
-		// buscarlo de nuevo en el selector.
-		if (initialDocumentId !== undefined) {
-			return {
-				...EMPTY_RECEPCION_VALUES,
-				mode: 'with_document',
-				purchase_document_id: initialDocumentId,
-				warehouse_id: defaultWarehouseId,
-				items: [],
-			};
-		}
-		// «Con documento» parte sin líneas: se precargan al elegir el documento
-		// (`buildDocumentLines`).
-		return { ...EMPTY_RECEPCION_VALUES, warehouse_id: defaultWarehouseId, items: [] };
-	}
-
-	const isWithDocument = receipt.purchase_document !== null;
-	return {
-		mode: isWithDocument ? 'with_document' : 'manual',
-		purchase_document_id: receipt.purchase_document?.id ?? '',
-		warehouse_id: receipt.warehouse.id,
-		supplier_id: receipt.supplier?.id ?? '',
-		received_on: receipt.received_on,
-		reason: receipt.reason ?? '',
-		notes: receipt.notes ?? '',
-		items: receipt.items.map((item) => ({
-			id: item.id,
-			purchase_document_line_id: item.purchase_document_line_id ?? '',
-			product_id: item.product.id,
-			quantity: String(item.quantity),
-			unit_cost: item.cost.entered_unit_amount ?? '',
-			unit_cost_basis:
-				item.cost.entered_basis && item.cost.entered_basis !== 'unknown'
-					? item.cost.entered_basis
-					: '',
-		})),
-	};
-};
-
-/**
- * Líneas del formulario «con documento» a partir de la ficha del documento.
- *
- * - **Alta** (`preserveExisting: false`): todas las líneas con saldo, con
- *   «Recibido» igual a ese saldo — el caso habitual es recibir todo.
- * - **Corrección** (`preserveExisting: true`): las filas de la recepción se
- *   conservan tal cual — mismas filas (incluidas varias contra la misma línea
- *   documental), mismos ids y mismas cantidades; sólo se les agrega el saldo
- *   como tope. Las líneas con saldo que la recepción no tenía se muestran al
- *   final en `0`: `0` no se envía, así que el payload no cambia salvo que el
- *   usuario lo decida.
- */
-export const buildDocumentLines = (
-	document: IPurchaseDocument,
-	currentItems: IRecepcionLineFormValues[],
-	{ preserveExisting }: { preserveExisting: boolean },
-): IRecepcionLineFormValues[] => {
-	if (!preserveExisting) {
-		return document.items
-			.filter((line) => line.remaining_quantity > 0)
-			.map((line) => ({
-				...EMPTY_RECEPCION_LINE,
-				purchase_document_line_id: line.id,
-				quantity: String(line.remaining_quantity),
-				pending_quantity: line.remaining_quantity,
-			}));
-	}
-
-	const remainingByLineId = new Map(
-		document.items.map((line) => [line.id, line.remaining_quantity]),
-	);
-	const preserved = currentItems.map((item) => ({
-		...item,
-		pending_quantity:
-			item.purchase_document_line_id === ''
-				? undefined
-				: remainingByLineId.get(item.purchase_document_line_id),
-	}));
-	const usedLineIds = new Set(currentItems.map((item) => item.purchase_document_line_id));
-	const omitted = document.items
-		.filter((line) => line.remaining_quantity > 0 && !usedLineIds.has(line.id))
-		.map((line) => ({
-			...EMPTY_RECEPCION_LINE,
-			purchase_document_line_id: line.id,
-			quantity: '0',
-			pending_quantity: line.remaining_quantity,
-		}));
-	return [...preserved, ...omitted];
-};
-
-const toWithDocumentLineInput = (
-	line: IRecepcionLineFormValues,
-): IStockReceiptLineWithDocumentInput => ({
-	id: line.id,
-	purchase_document_line_id: Number(line.purchase_document_line_id),
-	quantity: Number(line.quantity),
-});
-
-const toManualLineInput = (line: IRecepcionLineFormValues): IStockReceiptLineManualInput => ({
-	id: line.id,
-	product_id: Number(line.product_id),
-	quantity: Number(line.quantity),
-	unit_cost: toOptionalDecimal(line.unit_cost),
-	unit_cost_basis: line.unit_cost_basis || null,
-});
-
-const toCreatePayload = (values: IStockReceiptFormValues): IStockReceiptCreatePayload =>
-	values.mode === 'with_document'
-		? {
-				purchase_document_id: Number(values.purchase_document_id),
-				warehouse_id: Number(values.warehouse_id),
-				received_on: values.received_on,
-				notes: values.notes.trim() || null,
-				items: values.items.filter(hasReceivedQuantity).map(toWithDocumentLineInput),
-			}
-		: {
-				purchase_document_id: null,
-				supplier_id: values.supplier_id === '' ? null : Number(values.supplier_id),
-				warehouse_id: Number(values.warehouse_id),
-				received_on: values.received_on,
-				reason: values.reason.trim(),
-				notes: values.notes.trim() || null,
-				items: values.items.map(toManualLineInput),
-			};
-
-/**
- * Un proveedor que no cambió no se reenvía: enviarlo obliga a resolverlo de
- * nuevo, y sin `view-procurement-supplier` la corrección terminaba en «El
- * proveedor no existe» aunque el usuario no lo hubiera tocado.
- */
-const toSupplierUpdate = (
-	values: IStockReceiptFormValues,
-	receipt: IStockReceipt,
-): Pick<IStockReceiptUpdatePayload, 'supplier_id'> => {
-	const supplierId = values.supplier_id === '' ? null : Number(values.supplier_id);
-	return supplierId === (receipt.supplier?.id ?? null) ? {} : { supplier_id: supplierId };
-};
-
-export const toUpdatePayload = (
-	values: IStockReceiptFormValues,
-	receipt: IStockReceipt,
-): IStockReceiptUpdatePayload => ({
-	warehouse_id: Number(values.warehouse_id),
-	received_on: values.received_on,
-	notes: values.notes.trim() || null,
-	...(values.mode === 'manual'
-		? {
-				reason: values.reason.trim(),
-				...toSupplierUpdate(values, receipt),
-				items: values.items.map(toManualLineInput),
-			}
-		: { items: values.items.filter(hasReceivedQuantity).map(toWithDocumentLineInput) }),
-});
 
 const FORM_FIELD_BY_API_FIELD: Partial<Record<string, keyof IStockReceiptFormValues>> = {
 	warehouse_id: 'warehouse_id',
@@ -375,7 +191,7 @@ const useStockReceiptForm = ({
 	) => {
 		if (!isEdit)
 			resetForm({
-				values: { ...EMPTY_RECEPCION_VALUES, warehouse_id: defaultWarehouseId, items: [] },
+				values: toFormValues(null, defaultWarehouseId),
 			});
 		submitIntentRef.current = 'save';
 		setSubmitIntent('save');
@@ -564,7 +380,7 @@ const useStockReceiptForm = ({
 		setSubmitIntent('save');
 		if (!isEdit)
 			formik.resetForm({
-				values: { ...EMPTY_RECEPCION_VALUES, warehouse_id: defaultWarehouseId, items: [] },
+				values: toFormValues(null, defaultWarehouseId),
 			});
 		toast.info(
 			`La recepción #${saved.id} quedó guardada en su filial. Revisa allí si ingresó al stock.`,
