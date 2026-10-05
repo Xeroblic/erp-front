@@ -52,6 +52,12 @@ interface IDocumentosCompraFiltersProps {
 	receptionStatus: TDocumentReceptionStatusFilter;
 	receptionStatusOptions: { value: TDocumentReceptionStatusFilter; label: string }[];
 	onReceptionStatusChange: (value: TDocumentReceptionStatusFilter) => void;
+	supplierId: number | null;
+	supplierOptions: TSelectOption[];
+	supplierOptionsLoading: boolean;
+	/** Sin `view-procurement-supplier` no hay lista que ofrecer. */
+	canFilterBySupplier: boolean;
+	onSupplierIdChange: (value: number | null) => void;
 	issuedFrom: string;
 	onIssuedFromChange: (value: string) => void;
 	issuedTo: string;
@@ -74,6 +80,11 @@ const DocumentosCompraFilters: React.FC<IDocumentosCompraFiltersProps> = ({
 	receptionStatus,
 	receptionStatusOptions,
 	onReceptionStatusChange,
+	supplierId,
+	supplierOptions,
+	supplierOptionsLoading,
+	canFilterBySupplier,
+	onSupplierIdChange,
 	issuedFrom,
 	onIssuedFromChange,
 	issuedTo,
@@ -83,6 +94,8 @@ const DocumentosCompraFilters: React.FC<IDocumentosCompraFiltersProps> = ({
 	const documentTypeSelectOptions = withoutAllOption(documentTypeOptions);
 	const statusSelectOptions = withoutAllOption(statusOptions);
 	const receptionStatusSelectOptions = withoutAllOption(receptionStatusOptions);
+	// Un filtro que llegó por enlace se muestra aunque no se pueda listar proveedores.
+	const showSupplierFilter = canFilterBySupplier || supplierId !== null;
 
 	return (
 		<Card>
@@ -182,6 +195,33 @@ const DocumentosCompraFilters: React.FC<IDocumentosCompraFiltersProps> = ({
 							}
 						/>
 					</div>
+					{showSupplierFilter && (
+						<div className='space-y-1'>
+							<label htmlFor='documentos-compra-supplier' className={fieldLabelClass}>
+								Proveedor
+							</label>
+							<SelectReact
+								className={selectBackgroundClass}
+								inputId='documentos-compra-supplier'
+								name='supplier_id'
+								options={supplierOptions}
+								value={
+									supplierOptions.find(
+										(option) => option.value === String(supplierId),
+									) ?? null
+								}
+								placeholder='Todos'
+								isClearable
+								isSearchable
+								isLoading={supplierOptionsLoading}
+								noOptionsMessage={() => 'Sin proveedores'}
+								onChange={(selected) => {
+									const value = singleSelectValue(selected)?.value;
+									onSupplierIdChange(value ? Number(value) : null);
+								}}
+							/>
+						</div>
+					)}
 					{/* Un solo ítem del grid exterior, a todo el ancho: si «desde» y
 					    «hasta» compitieran por una sola columna del grid exterior
 					    quedaban demasiado angostos; a todo el ancho pasan juntos a su

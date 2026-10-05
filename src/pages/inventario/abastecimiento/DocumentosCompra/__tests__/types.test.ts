@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { purchaseDocumentFormSchema, EMPTY_DOCUMENTO_LINE } from '../types';
-import type { IPurchaseDocumentFormValues } from '../types';
+import {
+	DEFAULT_DOCUMENTOS_COMPRA_FILTERS,
+	EMPTY_DOCUMENTO_LINE,
+	parseDocumentosCompraFilters,
+	purchaseDocumentFormSchema,
+	serializeDocumentosCompraFilters,
+} from '../types';
+import type { IDocumentosCompraFilters, IPurchaseDocumentFormValues } from '../types';
 
 /**
  * Validación del formulario de documento de compra (sección 6 del
@@ -88,5 +94,41 @@ describe('purchaseDocumentFormSchema', () => {
 				items: [{ ...validLine, unit_cost: '', unit_cost_basis: '' }],
 			}),
 		).rejects.toThrow();
+	});
+});
+
+describe('Filtros del listado en la URL', () => {
+	it('sin parámetros son los valores por defecto y no escriben nada', () => {
+		const filters = parseDocumentosCompraFilters(new URLSearchParams());
+		expect(filters).toEqual(DEFAULT_DOCUMENTOS_COMPRA_FILTERS);
+		expect(serializeDocumentosCompraFilters(filters).toString()).toBe('');
+	});
+
+	it('ida y vuelta conserva todos los filtros con las claves del contrato', () => {
+		const filters: IDocumentosCompraFilters = {
+			search: 'PCExpress',
+			documentType: 'invoice',
+			status: 'confirmed',
+			receptionStatus: 'partially_received',
+			supplierId: 3,
+			issuedFrom: '2026-09-01',
+			issuedTo: '2026-09-30',
+			page: 2,
+			perPage: 50,
+		};
+		const params = serializeDocumentosCompraFilters(filters);
+		expect(params.toString()).toBe(
+			'search=PCExpress&document_type=invoice&status=confirmed&reception_status=partially_received&supplier_id=3&issued_from=2026-09-01&issued_to=2026-09-30&page=2&per_page=50',
+		);
+		expect(parseDocumentosCompraFilters(params)).toEqual(filters);
+	});
+
+	it('valores desconocidos o mal formados caen al valor por defecto', () => {
+		const filters = parseDocumentosCompraFilters(
+			new URLSearchParams(
+				'document_type=nota&status=all&reception_status=x&supplier_id=abc&issued_from=2026-02-30&page=0&per_page=500',
+			),
+		);
+		expect(filters).toEqual(DEFAULT_DOCUMENTOS_COMPRA_FILTERS);
 	});
 });

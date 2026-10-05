@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
@@ -15,6 +15,7 @@ import {
 	selectStockReceiptCurrentError,
 	selectStockReceiptCurrentLoading,
 } from '@/store/slices/procurement/stockReceiptsSlice';
+import { readListReturnSearch } from '@/utils/listSearchParams.util';
 import {
 	purchaseDocumentDetailLink,
 	supplierDetailLink,
@@ -55,6 +56,7 @@ const POLLING_INTERVAL_MS = 1500;
 const useRecepcionDetalle = () => {
 	const { recepcionId } = useParams();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId, visibleBranches } = useCurrentBranch();
 	const actor = useReceiptActor();
@@ -111,9 +113,11 @@ const useRecepcionDetalle = () => {
 		if (isLinkDocumentModalOpen) setIsLinkDocumentModalOpen(false);
 	}
 
+	// Si se llegó desde el listado, vuelve a él con los mismos filtros y página.
+	const listSearch = readListReturnSearch(location.state);
 	const goToList = useCallback(
-		() => navigate('/inventario/abastecimiento/recepciones'),
-		[navigate],
+		() => navigate(`/inventario/abastecimiento/recepciones${listSearch}`),
+		[navigate, listSearch],
 	);
 
 	const retryFetch = useCallback(() => {

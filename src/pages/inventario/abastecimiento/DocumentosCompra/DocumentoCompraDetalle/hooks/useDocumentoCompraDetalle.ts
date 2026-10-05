@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -13,6 +13,7 @@ import {
 	selectPurchaseDocumentCurrentSubsidiaryId,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
 import { supplierDetailLink } from '@/config/procurementLinks';
+import { readListReturnSearch } from '@/utils/listSearchParams.util';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
 import type { IDocumentAttachmentsCardHandle } from '../components/parts/DocumentAttachmentsCard';
 
@@ -34,6 +35,7 @@ interface IOpenModal {
 const useDocumentoCompraDetalle = () => {
 	const { documentoId } = useParams();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
 
@@ -99,9 +101,11 @@ const useDocumentoCompraDetalle = () => {
 		[setModalOpen],
 	);
 
+	// Si se llegó desde el listado, vuelve a él con los mismos filtros y página.
+	const listSearch = readListReturnSearch(location.state);
 	const goToList = useCallback(
-		() => navigate('/inventario/abastecimiento/documentos-compra'),
-		[navigate],
+		() => navigate(`/inventario/abastecimiento/documentos-compra${listSearch}`),
+		[navigate, listSearch],
 	);
 
 	const retry = useCallback(() => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Container from '@/components/layouts/Container/Container';
@@ -7,6 +7,7 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import ProtectedButton from '@/components/ui/ProtectedButton';
+import { listReturnState } from '@/utils/listSearchParams.util';
 import useDocumentosCompra from './hooks/useDocumentosCompra';
 import DocumentosCompraFilters from './components/filters/DocumentosCompraFilters';
 import DocumentosCompraTable from './components/tables/DocumentosCompraTable';
@@ -21,6 +22,7 @@ import PurchaseDocumentFormModal from './components/modals/PurchaseDocumentFormM
  */
 const DocumentosCompraView = () => {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const {
 		branchId,
 		subsidiaryId,
@@ -32,17 +34,22 @@ const DocumentosCompraView = () => {
 		documentType,
 		status,
 		receptionStatus,
+		supplierId,
 		issuedFrom,
 		issuedTo,
 		documentTypeOptions,
 		statusOptions,
 		receptionStatusOptions,
+		supplierOptions,
+		supplierOptionsLoading,
+		canFilterBySupplier,
 		hasActiveFilters,
 		setSearchValue,
 		clearFilters,
 		setDocumentTypeValue,
 		setStatusValue,
 		setReceptionStatusValue,
+		setSupplierIdValue,
 		setIssuedFromValue,
 		setIssuedToValue,
 		onPaginationChange,
@@ -51,8 +58,11 @@ const DocumentosCompraView = () => {
 		setIsCreateModalOpen,
 	} = useDocumentosCompra();
 
+	// La ficha recibe la query del listado para que «Volver al listado» la conserve.
 	const handleView = (id: number) =>
-		navigate(`/inventario/abastecimiento/documentos-compra/${id}`);
+		navigate(`/inventario/abastecimiento/documentos-compra/${id}`, {
+			state: listReturnState(location.search),
+		});
 
 	return (
 		<PageWrapper isProtectedRoute title='Documentos de compra'>
@@ -91,6 +101,11 @@ const DocumentosCompraView = () => {
 					receptionStatus={receptionStatus}
 					receptionStatusOptions={receptionStatusOptions}
 					onReceptionStatusChange={setReceptionStatusValue}
+					supplierId={supplierId}
+					supplierOptions={supplierOptions}
+					supplierOptionsLoading={supplierOptionsLoading}
+					canFilterBySupplier={canFilterBySupplier}
+					onSupplierIdChange={setSupplierIdValue}
 					issuedFrom={issuedFrom}
 					onIssuedFromChange={setIssuedFromValue}
 					issuedTo={issuedTo}

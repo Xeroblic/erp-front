@@ -1,6 +1,13 @@
 import * as Yup from 'yup';
 import { costEntrySchema, normalizeCostInput } from '@/components/procurement';
 import { parseDecimalString } from '@/utils/procurementDecimal.util';
+import {
+	LIST_MAX_PER_PAGE,
+	parseBusinessDateParam,
+	parseIdParam,
+	parseOptionParam,
+	parsePageParam,
+} from '@/utils/listSearchParams.util';
 import { PRODUCT_TYPES } from '@/pages/catalogos/productos/constants/products.constant';
 import type {
 	TCostEntryBasis,
@@ -47,6 +54,108 @@ export const DOCUMENT_RECEPTION_STATUS_FILTER_OPTIONS: {
 	{ value: 'partially_received', label: 'Parcialmente recibida' },
 	{ value: 'received', label: 'Recibida' },
 ];
+
+/**
+ * El contrato usa 15 por defecto, pero el paginador estándar sólo ofrece 5,
+ * 10, 20, 30, 40 y 50: con 15 el selector mostraba «Mostrar 5» mientras la
+ * tabla listaba 15. Se pide 20, una de sus opciones.
+ */
+export const DOCUMENTOS_COMPRA_PER_PAGE_DEFAULT = 20;
+
+/**
+ * Filtros y paginación del listado, tal como viven en la URL. Las claves de la
+ * query son las mismas del contrato (`?status=draft&supplier_id=3`), así un
+ * enlace se lee igual que la petición que dispara.
+ */
+export interface IDocumentosCompraFilters {
+	search: string;
+	documentType: TDocumentTypeFilter;
+	status: TDocumentStatusFilter;
+	receptionStatus: TDocumentReceptionStatusFilter;
+	supplierId: number | null;
+	/** Rango de emisión `AAAA-MM-DD`; vacío = sin límite. */
+	issuedFrom: string;
+	issuedTo: string;
+	page: number;
+	perPage: number;
+}
+
+export const DEFAULT_DOCUMENTOS_COMPRA_FILTERS: IDocumentosCompraFilters = {
+	search: '',
+	documentType: 'all',
+	status: 'all',
+	receptionStatus: 'all',
+	supplierId: null,
+	issuedFrom: '',
+	issuedTo: '',
+	page: 1,
+	perPage: DOCUMENTOS_COMPRA_PER_PAGE_DEFAULT,
+};
+
+/** Claves de la query que son del listado; cualquier otra se deja intacta. */
+export const DOCUMENTOS_COMPRA_FILTER_KEYS = [
+	'search',
+	'document_type',
+	'status',
+	'reception_status',
+	'supplier_id',
+	'issued_from',
+	'issued_to',
+	'page',
+	'per_page',
+] as const;
+
+const optionValues = <TValue extends string>(options: { value: TValue }[]): TValue[] =>
+	options.map((option) => option.value);
+
+/** Lee los filtros de la URL; un valor desconocido cae a su valor por defecto. */
+export const parseDocumentosCompraFilters = (
+	params: URLSearchParams,
+): IDocumentosCompraFilters => ({
+	search: params.get('search') ?? '',
+	documentType: parseOptionParam(
+		params.get('document_type'),
+		optionValues(DOCUMENT_TYPE_FILTER_OPTIONS),
+		'all',
+	),
+	status: parseOptionParam(
+		params.get('status'),
+		optionValues(DOCUMENT_STATUS_FILTER_OPTIONS),
+		'all',
+	),
+	receptionStatus: parseOptionParam(
+		params.get('reception_status'),
+		optionValues(DOCUMENT_RECEPTION_STATUS_FILTER_OPTIONS),
+		'all',
+	),
+	supplierId: parseIdParam(params.get('supplier_id')),
+	issuedFrom: parseBusinessDateParam(params.get('issued_from')),
+	issuedTo: parseBusinessDateParam(params.get('issued_to')),
+	page: parsePageParam(params.get('page'), 1),
+	perPage: parsePageParam(
+		params.get('per_page'),
+		DOCUMENTOS_COMPRA_PER_PAGE_DEFAULT,
+		LIST_MAX_PER_PAGE,
+	),
+});
+
+/** Escribe sólo lo que difiere del valor por defecto, para URLs cortas y compartibles. */
+export const serializeDocumentosCompraFilters = (
+	filters: IDocumentosCompraFilters,
+): URLSearchParams => {
+	const params = new URLSearchParams();
+	if (filters.search.trim()) params.set('search', filters.search);
+	if (filters.documentType !== 'all') params.set('document_type', filters.documentType);
+	if (filters.status !== 'all') params.set('status', filters.status);
+	if (filters.receptionStatus !== 'all') params.set('reception_status', filters.receptionStatus);
+	if (filters.supplierId !== null) params.set('supplier_id', String(filters.supplierId));
+	if (filters.issuedFrom) params.set('issued_from', filters.issuedFrom);
+	if (filters.issuedTo) params.set('issued_to', filters.issuedTo);
+	if (filters.page !== 1) params.set('page', String(filters.page));
+	if (filters.perPage !== DOCUMENTOS_COMPRA_PER_PAGE_DEFAULT)
+		params.set('per_page', String(filters.perPage));
+	return params;
+};
 
 export const DOCUMENT_TYPE_LABELS: Record<TPurchaseDocumentType, string> = {
 	invoice: 'Factura',

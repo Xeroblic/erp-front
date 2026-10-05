@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -10,6 +11,7 @@ import {
 	selectPurchaseDocumentsListSubsidiaryId,
 	selectPurchaseDocumentsMeta,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
+import { mergeListParams } from '@/utils/listSearchParams.util';
 import type {
 	IPurchaseDocumentListParams,
 	IPurchaseDocumentListRow,
@@ -18,21 +20,30 @@ import {
 	DOCUMENT_RECEPTION_STATUS_FILTER_OPTIONS,
 	DOCUMENT_STATUS_FILTER_OPTIONS,
 	DOCUMENT_TYPE_FILTER_OPTIONS,
+	DOCUMENTOS_COMPRA_FILTER_KEYS,
+	parseDocumentosCompraFilters,
+	serializeDocumentosCompraFilters,
 } from '../types';
+import useSupplierFilterOptions from './useSupplierFilterOptions';
 import type {
+	IDocumentosCompraFilters,
 	TDocumentReceptionStatusFilter,
 	TDocumentStatusFilter,
 	TDocumentTypeFilter,
 } from '../types';
 
-/**
- * El contrato usa 15 por defecto, pero el paginador estándar sólo ofrece 5,
- * 10, 20, 30, 40 y 50: con 15 el selector mostraba «Mostrar 5» mientras la
- * tabla listaba 15. Se pide 20, una de sus opciones.
- */
-const DEFAULT_PAGE_SIZE = 20;
 const NO_ROWS: IPurchaseDocumentListRow[] = [];
 
+/** Lo que se descarta al cambiar de filial: la página y el proveedor son de la anterior. */
+const SUBSIDIARY_RESET: Partial<IDocumentosCompraFilters> = { page: 1, supplierId: null };
+
+/**
+ * Listado de documentos de compra con filtros y paginación en la URL
+ * (`?status=draft&supplier_id=3&page=2`): volver de una ficha o recargar
+ * conserva la vista, y otra pantalla puede enlazar la lista ya filtrada. Igual
+ * que `useInventarioFilters`, cada cambio usa `replace` para no llenar el
+ * historial, y cualquier filtro vuelve a la página 1.
+ */
 const useDocumentosCompra = () => {
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
@@ -52,23 +63,60 @@ const useDocumentosCompra = () => {
 	const meta = isListForSubsidiary ? storedMeta : null;
 	const error = isListForSubsidiary ? storedError : null;
 
-	const [search, setSearch] = useState('');
-	const [debouncedSearch] = useDebounce(search, 300);
-	const [documentType, setDocumentType] = useState<TDocumentTypeFilter>('all');
-	const [status, setStatus] = useState<TDocumentStatusFilter>('all');
-	const [receptionStatus, setReceptionStatus] = useState<TDocumentReceptionStatusFilter>('all');
-	const [issuedFrom, setIssuedFrom] = useState('');
-	const [issuedTo, setIssuedTo] = useState('');
-	const [page, setPage] = useState(1);
-	const [perPage, setPerPage] = useState(DEFAULT_PAGE_SIZE);
+	const [searchParams, setSearchParams] = useSearchParams();
+	const urlFilters = useMemo(() => parseDocumentosCompraFilters(searchParams), [searchParams]);
 
-	// Otra filial es otro listado: se vuelve a la página 1 en el mismo render,
-	// para no pedir una página que puede no existir en la nueva.
-	const [pageSubsidiaryId, setPageSubsidiaryId] = useState(subsidiaryId);
-	if (pageSubsidiaryId !== subsidiaryId) {
-		setPageSubsidiaryId(subsidiaryId);
-		setPage(1);
-	}
+	const update = useCallback(
+		(patch: Partial<IDocumentosCompraFilters>) => {
+			setSearchParams(
+				(previous) =>
+					mergeListParams(
+						previous,
+						DOCUMENTOS_COMPRA_FILTER_KEYS,
+						serializeDocumentosCompraFilters({
+							...parseDocumentosCompraFilters(previous),
+							page: 1,
+							...patch,
+						}),
+					),
+				{ replace: true },
+			);
+		},
+		[setSearchParams],
+	);
+
+	/**
+	 * Otra filial es otro listado: la página puede no existir y el proveedor
+	 * es de la anterior (el backend respondería 422). Se descartan en el mismo
+	 * render —la petición nunca sale con ellos— y la URL se alinea en el
+	 * efecto. Pasar de `null` a una filial no es un cambio: es el perfil que
+	 * terminó de cargar, y un enlace con `?supplier_id=` debe sobrevivirlo.
+	 */
+	const [filtersSubsidiaryId, setFiltersSubsidiaryId] = useState(subsidiaryId);
+	const isSubsidiarySwitch = filtersSubsidiaryId !== null && filtersSubsidiaryId !== subsidiaryId;
+	const filters = useMemo(
+		() => (isSubsidiarySwitch ? { ...urlFilters, ...SUBSIDIARY_RESET } : urlFilters),
+		[isSubsidiarySwitch, urlFilters],
+	);
+	useEffect(() => {
+		if (filtersSubsidiaryId === subsidiaryId) return;
+		if (isSubsidiarySwitch) update(SUBSIDIARY_RESET);
+		setFiltersSubsidiaryId(subsidiaryId);
+	}, [filtersSubsidiaryId, isSubsidiarySwitch, subsidiaryId, update]);
+
+	const {
+		search,
+		documentType,
+		status,
+		receptionStatus,
+		supplierId,
+		issuedFrom,
+		issuedTo,
+		page,
+		perPage,
+	} = filters;
+	const [debouncedSearch] = useDebounce(search, 300);
+	const supplierFilter = useSupplierFilterOptions(subsidiaryId, supplierId);
 
 	/**
 	 * El alta queda atada a la filial en que se abrió: si cambia, el modal se
@@ -93,6 +141,7 @@ const useDocumentosCompra = () => {
 			document_type: documentType === 'all' ? undefined : documentType,
 			status: status === 'all' ? undefined : status,
 			reception_status: receptionStatus === 'all' ? undefined : receptionStatus,
+			supplier_id: supplierId ?? undefined,
 			issued_from: issuedFrom || undefined,
 			issued_to: issuedTo || undefined,
 			page,
@@ -103,6 +152,7 @@ const useDocumentosCompra = () => {
 			documentType,
 			status,
 			receptionStatus,
+			supplierId,
 			issuedFrom,
 			issuedTo,
 			page,
@@ -130,55 +180,58 @@ const useDocumentosCompra = () => {
 		const isLastRowOnLastPage =
 			items.length === 1 && page > 1 && meta !== null && meta.current_page === meta.last_page;
 		if (isLastRowOnLastPage) {
-			setPage((current) => Math.max(1, current - 1));
+			update({ page: Math.max(1, page - 1) });
 			return undefined;
 		}
 		return refresh();
-	}, [items.length, meta, page, refresh]);
+	}, [items.length, meta, page, refresh, update]);
 
-	const setSearchValue = useCallback((value: string) => {
-		setSearch(value);
-		setPage(1);
-	}, []);
-	const clearFilters = useCallback(() => {
-		setSearch('');
-		setDocumentType('all');
-		setStatus('all');
-		setReceptionStatus('all');
-		setIssuedFrom('');
-		setIssuedTo('');
-		setPage(1);
-	}, []);
-	const setDocumentTypeValue = useCallback((value: TDocumentTypeFilter) => {
-		setDocumentType(value);
-		setPage(1);
-	}, []);
-	const setStatusValue = useCallback((value: TDocumentStatusFilter) => {
-		setStatus(value);
-		setPage(1);
-	}, []);
-	const setReceptionStatusValue = useCallback((value: TDocumentReceptionStatusFilter) => {
-		setReceptionStatus(value);
-		setPage(1);
-	}, []);
-	const setIssuedFromValue = useCallback((value: string) => {
-		setIssuedFrom(value);
-		setPage(1);
-	}, []);
-	const setIssuedToValue = useCallback((value: string) => {
-		setIssuedTo(value);
-		setPage(1);
-	}, []);
-	const onPaginationChange = useCallback((nextPage: number, nextPerPage: number) => {
-		setPage(nextPage);
-		setPerPage(nextPerPage);
-	}, []);
+	const setSearchValue = useCallback((value: string) => update({ search: value }), [update]);
+	const clearFilters = useCallback(
+		() =>
+			update({
+				search: '',
+				documentType: 'all',
+				status: 'all',
+				receptionStatus: 'all',
+				supplierId: null,
+				issuedFrom: '',
+				issuedTo: '',
+			}),
+		[update],
+	);
+	const setDocumentTypeValue = useCallback(
+		(value: TDocumentTypeFilter) => update({ documentType: value }),
+		[update],
+	);
+	const setStatusValue = useCallback(
+		(value: TDocumentStatusFilter) => update({ status: value }),
+		[update],
+	);
+	const setReceptionStatusValue = useCallback(
+		(value: TDocumentReceptionStatusFilter) => update({ receptionStatus: value }),
+		[update],
+	);
+	const setSupplierIdValue = useCallback(
+		(value: number | null) => update({ supplierId: value }),
+		[update],
+	);
+	const setIssuedFromValue = useCallback(
+		(value: string) => update({ issuedFrom: value }),
+		[update],
+	);
+	const setIssuedToValue = useCallback((value: string) => update({ issuedTo: value }), [update]);
+	const onPaginationChange = useCallback(
+		(nextPage: number, nextPerPage: number) => update({ page: nextPage, perPage: nextPerPage }),
+		[update],
+	);
 
 	const hasActiveFilters = Boolean(
 		normalizedSearch ||
 			documentType !== 'all' ||
 			status !== 'all' ||
 			receptionStatus !== 'all' ||
+			supplierId !== null ||
 			issuedFrom ||
 			issuedTo,
 	);
@@ -194,17 +247,22 @@ const useDocumentosCompra = () => {
 		documentType,
 		status,
 		receptionStatus,
+		supplierId,
 		issuedFrom,
 		issuedTo,
 		documentTypeOptions: DOCUMENT_TYPE_FILTER_OPTIONS,
 		statusOptions: DOCUMENT_STATUS_FILTER_OPTIONS,
 		receptionStatusOptions: DOCUMENT_RECEPTION_STATUS_FILTER_OPTIONS,
+		supplierOptions: supplierFilter.options,
+		supplierOptionsLoading: supplierFilter.loading,
+		canFilterBySupplier: supplierFilter.canList,
 		hasActiveFilters,
 		setSearchValue,
 		clearFilters,
 		setDocumentTypeValue,
 		setStatusValue,
 		setReceptionStatusValue,
+		setSupplierIdValue,
 		setIssuedFromValue,
 		setIssuedToValue,
 		onPaginationChange,
