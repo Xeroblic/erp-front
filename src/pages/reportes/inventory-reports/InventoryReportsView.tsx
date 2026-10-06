@@ -45,8 +45,6 @@ const InventoryReportsSession = ({
 	activeBranch,
 }: IInventoryReportsSessionProps) => {
 	const dispatch = useAppDispatch();
-	const filtersApi = useInventoryReportFilters();
-	const { filters, setVista } = filtersApi;
 	const { ready, sourceOf } = useInventoryReportSources(subsidiaryId);
 	const companyName = useAppSelector((state) => {
 		const { user } = state.auth;
@@ -66,6 +64,9 @@ const InventoryReportsSession = ({
 		}));
 		return list.length === 0 && activeBranch ? [activeBranch] : list;
 	}, [subsidiaryBranches, activeBranch]);
+	const branchIds = useMemo(() => branches.map((branch) => branch.id), [branches]);
+	const filtersApi = useInventoryReportFilters(branchIds);
+	const { filters, setVista } = filtersApi;
 
 	const scopeLabel =
 		filters.sucursal === null
