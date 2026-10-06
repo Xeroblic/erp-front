@@ -1,25 +1,18 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { IReportType } from '@/interface/reports.interface';
 import type {
 	TInventoryReportResult,
 	TInventoryReportType,
 } from '@/interface/inventoryReports.interface';
-import {
-	exportReport,
-	fetchInventoryReport,
-	fetchReportResults,
-	fetchReportTypes,
-	inventoryReportQueryKey,
-} from './reportsThunks';
+import { fetchInventoryReport, fetchReportResults, inventoryReportQueryKey } from './reportsThunks';
 
 /**
  * Una consulta de Reportes › Inventario. Va aparte de `loading`/`error`, que
  * comparten Ventas y el dashboard: guarda la clave de quien la pidió
  * (`ownerContext`) y sólo la última petición (`requestId`) puede resolverla,
  * así un cambio de filial, sucursal o pestaña nunca pinta filas del contexto
- * anterior (ZF-12).
+ * anterior.
  */
-export interface IInventoryReportSlot {
+interface IInventoryReportSlot {
 	ownerContext: string | null;
 	requestId: string | null;
 	result: TInventoryReportResult | null;
@@ -28,25 +21,24 @@ export interface IInventoryReportSlot {
 }
 
 export interface ReportsState {
-	types: IReportType[];
 	aggregatedResults: unknown[] | null;
+	/** Sólo la última consulta de `fetchReportResults` escribe resultados y `loading`. */
+	resultsRequestId: string | null;
 	/** Una consulta por tipo: Estadísticas lee dos reportes a la vez. */
 	inventory: Partial<Record<TInventoryReportType, IInventoryReportSlot>>;
 	loading: boolean;
-	exporting: boolean;
 	error: string | null;
 }
 
 const initialState: ReportsState = {
-	types: [],
 	aggregatedResults: null,
+	resultsRequestId: null,
 	inventory: {},
 	loading: false,
-	exporting: false,
 	error: null,
 };
 
-export const reportsSlice = createSlice({
+const reportsSlice = createSlice({
 	name: 'reports',
 	initialState,
 	reducers: {
@@ -59,41 +51,29 @@ export const reportsSlice = createSlice({
 		},
 	},
 	extraReducers: (builder) => {
-		// ------- LISTA -------
-		builder.addCase(fetchReportTypes.pending, (state) => {
-			state.loading = true;
-			state.error = null;
-		});
-
-		builder.addCase(fetchReportTypes.fulfilled, (state, action) => {
-			state.types = action.payload as unknown as IReportType[];
-			state.loading = false;
-			state.error = null;
-		});
-
-		builder.addCase(fetchReportTypes.rejected, (state, action) => {
-			state.loading = false;
-			state.error = action.payload as string;
-		});
-
-		// ------- RESULTADOS AGREGADOS -------
-		builder.addCase(fetchReportResults.pending, (state) => {
+		builder.addCase(fetchReportResults.pending, (state, action) => {
+			state.resultsRequestId = action.meta.requestId;
 			state.loading = true;
 			state.error = null;
 		});
 
 		builder.addCase(fetchReportResults.fulfilled, (state, action) => {
-			state.aggregatedResults = action.payload.data as unknown[];
+			if (state.resultsRequestId !== action.meta.requestId) return;
+			state.aggregatedResults = action.payload;
 			state.loading = false;
 			state.error = null;
 		});
 
+		// Al cambiar de filtros se aborta la consulta anterior, pero su rechazo
+		// llega después del `pending` de la nueva: no debe apagar su `loading`.
 		builder.addCase(fetchReportResults.rejected, (state, action) => {
+			if (state.resultsRequestId !== action.meta.requestId) return;
 			state.loading = false;
-			state.error = action.payload as string;
+			state.error = action.meta.aborted
+				? null
+				: (action.payload ?? 'No pudimos cargar el reporte.');
 		});
 
-		// ------- REPORTES › INVENTARIO -------
 		builder.addCase(fetchInventoryReport.pending, (state, action) => {
 			state.inventory[action.meta.arg.type] = {
 				ownerContext: inventoryReportQueryKey(action.meta.arg),
@@ -119,18 +99,6 @@ export const reportsSlice = createSlice({
 			slot.error = action.meta.aborted
 				? null
 				: (action.payload ?? 'No pudimos cargar el reporte.');
-		});
-
-		// ------- EXPORTACION -------
-		builder.addCase(exportReport.pending, (state) => {
-			state.exporting = true;
-		});
-		builder.addCase(exportReport.fulfilled, (state) => {
-			state.exporting = false;
-		});
-		builder.addCase(exportReport.rejected, (state, action) => {
-			state.exporting = false;
-			state.error = action.payload as string;
 		});
 	},
 });
