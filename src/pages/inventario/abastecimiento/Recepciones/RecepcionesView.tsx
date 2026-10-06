@@ -71,6 +71,15 @@ const RecepcionesView = () => {
 	});
 
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+	/**
+	 * Se llegó con `?purchase_document_id=` sin poder registrar recepciones. Vive
+	 * en estado porque el parámetro se limpia en el acto; cada intento lo vuelve
+	 * a abrir aunque se haya cerrado antes. Se deriva contra `canWriteReceipts`
+	 * para que el aviso desaparezca si el permiso llega después (cambio de
+	 * sucursal, permisos refrescados).
+	 */
+	const [isDeniedCreateNoticeOpen, setIsDeniedCreateNoticeOpen] = useState(false);
+	const showDeniedCreateNotice = isDeniedCreateNoticeOpen && !canWriteReceipts;
 	const preselectedDocumentId = searchParams.get('purchase_document_id');
 
 	/**
@@ -103,7 +112,16 @@ const RecepcionesView = () => {
 	};
 
 	useEffect(() => {
-		if (preselectedDocumentId && canWriteReceipts) setIsCreateModalOpen(true);
+		if (!preselectedDocumentId) return;
+		if (canWriteReceipts) {
+			setIsCreateModalOpen(true);
+			return;
+		}
+		// Sin permiso no se abre el alta: se avisa y se quita el parámetro para
+		// que recargar o volver no repita el intento.
+		setIsDeniedCreateNoticeOpen(true);
+		handleCloseCreateModal(false);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [preselectedDocumentId, canWriteReceipts]);
 
 	/**
@@ -144,6 +162,27 @@ const RecepcionesView = () => {
 			</Subheader>
 			<Container className='space-y-4'>
 				<ProcurementMockNotice />
+				{showDeniedCreateNotice && (
+					<Alert
+						color='blue'
+						variant='outline'
+						icon='HeroLockClosed'
+						title='No se abrió el registro de recepción'
+						role='status'>
+						<div className='flex flex-wrap items-center justify-between gap-3'>
+							<span>
+								No tienes permiso para registrar recepciones en esta sucursal.
+							</span>
+							<Button
+								size='sm'
+								variant='outline'
+								icon='HeroXMark'
+								aria-label='Cerrar aviso'
+								onClick={() => setIsDeniedCreateNoticeOpen(false)}
+							/>
+						</div>
+					</Alert>
+				)}
 				<RecepcionesFilters
 					search={search}
 					onSearchChange={setSearchValue}
