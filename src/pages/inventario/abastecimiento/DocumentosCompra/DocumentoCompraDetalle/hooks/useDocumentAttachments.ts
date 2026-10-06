@@ -19,25 +19,16 @@ import type {
 } from '@/interface/procurement.interface';
 
 /**
- * Adjuntos privados del detalle de documento de compra (subsección de la
- * sección 6): lista, sube, descarga y elimina contra la API real (backend
- * PR #85). Estado local del componente, no del store global — el mismo
- * criterio que `useDeferredPaymentAttachments` en pagos diferidos: los
- * adjuntos sólo importan mientras esta ficha está abierta.
+ * Adjuntos privados del detalle de documento de compra. Estado local: sólo
+ * importan mientras la ficha está abierta.
  *
- * Cada subida/baja exitosa cambia `related_counts.attachments` **del
- * documento**, que vive en `purchaseDocumentsSlice`, no acá — por eso
- * `onChanged` avisa al padre para que recargue el documento completo en vez
- * de que este hook intente sincronizar dos stores a mano.
+ * Cada escritura exitosa cambia `related_counts.attachments` del documento,
+ * que vive en `purchaseDocumentsSlice`: `onChanged` avisa al padre para que
+ * lo recargue en vez de sincronizar dos stores a mano.
  *
- * **Propiedad de contexto (ZF-12):** el router reutiliza esta misma instancia
- * del hook al navegar de un documento a otro. Una subida que sigue en curso
- * cuando el usuario ya cambió de documento no puede refrescar ni avisar al
- * padre con el contexto viejo — eso reabriría/recargaría el documento
- * abandonado en vez del que se está mirando ahora. `generationRef` marca de
- * qué contexto (`subsidiaryId` + `documentId`) es cada operación en curso;
- * cualquier callback que resuelva después de un cambio de contexto se
- * descarta en silencio.
+ * El router reutiliza esta instancia al navegar entre documentos, así que cada
+ * operación captura la generación de su contexto (`subsidiaryId` +
+ * `documentId`) y se descarta en silencio si resuelve después de un cambio.
  */
 
 const PER_PAGE = PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT;
@@ -45,11 +36,6 @@ const NOT_FOUND_STATUS = 404;
 
 const ALLOWED_MIME_TYPES: readonly string[] = PURCHASE_DOCUMENT_ATTACHMENT_ALLOWED_MIME_TYPES;
 
-/**
- * Los límites se muestran **antes** de intentar subir (criterio de
- * aceptación de la card): un archivo de tipo o tamaño inválido se rechaza
- * acá, en español, sin llegar a golpear el backend.
- */
 const getClientFileError = (file: File): string | null => {
 	if (!ALLOWED_MIME_TYPES.includes(file.type)) return `${file.name}: debe ser PDF, JPG o PNG.`;
 	if (file.size > PURCHASE_DOCUMENT_ATTACHMENT_MAX_SIZE_BYTES)
@@ -71,12 +57,8 @@ const triggerBrowserDownload = (blob: Blob, fileName: string): void => {
 export type TAttachmentUploadStatus = 'pending' | 'uploading' | 'error';
 
 /**
- * Un archivo aceptado por la validación de cliente, camino al servicio.
- * `idempotencyKey` se genera **una sola vez** por archivo, al aceptarlo — un
- * reintento reenvía la misma clave con el mismo archivo, nunca una nueva:
- * regenerarla en cada intento le quita a la `Idempotency-Key` su propósito
- * (ante un timeout con resultado incierto, reintentar con clave nueva puede
- * duplicar la subida en el backend).
+ * `idempotencyKey` se genera una sola vez por archivo: ante un timeout con
+ * resultado incierto, reintentar con una clave nueva podría duplicar la subida.
  */
 export interface IPendingAttachmentUpload {
 	localId: string;
@@ -89,11 +71,8 @@ export interface IPendingAttachmentUpload {
 interface IUseDocumentAttachmentsArgs {
 	subsidiaryId: number | null;
 	documentId: number | null;
-	/** `true` en `draft`/`confirmed`. En `cancelled` no se ofrece subir. */
 	canUpload: boolean;
-	/** `true` sólo en `draft`. */
 	canDelete: boolean;
-	/** Avisa al padre tras una escritura exitosa, para recargar el documento. */
 	onChanged: () => void;
 }
 
@@ -109,22 +88,16 @@ const useDocumentAttachments = ({
 	const [page, setPage] = useState(1);
 	const [loading, setLoading] = useState(false);
 	const [listError, setListError] = useState<string | null>(null);
-	/** Rechazos de la validación de cliente (tipo/tamaño/cupo), previos a tocar el servicio. */
 	const [validationError, setValidationError] = useState<string | null>(null);
 	const [uploadQueue, setUploadQueue] = useState<IPendingAttachmentUpload[]>([]);
 	const [isUploading, setIsUploading] = useState(false);
 	const [deletingId, setDeletingId] = useState<number | null>(null);
 	const [downloadingId, setDownloadingId] = useState<number | null>(null);
-	// Incrementarlo fuerza el efecto de carga aunque `page` no cambie: sin
-	// esto, subir un archivo estando ya en la página 1 dejaba `setPage(1)`
-	// como no-op — React descarta un `setState` con el mismo valor — y la
-	// lista nunca se refrescaba con el adjunto recién subido.
+	// Fuerza la recarga aunque `page` ya sea 1: `setPage(1)` sería un no-op.
 	const [reloadToken, setReloadToken] = useState(0);
 
-	// Espejo síncrono de `uploadQueue`: el bucle de subida necesita leer el
-	// siguiente pendiente apenas se agrega uno nuevo, sin esperar al próximo
-	// render — un `useState` closured se quedaría con la foto de cuando se
-	// creó el bucle.
+	// Espejo síncrono de `uploadQueue`: el bucle lee los pendientes agregados
+	// después de arrancar, que su closure de estado no vería.
 	const queueRef = useRef<IPendingAttachmentUpload[]>([]);
 	const setQueue = useCallback(
 		(updater: (previous: IPendingAttachmentUpload[]) => IPendingAttachmentUpload[]) => {
@@ -134,21 +107,15 @@ const useDocumentAttachments = ({
 		[],
 	);
 
-	// Generación del contexto actual (`subsidiaryId` + `documentId`). Cada
-	// operación en curso captura la suya al iniciar; si no coincide con ésta
-	// al terminar, el documento mostrado ya cambió y la operación se descarta
-	// sin tocar estado ni avisar al padre.
 	const generationRef = useRef(0);
 
-	// Guarda de reentrancia del bucle de subida. Deliberadamente un ref, no el
-	// estado `isUploading`: dos llamadas a `addFiles`/`retryUpload` separadas
-	// por un solo tick (sin que React haya vuelto a renderizar entre medio)
-	// leerían el mismo `isUploading` cerrado en `false`, dejando correr dos
-	// bucles a la vez sobre la misma cola.
-	const isProcessingRef = useRef(false);
+	// Generación dueña del bucle de subida en curso, o `null` si no corre
+	// ninguno. Es un ref y no `isUploading` porque dos llamadas en el mismo
+	// tick leerían el mismo estado cerrado y arrancarían dos bucles. Guarda la
+	// generación, no un booleano: el bucle de un documento abandonado sigue
+	// esperando su petición y no debe bloquear la cola del documento actual.
+	const processingGenerationRef = useRef<number | null>(null);
 
-	// Documento nuevo: ni la página, ni el error del anterior, ni su cola de
-	// subidas en curso tienen sentido acá.
 	useEffect(() => {
 		generationRef.current += 1;
 		queueRef.current = [];
@@ -185,7 +152,6 @@ const useDocumentAttachments = ({
 		return () => {
 			cancelled = true;
 		};
-		// `reloadToken` no participa de la petición: sólo fuerza esta re-ejecución.
 	}, [subsidiaryId, documentId, page, reloadToken]);
 
 	const refetch = useCallback(() => {
@@ -194,9 +160,7 @@ const useDocumentAttachments = ({
 	}, []);
 
 	const totalCount = meta?.total ?? attachments.length;
-	// Los archivos ya en cola (pendientes o subiendo) también consumen cupo:
-	// sin restarlos, dos tandas seguidas antes de que la primera termine
-	// podrían aceptar juntas más de los 10 archivos permitidos.
+	// La cola también consume cupo: si no, dos tandas seguidas podrían superar el máximo.
 	const queuedCount = uploadQueue.filter((item) => item.status !== 'error').length;
 	const remainingQuota = Math.max(
 		0,
@@ -205,18 +169,15 @@ const useDocumentAttachments = ({
 	const isQuotaReached = remainingQuota === 0;
 
 	/**
-	 * Procesa los pendientes de la cola, uno por uno y en orden — igual que
-	 * antes, para no leer un cupo desactualizado del backend entre dos
-	 * archivos de la misma tanda. A diferencia de la versión anterior, un
-	 * archivo que falla ya **no aborta el resto de la tanda**: queda marcado
-	 * `error` (con su mismo archivo y clave, listo para reintentar) y el
-	 * bucle sigue con el siguiente pendiente.
+	 * Sube los pendientes uno por uno, para no competir por el cupo del backend
+	 * dentro de la misma tanda. Un fallo deja el archivo en `error`, listo para
+	 * reintentar, y el bucle sigue con el siguiente.
 	 */
 	const runUploadQueue = useCallback(
 		async (opSubsidiaryId: number, opDocumentId: number) => {
 			const generation = generationRef.current;
-			if (isProcessingRef.current) return;
-			isProcessingRef.current = true;
+			if (processingGenerationRef.current === generation) return;
+			processingGenerationRef.current = generation;
 			setIsUploading(true);
 			let hadSuccess = false;
 			try {
@@ -262,14 +223,13 @@ const useDocumentAttachments = ({
 					}
 				}
 			} finally {
-				isProcessingRef.current = false;
-				setIsUploading(false);
+				if (processingGenerationRef.current === generation) {
+					processingGenerationRef.current = null;
+					setIsUploading(false);
+				}
 			}
 
-			// Corre también si algún archivo de la tanda falló: los anteriores
-			// que sí se subieron ya están en el backend, así que la
-			// lista y el conteo del documento se refrescan igual — dejarlos sin
-			// refrescar escondería adjuntos que sí existen.
+			// También con fallos en la tanda: lo que sí se subió ya existe en el backend.
 			if (hadSuccess && generationRef.current === generation) {
 				refetch();
 				onChanged();
@@ -315,13 +275,7 @@ const useDocumentAttachments = ({
 		[subsidiaryId, documentId, canUpload, remainingQuota, setQueue, runUploadQueue],
 	);
 
-	/**
-	 * Reintenta un archivo que quedó en `error`, con el **mismo** archivo y la
-	 * **misma** `Idempotency-Key` que su intento original — nunca una clave
-	 * nueva: si el primer intento sí llegó a escribir en el backend real (el
-	 * cliente sólo vio el timeout, no la respuesta), la misma clave hace que
-	 * el reintento devuelva ese mismo resultado en vez de duplicar el adjunto.
-	 */
+	/** Reintenta con la misma `Idempotency-Key` del intento original. */
 	const retryUpload = useCallback(
 		(localId: string) => {
 			if (subsidiaryId === null || documentId === null) return;
@@ -357,7 +311,6 @@ const useDocumentAttachments = ({
 		void runUploadQueue(opSubsidiaryId, opDocumentId);
 	}, [subsidiaryId, documentId, setQueue, runUploadQueue]);
 
-	/** Descarta un archivo fallido de la cola sin reintentarlo. */
 	const dismissUpload = useCallback(
 		(localId: string) => {
 			setQueue((previous) => previous.filter((item) => item.localId !== localId));
@@ -382,9 +335,8 @@ const useDocumentAttachments = ({
 			} catch (error) {
 				if (generationRef.current !== generation) return;
 				const resolved = resolveProcurementError(error, 'No se pudo eliminar el adjunto.');
-				// Un 404 dice que el adjunto ya no existe: lo borró un intento
-				// anterior cuya respuesta se perdió, u otra persona. La lista y el
-				// contador se reconcilian igual que tras borrarlo.
+				// 404: ya lo borró un intento cuya respuesta se perdió, u otra
+				// persona. Se reconcilia igual que tras borrarlo.
 				if (resolved.status === NOT_FOUND_STATUS) {
 					toast.info('El adjunto ya se había eliminado.');
 					refetch();
@@ -411,11 +363,9 @@ const useDocumentAttachments = ({
 					documentId,
 					attachment.id,
 				);
-				// La descarga en sí no depende del contexto que sigue visible —
-				// dispararla igual no corrompe nada — pero el toast de error sí
-				// hablaría de un documento que el usuario ya no está mirando.
-				// El nombre sale de la fila: es el original que el usuario subió,
-				// aunque el navegador no pueda leer `Content-Disposition`.
+				// La descarga no depende del contexto visible; sólo el toast de error
+				// se descarta tras un cambio. El nombre sale de la fila porque el
+				// navegador puede no leer `Content-Disposition`.
 				triggerBrowserDownload(blob, attachment.file_name);
 			} catch (error) {
 				if (generationRef.current === generation) {
