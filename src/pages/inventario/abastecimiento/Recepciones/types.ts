@@ -8,6 +8,7 @@ import {
 	parsePageParam,
 } from '@/utils/listSearchParams.util';
 import type { TCostEntryBasis, TStockReceiptStatus } from '@/interface/procurement.interface';
+import { withinPendingPerDocumentLine } from './utils/pendingPerDocumentLine';
 
 /**
  * Tipos y validación de la pantalla de recepciones físicas (card 05,
@@ -218,31 +219,6 @@ const withDocumentLineSchema = Yup.object({
 			return typeof pending !== 'number' || value === undefined || value <= pending;
 		}),
 });
-
-/**
- * Una recepción corregida puede traer varias filas contra la misma línea del
- * documento: el tope por fila no alcanza, la suma de esas filas tampoco puede
- * superar lo pendiente de la línea.
- */
-const withinPendingPerDocumentLine = (
-	items: { purchase_document_line_id?: number; pending_quantity?: number; quantity?: number }[],
-): boolean => {
-	const totals = new Map<number, { sum: number; pending: number | undefined }>();
-	items.forEach((line) => {
-		if (line.purchase_document_line_id === undefined) return;
-		const current = totals.get(line.purchase_document_line_id) ?? {
-			sum: 0,
-			pending: line.pending_quantity,
-		};
-		totals.set(line.purchase_document_line_id, {
-			sum: current.sum + (line.quantity ?? 0),
-			pending: current.pending ?? line.pending_quantity,
-		});
-	});
-	return [...totals.values()].every(
-		({ sum, pending }) => pending === undefined || sum <= pending,
-	);
-};
 
 /** Una línea con documento sólo viaja si se recibió algo de ella. */
 export const hasReceivedQuantity = (line: IRecepcionLineFormValues): boolean =>

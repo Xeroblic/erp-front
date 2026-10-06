@@ -5,7 +5,8 @@ import {
 	updateStockReceipt,
 } from '@/mocks/services/stockReceipts.mock';
 import { getProcurementSupplier } from '@/mocks/services/procurementSuppliers.mock';
-import { toFormValues, toUpdatePayload } from '../useStockReceiptForm';
+import { toFormValues } from '../../utils/stockReceiptFormValues';
+import { toUpdatePayload } from '../../utils/stockReceiptPayload';
 
 /**
  * Misma regla que en documentos: corregir una recepción manual sin tocar el

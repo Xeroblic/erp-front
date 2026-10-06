@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { FormikProps } from 'formik';
 import type { IPurchaseDocument } from '@/interface/procurement.interface';
-import { buildDocumentLines } from './useStockReceiptForm';
+import { buildDocumentLines } from '../utils/stockReceiptFormValues';
 import type { IStockReceiptFormValues } from '../types';
 
 /**

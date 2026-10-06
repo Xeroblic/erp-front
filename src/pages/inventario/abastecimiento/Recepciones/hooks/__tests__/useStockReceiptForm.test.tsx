@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IPurchaseDocument, IStockReceipt } from '@/interface/procurement.interface';
 import { EMPTY_RECEPCION_LINE, EMPTY_RECEPCION_VALUES } from '../../types';
 import type { IStockReceiptFormValues } from '../../types';
-import useStockReceiptForm, { buildDocumentLines, toUpdatePayload } from '../useStockReceiptForm';
+import useStockReceiptForm from '../useStockReceiptForm';
+import { buildDocumentLines } from '../../utils/stockReceiptFormValues';
+import { toUpdatePayload } from '../../utils/stockReceiptPayload';
 
 /**
  * Dos garantías del envío que no se ven razonando sobre el cierre de
