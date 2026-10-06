@@ -1,21 +1,15 @@
 /**
- * Hook para manejar envío de ajuste de stock
- * Responsabilidad única: comunicación con API (Single Responsibility)
+ * Escribe contra el endpoint real `POST /subsidiaries/{sub}/stock-adjustments`,
+ * que hoy sirve dos cosas distintas: ingresar mercadería comprada y corregir una
+ * diferencia de conteo. El contrato nuevo las separa en tres pantallas —recepción,
+ * traslado interno y ajuste por conteo— bajo `pages/inventario/abastecimiento`.
  *
- * **Decisión de migración (card 08, ZF-113).** Este hook escribe contra el
- * endpoint real `POST /subsidiaries/{sub}/stock-adjustments`, que hoy sirve dos
- * cosas distintas: ingresar mercadería comprada y corregir una diferencia de
- * conteo. El contrato nuevo (`frontend-guide.md`, PR #67 del backend) las
- * separa en tres pantallas —recepción, traslado interno y ajuste por conteo—,
- * que ya existen mockeadas bajo `pages/inventario/abastecimiento`.
- *
- * Mientras el backend no publique esos endpoints, ambas cosas **conviven**:
- * esta pantalla sigue siendo la única operativa (`VITE_INVENTORY_STOCK_USE_MOCKS`
- * está apagado fuera de desarrollo) y sólo suma un aviso que deriva al destino
- * correcto. Cuando el contrato se publique, lo que se retira es este hook junto
- * con `pages/inventario/ingresoStock`, no una parte suya: su payload
- * (`quantity_change` firmado, sin bodega, sin condición y sin procedencia) no
- * tiene equivalente en el contrato nuevo y no se puede migrar campo a campo.
+ * Mientras el backend no publique esos endpoints, ambas cosas conviven: esta
+ * pantalla sigue siendo la única operativa (`VITE_INVENTORY_STOCK_USE_MOCKS` está
+ * apagado fuera de desarrollo). Cuando el contrato se publique, lo que se retira es
+ * este hook junto con `pages/inventario/ingresoStock`, no una parte suya: su
+ * payload (`quantity_change` firmado, sin bodega, sin condición y sin procedencia)
+ * no tiene equivalente en el contrato nuevo y no se puede migrar campo a campo.
  */
 import { useCallback, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -40,19 +34,31 @@ type ApiErrorLike = {
 	};
 };
 
+// El lote ya quedó aceptado (202) cuando se persiste su id: si el storage no está
+// disponible (modo privado, cuota, política del navegador) sólo se pierde el
+// recordatorio, no se debe reportar el envío como fallido ni romper el montaje.
 const persistLastBatchId = (batchId: string) => {
-	if (typeof window === 'undefined') return;
-	window.sessionStorage.setItem(LAST_BATCH_STORAGE_KEY, batchId);
+	try {
+		window.sessionStorage.setItem(LAST_BATCH_STORAGE_KEY, batchId);
+	} catch {
+		/* storage no disponible */
+	}
 };
 
 const readLastBatchId = (): string | null => {
-	if (typeof window === 'undefined') return null;
-	return window.sessionStorage.getItem(LAST_BATCH_STORAGE_KEY);
+	try {
+		return window.sessionStorage.getItem(LAST_BATCH_STORAGE_KEY);
+	} catch {
+		return null;
+	}
 };
 
 const clearPersistedLastBatchId = () => {
-	if (typeof window === 'undefined') return;
-	window.sessionStorage.removeItem(LAST_BATCH_STORAGE_KEY);
+	try {
+		window.sessionStorage.removeItem(LAST_BATCH_STORAGE_KEY);
+	} catch {
+		/* storage no disponible */
+	}
 };
 
 const showValidationErrors = (errors?: Record<string, string[] | string>) => {
@@ -75,17 +81,11 @@ export const useStockAdjustment = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [lastBatchId, setLastBatchId] = useState<string | null>(() => readLastBatchId());
 
-	/**
-	 * Convierte cantidad string a número, validando > 0
-	 */
 	const toPositiveNumber = useCallback((value: string | number): number => {
 		const parsed = Number(value);
 		return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 	}, []);
 
-	/**
-	 * Calcula quantity_change (con signo según tipo de movimiento)
-	 */
 	const getSignedQuantity = useCallback(
 		(quantity: string, movementType: IMovementType): number => {
 			const absolute = toPositiveNumber(quantity);
@@ -95,9 +95,6 @@ export const useStockAdjustment = () => {
 		[toPositiveNumber],
 	);
 
-	/**
-	 * Construye payload y envía ajuste al API
-	 */
 	const submitBatchAdjustment = useCallback(
 		async (
 			workItems: IWorkItem[],
@@ -144,12 +141,10 @@ export const useStockAdjustment = () => {
 
 			let hasNegativeStockError = false;
 
-			// Construir array de items con quantity_change
 			const items = workItems
 				.map((item) => {
 					const quantity_change = getSignedQuantity(item.quantity, movementType);
 
-					// Validación de stock negativo (Solo para egresos)
 					if (movementType === 'egreso' && quantity_change < 0) {
 						const absoluteChange = Math.abs(quantity_change);
 						const currentStock = Number(item.stock ?? 0);
@@ -172,13 +167,11 @@ export const useStockAdjustment = () => {
 				return false;
 			}
 
-			// Validar que NO haya cambios de 0
 			if (!items.length || items.length !== workItems.length) {
 				toast.error('Todos los productos deben tener cantidad distinta de 0.');
 				return false;
 			}
 
-			// Armar payload
 			const payload: IStockAdjustmentPayload = {
 				branch_id: parsedBranchId,
 				reason: normalizedReason,
