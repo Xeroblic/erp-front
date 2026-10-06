@@ -1,4 +1,3 @@
-// src/routes/contentRoutes.tsx
 import React, { lazy } from 'react';
 import { Navigate, PathRouteProps, useParams } from 'react-router-dom';
 import pagesConfig from '@/config/pages.config';
@@ -10,9 +9,6 @@ import NotFoundPage from '@/pages/NotFound.page';
 
 const ProfilePage = lazy(() => import('@/pages/perfil/Perfil'));
 const Dashboard = lazy(() => import('@/pages/MainDashboard'));
-// const ProductosPage = lazy(() => import("@/pages/Usuarios"));
-// const UsuariosPage  = lazy(() => import("@/pages/Usuarios"));
-// const Cotizaciones  = lazy(() => import("@/pages/Cotizaciones"));
 const EmpresaPage = lazy(() => import('@/pages/gestionAdmin/empresa/Empresa'));
 const SubEmpresa = lazy(() => import('@/pages/gestionAdmin/subempresa/SubEmpresa'));
 const SubEmpresaDetalle = lazy(() => import('@/pages/gestionAdmin/subempresa/SubEmpresaDetalle'));
@@ -123,18 +119,6 @@ const DetalleClientePage = lazy(() => import('@/pages/catalogos/clientes/Detalle
 const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
 const GarantiasPage = lazy(() => import('@/pages/garantias/GarantiasPage'));
 const GarantiaDetailsPage = lazy(() => import('@/pages/garantias/GarantiaDetailsPage'));
-// const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
-// const BatchesList = lazy(
-// 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchListPage'),
-// );
-// const BatchCreate = lazy(
-// 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchCreatePage'),
-// );
-// const BatchDetail = lazy(
-// 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchDetailPage'),
-// );
-
-// const ItemsList = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemListPage'));
 
 /// REFACTOR DE TECHNICAL REVIEW
 
@@ -170,293 +154,296 @@ export interface IRoutePersonalizada extends PathRouteProps {
 	public?: boolean;
 }
 
-const cfg = pagesConfig as any;
-
 const contentRoutes: IRoutePersonalizada[] = [
-	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
-	{ path: cfg.recuperarPassword.to, element: <RecoverPasswordPage />, public: true },
-	{ path: cfg.confirmarNuevaPass.to, element: <ResetPasswordPage />, public: true },
-	{ path: cfg.portalPedidosMock.to, element: <PortalPedidosPage />, public: true },
-	{ path: cfg.portalPedidos.to, element: <PortalPedidosPage />, public: true },
-	{ path: cfg.FormularioLockCare.to, element: <FormLockCare />, public: true },
+	{ path: pagesConfig.loginPage.to, element: <LoginPage />, public: true },
+	{ path: pagesConfig.recuperarPassword.to, element: <RecoverPasswordPage />, public: true },
+	{ path: pagesConfig.confirmarNuevaPass.to, element: <ResetPasswordPage />, public: true },
+	{ path: pagesConfig.portalPedidosMock.to, element: <PortalPedidosPage />, public: true },
+	{ path: pagesConfig.portalPedidos.to, element: <PortalPedidosPage />, public: true },
+	{ path: pagesConfig.FormularioLockCare.to, element: <FormLockCare />, public: true },
 	{
-		path: cfg.FormularioLockCare.subPages.publicLockCare.to,
+		path: pagesConfig.FormularioLockCare.subPages.publicLockCare.to,
 		element: <PublicLockCare />,
 		public: true,
 	},
 	{
-		path: cfg.FormularioLockCare.subPages.checkOutLockCare.to,
+		path: pagesConfig.FormularioLockCare.subPages.checkOutLockCare.to,
 		element: <CheckOutLockCare />,
 		public: true,
 	},
 	// Gestión interna de casilleros
 	{
-		path: cfg.technical.subPages.lockersManagement.to,
+		path: pagesConfig.technical.subPages.lockersManagement.to,
 		element: <LockersManagement />,
-		authority: cfg.technical.subPages.lockersManagement.authority,
+		authority: pagesConfig.technical.subPages.lockersManagement.authority,
 	},
-	// refactor
 	{
-		path: cfg.technical.subPages.refactor.to,
+		path: pagesConfig.technical.subPages.refactor.to,
 		element: <RefactorTechnicalReview />,
-		authority: cfg.technical.subPages.refactor.authority,
+		authority: pagesConfig.technical.subPages.refactor.authority,
 	},
 	{
-		path: cfg.technical.subPages.lotes.to,
+		path: pagesConfig.technical.subPages.lotes.to,
 		element: <RefactorBatches />,
-		authority: cfg.technical.subPages.lotes.authority,
+		authority: pagesConfig.technical.subPages.lotes.authority,
 	},
 	{
 		path: '/technical-reviews/lotes/crear',
 		element: <RefactorCrearLote />,
-		authority: cfg.technical.subPages.lotes.authority,
+		authority: pagesConfig.technical.subPages.lotes.authority,
 	},
 	{
 		path: '/technical-reviews/lotes/:batchId',
 		element: <RefactorDetalleLote />,
-		authority: cfg.technical.subPages.lotes.authority,
+		authority: pagesConfig.technical.subPages.lotes.authority,
 	},
 	{ path: '/usuarios/activar/:token', element: <AceptarInvitacionEmpresa />, public: true },
 
-	{ path: cfg.profilePage.to, element: <ProfilePage />, authority: cfg.profilePage.authority },
-	{ path: cfg.dashboard.to, element: <Dashboard />, authority: cfg.dashboard.authority },
+	{
+		path: pagesConfig.profilePage.to,
+		element: <ProfilePage />,
+		authority: pagesConfig.profilePage.authority,
+	},
+	{
+		path: pagesConfig.dashboard.to,
+		element: <Dashboard />,
+		authority: pagesConfig.dashboard.authority,
+	},
 
 	{
-		path: cfg.manage.subPages.company.to,
+		path: pagesConfig.manage.subPages.company.to,
 		element: <EmpresaPage />,
-		authority: cfg.manage.subPages.company.authority,
+		authority: pagesConfig.manage.subPages.company.authority,
 	},
 	{
-		path: cfg.manage.subPages.subsidiary.to,
+		path: pagesConfig.manage.subPages.subsidiary.to,
 		element: <SubEmpresa />,
-		authority: cfg.manage.subPages.subsidiary.authority,
+		authority: pagesConfig.manage.subPages.subsidiary.authority,
 	},
 	{
-		path: cfg.manage.subPages.subsidiaryDetail.to,
+		path: pagesConfig.manage.subPages.subsidiaryDetail.to,
 		element: <SubEmpresaDetalle />,
-		authority: cfg.manage.subPages.subsidiaryDetail.authority,
+		authority: pagesConfig.manage.subPages.subsidiaryDetail.authority,
 	},
 	{
-		path: cfg.manage.subPages.subsidiaryCustomization.to,
+		path: pagesConfig.manage.subPages.subsidiaryCustomization.to,
 		element: <SubEmpresaPersonalizacion />,
-		authority: cfg.manage.subPages.subsidiaryCustomization.authority,
+		authority: pagesConfig.manage.subPages.subsidiaryCustomization.authority,
 	},
 	{
-		path: cfg.manage.subPages.branch.to,
+		path: pagesConfig.manage.subPages.branch.to,
 		element: <Sucursales />,
-		authority: cfg.manage.subPages.branch.authority,
+		authority: pagesConfig.manage.subPages.branch.authority,
 	},
 	{
-		path: cfg.manage.subPages.branchDetail.to,
+		path: pagesConfig.manage.subPages.branchDetail.to,
 		element: <SucursalDetalle />,
-		authority: cfg.manage.subPages.branchDetail.authority,
+		authority: pagesConfig.manage.subPages.branchDetail.authority,
 	},
 	{
-		path: cfg.manage.subPages.permissionsAdmin.to,
+		path: pagesConfig.manage.subPages.permissionsAdmin.to,
 		element: <PermissionsAdmin />,
-		authority: cfg.manage.subPages.permissionsAdmin.authority,
+		authority: pagesConfig.manage.subPages.permissionsAdmin.authority,
 	},
 	{
-		path: cfg.manage.subPages.rolesPermisos.to,
+		path: pagesConfig.manage.subPages.rolesPermisos.to,
 		element: <RolesPermisos />,
-		authority: cfg.manage.subPages.rolesPermisos.authority,
+		authority: pagesConfig.manage.subPages.rolesPermisos.authority,
 	},
 	{
-		path: cfg.manage.subPages.rolesPermisosDetail.to,
+		path: pagesConfig.manage.subPages.rolesPermisosDetail.to,
 		element: <UserPermissionsDetail />,
-		authority: cfg.manage.subPages.rolesPermisosDetail.authority,
+		authority: pagesConfig.manage.subPages.rolesPermisosDetail.authority,
 	},
 	{
-		path: cfg.humanResources.subPages.invitationsAdmin.to,
+		path: pagesConfig.humanResources.subPages.invitationsAdmin.to,
 		element: <InvitationsAdmin />,
-		authority: cfg.humanResources.subPages.invitationsAdmin.authority,
+		authority: pagesConfig.humanResources.subPages.invitationsAdmin.authority,
 	},
 
 	// Recursos Humanos — Reloj Control
 	{
-		path: cfg.humanResources.subPages.relojControl.to,
+		path: pagesConfig.humanResources.subPages.relojControl.to,
 		element: <RelojControlPage />,
-		authority: cfg.humanResources.subPages.relojControl.authority,
+		authority: pagesConfig.humanResources.subPages.relojControl.authority,
 	},
 	// Recursos Humanos — Configuración
 	{
-		path: cfg.humanResources.subPages.configuracionRH.to,
+		path: pagesConfig.humanResources.subPages.configuracionRH.to,
 		element: <ConfiguracionRH />,
-		authority: cfg.humanResources.subPages.configuracionRH.authority,
+		authority: pagesConfig.humanResources.subPages.configuracionRH.authority,
 	},
 
 	// Rutas de Administración del Sistema
 	{
-		path: cfg.systemAdmin.subPages.systemParameters.to,
+		path: pagesConfig.systemAdmin.subPages.systemParameters.to,
 		element: <SystemParametersAdmin />,
-		authority: cfg.systemAdmin.subPages.systemParameters.authority,
+		authority: pagesConfig.systemAdmin.subPages.systemParameters.authority,
 	},
 	{
-		path: cfg.systemAdmin.subPages.systemParametersDetail.to,
+		path: pagesConfig.systemAdmin.subPages.systemParametersDetail.to,
 		element: <SystemParameterDetails />,
-		authority: cfg.systemAdmin.subPages.systemParametersDetail.authority,
+		authority: pagesConfig.systemAdmin.subPages.systemParametersDetail.authority,
 	},
 
 	// Rutas ERP
 	{
-		path: cfg.commercial.subPages.sales.to,
+		path: pagesConfig.commercial.subPages.sales.to,
 		element: <SalesListPage />,
-		authority: cfg.commercial.subPages.sales.authority,
+		authority: pagesConfig.commercial.subPages.sales.authority,
 	},
 	{
-		path: cfg.commercial.subPages.pendientesSerie.to,
+		path: pagesConfig.commercial.subPages.pendientesSerie.to,
 		element: <PendientesSeriePage />,
-		authority: cfg.commercial.subPages.pendientesSerie.authority,
+		authority: pagesConfig.commercial.subPages.pendientesSerie.authority,
 	},
 	{
-		path: `${cfg.commercial.subPages.sales.to}/:saleId`,
+		path: `${pagesConfig.commercial.subPages.sales.to}/:saleId`,
 		element: <SalesListPage />,
-		authority: cfg.commercial.subPages.sales.authority,
+		authority: pagesConfig.commercial.subPages.sales.authority,
 	},
 	{
-		path: cfg.commercial.subPages.quotes.to,
+		path: pagesConfig.commercial.subPages.quotes.to,
 		element: <CotizacionesPage />,
-		authority: cfg.commercial.subPages.quotes.authority,
+		authority: pagesConfig.commercial.subPages.quotes.authority,
 	},
 	{
-		path: cfg.commercial.subPages.enlacesPublicos.to,
+		path: pagesConfig.commercial.subPages.enlacesPublicos.to,
 		element: <EnlacesPublicosPage />,
-		authority: cfg.commercial.subPages.enlacesPublicos.authority,
+		authority: pagesConfig.commercial.subPages.enlacesPublicos.authority,
 	},
 	{
-		path: cfg.commercial.subPages.solicitudes.to,
+		path: pagesConfig.commercial.subPages.solicitudes.to,
 		element: <SolicitudesVentasPage />,
-		authority: cfg.commercial.subPages.solicitudes.authority,
+		authority: pagesConfig.commercial.subPages.solicitudes.authority,
 	},
 	{
-		path: `${cfg.commercial.subPages.quotes.to}/:quoteId`,
+		path: `${pagesConfig.commercial.subPages.quotes.to}/:quoteId`,
 		element: <CotizacionesPage />,
-		authority: cfg.commercial.subPages.quotes.authority,
+		authority: pagesConfig.commercial.subPages.quotes.authority,
 	},
 	{
-		path: cfg.commercial.subPages.transfers.to,
+		path: pagesConfig.commercial.subPages.transfers.to,
 		element: <TransferenciasComercial />,
-		authority: cfg.commercial.subPages.transfers.authority,
+		authority: pagesConfig.commercial.subPages.transfers.authority,
 	},
 	{
-		path: cfg.commercial.subPages.warranties.to,
+		path: pagesConfig.commercial.subPages.warranties.to,
 		element: <GarantiasPage />,
-		authority: cfg.commercial.subPages.warranties.authority,
+		authority: pagesConfig.commercial.subPages.warranties.authority,
 	},
 	{
-		path: cfg.commercial.subPages.warrantyDetail.to,
+		path: pagesConfig.commercial.subPages.warrantyDetail.to,
 		element: <GarantiaDetailsPage />,
-		authority: cfg.commercial.subPages.warrantyDetail.authority,
+		authority: pagesConfig.commercial.subPages.warrantyDetail.authority,
 	},
 	{
-		path: cfg.commercial.subPages.pagosDiferidos.to,
+		path: pagesConfig.commercial.subPages.pagosDiferidos.to,
 		element: <PagosDiferidos />,
-		authority: cfg.commercial.subPages.pagosDiferidos.authority,
+		authority: pagesConfig.commercial.subPages.pagosDiferidos.authority,
 	},
 	{
-		path: cfg.commercial.subPages.carteraCredito.to,
+		path: pagesConfig.commercial.subPages.carteraCredito.to,
 		element: <CarteraCredito />,
-		authority: cfg.commercial.subPages.carteraCredito.authority,
+		authority: pagesConfig.commercial.subPages.carteraCredito.authority,
 	},
 	{
-		path: cfg.commercial.subPages.clientesVentas.to,
+		path: pagesConfig.commercial.subPages.clientesVentas.to,
 		element: <ClientesVentas />,
-		authority: cfg.commercial.subPages.clientesVentas.authority,
+		authority: pagesConfig.commercial.subPages.clientesVentas.authority,
 	},
 	{
-		path: cfg.commercial.subPages.clientesVentasDetalle.to,
+		path: pagesConfig.commercial.subPages.clientesVentasDetalle.to,
 		element: <ClientesVentasDetalle />,
-		authority: cfg.commercial.subPages.clientesVentasDetalle.authority,
+		authority: pagesConfig.commercial.subPages.clientesVentasDetalle.authority,
 	},
 
 	// Reportes — rutas directas
 	{
-		path: cfg.reports.subPages.salesDashboard.to,
+		path: pagesConfig.reports.subPages.salesDashboard.to,
 		element: <SalesDashboard />,
-		authority: cfg.reports.subPages.salesDashboard.authority,
+		authority: pagesConfig.reports.subPages.salesDashboard.authority,
 	},
 	{
-		path: cfg.reports.subPages.inventoryReports.to,
+		path: pagesConfig.reports.subPages.inventoryReports.to,
 		element: <InventoryReports />,
-		authority: cfg.reports.subPages.inventoryReports.authority,
+		authority: pagesConfig.reports.subPages.inventoryReports.authority,
 	},
 
 	// Integraciones (WooCommerce)
 	{
 		// Hub unificado con pestañas (`?tab=...`). Punto de entrada del menú.
-		path: cfg.integrations.to,
+		path: pagesConfig.integrations.to,
 		element: <IntegrationsHubPage />,
-		authority: cfg.integrations.authority,
+		authority: pagesConfig.integrations.authority,
 	},
 	{
-		path: cfg.integrations.subPages.list.to,
+		path: pagesConfig.integrations.subPages.list.to,
 		element: <IntegrationsListPage />,
-		authority: cfg.integrations.subPages.list.authority,
+		authority: pagesConfig.integrations.subPages.list.authority,
 	},
 	{
-		path: cfg.integrations.subPages.unmappedProducts.to,
+		path: pagesConfig.integrations.subPages.unmappedProducts.to,
 		element: <UnmappedProductsPage />,
-		authority: cfg.integrations.subPages.unmappedProducts.authority,
+		authority: pagesConfig.integrations.subPages.unmappedProducts.authority,
 	},
 	{
-		path: cfg.integrations.subPages.syncStock.to,
+		path: pagesConfig.integrations.subPages.syncStock.to,
 		element: <SyncStockPage />,
-		authority: cfg.integrations.subPages.syncStock.authority,
+		authority: pagesConfig.integrations.subPages.syncStock.authority,
 	},
 	{
-		path: cfg.integrations.subPages.importOrders.to,
+		path: pagesConfig.integrations.subPages.importOrders.to,
 		element: <ImportOrdersPage />,
-		authority: cfg.integrations.subPages.importOrders.authority,
+		authority: pagesConfig.integrations.subPages.importOrders.authority,
 	},
 	{
-		path: cfg.integrations.subPages.importTerms.to,
+		path: pagesConfig.integrations.subPages.importTerms.to,
 		element: <ImportTermsPage />,
-		authority: cfg.integrations.subPages.importTerms.authority,
+		authority: pagesConfig.integrations.subPages.importTerms.authority,
 	},
 	{
-		path: cfg.integrations.subPages.syncedProducts.to,
+		path: pagesConfig.integrations.subPages.syncedProducts.to,
 		element: <WooProductsPage />,
-		authority: cfg.integrations.subPages.syncedProducts.authority,
+		authority: pagesConfig.integrations.subPages.syncedProducts.authority,
 	},
 
 	// Notificaciones
 	{
-		path: cfg.notifications.to,
+		path: pagesConfig.notifications.to,
 		element: <NotificationsAllPage />,
-		authority: cfg.notifications.authority,
+		authority: pagesConfig.notifications.authority,
 	},
 	{
 		path: '/notificaciones/:id',
 		element: <NotificationDetailPage />,
-		authority: cfg.notifications.authority,
+		authority: pagesConfig.notifications.authority,
 	},
 
 	// Rutas para inventario
 	{
-		path: cfg.inventory.subPages.warehouses.to,
+		path: pagesConfig.inventory.subPages.warehouses.to,
 		element: <BodegasPage />,
-		authority: cfg.inventory.subPages.warehouses.authority,
+		authority: pagesConfig.inventory.subPages.warehouses.authority,
 	},
 	{
-		path: `${cfg.inventory.subPages.warehouses.to}/:id`,
+		path: `${pagesConfig.inventory.subPages.warehouses.to}/:id`,
 		element: <BodegasDetailPage />,
-		authority: cfg.inventory.subPages.warehouses.authority,
+		authority: pagesConfig.inventory.subPages.warehouses.authority,
 	},
 	{
-		path: `${cfg.inventory.subPages.trazabilidadSubsidiary.to}`,
+		path: `${pagesConfig.inventory.subPages.trazabilidadSubsidiary.to}`,
 		element: <TrazabilidadSucursal />,
-		authority: cfg.inventory.subPages.trazabilidadSubsidiary.authority,
+		authority: pagesConfig.inventory.subPages.trazabilidadSubsidiary.authority,
 	},
 
 	{
-		path: `${cfg.inventory.subPages.ingresoStock.to}`,
+		path: `${pagesConfig.inventory.subPages.ingresoStock.to}`,
 		element: <IngresoStock />,
-		authority: cfg.inventory.subPages.ingresoStock.authority,
+		authority: pagesConfig.inventory.subPages.ingresoStock.authority,
 	},
 
 	{
-		// Se lee de `pagesConfig` y no de `cfg`: `cfg` es el mismo objeto tipado
-		// como `any` para las rutas heredadas, y acá no hace falta perder el tipo.
 		path: pagesConfig.inventory.subPages.catalogoAbastecimiento.to,
 		element: <CatalogoAbastecimiento />,
 		authority: pagesConfig.inventory.subPages.catalogoAbastecimiento.authority,
@@ -573,127 +560,96 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 
 	{
-		path: cfg.inventory.subPages.retirosEquipos.to,
+		path: pagesConfig.inventory.subPages.retirosEquipos.to,
 		element: <RetirosEquiposPage />,
-		authority: cfg.inventory.subPages.retirosEquipos.authority,
+		authority: pagesConfig.inventory.subPages.retirosEquipos.authority,
 	},
 
 	// Rutas de Catálogos
 	{
-		path: cfg.catalogs.subPages.products.to,
+		path: pagesConfig.catalogs.subPages.products.to,
 		element: <ProductosPage />,
-		authority: cfg.catalogs.subPages.products.authority,
+		authority: pagesConfig.catalogs.subPages.products.authority,
 	},
 	{
-		path: cfg.catalogs.subPages.productsDetail.to,
+		path: pagesConfig.catalogs.subPages.productsDetail.to,
 		element: <ProductDetailPage />,
-		authority: cfg.catalogs.subPages.productsDetail.authority,
+		authority: pagesConfig.catalogs.subPages.productsDetail.authority,
 	},
 	{
-		path: cfg.catalogs.subPages.categories.to,
+		path: pagesConfig.catalogs.subPages.categories.to,
 		element: <CategoriasPage />,
-		authority: cfg.catalogs.subPages.categories.authority,
+		authority: pagesConfig.catalogs.subPages.categories.authority,
 	},
 	{
-		path: cfg.catalogs.subPages.brands.to,
+		path: pagesConfig.catalogs.subPages.brands.to,
 		element: <MarcasPage />,
-		authority: cfg.catalogs.subPages.brands.authority,
+		authority: pagesConfig.catalogs.subPages.brands.authority,
 	},
 	{
-		path: cfg.catalogs.subPages.suppliers.to,
+		path: pagesConfig.catalogs.subPages.suppliers.to,
 		element: <ProveedoresPage />,
-		authority: cfg.catalogs.subPages.suppliers.authority,
+		authority: pagesConfig.catalogs.subPages.suppliers.authority,
 	},
 	{
 		path: '/catalogos/proveedores/:id',
 		element: <DetalleProveedorPage />,
-		authority: cfg.catalogs.subPages.suppliers.authority,
+		authority: pagesConfig.catalogs.subPages.suppliers.authority,
 	},
 	{
-		path: cfg.catalogs.subPages.customers.to,
+		path: pagesConfig.catalogs.subPages.customers.to,
 		element: <ClientesPage />,
-		authority: cfg.catalogs.subPages.customers.authority,
+		authority: pagesConfig.catalogs.subPages.customers.authority,
 	},
 	{
 		path: '/catalogos/clientes/:id',
 		element: <DetalleClientePage />,
-		authority: cfg.catalogs.subPages.customers.authority,
+		authority: pagesConfig.catalogs.subPages.customers.authority,
 	},
 	{
-		path: cfg.catalogs.subPages.documents.to,
+		path: pagesConfig.catalogs.subPages.documents.to,
 		element: <DocumentosPage />,
-		authority: cfg.catalogs.subPages.documents.authority,
+		authority: pagesConfig.catalogs.subPages.documents.authority,
 	},
 
-	// Technical Reviews Routes
-	// {
-	// 	path: '/technical-reviews',
-	// 	element: <TechnicalReviewsHub />,
-	// 	authority: cfg.technical.subPages.reviews.authority,
-	// },
-	// {
-	// 	path: '/technical-reviews/batches',
-	// 	element: <BatchesList />,
-	// 	authority: cfg.technical.subPages.reviews.authority,
-	// },
-	// {
-	// 	path: '/technical-reviews/batches/create',
-	// 	element: <BatchCreate />,
-	// 	authority: cfg.technical.subPages.reviews.authority,
-	// },
-	// {
-	// 	path: '/technical-reviews/batches/:batchId',
-	// 	element: <BatchDetail />,
-	// 	authority: cfg.technical.subPages.reviews.authority,
-	// },
 	{
 		path: '/technical-reviews/batches/:batchId/:itemId',
 		element: <RefactorRevisiones />,
-		authority: cfg.technical.subPages.reviews.authority,
+		authority: pagesConfig.technical.subPages.reviews.authority,
 	},
 	{
 		path: '/technical-reviews/batches/:batchId/items/:itemId',
 		element: <RefactorRevisiones />,
-		authority: cfg.technical.subPages.reviews.authority,
+		authority: pagesConfig.technical.subPages.reviews.authority,
 	},
 	{
 		path: '/technical-reviews/batches/:batchId/items/create',
 		element: <RefactorRevisiones />,
-		authority: cfg.technical.subPages.reviews.authority,
+		authority: pagesConfig.technical.subPages.reviews.authority,
 	},
 	{
 		path: '/technical-reviews/series',
 		element: <RefactorSeries />,
-		authority: cfg.technical.subPages.reviews.authority,
+		authority: pagesConfig.technical.subPages.reviews.authority,
 	},
-	// {
-	// 	path: '/technical-reviews/items',
-	// 	element: <ItemsList />,
-	// 	authority: cfg.technical.subPages.reviews.authority,
-	// },
 	{
 		path: '/technical-reviews/items/create',
 		element: <RefactorRevisiones />,
-		authority: cfg.technical.subPages.reviews.authority,
+		authority: pagesConfig.technical.subPages.reviews.authority,
 	},
 	{
 		path: '/technical-reviews/items/:itemId',
 		element: <RefactorRevisiones />,
-		authority: cfg.technical.subPages.reviews.authority,
+		authority: pagesConfig.technical.subPages.reviews.authority,
 	},
 	{
 		path: '/technical-reviews/traceability/:serialNumber',
 		element: <RefactorTraceability />,
-		authority: cfg.technical.subPages.reviews.authority,
+		authority: pagesConfig.technical.subPages.reviews.authority,
 	},
-	// {
-	// 	path: cfg.technical.subPages.reviews.to,
-	// 	element: <TechnicalReviewsHub />,
-	// 	authority: cfg.technical.subPages.reviews.authority,
-	// },
 
 	{ path: '/sin-permisos', element: <SinPermisos />, public: true },
-	{ path: '/', element: <Dashboard />, authority: cfg.dashboard.authority },
+	{ path: '/', element: <Dashboard />, authority: pagesConfig.dashboard.authority },
 	{ path: '*', element: <NotFoundPage />, public: true },
 ];
 
