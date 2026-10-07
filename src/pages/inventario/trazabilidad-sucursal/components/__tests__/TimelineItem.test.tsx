@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { IInventoryMovement } from '@/interface/inventoryMovements.interface';
-import TimelineItem from '../TimelineItem';
+import { TimelineItem } from '../TimelineItem';
 
 vi.mock('@/components/icon/Icon', () => ({
 	default: ({ icon }: { icon: string }) => <span data-icon={icon} />,

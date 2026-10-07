@@ -42,7 +42,6 @@ const TrazabilidadSucursal = () => {
 			<Container className='flex flex-col gap-4'>
 				<Card>
 					<CardBody>
-						{/* Filtros */}
 						<TrazabilidadFilters
 							filters={filters}
 							onApplyFilters={applyFilters}
@@ -53,7 +52,6 @@ const TrazabilidadSucursal = () => {
 				</Card>
 				<Card>
 					<CardBody>
-						{/* Timeline */}
 						<TrazabilidadTimeline
 							movimientos={movimientos}
 							pagination={pagination}

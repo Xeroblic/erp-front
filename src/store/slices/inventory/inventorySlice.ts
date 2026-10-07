@@ -3,7 +3,6 @@ import ApiService from '@/services/ApiService';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { RootState } from '@/store';
 
-// Interfaz para la respuesta paginada del API
 interface IInventoryMovementsResponse {
 	data: IInventoryMovement[];
 	links: {
@@ -32,7 +31,6 @@ export interface IInventoryPagination {
 	hasPrevPage: boolean;
 }
 
-// Interfaz para los filtros de búsqueda
 export interface IInventoryFilters {
 	occurred_from?: string;
 	occurred_to?: string;
@@ -45,16 +43,14 @@ export interface IInventoryState {
 	loading: boolean;
 	error: string | undefined;
 	listaMovimientoSucursal: IInventoryMovement[];
-	detalleMovimientoSucursal: IInventoryMovement | undefined;
 	pagination: IInventoryPagination;
-	filters: IInventoryFilters;
+	listRequestId: string | null;
 }
 
 const initialState: IInventoryState = {
 	loading: false,
 	error: undefined,
 	listaMovimientoSucursal: [],
-	detalleMovimientoSucursal: undefined,
 	pagination: {
 		currentPage: 1,
 		totalPages: 1,
@@ -63,7 +59,7 @@ const initialState: IInventoryState = {
 		hasNextPage: false,
 		hasPrevPage: false,
 	},
-	filters: {},
+	listRequestId: null,
 };
 
 export interface FetchMovimientosParams {
@@ -77,20 +73,33 @@ export interface FetchMovimientosParams {
 	movement_type?: string;
 }
 
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+	typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined;
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+	const message = asRecord(asRecord(asRecord(error)?.response)?.data)?.message;
+	return typeof message === 'string' && message.trim() ? message : fallback;
+};
+
 export const fetchListaMovimientoSucursalThunk = createAsyncThunk<
 	IInventoryMovementsResponse,
 	FetchMovimientosParams & { append?: boolean },
 	{ rejectValue: string }
->('inventario/listaMovimientoSucursal', async (params, { rejectWithValue }) => {
+>('inventario/listaMovimientoSucursal', async (params, { rejectWithValue, signal }) => {
 	try {
-		const { branch_id, page = 1, per_page = 20, append, ...filters } = params;
+		const {
+			branch_id: branchId,
+			page = 1,
+			per_page: perPage = 20,
+			append,
+			...filters
+		} = params;
 
 		const queryParams = new URLSearchParams({
 			page: page.toString(),
-			per_page: per_page.toString(),
+			per_page: perPage.toString(),
 		});
 
-		// Agregar filtros opcionales
 		if (filters.occurred_from) queryParams.append('occurred_from', filters.occurred_from);
 		if (filters.occurred_to) queryParams.append('occurred_to', filters.occurred_to);
 		if (filters.q) queryParams.append('q', filters.q);
@@ -99,69 +108,40 @@ export const fetchListaMovimientoSucursalThunk = createAsyncThunk<
 		if (filters.movement_type) queryParams.append('movement_type', filters.movement_type);
 
 		const response = await ApiService.fetchData<IInventoryMovementsResponse>({
-			url: `/branches/${branch_id}/inventory-movements?${queryParams.toString()}`,
+			url: `/branches/${branchId}/inventory-movements?${queryParams.toString()}`,
 			method: 'get',
+			signal,
 		});
 		return response.data;
-	} catch (error: any) {
-		return rejectWithValue(error.response?.data?.message || 'Error al cargar movimientos');
+	} catch (error) {
+		if (signal.aborted) throw error;
+		return rejectWithValue(getErrorMessage(error, 'Error al cargar movimientos'));
 	}
 });
-
-export const fetchDetalleMovimientoSucursalThunk = createAsyncThunk<
-	IInventoryMovement,
-	{ branch_id: number; movement_id: number },
-	{ rejectValue: string }
->(
-	'inventario/detalleMovimientoSucursal',
-	async ({ branch_id, movement_id }, { rejectWithValue }) => {
-		try {
-			const response = await ApiService.fetchData<IInventoryMovement>({
-				url: `/branches/${branch_id}/inventory-movements/${movement_id}`,
-				method: 'get',
-			});
-			return response.data;
-		} catch (error: any) {
-			return rejectWithValue(error.response?.data?.message || 'Error al cargar detalle');
-		}
-	},
-);
 
 const inventorySlice = createSlice({
 	name: 'inventario',
 	initialState,
 	reducers: {
-		clearDetalleMovimientoSucursal: (state) => {
-			state.detalleMovimientoSucursal = undefined;
-		},
 		clearListaMovimientoSucursal: (state) => {
 			state.listaMovimientoSucursal = [];
 			state.pagination = initialState.pagination;
-		},
-		setPage: (state, action) => {
-			state.pagination.currentPage = action.payload;
-		},
-		setFilters: (state, action) => {
-			state.filters = action.payload;
-		},
-		clearFilters: (state) => {
-			state.filters = {};
-		},
-		appendMovimientos: (state, action) => {
-			state.listaMovimientoSucursal = [...state.listaMovimientoSucursal, ...action.payload];
+			state.loading = false;
+			state.error = undefined;
+			state.listRequestId = null;
 		},
 	},
 	extraReducers: (builder) => {
 		builder
-			.addCase(fetchListaMovimientoSucursalThunk.pending, (state) => {
+			.addCase(fetchListaMovimientoSucursalThunk.pending, (state, action) => {
 				state.loading = true;
 				state.error = undefined;
+				state.listRequestId = action.meta.requestId;
 			})
 			.addCase(fetchListaMovimientoSucursalThunk.fulfilled, (state, action) => {
+				if (state.listRequestId !== action.meta.requestId) return;
 				state.loading = false;
-				// Si es append (cargar más), agregar a la lista existente
-				const isAppend = action.meta.arg.append;
-				if (isAppend) {
+				if (action.meta.arg.append) {
 					state.listaMovimientoSucursal = [
 						...state.listaMovimientoSucursal,
 						...action.payload.data,
@@ -179,38 +159,21 @@ const inventorySlice = createSlice({
 				};
 			})
 			.addCase(fetchListaMovimientoSucursalThunk.rejected, (state, action) => {
+				if (state.listRequestId !== action.meta.requestId) return;
 				state.loading = false;
+				// Un «cargar más» fallido o cancelado no invalida las páginas ya cargadas.
+				if (action.meta.aborted || action.meta.arg.append) return;
 				state.error = action.payload;
 				state.listaMovimientoSucursal = [];
-			})
-			.addCase(fetchDetalleMovimientoSucursalThunk.pending, (state) => {
-				state.loading = true;
-				state.error = undefined;
-			})
-			.addCase(fetchDetalleMovimientoSucursalThunk.fulfilled, (state, action) => {
-				state.loading = false;
-				state.detalleMovimientoSucursal = action.payload;
-			})
-			.addCase(fetchDetalleMovimientoSucursalThunk.rejected, (state, action) => {
-				state.loading = false;
-				state.error = action.payload;
 			});
 	},
 });
 
-// Selectors
 export const selectMovimientosSucursal = (state: RootState) =>
 	state.inventario.listaMovimientoSucursal;
 export const selectInventarioPagination = (state: RootState) => state.inventario.pagination;
 export const selectInventarioLoading = (state: RootState) => state.inventario.loading;
 export const selectInventarioError = (state: RootState) => state.inventario.error;
-export const selectInventarioFilters = (state: RootState) => state.inventario.filters;
 
-export const {
-	clearDetalleMovimientoSucursal,
-	clearListaMovimientoSucursal,
-	setPage,
-	setFilters,
-	clearFilters,
-} = inventorySlice.actions;
+export const { clearListaMovimientoSucursal } = inventorySlice.actions;
 export default inventorySlice.reducer;
