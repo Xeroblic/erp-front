@@ -33,6 +33,7 @@ import {
 	resolveInventoryStockProduct,
 } from '@/mocks/services/inventoryStock.mock';
 import {
+	clearAllPersistedMockState,
 	loadPersistedMockState,
 	savePersistedMockState,
 } from '@/services/procurement/procurementMockPersistence.util';
@@ -40,7 +41,7 @@ import {
 /**
  * Doble de la vista unificada de Inventario: A1–A4 de
  * `docs/inventario-unificado-contrato.md`, ampliación del contrato de
- * abastecimiento (PR #67 del backend). **Ninguno de estos endpoints existe
+ * abastecimiento. **Ninguno de estos endpoints existe
  * todavía.** La UI pasa por la fachada
  * `@/services/procurement/inventoryOverview.service`.
  *
@@ -56,7 +57,6 @@ import {
    ================================================= */
 
 const THRESHOLD_STORAGE_NAMESPACE = 'inventory-critical-thresholds';
-/** v2: umbrales de los ejemplos de Ecopc en la semilla. */
 const THRESHOLD_STORAGE_VERSION = 2;
 /** El umbral es del producto (filial), no de la sucursal: una sola partición basta en el mock. */
 const THRESHOLD_STORAGE_PARTITION = 0;
@@ -120,9 +120,10 @@ export const updateInventoryCriticalThreshold = async (
 	});
 };
 
-/** Sólo para tests: vuelve el umbral a la semilla. */
+/** Sólo para tests: vuelve el umbral a la semilla, incluida la persistencia. */
 export const resetInventoryCriticalThresholdsForTests = (): void => {
 	thresholds = null;
+	clearAllPersistedMockState(THRESHOLD_STORAGE_NAMESPACE);
 };
 
 /* =================================================

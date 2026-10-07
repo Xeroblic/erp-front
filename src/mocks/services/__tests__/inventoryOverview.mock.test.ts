@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+	getInventoryCriticalThreshold,
 	getInventoryStockDetail,
 	getInventoryStockSummary,
 	listInventoryOverview,
@@ -12,7 +13,6 @@ import {
 	createWarehouseStockMovement,
 	resetInventoryStockStoreForTests,
 } from '@/mocks/services/inventoryStock.mock';
-import { clearAllPersistedMockState } from '@/services/procurement/procurementMockPersistence.util';
 import type { IInventoryOverviewParams } from '@/interface/inventoryOverview.interface';
 
 // Fixtures de `inventoryStock.db.ts`, sucursal 4.
@@ -43,7 +43,6 @@ const readError = async (promise: Promise<unknown>) => {
 afterEach(() => {
 	resetInventoryStockStoreForTests();
 	resetInventoryCriticalThresholdsForTests();
-	clearAllPersistedMockState('inventory-critical-thresholds');
 });
 
 describe('A1 · listInventoryOverview', () => {
@@ -295,5 +294,13 @@ describe('Umbral crítico (§13)', () => {
 		});
 		expect((await readError(updateInventoryCriticalThreshold(CABLE_ID, -1))).status).toBe(422);
 		expect((await readError(updateInventoryCriticalThreshold(CABLE_ID, 1.5))).status).toBe(422);
+	});
+
+	it('el reinicio de pruebas también descarta el umbral persistido', async () => {
+		await updateInventoryCriticalThreshold(CABLE_ID, 150);
+
+		resetInventoryCriticalThresholdsForTests();
+
+		expect(getInventoryCriticalThreshold(CABLE_ID)).toBe(20);
 	});
 });
