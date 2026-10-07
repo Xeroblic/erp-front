@@ -71,3 +71,36 @@ describe('useStockAdjustment con sessionStorage no disponible', () => {
 		expect(result.current.lastBatchId).toBe('b-1');
 	});
 });
+
+describe('useStockAdjustment después de un 202', () => {
+	beforeEach(() => {
+		fetchData.mockReset().mockResolvedValue({ status: 202, data: { batch_id: 'b-2' } });
+		toastError.mockReset();
+		toastSuccess.mockReset();
+	});
+
+	it('no informa como fallido un lote aceptado si falla el cierre del llamador', async () => {
+		const { result } = renderHook(() => useStockAdjustment());
+		const failure = new Error('falló el reset del formulario');
+
+		await act(async () => {
+			await expect(
+				result.current.submitBatchAdjustment(
+					[item],
+					'2',
+					'Compra factura 123',
+					'',
+					4,
+					'ingreso',
+					() => {
+						throw failure;
+					},
+				),
+			).rejects.toBe(failure);
+		});
+
+		expect(toastSuccess).toHaveBeenCalledTimes(1);
+		expect(toastError).not.toHaveBeenCalled();
+		expect(result.current.isSubmitting).toBe(false);
+	});
+});

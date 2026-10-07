@@ -34,9 +34,9 @@ type ApiErrorLike = {
 	};
 };
 
-// El lote ya quedó aceptado (202) cuando se persiste su id: si el storage no está
-// disponible (modo privado, cuota, política del navegador) sólo se pierde el
-// recordatorio, no se debe reportar el envío como fallido ni romper el montaje.
+// Si el storage no está disponible (modo privado, cuota, política del navegador)
+// sólo se pierde el recordatorio del último lote: no debe romper el montaje ni el
+// cierre de un envío que el backend ya aceptó.
 const persistLastBatchId = (batchId: string) => {
 	try {
 		window.sessionStorage.setItem(LAST_BATCH_STORAGE_KEY, batchId);
@@ -180,6 +180,9 @@ export const useStockAdjustment = () => {
 			};
 
 			setIsSubmitting(true);
+			let batchId: string | undefined;
+			// El try cubre sólo el envío: lo que ocurra después del 202 no puede
+			// reportarse como fallo, porque el usuario reenviaría un lote ya aceptado.
 			try {
 				const response = await ApiService.fetchData<IBatchAdjustmentResponse>({
 					url: `/subsidiaries/${selectedSubsidiaryId}/stock-adjustments`,
@@ -191,19 +194,7 @@ export const useStockAdjustment = () => {
 					throw new Error('El backend no aceptó el ajuste en segundo plano.');
 				}
 
-				const batchId = response.data?.batch_id;
-				if (batchId) {
-					setLastBatchId(batchId);
-					persistLastBatchId(batchId);
-				}
-				toast.success(
-					batchId
-						? `✓ Procesando en segundo plano. Batch: ${batchId}`
-						: '✓ Procesando en segundo plano.',
-				);
-
-				onSuccess?.();
-				return true;
+				batchId = response.data?.batch_id;
 			} catch (err) {
 				const apiError = err as ApiErrorLike;
 				const status = apiError?.response?.status;
@@ -231,6 +222,19 @@ export const useStockAdjustment = () => {
 			} finally {
 				setIsSubmitting(false);
 			}
+
+			if (batchId) {
+				setLastBatchId(batchId);
+				persistLastBatchId(batchId);
+			}
+			toast.success(
+				batchId
+					? `✓ Procesando en segundo plano. Batch: ${batchId}`
+					: '✓ Procesando en segundo plano.',
+			);
+
+			onSuccess?.();
+			return true;
 		},
 		[getSignedQuantity, toPositiveNumber],
 	);

@@ -92,8 +92,10 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 			<Container>
 				<div className='flex flex-col gap-6 py-8'>
 					{/*
-					 * Va detrás del flag porque, con los mocks apagados, los tres
-					 * destinos sólo saben decir «no habilitado».
+					 * Esta pantalla convive con Recepciones, Traslados internos y Ajuste
+					 * de inventario hasta que el backend publique sus endpoints; el aviso
+					 * sólo deriva a la correcta. Va detrás del flag porque, con los mocks
+					 * apagados, esos tres destinos sólo saben decir «no habilitado».
 					 */}
 					{INVENTORY_STOCK_USE_MOCKS && (
 						<Alert
