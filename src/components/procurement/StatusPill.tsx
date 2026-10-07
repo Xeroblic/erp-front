@@ -1,17 +1,9 @@
 import React from 'react';
 
 /**
- * Píldora de estado sólida: mismo estilo que `DeferredStatusPill`/
- * `DaysUntilDueBadge` de pagos diferidos (fondo de color + texto blanco,
- * esquinas completas). El `Badge` genérico del Design System no ofrece esta
- * forma (usa el color como fondo suave, no sólido), así que los estados de
- * abastecimiento la comparten desde acá en vez de repetir el marcado.
- *
- * `width` es fijo en rem, no un rango: todas las píldoras de una misma
- * columna deben medir exactamente lo mismo entre sí (p. ej. las tres
- * variantes de «Cobertura»), pero columnas distintas —con etiquetas más
- * cortas o más largas— pueden y deben usar anchos distintos. Cada llamador
- * fija el suyo según la etiqueta más larga de su propia columna.
+ * Píldora sólida (fondo de color y texto blanco), forma que el `Badge` del
+ * Design System no ofrece. `width` es fijo para que las píldoras de una misma
+ * columna midan lo mismo; cada llamador lo fija según su etiqueta más larga.
  */
 export type TStatusPillColor = 'zinc' | 'blue' | 'violet' | 'emerald' | 'amber' | 'red';
 
@@ -31,12 +23,7 @@ export interface IStatusPillProps {
 	children: React.ReactNode;
 	/** Ancho fijo en rem. Todas las píldoras de la misma columna deben pasar el mismo valor. */
 	width?: number;
-	/**
-	 * Ignora `width` y se ajusta al contenido. Para usos fuera de una columna
-	 * de tabla —p. ej. la cabecera del detalle, donde varias píldoras de
-	 * largos distintos conviven en una misma fila y un ancho fijo por columna
-	 * ya no tiene sentido.
-	 */
+	/** Ignora `width` y se ajusta al contenido, para usos fuera de una columna de tabla. */
 	fit?: boolean;
 	className?: string;
 }

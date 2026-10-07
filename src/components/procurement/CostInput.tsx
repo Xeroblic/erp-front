@@ -9,16 +9,9 @@ import { formatDecimalAmount } from '@/utils/procurementDecimal.util';
 import { COST_ENTRY_BASIS_OPTIONS, normalizeCostInput } from './costEntry.schema';
 
 /**
- * Entrada de costo de compra del contrato de abastecimiento.
- *
- * Son **dos** campos: monto y base neto/bruto. Y nada más. El IVA, el neto
- * derivado, el bruto derivado y el costo efectivo no se digitan ni se envían —
- * el contrato los calcula y los persiste en el backend, y rechaza que el cliente
- * los mande.
- *
- * La previsualización de abajo es exactamente eso: ayuda mientras se escribe. Lo
- * que queda registrado es el `cost` que devuelve el servidor, que se muestra con
- * `CostBlock`.
+ * Sólo monto y base: IVA, neto, bruto y costo efectivo los calcula el backend y
+ * rechaza que el cliente los envíe. La previsualización es ayuda al tipear; lo
+ * registrado se muestra con `CostBlock`.
  */
 
 export interface ICostInputProps {
@@ -32,7 +25,6 @@ export interface ICostInputProps {
 	onBlur: FocusEventHandler<HTMLInputElement | HTMLSelectElement>;
 	/** Error del monto ya resuelto por el caller (`touched ? errors : undefined`). */
 	amountError?: string;
-	/** Error de la base ya resuelto por el caller. */
 	basisError?: string;
 	label?: string;
 	currencyCode?: string;
@@ -141,8 +133,6 @@ const CostInput: FC<ICostInputProps> = ({
 					id={previewId}
 					className='mt-2 text-xs text-zinc-500 dark:text-zinc-400'
 					data-component-name='Procurement/CostInput/Preview'>
-					{/* Previsualización, no dato registrado: el desglose definitivo
-					    es el que devuelve el servidor tras guardar. */}
 					<span className='font-medium'>Vista previa</span>
 					{` (IVA ${preview.vat_rate_percent}%): neto `}
 					{formatDecimalAmount(preview.net_unit_amount, currencyCode)}

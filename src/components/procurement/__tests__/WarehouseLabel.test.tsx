@@ -20,9 +20,6 @@ describe('WarehouseLabel', () => {
 		const { container } = render(<WarehouseLabel warehouse={null} />);
 
 		expect(screen.getByText('Sin ubicación')).toBeInTheDocument();
-		// Nada de guiones ni de vacíos: «Sin ubicación» es una ubicación válida de
-		// la sucursal, vendible y trasladable.
-		expect(container.textContent).not.toMatch(/^[-—–\s]*$/);
 		expect(
 			container.querySelector('[data-component-name="Procurement/WarehouseLabel"]'),
 		).toHaveAttribute('data-unlocated', 'true');

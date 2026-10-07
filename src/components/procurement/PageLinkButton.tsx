@@ -10,12 +10,7 @@ export interface IPageLinkButtonProps
 	children: ReactNode;
 }
 
-/**
- * Botón que lleva a otra ficha del flujo de inventario. Como `DetailLink`,
- * sólo aparece si quien mira tiene **todo** el `authority` de la ruta destino
- * (la regla de `AuthorityCheck`): nunca ofrece un camino que termine en «sin
- * permisos».
- */
+/** Sólo aparece con **todo** el `authority` de la ruta destino, la regla de `AuthorityCheck`. */
 const PageLinkButton: FC<IPageLinkButtonProps> = ({
 	link,
 	children,

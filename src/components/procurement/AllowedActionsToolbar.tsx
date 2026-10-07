@@ -7,17 +7,9 @@ import type { AuthorizationScopeMode } from '@/types/authorization';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
 
 /**
- * Botonera derivada de `allowed_actions`.
- *
- * El backend decide qué acciones ofrece según **estado y autorización**, y la
- * lista siempre llega como array. Pero el contrato es explícito en que
- * `allowed_actions` **no sustituye la autorización**: cada botón sigue pasando
- * por `ProtectedButton` con su permiso y su contexto de sucursal, porque la
- * lista puede venir de una respuesta cacheada, de otro contexto o simplemente
- * quedar obsoleta entre la carga y el clic.
- *
- * Dicho al revés: `allowed_actions` decide qué se **ofrece**; el guard decide qué
- * se **permite**. Ambos, no uno.
+ * `allowed_actions` decide qué se **ofrece**; el guard decide qué se **permite**.
+ * La lista puede venir cacheada u obsoleta, así que cada botón sigue pasando por
+ * `ProtectedButton` con su permiso y su contexto de sucursal.
  */
 
 export interface IAllowedActionDefinition {
@@ -34,19 +26,12 @@ export interface IAllowedActionDefinition {
 	isDestructive?: boolean;
 }
 
-/** Recurso al que pertenece la botonera. Determina permiso y etiqueta. */
 export type TProcurementResource = 'supplier' | 'purchase_document' | 'stock_receipt';
 
 /**
- * Catálogo de acciones **por recurso**, no global: el mismo nombre de acción
- * exige permisos distintos según de qué recurso venga. `update` sobre un
- * proveedor pide `edit-procurement-supplier`, sobre un documento
- * `edit-purchase-document` y sobre una recepción `edit-product` (sección 15 del
- * contrato). Un registro único por nombre de acción le daría a la recepción el
- * permiso del documento y dejaría el botón visible para quien no puede usarlo.
- *
- * Un recurso solo declara las acciones que su sección del contrato le atribuye:
- * lo que no está acá es que el backend no lo ofrece para ese recurso.
+ * Por recurso y no global: el mismo nombre de acción exige permisos distintos
+ * según el recurso (`update` pide `edit-procurement-supplier`,
+ * `edit-purchase-document` o `edit-product`).
  */
 export const PROCUREMENT_ACTION_DEFINITIONS: Record<
 	TProcurementResource,
@@ -141,10 +126,8 @@ export const PROCUREMENT_ACTION_DEFINITIONS: Record<
 			color: 'red',
 			isDestructive: true,
 		},
-		// Vincular exige el contexto de ambas entidades: `edit-product` sobre el
-		// stock y `view-purchase-document` sobre el documento que se asocia. Los
-		// dos se piden acá y no en cada pantalla: la primera card que olvidara el
-		// segundo guard mostraría el botón a quien no puede usarlo.
+		// Ambos permisos se exigen acá y no en cada pantalla, para que ninguna
+		// olvide el segundo guard.
 		link_purchase_document: {
 			label: 'Vincular documento',
 			icon: 'HeroLink',
@@ -188,9 +171,19 @@ const AllowedActionsToolbar: FC<IAllowedActionsToolbarProps> = ({
 	className,
 	emptyLabel = 'Sin acciones disponibles',
 }) => {
-	if (allowedActions.length === 0) {
-		// Colección vacía es `[]`, no ausencia: el estado sin acciones se dice,
-		// no se deja como un hueco que parezca un error de carga.
+	// Una acción desconocida o ajena al recurso no puede pintarse con un permiso
+	// adivinado: se omite, y si no queda ninguna rige el estado vacío.
+	// `hasOwn`: la lista llega del backend y un nombre como `constructor` resolvería
+	// por el prototipo.
+	const definitions = PROCUREMENT_ACTION_DEFINITIONS[resource];
+	const offeredActions = allowedActions.flatMap((action) => {
+		const definition = Object.hasOwn(definitions, action) ? definitions[action] : undefined;
+
+		return definition === undefined ? [] : [{ action, definition }];
+	});
+
+	if (offeredActions.length === 0) {
+		// Sin acciones se dice, en vez de dejar un hueco que parezca error de carga.
 		return emptyLabel === null ? null : (
 			<p
 				data-component-name='Procurement/AllowedActionsToolbar'
@@ -207,34 +200,26 @@ const AllowedActionsToolbar: FC<IAllowedActionsToolbarProps> = ({
 		<div
 			data-component-name='Procurement/AllowedActionsToolbar'
 			className={classNames('flex flex-wrap items-center gap-2', className)}>
-			{allowedActions.map((action) => {
-				const definition = PROCUREMENT_ACTION_DEFINITIONS[resource][action];
-
-				// Una acción que el backend agregue, o que no corresponda a este
-				// recurso, no puede pintarse con un permiso adivinado: se omite.
-				if (definition === undefined) return null;
-
-				return (
-					<ProtectedButton
-						key={action}
-						permissions={definition.permissions}
-						requireAll
-						branchId={branchId}
-						subsidiaryId={subsidiaryId}
-						scope={scope}
-						fallbackMode='disabled'
-						disabledTooltip={`No tienes autorización para ${definition.label.toLocaleLowerCase('es-CL')}`}
-						variant={definition.isDestructive ? 'outline' : 'solid'}
-						color={definition.color}
-						icon={definition.icon}
-						size={size}
-						isDisable={disabled || pendingAction !== null}
-						isLoading={pendingAction === action}
-						onClick={() => onAction(action)}>
-						{definition.label}
-					</ProtectedButton>
-				);
-			})}
+			{offeredActions.map(({ action, definition }) => (
+				<ProtectedButton
+					key={action}
+					permissions={definition.permissions}
+					requireAll
+					branchId={branchId}
+					subsidiaryId={subsidiaryId}
+					scope={scope}
+					fallbackMode='disabled'
+					disabledTooltip={`No tienes autorización para ${definition.label.toLocaleLowerCase('es-CL')}`}
+					variant={definition.isDestructive ? 'outline' : 'solid'}
+					color={definition.color}
+					icon={definition.icon}
+					size={size}
+					isDisable={disabled || pendingAction !== null}
+					isLoading={pendingAction === action}
+					onClick={() => onAction(action)}>
+					{definition.label}
+				</ProtectedButton>
+			))}
 		</div>
 	);
 };

@@ -3,18 +3,11 @@ import classNames from 'classnames';
 import Icon from '@/components/icon/Icon';
 import type { TStockCondition } from '@/interface/procurement.interface';
 
-/**
- * Texto que el contrato asigna a cada condición. Vive acá y no en cada
- * pantalla por el mismo motivo que `UNLOCATED_WAREHOUSE_LABEL`: «No apto» tiene
- * que leerse igual en stock, traslados y ajustes, en vez de aparecer como
- * «Dañado» en una pantalla y «unfit» en otra.
- */
 export const CONDITION_LABELS: Record<TStockCondition, string> = {
 	fit: 'Apto',
 	unfit: 'No apto',
 };
 
-/** Opciones para los selects de condición de traslados y ajustes, en orden estable. */
 export const CONDITION_OPTIONS: readonly { value: TStockCondition; label: string }[] = [
 	{ value: 'fit', label: CONDITION_LABELS.fit },
 	{ value: 'unfit', label: CONDITION_LABELS.unfit },
@@ -27,13 +20,7 @@ export interface IConditionLabelProps {
 	className?: string;
 }
 
-/**
- * Etiqueta de condición del módulo de abastecimiento.
- *
- * El no apto se destaca en ámbar —igual que la columna «No apto» de
- * `StockPorUbicacion`— porque en un traslado o un ajuste es la información que
- * decide si las unidades pueden venderse, no un matiz decorativo.
- */
+/** El no apto se destaca en ámbar: decide si las unidades pueden venderse. */
 const ConditionLabel: FC<IConditionLabelProps> = ({ condition, withIcon = true, className }) => {
 	const isUnfit = condition === 'unfit';
 

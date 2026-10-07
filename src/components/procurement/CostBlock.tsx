@@ -15,18 +15,9 @@ import {
 import { formatDecimalAmount } from '@/utils/procurementDecimal.util';
 
 /**
- * Lectura del bloque `cost` del contrato de abastecimiento.
- *
- * Tres cosas que este componente existe para no volver a discutir en cada card:
- *
- * 1. Un costo desconocido se muestra **desconocido**, nunca como `$0`. El
- *    contrato manda importes y tasa en `null`, y `null` formateado como moneda
- *    da $0, que es una afirmación falsa sobre lo que se pagó.
- * 2. Un agregado con `effective_basis: "mixed"` se distingue de uno con base
- *    única: su costo efectivo no es comparable contra un neto ni contra un bruto
- *    sin decir cuál.
- * 3. Lo que se ve es lo que devolvió el servidor. La previsualización local del
- *    IVA vive en `CostInput` y no llega hasta acá.
+ * Muestra el `cost` tal como lo devolvió el servidor. Un costo desconocido se
+ * dice desconocido (formatear sus `null` daría un $0 falso) y un agregado de
+ * base mixta se marca como no comparable.
  */
 
 export interface ICostBlockProps {
@@ -84,8 +75,6 @@ const CostBlock: FC<ICostBlockProps> = ({ cost, showBreakdown = true, className 
 						className='h-5 w-5 shrink-0 text-zinc-400'
 						aria-hidden='true'
 					/>
-					{/* Sin importes no hay nada que desglosar: se dice que se
-					    desconoce el costo, en vez de pintar una tabla de ceros. */}
 					<span>Costo de compra desconocido</span>
 				</p>
 			) : (
@@ -132,8 +121,6 @@ const CostBlock: FC<ICostBlockProps> = ({ cost, showBreakdown = true, className 
 							emphasis
 						/>
 						{isMixed && (
-							// El agregado mixto se marca aquí, no sólo con una etiqueta
-							// al pie: es lo que impide compararlo como si fuera neto.
 							<p className='mt-1 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400'>
 								<Icon
 									icon='HeroExclamationTriangle'

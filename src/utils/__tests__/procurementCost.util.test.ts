@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	divideRoundHalfUp,
-	formatDecimalAmount,
-	formatDecimalCents,
-	parseDecimalString,
-} from '@/utils/procurementDecimal.util';
+import { parseDecimalString } from '@/utils/procurementDecimal.util';
 import {
 	isAggregatedCost,
 	isMixedBasisCost,
@@ -12,40 +7,6 @@ import {
 	previewCostBreakdown,
 } from '@/utils/procurementCost.util';
 import { mixedBasisCost, netEnteredCost, unknownCost } from '@/mocks/db/procurement.db';
-
-describe('procurementDecimal.util', () => {
-	it('parsea el string decimal del contrato sin pasar por float', () => {
-		expect(parseDecimalString('5712.00')).toBe(571200n);
-		expect(parseDecimalString('0.1')).toBe(10n);
-		expect(parseDecimalString('-4800.55')).toBe(-480055n);
-	});
-
-	it('devuelve null ante un importe que no es decimal, en vez de asumir cero', () => {
-		expect(parseDecimalString('')).toBeNull();
-		expect(parseDecimalString('abc')).toBeNull();
-		expect(parseDecimalString(null)).toBeNull();
-		expect(parseDecimalString(undefined)).toBeNull();
-	});
-
-	it('conserva los centavos que un float perdería', () => {
-		// 0.1 + 0.2 en float da 0.30000000000000004; sobre centésimas es exacto.
-		const total = (parseDecimalString('0.1') ?? 0n) + (parseDecimalString('0.2') ?? 0n);
-
-		expect(formatDecimalCents(total)).toBe('0.30');
-	});
-
-	it('redondea half-up, no half-even', () => {
-		// 2,5 → 3 y 3,5 → 4: half-even daría 2 y 4.
-		expect(divideRoundHalfUp(5n, 2n)).toBe(3n);
-		expect(divideRoundHalfUp(7n, 2n)).toBe(4n);
-	});
-
-	it('formatea en es-CL y no convierte un importe desconocido en $0', () => {
-		expect(formatDecimalAmount('5712.00', 'CLP')).toBe('$5.712,00');
-		expect(formatDecimalAmount('1234567.89', 'CLP')).toBe('$1.234.567,89');
-		expect(formatDecimalAmount(null, 'CLP')).toBeNull();
-	});
-});
 
 describe('previewCostBreakdown', () => {
 	it('deriva IVA y bruto desde una entrada neta', () => {

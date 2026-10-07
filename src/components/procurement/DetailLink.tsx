@@ -14,12 +14,7 @@ export interface IDetailLinkProps {
 	children: ReactNode;
 }
 
-/**
- * Referencia cruzada entre fichas del módulo de abastecimiento. Es enlace sólo
- * si hay destino y quien mira tiene **todo** el `authority` de esa ruta (la
- * misma regla de `AuthorityCheck`); si no, deja el texto tal cual, sin pistas
- * de un enlace que no podría abrir.
- */
+/** Es enlace sólo con destino y **todo** el `authority` de la ruta (regla de `AuthorityCheck`). */
 const DetailLink: FC<IDetailLinkProps> = ({ link, srLabel, children }) => {
 	const { all } = useCan();
 

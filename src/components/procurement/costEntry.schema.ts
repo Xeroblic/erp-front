@@ -2,47 +2,24 @@ import * as Yup from 'yup';
 import type { TCostEntryBasis, TDecimalString } from '@/interface/procurement.interface';
 import { formatDecimalCents, parseDecimalString } from '@/utils/procurementDecimal.util';
 
-/**
- * Validación de la **entrada** de costo del contrato de abastecimiento.
- *
- * El contrato acepta exactamente dos campos: `unit_cost` y `unit_cost_basis`.
- * El IVA, el neto derivado, el bruto derivado y el costo efectivo no se digitan
- * ni se envían, así que tampoco se validan acá — no existen en el formulario.
- */
-
-/** Valores del formulario. `unit_cost` viaja como string decimal, no como number. */
+/** `unit_cost` viaja como string decimal, no como number. */
 export interface ICostEntryFormValues {
 	unit_cost: string;
 	unit_cost_basis: TCostEntryBasis | '';
 }
 
-/** Hasta dos decimales, la escala en la que el contrato transporta importes. */
 const DECIMAL_TWO_PLACES = /^\d+([.,]\d{1,2})?$/;
 
-/** Normaliza la coma decimal que se escribe en es-CL antes de validar/enviar. */
 export const normalizeCostInput = (value: string): string => value.trim().replace(',', '.');
 
 /**
- * Ausencia tal como llega al schema, que **no** es una sola forma:
- *
- * - Formik normaliza `''` a `undefined` antes de validar
- *   (`prepareDataForValidation`), así que un campo vacío llega como `undefined`.
- * - Un campo con sólo espacios llega tal cual, porque Formik no lo considera vacío.
- * - Quien valide el schema directamente (`validate`, `validateAt`, una prueba)
- *   sí manda `''`.
- *
- * Comparar contra una sola de esas formas es lo que hacía que el costo opcional
- * rechazara el estado que existe precisamente para permitirlo.
+ * La ausencia llega de tres formas: `undefined` (Formik normaliza `''`), una
+ * cadena de espacios (Formik no la considera vacía) y `''` (validación directa).
  */
 const isAbsentValue = (value: unknown): boolean =>
 	value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
 
-/**
- * Convierte la ausencia en `undefined` para que `matches` y `oneOf` la omitan:
- * Yup 1.x salta esas validaciones ante `undefined`, pero no ante `''` ni ante
- * una cadena de espacios. Cubre el campo con espacios que Formik deja pasar y el
- * `''` de quien valide el schema sin Formik.
- */
+/** Yup 1.x salta `matches` y `oneOf` ante `undefined`, pero no ante `''` ni espacios. */
 const absentToUndefined = (value: unknown): unknown => (isAbsentValue(value) ? undefined : value);
 
 export const COST_ENTRY_BASIS_OPTIONS: { value: TCostEntryBasis; label: string }[] = [
@@ -69,9 +46,8 @@ export const costEntrySchema = Yup.object({
 });
 
 /**
- * Costo opcional, para la recepción sin documento y sin proveedor: puede quedar
- * desconocido, pero el contrato exige que monto y base viajen juntos —
- * «monto presente exige base y viceversa».
+ * Recepción sin documento y sin proveedor: el costo puede quedar desconocido,
+ * pero monto y base viajan juntos o no viajan.
  */
 export const optionalCostEntrySchema = Yup.object({
 	unit_cost: amountRules
@@ -82,8 +58,6 @@ export const optionalCostEntrySchema = Yup.object({
 			function validate(value) {
 				const { unit_cost_basis: basis } = this.parent as ICostEntryFormValues;
 
-				// Ambos ausentes es válido: el costo desconocido es un estado del
-				// contrato. Con base elegida, el monto pasa a ser obligatorio.
 				return isAbsentValue(basis) || !isAbsentValue(value);
 			},
 		),
@@ -96,11 +70,7 @@ export const optionalCostEntrySchema = Yup.object({
 		}),
 });
 
-/**
- * Payload de escritura a partir de los valores del formulario. Devuelve `null`
- * cuando el costo quedó vacío (recepción sin proveedor conocido): el contrato
- * espera ausencia, no un `"0.00"` inventado.
- */
+/** `null` con el costo vacío: el contrato espera ausencia, no un `"0.00"` inventado. */
 export const toCostEntryPayload = (
 	values: ICostEntryFormValues,
 ): { unit_cost: TDecimalString; unit_cost_basis: TCostEntryBasis } | null => {
@@ -110,7 +80,5 @@ export const toCostEntryPayload = (
 	const cents = parseDecimalString(amount);
 	if (cents === null) return null;
 
-	// El contrato transporta importes con dos decimales: "5712" se envía como
-	// "5712.00", no como lo tipeó el usuario.
 	return { unit_cost: formatDecimalCents(cents), unit_cost_basis: values.unit_cost_basis };
 };

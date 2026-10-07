@@ -3,28 +3,16 @@ import classNames from 'classnames';
 import Icon from '@/components/icon/Icon';
 import type { IWarehouseCompact } from '@/interface/procurement.interface';
 
-/**
- * Texto que el contrato asigna a `warehouse_id: null`. No es «sin datos» ni un
- * error de carga: es una ubicación válida dentro de la sucursal, vendible y
- * trasladable, donde vive el stock inicial reconciliado.
- */
+/** `warehouse_id: null` no es un dato faltante: es una ubicación válida, vendible y trasladable. */
 export const UNLOCATED_WAREHOUSE_LABEL = 'Sin ubicación';
 
 export interface IWarehouseLabelProps {
-	/** Bodega compacta del contrato. `null` se presenta como «Sin ubicación». */
 	warehouse: IWarehouseCompact | null;
 	/** Oculta el icono cuando el contexto ya lo aporta (una celda de tabla densa). */
 	withIcon?: boolean;
 	className?: string;
 }
 
-/**
- * Etiqueta de ubicación del módulo de abastecimiento.
- *
- * Se usa en todas las cards que muestran bodega para que «Sin ubicación» se lea
- * igual en stock, recepciones, traslados y ajustes, en vez de aparecer como un
- * guion en una pantalla y como «—» en otra.
- */
 const WarehouseLabel: FC<IWarehouseLabelProps> = ({ warehouse, withIcon = true, className }) => {
 	const isUnlocated = warehouse === null;
 

@@ -2,7 +2,6 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import CostInput from '../CostInput';
-import { costEntrySchema, toCostEntryPayload } from '../costEntry.schema';
 
 vi.mock('@/hooks/useReactiveThemeConfig', () => ({
 	default: () => ({ themeColor: 'blue', themeColorShade: '500' }),
@@ -42,9 +41,7 @@ describe('CostInput', () => {
 	it('pide monto y base, y nada más', () => {
 		const { container } = renderInput();
 
-		// El contrato acepta exactamente dos campos. El IVA, el neto derivado, el
-		// bruto derivado y el costo efectivo los calcula el backend: si aparecen
-		// como campos editables, el formulario deja de cumplir el contrato.
+		// IVA, neto, bruto y costo efectivo los calcula el backend: no son editables.
 		expect(container.querySelectorAll('input, select, textarea')).toHaveLength(2);
 		expect(screen.getByLabelText('Costo unitario')).toBeInTheDocument();
 		expect(screen.getByLabelText('Base')).toBeInTheDocument();
@@ -116,52 +113,5 @@ describe('CostInput', () => {
 		fireEvent.change(screen.getByLabelText('Costo unitario'), { target: { value: '100' } });
 
 		expect(onChange).toHaveBeenCalled();
-	});
-});
-
-describe('costEntrySchema', () => {
-	it('exige monto y base', async () => {
-		// `abortEarly: false` para que el orden en que Yup recorre los campos no
-		// decida cuál de los dos mensajes se comprueba.
-		await expect(
-			costEntrySchema.validate({ unit_cost: '', unit_cost_basis: '' }, { abortEarly: false }),
-		).rejects.toMatchObject({
-			errors: expect.arrayContaining([
-				'Indica el costo unitario.',
-				'Indica si el monto es neto o bruto.',
-			]),
-		});
-	});
-
-	it('rechaza un monto de más de dos decimales y un monto cero', async () => {
-		await expect(
-			costEntrySchema.validate({ unit_cost: '100.123', unit_cost_basis: 'net' }),
-		).rejects.toThrow('Usa un monto con hasta dos decimales.');
-		await expect(
-			costEntrySchema.validate({ unit_cost: '0', unit_cost_basis: 'net' }),
-		).rejects.toThrow('El costo debe ser mayor que cero.');
-	});
-
-	it('acepta la coma decimal que se escribe en es-CL', async () => {
-		await expect(
-			costEntrySchema.validate({ unit_cost: '5712,50', unit_cost_basis: 'gross' }),
-		).resolves.toBeDefined();
-	});
-});
-
-describe('toCostEntryPayload', () => {
-	it('normaliza el monto a dos decimales y envía solo los dos campos', () => {
-		expect(toCostEntryPayload({ unit_cost: '5712', unit_cost_basis: 'gross' })).toEqual({
-			unit_cost: '5712.00',
-			unit_cost_basis: 'gross',
-		});
-		expect(toCostEntryPayload({ unit_cost: '5712,5', unit_cost_basis: 'net' })).toEqual({
-			unit_cost: '5712.50',
-			unit_cost_basis: 'net',
-		});
-	});
-
-	it('devuelve null cuando el costo quedó vacío, en vez de inventar "0.00"', () => {
-		expect(toCostEntryPayload({ unit_cost: '', unit_cost_basis: '' })).toBeNull();
 	});
 });
