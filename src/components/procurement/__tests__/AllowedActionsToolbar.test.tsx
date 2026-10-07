@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { allowedActionsByState } from '@/mocks/db/procurement.db';
+import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
 import AllowedActionsToolbar, { PROCUREMENT_ACTION_DEFINITIONS } from '../AllowedActionsToolbar';
 
 const authorizationCalls = vi.hoisted(
@@ -189,7 +190,12 @@ describe('AllowedActionsToolbar', () => {
 	it('dice que no hay acciones cuando ninguna corresponde al recurso', () => {
 		render(
 			<AllowedActionsToolbar
-				allowedActions={['confirm', 'add_attachment']}
+				allowedActions={[
+					'confirm',
+					'add_attachment',
+					// Nombre heredado del prototipo, no una acción del contrato.
+					'constructor' as TProcurementAllowedAction,
+				]}
 				resource='stock_receipt'
 				onAction={vi.fn()}
 			/>,

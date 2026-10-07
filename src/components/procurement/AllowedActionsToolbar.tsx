@@ -173,8 +173,11 @@ const AllowedActionsToolbar: FC<IAllowedActionsToolbarProps> = ({
 }) => {
 	// Una acción desconocida o ajena al recurso no puede pintarse con un permiso
 	// adivinado: se omite, y si no queda ninguna rige el estado vacío.
+	// `hasOwn`: la lista llega del backend y un nombre como `constructor` resolvería
+	// por el prototipo.
+	const definitions = PROCUREMENT_ACTION_DEFINITIONS[resource];
 	const offeredActions = allowedActions.flatMap((action) => {
-		const definition = PROCUREMENT_ACTION_DEFINITIONS[resource][action];
+		const definition = Object.hasOwn(definitions, action) ? definitions[action] : undefined;
 
 		return definition === undefined ? [] : [{ action, definition }];
 	});

@@ -124,6 +124,17 @@ describe('costEntrySchema con Formik', () => {
 });
 
 describe('costEntrySchema', () => {
+	it('exige monto y base también cuando se valida sin Formik, con cadenas vacías', async () => {
+		await expect(
+			costEntrySchema.validate(emptyValues, { abortEarly: false }),
+		).rejects.toMatchObject({
+			errors: expect.arrayContaining([
+				'Indica el costo unitario.',
+				'Indica si el monto es neto o bruto.',
+			]),
+		});
+	});
+
 	it('rechaza un monto de más de dos decimales y un monto cero', async () => {
 		await expect(
 			costEntrySchema.validate({ unit_cost: '100.123', unit_cost_basis: 'net' }),
