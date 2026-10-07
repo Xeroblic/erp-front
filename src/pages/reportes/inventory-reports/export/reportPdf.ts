@@ -123,10 +123,10 @@ const kpiBlock = (doc: IExportDocument) => ({
 });
 
 /** Horizontal cuando alguna tabla tiene muchas columnas. */
-export const pdfOrientationOf = (doc: IExportDocument): 'portrait' | 'landscape' =>
+const pdfOrientationOf = (doc: IExportDocument): 'portrait' | 'landscape' =>
 	doc.tables.some((table) => table.columns.length > 4) ? 'landscape' : 'portrait';
 
-export const reportToPdfDefinition = (doc: IExportDocument): TDocumentDefinitions => {
+const reportToPdfDefinition = (doc: IExportDocument): TDocumentDefinitions => {
 	const orientation = pdfOrientationOf(doc);
 	const availableWidth = A4_WIDTH[orientation] - PAGE_MARGIN * 2;
 	return {
@@ -165,7 +165,7 @@ export const reportToPdfDefinition = (doc: IExportDocument): TDocumentDefinition
 	};
 };
 
-export const reportToPdfBlob = async (doc: IExportDocument): Promise<Blob> => {
+const reportToPdfBlob = async (doc: IExportDocument): Promise<Blob> => {
 	const pdfMake = await loadPdfMake();
 	const pdf = pdfMake.createPdf(reportToPdfDefinition(doc));
 	return new Promise<Blob>((resolve, reject) => {
@@ -178,3 +178,5 @@ export const reportToPdfBlob = async (doc: IExportDocument): Promise<Blob> => {
 		}
 	});
 };
+
+export default reportToPdfBlob;

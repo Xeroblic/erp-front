@@ -8,10 +8,6 @@ import type {
 import type { IInventarioKpi } from '@/pages/inventario/Inventario/components/parts/InventarioKpis';
 import type { IInventoryReportSort } from '@/pages/reportes/inventory-reports/types';
 
-/* =================================================
-   Búsqueda, orden y página (en el navegador)
-   ================================================= */
-
 /**
  * Mismo criterio que `q` del backend (`ILIKE` sobre SKU y nombre): contiene
  * el texto, sin distinguir mayúsculas. Así lo que se ve es lo que se exporta.
@@ -72,10 +68,6 @@ export const paginateReportRows = <T>(rows: T[], page: number, perPage: number):
 	};
 };
 
-/* =================================================
-   Estado visible (igual que Inventario)
-   ================================================= */
-
 /** «Sin disponible» gana a los estados del §13, como la etiqueta de Inventario. */
 export const visibleStatusOf = (
 	row: Pick<IStockHealthReportRow, 'available_quantity' | 'status'>,
@@ -88,10 +80,6 @@ export const STATUS_RANK: Record<TInventoryStockStatusFilter, number> = {
 	unconfigured: 2,
 	healthy: 3,
 };
-
-/* =================================================
-   KPI de cada pestaña
-   ================================================= */
 
 const sum = (values: number[]): number => values.reduce((total, value) => total + value, 0);
 
@@ -187,7 +175,7 @@ export const replenishmentKpis = (rows: IReplenishmentReportRow[]): IInventarioK
 };
 
 /** Días sin movimiento desde los que un producto se considera inmovilizado (R3). */
-export const DEAD_STOCK_DAYS = 90;
+const DEAD_STOCK_DAYS = 90;
 
 export const statisticsKpis = (
 	health: IStockHealthReportRow[],
@@ -221,10 +209,6 @@ export const statisticsKpis = (
 		},
 	];
 };
-
-/* =================================================
-   Agregados para los gráficos de Estadísticas
-   ================================================= */
 
 export interface IBranchStockTotals {
 	branch: string;

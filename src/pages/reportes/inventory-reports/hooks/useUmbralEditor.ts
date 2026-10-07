@@ -8,7 +8,7 @@ import {
 } from '@/store/slices/procurement/inventoryOverviewSlice';
 import { UmbralSchema, type IUmbralFormValues } from '@/pages/inventario/Inventario/types';
 
-export interface IUmbralTarget {
+interface IUmbralTarget {
 	productId: number;
 	productName: string;
 	threshold: number | null;

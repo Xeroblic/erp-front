@@ -18,11 +18,7 @@ import type { IReportFilters } from '@/interface/reports.interface';
 import { ReportsService } from '@/services/reports/reports.service';
 import { getInventoryReportMock } from '@/services/reports/inventoryReportsMock.service';
 
-/* =================================================
-   Lectura defensiva del cuerpo (forma desconocida)
-   ================================================= */
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /** Filas del cuerpo: paginador de Laravel o sobre `{ data }`; ambos traen `data[]`. */
@@ -113,10 +109,6 @@ const lastPurchaseOf = (value: unknown): IReplenishmentLastPurchase | null => {
 	};
 };
 
-/* =================================================
-   Filas por tipo
-   ================================================= */
-
 const stockRowOf = (value: unknown): IStockReportRow | null => {
 	if (!isRecord(value)) return null;
 	const sku = stringOf(value.sku);
@@ -201,10 +193,6 @@ export const parseInventoryReport = (
 	if (type === 'replenishment') return { type, rows: compact(rows.map(replenishmentRowOf)) };
 	return { type, rows: compact(rows.map(deadStockRowOf)) };
 };
-
-/* =================================================
-   Consulta
-   ================================================= */
 
 export interface IInventoryReportQuery {
 	subsidiaryId: number;

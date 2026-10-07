@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { ReportsService } from '@/services/reports/reports.service';
 import reducer, {
 	clearInventoryReports,
 	type ReportsState,
 } from '@/store/slices/reports/reportSlice';
 import {
 	fetchInventoryReport,
+	fetchReportResults,
 	inventoryReportQueryKey,
 	type IInventoryReportRequest,
 } from '@/store/slices/reports/reportsThunks';
@@ -29,7 +31,13 @@ const initial = reducer(undefined, { type: '@@init' });
 const pending = (state: ReportsState, requestId: string, arg = request()) =>
 	reducer(state, fetchInventoryReport.pending(requestId, arg));
 
-describe('reportSlice · Reportes › Inventario (ZF-12)', () => {
+const getResults = vi.hoisted(() => vi.fn<typeof ReportsService.getResults>());
+
+vi.mock('@/services/reports/reports.service', () => ({
+	ReportsService: { getResults },
+}));
+
+describe('reportSlice · Reportes › Inventario', () => {
 	it('sólo la última petición resuelve la consulta de su tipo', () => {
 		const stock = request({ type: 'stock', source: 'api' });
 		let state = pending(initial, 'old', stock);
@@ -87,10 +95,52 @@ describe('reportSlice · Reportes › Inventario (ZF-12)', () => {
 	});
 
 	it('no toca `loading` ni `error`, que comparten Ventas y el dashboard', () => {
-		const state = pending(initial, 'r1');
+		const shared: ReportsState = { ...initial, loading: true, error: 'ventas' };
 
-		expect(state.loading).toBe(false);
-		expect(state.error).toBeNull();
+		let state = pending(shared, 'r1');
+		state = reducer(state, fetchInventoryReport.rejected(new Error('boom'), 'r1', request()));
+
+		expect(state).toMatchObject({ loading: true, error: 'ventas' });
 		expect(reducer(state, clearInventoryReports()).inventory).toEqual({});
+	});
+});
+
+describe('reportSlice · resultados agregados (Ventas y dashboard)', () => {
+	const args = { subsidiaryId: 2, type: 'sales', filters: { date_from: '2026-01-01' } };
+	const abortError = Object.assign(new Error('cancelada'), { name: 'AbortError' });
+
+	it('el abort de la consulta anterior no apaga el `loading` de la nueva ni pisa sus filas', () => {
+		let state = reducer(initial, fetchReportResults.pending('old', args));
+		state = reducer(state, fetchReportResults.pending('new', args));
+		state = reducer(state, fetchReportResults.rejected(abortError, 'old', args));
+
+		expect(state).toMatchObject({ loading: true, error: null });
+
+		state = reducer(state, fetchReportResults.fulfilled([{ id: 1 }], 'old', args));
+		expect(state.aggregatedResults).toBeNull();
+
+		state = reducer(state, fetchReportResults.fulfilled([{ id: 2 }], 'new', args));
+		expect(state).toMatchObject({ loading: false, aggregatedResults: [{ id: 2 }] });
+	});
+
+	it('pide de a 200 filas hasta una página incompleta y las junta', async () => {
+		const page = (size: number, offset: number) =>
+			Array.from({ length: size }, (_, index) => ({ id: offset + index }));
+		getResults
+			.mockResolvedValueOnce({ data: page(200, 0) })
+			.mockResolvedValueOnce({ data: page(5, 200) });
+
+		const action = await fetchReportResults({
+			...args,
+			filters: { ...args.filters, per_page: 10 },
+		})(vi.fn(), () => ({}), undefined);
+
+		expect(fetchReportResults.fulfilled.match(action)).toBe(true);
+		expect(action.payload).toHaveLength(205);
+		expect(getResults.mock.calls.map((call) => call[2])).toEqual([
+			{ date_from: '2026-01-01', per_page: 200, page: 1 },
+			{ date_from: '2026-01-01', per_page: 200, page: 2 },
+		]);
+		expect(getResults.mock.calls[0][3]).toBeInstanceOf(AbortSignal);
 	});
 });

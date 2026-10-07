@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const formatUnits = (value: number): string =>
+const formatUnits = (value: number): string =>
 	value.toLocaleString('es-CL', { maximumFractionDigits: 2 });
 
 /** Fecha ISO (`2026-09-10` o con hora) como `10-09-2026`, sin correrse por zona horaria. */

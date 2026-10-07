@@ -10,14 +10,14 @@ import {
 	isInventoryReportView,
 	type TInventoryReportView,
 } from '@/pages/reportes/inventory-reports/inventoryReportTabs';
+import { parseIdParam, parsePageParam } from '@/utils/listSearchParams.util';
 
-export const INVENTORY_REPORTS_PATH = '/reportes/inventario';
 export const SUPPLIER_DETAIL_PATH = '/inventario/abastecimiento/proveedores';
 
 /** Lo que comparten las pestañas de una sesión (usuario + filial). */
 export interface IInventoryReportContext {
 	subsidiaryId: number;
-	/** Clave de la sesión para la propiedad de las consultas (ZF-12). */
+	/** Clave de la sesión para la propiedad de las consultas. */
 	owner: string;
 	/** Sucursales de la filial, para el filtro y para el mock. */
 	branches: IInventoryReportBranch[];
@@ -27,10 +27,6 @@ export interface IInventoryReportContext {
 	companyName: string | null;
 	sourceOf: (type: TInventoryReportType) => TInventoryReportSource | null;
 }
-
-/* =================================================
-   Filtros (URL)
-   ================================================= */
 
 export type TInventoryReportSortDirection = 'asc' | 'desc';
 
@@ -77,11 +73,6 @@ const ESTADOS: readonly TInventoryStockStatusFilter[] = [
 export const isEstado = (value: string | null): value is TInventoryStockStatusFilter =>
 	ESTADOS.some((estado) => estado === value);
 
-const positiveInt = (value: string | null, fallback: number): number => {
-	const parsed = Number(value);
-	return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-};
-
 const parseOrden = (value: string | null): IInventoryReportSort | null => {
 	if (!value || value === '-') return null;
 	return value.startsWith('-')
@@ -92,19 +83,28 @@ const parseOrden = (value: string | null): IInventoryReportSort | null => {
 /**
  * Lee los filtros de la URL. Un valor desconocido cae al valor por defecto en
  * vez de romper la vista: los enlaces viejos o editados a mano siguen abriendo.
+ *
+ * Con `branchIds` (las sucursales de la filial activa), una `sucursal` que no
+ * está entre ellas cae a «todas»: tras cambiar de empresa la URL conserva la de
+ * la anterior, y pedirla haría fallar el reporte. Una lista vacía no admite
+ * ninguna; sólo `null` (sin contexto de filial) respeta la de la URL.
  */
-export const parseInventoryReportFilters = (params: URLSearchParams): IInventoryReportFilters => {
+export const parseInventoryReportFilters = (
+	params: URLSearchParams,
+	branchIds: readonly number[] | null = null,
+): IInventoryReportFilters => {
 	const vista = params.get('vista');
-	const sucursal = params.get('sucursal');
+	const sucursal = parseIdParam(params.get('sucursal'));
 	const estado = params.get('estado');
+	const sucursalInScope = sucursal === null || branchIds === null || branchIds.includes(sucursal);
 	return {
 		vista: isInventoryReportView(vista) ? vista : INVENTORY_REPORT_DEFAULT_VIEW,
 		busqueda: params.get('q') ?? '',
-		sucursal: sucursal !== null && /^[1-9]\d*$/.test(sucursal) ? Number(sucursal) : null,
+		sucursal: sucursalInScope ? sucursal : null,
 		estado: isEstado(estado) ? estado : null,
 		orden: parseOrden(params.get('orden')),
-		page: positiveInt(params.get('page'), 1),
-		perPage: positiveInt(params.get('per_page'), INVENTORY_REPORT_PER_PAGE_DEFAULT),
+		page: parsePageParam(params.get('page'), 1),
+		perPage: parsePageParam(params.get('per_page'), INVENTORY_REPORT_PER_PAGE_DEFAULT),
 	};
 };
 
@@ -136,10 +136,6 @@ export const nextInventoryReportSort = (
 	field,
 	direction: current?.field === field && current.direction === 'asc' ? 'desc' : 'asc',
 });
-
-/* =================================================
-   Etiquetas
-   ================================================= */
 
 /** Mismo texto y color que la etiqueta de estado de Inventario. */
 export const ESTADO_OPTIONS: { value: TInventoryStockStatusFilter; label: string }[] = [

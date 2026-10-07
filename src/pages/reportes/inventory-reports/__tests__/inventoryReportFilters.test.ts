@@ -50,6 +50,18 @@ describe('Filtros de Reportes › Inventario en la URL', () => {
 		expect(filters).toEqual(DEFAULT_INVENTORY_REPORT_FILTERS);
 	});
 
+	it('una sucursal que no es de la filial activa se lee como «todas»', () => {
+		const params = new URLSearchParams('sucursal=9&q=mouse');
+
+		expect(parseInventoryReportFilters(params, [4, 5])).toMatchObject({
+			sucursal: null,
+			busqueda: 'mouse',
+		});
+		expect(parseInventoryReportFilters(params, [4, 9]).sucursal).toBe(9);
+		expect(parseInventoryReportFilters(params, []).sucursal).toBeNull();
+		expect(parseInventoryReportFilters(params, null).sucursal).toBe(9);
+	});
+
 	it('el primer clic ordena ascendente, el segundo descendente y otra columna vuelve a ascendente', () => {
 		const first = nextInventoryReportSort(null, 'stock');
 		const second = nextInventoryReportSort(first, 'stock');

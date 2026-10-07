@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import Button from '@/components/ui/Button';
-import Icon from '@/components/icon/Icon';
 import type { SalesDashboardStats, SaleRecord, ReportFiltersState } from '../../types';
 import { generateExecutiveReport } from '../utils/pdf/generateExecutiveReport';
 
@@ -28,8 +28,8 @@ const DashboardExportButton: React.FC<Props> = ({
 				topCustomers,
 				filters,
 			});
-		} catch (error) {
-			console.error('Error generando reporte PDF:', error);
+		} catch {
+			toast.error('No pudimos generar el reporte PDF. Intenta nuevamente.');
 		} finally {
 			setLoading(false);
 		}

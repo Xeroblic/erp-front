@@ -8,7 +8,7 @@ import type { IInventoryReportQuery } from '@/services/reports/inventoryReports.
 
 /**
  * Carga un reporte completo y lo expone sólo si la respuesta es de esta
- * instancia (ZF-12): la clave incluye filial, sucursal, fuente y una marca de
+ * instancia: la clave incluye filial, sucursal, fuente y una marca de
  * sesión, así un cambio de contexto nunca pinta filas del anterior.
  *
  * `query` debe venir memoizada; `null` no pide nada (tipo aún no resuelto).

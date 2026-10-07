@@ -17,16 +17,23 @@ import {
  * usan Formik.
  *
  * Cualquier cambio de filtro vuelve a la página 1; sólo paginar la conserva.
+ *
+ * `branchIds` son las sucursales de la filial: una `?sucursal=` que no está
+ * entre ellas se lee como «todas» y desaparece de la URL al próximo cambio.
+ * Debe venir memoizado.
  */
-const useInventoryReportFilters = () => {
+const useInventoryReportFilters = (branchIds: readonly number[]) => {
 	const [searchParams, setSearchParams] = useSearchParams();
-	const filters = useMemo(() => parseInventoryReportFilters(searchParams), [searchParams]);
+	const filters = useMemo(
+		() => parseInventoryReportFilters(searchParams, branchIds),
+		[searchParams, branchIds],
+	);
 
 	const update = useCallback(
 		(patch: (previous: IInventoryReportFilters) => Partial<IInventoryReportFilters>) => {
 			setSearchParams(
 				(previousParams) => {
-					const previous = parseInventoryReportFilters(previousParams);
+					const previous = parseInventoryReportFilters(previousParams, branchIds);
 					return serializeInventoryReportFilters({
 						...previous,
 						page: 1,
@@ -36,7 +43,7 @@ const useInventoryReportFilters = () => {
 				{ replace: true },
 			);
 		},
-		[setSearchParams],
+		[setSearchParams, branchIds],
 	);
 
 	// Cada pestaña tiene otras columnas: el orden de la anterior no aplica, y
