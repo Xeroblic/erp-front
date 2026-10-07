@@ -264,12 +264,9 @@ describe('uploadPurchaseDocumentAttachment', () => {
 	});
 
 	it('subir un adjunto y editar el documento a la vez no pierde ni el conteo ni la edición', async () => {
-		// Antes compartían filial+documento pero cada servicio encolaba sus
-		// escrituras por separado: una editaba `store.documents` con su propia
-		// foto de `existing` mientras la otra escribía el conteo de adjuntos
-		// sobre esa misma colección, y una de las dos escrituras se perdía
-		// según cuál terminara último. Ahora ambas pasan por la cola
-		// compartida de `purchaseDocuments.service` (`withDocumentLock`).
+		// Ambas escrituras tocan `store.documents`: si no pasaran por la cola
+		// compartida de `purchaseDocuments.service` (`withDocumentLock`), una
+		// pisaría a la otra según cuál terminara último.
 		//
 		// El `update` cambia `supplier_id`: eso lo obliga a esperar
 		// `getProcurementSupplier` (~220 ms) **dentro** de su tramo bloqueado,

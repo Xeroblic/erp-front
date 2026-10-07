@@ -14,7 +14,7 @@ import type {
 /**
  * Maestro de proveedores **de prueba** — sección 5 del contrato de
  * abastecimiento. La pantalla de Proveedores no lo usa: consume el servicio
- * real `@/services/procurement/procurementSuppliers.service` (backend PR #93).
+ * real `@/services/procurement/procurementSuppliers.service`.
  *
  * Lo usan, en la app y en las pruebas, los servicios simulados que todavía no
  * tienen backend (recepciones y el doble de documentos de compra): validan

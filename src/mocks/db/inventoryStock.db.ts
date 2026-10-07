@@ -97,7 +97,7 @@ const products = [
 
 /**
  * Resuelve un producto por id contra el mismo catálogo que arma
- * `inventoryStockRows` (card 07, ZF-112): `inventoryStock.mock` lo
+ * `inventoryStockRows`: `inventoryStock.mock` lo
  * necesita para reconstruir filas agregadas dinámicamente desde el store
  * mutable de procedencias (`origins`), que sólo guarda `product_id` — nunca
  * el producto completo — igual criterio que el resto del mock: el fixture es
@@ -166,8 +166,8 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 	inventoryOrigin51,
 	/**
 	 * Lo que queda en el estante de la recepción #211 (8 mouse sin documento,
-	 * `supplierPurchaseHistoryReceipts`). Antes copiaba la 51 y decía venir de
-	 * la #80 con la factura #1234, que sólo cubre 10 mouse.
+	 * `supplierPurchaseHistoryReceipts`), no de la #80: la factura #1234 sólo
+	 * cubre 10 mouse.
 	 */
 	{
 		...inventoryOrigin51,
@@ -242,7 +242,7 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 		}),
 	),
 	/**
-	 * Caso canónico de la card 07 (ZF-112, sección 8): 100 físicos sin
+	 * Caso canónico de la sección 8: 100 físicos sin
 	 * documento, en una ubicación/producto que ningún otro fixture toca
 	 * (`cableProduct` no aparece en ningún otro origin) para no perturbar los
 	 * agregados ya cerrados de mouse/teclado que ejercen otras pruebas.

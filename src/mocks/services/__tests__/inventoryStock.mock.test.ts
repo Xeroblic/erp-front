@@ -26,7 +26,7 @@ import type { IInventoryStockListParams } from '@/interface/procurement.interfac
 const BRANCH_ID = 4;
 const MOUSE_ID = 31;
 
-// IDs literales de `procurement.db.ts`/`inventoryStock.db.ts` (card 07, sección 8).
+// IDs literales de `procurement.db.ts`/`inventoryStock.db.ts` (sección 8).
 const SUBSIDIARY_ID = 2; // STOCK_RECEIPT_SUBSIDIARY_ID
 const SOUTH_BRANCH_ID = 6; // STOCK_RECEIPT_SOUTH_BRANCH_ID
 const CABLE_PRODUCT_ID = 58;
@@ -277,8 +277,8 @@ describe('inventoryStock mock', () => {
 });
 
 /**
- * `POST B/inventory-stock/{product}/document-allocations` (card 07, sección
- * 8, ZF-112): respalda documentalmente stock inicial sin documento.
+ * `POST B/inventory-stock/{product}/document-allocations` (sección 8):
+ * respalda documentalmente stock inicial sin documento.
  * `CANONICAL_ORIGIN_ID` (220, `cableProduct`, `mainWarehouse`) es el caso
  * canónico del issue: 100 físicos sin documento, respaldable contra
  * `CABLE_DOCUMENT_ID` (90, línea 950, capacidad 40).
@@ -583,7 +583,7 @@ describe('listInitialStockAllocationsForPurchaseDocument', () => {
 });
 
 /* =================================================
-   Traslados internos y ajuste por conteo — card 08 (ZF-113), secciones 9 y 11
+   Traslados internos y ajuste por conteo — secciones 9 y 11
    ================================================= */
 
 /** Físico, apto y no apto de un producto en una ubicación, leídos por el mismo endpoint que la UI. */
