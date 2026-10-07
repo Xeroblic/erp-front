@@ -24,8 +24,8 @@ import { ECOPC_SUBSIDIARY_ID, ecopcDemoHistory } from '@/mocks/db/inventoryEcopc
 /**
  * Compras de la sucursal Ecopc (filial 1, la de la sesión del equipo en
  * desarrollo): los documentos de prueba y las recepciones que nombran sus
- * procedencias y su historial (#90, #95–#99). Antes no existían: la ficha de
- * inventario enlazaba «Recepción #N» y abría «La recepción no existe».
+ * procedencias y su historial (#90, #95–#99), para que la ficha de
+ * inventario no enlace una «Recepción #N» inexistente.
  *
  * Todo se **deriva** de esas procedencias en vez de copiarse, para que
  * producto, cantidad, bodega, proveedor, fecha y documento no se desalineen si

@@ -58,7 +58,7 @@ import type {
 
 /**
  * Doble de recepciones físicas — sección 7 del contrato de abastecimiento
- * (`frontend-guide.md`, PR #67 del backend, rama
+ * (`frontend-guide.md`, rama
  * `docs/procurement-stock-receipts`). **La UI no lo importa**: pasa por la
  * fachada `@/services/procurement/stockReceipts.service`, que lo elige mientras
  * `VITE_INVENTORY_STOCK_USE_MOCKS` esté encendida.
@@ -82,7 +82,7 @@ import type {
  * a los helpers exportados de `purchaseDocuments.mock` para reflejar la
  * cobertura en la línea del documento — la misma disciplina de «una sola
  * cola por documento, no dos» que ya resolvió `purchaseDocumentAttachments.mock`
- * para adjuntos (ZF-109): acá no hace falta cola porque la mutación de
+ * para adjuntos: acá no hace falta cola porque la mutación de
  * cobertura es síncrona (ver `applyStockReceiptCoverageDelta`).
  *
  * El proveedor se resuelve contra el **maestro de prueba**
@@ -126,22 +126,13 @@ const storesBySubsidiary = new Map<number, IStockReceiptVersionedStore>();
 const nextReceiptIdBySubsidiary = new Map<number, number>();
 const nextItemIdBySubsidiary = new Map<number, number>();
 
-/**
- * Persistencia local del store autoritativo (hallazgo 1, revisión ZF-110):
- * ver `procurementMockPersistence.util`. Se sube la versión si cambia la
- * forma de `IPersistedStockReceiptsState`.
- */
+/** Persistencia local del store autoritativo: ver `procurementMockPersistence.util`. */
 const STOCK_RECEIPTS_STORAGE_NAMESPACE = 'stock-receipts';
 /**
- * v2: la semilla sumó el historial de compras de proveedores
- * (`supplierPurchaseHistoryReceipts`). Un store v1 ya persistido hidrataría
- * sin esas recepciones y la ficha de proveedor seguiría vacía.
- *
- * v3: el proveedor pasó a resolverse contra el maestro de prueba. Un store v2
- * puede traer recepciones con ids de proveedores reales.
- *
- * v4: la filial de Ecopc siembra las recepciones que nombran sus procedencias
- * (`ecopcDemoProcurement.db`). Un store v3 hidrataría sin ellas.
+ * Sube si cambia la forma de `IPersistedStockReceiptsState` o la semilla: un
+ * store viejo hidrataría sin los fixtures nuevos. Al subirla hay que subir
+ * también `purchase-documents` e `inventory-stock`, que persisten cobertura y
+ * procedencias derivadas de estas recepciones.
  */
 const STOCK_RECEIPTS_STORAGE_VERSION = 4;
 
@@ -252,7 +243,7 @@ interface IIdempotencyLogEntry {
 const idempotencyLog = new Map<string, IIdempotencyLogEntry>();
 const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subsidiaryId}:${key}`;
 
-/** Serializa y guarda el estado autoritativo vigente de una filial (hallazgo 1). */
+/** Serializa y guarda el estado autoritativo vigente de una filial. */
 const persistSubsidiaryState = (subsidiaryId: number): void => {
 	const store = storesBySubsidiary.get(subsidiaryId);
 	if (!store) return;
@@ -298,7 +289,7 @@ async function withIdempotency<T>(
 	if (!idempotencyKey) {
 		const result = await run();
 		// Sin clave no hay entrada de idempotencia que persistir, pero el store
-		// sí cambió: persiste igual (hallazgo 1).
+		// sí cambió: persiste igual.
 		persistSubsidiaryState(subsidiaryId);
 		return result;
 	}
@@ -328,7 +319,7 @@ async function withIdempotency<T>(
 		idempotencyLog.set(logKey, { payloadHash, result });
 		// Persiste **después** de fijar el resultado idempotente definitivo: si
 		// se persistiera antes, una recarga justo en este instante congelaría la
-		// clave en «en curso» para siempre (hallazgo 1: «conserva... resultado
+		// clave en «en curso» para siempre («conserva... resultado
 		// idempotente»).
 		persistSubsidiaryState(subsidiaryId);
 		return result;
@@ -365,7 +356,7 @@ function withReceiptLock<T>(
 /**
  * `allowed_actions` por estado (sección 7 y `allowedActionsByState` del
  * fixture). `posted` es la única entrada que **no** es una tabla estática:
- * `link_purchase_document` (card 07, sección 8) sólo corresponde ofrecerlo
+ * `link_purchase_document` (sección 8) sólo corresponde ofrecerlo
  * mientras la recepción `posted` **no** tenga ya un documento vinculado — el
  * vínculo es único y no sustituible, así que una vez hecho no se vuelve a
  * ofrecer. `computeAllowedActionsForStatus` es la única función que decide
@@ -414,8 +405,8 @@ const groupQuantityByLine = (
 };
 
 /**
- * Agrupa cantidades de líneas «con documento» por `purchase_document_line_id`
- * (hallazgo 2): valida la suma, no cada ítem por separado.
+ * Agrupa cantidades de líneas «con documento» por `purchase_document_line_id`:
+ * valida la suma, no cada ítem por separado.
  */
 const groupDocumentLineQuantities = (
 	items: (
@@ -435,7 +426,7 @@ const groupDocumentLineQuantities = (
 
 /**
  * Valida la capacidad **agregada y vigente** de cada línea de documento
- * involucrada (hallazgo 2, sección 7 del contrato): agrupa antes de
+ * involucrada (sección 7 del contrato): agrupa antes de
  * comparar contra `remaining_quantity`, y siempre contra el documento que se
  * le pase — al crear/editar es el snapshot recién leído; al contabilizar
  * (`resolveStockReceiptWorker`) es el documento **vigente** en ese instante,
@@ -504,7 +495,7 @@ function resolveStockReceiptWorker(subsidiaryId: number, receiptId: number): voi
 	const attemptCount = receipt.processing.attempt_count;
 
 	// Antes de aplicar el efecto físico, revalida la capacidad **vigente** del
-	// documento (hallazgo 2): dos recepciones (o dos reintentos) que
+	// documento: dos recepciones (o dos reintentos) que
 	// individualmente cabían al crearse pueden competir por el mismo saldo —
 	// un borrador nunca reserva stock (sección 7), así que el único momento
 	// seguro para bloquear el exceso es este, justo antes de contabilizar.
@@ -642,8 +633,8 @@ const seedStore = (subsidiaryId: number): IStockReceiptVersionedStore => {
 };
 
 /**
- * Reconstruye el store de una filial desde `localStorage`, si existe
- * (hallazgo 1). Repuebla también los mapas satélite (`requestedBy`,
+ * Reconstruye el store de una filial desde `localStorage`, si existe.
+ * Repuebla también los mapas satélite (`requestedBy`,
  * `idempotencyLog`, contadores de ID) que no viven dentro del store mismo.
  */
 const hydrateStoreFromStorage = (subsidiaryId: number): IStockReceiptVersionedStore | null => {
@@ -668,7 +659,7 @@ const hydrateStoreFromStorage = (subsidiaryId: number): IStockReceiptVersionedSt
 
 /**
  * Reanuda el trabajo pendiente de las recepciones `queued` que sobrevivieron
- * a hidratar el store de una filial (hallazgo 1): su `setTimeout` no
+ * a hidratar el store de una filial: su `setTimeout` no
  * sobrevive a una recarga real (reinstancia el módulo), así que sin esto se
  * quedarían en `queued` para siempre. Corre una sola vez por filial, tanto
  * si el store viene de `localStorage` como si nace de la semilla de
@@ -744,7 +735,7 @@ interface IWarehouseContext {
 }
 
 /**
- * Resuelve la bodega elegida a su sucursal real (hallazgo 5, sección 7 del
+ * Resuelve la bodega elegida a su sucursal real (sección 7 del
  * contrato: «Nueva recepción exige bodega; branch se deriva de ella»).
  * `null` si la bodega no existe o —cuando se conocen las sucursales
  * autorizadas del actor— pertenece a una sucursal fuera de esa lista. Lista
@@ -768,8 +759,8 @@ const resolveWarehouseContext = (
 };
 
 /**
- * Bodegas que corresponde ofrecer para dar de alta/editar una recepción
- * (hallazgo 5): filtra, si se conocen, por sucursales autorizadas. Se expone
+ * Bodegas que corresponde ofrecer para dar de alta/editar una recepción:
+ * filtra, si se conocen, por sucursales autorizadas. Se expone
  * desde el servicio para que la UI no importe el catálogo de fixtures
  * directamente para decidir qué mostrar en un selector — la misma disciplina
  * que ya siguen `listPurchaseDocuments`/`listProcurementSuppliers` para sus
@@ -868,7 +859,7 @@ const buildDocumentLine = (
 		};
 	}
 	// La comparación contra `remaining_quantity` **no** se hace acá por línea
-	// individual (hallazgo 2): dos ítems de esta misma recepción pueden
+	// individual: dos ítems de esta misma recepción pueden
 	// compartir `purchase_document_line_id` y cada uno, visto por separado,
 	// caber en el saldo — `validateDocumentLineCapacity` valida la suma
 	// agrupada antes de aplicar el efecto físico.
@@ -1029,7 +1020,7 @@ export const listStockReceipts = (
 };
 
 /**
- * `GET .../purchase-documents/{document}/stock-receipts` (hallazgo 9, sección
+ * `GET .../purchase-documents/{document}/stock-receipts` (sección
  * 6 del contrato): resumen paginado de las recepciones vinculadas a un
  * documento, servido desde **este** store — el único que conoce recepciones
  * reales — para que `purchaseDocuments.mock` no necesite importar este
@@ -1156,7 +1147,7 @@ export const createStockReceipt = (
 				const failed = results.find((result) => result.error);
 				if (failed) return fail(422, failed.error!);
 
-				// Hallazgo 2: valida la suma agrupada por línea, no cada ítem por
+				// Valida la suma agrupada por línea, no cada ítem por
 				// separado — dos ítems de esta recepción que comparten línea pueden
 				// caber individualmente y exceder el saldo juntos.
 				const groupedQuantities = groupDocumentLineQuantities(payload.items);
@@ -1312,7 +1303,7 @@ export const updateStockReceipt = (
 				});
 			}
 
-			// Hallazgo 5: cambiar de bodega recalcula `branch_id` desde la bodega
+			// Cambiar de bodega recalcula `branch_id` desde la bodega
 			// elegida, nunca desde la sucursal activa de quien edita.
 			let { warehouse } = existing;
 			let branchId = existing.branch_id;
@@ -1335,7 +1326,7 @@ export const updateStockReceipt = (
 				branchId = warehouseContext.branchId;
 			}
 
-			// Hallazgo 6: `received_on` sólo se cambia en `draft` (sección 7). Una
+			// `received_on` sólo se cambia en `draft` (sección 7). Una
 			// recepción `failed` la conserva hasta volver a `draft` — corregir
 			// otros campos sí se permite, y reenviar el mismo valor no cuenta como
 			// «cambiarla».
@@ -1452,7 +1443,7 @@ export const updateStockReceipt = (
 					const failed = results.find((result) => result.error);
 					if (failed) return fail(422, failed.error!);
 
-					// Hallazgo 2: suma agrupada por línea antes de comparar contra el
+					// Suma agrupada por línea antes de comparar contra el
 					// saldo vigente del documento.
 					const groupedQuantities = groupDocumentLineQuantities(documentItems);
 					const capacityError = validateDocumentLineCapacity(document, groupedQuantities);
@@ -1792,12 +1783,12 @@ const appendAuditNote = (existingNotes: string | null, note: string): string =>
 	existingNotes ? `${existingNotes}\n${note}` : note;
 
 /**
- * `PUT /stock-receipts/{receipt}/purchase-document` (card 07, sección 8):
+ * `PUT /stock-receipts/{receipt}/purchase-document` (sección 8):
  * vincula un documento `confirmed` a una recepción `posted` que se creó sin
  * uno. Mapea **todas** las líneas de la recepción al mismo documento,
  * validando producto/cantidad/capacidad — reutiliza exactamente
  * `validateDocumentLineCapacity`/`groupDocumentLineQuantities`, el mismo
- * criterio agregado (hallazgo 2) que ya usa el alta con documento.
+ * criterio agregado que ya usa el alta con documento.
  *
  * Decisiones no especificadas literalmente en el contrato (sección 8):
  * - **Recepción no `posted`**: el contrato no da un código específico para
@@ -1937,7 +1928,7 @@ export const linkStockReceiptPurchaseDocument = (
 					});
 				}
 
-				// Capacidad agregada y vigente (hallazgo 2): el documento todavía no
+				// Capacidad agregada y vigente: el documento todavía no
 				// tiene cobertura de esta recepción — se posteó sin documento — así
 				// que `remaining_quantity` vigente es la capacidad real disponible.
 				const groupedQuantities = new Map<number, number>();
@@ -2033,7 +2024,7 @@ export const linkStockReceiptPurchaseDocument = (
 /**
  * Sólo para pruebas: descarta el estado **en memoria** — como una recarga
  * real de la pestaña, que reinstancia el módulo y pierde todo `setTimeout` —
- * pero conserva deliberadamente lo persistido en `localStorage` (hallazgo 1).
+ * pero conserva deliberadamente lo persistido en `localStorage`.
  * `forcedOutcomeByReceipt` también se descarta: es control de pruebas, no
  * estado del mock, así que una prueba que reanuda tras «recargar» debe
  * volver a fijarlo si necesita un resultado específico del worker.

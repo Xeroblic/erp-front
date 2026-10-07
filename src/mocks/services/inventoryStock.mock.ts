@@ -54,12 +54,10 @@ import { normalizePageParams } from '@/utils/procurementPagination.util';
 
 /**
  * Doble de stock por ubicación — secciones 3 y 8 del contrato de
- * abastecimiento (`frontend-guide.md`, PR #67 del backend). **La UI no lo
+ * abastecimiento (`frontend-guide.md`). **La UI no lo
  * importa**: pasa por la fachada `@/services/procurement/inventoryStock.service`.
  *
- * **Ninguno de estos endpoints existe todavía.** Hasta la card 07 (ZF-112)
- * este servicio era de sólo lectura sobre los fixtures estáticos de
- * `inventoryStock.db`. Ahora mantiene un store mutable de procedencias
+ * **Ninguno de estos endpoints existe todavía.** Mantiene un store mutable de procedencias
  * (`origins`), particionado por **sucursal** — a diferencia de
  * `stockReceipts.mock`/`purchaseDocuments.mock`, que particionan por
  * filial, porque `GET/POST B/inventory-stock/...` es un prefijo `B`
@@ -109,9 +107,9 @@ interface IInventoryStockBranchStore {
 	origins: IInventorySeedOrigin[];
 	/** Historial de asignaciones confirmadas — la lista relacionada del documento (sección 6/8). */
 	allocations: IInventoryDocumentAllocation[];
-	/** Traslados internos confirmados (card 08, sección 9). */
+	/** Traslados internos confirmados (sección 9). */
 	movements: IWarehouseStockMovement[];
-	/** Ajustes por conteo confirmados (card 08, sección 11). */
+	/** Ajustes por conteo confirmados (sección 11). */
 	adjustments: IInventoryAdjustment[];
 	/** Ingresos de recepciones publicadas en la sucursal (sección 7). */
 	stockReceiptEffects: IStockReceiptInventoryEffect[];
@@ -180,16 +178,11 @@ const nextAllocationIdFor = (branchId: number): number => {
 
 const INVENTORY_STOCK_STORAGE_NAMESPACE = 'inventory-stock';
 /**
- * v2 (card 08, ZF-113): el estado persistido gana `movements` y `adjustments`.
- * La clave de `procurementMockPersistence.util` incluye la versión, así que un
- * estado v1 deja de encontrarse y el store vuelve a la semilla — no hay
- * migración que escribir, pero el bump es obligatorio para no hidratar un
- * objeto al que le faltan los arreglos nuevos.
+ * La clave incluye la versión, así que subirla descarta el estado anterior y
+ * el store vuelve a la semilla: no hay migración que escribir, pero el bump es
+ * obligatorio al cambiar la forma persistida o la semilla, y junto con
+ * `stock-receipts`, porque las procedencias apuntan a esas recepciones.
  */
-// v3: `stockReceiptEffects`. v4: ejemplos de Ecopc. v5: su historial. v6: se
-// descartan orígenes de recepciones con proveedores reales (recepciones v3).
-// v7: acompaña a recepciones v4, para no conservar procedencias de recepciones
-// que el store nuevo ya no tiene.
 const INVENTORY_STOCK_STORAGE_VERSION = 7;
 
 interface IIdempotencyLogEntry {
@@ -827,11 +820,9 @@ const page = <T>(items: T[], path: string, params: { page?: number; per_page?: n
 
 /**
  * Agrega procedencias vigentes del store mutable a filas de stock por
- * producto/ubicación (card 07, ZF-112): `documented_quantity`/
- * `undocumented_quantity` ya no se derivan estáticamente de un fixture — se
- * suman dinámicamente sobre `origins`, que cambia con cada
- * `document-allocations` confirmado. Mismo criterio de reduce que usaba
- * `inventoryStockRows` en `inventoryStock.db.ts`.
+ * producto/ubicación: `documented_quantity`/
+ * `undocumented_quantity` se suman sobre `origins`, que cambia con cada
+ * `document-allocations` confirmado.
  */
 const aggregateStockRows = (origins: readonly IInventorySeedOrigin[]): IInventorySeedRow[] => {
 	const rows = new Map<string, IInventorySeedRow>();
@@ -1093,8 +1084,8 @@ interface IMockWriteHeaders {
 }
 
 /**
- * `POST B/inventory-stock/{product}/document-allocations` (card 07, sección
- * 8): respalda documentalmente stock inicial **todavía existente** y sin
+ * `POST B/inventory-stock/{product}/document-allocations` (sección 8):
+ * respalda documentalmente stock inicial **todavía existente** y sin
  * documento. `physical_stock_delta` es siempre `0` — la operación divide un
  * origin en dos, nunca mueve ni crea unidades físicas.
  *
@@ -1295,10 +1286,10 @@ export const createInventoryDocumentAllocation = (
 
 /**
  * `GET .../purchase-documents/{document}/initial-stock-allocations` (sección
- * 6, card 07): lista relacionada paginada, servida desde **este** store — el
+ * 6): lista relacionada paginada, servida desde **este** store — el
  * único que posee asignaciones reales — para que `purchaseDocuments.service`
  * no necesite importar este módulo (mismo criterio que
- * `listStockReceiptsForPurchaseDocument`, hallazgo 9 de ZF-110).
+ * `listStockReceiptsForPurchaseDocument`).
  * `subsidiaryId` sólo se usa para confirmar que el documento existe en esa
  * filial (404 si no) y para el `path` cosmético del `meta`: las asignaciones
  * mismas están particionadas por sucursal, no por filial.
@@ -1337,7 +1328,7 @@ export const listInitialStockAllocationsForPurchaseDocument = async (
    ================================================= */
 
 /**
- * `POST B/warehouse-stock-movements` (card 08, sección 9): mueve unidades
+ * `POST B/warehouse-stock-movements` (sección 9): mueve unidades
  * entre ubicaciones de **la misma sucursal**.
  *
  * `global_stock_delta` es siempre `0` y las unidades cuentan **una vez**
@@ -1458,7 +1449,7 @@ export const createWarehouseStockMovement = (
 	);
 
 /**
- * `POST B/inventory-adjustments` (card 08, sección 11): corrige una diferencia
+ * `POST B/inventory-adjustments` (sección 11): corrige una diferencia
  * de conteo con motivo auditado.
  *
  * Decisiones no especificadas literalmente en el contrato (sección 11):

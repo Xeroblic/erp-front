@@ -76,7 +76,7 @@ const POSTED_CONSUMED_ID = 76; // postedKeyboardStockReceipt, marcada consumida
 
 const MAIN_WAREHOUSE_ID = 8;
 const SHELF_WAREHOUSE_ID = 12; // misma sucursal (4) que MAIN_WAREHOUSE_ID
-const SOUTH_BRANCH_WAREHOUSE_ID = 15; // sucursal 6, hallazgo 5
+const SOUTH_BRANCH_WAREHOUSE_ID = 15; // sucursal 6
 const SOUTH_BRANCH_ID = 6;
 const ECOPC_WAREHOUSE_ID = 20; // sucursal 1
 const ECOPC_SHOWROOM_WAREHOUSE_ID = 21; // sucursal 1, también recibe mercadería
@@ -146,8 +146,8 @@ const createCleanConfirmedDocument = async (quantity: number) => {
 };
 
 /**
- * Documento confirmado con proveedor y producto configurables (card 07,
- * sección 8): a diferencia de `createCleanConfirmedDocument`, éste sí lleva
+ * Documento confirmado con proveedor y producto configurables (sección
+ * 8): a diferencia de `createCleanConfirmedDocument`, éste sí lleva
  * proveedor — necesario para ejercer «el proveedor debe coincidir» al
  * vincular.
  */
@@ -180,7 +180,7 @@ const createConfirmedDocumentWithSupplier = async (
 
 /**
  * Recepción `posted` sin documento, con proveedor y producto configurables
- * (card 07, sección 8): ningún fixture semilla nace `posted` sin documento —
+ * (sección 8): ningún fixture semilla nace `posted` sin documento —
  * se construye vía `draft → queued → posted`, mismo patrón que el resto del
  * archivo.
  */
@@ -507,7 +507,7 @@ describe('Ciclo de estados: draft → queued → posted', () => {
 		expect(resolved.inventory_operation_id).not.toBeNull();
 		expect(resolved.posted_by).toEqual(ACTOR);
 		// `manualPayload` no lleva documento: `posted` sin documento ofrece
-		// `link_purchase_document` (card 07, sección 8) además de `reverse`.
+		// `link_purchase_document` (sección 8) además de `reverse`.
 		expect(resolved.allowed_actions.sort()).toEqual(
 			['link_purchase_document', 'reverse'].sort(),
 		);
@@ -688,13 +688,13 @@ describe('Fixture semilla en queued (sección 7)', () => {
 
 		const { data: resolved } = await getStockReceipt(SUBSIDIARY_A, QUEUED_ID);
 		expect(['posted', 'failed']).toContain(resolved.status);
-		// Solicitante histórico coherente (hallazgo 1): nunca `posted_by: null`
+		// Solicitante histórico coherente: nunca `posted_by: null`
 		// para una recepción que sí llegó a `posted`.
 		if (resolved.status === 'posted') expect(resolved.posted_by).not.toBeNull();
 	});
 });
 
-describe('Hallazgo 1: persistencia y reanudación tras recargar (revisión ZF-110)', () => {
+describe('persistencia y reanudación tras recargar', () => {
 	it('crear → publicar → reinicializar el entorno conservando almacenamiento → consultar el mismo ID alcanza un estado terminal, sin duplicar cobertura ni perder al solicitante', async () => {
 		const created = await createStockReceipt(SUBSIDIARY_A, {
 			purchase_document_id: KEYBOARD_DOCUMENT_ID,
@@ -708,17 +708,16 @@ describe('Hallazgo 1: persistencia y reanudación tras recargar (revisión ZF-11
 		// Simula una recarga real de la pestaña: descarta el estado en memoria
 		// (Maps, `setTimeout`) pero conserva `localStorage` — a diferencia de
 		// `resetStockReceiptsStoreForTests` (usado en `afterEach`), que también
-		// lo borra para aislar las pruebas entre sí. Antes del fix, el GET de
-		// abajo devolvía 404 (el store se resembraba desde la fixture) porque
-		// este ID nunca existió ahí.
+		// lo borra para aislar las pruebas entre sí. Sin persistencia, el GET
+		// de abajo daría 404: el store se resembraría desde la fixture.
 		simulateStockReceiptsReloadForTests();
 		simulatePurchaseDocumentsReloadForTests();
 
 		const { data: afterReload } = await getStockReceipt(SUBSIDIARY_A, created.data.id);
 		expect(afterReload.status).toBe('queued');
 
-		// Antes del fix, esto se quedaba en `queued` para siempre: el
-		// `setTimeout` del worker no sobrevive a la recarga simulada.
+		// El `setTimeout` del worker no sobrevive a la recarga: la hidratación
+		// tiene que reprogramarlo o esto se quedaría en `queued`.
 		await waitForWorker();
 
 		const { data: resolved } = await getStockReceipt(SUBSIDIARY_A, created.data.id);
@@ -765,7 +764,7 @@ describe('Hallazgo 1: persistencia y reanudación tras recargar (revisión ZF-11
 	});
 });
 
-describe('Hallazgo 2: capacidad agregada y vigente del documento', () => {
+describe('capacidad agregada y vigente del documento', () => {
 	it('línea repetida en la misma recepción: la suma, no cada ítem, se valida contra el saldo', async () => {
 		// Línea 601 tiene 12 de saldo: 8 + 8 individualmente caben, juntos exceden.
 		const response = await readErrorData(
@@ -840,7 +839,7 @@ describe('Hallazgo 2: capacidad agregada y vigente del documento', () => {
 	}, 20000); // cuatro esperas reales del worker (~4.4s) más latencia de mock.
 });
 
-describe('Hallazgo 5: la bodega elegida deriva la sucursal, no la sucursal activa', () => {
+describe('la bodega elegida deriva la sucursal, no la sucursal activa', () => {
 	it('bodega de otra sucursal autorizada produce el branch_id correcto', async () => {
 		const { data } = await createStockReceipt(
 			SUBSIDIARY_A,
@@ -916,7 +915,7 @@ describe('Hallazgo 5: la bodega elegida deriva la sucursal, no la sucursal activ
 	});
 });
 
-describe('Hallazgo 6: received_on inmutable en failed', () => {
+describe('received_on inmutable en failed', () => {
 	it('no permite cambiar la fecha en failed, sí corrige otro campo; al volver a draft, la fecha vuelve a ser editable', async () => {
 		const { headers, data: original } = await getStockReceipt(SUBSIDIARY_A, FAILED_ID);
 
@@ -955,7 +954,7 @@ describe('Hallazgo 6: received_on inmutable en failed', () => {
 	});
 });
 
-describe('Hallazgo 9: recepciones reales por documento', () => {
+describe('recepciones reales por documento', () => {
 	it('listStockReceiptsForPurchaseDocument devuelve las recepciones vinculadas, paginadas', async () => {
 		const result = await listStockReceiptsForPurchaseDocument(
 			SUBSIDIARY_A,
@@ -1048,8 +1047,8 @@ describe('allowed_actions por estado', () => {
 });
 
 /**
- * `PUT /stock-receipts/{receipt}/purchase-document` (card 07, sección 8,
- * ZF-112): vincula un documento confirmado a una recepción `posted` que se
+ * `PUT /stock-receipts/{receipt}/purchase-document` (sección 8):
+ * vincula un documento confirmado a una recepción `posted` que se
  * creó sin uno. `createPostedManualReceipt` construye la recepción real vía
  * `draft → queued → posted` (ningún fixture semilla nace `posted` sin
  * documento) y `createConfirmedDocumentWithSupplier` el documento destino.
@@ -1300,14 +1299,9 @@ describe('linkStockReceiptPurchaseDocument — sección 8', () => {
 		expect(response.data.code).toBe('LINK_REASON_REQUIRED');
 	});
 
-	// Hallazgo 3 (QA, revisión ZF-112): `linkStockReceiptPurchaseDocument`
-	// comparte `withIdempotency`/`withReceiptLock` con el resto de este
-	// archivo (ya probado en `describe('Idempotencia', ...)` para
-	// `createStockReceipt`), pero no tenía un caso propio — el vínculo es
-	// además de un solo uso (`RECEIPT_DOCUMENT_ALREADY_LINKED`), así que sin
-	// este test un reintento por timeout que perdiera la clave repetiría la
-	// operación y chocaría con esa regla en vez de devolver el resultado
-	// cacheado.
+	// El vínculo es de un solo uso (`RECEIPT_DOCUMENT_ALREADY_LINKED`): un
+	// reintento por timeout que perdiera la clave repetiría la operación y
+	// chocaría con esa regla en vez de devolver el resultado cacheado.
 	it('misma Idempotency-Key repite el vínculo ya hecho; con otro payload responde 409 IDEMPOTENCY_KEY_REUSED', async () => {
 		const receipt = await createPostedManualReceipt(
 			PC_EXPRESS_SUPPLIER_ID,

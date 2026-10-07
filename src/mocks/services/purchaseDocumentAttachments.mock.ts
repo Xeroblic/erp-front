@@ -20,7 +20,7 @@ import {
 /**
  * Servicio mock de adjuntos privados de documentos de compra — subsección
  * «Adjuntos privados» de la sección 6 del contrato de abastecimiento
- * (`frontend-guide.md`, PR #67 del backend, rama
+ * (`frontend-guide.md`, rama
  * `docs/procurement-stock-receipts`).
  *
  * **Ninguno de estos endpoints existe todavía.** Simula

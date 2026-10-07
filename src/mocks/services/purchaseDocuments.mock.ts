@@ -39,7 +39,7 @@ import type {
 /**
  * Doble de documentos de compra — sección 6 del contrato de abastecimiento.
  * **La pantalla de Documentos de compra ya no lo usa**: consume el servicio
- * real `@/services/procurement/purchaseDocuments.service` (backend PR #84/#92).
+ * real `@/services/procurement/purchaseDocuments.service`.
  *
  * Se conserva porque Recepciones e Inventario siguen sin backend: sus
  * servicios mock (`stockReceipts.mock`, `inventoryStock.mock`) leen y
@@ -106,7 +106,7 @@ const idempotencyLog = new Map<string, IIdempotencyLogEntry>();
 const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subsidiaryId}:${key}`;
 
 /**
- * Persistencia local del store autoritativo (hallazgo 1, revisión ZF-110):
+ * Persistencia local del store autoritativo:
  * ver `procurementMockPersistence.util`. Sin esto, la cobertura que refleja
  * una recepción publicada (`applyStockReceiptCoverageDelta`) se perdía al
  * recargar la pestaña — persistir sólo el slice de UI de recepciones no
@@ -114,10 +114,8 @@ const idempotencyLogKey = (subsidiaryId: number, key: string): string => `${subs
  */
 const PURCHASE_DOCUMENTS_STORAGE_NAMESPACE = 'purchase-documents';
 /**
- * v2: el proveedor pasó a resolverse contra el maestro de prueba.
- * v3: acompaña a recepciones v4, para no conservar la cobertura de
- * recepciones que el store nuevo ya no tiene, y siembra los documentos de la
- * demo de Ecopc.
+ * Sube con la forma persistida o la semilla, y junto con `stock-receipts`: la
+ * cobertura persistida se deriva de esas recepciones.
  */
 const PURCHASE_DOCUMENTS_STORAGE_VERSION = 3;
 
@@ -146,7 +144,7 @@ const hydrateStoreFromStorage = (subsidiaryId: number): IPurchaseDocumentVersion
 	return { documents: persisted.documents, versions: new Map(persisted.versions) };
 };
 
-/** Serializa y guarda el estado autoritativo vigente de una filial (hallazgo 1). */
+/** Serializa y guarda el estado autoritativo vigente de una filial. */
 const persistSubsidiaryState = (subsidiaryId: number): void => {
 	const store = storesBySubsidiary.get(subsidiaryId);
 	if (!store) return;
@@ -240,7 +238,7 @@ async function withIdempotency<T>(
 	if (!idempotencyKey) {
 		const result = await run();
 		// Sin clave no hay entrada de idempotencia que persistir, pero el store
-		// sí cambió: persiste igual (hallazgo 1).
+		// sí cambió: persiste igual.
 		persistSubsidiaryState(subsidiaryId);
 		return result;
 	}
@@ -268,8 +266,8 @@ async function withIdempotency<T>(
 	try {
 		const result = await run();
 		idempotencyLog.set(logKey, { payloadHash, result });
-		// Persiste después de fijar el resultado idempotente definitivo (hallazgo
-		// 1): persistir antes congelaría la clave en «en curso» para siempre si
+		// Persiste después de fijar el resultado idempotente definitivo:
+		// persistir antes congelaría la clave en «en curso» para siempre si
 		// la pestaña se recarga justo en este instante.
 		persistSubsidiaryState(subsidiaryId);
 		return result;
@@ -560,7 +558,7 @@ const replaceExistingLines = (
  * sobre la ficha completa en vez de los valores del form.
  *
  * Incluye las comunas a propósito, aunque el texto de la sección 5 sólo
- * nombra «giro y ambas direcciones»: `SupplierCompletenessNotice` (card 02)
+ * nombra «giro y ambas direcciones»: `SupplierCompletenessNotice`
  * ya advierte al usuario con este mismo criterio —comuna incluida— antes de
  * llegar a confirmar una factura. Que el aviso de proveedores y el bloqueo
  * de confirmar acá exijan cosas distintas sería peor que ser un poco más
@@ -1042,7 +1040,7 @@ export const confirmPurchaseDocument = (
 				reception_status: 'pending',
 				supplier_snapshot: supplierSnapshot,
 				confirmed_at: new Date().toISOString(),
-				// `create_receipt` (card 05, sección 7 del contrato): un documento
+				// `create_receipt` (sección 7 del contrato): un documento
 				// confirmado siempre la ofrece, aunque su capacidad restante sea baja
 				// — el mock no la oculta por capacidad, la escritura valida y
 				// responde `RECEIPT_EXCEEDS_DOCUMENT` si corresponde.
@@ -1098,7 +1096,7 @@ export const cancelPurchaseDocument = (
 					),
 				);
 			}
-			// Hallazgo 9: el bloqueo depende de recepciones `posted` y asignaciones
+			// El bloqueo depende de recepciones `posted` y asignaciones
 			// documentales **activas**, no de `related_counts` — ese contador es
 			// histórico (sube al dar de alta cualquier recepción, incluso un
 			// borrador) y no baja al revertir, a propósito: conserva la historia
@@ -1143,18 +1141,18 @@ export const cancelPurchaseDocument = (
 	);
 
 /**
- * `GET .../initial-stock-allocations` (sección 6) ya no vive acá: las
+ * `GET .../initial-stock-allocations` (sección 6) no vive acá: las
  * asignaciones reales viven en `inventoryStock.mock` (el store que las
  * posee, sección 8), que las expone como
  * `listInitialStockAllocationsForPurchaseDocument` — mismo criterio que
- * `GET .../stock-receipts` (hallazgo 9, revisión ZF-110): importarlo desde
+ * `GET .../stock-receipts`: importarlo desde
  * este archivo crearía el ciclo que ese servicio evita a propósito, porque
  * `inventoryStock.mock` sí importa de acá (`findPurchaseDocumentForReceipts`)
  * para resolver el documento y su línea al documentar.
  */
 
 /**
- * Sólo para el servicio de adjuntos (card 04, sección 6): lee el documento
+ * Sólo para el servicio de adjuntos (sección 6): lee el documento
  * vigente sin la latencia artificial del mock ni el envoltorio HTTP. Subir o
  * eliminar un adjunto necesita el `status` del documento para validar la
  * regla de estados («se puede subir en draft y confirmed, nunca cancelled;
@@ -1194,7 +1192,7 @@ export const setPurchaseDocumentAttachmentsCount = (
 };
 
 /**
- * Sólo para el servicio de recepciones (card 05, sección 7): lee el
+ * Sólo para el servicio de recepciones (sección 7): lee el
  * documento vigente completo, sin la latencia artificial del mock ni el
  * envoltorio HTTP. Dar de alta o publicar una recepción «con documento»
  * necesita el `status` (debe estar `confirmed`) y las líneas (para derivar
@@ -1212,7 +1210,7 @@ export const findPurchaseDocumentForReceipts = (
 };
 
 /**
- * Sólo para `inventoryStock.mock` (card 07, sección 8): el payload de
+ * Sólo para `inventoryStock.mock` (sección 8): el payload de
  * `document-allocations` sólo trae `purchase_document_line_id` — a
  * diferencia de vincular un documento a una recepción (mismo endpoint 1 de
  * la sección 8), acá no viaja `purchase_document_id` — así que resolver el
@@ -1433,7 +1431,7 @@ export const bumpPurchaseDocumentInitialStockAllocationsCount = (
 /**
  * Sólo para pruebas: descarta el estado **en memoria** — como una recarga
  * real de la pestaña — pero conserva lo persistido en `localStorage`
- * (hallazgo 1, igual criterio que `simulateStockReceiptsReloadForTests`).
+ * (igual criterio que `simulateStockReceiptsReloadForTests`).
  */
 export const simulatePurchaseDocumentsReloadForTests = (): void => {
 	storesBySubsidiary.clear();

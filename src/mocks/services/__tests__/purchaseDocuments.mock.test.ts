@@ -65,12 +65,11 @@ afterEach(() => {
 	resetPurchaseDocumentsStoreForTests();
 });
 
-// Documento agregado por la card 05 (recepciones): confirmado, con
+// Documento confirmado con
 // capacidad parcial, para que las recepciones «con documento» tengan un
 // destino real sin consumir de inmediato `CONFIRMED_WITH_RECEIPT_ID`.
 const CONFIRMED_PARTIAL_ID = 61; // pcExpressKeyboardInvoiceDocument
-// Documento agregado por la card 07 (documentar después, sección 8):
-// confirmado, sin proveedor, con capacidad sin consumir para `cableProduct`.
+// Documento para documentar después (sección 8): confirmado, sin proveedor, con capacidad sin consumir para `cableProduct`.
 const CONFIRMED_INITIAL_STOCK_ID = 90; // cableProductInitialStockDocument
 
 describe('listPurchaseDocuments', () => {
@@ -116,7 +115,7 @@ describe('listPurchaseDocuments', () => {
 
 		// «1234» coincide con el folio del documento 24 y con el RUT de
 		// PCExpress (76123456-0), proveedor también de los documentos 42, 50 y
-		// del agregado por la card 05 (61, mismo proveedor).
+		// 61.
 		const byFolioOrSupplierRut = await listPurchaseDocuments(SUBSIDIARY_A, { search: '1234' });
 		expect(byFolioOrSupplierRut.data.map((row) => row.id).sort()).toEqual([
 			24,
@@ -442,7 +441,7 @@ describe('confirmPurchaseDocument', () => {
 		expect(data.status).toBe('confirmed');
 		expect(data.reception_status).toBe('pending');
 		expect(data.supplier_snapshot).toBeNull();
-		// `create_receipt` (card 05, sección 7): un documento confirmado
+		// `create_receipt` (sección 7): un documento confirmado
 		// siempre la ofrece, aunque su capacidad restante sea baja.
 		expect(data.allowed_actions).toEqual(['create_receipt', 'cancel', 'add_attachment']);
 	});
@@ -513,9 +512,8 @@ describe('cancelPurchaseDocument', () => {
 });
 
 // «listas relacionadas»: ni las recepciones vinculadas
-// (`listStockReceiptsForPurchaseDocument`, hallazgo 9) ni las asignaciones de
-// stock inicial (`listInitialStockAllocationsForPurchaseDocument`, card 07,
-// ZF-112) viven en este servicio — ambas se cubren en
+// (`listStockReceiptsForPurchaseDocument`) ni las asignaciones de
+// stock inicial (`listInitialStockAllocationsForPurchaseDocument`) viven en este servicio — ambas se cubren en
 // `stockReceipts.mock.test.ts` e `inventoryStock.mock.test.ts`
 // respectivamente: esos stores son la fuente real, no un stub de este
 // archivo.

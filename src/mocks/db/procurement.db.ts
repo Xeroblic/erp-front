@@ -16,8 +16,8 @@ import type {
 } from '@/interface/procurement.interface';
 
 /**
- * Fixtures del módulo de abastecimiento e inventario ubicado (PR #67 del
- * backend, rama `docs/procurement-stock-receipts`).
+ * Fixtures del módulo de abastecimiento e inventario ubicado (rama
+ * `docs/procurement-stock-receipts` del backend).
  *
  * **Ningún endpoint de este módulo existe todavía.** Estos datos se copian
  * literalmente de los ejemplos de `frontend-guide.md`: mismos nombres de campo,
@@ -114,7 +114,7 @@ export const cableProduct: IProcurementProduct = {
 
 /**
  * Segundo producto no serializado y activo (`cableProduct` ya está inactivo).
- * La card 03 necesita al menos dos productos elegibles para ejercer «varias
+ * Hacen falta al menos dos productos elegibles para ejercer «varias
  * líneas del mismo producto son válidas» junto con líneas de productos
  * distintos en un mismo documento.
  */
@@ -167,8 +167,8 @@ export const pcExpressSupplier: ISupplierCompact = {
 /**
  * Proveedor desactivado: se excluye de nuevas selecciones, no del historial.
  * DV recalculado a `-4`: el ejemplo original del contrato traía `-K`, que no
- * es el dígito verificador real de `77888999` — la card 02 valida RUT contra
- * el algoritmo, así que el fixture necesita uno que pase.
+ * es el dígito verificador real de `77888999` — el formulario de proveedor valida
+ * el RUT contra el algoritmo, así que el fixture necesita uno que pase.
  */
 export const inactiveSupplier: ISupplierCompact = {
 	id: 12,
@@ -199,7 +199,7 @@ export const mainWarehouse: IWarehouseCompact = { id: 8, name: 'Bodega Central' 
 export const shelfWarehouse: IWarehouseCompact = { id: 12, name: 'Estante A3' };
 
 /**
- * Bodega de una **segunda sucursal** (hallazgo 5, revisión ZF-110): existe
+ * Bodega de una **segunda sucursal**: existe
  * para poder dar de alta una recepción cuya bodega no pertenece a la
  * sucursal activa de la sesión, y comprobar que `branch_id` se deriva de la
  * bodega elegida, no del argumento de sucursal activa. También es la bodega
@@ -542,10 +542,7 @@ export const allowedActionsByState: Record<string, TProcurementAllowedAction[]> 
  * stock_receipts: 1`), así que el mock la deja **sin `cancel`** en
  * `allowed_actions`: el contrato prohíbe anular con recepciones posted.
  *
- * `create_receipt` se omite a propósito: la card 05 (recepciones físicas)
- * todavía no existe — un botón que no lleva a ninguna parte es peor que no
- * ofrecerlo. `add_attachment` sí corresponde: el documento está `confirmed`,
- * no `cancelled`, y la card 04 ya permite adjuntar en ese estado.
+ * `add_attachment` corresponde: el documento está `confirmed`, no `cancelled`.
  */
 export const pcExpressInvoiceDocument: IPurchaseDocument = {
 	id: 24,
@@ -559,8 +556,7 @@ export const pcExpressInvoiceDocument: IPurchaseDocument = {
 	supplier: pcExpressSupplier,
 	items_count: 1,
 	created_at: '2026-09-03T09:15:00-03:00',
-	// `create_receipt` (sección 6): la card 05 ya existe, así que un documento
-	// `confirmed` la ofrece aunque su única línea ya esté cubierta — el mock no
+	// `create_receipt` (sección 6): un documento `confirmed` la ofrece aunque su única línea ya esté cubierta — el mock no
 	// la oculta por capacidad restante, igual que el 409 de reversión no se
 	// anticipa desde `allowed_actions`: la escritura valida y responde
 	// `RECEIPT_EXCEEDS_DOCUMENT` si corresponde.
@@ -746,9 +742,8 @@ export const cancelledInvoiceDocument: IPurchaseDocument = {
  * Costo de la línea de teclados de `pcExpressKeyboardInvoiceDocument`:
  * entrada neta sobre factura, con el propio costo de catálogo de
  * `keyboardProduct` (`24000.00` neto) en vez de reutilizar `netEnteredCost`
- * (pensado para `mouseProduct`) — la card 05 necesita un documento con
- * capacidad **sin consumir** para las recepciones con documento, y
- * `pcExpressInvoiceDocument` (línea 101) ya está cubierta al 100%.
+ * (pensado para `mouseProduct`) — las recepciones con documento necesitan
+ * uno con capacidad **sin consumir**, y `pcExpressInvoiceDocument` (línea 101) ya está cubierta al 100%.
  */
 export const keyboardInvoiceLineCost: IProcurementCost = {
 	currency_code: 'CLP',
@@ -768,7 +763,7 @@ export const keyboardInvoiceLineCost: IProcurementCost = {
  * Factura confirmada con capacidad **parcialmente** cubierta: de 20
  * teclados, 8 ya llegaron por `postedKeyboardStockReceipt` (recepción 76,
  * `procurement.db.ts` recepciones) y quedan 12 por recibir
- * (`remaining_quantity`). Existe para que la card 05 tenga un documento real
+ * (`remaining_quantity`). Existe para tener un documento real
  * contra el que dar de alta recepciones «con documento» sin agotar su
  * capacidad de inmediato, y para ejercer `RECEIPT_EXCEEDS_DOCUMENT` pidiendo
  * más de 12.
@@ -814,10 +809,9 @@ export const pcExpressKeyboardInvoiceDocument: IPurchaseDocument = {
 
 /**
  * Boleta confirmada, **sin proveedor** («la boleta lo permite null»), con
- * capacidad **sin consumir** para `cableProduct` (card 07, sección 8,
- * ZF-112): existe para respaldar documentalmente el origin canónico de 100
+ * capacidad **sin consumir** para `cableProduct` (sección 8): existe para respaldar documentalmente el origin canónico de 100
  * físicos sin documento (`inventoryStock.db.ts`, origin 220) — mismo criterio
- * que `pcExpressKeyboardInvoiceDocument` para las recepciones de la card 05,
+ * que `pcExpressKeyboardInvoiceDocument` para las recepciones,
  * pero para `document-allocations`. Sin proveedor a propósito: la sección 8
  * de `document-allocations` no exige coincidencia de proveedor (a diferencia
  * de vincular un documento a una recepción, sección 8 endpoint 1) —
@@ -932,7 +926,7 @@ export const STOCK_RECEIPT_BRANCH_ID = 4;
  * productos y proveedores, **no está particionado por filial** — cada
  * partición por `subsidiaryId` clona el mismo catálogo global (así lo
  * ejercen las pruebas existentes con IDs de filial arbitrarios). La relación
- * organizacional que modela el hallazgo 5 es bodega → **sucursal**; no se le
+ * organizacional que se modela es bodega → **sucursal**; no se le
  * agrega una dimensión de filial que el resto del módulo no tiene, para no
  * romper esa convención ni inventar un aislamiento que no existe en ningún
  * otro catálogo de este archivo.
@@ -943,7 +937,7 @@ export const STOCK_RECEIPT_SOUTH_BRANCH_ID = 6;
 export const ECOPC_BRANCH_ID = 1;
 
 /**
- * Relación bodega → sucursal (hallazgo 5, revisión ZF-110). El compacto
+ * Relación bodega → sucursal. El compacto
  * `IWarehouseCompact` de respuesta se mantiene `{id, name}` — esta relación
  * es un dato **interno** del mock, nunca se serializa tal cual en una
  * respuesta; `stockReceipts.mock` la usa para derivar `branch_id` de la
@@ -1184,7 +1178,7 @@ export const failedStockReceipt: IStockReceipt = {
 	reversed_at: null,
 	cancellation_reason: null,
 	reversal_reason: null,
-	// Código propio del mock (card 05), sin código estable en la sección 16:
+	// Código propio del mock, sin código estable en la sección 16:
 	// misma licencia que `PURCHASE_DOCUMENT_ITEMS_EMPTY` en documentos.
 	failure_code: 'MOCK_STOCK_RECEIPT_WORKER_ERROR',
 	failure_message:
@@ -1241,8 +1235,7 @@ export const cancelledStockReceipt: IStockReceipt = {
 };
 
 /**
- * `reversed`: compensada, con historia conservada. Sin documento — vincular
- * uno después (sección 8, card 07) queda fuera del alcance de esta card.
+ * `reversed`: compensada, con historia conservada, sin documento.
  */
 export const reversedStockReceipt: IStockReceipt = {
 	id: 75,
@@ -1292,13 +1285,12 @@ export const reversedStockReceipt: IStockReceipt = {
 
 /**
  * `posted` **con documento** (`pcExpressKeyboardInvoiceDocument`, línea 601).
- * Antes usaba el id `80`, que en el contrato es la recepción del mouse con la
- * factura #1234 (`postedMouseInvoiceStockReceipt`): la procedencia 51 enlazaba
- * a una recepción de teclados con otra factura. Cubre 8
+ * No usa el id `80`, que en el contrato es la recepción del mouse con la
+ * factura #1234 (`postedMouseInvoiceStockReceipt`). Cubre 8
  * de los 20 teclados — coincide con `received_quantity`/`received_distribution`
  * de esa línea — y queda **marcada como consumida** en el store del servicio
  * mock (`stockReceipts.mock`) para poder ejercer `409
- * RECEIPT_ALREADY_CONSUMED` al revertir, tal como pide la card: el contrato no
+ * RECEIPT_ALREADY_CONSUMED` al revertir, como pide el contrato, que no
  * modela consumo real (eso vive en ventas, fuera de este módulo), así que el
  * mock lo simula marcando este id a propósito.
  */
@@ -1321,10 +1313,8 @@ export const postedKeyboardStockReceipt: IStockReceipt = {
 	created_at: '2026-08-29T09:50:00-03:00',
 	posted_at: '2026-08-29T10:15:00-03:00',
 	// No `allowedActionsByState.receiptPosted`: ese ejemplo incluye
-	// `link_purchase_document`, pero la card 05 lo omite a propósito — la
-	// card 07 (documentar después, sección 8) todavía no existe para ofrecer
-	// un botón que no lleva a ninguna parte. Mismo criterio que
-	// `create_receipt` en documentos antes de que esta card existiera.
+	// `link_purchase_document`, que no aplica a una recepción que ya tiene
+	// documento (sección 8).
 	allowed_actions: ['reverse'],
 	reason: null,
 	notes: null,
@@ -1656,8 +1646,7 @@ export type { IInventoryStockRow } from '@/interface/procurement.interface';
 /**
  * Respuesta literal de `GET B/inventory-stock` del contrato. Se incluye acá
  * porque es el ejemplo canónico del envoltorio `{data, context, links, meta}`
- * que consumirá el resto del módulo; el detalle de la pantalla de stock es de la
- * card 06.
+ * que consume el resto del módulo.
  */
 export const inventoryStockEnvelope: IApiCollectionEnvelope<
 	IInventoryStockRow,
