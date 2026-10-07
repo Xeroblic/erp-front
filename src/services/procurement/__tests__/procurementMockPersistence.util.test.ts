@@ -47,6 +47,33 @@ describe('procurementMockPersistence.util', () => {
 		expect(storedKeys()).toEqual([key('products', 'v2:2')]);
 	});
 
+	it('una pestaña con código anterior no borra lo que guardó una versión más nueva', () => {
+		savePersistedMockState('stock', 8, 4, { fromNewerTab: true });
+
+		expect(loadPersistedMockState('stock', 7, 4)).toBeNull();
+
+		expect(loadPersistedMockState('stock', 8, 4)).toEqual({ fromNewerTab: true });
+	});
+
+	it('la carga de todas las particiones tampoco borra versiones más nuevas', () => {
+		savePersistedMockState('products', 3, 2, { fromNewerTab: true });
+		savePersistedMockState('products', 1, 2, { stale: true });
+
+		expect(loadAllPersistedMockStates('products', 2)).toEqual([]);
+
+		expect(loadAllPersistedMockStates('products', 3)).toEqual([[2, { fromNewerTab: true }]]);
+		expect(storedKeys()).toEqual([key('products', 'v3:2')]);
+	});
+
+	it('no toca claves del namespace cuya versión no es un entero canónico', () => {
+		window.localStorage.setItem(key('stock', 'vX:4'), '{"unknown":true}');
+		window.localStorage.setItem(key('stock', 'v07:4'), '{"padded":true}');
+
+		loadPersistedMockState('stock', 7, 4);
+
+		expect(storedKeys()).toEqual([key('stock', 'v07:4'), key('stock', 'vX:4')].sort());
+	});
+
 	it('sólo lee como partición un sufijo entero canónico', () => {
 		window.localStorage.setItem(key('products', 'v1:'), '{"bare":true}');
 		window.localStorage.setItem(key('products', 'v1:1e3'), '{"exp":true}');
