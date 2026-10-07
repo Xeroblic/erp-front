@@ -8,10 +8,7 @@ import {
 	fetchInventoryStock,
 	inventoryStockQueryKey,
 } from '@/store/slices/procurement/inventoryStockSlice';
-import {
-	getInventoryWarehouses,
-	listInventoryStock,
-} from '@/services/procurement/inventoryStock.service';
+import { getInventoryWarehouses } from '@/services/procurement/inventoryStock.service';
 import {
 	locationStockParams,
 	locationToken,
@@ -34,51 +31,24 @@ import {
 	type TTrasladoStep,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import {
-	PROCUREMENT_PER_PAGE_MAX,
-	type IInventoryStockRow,
-	type IWarehouseStockMovement,
-	type IWarehouseStockMovementPayload,
-	type TStockCondition,
+	findLocationStockRows,
+	LOCATION_STOCK_PAGE_SIZE,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/locationStockLookup';
+import type {
+	IInventoryStockRow,
+	IWarehouseStockMovement,
+	IWarehouseStockMovementPayload,
+	TStockCondition,
 } from '@/interface/procurement.interface';
 
 /** Nombre y SKU de lo trasladado, para que el resultado siga legible tras limpiar el formulario. */
 export type TProductNames = Record<number, { name: string; sku: string }>;
 
-/** Productos del origen por página: el máximo del contrato. */
-const ORIGIN_PAGE_SIZE = PROCUREMENT_PER_PAGE_MAX;
-
-/** Búsqueda del producto preseleccionado más allá de la primera página del origen. */
 interface IPreselectedProductLookup {
 	from: string;
 	productId: number;
 	lastPage: number;
 }
-
-/**
- * Recorre las páginas 2…`lastPage` del stock del origen hasta encontrar el
- * producto. El contrato de `GET B/inventory-stock` no filtra por producto y
- * `per_page` ya está en su máximo, así que es la única forma de resolverlo sin
- * adivinar por nombre.
- */
-const findOriginRow = async (
-	branchId: number,
-	{ from, productId, lastPage }: IPreselectedProductLookup,
-	signal: AbortSignal,
-): Promise<IInventoryStockRow | null> => {
-	for (let page = 2; page <= lastPage; page += 1) {
-		// Secuencial a propósito: se detiene en la página que lo trae.
-		// eslint-disable-next-line no-await-in-loop
-		const response = await listInventoryStock(
-			branchId,
-			{ ...locationStockParams(from), page, per_page: ORIGIN_PAGE_SIZE },
-			signal,
-		);
-		const row = response.data.find((candidate) => candidate.product.id === productId);
-		if (row) return row;
-		if (page >= response.meta.last_page) break;
-	}
-	return null;
-};
 
 export interface ITrasladoResult {
 	movement: IWarehouseStockMovement;
@@ -88,11 +58,9 @@ export interface ITrasladoResult {
 }
 
 /**
- * Lógica del traslado interno (card 08, sección 9).
- *
- * Lo monta una sesión con `key` de usuario/filial/sucursal, igual que
- * `StockPorUbicacion`: un cambio de contexto desmonta el formulario en vez de
- * dejar que un efecto de limpieza alcance a borrarlo.
+ * Lo monta una sesión con `key` de usuario/filial/sucursal: un cambio de
+ * contexto desmonta el formulario en vez de dejar que un efecto de limpieza
+ * alcance a borrarlo.
  */
 export default function useInternalTransfer(
 	branchId: number,
@@ -104,26 +72,21 @@ export default function useInternalTransfer(
 	const raw = useAppSelector((state) => state.inventoryStock.list);
 	const [result, setResult] = useState<ITrasladoResult | null>(null);
 	const [retry, setRetry] = useState(0);
-	// Las líneas muestran sus errores tras intentar avanzar del paso de
-	// productos, no sólo tras un envío: el asistente valida antes de confirmar.
+	// Los errores de línea se muestran desde el primer intento de avanzar del
+	// paso de productos, no sólo tras un envío.
 	const [itemsChecked, setItemsChecked] = useState(false);
 
 	const warehouses = useMemo(() => getInventoryWarehouses(branchId), [branchId]);
-	/** Origen que trae la URL, sólo si es una ubicación de la sucursal activa. */
 	const [initialOrigin] = useState(
 		() => resolvePreselectedLocation(preselection.location, warehouses) ?? '',
 	);
 	/**
-	 * Producto que trae la URL, a la espera del stock del origen: sólo se
-	 * elige si el origen lo tiene. Se consume una vez — aplicado o descartado —
-	 * y cambiar el origen antes de resolverlo lo descarta.
+	 * Producto de la URL, a la espera del stock del origen: sólo se elige si el
+	 * origen lo tiene. Se consume una vez y cambiar el origen antes lo descarta.
 	 */
 	const pendingProductRef = useRef<number | null>(initialOrigin ? preselection.productId : null);
-	/**
-	 * Si el producto no viene en la primera página del origen, se busca en las
-	 * siguientes (`productLookup`) y su fila se suma al catálogo del origen
-	 * (`resolvedRow`): sin ella tampoco podría mostrarse en el selector.
-	 */
+	// Si no viene en la primera página se busca en las siguientes y su fila se
+	// suma a las del origen: sin ella tampoco se ofrecería en el selector.
 	const lookupStartedRef = useRef(false);
 	const [productLookup, setProductLookup] = useState<IPreselectedProductLookup | null>(null);
 	const [resolvedRow, setResolvedRow] = useState<{
@@ -136,12 +99,8 @@ export default function useInternalTransfer(
 		renewKeyOnDefinitiveError: true,
 	});
 
-	/**
-	 * El catálogo del origen viaja por ref además de por render: `onSubmit` lo
-	 * necesita para congelar nombre y SKU **antes** de escribir, y leerlo del
-	 * estado obligaría a declarar la consulta encima del formulario del que esa
-	 * misma consulta depende.
-	 */
+	// `onSubmit` congela nombre y SKU antes de escribir; la consulta del origen
+	// depende del formulario, así que sus filas le llegan por ref.
 	const originRowsRef = useRef<IInventoryStockRow[]>([]);
 
 	const labelFor = useCallback(
@@ -197,8 +156,8 @@ export default function useInternalTransfer(
 			toast.success(
 				`${units} ${units === 1 ? 'unidad trasladada' : 'unidades trasladadas'} de ${fromLabel} a ${toLabel}.`,
 			);
-			// Conserva origen y destino: quien traslada suele encadenar varias
-			// líneas entre las mismas dos ubicaciones. Sólo se limpia lo escrito.
+			// Origen y destino se conservan: suelen encadenarse varios traslados
+			// entre las mismas dos ubicaciones.
 			helpers.resetForm({
 				values: {
 					from: formValues.from,
@@ -215,13 +174,16 @@ export default function useInternalTransfer(
 	const { values, touched, setFieldValue, setValues, setTouched, setFieldTouched, validateForm } =
 		formik;
 
-	/* Stock vigente en el ORIGEN: alimenta el selector de producto y el saldo por línea. */
 	const request = useMemo(
 		() => ({
 			branchId,
 			ownerContext: `traslado:${context}:${session}`,
 			params: values.from
-				? { ...locationStockParams(values.from), page: 1, per_page: ORIGIN_PAGE_SIZE }
+				? {
+						...locationStockParams(values.from),
+						page: 1,
+						per_page: LOCATION_STOCK_PAGE_SIZE,
+					}
 				: {},
 		}),
 		[branchId, context, session, values.from],
@@ -256,7 +218,6 @@ export default function useInternalTransfer(
 	}, [originResponse, resolvedRow, values.from]);
 	originRowsRef.current = originRows;
 
-	/* Aplica el producto preseleccionado o, si no está en la primera página, lo busca. */
 	useEffect(() => {
 		const pending = pendingProductRef.current;
 		if (pending === null || loadingFirstPage || productLookup !== null) return;
@@ -289,22 +250,23 @@ export default function useInternalTransfer(
 	useEffect(() => {
 		if (!productLookup) return undefined;
 		const controller = new AbortController();
-		findOriginRow(branchId, productLookup, controller.signal).then(
-			(row) => {
+		const { from, productId, lastPage } = productLookup;
+		findLocationStockRows(branchId, from, [productId], lastPage, controller.signal).then(
+			(found) => {
 				if (controller.signal.aborted) return;
-				if (row) setResolvedRow({ from: productLookup.from, row });
+				const row = found.get(productId);
+				if (row) setResolvedRow({ from, row });
 				setProductLookup(null);
 			},
 			() => {
-				// Un error al buscar deja el asistente como si el origen no lo
-				// tuviera: el producto se descarta y el traslado sigue disponible.
+				// Un error al buscar se trata como si el origen no lo tuviera: el
+				// producto se descarta y el traslado sigue disponible.
 				if (!controller.signal.aborted) setProductLookup(null);
 			},
 		);
 		return () => controller.abort();
 	}, [branchId, productLookup]);
 
-	/** Saldo de la condición elegida en el origen, para el aviso por línea. */
 	const balanceFor = useCallback(
 		(productId: number | '', condition: TStockCondition): number | null => {
 			if (productId === '') return null;
@@ -340,13 +302,11 @@ export default function useInternalTransfer(
 	);
 
 	/**
-	 * Cambiar el origen invalida las líneas: los productos y saldos del origen
-	 * anterior no existen necesariamente en el nuevo, y conservarlas produciría
-	 * un 409 al confirmar en vez de un formulario coherente.
+	 * Cambiar el origen invalida las líneas: sus productos y saldos pueden no
+	 * existir en el nuevo, y conservarlas acabaría en un 409 al confirmar.
 	 *
-	 * Un único `setValues` valida con los valores nuevos. Encadenar
-	 * `setFieldValue` + `setFieldTouched` hacía que cada llamada validara con el
-	 * estado anterior, y el origen recién elegido quedaba en rojo como vacío.
+	 * Un único `setValues` para que la validación vea el origen nuevo: con
+	 * `setFieldValue` + `setFieldTouched` cada llamada valida el estado anterior.
 	 */
 	const setOrigin = useCallback(
 		(token: string) => {
@@ -360,10 +320,8 @@ export default function useInternalTransfer(
 		[setValues, setTouched, values, touched],
 	);
 
-	/**
-	 * Las unidades cuentan **una vez** aunque el traslado tenga dos efectos: es
-	 * el criterio de aceptación de la card (5 se leen como 5, nunca como 10).
-	 */
+	// Las unidades cuentan una vez aunque el traslado tenga dos efectos: 5 se
+	// leen como 5, nunca como 10.
 	const totalUnits = useMemo(
 		() =>
 			values.items.reduce((total, item) => {
@@ -373,7 +331,6 @@ export default function useInternalTransfer(
 		[values.items],
 	);
 
-	/** Destinos elegibles: sólo ubicaciones de esta sucursal, nunca el origen. */
 	const destinationOptions = useMemo(
 		() =>
 			[
@@ -386,10 +343,7 @@ export default function useInternalTransfer(
 		[warehouses, values.from],
 	);
 
-	/**
-	 * Resumen del paso «Motivo y confirmación»: qué se mueve, de dónde y a
-	 * dónde, para revisarlo antes de registrar. Sólo líneas completas.
-	 */
+	/** Resumen del paso «Motivo y confirmación». Sólo líneas completas. */
 	const summary = useMemo(() => {
 		const locationName = (token: string): string => {
 			if (token === locationToken(null)) return 'Sin ubicación';
@@ -420,14 +374,11 @@ export default function useInternalTransfer(
 	}, [values.from, values.to, values.items, warehouses, originRows]);
 
 	/**
-	 * Mensaje de Yup para un campo de una línea. Formik guarda los errores de un
-	 * arreglo como `FormikErrors<T>[]` o como una cadena única (la del `test` de
-	 * nivel arreglo); sólo el primer caso tiene mensajes por línea que mostrar
-	 * junto a su control.
+	 * Formik guarda los errores de un arreglo como `FormikErrors<T>[]` o como la
+	 * cadena del `test` de nivel arreglo; sólo el primero trae mensajes por línea.
 	 *
-	 * Sólo se muestran tras un intento de envío: elegir el origen marca ese campo
-	 * como tocado y Formik valida el formulario entero, lo que llenaba de errores
-	 * las líneas en blanco que el usuario todavía no editó.
+	 * Se esperan al primer intento de avanzar o enviar: elegir el origen valida
+	 * el formulario entero y marcaría en rojo líneas que nadie editó aún.
 	 */
 	const errorFor = useCallback(
 		(index: number, field: keyof ITrasladoItemDraft): string | undefined => {
@@ -441,7 +392,7 @@ export default function useInternalTransfer(
 		[formik.errors.items, formik.submitCount, itemsChecked],
 	);
 
-	/** Valida sólo los campos de un paso y marca como tocados sólo esos. */
+	/** Marca como tocados sólo los campos del paso validado. */
 	const validateStep = useCallback(
 		async (key: TTrasladoStep): Promise<string | undefined> => {
 			const errors = await validateForm();
@@ -470,11 +421,6 @@ export default function useInternalTransfer(
 	const { submitForm } = formik;
 	const submit = useCallback(() => finish(submitForm), [finish, submitForm]);
 
-	/**
-	 * Cierra el resultado y empieza otro movimiento desde el primer paso. El
-	 * resultado reemplaza al asistente mientras está visible: al confirmar no se
-	 * vuelve a la selección de productos. Origen y destino se conservan.
-	 */
 	const clearResult = useCallback(() => {
 		setResult(null);
 		restartAt(0);

@@ -428,4 +428,91 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			expect(stockDouble.calls).toContainEqual(expect.objectContaining({ page: 2 }));
 		});
 	});
+	describe('saldo del ajuste con la ubicación paginada', () => {
+		const SHELF_ID = 12;
+		const MOUSE_ID = 31;
+
+		/**
+		 * Estante A3 con 120 productos de relleno delante de sus filas reales: con
+		 * 100 por página, el mouse cae en la página 2.
+		 */
+		const installPagedShelf = async () => {
+			const { listInventoryStock } = await vi.importActual<typeof InventoryStockService>(
+				'@/services/procurement/inventoryStock.service',
+			);
+			const base = await listInventoryStock(4, { warehouse_id: SHELF_ID });
+			const template = base.data[0];
+			const fillers = Array.from({ length: 120 }, (_, index) => ({
+				...template,
+				product: { ...template.product, id: 7001 + index, sku: `REL-${7001 + index}` },
+			}));
+			const rows = [...fillers, ...base.data];
+			stockDouble.list = (_branchId, params) => {
+				const perPage = params?.per_page ?? 15;
+				const lastPage = Math.ceil(rows.length / perPage);
+				const current = Math.min(params?.page ?? 1, lastPage);
+				return Promise.resolve({
+					...base,
+					data: rows.slice((current - 1) * perPage, current * perPage),
+					meta: {
+						...base.meta,
+						current_page: current,
+						last_page: lastPage,
+						per_page: perPage,
+						total: rows.length,
+					},
+				});
+			};
+			return base.data.find((row) => row.product.id === MOUSE_ID)?.fit_quantity ?? 0;
+		};
+
+		it('muestra el saldo de un producto que está fuera de la primera página', async () => {
+			const mouseFit = await installPagedShelf();
+			expect(mouseFit).toBeGreaterThan(0);
+			renderPage(`/?tab=ajuste&warehouse_id=${SHELF_ID}&product_id=${MOUSE_ID}`);
+
+			const lines = await screen.findByRole('table', { name: 'Líneas del ajuste' });
+			await waitFor(() =>
+				expect(within(lines).getAllByRole('cell')[2]).toHaveTextContent(
+					new RegExp(`^${mouseFit}$`),
+				),
+			);
+			expect(stockDouble.calls).toContainEqual(
+				expect.objectContaining({ warehouse_id: SHELF_ID, page: 2, per_page: 100 }),
+			);
+		});
+
+		it('si falla la búsqueda en otras páginas, el saldo queda desconocido hasta reintentar', async () => {
+			const mouseFit = await installPagedShelf();
+			const paged = stockDouble.list;
+			stockDouble.list = (branchId, params, signal) => {
+				if (params?.page === 2) return Promise.reject(new Error('Sin red'));
+				if (!paged) throw new Error('Falta la ubicación paginada.');
+				return paged(branchId, params, signal);
+			};
+			renderPage(`/?tab=ajuste&warehouse_id=${SHELF_ID}&product_id=${MOUSE_ID}`);
+
+			expect(
+				await screen.findByText(
+					'No se pudo consultar el saldo de todos los productos elegidos.',
+				),
+			).toBeInTheDocument();
+			const lines = screen.getByRole('table', { name: 'Líneas del ajuste' });
+			expect(within(lines).getAllByRole('cell')[2]).toHaveTextContent(/^—$/);
+
+			// Con la red de vuelta, «Reintentar» recupera el saldo sin cambiar la línea.
+			stockDouble.list = paged;
+			fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+			await waitFor(() =>
+				expect(within(lines).getAllByRole('cell')[2]).toHaveTextContent(
+					new RegExp(`^${mouseFit}$`),
+				),
+			);
+			expect(
+				screen.queryByText(
+					'No se pudo consultar el saldo de todos los productos elegidos.',
+				),
+			).not.toBeInTheDocument();
+		});
+	});
 });

@@ -28,12 +28,8 @@ const conditionAdjective = (condition: TStockCondition, count: number): string =
 const lineVerb = (added: boolean): string => (added ? 'Ingreso de' : 'Egreso de');
 
 /**
- * Confirmación de lo aplicado, con los saldos que devuelve la 201 del contrato
- * (sección 11): se muestran como evidencia de lo que quedó, no recalculados.
- *
- * Se lee de arriba abajo: una frase por producto, el antes/ahora de la
- * condición ajustada y el total de la ubicación, y al final lo que queda
- * disponible para vender en la sucursal frente a las reservas.
+ * Los saldos son los que devuelve la 201: evidencia de lo que quedó, no un
+ * recálculo.
  */
 const AdjustmentResultCard: FC<IAdjustmentResultCardProps> = ({ result, onDismiss }) => {
 	const { adjustment, products, locationLabel, availability } = result;
@@ -182,10 +178,8 @@ const AdjustmentResultCard: FC<IAdjustmentResultCardProps> = ({ result, onDismis
 				</section>
 
 				{/*
-				 * Disponible de la sucursal frente a las reservas vigentes. La card
-				 * pide explícitamente que un conteo pueda dejarlo negativo y que ese
-				 * faltante **se muestre**: truncarlo en cero escondería unidades ya
-				 * comprometidas que no existen.
+				 * Un conteo puede dejar el disponible negativo frente a las reservas:
+				 * truncarlo en cero escondería unidades comprometidas que no existen.
 				 */}
 				<section className='space-y-2'>
 					<h3 className='text-sm font-semibold'>Disponible para venta en la sucursal</h3>

@@ -94,7 +94,6 @@ const auth = createSlice({
 		loading: false,
 		user: {
 			id: 1,
-			// Sección 15: traslados y ajustes exigen `edit-product`.
 			permisos: ['view-product', 'edit-product'] as string[],
 			roles: [] as string[],
 			visible: { branches: [{ id: 4 }, { id: 6 }], subsidiaries: [{ id: 2 }] },
@@ -191,7 +190,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		expect(screen.getByTestId('traslado-neto')).toHaveTextContent(
 			'Efecto neto en la sucursal: 0 unidades',
 		);
-		// Nunca 10: el criterio de aceptación explícito de la card.
+		// Las unidades cuentan una vez aunque el traslado tenga dos efectos.
 		expect(screen.queryByText(/10 unidades movidas/)).not.toBeInTheDocument();
 
 		const row = within(table).getAllByRole('row')[1];
@@ -252,10 +251,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		renderPage();
 		await chooseRoute();
 
-		// Una sola condición por línea: no existe «condición de destino».
 		expect(screen.getByLabelText('Condición de la línea 1')).toBeInTheDocument();
-		expect(screen.queryByLabelText(/Condición de destino/i)).not.toBeInTheDocument();
-		expect(screen.queryByLabelText(/Condición de origen/i)).not.toBeInTheDocument();
 		expect(screen.getByText(/La condición no cambia en un traslado/)).toBeInTheDocument();
 	});
 

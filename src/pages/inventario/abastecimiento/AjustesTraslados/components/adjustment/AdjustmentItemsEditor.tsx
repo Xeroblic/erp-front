@@ -26,7 +26,8 @@ export interface IAdjustmentItemsEditorProps {
 	loadingStock: boolean;
 	hasLocation: boolean;
 	disabled: boolean;
-	totalsFor: (productId: number | '') => IInventoryStockRow | null;
+	/** `null`: la ubicación no tiene el producto; `undefined`: saldo desconocido. */
+	totalsFor: (productId: number | '') => IInventoryStockRow | null | undefined;
 	/** Mensaje de Yup para un campo de una línea, o `undefined` si está bien. */
 	errorFor: (index: number, field: keyof IAjusteItemDraft) => string | undefined;
 	onChangeItem: (index: number, patch: Partial<IAjusteItemDraft>) => void;
@@ -93,7 +94,10 @@ const AdjustmentItemsEditor: FC<IAdjustmentItemsEditorProps> = ({
 									? row.fit_quantity
 									: row.unfit_quantity;
 							};
-							const balance = item.productId === '' ? null : conditionBalance(totals);
+							const balance =
+								item.productId === '' || totals === undefined
+									? null
+									: conditionBalance(totals);
 							const delta = Number(item.quantityDelta);
 							const isEgress = Number.isInteger(delta) && delta < 0;
 							const isEntry = Number.isInteger(delta) && delta > 0;
