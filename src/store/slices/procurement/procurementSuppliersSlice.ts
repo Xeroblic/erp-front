@@ -18,14 +18,10 @@ import type {
 } from '@/interface/procurement.interface';
 
 /**
- * Store del maestro de proveedores (card 02 del módulo de abastecimiento,
- * sección 5 del contrato). Los thunks llaman al servicio real de
- * `@/services/procurement/procurementSuppliers.service`.
- *
- * `subsidiaryId` viaja en cada thunk y se reenvía al servicio: el contrato
- * ata el RUT único a la filial
- * (`/api/subsidiaries/{subsidiary}/procurement/suppliers`). Las escrituras
- * exigen `headers.idempotencyKey`: el backend rechaza una escritura sin ella.
+ * `subsidiaryId` viaja en cada thunk porque el contrato ata el RUT único a la
+ * filial (`/api/subsidiaries/{subsidiary}/procurement/suppliers`). Las
+ * escrituras exigen `headers.idempotencyKey`: el backend rechaza una escritura
+ * sin ella.
  */
 
 export interface ProcurementSuppliersState {
@@ -33,7 +29,6 @@ export interface ProcurementSuppliersState {
 	meta: IApiPaginationMeta | null;
 	listLoading: boolean;
 	listError: string | null;
-	/** `requestId` de la última petición de listado en curso o resuelta. */
 	listRequestId: string | null;
 	/**
 	 * Filial a la que pertenecen `items`, `meta` y `listError`. La pantalla
@@ -45,13 +40,9 @@ export interface ProcurementSuppliersState {
 	current: IProcurementSupplier | null;
 	currentLoading: boolean;
 	currentError: string | null;
-	/**
-	 * `requestId` de la última petición de ficha en curso o resuelta. Descarta
-	 * una respuesta tardía de una ficha anterior (proveedor previo, filial
-	 * previa) que llega después de que ya se pidió la siguiente: sin esto, un
-	 * `fetch` lento de la ficha A puede resolver después que uno más rápido de
-	 * la ficha B y pisarla con datos de A.
-	 */
+	/** Filial dueña de `current`/`currentError`, mismo criterio que `listSubsidiaryId`. */
+	currentSubsidiaryId: number | null;
+	/** Descarta la respuesta tardía de una ficha anterior que llega después de pedir la siguiente. */
 	currentRequestId: string | null;
 	creating: boolean;
 	updating: boolean;
@@ -69,6 +60,7 @@ const initialState: ProcurementSuppliersState = {
 	current: null,
 	currentLoading: false,
 	currentError: null,
+	currentSubsidiaryId: null,
 	currentRequestId: null,
 	creating: false,
 	updating: false,
@@ -161,10 +153,9 @@ export const updateProcurementSupplierThunk = createAsyncThunk(
 );
 
 /**
- * `DELETE` es 204 sin cuerpo (sección 5): el thunk no tiene ficha que
- * devolver, así que el resultado interno es sólo el `id` que se desactivó.
- * El slice no adivina `allowed_actions` a partir de eso — quien necesite la
- * ficha fresca la vuelve a pedir con `fetchProcurementSupplierDetail`.
+ * `DELETE` es 204 sin cuerpo: el thunk sólo puede devolver el `id`. El slice
+ * no adivina `allowed_actions` a partir de eso; quien necesite la ficha fresca
+ * la vuelve a pedir con `fetchProcurementSupplierDetail`.
  */
 export const deactivateProcurementSupplierThunk = createAsyncThunk(
 	'procurementSuppliers/deactivate',
@@ -214,13 +205,33 @@ const toListRow = (supplier: IProcurementSupplier): IProcurementSupplierListRow 
 	is_active: supplier.is_active,
 });
 
-/** Refleja en `items` y `current` el resultado de una escritura, sin refetch. */
+const belongsToList = (state: ProcurementSuppliersState, subsidiaryId: number | null) =>
+	subsidiaryId !== null && subsidiaryId === state.listSubsidiaryId;
+
+const belongsToCurrent = (
+	state: ProcurementSuppliersState,
+	subsidiaryId: number | null,
+	id: number,
+) =>
+	state.current?.id === id && subsidiaryId !== null && subsidiaryId === state.currentSubsidiaryId;
+
+/**
+ * Refleja en `items` y `current` el resultado de una escritura, sin refetch.
+ * `subsidiaryId` es el de la propia mutación: una escritura resuelta después
+ * de cambiar de filial no puede pisar la lista o la ficha de la nueva sólo
+ * porque el ID coincide.
+ */
 const applySupplierMutation = (
 	state: ProcurementSuppliersState,
 	supplier: IProcurementSupplier,
+	subsidiaryId: number | null,
 ) => {
-	state.items = state.items.map((row) => (row.id === supplier.id ? toListRow(supplier) : row));
-	if (state.current?.id === supplier.id) state.current = supplier;
+	if (belongsToList(state, subsidiaryId)) {
+		state.items = state.items.map((row) =>
+			row.id === supplier.id ? toListRow(supplier) : row,
+		);
+	}
+	if (belongsToCurrent(state, subsidiaryId, supplier.id)) state.current = supplier;
 };
 
 const procurementSuppliersSlice = createSlice({
@@ -230,9 +241,9 @@ const procurementSuppliersSlice = createSlice({
 		clearProcurementSupplierCurrent(state) {
 			state.current = null;
 			state.currentError = null;
-			// Sin esto, una respuesta en vuelo de la ficha que se está
-			// abandonando podría seguir llegando y repoblar `current` después
-			// de limpiarlo: la próxima carga necesita su propio `requestId`.
+			state.currentSubsidiaryId = null;
+			// Sin esto, una respuesta en vuelo de la ficha que se abandona
+			// podría llegar tarde y repoblar `current`.
 			state.currentRequestId = null;
 		},
 	},
@@ -273,11 +284,10 @@ const procurementSuppliersSlice = createSlice({
 				state.currentRequestId = action.meta.requestId;
 			})
 			.addCase(fetchProcurementSupplierDetail.fulfilled, (state, action) => {
-				// Propiedad de contexto (ZF-12): una ficha anterior que resuelve
-				// tarde no puede pisar la que el usuario está viendo ahora.
 				if (action.meta.requestId !== state.currentRequestId) return;
 				state.currentLoading = false;
 				state.current = action.payload;
+				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchProcurementSupplierDetail.rejected, (state, action) => {
 				if (action.meta.requestId !== state.currentRequestId) return;
@@ -287,6 +297,7 @@ const procurementSuppliersSlice = createSlice({
 					'No se pudo cargar el proveedor.',
 				);
 				state.current = null;
+				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 
 			.addCase(createProcurementSupplierThunk.pending, (state) => {
@@ -294,8 +305,7 @@ const procurementSuppliersSlice = createSlice({
 			})
 			.addCase(createProcurementSupplierThunk.fulfilled, (state) => {
 				state.creating = false;
-				// La lista se refresca desde el hook: acá no hay página/filtro que
-				// mantener consistente sin repetir esa lógica.
+				// La lista se refresca desde el hook, que conoce página y filtros.
 			})
 			.addCase(createProcurementSupplierThunk.rejected, (state) => {
 				state.creating = false;
@@ -306,7 +316,7 @@ const procurementSuppliersSlice = createSlice({
 			})
 			.addCase(updateProcurementSupplierThunk.fulfilled, (state, action) => {
 				state.updating = false;
-				applySupplierMutation(state, action.payload);
+				applySupplierMutation(state, action.payload, action.meta.arg.subsidiaryId);
 			})
 			.addCase(updateProcurementSupplierThunk.rejected, (state) => {
 				state.updating = false;
@@ -317,14 +327,16 @@ const procurementSuppliersSlice = createSlice({
 			})
 			.addCase(deactivateProcurementSupplierThunk.fulfilled, (state, action) => {
 				state.deactivating = false;
-				// Sin ficha que aplicar (204): sólo se sabe con certeza que
-				// `is_active` pasó a `false`. `allowed_actions` no se adivina acá —
-				// lo decide el backend y llega recién con el próximo `fetch`.
+				// Sin ficha que aplicar (204): sólo se sabe que `is_active` pasó a
+				// `false`; `allowed_actions` llega con el próximo `fetch`.
 				const { id } = action.payload;
-				state.items = state.items.map((row) =>
-					row.id === id ? { ...row, is_active: false } : row,
-				);
-				if (state.current?.id === id)
+				const { subsidiaryId } = action.meta.arg;
+				if (belongsToList(state, subsidiaryId)) {
+					state.items = state.items.map((row) =>
+						row.id === id ? { ...row, is_active: false } : row,
+					);
+				}
+				if (state.current && belongsToCurrent(state, subsidiaryId, id))
 					state.current = { ...state.current, is_active: false };
 			})
 			.addCase(deactivateProcurementSupplierThunk.rejected, (state) => {
@@ -336,7 +348,7 @@ const procurementSuppliersSlice = createSlice({
 			})
 			.addCase(restoreProcurementSupplierThunk.fulfilled, (state, action) => {
 				state.restoring = false;
-				applySupplierMutation(state, action.payload);
+				applySupplierMutation(state, action.payload, action.meta.arg.subsidiaryId);
 			})
 			.addCase(restoreProcurementSupplierThunk.rejected, (state) => {
 				state.restoring = false;
