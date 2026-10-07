@@ -30,7 +30,7 @@ export interface IPurchasableProductsPage {
 	has_more: boolean;
 }
 
-export const PURCHASABLE_PRODUCTS_PER_PAGE = 20;
+const PURCHASABLE_PRODUCTS_PER_PAGE = 20;
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
 	value !== null && typeof value === 'object' && !Array.isArray(value)

@@ -9,8 +9,7 @@ import type {
 
 /**
  * Adjuntos privados de documentos de compra — sección 6 del contrato,
- * `/api/subsidiaries/{subsidiary}/procurement/purchase-documents/{document}/attachments`
- * (backend PR #85).
+ * `/api/subsidiaries/{subsidiary}/procurement/purchase-documents/{document}/attachments`.
  *
  * Contrato verificado contra el backend:
  * - Leer y descargar exigen `view-purchase-document`; subir y eliminar,

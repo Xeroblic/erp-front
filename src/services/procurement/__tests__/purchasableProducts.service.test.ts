@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-	PURCHASABLE_PRODUCTS_PER_PAGE,
 	createPurchasableProduct,
 	findPurchasableProductBySku,
 	searchPurchasableProducts,
@@ -35,7 +34,7 @@ describe('searchPurchasableProducts', () => {
 				is_active: true,
 				order_by: 'name',
 				order_dir: 'asc',
-				per_page: PURCHASABLE_PRODUCTS_PER_PAGE,
+				per_page: 20,
 			},
 		});
 	});

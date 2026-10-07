@@ -13,7 +13,7 @@ import type { IPurchaseDocumentCreatePayload } from '@/interface/procurement.int
 
 /**
  * Cableado HTTP de documentos de compra contra el contrato del backend
- * (`routes/apis/procurement.php`, PR #84/#92): URL por filial, método,
+ * (`routes/apis/procurement.php`): URL por filial, método,
  * `Idempotency-Key` en cada escritura, `If-Match` sólo en el PATCH y el
  * `ETag` de la respuesta. Las reglas de negocio las prueba el backend; el
  * doble en memoria las cubre en `purchaseDocuments.mock.test.ts`.

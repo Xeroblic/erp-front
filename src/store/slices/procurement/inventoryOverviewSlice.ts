@@ -32,7 +32,7 @@ import { getProcurementErrorMessage } from '@/utils/procurementErrors.util';
  * Mismo patrón que `inventoryStockSlice`: cada consulta guarda la clave de
  * quien la pidió (`ownerContext`) y la vista sólo pinta la respuesta si la
  * clave coincide con la suya, así un cambio de sucursal nunca muestra datos
- * de la anterior (ZF-12).
+ * de la anterior.
  */
 
 interface IBranchRequest {
@@ -259,7 +259,7 @@ const inventoryOverviewSlice = createSlice({
 	reducers: {},
 	extraReducers: (builder) => {
 		/**
-		 * Los cuatro listados comparten ciclo de vida: `pending` reemplaza la
+		 * Las consultas comparten ciclo de vida: `pending` reemplaza la
 		 * consulta y sólo la última petición (`requestId`) puede resolverla. Un
 		 * abort no es un error que mostrar.
 		 */

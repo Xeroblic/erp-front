@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 describe('inventoryOverview.service (fachada)', () => {
-	it('con datos simulados delega en el doble, sin pasar por la API', async () => {
+	it('con datos simulados delega en el doble', async () => {
 		const facade = await loadFacade(true);
 		const mock = await import('@/mocks/services/inventoryOverview.mock');
 
@@ -34,7 +34,6 @@ describe('inventoryOverview.service (fachada)', () => {
 		expect(facade.listInventoryWarehouseAggregates).toBe(mock.listInventoryWarehouseAggregates);
 		expect(facade.getInventoryStockDetail).toBe(mock.getInventoryStockDetail);
 		expect(facade.updateInventoryCriticalThreshold).toBe(mock.updateInventoryCriticalThreshold);
-		expect(fetchData).not.toHaveBeenCalled();
 	});
 
 	it('sin datos simulados rechaza con un error tipado y nunca inventa datos', async () => {

@@ -13,8 +13,7 @@ import type {
 
 /**
  * Documentos de compra — sección 6 del contrato,
- * `/api/subsidiaries/{subsidiary}/procurement/purchase-documents` (backend
- * PR #84 y #92).
+ * `/api/subsidiaries/{subsidiary}/procurement/purchase-documents`.
  *
  * Contrato verificado contra el backend:
  * - Permisos por ruta: `view-`, `create-`, `edit-`, `confirm-` y

@@ -11,7 +11,7 @@ import type {
 
 /**
  * Maestro de proveedores de abastecimiento — sección 5 del contrato,
- * `/api/subsidiaries/{subsidiary}/procurement/suppliers` (backend PR #93).
+ * `/api/subsidiaries/{subsidiary}/procurement/suppliers`.
  *
  * Contrato verificado contra el backend:
  * - Permisos por ruta: `view-`, `create-`, `edit-`, `delete-` y

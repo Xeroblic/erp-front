@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, isFulfilled } from '@reduxjs/toolkit';
 import {
 	cancelStockReceipt,
 	createStockReceipt,
@@ -27,17 +27,10 @@ import type {
 } from '@/interface/procurement.interface';
 
 /**
- * Store de recepciones físicas (card 05, sección 7 del contrato). Mismo
- * patrón que `purchaseDocumentsSlice`: los thunks llaman a la fachada
- * `@/services/procurement/stockReceipts.service` (hoy, el doble simulado
- * mientras el backend no publique las rutas), particionada por filial, y
- * guardan el `ETag` de `current` junto con la ficha para el `If-Match` de
- * `update`.
- *
- * A diferencia de documentos, acá el detalle se vuelve a pedir en bucle
- * mientras `current.status === 'queued'` — el polling vive en el hook de la
- * pantalla (`useRecepcionDetalle`), no acá: el slice sólo expone el thunk que
- * ese bucle dispara repetidas veces.
+ * Recepciones físicas, particionadas por filial. Guarda el `ETag` de `current`
+ * para el `If-Match` de `update`. Mientras `current.status === 'queued'` el
+ * detalle se vuelve a pedir en bucle, pero ese polling vive en
+ * `useRecepcionDetalle`: el slice sólo expone el thunk.
  */
 
 export interface StockReceiptsState {
@@ -46,7 +39,7 @@ export interface StockReceiptsState {
 	listLoading: boolean;
 	listError: string | null;
 	listRequestId: string | null;
-	/** Filial dueña de `items`/`meta` (propiedad de contexto, ZF-12). */
+	/** Filial dueña de `items`/`meta`. */
 	listSubsidiaryId: number | null;
 	current: IStockReceipt | null;
 	/** `ETag` de `current`, tal como lo devolvió el último GET o escritura. */
@@ -56,13 +49,6 @@ export interface StockReceiptsState {
 	currentRequestId: string | null;
 	/** Filial dueña de `current`, mismo criterio que `listSubsidiaryId`. */
 	currentSubsidiaryId: number | null;
-	creating: boolean;
-	updating: boolean;
-	cancelling: boolean;
-	posting: boolean;
-	retrying: boolean;
-	reversing: boolean;
-	linkingPurchaseDocument: boolean;
 }
 
 const initialState: StockReceiptsState = {
@@ -78,13 +64,6 @@ const initialState: StockReceiptsState = {
 	currentError: null,
 	currentRequestId: null,
 	currentSubsidiaryId: null,
-	creating: false,
-	updating: false,
-	cancelling: false,
-	posting: false,
-	retrying: false,
-	reversing: false,
-	linkingPurchaseDocument: false,
 };
 
 interface IWriteHeaders {
@@ -109,11 +88,6 @@ export const fetchStockReceipts = createAsyncThunk(
 	},
 );
 
-/**
- * Se dispara una vez al entrar a la ficha y, mientras `current.status ===
- * 'queued'`, en bucle desde `useRecepcionDetalle` — es el «polling sobre el
- * GET individual» que pide la card.
- */
 export const fetchStockReceiptDetail = createAsyncThunk(
 	'stockReceipts/fetchDetail',
 	async (args: { subsidiaryId: number | null; id: number }, { rejectWithValue }) => {
@@ -134,7 +108,7 @@ export const createStockReceiptThunk = createAsyncThunk(
 			subsidiaryId: number | null;
 			payload: IStockReceiptCreatePayload;
 			headers?: IWriteHeaders;
-			/** Sucursales autorizadas del actor (hallazgo 5); `null`/vacío no filtra. */
+			/** Sucursales autorizadas del actor; `null`/vacío no filtra. */
 			authorizedBranchIds?: number[] | null;
 		},
 		{ rejectWithValue },
@@ -166,7 +140,7 @@ export const updateStockReceiptThunk = createAsyncThunk(
 			id: number;
 			payload: IStockReceiptUpdatePayload;
 			headers: IWriteHeaders;
-			/** Sucursales autorizadas del actor (hallazgo 5); `null`/vacío no filtra. */
+			/** Sucursales autorizadas del actor; `null`/vacío no filtra. */
 			authorizedBranchIds?: number[] | null;
 		},
 		{ rejectWithValue },
@@ -311,7 +285,7 @@ export const reverseStockReceiptThunk = createAsyncThunk(
 	},
 );
 
-/** `PUT .../purchase-document` (card 07, sección 8): vinculación posterior. */
+/** `PUT .../purchase-document`: vinculación posterior a un documento de compra. */
 export const linkStockReceiptPurchaseDocumentThunk = createAsyncThunk(
 	'stockReceipts/linkPurchaseDocument',
 	async (
@@ -404,10 +378,8 @@ const stockReceiptsSlice = createSlice({
 				state.listError = null;
 				state.listRequestId = action.meta.requestId;
 				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
-				// Propiedad de contexto (ZF-12): `items`/`meta` de la filial anterior
-				// no pueden seguir pintados mientras se pide la nueva — un GET
-				// rechazado para la filial entrante no debe dejar ver datos de la
-				// saliente por debajo del error (hallazgo 3).
+				// Un GET rechazado para la filial entrante no debe dejar ver los
+				// datos de la saliente por debajo del error.
 				state.items = [];
 				state.meta = null;
 			})
@@ -437,8 +409,7 @@ const stockReceiptsSlice = createSlice({
 				state.currentError = null;
 			})
 			.addCase(fetchStockReceiptDetail.fulfilled, (state, action) => {
-				// Propiedad de contexto (ZF-12): una ficha anterior que resuelve
-				// tarde no puede pisar la que el usuario está viendo ahora.
+				// Una ficha anterior que resuelve tarde no puede pisar la vigente.
 				if (action.meta.requestId !== state.currentRequestId) return;
 				state.currentLoading = false;
 				state.current = action.payload.data;
@@ -455,112 +426,24 @@ const stockReceiptsSlice = createSlice({
 				state.currentEtag = null;
 				state.currentSubsidiaryId = null;
 			})
-
-			.addCase(createStockReceiptThunk.pending, (state) => {
-				state.creating = true;
-			})
-			.addCase(createStockReceiptThunk.fulfilled, (state) => {
-				state.creating = false;
-			})
-			.addCase(createStockReceiptThunk.rejected, (state) => {
-				state.creating = false;
-			})
-
-			.addCase(updateStockReceiptThunk.pending, (state) => {
-				state.updating = true;
-			})
-			.addCase(updateStockReceiptThunk.fulfilled, (state, action) => {
-				state.updating = false;
-				applyReceiptMutation(
-					state,
-					action.payload.data,
-					action.payload.etag,
-					action.payload.subsidiaryId,
-				);
-			})
-			.addCase(updateStockReceiptThunk.rejected, (state) => {
-				state.updating = false;
-			})
-
-			.addCase(cancelStockReceiptThunk.pending, (state) => {
-				state.cancelling = true;
-			})
-			.addCase(cancelStockReceiptThunk.fulfilled, (state, action) => {
-				state.cancelling = false;
-				applyReceiptMutation(
-					state,
-					action.payload.data,
-					action.payload.etag,
-					action.payload.subsidiaryId,
-				);
-			})
-			.addCase(cancelStockReceiptThunk.rejected, (state) => {
-				state.cancelling = false;
-			})
-
-			.addCase(postStockReceiptThunk.pending, (state) => {
-				state.posting = true;
-			})
-			.addCase(postStockReceiptThunk.fulfilled, (state, action) => {
-				state.posting = false;
-				applyReceiptMutation(
-					state,
-					action.payload.data,
-					action.payload.etag,
-					action.payload.subsidiaryId,
-				);
-			})
-			.addCase(postStockReceiptThunk.rejected, (state) => {
-				state.posting = false;
-			})
-
-			.addCase(retryStockReceiptThunk.pending, (state) => {
-				state.retrying = true;
-			})
-			.addCase(retryStockReceiptThunk.fulfilled, (state, action) => {
-				state.retrying = false;
-				applyReceiptMutation(
-					state,
-					action.payload.data,
-					action.payload.etag,
-					action.payload.subsidiaryId,
-				);
-			})
-			.addCase(retryStockReceiptThunk.rejected, (state) => {
-				state.retrying = false;
-			})
-
-			.addCase(reverseStockReceiptThunk.pending, (state) => {
-				state.reversing = true;
-			})
-			.addCase(reverseStockReceiptThunk.fulfilled, (state, action) => {
-				state.reversing = false;
-				applyReceiptMutation(
-					state,
-					action.payload.data,
-					action.payload.etag,
-					action.payload.subsidiaryId,
-				);
-			})
-			.addCase(reverseStockReceiptThunk.rejected, (state) => {
-				state.reversing = false;
-			})
-
-			.addCase(linkStockReceiptPurchaseDocumentThunk.pending, (state) => {
-				state.linkingPurchaseDocument = true;
-			})
-			.addCase(linkStockReceiptPurchaseDocumentThunk.fulfilled, (state, action) => {
-				state.linkingPurchaseDocument = false;
-				applyReceiptMutation(
-					state,
-					action.payload.data,
-					action.payload.etag,
-					action.payload.subsidiaryId,
-				);
-			})
-			.addCase(linkStockReceiptPurchaseDocumentThunk.rejected, (state) => {
-				state.linkingPurchaseDocument = false;
-			});
+			.addMatcher(
+				isFulfilled(
+					updateStockReceiptThunk,
+					cancelStockReceiptThunk,
+					postStockReceiptThunk,
+					retryStockReceiptThunk,
+					reverseStockReceiptThunk,
+					linkStockReceiptPurchaseDocumentThunk,
+				),
+				(state, action) => {
+					applyReceiptMutation(
+						state,
+						action.payload.data,
+						action.payload.etag,
+						action.payload.subsidiaryId,
+					);
+				},
+			);
 	},
 });
 
@@ -570,7 +453,6 @@ export const selectStockReceiptsItems = (state: RootState) => state.stockReceipt
 export const selectStockReceiptsMeta = (state: RootState) => state.stockReceipts.meta;
 export const selectStockReceiptsListLoading = (state: RootState) => state.stockReceipts.listLoading;
 export const selectStockReceiptsListError = (state: RootState) => state.stockReceipts.listError;
-/** Filial dueña de `items`/`meta`/`listError` vigentes (propiedad de contexto, ZF-12). */
 export const selectStockReceiptsListSubsidiaryId = (state: RootState) =>
 	state.stockReceipts.listSubsidiaryId;
 export const selectStockReceiptCurrent = (state: RootState) => state.stockReceipts.current;
@@ -579,11 +461,5 @@ export const selectStockReceiptCurrentLoading = (state: RootState) =>
 	state.stockReceipts.currentLoading;
 export const selectStockReceiptCurrentError = (state: RootState) =>
 	state.stockReceipts.currentError;
-export const selectStockReceiptPosting = (state: RootState) => state.stockReceipts.posting;
-export const selectStockReceiptRetrying = (state: RootState) => state.stockReceipts.retrying;
-export const selectStockReceiptCancelling = (state: RootState) => state.stockReceipts.cancelling;
-export const selectStockReceiptReversing = (state: RootState) => state.stockReceipts.reversing;
-export const selectStockReceiptLinkingPurchaseDocument = (state: RootState) =>
-	state.stockReceipts.linkingPurchaseDocument;
 
 export default stockReceiptsSlice.reducer;
