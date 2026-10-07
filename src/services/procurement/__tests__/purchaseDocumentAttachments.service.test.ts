@@ -7,7 +7,7 @@ import {
 } from '@/services/procurement/purchaseDocumentAttachments.service';
 
 /**
- * Cableado HTTP de los adjuntos privados (backend PR #85): multipart con el
+ * Cableado HTTP de los adjuntos privados: multipart con el
  * campo `file`, descarga como `blob` autenticado y `Idempotency-Key` en subir
  * y eliminar. Las reglas de estado y cupo las cubre el doble en
  * `purchaseDocumentAttachments.mock.test.ts`.

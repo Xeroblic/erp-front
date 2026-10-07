@@ -182,12 +182,8 @@ export const findProcurementProductById = (productId: number): IProcurementProdu
 	productSeed.find((product) => product.id === productId) ??
 	allCreatedProducts().find((product) => product.id === productId);
 
-/**
- * `true` si el SKU ya lo usa un producto de los fixtures o uno creado en esta
- * filial, sin distinguir mayúsculas. Lo usa el alta y también el generador de
- * SKU del formulario para reintentar antes de enviar.
- */
-export const isProcurementProductSkuTaken = (subsidiaryId: number, sku: string): boolean => {
+/** SKU usado por un fixture o por un producto creado en esta filial, sin distinguir mayúsculas. */
+const isProcurementProductSkuTaken = (subsidiaryId: number, sku: string): boolean => {
 	const normalizedSku = sku.trim().toLocaleUpperCase('es-CL');
 	if (!normalizedSku) return false;
 	return [...productSeed, ...getState(subsidiaryId).products].some(

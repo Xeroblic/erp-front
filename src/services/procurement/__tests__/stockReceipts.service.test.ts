@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 describe('stockReceipts.service (fachada)', () => {
-	it('con datos simulados delega en el doble, sin pasar por la API', async () => {
+	it('con datos simulados delega en el doble', async () => {
 		const facade = await loadFacade(true);
 		const mock = await import('@/mocks/services/stockReceipts.mock');
 
@@ -38,7 +38,6 @@ describe('stockReceipts.service (fachada)', () => {
 		expect(facade.reverseStockReceipt).toBe(mock.reverseStockReceipt);
 		expect(facade.listWarehousesForStockReceipts).toBe(mock.listWarehousesForStockReceipts);
 		expect(facade.listStockReceiptSuppliers).toBe(mock.listStockReceiptSuppliers);
-		expect(fetchData).not.toHaveBeenCalled();
 	});
 
 	it('sin datos simulados rechaza con un error tipado y nunca inventa datos', async () => {

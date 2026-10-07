@@ -21,7 +21,7 @@ export type { IInventoryStockAvailability } from '@/interface/procurement.interf
  * `inventory-adjustments`; `stock-adjustments` e `inventory-movements` son
  * rutas legadas con otro contrato). La rama real rechaza con
  * `ProcurementEndpointNotPublishedError` en vez de inventar datos. Las rutas
- * anotadas salen de `frontend-guide.md` (PR #67 del backend) y quedan
+ * anotadas salen de `frontend-guide.md` y quedan
  * **pendientes de confirmar**. Permiso previsto (§15): `view-product` para
  * leer y `edit-product` para escribir, en la sucursal.
  */

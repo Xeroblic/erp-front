@@ -11,7 +11,7 @@ import type { IProcurementSupplierPayload } from '@/interface/procurement.interf
 
 /**
  * Cableado HTTP del maestro de proveedores contra el contrato del backend
- * (`routes/apis/procurement.php`, PR #93): URL por filial, método, params y
+ * (`routes/apis/procurement.php`): URL por filial, método, params y
  * la `Idempotency-Key` que el middleware `idempotent` exige en cada escritura.
  * Las reglas de negocio las prueba el backend; el doble en memoria las cubre
  * en `procurementSuppliers.mock.test.ts`.

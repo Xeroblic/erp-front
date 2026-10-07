@@ -19,7 +19,7 @@ import {
  * bajo `procurement` sólo existen `suppliers` y `purchase-documents`). Mientras
  * tanto, la rama real rechaza con `ProcurementEndpointNotPublishedError` en
  * vez de inventar datos. Las rutas anotadas en cada función salen del contrato
- * (`frontend-guide.md` §7–§8, PR #67 del backend) y quedan **pendientes de
+ * (`frontend-guide.md` §7–§8) y quedan **pendientes de
  * confirmar** —método, campos, nulabilidad y permiso efectivo— el día que se
  * publiquen. Permiso previsto (§15): `view-product` para leer y `edit-product`
  * para escribir, más `view-purchase-document` si la recepción tiene documento.

@@ -4,7 +4,6 @@ import {
 	createProcurementProduct,
 	findPurchasableProcurementProduct,
 	formatProcurementProductLabel,
-	isProcurementProductSkuTaken,
 	listPurchasableProcurementProducts,
 	resetProcurementProductsStoreForTests,
 } from '../procurementProducts.service';
@@ -91,6 +90,10 @@ describe('procurementProducts.service', () => {
 		expect(duplicateOfCreated.response.data).toMatchObject({
 			code: 'PRODUCT_SKU_ALREADY_EXISTS',
 		});
+
+		// La unicidad es por filial: otra filial puede usar el mismo SKU.
+		const otherSubsidiary = await createProcurementProduct(SUBSIDIARY_B, payload);
+		expect(otherSubsidiary.data.sku).toBe(payload.sku);
 	});
 
 	it('exige nombre y marca', async () => {
@@ -139,24 +142,16 @@ describe('procurementProducts.service', () => {
 		expect(serialized.data.serial_tracking).toBe(true);
 		expect(findPurchasableProcurementProduct(SUBSIDIARY_A, serialized.data.id)).toBeUndefined();
 		// El SKU del serializado sigue ocupado aunque no sea elegible.
-		expect(isProcurementProductSkuTaken(SUBSIDIARY_A, 'NB-SERIE-1')).toBe(true);
+		const duplicateOfSerialized = await rejectionOf(
+			createProcurementProduct(SUBSIDIARY_A, { ...payload, sku: 'nb-serie-1' }),
+		);
+		expect(duplicateOfSerialized.response.data).toMatchObject({
+			code: 'PRODUCT_SKU_ALREADY_EXISTS',
+		});
 		expect(inactive.data.is_active).toBe(false);
 		expect(findPurchasableProcurementProduct(SUBSIDIARY_A, inactive.data.id)).toEqual(
 			inactive.data,
 		);
-	});
-
-	it('informa si un SKU ya está tomado en la filial, para reintentar la generación', async () => {
-		expect(isProcurementProductSkuTaken(SUBSIDIARY_A, notebookProduct.sku.toLowerCase())).toBe(
-			true,
-		);
-		expect(isProcurementProductSkuTaken(SUBSIDIARY_A, payload.sku)).toBe(false);
-		expect(isProcurementProductSkuTaken(SUBSIDIARY_A, '   ')).toBe(false);
-
-		await createProcurementProduct(SUBSIDIARY_A, payload);
-
-		expect(isProcurementProductSkuTaken(SUBSIDIARY_A, payload.sku)).toBe(true);
-		expect(isProcurementProductSkuTaken(SUBSIDIARY_B, payload.sku)).toBe(false);
 	});
 
 	it('conserva los fixtures elegibles', () => {
