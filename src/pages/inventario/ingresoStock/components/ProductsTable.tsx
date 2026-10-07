@@ -1,7 +1,3 @@
-/**
- * Tabla de catálogo de productos para ingreso/egreso
- * Responsabilidad única: renderizar y permitir selección de productos (Single Responsibility)
- */
 import { useMemo } from 'react';
 import type { ColumnDef, OnChangeFn, PaginationState } from '@tanstack/react-table';
 import Badge from '@/components/ui/Badge';
@@ -12,19 +8,9 @@ import DataTable from '@/components/ui/DataTable';
 import type { IProduct } from '@/interface/product.interface';
 
 interface ProductsTableProps {
-	/**
-	 * Productos a mostrar (ya filtrados de serializados)
-	 */
+	/** Ya filtrados: sin productos serializados. */
 	products: IProduct[];
-
-	/**
-	 * Indicador de carga
-	 */
 	loading?: boolean;
-
-	/**
-	 * Callback cuando usuario hace click en "Ingresar/Ajustar"
-	 */
 	onSelectProduct: (product: IProduct) => void;
 
 	/**
@@ -60,10 +46,6 @@ const getStockTone = (stock: number): 'zinc' | 'amber' | 'emerald' => {
 	return 'emerald';
 };
 
-/**
- * Componente puro: solo renderiza, no maneja estado complejo
- * Usa DataTable para catálogo grande (búsqueda, paginación, sorting)
- */
 export const ProductsTable = ({
 	products,
 	loading = false,

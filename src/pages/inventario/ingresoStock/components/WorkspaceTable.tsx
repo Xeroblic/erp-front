@@ -14,7 +14,6 @@ const clpFormatter = new Intl.NumberFormat('es-CL', {
 	maximumFractionDigits: 0,
 });
 
-// 1. Creamos un micro-componente para la celda que maneja su propio foco y estado
 const QuantityInputCell = ({
 	initialQuantity,
 	productId,
@@ -26,7 +25,6 @@ const QuantityInputCell = ({
 }) => {
 	const [draft, setDraft] = useState(initialQuantity);
 
-	// Sincroniza si el valor inicial cambia desde afuera
 	useEffect(() => {
 		setDraft(initialQuantity);
 	}, [initialQuantity]);
@@ -39,8 +37,8 @@ const QuantityInputCell = ({
 	const handleCommit = () => {
 		const parsed = Number(draft);
 		const safe = Number.isFinite(parsed) && parsed > 0 ? String(parsed) : '1';
-		setDraft(safe); // Actualizamos la UI local con el valor seguro
-		onCommit(productId, safe); // Avisamos al padre
+		setDraft(safe);
+		onCommit(productId, safe);
 	};
 
 	return (
@@ -57,15 +55,13 @@ const QuantityInputCell = ({
 						e.preventDefault();
 					}
 					if (e.key === 'Enter') {
-						e.currentTarget.blur(); // Esto disparará el onBlur automáticamente
+						e.currentTarget.blur();
 					}
 				}}
 			/>
 		</div>
 	);
 };
-
-// ------------------------------------------------------------------
 
 interface WorkspaceTableProps {
 	items: IWorkItem[];
@@ -80,7 +76,6 @@ export const WorkspaceTable = ({
 	onQuantityChange,
 	onRemoveItem,
 }: WorkspaceTableProps) => {
-	// 2. Las columnas ahora son estables y no dependen de borradores locales
 	const columns = useMemo<ColumnDef<IWorkItem, unknown>[]>(
 		() => [
 			{
@@ -183,7 +178,7 @@ export const WorkspaceTable = ({
 				),
 			},
 		],
-		[getSignedQuantity, onQuantityChange, onRemoveItem], // Dependencias limpias
+		[getSignedQuantity, onQuantityChange, onRemoveItem],
 	);
 
 	return (
