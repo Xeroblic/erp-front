@@ -43,6 +43,11 @@ describe('Filtros de Inventario en la URL', () => {
 			new URLSearchParams('vista=otra&bodega=abc&estado=x&orden=precio&page=-3&per_page=0'),
 		);
 		expect(filtros).toEqual(DEFAULT_INVENTARIO_FILTROS);
+		// Paginación: sólo enteros canónicos, igual que el resto de listados.
+		expect(parseInventarioFilters(new URLSearchParams('page=02&per_page=1e2'))).toMatchObject({
+			page: 1,
+			perPage: DEFAULT_INVENTARIO_FILTROS.perPage,
+		});
 	});
 
 	it('Sin ubicación gana a una bodega y se traduce al filtro del contrato', () => {

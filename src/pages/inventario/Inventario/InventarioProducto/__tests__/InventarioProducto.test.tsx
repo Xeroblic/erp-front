@@ -208,6 +208,22 @@ describe('Ficha de inventario', () => {
 		expect(within(shelf).getByRole('button', { name: 'Documentar' })).toBeInTheDocument();
 	});
 
+	it('cambiar de ubicación descarta el filtro de proveedor de la anterior', async () => {
+		renderFicha(MOUSE_ID);
+		const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+		await within(region).findByText('Recepción #80');
+		const proveedor = within(region).getByLabelText('Proveedor');
+		const [, primero] = within(proveedor).getAllByRole('option');
+		fireEvent.change(proveedor, { target: { value: primero.getAttribute('value') } });
+		await waitFor(() => expect(proveedor).toHaveValue(primero.getAttribute('value')));
+
+		fireEvent.click(screen.getByRole('button', { name: 'Estante A3 · 4' }));
+
+		const shelf = await screen.findByRole('region', { name: 'Procedencias del producto' });
+		await within(shelf).findByText('Recepción #211');
+		expect(within(shelf).getByLabelText('Proveedor')).toHaveValue('');
+	});
+
 	describe('Enlaces de las procedencias', () => {
 		it('con `view-product` la recepción enlaza a su ficha', async () => {
 			renderFicha(MOUSE_ID, ['view-procurement-supplier']);
