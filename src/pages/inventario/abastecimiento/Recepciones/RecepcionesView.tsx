@@ -15,6 +15,12 @@ import RecepcionesFilters from './components/filters/RecepcionesFilters';
 import RecepcionesTable from './components/tables/RecepcionesTable';
 import StockReceiptFormModal from './components/modals/StockReceiptFormModal';
 
+interface IDeniedCreateRequest {
+	documentId: string;
+	/** Filial en la que se pidió; `null` si el perfil todavía no la había resuelto. */
+	subsidiaryId: number | null;
+}
+
 /**
  * Listado de recepciones físicas (sección 7 del contrato de abastecimiento).
  * La fila resumida no trae `items`, `reason` ni `processing` — esos son caros
@@ -71,14 +77,25 @@ const RecepcionesView = () => {
 
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	/**
-	 * Documento con el que se llegó (`?purchase_document_id=`) sin poder
-	 * registrar recepciones. Vive en estado porque el parámetro se limpia en el
-	 * acto; cada intento lo vuelve a fijar aunque el aviso se haya cerrado. Si
-	 * el permiso llega después con el aviso abierto (perfil que termina de
-	 * cargar, cambio de sucursal), abre el alta que se había pedido.
+	 * Alta pedida por `?purchase_document_id=` sin poder registrar recepciones.
+	 * Vive en estado porque el parámetro se limpia en el acto; cada intento la
+	 * vuelve a fijar aunque el aviso se haya cerrado. Si el permiso llega después
+	 * con el aviso abierto, abre el alta pedida.
+	 *
+	 * El ID del documento sólo vale en la filial donde se pidió: los IDs se
+	 * repiten entre filiales y el formulario consulta y escribe bajo la filial
+	 * vigente. Por eso la intención se descarta al cambiar de filial y, mientras
+	 * tanto, sólo cuenta si es de la filial vigente. Pedida con la filial aún sin
+	 * resolver (perfil cargando), se adopta la primera que llegue.
 	 */
-	const [deniedDocumentId, setDeniedDocumentId] = useState<string | null>(null);
+	const [deniedRequest, setDeniedRequest] = useState<IDeniedCreateRequest | null>(null);
+	const deniedDocumentId =
+		deniedRequest !== null &&
+		(deniedRequest.subsidiaryId === null || deniedRequest.subsidiaryId === subsidiaryId)
+			? deniedRequest.documentId
+			: null;
 	const showDeniedCreateNotice = deniedDocumentId !== null && !canWriteReceipts;
+
 	const preselectedDocumentId = searchParams.get('purchase_document_id');
 	const requestedDocumentId = preselectedDocumentId ?? deniedDocumentId;
 
@@ -99,7 +116,7 @@ const RecepcionesView = () => {
 	// Quita sólo `purchase_document_id`: los filtros del listado comparten la query.
 	const handleCloseCreateModal = (open: boolean) => {
 		setIsCreateModalOpen(open);
-		if (!open) setDeniedDocumentId(null);
+		if (!open) setDeniedRequest(null);
 		if (!open && preselectedDocumentId) {
 			setSearchParams(
 				(previous) => {
@@ -113,6 +130,18 @@ const RecepcionesView = () => {
 	};
 
 	useEffect(() => {
+		if (deniedRequest === null || deniedRequest.subsidiaryId === subsidiaryId) return;
+		if (deniedRequest.subsidiaryId === null) {
+			setDeniedRequest({ ...deniedRequest, subsidiaryId });
+			return;
+		}
+		// Si la intención ya había abierto el alta, ese formulario también es de la otra filial.
+		if (isCreateModalOpen) handleCloseCreateModal(false);
+		setDeniedRequest(null);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [subsidiaryId]);
+
+	useEffect(() => {
 		if (!preselectedDocumentId) return;
 		if (canWriteReceipts) {
 			setIsCreateModalOpen(true);
@@ -121,7 +150,7 @@ const RecepcionesView = () => {
 		// Sin permiso no se abre el alta: se avisa y se quita el parámetro para
 		// que recargar o volver no repita el intento.
 		handleCloseCreateModal(false);
-		setDeniedDocumentId(preselectedDocumentId);
+		setDeniedRequest({ documentId: preselectedDocumentId, subsidiaryId });
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [preselectedDocumentId, canWriteReceipts]);
 
@@ -181,7 +210,7 @@ const RecepcionesView = () => {
 								variant='outline'
 								icon='HeroXMark'
 								aria-label='Cerrar aviso'
-								onClick={() => setDeniedDocumentId(null)}
+								onClick={() => setDeniedRequest(null)}
 							/>
 						</div>
 					</Alert>
