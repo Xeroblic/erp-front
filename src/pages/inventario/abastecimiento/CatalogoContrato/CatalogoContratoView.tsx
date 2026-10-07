@@ -29,11 +29,9 @@ import CatalogSection from './components/parts/CatalogSection';
 import CatalogSample from './components/parts/CatalogSample';
 
 /**
- * Catálogo de los componentes compartidos del módulo de abastecimiento.
- *
- * Cumple el criterio de cierre de la card 01: cada componente compartido, en
- * cada estado que el contrato admite, en una pantalla navegable. No hay
- * Storybook en el repo, así que el catálogo es la pantalla.
+ * Cada componente compartido del módulo de abastecimiento, en cada estado que
+ * el contrato admite. No hay Storybook en el repo, así que el catálogo es la
+ * pantalla.
  *
  * No consulta ningún endpoint: los datos vienen de `@/mocks/db/procurement.db`,
  * copiados de los ejemplos del contrato.
@@ -81,11 +79,12 @@ const CatalogoContratoView = () => {
 					</h1>
 
 					<Alert color='amber' icon='HeroExclamationTriangle'>
-						Ninguno de los endpoints de este módulo existe todavía. Todo lo que se ve
-						acá sale de fixtures locales copiados de los ejemplos del contrato (PR #67
-						del backend, <code>frontend-guide.md</code>) y de su ampliación para
-						Inventario (<code>docs/inventario-unificado-contrato.md</code>). Sirve para
-						acordar la presentación y reutilizar las mismas piezas en cada pantalla.
+						Esta pantalla no consulta el backend: sale de fixtures locales copiados de
+						los ejemplos del contrato (<code>frontend-guide.md</code> del backend y{' '}
+						<code>Docs/inventario-unificado-contrato.md</code>). Proveedores, documentos
+						de compra y sus adjuntos ya usan la API real; recepciones, inventario y
+						ajustes y traslados siguen sobre datos simulados. Sirve para acordar la
+						presentación y reutilizar las mismas piezas en cada pantalla.
 					</Alert>
 
 					<CatalogSection
@@ -354,7 +353,7 @@ const CatalogoContratoView = () => {
 					<CatalogSection
 						id='catalogo-simulado'
 						title='Aviso de datos simulados'
-						summary='Documentos de compra, recepciones e inventario comparten la bandera VITE_INVENTORY_STOCK_USE_MOCKS: el módulo se enciende o se apaga entero. Proveedores ya usa el backend real y no depende de ella.'>
+						summary='Recepciones, inventario y ajustes y traslados comparten la bandera VITE_INVENTORY_STOCK_USE_MOCKS: se encienden o se apagan juntos. Proveedores y documentos de compra ya usan el backend real y no dependen de ella.'>
 						<div className='grid gap-3 md:grid-cols-2'>
 							<CatalogSample
 								title='Bandera encendida'
@@ -370,7 +369,7 @@ const CatalogoContratoView = () => {
 							</CatalogSample>
 							<CatalogSample
 								title='Bandera apagada'
-								description='ProcurementMockGate, en el index.tsx de cada pantalla, reemplaza la vista antes de ejecutar su hook: no se siembra ni se persiste el store simulado.'>
+								description='En Recepciones, ProcurementMockGate reemplaza la vista desde su index.tsx antes de ejecutar el hook: no se siembra ni se persiste el store simulado. Inventario y ajustes y traslados muestran su propio aviso.'>
 								<Alert title='Pantalla no habilitada'>
 									Esta pantalla aún no está habilitada en este entorno.
 								</Alert>
