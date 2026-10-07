@@ -64,7 +64,12 @@ const InventoryReportsSession = ({
 		}));
 		return list.length === 0 && activeBranch ? [activeBranch] : list;
 	}, [subsidiaryBranches, activeBranch]);
-	const branchIds = useMemo(() => branches.map((branch) => branch.id), [branches]);
+	// Sólo la lista de la filial sirve para validar `?sucursal=`: el respaldo
+	// con la sucursal activa descartaría otra sucursal válida de la misma filial.
+	const branchIds = useMemo(
+		() => subsidiaryBranches.map((branch) => branch.id),
+		[subsidiaryBranches],
+	);
 	const filtersApi = useInventoryReportFilters(branchIds);
 	const { filters, setVista } = filtersApi;
 

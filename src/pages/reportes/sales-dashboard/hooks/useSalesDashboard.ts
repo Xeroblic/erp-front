@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import { fetchReportResults } from '@/store/slices/reports/reportsThunks';
-import { clearResults } from '@/store/slices/reports/reportSlice';
 import type { IReportResult } from '@/interface/reports.interface';
 import type {
 	SaleRecord,

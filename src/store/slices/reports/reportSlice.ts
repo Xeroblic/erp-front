@@ -42,10 +42,6 @@ const reportsSlice = createSlice({
 	name: 'reports',
 	initialState,
 	reducers: {
-		clearResults: (state) => {
-			state.aggregatedResults = null;
-			state.error = null;
-		},
 		clearInventoryReports: (state) => {
 			state.inventory = {};
 		},
@@ -103,5 +99,5 @@ const reportsSlice = createSlice({
 	},
 });
 
-export const { clearResults, clearInventoryReports } = reportsSlice.actions;
+export const { clearInventoryReports } = reportsSlice.actions;
 export default reportsSlice.reducer;

@@ -29,7 +29,7 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 
 	// Las fuentes también se cargan bajo demanda, junto con pdfmake.
 	const { loadPdfFonts } = await import('../../../../comercial/cotizaciones/utils/pdf/fonts');
-	loadPdfFonts(pdfMake as any);
+	loadPdfFonts(pdfMake);
 
 	const insights = generateSmartInsights(data.stats, data.previousStats);
 
