@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ReportsService } from '@/services/reports/reports.service';
+import type { ReportsService } from '@/services/reports/reports.service';
 import reducer, {
 	clearInventoryReports,
 	type ReportsState,
@@ -31,8 +31,10 @@ const initial = reducer(undefined, { type: '@@init' });
 const pending = (state: ReportsState, requestId: string, arg = request()) =>
 	reducer(state, fetchInventoryReport.pending(requestId, arg));
 
+const getResults = vi.hoisted(() => vi.fn<typeof ReportsService.getResults>());
+
 vi.mock('@/services/reports/reports.service', () => ({
-	ReportsService: { getResults: vi.fn() },
+	ReportsService: { getResults },
 }));
 
 describe('reportSlice · Reportes › Inventario', () => {
@@ -124,7 +126,7 @@ describe('reportSlice · resultados agregados (Ventas y dashboard)', () => {
 	it('pide de a 200 filas hasta una página incompleta y las junta', async () => {
 		const page = (size: number, offset: number) =>
 			Array.from({ length: size }, (_, index) => ({ id: offset + index }));
-		vi.mocked(ReportsService.getResults)
+		getResults
 			.mockResolvedValueOnce({ data: page(200, 0) })
 			.mockResolvedValueOnce({ data: page(5, 200) });
 
@@ -135,10 +137,10 @@ describe('reportSlice · resultados agregados (Ventas y dashboard)', () => {
 
 		expect(fetchReportResults.fulfilled.match(action)).toBe(true);
 		expect(action.payload).toHaveLength(205);
-		expect(vi.mocked(ReportsService.getResults).mock.calls.map((call) => call[2])).toEqual([
+		expect(getResults.mock.calls.map((call) => call[2])).toEqual([
 			{ date_from: '2026-01-01', per_page: 200, page: 1 },
 			{ date_from: '2026-01-01', per_page: 200, page: 2 },
 		]);
-		expect(vi.mocked(ReportsService.getResults).mock.calls[0][3]).toBeInstanceOf(AbortSignal);
+		expect(getResults.mock.calls[0][3]).toBeInstanceOf(AbortSignal);
 	});
 });

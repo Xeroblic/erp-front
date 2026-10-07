@@ -165,7 +165,7 @@ const reportToPdfDefinition = (doc: IExportDocument): TDocumentDefinitions => {
 	};
 };
 
-export const reportToPdfBlob = async (doc: IExportDocument): Promise<Blob> => {
+const reportToPdfBlob = async (doc: IExportDocument): Promise<Blob> => {
 	const pdfMake = await loadPdfMake();
 	const pdf = pdfMake.createPdf(reportToPdfDefinition(doc));
 	return new Promise<Blob>((resolve, reject) => {
@@ -178,3 +178,5 @@ export const reportToPdfBlob = async (doc: IExportDocument): Promise<Blob> => {
 		}
 	});
 };
+
+export default reportToPdfBlob;

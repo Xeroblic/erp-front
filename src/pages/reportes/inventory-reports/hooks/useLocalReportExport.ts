@@ -6,7 +6,7 @@ import {
 	type IExportDocument,
 } from '@/pages/reportes/inventory-reports/export/reportDocument';
 import reportToExcelBlob from '@/pages/reportes/inventory-reports/export/reportExcel';
-import { reportToPdfBlob } from '@/pages/reportes/inventory-reports/export/reportPdf';
+import reportToPdfBlob from '@/pages/reportes/inventory-reports/export/reportPdf';
 
 /**
  * Exporta en el navegador lo que muestra la pestaña (todas las filas con sus

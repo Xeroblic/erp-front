@@ -2,12 +2,14 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { toast } from 'react-toastify';
-import { ReportsService } from '@/services/reports/reports.service';
+import type { ReportsService } from '@/services/reports/reports.service';
 import ReportExportButton from '../ReportExportButton';
+
+const exportMock = vi.hoisted(() => vi.fn<typeof ReportsService.export>());
 
 vi.mock('react-toastify', () => ({ toast: { error: vi.fn() } }));
 vi.mock('@/services/reports/reports.service', () => ({
-	ReportsService: { export: vi.fn() },
+	ReportsService: { export: exportMock },
 }));
 vi.mock('@/components/ui/Button', () => ({
 	default: ({
@@ -24,8 +26,6 @@ vi.mock('@/components/ui/Button', () => ({
 		</button>
 	),
 }));
-
-const exportMock = vi.mocked(ReportsService.export);
 
 describe('ReportExportButton', () => {
 	beforeEach(() => {
