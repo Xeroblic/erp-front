@@ -5,14 +5,7 @@ import Badge from '@/components/ui/Badge';
 import type { IProcurementProduct } from '@/interface/procurement.interface';
 import { formatDecimalAmount } from '@/utils/procurementDecimal.util';
 
-/**
- * Tarjeta de producto compartida por todo el módulo de abastecimiento.
- *
- * El contrato embebe la ficha completa en cada fila de stock, recepciones,
- * documentos, proveedores del producto, operaciones y reposición, precisamente
- * para que ninguna lista pida un producto extra por fila. Este componente recibe
- * esa ficha y no dispara ninguna carga.
- */
+/** Recibe la ficha que el contrato embebe en cada fila; no dispara ninguna carga. */
 
 export type TProductCardDensity = 'comfortable' | 'compact';
 
@@ -27,7 +20,6 @@ export interface IProductCardProps {
 	className?: string;
 }
 
-/** Miniatura del producto; también la usan tablas que no necesitan la tarjeta completa. */
 export const ProductThumbnail: FC<{ product: IProcurementProduct; size: string }> = ({
 	product,
 	size,
@@ -41,7 +33,6 @@ export const ProductThumbnail: FC<{ product: IProcurementProduct; size: string }
 					size,
 					'flex shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800',
 				)}>
-				{/* Sin imagen no se inventa un placeholder con texto: el icono es decorativo. */}
 				<Icon icon='HeroPhoto' className='h-5 w-5 text-zinc-400' aria-hidden='true' />
 			</div>
 		);
@@ -50,15 +41,12 @@ export const ProductThumbnail: FC<{ product: IProcurementProduct; size: string }
 	return (
 		<img
 			src={image.thumb ?? image.url ?? ''}
-			// `alt` ausente es null en el contrato: se cae al nombre del producto,
-			// que es lo que el lector necesita, en vez de dejarlo vacío.
 			alt={image.alt ?? name}
 			className={classNames(size, 'shrink-0 rounded-lg object-cover')}
 		/>
 	);
 };
 
-/** Precio vigente: la oferta manda cuando existe, y se muestra el precio tachado. */
 const CatalogPricing: FC<{ product: IProcurementProduct }> = ({ product }) => {
 	const price = formatDecimalAmount(product.price, product.currency_code);
 	const offerPrice = formatDecimalAmount(product.offer_price, product.currency_code);
@@ -77,8 +65,6 @@ const CatalogPricing: FC<{ product: IProcurementProduct }> = ({ product }) => {
 			)}
 
 			<span className='text-zinc-500 dark:text-zinc-400'>Costo de catálogo</span>
-			{/* `cost_basis: "unknown"` es un costo sin base demostrable: se dice
-			    «base desconocida», no se afirma que sea neto ni bruto. */}
 			<span className='font-semibold'>{cost ?? 'Desconocido'}</span>
 			{cost !== null && (
 				<span className='text-xs text-zinc-500 dark:text-zinc-400'>
@@ -139,8 +125,6 @@ const ProductCard: FC<IProductCardProps> = ({
 
 				<p className='mt-0.5 text-xs text-zinc-500 dark:text-zinc-400'>
 					<span className='font-mono'>{product.sku}</span>
-					{/* `commercial_sku` es null cuando no hay SKU comercial distinto:
-					    no se repite el SKU interno para rellenar el hueco. */}
 					{product.commercial_sku !== null && (
 						<>
 							{' · '}

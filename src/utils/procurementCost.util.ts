@@ -13,15 +13,7 @@ import {
 	parseDecimalString,
 } from '@/utils/procurementDecimal.util';
 
-/**
- * Lectura y previsualización del bloque `cost` del contrato de abastecimiento.
- *
- * La UI puede previsualizar el cálculo del IVA, pero presenta el resultado del
- * servidor: `previewCostBreakdown` existe para dar feedback mientras se digita,
- * no para reemplazar lo que devuelve el backend.
- */
-
-/** Tasa de IVA afecta de V1. El backend persiste su propio snapshot. */
+/** El backend persiste su propio snapshot de la tasa; esta sólo alimenta la previsualización. */
 export const PROCUREMENT_VAT_RATE_PERCENT: TDecimalString = '19.00';
 
 const VAT_RATE_NUMERATOR = 19n;
@@ -53,30 +45,15 @@ export const COST_EFFECTIVE_BASIS_LABELS: Record<TCostEffectiveBasis, string> = 
 	unknown: 'Base desconocida',
 };
 
-export const COST_ENTRY_BASIS_LABELS: Record<TCostEntryBasis, string> = {
-	net: 'Neto',
-	gross: 'Bruto',
-};
-
-/**
- * Costo desconocido: importes y tasa `null`, bases `unknown`, `source: unknown`.
- * Un costo así se muestra como desconocido y nunca como $0.
- */
+/** Un costo desconocido se muestra como tal, nunca como $0. */
 export const isUnknownCost = (cost: IProcurementCost): boolean =>
 	cost.source === 'unknown' || cost.effective_unit_amount === null;
 
-/**
- * Agregado que combina bases efectivas distintas. Se distingue de una base única
- * porque su `effective_unit_amount` no es comparable contra un neto ni contra un
- * bruto sin decir cuál.
- */
+/** Su `effective_unit_amount` no es comparable contra un neto ni contra un bruto. */
 export const isMixedBasisCost = (cost: IProcurementCost): boolean =>
 	cost.effective_basis === 'mixed';
 
-/**
- * Agregado heterogéneo: el contrato anula `entered_unit_amount` y
- * `entered_basis` cuando el agregado no proviene de un único monto ingresado.
- */
+/** El contrato anula monto y base ingresados cuando el costo no viene de un único monto. */
 export const isAggregatedCost = (cost: IProcurementCost): boolean =>
 	cost.entered_unit_amount === null || cost.entered_basis === null;
 
@@ -88,14 +65,11 @@ export interface IProcurementCostPreview {
 }
 
 /**
- * Previsualización local del desglose neto / IVA / bruto, con las mismas reglas
- * de redondeo del contrato:
- * - Entrada `net`: IVA = neto × 0,19 half-up a 2; bruto = neto + IVA.
- * - Entrada `gross`: neto = bruto / 1,19 half-up a 2; IVA = bruto − neto.
+ * Mismo redondeo que el contrato:
+ * - `net`: IVA = neto × 0,19 half-up a 2; bruto = neto + IVA.
+ * - `gross`: neto = bruto / 1,19 half-up a 2; IVA = bruto − neto.
  *
- * Devuelve `null` si el monto no es un decimal válido. **No se envía al
- * backend**: el contrato rechaza que el cliente mande IVA, neto o bruto
- * derivados.
+ * Sólo para mostrar: el contrato rechaza que el cliente envíe IVA, neto o bruto.
  */
 export const previewCostBreakdown = (
 	amount: string | null | undefined,
@@ -125,16 +99,3 @@ export const previewCostBreakdown = (
 		vat_rate_percent: PROCUREMENT_VAT_RATE_PERCENT,
 	};
 };
-
-/**
- * Payload de escritura del costo. Es **todo** lo que el contrato acepta: monto y
- * base. Se expone como helper para que ningún formulario caiga en la tentación
- * de adjuntar el desglose previsualizado.
- */
-export const buildCostEntryPayload = (
-	amount: TDecimalString,
-	basis: TCostEntryBasis,
-): { unit_cost: TDecimalString; unit_cost_basis: TCostEntryBasis } => ({
-	unit_cost: amount,
-	unit_cost_basis: basis,
-});

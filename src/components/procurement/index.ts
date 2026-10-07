@@ -1,9 +1,3 @@
-/**
- * Componentes compartidos del módulo de abastecimiento e inventario ubicado
- * (PR #67 del backend). Las ocho cards del módulo consumen estas piezas en vez
- * de redibujar producto, costo, ubicación y botonera en cada pantalla.
- */
-
 export { default as ProductCard, ProductThumbnail } from './ProductCard';
 export type { IProductCardProps, TProductCardDensity } from './ProductCard';
 

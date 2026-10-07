@@ -9,15 +9,9 @@ import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import type { TIcons } from '@/types/icons.type';
 
 /**
- * Recepciones corre sólo contra servicios mock (Proveedores y Documentos de
- * compra ya consumen el backend real y no pasan por aquí). Comparte la
- * bandera de Inventario y Ajustes y traslados —las recepciones publicadas
- * escriben en ese mismo stock simulado—, así que el módulo se enciende o se
- * apaga entero: nunca queda una pantalla operando con datos ficticios en un
- * entorno donde el stock está deshabilitado.
+ * Comparte la bandera de Inventario porque las recepciones escriben en ese mismo
+ * stock simulado: el módulo se enciende o se apaga entero.
  */
-
-/** Aviso visible mientras la pantalla opera con datos simulados. */
 export const ProcurementMockNotice = () =>
 	INVENTORY_STOCK_USE_MOCKS ? (
 		<Alert color='amber' title='Datos simulados'>
@@ -26,17 +20,12 @@ export const ProcurementMockNotice = () =>
 	) : null;
 
 export interface IProcurementMockGateProps {
-	/** Título de la página cuando la pantalla está deshabilitada. */
 	title: string;
 	icon: TIcons;
 	children: ReactElement;
 }
 
-/**
- * Se monta en el `index.tsx` de cada pantalla, antes de la vista: con la
- * bandera apagada no se ejecuta el hook de la página, así que tampoco se
- * siembra ni se persiste el store mock.
- */
+/** Va en el `index.tsx`, antes de la vista: apagado, no se siembra ni persiste el store mock. */
 const ProcurementMockGate = ({ title, icon, children }: IProcurementMockGateProps) => {
 	if (INVENTORY_STOCK_USE_MOCKS) return children;
 

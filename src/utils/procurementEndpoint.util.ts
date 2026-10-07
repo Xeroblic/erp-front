@@ -4,13 +4,10 @@
  * una respuesta del servidor ni devuelve datos inventados.
  */
 
-/** Código estable del rechazo local: no es un código del contrato. */
+/** Código del rechazo local, no del contrato. */
 export const PROCUREMENT_ENDPOINT_NOT_PUBLISHED = 'ENDPOINT_NOT_PUBLISHED';
 
-/**
- * Lleva `code` y `message` propios para que `getProcurementErrorMessage`
- * muestre el motivo en vez del genérico.
- */
+/** Lleva `code` y `message` propios para que `getProcurementErrorMessage` muestre el motivo. */
 export class ProcurementEndpointNotPublishedError extends Error {
 	readonly code = PROCUREMENT_ENDPOINT_NOT_PUBLISHED;
 
