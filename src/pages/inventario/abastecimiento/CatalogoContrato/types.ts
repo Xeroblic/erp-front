@@ -58,6 +58,5 @@ export interface ICatalogStatusPillSample {
 	color: TStatusPillColor;
 	/** Etiqueta real de una pantalla del módulo que usa este color. */
 	label: string;
-	/** Qué significa el color en todo el módulo. */
 	meaning: string;
 }
