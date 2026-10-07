@@ -8,7 +8,7 @@ import purchaseDocumentsReducer from '@/store/slices/procurement/purchaseDocumen
 import useDocumentoCompraDetalle from '../useDocumentoCompraDetalle';
 
 /**
- * Propiedad de contexto de la ficha (ZF-12). La limpieza del contexto
+ * Propiedad de contexto de la ficha. La limpieza del contexto
  * anterior y la carga nueva ocurren en efectos, después del render: la ficha
  * y sus modales no pueden quedar a la vista de otra filial ni de otro
  * documento, ni siquiera en el primer render.

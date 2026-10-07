@@ -22,16 +22,6 @@ import PurchaseDocumentLinesCard from '../parts/PurchaseDocumentLinesCard';
 import PurchaseDocumentFormFooter from '../parts/PurchaseDocumentFormFooter';
 import { focusFirstInvalidPurchaseDocumentField } from '../../utils/purchaseDocumentFieldFocus';
 
-/**
- * Alta y edición de documento de compra (card 03, sección 6). La edición
- * sólo se ofrece en `draft` — la ficha filtra `allowed_actions` antes de
- * abrir este modal, así que acá no hay que resolver ese caso.
- *
- * El modal reúne los datos (formulario, proveedores, productos, altas en
- * línea) y compone las partes de `components/parts/`: avisos, encabezado con
- * proveedor, líneas con envío y total, y pie.
- */
-
 interface IPurchaseDocumentFormModalProps {
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
@@ -41,13 +31,7 @@ interface IPurchaseDocumentFormModalProps {
 	/** `ETag` vigente de `document`. Sólo hace falta en edición. */
 	etag?: string | null;
 	onSuccess?: (document: IPurchaseDocument) => void;
-	/**
-	 * Se llama cuando el `PATCH` responde `412 RESOURCE_VERSION_CONFLICT`: el
-	 * ETag con el que se abrió el formulario quedó obsoleto. El contrato
-	 * exige recargar antes de volver a editar, así que el caller debe volver
-	 * a pedir el documento (`retry` de `useDocumentoCompraDetalle`) para que
-	 * la próxima apertura reciba un ETag vigente.
-	 */
+	/** El `PATCH` respondió 412: el caller debe recargar el documento para obtener un ETag vigente. */
 	onStaleVersion?: () => void;
 }
 
@@ -86,17 +70,10 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 		initialProducts: document?.items.map((item) => item.product),
 	});
 	/**
-	 * Crear una factura exige `view-procurement-supplier` además de
-	 * `create-purchase-document`: el backend no ofrece otra forma de conocer el
-	 * `supplier_id`. Al editar, el tipo ya está fijo y el proveedor actual se
-	 * conserva aunque no se pueda listar.
+	 * Una factura nueva exige elegir proveedor, y sin `view-procurement-supplier`
+	 * no hay de dónde sacar el `supplier_id`. Al editar, el tipo ya está fijo.
 	 */
 	const isInvoiceUnavailable = !canListSuppliers && !isEdit;
-	/**
-	 * Alta de proveedor en línea: `SupplierFormModal` se apila sobre este
-	 * modal y, al crear o restaurar, el proveedor queda seleccionado sin perder
-	 * el borrador del documento.
-	 */
 	const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
 	const { editingSupplier, isLoadingSupplier, openSupplierEdit, closeSupplierEdit } =
 		useSupplierInlineEdit(subsidiaryId);
@@ -117,10 +94,7 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 		label: `${supplier.display_name} · ${supplier.rut}`,
 	}));
 
-	/**
-	 * Alta de producto en línea: guarda qué línea abrió `ProcurementProductFormModal`
-	 * para dejar ahí el producto creado. `null` con el modal cerrado.
-	 */
+	/** Línea que abrió el alta de producto, para dejar ahí el producto creado. */
 	const [productLineIndex, setProductLineIndex] = useState<number | null>(null);
 
 	const handleProductCreated = (product: ICreatedPurchasableProduct) => {
@@ -133,11 +107,9 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 	};
 
 	/**
-	 * El borrador pertenece a la filial en que se escribió: proveedor, líneas y
-	 * productos son de su catálogo. El contenedor cierra el modal al cambiar de
-	 * filial, pero este componente sigue montado con su estado; sin esto, al
-	 * volver a abrir «Nuevo documento» reaparecería el borrador anterior, con
-	 * el alta de producto abierta sobre la línea de entonces.
+	 * El borrador es de la filial en que se escribió. El contenedor cierra el
+	 * modal al cambiar de filial, pero este componente sigue montado: sin
+	 * descartarlo, «Nuevo documento» reabriría el borrador de la anterior.
 	 */
 	const draftSubsidiaryRef = useRef(subsidiaryId);
 	useEffect(() => {
@@ -211,22 +183,17 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 						</p>
 					</div>
 				</ModalHeader>
-				{/* `FieldArray` sólo lee su bag de Formik vía contexto (`useFormikContext`):
-			    sin este `FormikProvider`, `push`/`remove` no encuentran `items` porque
-			    este modal usa el hook `useFormik` directo, no el componente `<Formik>`
-			    que lo provee automáticamente. */}
+				{/* `FieldArray` lee Formik del contexto, que `useFormik` no provee. */}
 				<FormikProvider value={formik}>
 					<form
 						className='flex min-h-0 flex-1 flex-col overflow-hidden'
 						onSubmit={(event) => {
-							// Defensa además del botón deshabilitado: Enter en un campo de
-							// texto dispara el submit nativo del `<form>` sin pasar por el
-							// botón, así que el bloqueo tiene que vivir acá también.
+							// Enter en un campo envía el `<form>` aunque el botón esté
+							// deshabilitado: el bloqueo tiene que vivir acá también.
 							event.preventDefault();
 							if (hasVersionConflict || isMissingEtag) return;
-							// Mismo criterio que pagos diferidos: se envía igual (Formik
-							// marca los campos tocados y no llama a `onSubmit` si hay
-							// errores) y después se lleva la vista al primer campo inválido.
+							// Se envía igual para que Formik marque los campos tocados, y
+							// después se lleva la vista al primer campo inválido.
 							formik
 								.validateForm()
 								.then((errors) =>
@@ -289,12 +256,9 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 				</FormikProvider>
 			</Modal>
 
-			{/*
-			 * Hermano del modal del documento, no hijo de su `<form>`: los eventos
-			 * de React suben por el árbol de componentes aunque el DOM esté en otro
-			 * lado, y un submit del proveedor no debe llegar al `onSubmit` del
-			 * documento.
-			 */}
+			{/* Fuera del `<form>`: los eventos de React suben por el árbol de
+			    componentes aunque el portal esté en otro lado del DOM, y un submit
+			    del proveedor no debe llegar al del documento. */}
 			<SupplierFormModal
 				isOpen={isOpen && isSupplierModalOpen}
 				setIsOpen={setIsSupplierModalOpen}

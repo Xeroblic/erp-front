@@ -13,13 +13,7 @@ import DocumentosCompraFilters from './components/filters/DocumentosCompraFilter
 import DocumentosCompraTable from './components/tables/DocumentosCompraTable';
 import PurchaseDocumentFormModal from './components/modals/PurchaseDocumentFormModal';
 
-/**
- * Listado de documentos de compra (card 03, sección 6 del contrato de
- * abastecimiento). La fila resumida no trae `items`, `supplier_snapshot` ni
- * `related_counts` — esos son caros y sólo viajan en el detalle
- * (`DocumentoCompraDetalle`), que también es donde vive editar, confirmar y
- * anular vía `AllowedActionsToolbar`.
- */
+/** Editar, confirmar y anular viven en la ficha (`DocumentoCompraDetalle`). */
 const DocumentosCompraView = () => {
 	const navigate = useNavigate();
 	const location = useLocation();

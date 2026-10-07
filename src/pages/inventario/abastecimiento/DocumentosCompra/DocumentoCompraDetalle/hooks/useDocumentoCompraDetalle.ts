@@ -17,13 +17,6 @@ import { readListReturnSearch } from '@/utils/listSearchParams.util';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
 import type { IDocumentAttachmentsCardHandle } from '../components/parts/DocumentAttachmentsCard';
 
-/**
- * Ficha de documento de compra (sección 6 del contrato). A diferencia del
- * listado, acá viajan `items`, `supplier_snapshot`, `related_counts` y el
- * `ETag` — la única pantalla del módulo que los necesita, porque editar
- * exige `If-Match` con el `ETag` de esta misma carga.
- */
-
 type TDocumentModal = 'update' | 'confirm' | 'cancel';
 
 /** Modal abierto y el contexto (filial y documento) en que se abrió. */
@@ -121,11 +114,9 @@ const useDocumentoCompraDetalle = () => {
 	const attachmentsCardRef = useRef<IDocumentAttachmentsCardHandle>(null);
 
 	/**
-	 * `create_receipt` se retira aunque el backend la ofrezca: Recepciones sigue
-	 * contra datos simulados, que no conocen este documento real. Vuelve cuando
-	 * Recepciones consuma la API (su alta «con documento» ya lee
-	 * `?purchase_document_id=`). Mientras tanto la vista lo explica con
-	 * `isReceiptDeferred`, en vez de dejar al usuario sin la acción y sin aviso.
+	 * `create_receipt` se retira aunque el backend la ofrezca: el alta de
+	 * Recepciones todavía no recibe este documento. La vista lo avisa con
+	 * `isReceiptDeferred`.
 	 */
 	const allowedActions = useMemo(
 		() => (document?.allowed_actions ?? []).filter((action) => action !== 'create_receipt'),
