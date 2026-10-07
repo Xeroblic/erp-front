@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, isFulfilled } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import {
 	cancelPurchaseDocument,
@@ -25,13 +25,9 @@ import type {
 } from '@/interface/procurement.interface';
 
 /**
- * Store de documentos de compra (sección 6 del contrato). Mismo patrón que
- * `procurementSuppliersSlice`: los thunks llaman al servicio real
- * `@/services/procurement/purchaseDocuments.service` (backend PR #84/#92).
- *
- * A diferencia de proveedores, acá se guarda el `ETag` del recurso junto con
- * `current`: la edición (`PATCH`) lo necesita para `If-Match`, y sólo la
- * ficha ya cargada lo tiene — no hay otro lugar del store de donde sacarlo.
+ * Documentos de compra. Se guarda el `ETag` del recurso junto con `current`:
+ * la edición (`PATCH`) lo necesita para `If-Match`, y sólo la ficha ya cargada
+ * lo tiene.
  */
 
 /**
@@ -52,10 +48,10 @@ export interface PurchaseDocumentsState {
 	listError: string | null;
 	listRequestId: string | null;
 	/**
-	 * Filial dueña de `items`/`meta`/`listError` (propiedad de contexto,
-	 * ZF-12). Se fija al resolver, no al pedir: mientras la petición de otra
-	 * filial vuela, lo guardado sigue siendo de la anterior y el hook no lo
-	 * muestra. Tampoco deja que una mutación de otra filial parchee la lista.
+	 * Filial dueña de `items`/`meta`/`listError`. Se fija al resolver, no al
+	 * pedir: mientras la petición de otra filial vuela, lo guardado sigue siendo
+	 * de la anterior y el hook no lo muestra. Tampoco deja que una mutación de
+	 * otra filial parchee la lista.
 	 */
 	listSubsidiaryId: number | null;
 	current: IPurchaseDocument | null;
@@ -68,10 +64,6 @@ export interface PurchaseDocumentsState {
 	currentSubsidiaryId: number | null;
 	/** Documento pedido por la carga que dejó `current`/`currentError`. */
 	currentDocumentId: number | null;
-	creating: boolean;
-	updating: boolean;
-	confirming: boolean;
-	cancelling: boolean;
 	/**
 	 * Altas de producto en línea sin cerrar, una por filial, desde que empieza
 	 * el `POST`. Viven acá y no en el modal que las hizo: el modal se desmonta
@@ -95,10 +87,6 @@ const initialState: PurchaseDocumentsState = {
 	currentRequestId: null,
 	currentSubsidiaryId: null,
 	currentDocumentId: null,
-	creating: false,
-	updating: false,
-	confirming: false,
-	cancelling: false,
 	pendingProductAttempts: {},
 };
 
@@ -306,8 +294,8 @@ const purchaseDocumentsSlice = createSlice({
 			state.currentError = null;
 			state.currentSubsidiaryId = null;
 			state.currentDocumentId = null;
-			// Igual que en proveedores: sin esto, una respuesta en vuelo de la
-			// ficha que se abandona podría llegar tarde y repoblar `current`.
+			// Sin esto, una respuesta en vuelo de la ficha que se abandona
+			// podría llegar tarde y repoblar `current`.
 			state.currentRequestId = null;
 		},
 		/** Empieza el `POST` de un alta o su conciliación. */
@@ -375,8 +363,7 @@ const purchaseDocumentsSlice = createSlice({
 				state.currentRequestId = action.meta.requestId;
 			})
 			.addCase(fetchPurchaseDocumentDetail.fulfilled, (state, action) => {
-				// Propiedad de contexto (ZF-12): una ficha anterior que resuelve
-				// tarde no puede pisar la que el usuario está viendo ahora.
+				// Una ficha anterior que resuelve tarde no puede pisar la vigente.
 				if (action.meta.requestId !== state.currentRequestId) return;
 				state.currentLoading = false;
 				state.current = action.payload.data;
@@ -396,65 +383,21 @@ const purchaseDocumentsSlice = createSlice({
 				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
 				state.currentDocumentId = action.meta.arg.id;
 			})
-
-			.addCase(createPurchaseDocumentThunk.pending, (state) => {
-				state.creating = true;
-			})
-			.addCase(createPurchaseDocumentThunk.fulfilled, (state) => {
-				state.creating = false;
-				// La lista se refresca desde el hook, igual que en proveedores.
-			})
-			.addCase(createPurchaseDocumentThunk.rejected, (state) => {
-				state.creating = false;
-			})
-
-			.addCase(updatePurchaseDocumentThunk.pending, (state) => {
-				state.updating = true;
-			})
-			.addCase(updatePurchaseDocumentThunk.fulfilled, (state, action) => {
-				state.updating = false;
-				applyDocumentMutation(
-					state,
-					action.payload.data,
-					action.payload.etag,
-					action.payload.subsidiaryId,
-				);
-			})
-			.addCase(updatePurchaseDocumentThunk.rejected, (state) => {
-				state.updating = false;
-			})
-
-			.addCase(confirmPurchaseDocumentThunk.pending, (state) => {
-				state.confirming = true;
-			})
-			.addCase(confirmPurchaseDocumentThunk.fulfilled, (state, action) => {
-				state.confirming = false;
-				applyDocumentMutation(
-					state,
-					action.payload.data,
-					action.payload.etag,
-					action.payload.subsidiaryId,
-				);
-			})
-			.addCase(confirmPurchaseDocumentThunk.rejected, (state) => {
-				state.confirming = false;
-			})
-
-			.addCase(cancelPurchaseDocumentThunk.pending, (state) => {
-				state.cancelling = true;
-			})
-			.addCase(cancelPurchaseDocumentThunk.fulfilled, (state, action) => {
-				state.cancelling = false;
-				applyDocumentMutation(
-					state,
-					action.payload.data,
-					action.payload.etag,
-					action.payload.subsidiaryId,
-				);
-			})
-			.addCase(cancelPurchaseDocumentThunk.rejected, (state) => {
-				state.cancelling = false;
-			});
+			.addMatcher(
+				isFulfilled(
+					updatePurchaseDocumentThunk,
+					confirmPurchaseDocumentThunk,
+					cancelPurchaseDocumentThunk,
+				),
+				(state, action) => {
+					applyDocumentMutation(
+						state,
+						action.payload.data,
+						action.payload.etag,
+						action.payload.subsidiaryId,
+					);
+				},
+			);
 	},
 });
 
@@ -482,13 +425,11 @@ export const selectPurchaseDocumentCurrentLoading = (state: RootState) =>
 export const selectPurchaseDocumentCurrentError = (state: RootState) =>
 	state.purchaseDocuments.currentError;
 
-/** Filial y documento de la carga que dejó la ficha (o su error) en el store. */
 export const selectPurchaseDocumentCurrentSubsidiaryId = (state: RootState) =>
 	state.purchaseDocuments.currentSubsidiaryId;
 export const selectPurchaseDocumentCurrentDocumentId = (state: RootState) =>
 	state.purchaseDocuments.currentDocumentId;
 
-/** Alta de producto sin cerrar en la filial dada, si la hay. */
 export const selectPendingProductAttempt = (
 	state: RootState,
 	subsidiaryId: number | null,

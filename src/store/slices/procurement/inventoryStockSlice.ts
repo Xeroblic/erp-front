@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
-import type { RootState } from '@/store';
 import type {
 	IInventoryAdjustment,
 	IInventoryAdjustmentPayload,
@@ -78,10 +77,8 @@ interface IWriteHeaders {
 }
 
 /**
- * `POST .../document-allocations` (card 07, sección 8): respalda
- * documentalmente stock inicial sin documento. No toca `list`/`origins` del
- * store — el llamador refresca con `refresh()` tras confirmar, mismo
- * criterio que `onReversed`/`onCancelled` en Recepciones.
+ * `POST .../document-allocations`: respalda documentalmente stock inicial sin
+ * documento. No toca `list`/`origins`: el llamador refresca tras confirmar.
  */
 export const createInventoryDocumentAllocationThunk = createAsyncThunk<
 	IInventoryDocumentAllocation,
@@ -114,11 +111,7 @@ export const createInventoryDocumentAllocationThunk = createAsyncThunk<
 	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
 
-/**
- * `POST B/warehouse-stock-movements` (card 08, sección 9): traslado interno
- * inmediato. Como `document-allocations`, no parchea `list`/`origins` — el
- * llamador refresca lo que necesite tras confirmar.
- */
+/** `POST B/warehouse-stock-movements`: traslado interno inmediato; tampoco parchea `list`/`origins`. */
 export const createWarehouseStockMovementThunk = createAsyncThunk<
 	IWarehouseStockMovement,
 	{
@@ -141,10 +134,9 @@ export const createWarehouseStockMovementThunk = createAsyncThunk<
 );
 
 /**
- * `POST B/inventory-adjustments` (card 08, sección 11): ajuste explícito por
- * conteo o corrección. Rechaza con el error crudo para que
- * `useIdempotentWrite` pueda distinguir un reintento con la misma clave de una
- * corrección de payload.
+ * `POST B/inventory-adjustments`: ajuste por conteo o corrección. Rechaza con
+ * el error crudo para que `useIdempotentWrite` distinga un reintento con la
+ * misma clave de una corrección de payload.
  */
 export const createInventoryAdjustmentThunk = createAsyncThunk<
 	IInventoryAdjustment,
@@ -184,19 +176,10 @@ const emptyQuery = <T>(): QueryState<T> => ({
 export interface InventoryStockState {
 	list: QueryState<IInventoryStockResponse>;
 	origins: QueryState<IInventoryOriginsResponse>;
-	/** `document-allocations` (card 07) es puntual, no una consulta con `ownerContext` — sólo necesita saber si hay un envío en curso. */
-	creatingAllocation: boolean;
-	/** Traslado interno en curso (card 08). */
-	creatingMovement: boolean;
-	/** Ajuste por conteo en curso (card 08). */
-	creatingAdjustment: boolean;
 }
 const initialState: InventoryStockState = {
 	list: emptyQuery(),
 	origins: emptyQuery(),
-	creatingAllocation: false,
-	creatingMovement: false,
-	creatingAdjustment: false,
 };
 const inventoryStockSlice = createSlice({
 	name: 'inventoryStock',
@@ -245,44 +228,8 @@ const inventoryStockSlice = createSlice({
 				state.origins.error = action.meta.aborted
 					? null
 					: (action.payload ?? 'No pudimos cargar las procedencias.');
-			})
-			.addCase(createInventoryDocumentAllocationThunk.pending, (state) => {
-				state.creatingAllocation = true;
-			})
-			.addCase(createInventoryDocumentAllocationThunk.fulfilled, (state) => {
-				state.creatingAllocation = false;
-			})
-			.addCase(createInventoryDocumentAllocationThunk.rejected, (state) => {
-				state.creatingAllocation = false;
-			})
-			.addCase(createWarehouseStockMovementThunk.pending, (state) => {
-				state.creatingMovement = true;
-			})
-			.addCase(createWarehouseStockMovementThunk.fulfilled, (state) => {
-				state.creatingMovement = false;
-			})
-			.addCase(createWarehouseStockMovementThunk.rejected, (state) => {
-				state.creatingMovement = false;
-			})
-			.addCase(createInventoryAdjustmentThunk.pending, (state) => {
-				state.creatingAdjustment = true;
-			})
-			.addCase(createInventoryAdjustmentThunk.fulfilled, (state) => {
-				state.creatingAdjustment = false;
-			})
-			.addCase(createInventoryAdjustmentThunk.rejected, (state) => {
-				state.creatingAdjustment = false;
 			});
 	},
 });
-
-export const selectInventoryStockCreatingAllocation = (state: RootState) =>
-	state.inventoryStock.creatingAllocation;
-
-export const selectInventoryStockCreatingMovement = (state: RootState) =>
-	state.inventoryStock.creatingMovement;
-
-export const selectInventoryStockCreatingAdjustment = (state: RootState) =>
-	state.inventoryStock.creatingAdjustment;
 
 export default inventoryStockSlice.reducer;
