@@ -35,6 +35,10 @@ import {
 	type IAjustesTrasladosPreselection,
 	type TAjusteStep,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
+import {
+	findLocationStockRows,
+	LOCATION_STOCK_PAGE_SIZE,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/locationStockLookup';
 import type {
 	IInventoryAdjustment,
 	IInventoryAdjustmentPayload,
@@ -53,8 +57,20 @@ export interface IAjusteResult {
 }
 
 /**
- * Lógica del ajuste por conteo (card 08, sección 11).
- *
+ * Filas de stock halladas más allá de la primera página, por producto (`null`:
+ * la ubicación no lo tiene). `key` las ata a la consulta que las originó y
+ * `failedFor` es el conjunto de productos cuya búsqueda falló: otro conjunto
+ * vuelve a intentarlo.
+ */
+interface IPagedStockLookup {
+	key: string;
+	rows: Record<number, IInventoryStockRow | null>;
+	failedFor: string | null;
+}
+
+const NO_PAGED_LOOKUP: IPagedStockLookup = { key: '', rows: {}, failedFor: null };
+
+/**
  * El ajuste corrige el saldo de la ubicación elegida: no se enlaza a una
  * recepción ni atribuye egresos a una compra. El servicio consume lo más
  * antiguo primero (FIFO), que es lo que el usuario espera al «quitar de la
@@ -71,27 +87,25 @@ export default function useInventoryAdjustment(
 	const raw = useAppSelector((state) => state.inventoryStock.list);
 	const [result, setResult] = useState<IAjusteResult | null>(null);
 	const [retry, setRetry] = useState(0);
-	// Las líneas muestran sus errores tras intentar avanzar del paso de
-	// productos, no sólo tras un envío: el asistente valida antes de confirmar.
+	// Los errores de línea se muestran desde el primer intento de avanzar del
+	// paso de productos, no sólo tras un envío.
 	const [itemsChecked, setItemsChecked] = useState(false);
+
+	const [pagedLookup, setPagedLookup] = useState<IPagedStockLookup>(NO_PAGED_LOOKUP);
 
 	const warehouses = useMemo(() => getInventoryWarehouses(branchId), [branchId]);
 	/**
 	 * Los productos elegibles salen del **catálogo**, no del stock vigente de la
 	 * ubicación: un conteo que encuentra unidades de un producto que quedó en
 	 * cero —o que nunca estuvo en esa bodega— tiene que poder nombrarlo. El
-	 * stock se sigue consultando, pero para informar el saldo y validar los
-	 * egresos, no para decidir qué se puede corregir.
+	 * stock sólo informa el saldo y valida los egresos.
 	 */
 	const products = useMemo<IProcurementProduct[]>(
 		() => getInventoryAdjustableProducts(subsidiaryId),
 		[subsidiaryId],
 	);
-	/**
-	 * Ubicación y producto que trae la URL, sólo si son de la sucursal activa y
-	 * del catálogo corregible. Se resuelven una vez, al montar: son los valores
-	 * iniciales del formulario, no un filtro que lo siga.
-	 */
+	// Preselección de la URL: se resuelve una vez, al montar. Es el valor
+	// inicial del formulario, no un filtro que lo siga.
 	const [initialSelection] = useState(() => {
 		const location = resolvePreselectedLocation(preselection.location, warehouses);
 		const productId: number | '' =
@@ -188,13 +202,16 @@ export default function useInventoryAdjustment(
 	const { values, touched, setFieldValue, setValues, setTouched, setFieldTouched, validateForm } =
 		formik;
 
-	/* Stock vigente en la ubicación ajustada: alimenta el selector de producto. */
 	const request = useMemo(
 		() => ({
 			branchId,
 			ownerContext: `ajuste:${context}:${session}`,
 			params: values.location
-				? { ...locationStockParams(values.location), page: 1, per_page: 100 }
+				? {
+						...locationStockParams(values.location),
+						page: 1,
+						per_page: LOCATION_STOCK_PAGE_SIZE,
+					}
 				: {},
 		}),
 		[branchId, context, session, values.location],
@@ -202,9 +219,9 @@ export default function useInventoryAdjustment(
 	const queryKey = inventoryStockQueryKey(request);
 	const isCurrent = raw.ownerContext === queryKey;
 	const stockResponse = isCurrent ? raw.response : null;
-	const stockError = isCurrent ? raw.error : null;
+	const firstPageError = isCurrent ? raw.error : null;
 	const hasLocation = Boolean(values.location);
-	const loadingStock = hasLocation && (!isCurrent || raw.loading);
+	const loadingFirstPage = hasLocation && (!isCurrent || raw.loading);
 
 	useEffect(() => {
 		if (!hasLocation) return undefined;
@@ -214,18 +231,88 @@ export default function useInventoryAdjustment(
 		};
 	}, [dispatch, request, retry, hasLocation]);
 
-	const stockRows: IInventoryStockRow[] = useMemo(
-		() => stockResponse?.data ?? [],
-		[stockResponse],
+	// `retry` cambia tras registrar un ajuste: los saldos hallados quedan viejos.
+	const pagedLookupKey = `${queryKey}#${retry}`;
+	const paged = pagedLookup.key === pagedLookupKey ? pagedLookup : NO_PAGED_LOOKUP;
+	const firstPageRows = useMemo(() => stockResponse?.data ?? [], [stockResponse]);
+	const lastPage = stockResponse?.meta.last_page ?? 1;
+
+	/*
+	 * Productos de las líneas que la primera página no trae: el catálogo ofrece
+	 * cualquier producto, así que su saldo puede estar en cualquier página. Se
+	 * serializa para que el efecto no se reinicie con cada tecla.
+	 */
+	const missingProductKey = useMemo(() => {
+		if (loadingFirstPage || firstPageError || lastPage <= 1) return '';
+		const loaded = new Set(firstPageRows.map((row) => row.product.id));
+		const ids = values.items.flatMap((item) =>
+			item.productId === '' || loaded.has(item.productId) || item.productId in paged.rows
+				? []
+				: [item.productId],
+		);
+		return [...new Set(ids)].sort((a, b) => a - b).join(',');
+	}, [loadingFirstPage, firstPageError, lastPage, firstPageRows, values.items, paged.rows]);
+	const lookupFailed = missingProductKey !== '' && paged.failedFor === missingProductKey;
+	const searchingPages = missingProductKey !== '' && !lookupFailed;
+	const unresolvedIds = useMemo(
+		() => new Set(lookupFailed ? missingProductKey.split(',').map(Number) : []),
+		[lookupFailed, missingProductKey],
 	);
+
+	useEffect(() => {
+		if (!searchingPages) return undefined;
+		const productIds = missingProductKey.split(',').map(Number);
+		const controller = new AbortController();
+		findLocationStockRows(
+			branchId,
+			values.location,
+			productIds,
+			lastPage,
+			controller.signal,
+		).then(
+			(found) => {
+				if (controller.signal.aborted) return;
+				setPagedLookup((previous) => {
+					const rows = previous.key === pagedLookupKey ? { ...previous.rows } : {};
+					productIds.forEach((id) => {
+						rows[id] = found.get(id) ?? null;
+					});
+					return { key: pagedLookupKey, rows, failedFor: null };
+				});
+			},
+			() => {
+				if (controller.signal.aborted) return;
+				setPagedLookup((previous) => ({
+					key: pagedLookupKey,
+					rows: previous.key === pagedLookupKey ? previous.rows : {},
+					failedFor: missingProductKey,
+				}));
+			},
+		);
+		return () => controller.abort();
+	}, [branchId, values.location, lastPage, missingProductKey, pagedLookupKey, searchingPages]);
+
+	const stockRows: IInventoryStockRow[] = useMemo(() => {
+		const found = Object.values(paged.rows).filter(
+			(row): row is IInventoryStockRow => row !== null,
+		);
+		return found.length ? [...firstPageRows, ...found] : firstPageRows;
+	}, [firstPageRows, paged.rows]);
 	stockRowsRef.current = stockRows;
 
+	const loadingStock = loadingFirstPage || searchingPages;
+	const stockError =
+		firstPageError ??
+		(lookupFailed ? 'No se pudo consultar el saldo de todos los productos elegidos.' : null);
+
+	/** `null`: la ubicación no tiene el producto; `undefined`: saldo desconocido. */
 	const totalsFor = useCallback(
-		(productId: number | ''): IInventoryStockRow | null =>
-			productId === ''
-				? null
-				: (stockRows.find((row) => row.product.id === productId) ?? null),
-		[stockRows],
+		(productId: number | ''): IInventoryStockRow | null | undefined => {
+			if (productId === '') return null;
+			if (unresolvedIds.has(productId)) return undefined;
+			return stockRows.find((row) => row.product.id === productId) ?? null;
+		},
+		[stockRows, unresolvedIds],
 	);
 
 	const setItem = useCallback(
@@ -255,9 +342,8 @@ export default function useInventoryAdjustment(
 	/**
 	 * Cambiar de ubicación invalida las líneas: el saldo que muestran era de la otra.
 	 *
-	 * Un único `setValues` valida con los valores nuevos. Encadenar
-	 * `setFieldValue` + `setFieldTouched` hacía que cada llamada validara con el
-	 * estado anterior, y la ubicación recién elegida quedaba en rojo como vacía.
+	 * Un único `setValues` para que la validación vea la ubicación nueva: con
+	 * `setFieldValue` + `setFieldTouched` cada llamada valida el estado anterior.
 	 */
 	const setLocation = useCallback(
 		(token: string) => {
@@ -276,14 +362,11 @@ export default function useInventoryAdjustment(
 	);
 
 	/**
-	 * Mensaje de Yup para un campo de una línea. Formik guarda los errores de un
-	 * arreglo como `FormikErrors<T>[]` o como una cadena única (la del `test` de
-	 * nivel arreglo); sólo el primer caso tiene mensajes por línea que mostrar
-	 * junto a su control.
+	 * Formik guarda los errores de un arreglo como `FormikErrors<T>[]` o como la
+	 * cadena del `test` de nivel arreglo; sólo el primero trae mensajes por línea.
 	 *
-	 * Sólo se muestran tras un intento de envío: cambiar la ubicación marca ese
-	 * campo como tocado y Formik valida el formulario entero, lo que llenaba de
-	 * errores las líneas en blanco que el usuario todavía no editó.
+	 * Se esperan al primer intento de avanzar o enviar: cambiar la ubicación
+	 * valida el formulario entero y marcaría en rojo líneas que nadie editó aún.
 	 */
 	const errorFor = useCallback(
 		(index: number, field: keyof IAjusteItemDraft): string | undefined => {
@@ -297,7 +380,7 @@ export default function useInventoryAdjustment(
 		[formik.errors.items, formik.submitCount, itemsChecked],
 	);
 
-	/** Valida sólo los campos de un paso y marca como tocados sólo esos. */
+	/** Marca como tocados sólo los campos del paso validado. */
 	const validateStep = useCallback(
 		async (key: TAjusteStep): Promise<string | undefined> => {
 			const errors = await validateForm();
@@ -327,15 +410,11 @@ export default function useInventoryAdjustment(
 	const { submitForm } = formik;
 	const submit = useCallback(() => finish(submitForm), [finish, submitForm]);
 
-	/**
-	 * Cierra el resultado y empieza otro movimiento desde el primer paso. El
-	 * resultado reemplaza al asistente mientras está visible: al confirmar no se
-	 * vuelve a la selección de productos. La ubicación se conserva.
-	 */
 	const clearResult = useCallback(() => {
 		setResult(null);
 		restartAt(0);
 	}, [restartAt]);
+
 	const locationOptions = useMemo(
 		() => [
 			{ value: locationToken(null), label: 'Sin ubicación' },
