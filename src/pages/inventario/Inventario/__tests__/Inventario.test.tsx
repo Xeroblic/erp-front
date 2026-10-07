@@ -269,6 +269,10 @@ describe('Inventario — vista unificada', () => {
 			fireEvent.click(screen.getByRole('tab', { name: /Trazabilidad/ }));
 
 			await waitFor(() => expect(location()).toBe('/inventario/stock?vista=trazabilidad'));
+			expect(screen.getByLabelText('Búsqueda')).toHaveValue('');
+			// La recepción #76 no contiene el mouse: sólo aparece si `q=mouse` se descartó.
+			const table = await screen.findByRole('table', { name: 'Operaciones' });
+			expect(await within(table).findByText('Recepción #76')).toBeInTheDocument();
 		});
 	});
 });

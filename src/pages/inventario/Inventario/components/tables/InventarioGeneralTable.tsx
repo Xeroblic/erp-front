@@ -16,6 +16,7 @@ import StockStatusPill from '@/pages/inventario/Inventario/components/parts/Stoc
 import InventarioPagination from '@/pages/inventario/Inventario/components/parts/InventarioPagination';
 import WarehouseDistribution from '@/pages/inventario/Inventario/components/parts/WarehouseDistribution';
 import type { TInventarioUbicacion } from '@/pages/inventario/Inventario/types';
+import { warehouseIdFromToken } from '@/utils/inventoryLocation.util';
 
 const sortState = (orden: TInventoryStockSort): TableSortState<TInventoryStockSortField> =>
 	orden.startsWith('-')
@@ -28,11 +29,8 @@ const nextOrden = (
 	key: TInventoryStockSortField,
 ): TInventoryStockSort => (orden === key ? `-${key}` : key);
 
-const highlightedWarehouse = (ubicacion: TInventarioUbicacion): number | null | undefined => {
-	if (ubicacion === 'branch') return undefined;
-	if (ubicacion === 'unlocated') return null;
-	return Number(ubicacion.slice('warehouse:'.length));
-};
+const highlightedWarehouse = (ubicacion: TInventarioUbicacion): number | null | undefined =>
+	ubicacion === 'branch' ? undefined : warehouseIdFromToken(ubicacion);
 
 interface IInventarioGeneralTableProps {
 	response: IInventoryOverviewResponse | null;

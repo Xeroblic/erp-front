@@ -26,7 +26,7 @@ const documentLabel = (origin: IInventoryStockOriginRow): string | null =>
 		? `${origin.purchase_document.document_type === 'invoice' ? 'Factura' : 'Boleta'} #${origin.purchase_document.document_number}`
 		: null;
 
-export interface InventoryOriginsProps {
+interface InventoryOriginsProps {
 	branchId: number;
 	subsidiaryId: number | null;
 	productId: number;

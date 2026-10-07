@@ -8,13 +8,12 @@ import {
 	selectInventoryUpdatingThreshold,
 	updateInventoryThresholdThunk,
 } from '@/store/slices/procurement/inventoryOverviewSlice';
+import { UmbralSchema, type IUmbralFormValues } from '@/pages/inventario/Inventario/types';
 import {
-	inventoryLocationParams,
-	ubicacionFromWarehouseId,
-	UmbralSchema,
-	type IUmbralFormValues,
-	type TInventarioUbicacion,
-} from '@/pages/inventario/Inventario/types';
+	locationStockParams,
+	locationToken,
+	type TLocationToken,
+} from '@/utils/inventoryLocation.util';
 
 /**
  * Ficha de un producto en la sucursal activa (A4): totales, estado, desglose
@@ -32,7 +31,7 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 	const [retry, setRetry] = useState(0);
 	const [umbralOpen, setUmbralOpen] = useState(false);
 	/** Ubicación de las procedencias. `null` = aún no elegida: se usa la primera con saldo. */
-	const [ubicacionElegida, setUbicacionElegida] = useState<TInventarioUbicacion | null>(null);
+	const [ubicacionElegida, setUbicacionElegida] = useState<TLocationToken | null>(null);
 
 	const request = useMemo(
 		() => ({ branchId, productId, ownerContext: `${owner}:${session}` }),
@@ -54,7 +53,7 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 	const ubicaciones = useMemo(
 		() =>
 			(detail?.warehouses ?? []).map((location) => ({
-				value: ubicacionFromWarehouseId(location.warehouse?.id ?? null),
+				value: locationToken(location.warehouse?.id ?? null),
 				warehouse: location.warehouse,
 				quantity: location.physical_quantity,
 			})),
@@ -66,7 +65,7 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 		ubicaciones[0]?.value ??
 		null;
 	const locationParams = useMemo(
-		() => (ubicacion ? inventoryLocationParams(ubicacion) : null),
+		() => (ubicacion ? locationStockParams(ubicacion) : null),
 		[ubicacion],
 	);
 
@@ -95,13 +94,12 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 		},
 	});
 
+	const { resetForm } = formik;
 	const openUmbral = useCallback(() => setUmbralOpen(true), []);
 	const closeUmbral = useCallback(() => {
 		setUmbralOpen(false);
-		formik.resetForm();
-		// `formik` cambia en cada render; sólo se necesita su `resetForm` estable.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [formik.resetForm]);
+		resetForm();
+	}, [resetForm]);
 
 	return {
 		detail,

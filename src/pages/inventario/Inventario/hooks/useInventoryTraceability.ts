@@ -13,7 +13,7 @@ import type {
 	IInventoryOperationsParams,
 } from '@/interface/inventoryOperations.interface';
 
-export interface IInventoryTraceabilityOptions {
+interface IInventoryTraceabilityOptions {
 	subsidiaryId: number;
 	branchId: number;
 	/** Nombre de la sucursal activa: el mock no lo conoce y lo necesita para `branch`. */

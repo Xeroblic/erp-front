@@ -12,13 +12,25 @@ import type {
 	TInventoryOperationType,
 } from '@/interface/inventoryOperations.interface';
 import type { TIcons } from '@/types/icons.type';
+import {
+	locationStockParams,
+	locationToken,
+	warehouseIdFromToken,
+	type TLocationToken,
+} from '@/utils/inventoryLocation.util';
+import {
+	LIST_MAX_PER_PAGE,
+	parseBusinessDateParam,
+	parseIdParam,
+	parsePageParam,
+} from '@/utils/listSearchParams.util';
 
 export const INVENTARIO_PATH = '/inventario/stock';
 export const inventarioProductoPath = (productId: number): string =>
 	`${INVENTARIO_PATH}/${productId}`;
 
 /** Segmento de «Sin ubicación» en la ficha de bodega: no es un ID. */
-export const SIN_UBICACION_SLUG = 'sin-ubicacion';
+const SIN_UBICACION_SLUG = 'sin-ubicacion';
 
 export const inventarioBodegaPath = (warehouseId: number | null): string =>
 	`${INVENTARIO_PATH}/bodegas/${warehouseId ?? SIN_UBICACION_SLUG}`;
@@ -41,8 +53,8 @@ export const inventarioBodegaLink = (warehouseId: number | null): IPageLink => (
 /** Lee el segmento de la ficha de bodega: `null` si no es una ubicación válida. */
 export const parseBodegaParam = (param: string | undefined): TInventarioUbicacion | null => {
 	if (param === SIN_UBICACION_SLUG) return 'unlocated';
-	if (param && /^[1-9]\d*$/.test(param)) return `warehouse:${Number(param)}`;
-	return null;
+	const warehouseId = parseIdParam(param ?? null);
+	return warehouseId === null ? null : locationToken(warehouseId);
 };
 
 /** Vista General (productos), Por bodega o Trazabilidad. Viaja en `?vista=`. */
@@ -51,11 +63,10 @@ export type TInventarioVista = 'general' | 'bodegas' | 'trazabilidad';
 const VISTAS: readonly TInventarioVista[] = ['general', 'bodegas', 'trazabilidad'];
 
 /**
- * Ubicación del filtro: `branch` (toda la sucursal), `unlocated` o
- * `warehouse:<id>`. Mismo token que usaba Stock por ubicación, así un enlace
- * se lee igual en la URL y en el estado.
+ * Ubicación del filtro: `branch` (toda la sucursal) o el token de una
+ * ubicación concreta (`unlocated` / `warehouse:<id>`).
  */
-export type TInventarioUbicacion = 'branch' | 'unlocated' | `warehouse:${number}`;
+export type TInventarioUbicacion = 'branch' | TLocationToken;
 
 /* =================================================
    Trazabilidad (§14) — tipos de operación
@@ -64,7 +75,7 @@ export type TInventarioUbicacion = 'branch' | 'unlocated' | `warehouse:${number}
 /** Tipos del §14 más el saldo inicial, tipo legado que se conserva con su nombre. */
 export type TOperacionTipo = TInventoryOperationType | 'initial_balance';
 
-export interface IOperacionTipoInfo {
+interface IOperacionTipoInfo {
 	label: string;
 	icon: TIcons;
 	/** Fondo del icono, igual que los KPI. */
@@ -172,51 +183,38 @@ const isEstado = (value: string | null): value is TInventoryStockStatusFilter =>
 	value !== null && (ESTADOS as readonly string[]).includes(value);
 const isOrden = (value: string | null): value is TInventoryStockSort =>
 	value !== null && (ORDENES as readonly string[]).includes(value);
-const isVista = (value: string | null): value is TInventarioVista =>
+export const isInventarioVista = (value: string | null): value is TInventarioVista =>
 	value !== null && (VISTAS as readonly string[]).includes(value);
-
-/** Fecha de negocio `AAAA-MM-DD` que existe en el calendario. */
-const isBusinessDate = (value: string | null): value is string => {
-	const match = value === null ? null : /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-	if (!match) return false;
-	const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
-	const date = new Date(Date.UTC(year, month - 1, day));
-	return date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
-};
-
-const positiveInt = (value: string | null, fallback: number): number => {
-	const parsed = Number(value);
-	return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-};
 
 /**
  * Lee los filtros de la URL. Un valor desconocido cae al valor por defecto en
  * vez de romper la vista: los enlaces viejos o editados a mano siguen abriendo.
  */
 export const parseInventarioFilters = (params: URLSearchParams): IInventarioFilters => {
-	const bodega = params.get('bodega');
+	const bodega = parseIdParam(params.get('bodega'));
 	let ubicacion: TInventarioUbicacion = 'branch';
 	if (params.get('sin_ubicacion') === '1') ubicacion = 'unlocated';
-	else if (bodega !== null && /^[1-9]\d*$/.test(bodega))
-		ubicacion = `warehouse:${Number(bodega)}`;
+	else if (bodega !== null) ubicacion = locationToken(bodega);
 
 	const vista = params.get('vista');
 	const estado = params.get('estado');
 	const orden = params.get('orden');
 	const tipo = params.get('tipo');
-	const desde = params.get('desde');
-	const hasta = params.get('hasta');
 	return {
-		vista: isVista(vista) ? vista : 'general',
+		vista: isInventarioVista(vista) ? vista : 'general',
 		ubicacion,
 		estado: isEstado(estado) ? estado : null,
 		busqueda: params.get('q') ?? '',
 		orden: isOrden(orden) ? orden : 'name',
 		tipo: isOperacionTipo(tipo) ? tipo : null,
-		desde: isBusinessDate(desde) ? desde : '',
-		hasta: isBusinessDate(hasta) ? hasta : '',
-		page: positiveInt(params.get('page'), 1),
-		perPage: positiveInt(params.get('per_page'), INVENTARIO_PER_PAGE_DEFAULT),
+		desde: parseBusinessDateParam(params.get('desde')),
+		hasta: parseBusinessDateParam(params.get('hasta')),
+		page: parsePageParam(params.get('page'), 1),
+		perPage: parsePageParam(
+			params.get('per_page'),
+			INVENTARIO_PER_PAGE_DEFAULT,
+			LIST_MAX_PER_PAGE,
+		),
 	};
 };
 
@@ -226,7 +224,7 @@ export const serializeInventarioFilters = (filtros: IInventarioFilters): URLSear
 	if (filtros.vista !== 'general') params.set('vista', filtros.vista);
 	if (filtros.ubicacion === 'unlocated') params.set('sin_ubicacion', '1');
 	else if (filtros.ubicacion !== 'branch')
-		params.set('bodega', filtros.ubicacion.slice('warehouse:'.length));
+		params.set('bodega', String(warehouseIdFromToken(filtros.ubicacion)));
 	if (filtros.estado) params.set('estado', filtros.estado);
 	if (filtros.busqueda.trim()) params.set('q', filtros.busqueda);
 	if (filtros.orden !== 'name') params.set('orden', filtros.orden);
@@ -239,17 +237,10 @@ export const serializeInventarioFilters = (filtros: IInventarioFilters): URLSear
 	return params;
 };
 
+/** `branch` no acota: toda la sucursal. */
 export const inventoryLocationParams = (
 	ubicacion: TInventarioUbicacion,
-): IInventoryStockListParams => {
-	if (ubicacion === 'unlocated') return { unlocated: 1 };
-	if (ubicacion.startsWith('warehouse:'))
-		return { warehouse_id: Number(ubicacion.slice('warehouse:'.length)) };
-	return {};
-};
-
-export const ubicacionFromWarehouseId = (warehouseId: number | null): TInventarioUbicacion =>
-	warehouseId === null ? 'unlocated' : `warehouse:${warehouseId}`;
+): IInventoryStockListParams => (ubicacion === 'branch' ? {} : locationStockParams(ubicacion));
 
 /** Filtros de la pestaña Trazabilidad como parámetros del §14, acotados a la sucursal activa. */
 export const trazabilidadParams = (
