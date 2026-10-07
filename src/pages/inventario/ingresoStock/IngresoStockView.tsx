@@ -18,7 +18,7 @@ import {
 	QuickProductModal,
 	FinalizeAdjustmentModal,
 	BrandDedupModal,
-	ProductDetailCard, // @Full_React: Importamos card de detalle
+	ProductDetailCard,
 } from './components';
 
 import { useIngresoStock } from './hooks/useIngresoStock';
@@ -92,11 +92,10 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 			<Container>
 				<div className='flex flex-col gap-6 py-8'>
 					{/*
-					 * Card 08 (ZF-113): esta pantalla convive con las tres del contrato
-					 * nuevo mientras el backend no publique sus endpoints. No cambia de
-					 * comportamiento; sólo deriva a la pantalla correcta de cada caso.
-					 * Va detrás del flag porque, con los mocks apagados, las tres
-					 * destinos sólo saben decir «no habilitado».
+					 * Esta pantalla convive con Recepciones, Traslados internos y Ajuste
+					 * de inventario hasta que el backend publique sus endpoints; el aviso
+					 * sólo deriva a la correcta. Va detrás del flag porque, con los mocks
+					 * apagados, esos tres destinos sólo saben decir «no habilitado».
 					 */}
 					{INVENTORY_STOCK_USE_MOCKS && (
 						<Alert
@@ -177,7 +176,6 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 							</Card>
 						</div>
 
-						{/* COLUMNA DERECHA: Card Detalle de Producto (Fase 1) */}
 						{isDetailVisible && selectedProduct && (
 							<div className='col-span-1 lg:col-span-5'>
 								<ProductDetailCard
@@ -193,7 +191,6 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 						)}
 					</div>
 
-					{/* ─── Zona de Trabajo (Fase 3: full-width, abajo) ─── */}
 					{isWorkspaceOpen && (
 						<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
 							<div className='col-span-1 lg:col-span-12'>
@@ -266,14 +263,11 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 									</CardBody>
 								</Card>
 							</div>
-
-							{/* Opcional: Podríamos re-utilizar la columna de col-span-5 para formulario de datos aquí si quisiéramos replicar el diseño exacto o simplemente dejarlo flotante. */}
 						</div>
 					)}
 				</div>
 			</Container>
 
-			{/* Modales Controlados */}
 			<QuickProductModal
 				isOpen={modals.isQuickProductModalOpen}
 				onClose={actions.closeQuickProductModal}

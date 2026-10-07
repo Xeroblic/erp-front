@@ -1,6 +1,3 @@
-// src/config/pages.config.ts
-
-import { id } from 'date-fns/locale';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 
 /* =================================================
@@ -98,7 +95,6 @@ export const authPages = {
    PÁGINAS PRIVADAS - MÓDULOS ERP
    ================================================= */
 
-// src/config/pages.config.ts
 export const privatePages = {
 	dashboard: {
 		id: 'dashboard',
@@ -219,12 +215,10 @@ export const privatePages = {
 		to: '/inventario',
 		text: 'Inventario',
 		icon: 'DuoBox3',
-		// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`): el
-		// allowlist de nombres de rol dejaba fuera a perfiles que sí tienen los
-		// permisos del flujo. Cada permiso abre al menos una subpágina —
-		// `view-warehouse` Bodegas, `edit-product` Ingreso de Stock,
-		// `view-inventory-movements` Trazabilidad, `view-product` Catálogo del
-		// contrato — así que basta con cualquiera de ellos para mostrar la sección.
+		// Gateado solo por permiso, no por allowlist de nombres de rol: cada permiso
+		// abre al menos una subpágina — `view-warehouse` Bodegas, `edit-product`
+		// Ingreso de Stock, `view-inventory-movements` Trazabilidad, `view-product`
+		// Catálogo del contrato — así que basta con cualquiera para mostrar la sección.
 		// Este nodo no gatea ninguna ruta (ver `contentRoutes.tsx`): sólo decide la
 		// visibilidad del menú, que el aside evalúa con OR. Ampliarlo acá no le
 		// quita la ruta a nadie.
@@ -256,11 +250,9 @@ export const privatePages = {
 				to: '/inventario/trazabilidad-subsidiary',
 				text: 'Trazabilidad de Sucursal',
 				icon: 'HeroArrowsRightLeft',
-				// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`).
 				// El permiso es el de la API que alimenta la vista: consume
-				// `inventorySlice` → GET /branches/{id}/inventory-movements. Antes
-				// pedía `view-transfer`, que pertenece a Transferencias Comerciales:
-				// el gate y el endpoint quedaban desalineados en ambos sentidos.
+				// `inventorySlice` → GET /branches/{id}/inventory-movements. No es
+				// `view-transfer`, que pertenece a Transferencias Comerciales.
 				authority: ['view-inventory-movements'],
 				requireAll: false,
 			},
@@ -272,8 +264,6 @@ export const privatePages = {
 				// La vista necesita ambos permisos para ser útil: `view-product` carga
 				// el catálogo y el detalle en la sucursal destino; `edit-product`
 				// autoriza el POST de ajustes que cierra el flujo.
-				// Antes iba con `authority: []`, lo que dejaba la ruta accesible por
-				// URL directa a cualquier usuario autenticado.
 				authority: ['view-product', 'edit-product'],
 				requireAll: true,
 			},
@@ -282,8 +272,8 @@ export const privatePages = {
 				to: '/inventario/abastecimiento/catalogo',
 				text: 'Catálogo del contrato',
 				icon: 'HeroCube',
-				// Pantalla de referencia del módulo de abastecimiento (PR #67 del
-				// backend): sólo lee fixtures locales, no escribe ni consulta nada.
+				// Pantalla de referencia del módulo de abastecimiento: sólo lee
+				// fixtures locales, no escribe ni consulta nada.
 				// `view-product` es el permiso de lectura que el contrato asigna a
 				// stock y recepciones, así que es el mismo que abre esta vista.
 				authority: ['view-product'],
@@ -295,9 +285,8 @@ export const privatePages = {
 				// «de compras» lo distingue de Catálogos › Proveedores (revisión técnica).
 				text: 'Proveedores de compras',
 				icon: 'HeroBuildingStorefront',
-				// Card 02 del módulo de abastecimiento (mock, PR #67 del backend):
-				// maestro de proveedores comerciales de compras. Permiso propio de la
-				// sección 15 del contrato, no el de `Supplier` de revisión técnica.
+				// Permiso propio de la sección 15 del contrato, no el de `Supplier` de
+				// revisión técnica.
 				authority: ['view-procurement-supplier'],
 				requireAll: true,
 			},
@@ -316,9 +305,7 @@ export const privatePages = {
 				to: '/inventario/abastecimiento/documentos-compra',
 				text: 'Documentos de compra',
 				icon: 'HeroDocumentText',
-				// Card 03 del módulo de abastecimiento (mock, PR #67 del backend):
-				// documentos de compra (boleta/factura). Permiso propio de la sección
-				// 15 del contrato — bloqueada por la card 02 (proveedores).
+				// Permiso propio de la sección 15 del contrato.
 				authority: ['view-purchase-document'],
 				requireAll: true,
 			},
@@ -337,10 +324,8 @@ export const privatePages = {
 				to: '/inventario/abastecimiento/recepciones',
 				text: 'Recepciones',
 				icon: 'HeroInboxArrowDown',
-				// Card 05 del módulo de abastecimiento (mock, PR #67 del backend):
-				// recepciones físicas, alta, publicación asíncrona y estados.
-				// Permiso de lectura de la sección 15 del contrato — bloqueada por la
-				// card 03 (documentos de compra).
+				// Permiso de lectura de la sección 15 del contrato; las acciones de
+				// escritura llevan su propio guard en la vista.
 				authority: ['view-product'],
 				requireAll: true,
 			},
@@ -362,10 +347,6 @@ export const privatePages = {
 				to: '/inventario/abastecimiento/ajustes-traslados',
 				text: 'Ajustes y traslados',
 				icon: 'HeroArrowsRightLeft',
-				// Card 08 del módulo de abastecimiento (mock, PR #67 del backend): una
-				// página con dos pestañas (`?tab=ajuste|traslado`) — corrección de
-				// conteo con motivo auditado y traslado entre ubicaciones de la MISMA
-				// sucursal. Las rutas previas `/ajustes` y `/traslados` redirigen acá.
 				// La sección 15 del contrato pide `edit-product` para traslados y
 				// ajustes, pero la ruta declara sólo `view-product`: `AuthorityCheck`
 				// exige TODOS los permisos del arreglo, así que sumarlo acá le
@@ -408,7 +389,7 @@ export const privatePages = {
 				to: '/inventario/retiros-equipos',
 				text: 'Retiros de equipos',
 				icon: 'HeroArchiveBox',
-				// Gateado solo por permiso (ZB-83): un warehouse-employee arma y
+				// Gateado solo por permiso: un warehouse-employee arma y
 				// devuelve retiros sin aparecer en un allowlist de nombres de rol.
 				authority: [ERP_PERMISSIONS.WITHDRAWALS.VIEW],
 				requireAll: false,
@@ -424,7 +405,7 @@ export const privatePages = {
 		to: '/comercial',
 		text: 'Comercial',
 		icon: 'DuoBag',
-		// Gateado solo por permiso (ZF-15): incluye view-sale (rol comercial clásico) y
+		// Gateado solo por permiso: incluye view-sale (rol comercial clásico) y
 		// DEFERRED_PAYMENTS.VIEW para que roles como Cobranza, que no aparecen en un
 		// allowlist de nombres de rol, puedan ver la sección y su subpágina Pagos diferidos.
 		authority: ['view-sale', ERP_PERMISSIONS.DEFERRED_PAYMENTS.VIEW],
@@ -501,16 +482,8 @@ export const privatePages = {
 				to: '/comercial/enlaces',
 				text: 'Enlaces Públicos',
 				icon: 'DuoShare',
-				authority: ['view-sale'], // Mismos permisos que ventas
-				roles: [
-					'super-admin',
-					// 'admin',
-					// 'company-admin',
-					// 'subsidiary-admin',
-					// 'branch-admin',
-					// 'manager',
-					// 'salesperson',
-				],
+				authority: ['view-sale'],
+				roles: ['super-admin'],
 			},
 			solicitudes: {
 				id: 'solicitudesBandeja',
@@ -599,7 +572,7 @@ export const privatePages = {
 				to: '/comercial/pagos-diferidos',
 				text: 'Pagos diferidos',
 				icon: 'HeroBanknotes',
-				// Gateado solo por permiso (ZF-15): un rol como Cobranza opera el módulo
+				// Gateado solo por permiso: un rol como Cobranza opera el módulo
 				// completo sin necesidad de aparecer en un allowlist de nombres de rol.
 				authority: [ERP_PERMISSIONS.DEFERRED_PAYMENTS.VIEW],
 				requireAll: false,
@@ -860,7 +833,7 @@ export const privatePages = {
 				id: 'technicalRefactor',
 				to: '/technical-reviews/refactor',
 				text: 'Revisiones Técnicas',
-				icon: 'DuoClipboard', // Using a clipboard icon
+				icon: 'DuoClipboard',
 				authority: ['view-technical-reviews-batches'],
 				roles: [
 					'super-admin',
@@ -881,7 +854,7 @@ export const privatePages = {
 				id: 'technicalLotes',
 				to: '/technical-reviews/lotes',
 				text: 'Revisiones por lotes',
-				icon: 'DuoClipboard', // Using a clipboard icon
+				icon: 'DuoClipboard',
 				authority: ['view-technical-reviews-batches'],
 				roles: [
 					'super-admin',
@@ -925,16 +898,7 @@ export const privatePages = {
 				text: 'Casilleros',
 				icon: 'DuoLockClosed',
 				authority: ['view-technical-reviews-batches'],
-				roles: [
-					'super-admin',
-					// 'admin',
-					// 'company-admin',
-					// 'subsidiary-admin',
-					// 'branch-admin',
-					// 'company-supervisor',
-					// 'employee',
-					// 'technician',
-				],
+				roles: ['super-admin'],
 			},
 		},
 	},
@@ -944,9 +908,8 @@ export const privatePages = {
 		to: '/catalogos',
 		text: 'Catálogos',
 		icon: 'DuoArchive',
-		// Gateado solo por permiso (mismo criterio que ZF-15 en `commercial`): el
-		// allowlist de nombres de rol ocultaba la sección a perfiles que sí tienen
-		// `view-product`, que es lo que realmente habilita el catálogo.
+		// Gateado solo por permiso: el allowlist de nombres de rol ocultaba la sección
+		// a perfiles que sí tienen `view-product`, que es lo que habilita el catálogo.
 		authority: ['view-product'],
 		requireAll: false,
 		subPages: {
@@ -1148,11 +1111,7 @@ export const dashboardQuickLinksConfig: QuickLinkConfig[] = [
 		section: 'commercial',
 		items: ['sales', 'quotes', 'clientesVentas', 'pagosDiferidos', 'carteraCredito'],
 	},
-	// { section: 'inventory' },
-	// { section: 'manage' },
-	// { section: 'humanResources' },
 	{ section: 'reports' },
-	// { section: 'integrations' },
 ];
 
 export const pagesConfig = { ...authPages, ...privatePages };
