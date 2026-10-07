@@ -82,7 +82,9 @@ const UrlProbe = () => {
 const createWrapper = (initialEntry: string) => {
 	const store = configureStore({ reducer: { stockReceipts: stockReceiptsReducer } });
 	const Wrapper = ({ children }: PropsWithChildren) => (
-		<MemoryRouter initialEntries={[initialEntry]}>
+		// Mismo flag que el `BrowserRouter` de la app: la URL se actualiza en
+		// una transición, después que el estado urgente del hook.
+		<MemoryRouter initialEntries={[initialEntry]} future={{ v7_startTransition: true }}>
 			<Provider store={store}>
 				{children}
 				<UrlProbe />

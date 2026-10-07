@@ -50,7 +50,7 @@ const useRecepciones = () => {
 	 * retiene la petición nueva. Sin filial activa, el thunk rechaza con
 	 * `listSubsidiaryId = null` y ese error sí es de este contexto.
 	 */
-	const isCurrentSubsidiaryData = listSubsidiaryId !== null && listSubsidiaryId === subsidiaryId;
+	const isCurrentSubsidiaryData = listSubsidiaryId === subsidiaryId;
 	const items = isCurrentSubsidiaryData ? rawItems : NO_ROWS;
 	const meta = isCurrentSubsidiaryData ? rawMeta : null;
 	const error = isCurrentSubsidiaryData ? rawError : null;
@@ -90,21 +90,27 @@ const useRecepciones = () => {
 	/**
 	 * Otra filial es otro listado: la página puede no existir y la bodega es de
 	 * la anterior. Se descartan en el mismo render —la petición nunca sale con
-	 * ellos— y la URL se alinea en el efecto. Pasar de `null` a una filial no
-	 * es un cambio: es el perfil que terminó de cargar, y un enlace con
-	 * `?warehouse_id=` debe sobrevivirlo.
+	 * ellos— y siguen descartados hasta que la URL los refleje: el router
+	 * aplica `setSearchParams` en una transición (`v7_startTransition`), después
+	 * del estado de este hook. Pasar de `null` a una filial no es un cambio: es
+	 * el perfil que terminó de cargar, y un enlace con `?warehouse_id=` debe
+	 * sobrevivirlo.
 	 */
 	const [filtersSubsidiaryId, setFiltersSubsidiaryId] = useState(subsidiaryId);
 	const isSubsidiarySwitch = filtersSubsidiaryId !== null && filtersSubsidiaryId !== subsidiaryId;
+	const isUrlReset = urlFilters.page === 1 && urlFilters.warehouseId === '';
 	const filters = useMemo(
 		() => (isSubsidiarySwitch ? { ...urlFilters, ...SUBSIDIARY_RESET } : urlFilters),
 		[isSubsidiarySwitch, urlFilters],
 	);
 	useEffect(() => {
 		if (filtersSubsidiaryId === subsidiaryId) return;
-		if (isSubsidiarySwitch) update(SUBSIDIARY_RESET);
+		if (isSubsidiarySwitch && !isUrlReset) {
+			update(SUBSIDIARY_RESET);
+			return;
+		}
 		setFiltersSubsidiaryId(subsidiaryId);
-	}, [filtersSubsidiaryId, isSubsidiarySwitch, subsidiaryId, update]);
+	}, [filtersSubsidiaryId, isSubsidiarySwitch, isUrlReset, subsidiaryId, update]);
 
 	const { search, status, warehouseId, receivedFrom, receivedTo, page, perPage } = filters;
 	const [debouncedSearch] = useDebounce(search, 300);
