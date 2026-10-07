@@ -1,7 +1,5 @@
 import * as Yup from 'yup';
 
-// ==================== Form Schemas (Yup) ====================
-
 export const WarehouseSchema = Yup.object({
 	name: Yup.string()
 		.min(3, 'El nombre debe tener al menos 3 caracteres')
@@ -29,8 +27,6 @@ export const WarehouseSchema = Yup.object({
 	is_active: Yup.boolean().optional(),
 	requires_serial_tracking: Yup.boolean().optional(),
 });
-
-// ==================== Form Interfaces ====================
 
 export interface ICreateWarehouseForm {
 	name: string;
@@ -60,8 +56,6 @@ export const CREATE_WAREHOUSE_INITIAL_VALUES: ICreateWarehouseForm = {
 	requires_serial_tracking: false,
 };
 
-// ==================== Listado ====================
-
 /** «Todas» no es una opción: es la ausencia de filtro (`null`). */
 export type TBodegaEstadoFiltro = 'active' | 'inactive';
 
@@ -77,8 +71,6 @@ export interface IBodegasResumen {
 	units: number;
 	nearCapacity: number;
 }
-
-// ==================== Ficha ====================
 
 /** KPI de la ficha de bodega, sobre los productos asociados a ella. */
 export interface IFichaBodegaResumen {
