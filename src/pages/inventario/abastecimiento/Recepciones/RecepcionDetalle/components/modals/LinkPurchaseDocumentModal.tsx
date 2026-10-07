@@ -23,7 +23,7 @@ import type {
 } from '@/interface/procurement.interface';
 
 /**
- * `PUT .../purchase-document` (card 07, sección 8): vinculación posterior de
+ * `PUT .../purchase-document` (sección 8 del contrato): vinculación posterior de
  * un documento confirmado a una recepción `posted` que se creó sin uno.
  * Vínculo único, no sustituible — este modal sólo se abre desde
  * `allowed_actions`, que ya deja de ofrecer la acción en cuanto la recepción
@@ -110,7 +110,7 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 	const handleClose = () => {
 		if (idempotentWrite.isSubmitting) return;
 		setIsOpen(false);
-		// Hallazgo 8: con un resultado incierto (`canRetry`), conserva la
+		// Con un resultado incierto (`canRetry`), conserva la
 		// selección y la clave para poder reabrir y reintentar exactamente el
 		// mismo comando en vez de perderlo.
 		if (!idempotentWrite.canRetry) {

@@ -47,8 +47,8 @@ export interface IPendingIngress {
 }
 
 /**
- * Formik + `useIdempotentWrite` del alta y corrección de recepción (card 05,
- * sección 7). Un solo hook para las dos, igual que
+ * Formik + `useIdempotentWrite` del alta y corrección de recepción
+ * (sección 7 del contrato). Un solo hook para las dos, igual que
  * `usePurchaseDocumentForm`: el contrato usa el mismo cuerpo de líneas en
  * `POST` y en los campos editables de `PATCH`.
  *
@@ -82,7 +82,7 @@ interface IUseStockReceiptFormArgs {
 	etag?: string | null;
 	/** Sólo en alta: preselecciona modo «con documento» y ese documento. */
 	initialDocumentId?: number;
-	/** Sucursales autorizadas del actor (hallazgo 5); `null`/vacío no filtra. */
+	/** Sucursales autorizadas del actor; `null`/vacío no filtra. */
 	authorizedBranchIds?: number[] | null;
 	onSuccess?: (receipt: IStockReceipt) => void;
 }
@@ -209,9 +209,9 @@ const useStockReceiptForm = ({
 		outcome: TIngressOutcome,
 		resetForm: (nextState?: { values: IStockReceiptFormValues }) => void,
 	) => {
-		// Hallazgo 3 aplicado al segundo paso: con otra filial activa no se
-		// navega ni se cierra como si fuera de este contexto. Un resultado
-		// definitivo ya renovó la clave; uno incierto se conserva con su filial.
+		// Con otra filial activa no se navega ni se cierra como si fuera de este
+		// contexto. Un resultado definitivo ya renovó la clave; uno incierto se
+		// conserva con su filial.
 		if (subsidiaryIdRef.current !== ownerSubsidiaryId) {
 			if (outcome.kind === 'uncertain') {
 				setPendingIngress({ receipt: saved, subsidiaryId: ownerSubsidiaryId });
@@ -247,9 +247,8 @@ const useStockReceiptForm = ({
 		enableReinitialize: true,
 		validationSchema: stockReceiptFormSchema,
 		onSubmit: async (values, { resetForm, setFieldError }) => {
-			// Hallazgo 4: revalida al confirmar, no sólo al abrir — cubre un
-			// permiso o contexto (filial/sucursal) que cambió con el formulario
-			// ya abierto. La ruta sólo exige `view-product`; escribir exige
+			// Revalida al confirmar, no sólo al abrir: el permiso o el contexto
+			// (filial/sucursal) pudo cambiar con el formulario ya abierto. La ruta sólo exige `view-product`; escribir exige
 			// `edit-product` con el scope de la sucursal/filial de destino.
 			if (
 				!authorize({ permission: 'edit-product', scope: 'access', branchId, subsidiaryId })
@@ -286,10 +285,10 @@ const useStockReceiptForm = ({
 				return;
 			}
 
-			// Hallazgo 3: si la filial cambia mientras esta escritura sigue en
-			// vuelo, la continuación no debe navegar ni cerrar el modal de un
-			// contexto que ya no es el activo — la operación se completó, pero
-			// para la filial con la que se envió, no con la que quedó activa.
+			// Si la filial cambia mientras esta escritura sigue en vuelo, la
+			// continuación no debe navegar ni cerrar el modal de un contexto que
+			// ya no es el activo: la operación se completó para la filial con la
+			// que se envió.
 			const submittedSubsidiaryId = subsidiaryId;
 
 			const result = await idempotentWrite.submit((headers) =>
@@ -448,8 +447,7 @@ const useStockReceiptForm = ({
 		 * PROGRESS`): el hook expone esto para que la vista bloquee el
 		 * formulario y conserve `formik.values` intactos hasta que el usuario
 		 * reintente con el mismo comando — un reintento debe reenviar
-		 * exactamente lo que se envió, nunca datos editados a mitad de camino
-		 * (hallazgo 8).
+		 * exactamente lo que se envió, nunca datos editados a mitad de camino.
 		 */
 		canRetry: idempotentWrite.canRetry,
 		reset,

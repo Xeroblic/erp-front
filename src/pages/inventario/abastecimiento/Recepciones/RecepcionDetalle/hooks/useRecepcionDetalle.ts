@@ -95,15 +95,11 @@ const useRecepcionDetalle = () => {
 	const [isLinkDocumentModalOpen, setIsLinkDocumentModalOpen] = useState(false);
 
 	/**
-	 * Cierra los overlays **durante el render**, no en un efecto posterior
-	 * (hallazgo 3): un `useEffect` corre después de pintar, así que el primer
-	 * render tras cambiar de recepción/filial alcanzaba a mostrar el modal
-	 * abierto todavía con el `receipt`/`etag` viejos antes de que el efecto lo
-	 * cerrara. Ajustar estado en el cuerpo del componente cuando cambia una
-	 * prop de identidad es un patrón soportado por React: si el valor difiere
-	 * del último render, React descarta ese render y vuelve a renderizar con
-	 * el estado ya corregido antes de pintar — nunca llega a verse el frame
-	 * intermedio.
+	 * Cierra los overlays **durante el render**, no en un efecto: un
+	 * `useEffect` corre después de pintar, y el primer render tras cambiar de
+	 * recepción/filial mostraría el modal abierto con el `receipt`/`etag`
+	 * viejos. Ajustar estado en el cuerpo cuando cambia una prop de identidad
+	 * hace que React descarte ese render y repinte con el estado corregido.
 	 */
 	const lastResourceKeyRef = useRef(resourceKey);
 	if (lastResourceKeyRef.current !== resourceKey) {
@@ -135,7 +131,7 @@ const useRecepcionDetalle = () => {
 
 	/**
 	 * El error se muestra desde `onError`, no releyendo `postWrite.error`
-	 * después del `await` (hallazgo 7): `postWrite` acá es el objeto del
+	 * después del `await`: `postWrite` acá es el objeto del
 	 * render en que se creó este `handlePost` — un cierre cerrado antes de
 	 * que la escritura terminara —, así que su `.error` nunca refleja el
 	 * fallo que esa misma llamada acaba de producir. `onError` entrega el

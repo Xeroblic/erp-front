@@ -11,9 +11,13 @@ import type {
 /**
  * Documentos confirmados para el `Select` del alta «con documento» y, una
  * vez elegido uno, su ficha completa (para las líneas con
- * `remaining_quantity` y el costo derivado). Llama al servicio directamente
- * — es sólo una lista/ficha de apoyo para este formulario, no el `current`
- * de la pantalla de Documentos de compra.
+ * `remaining_quantity` y el costo derivado). Es sólo una lista/ficha de apoyo
+ * para este formulario, no el `current` de la pantalla de Documentos de compra.
+ *
+ * Lee del doble de documentos, no de `purchaseDocuments.service` (que ya usa
+ * la API real): Recepciones sigue simulada (`STOCK_RECEIPTS_USE_TEST_SUPPLIERS`)
+ * y su servicio sólo reconoce los documentos de esa semilla. Pasa a la fachada
+ * real junto con las rutas de recepciones.
  */
 const usePurchaseDocumentPicker = (
 	subsidiaryId: number | null,
@@ -27,9 +31,7 @@ const usePurchaseDocumentPicker = (
 		if (!isEnabled || subsidiaryId === null) return undefined;
 
 		let cancelled = false;
-		// Hallazgo 3: no dejar la lista de la filial anterior visible mientras
-		// se pide la nueva — sin esto, cambiar de filial con el modal abierto
-		// mostraba documentos ajenos hasta que la petición nueva resolviera.
+		// No deja la lista de la filial anterior visible mientras se pide la nueva.
 		setDocuments([]);
 		setLoadingDocuments(true);
 		listPurchaseDocuments(subsidiaryId, { status: 'confirmed', per_page: 100 })

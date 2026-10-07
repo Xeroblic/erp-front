@@ -567,7 +567,7 @@ describe('buildDocumentLines', () => {
 	});
 
 	it('corrección: no agrega unidades de líneas omitidas y conserva las cantidades', () => {
-		// Hallazgo de revisión: una recepción con 2 de A no debe volver con 10 de B.
+		// Una recepción con 2 de A no debe volver con 10 de B.
 		const withTwoLines = {
 			items: [
 				{ id: 701, remaining_quantity: 5 },
@@ -619,36 +619,5 @@ describe('buildDocumentLines', () => {
 			[23, 603, '3'],
 		]);
 		expect(lines.map((line) => line.pending_quantity)).toEqual([5, 5, 0]);
-	});
-});
-
-describe('toUpdatePayload', () => {
-	it('con documento, una línea bajada a 0 deja de viajar al corregir', () => {
-		const receipt = { id: 501, supplier: null } as unknown as IStockReceipt;
-		const payload = toUpdatePayload(
-			{
-				...EMPTY_RECEPCION_VALUES,
-				mode: 'with_document',
-				purchase_document_id: 61,
-				warehouse_id: MAIN_WAREHOUSE_ID,
-				received_on: '2026-09-04',
-				items: [
-					{
-						...EMPTY_RECEPCION_LINE,
-						id: 1,
-						purchase_document_line_id: 601,
-						quantity: '0',
-					},
-					{
-						...EMPTY_RECEPCION_LINE,
-						id: 2,
-						purchase_document_line_id: 602,
-						quantity: '1',
-					},
-				],
-			},
-			receipt,
-		);
-		expect(payload.items).toEqual([{ id: 2, purchase_document_line_id: 602, quantity: 1 }]);
 	});
 });

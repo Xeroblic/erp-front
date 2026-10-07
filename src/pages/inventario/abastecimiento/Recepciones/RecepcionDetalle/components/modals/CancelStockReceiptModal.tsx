@@ -49,7 +49,7 @@ const CancelStockReceiptModal: React.FC<ICancelStockReceiptModalProps> = ({
 	const handleClose = () => {
 		if (idempotentWrite.isSubmitting) return;
 		setIsOpen(false);
-		// Hallazgo 8: con un resultado incierto (`canRetry`), conserva el
+		// Con un resultado incierto (`canRetry`), conserva el
 		// motivo y la clave — reabrir debe seguir listo para reintentar
 		// exactamente el mismo comando, no un motivo en blanco con la misma
 		// `Idempotency-Key` (eso termina en `IDEMPOTENCY_KEY_REUSED`).
