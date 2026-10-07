@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import {
+	fetchBranchProductCatalog,
 	fetchWarehouseDetail,
 	attachWarehouseProducts,
 	detachWarehouseProduct,
@@ -44,16 +44,14 @@ export const useBodegaDetail = () => {
 	const warehouse = useAppSelector((s) => s.warehouse.warehouseDetail);
 	const warehouseDetailLoading = useAppSelector((s) => s.warehouse.warehouseDetailLoading);
 	const warehouseDetailError = useAppSelector((s) => s.warehouse.warehouseDetailError);
-	const allProducts = useAppSelector((s) => s.products.items);
-	const productsLoading = useAppSelector((s) => s.products.loading);
-
-	// UI state
+	const [allProducts, setAllProducts] = useState<IProduct[]>([]);
+	const [productsLoading, setProductsLoading] = useState(false);
 	const [showAvailable, setShowAvailable] = useState(false);
 	const [productToRemove, setProductToRemove] = useState<IWarehouseProduct | null>(null);
 	const [attachProduct, setAttachProduct] = useState<IProduct | null>(null);
 	const [isAttaching, setIsAttaching] = useState(false);
 
-	// Load detail: el error queda en `warehouseDetailError` y la vista lo muestra con «Reintentar».
+	// El error queda en `warehouseDetailError` y la vista lo muestra con «Reintentar».
 	const refresh = useCallback(() => {
 		if (!branchId || warehouseId === null) return;
 		void dispatch(fetchWarehouseDetail({ branchId, warehouseId }));
@@ -63,26 +61,39 @@ export const useBodegaDetail = () => {
 		refresh();
 	}, [refresh]);
 
-	// Load products for the branch
 	useEffect(() => {
-		if (warehouseId === null || !branchId) return;
-		void dispatch(
-			fetchProductsList({
-				entityParam: 'branches',
-				entityId: branchId,
-				params: { per_page: 50 },
-			}),
-		);
+		if (warehouseId === null || !branchId) return undefined;
+		let cancelled = false;
+
+		const loadAllProducts = async () => {
+			setAllProducts([]);
+			setProductsLoading(true);
+			try {
+				const products = await dispatch(fetchBranchProductCatalog({ branchId })).unwrap();
+				if (!cancelled) setAllProducts(products);
+			} catch (e: unknown) {
+				if (cancelled) return;
+				toast.error(
+					(e as IWarehouseApiError).message ||
+						'No se pudieron cargar los productos de la sucursal',
+				);
+			} finally {
+				if (!cancelled) setProductsLoading(false);
+			}
+		};
+
+		void loadAllProducts();
+		return () => {
+			cancelled = true;
+		};
 	}, [dispatch, branchId, warehouseId]);
 
-	// Cleanup
 	useEffect(() => {
 		return () => {
 			dispatch(clearWarehouseDetail());
 		};
 	}, [dispatch]);
 
-	// Derived data
 	const associatedProductIds = useMemo(
 		() => new Set(warehouse?.products?.map((wp) => wp.id) ?? []),
 		[warehouse?.products],
@@ -114,7 +125,6 @@ export const useBodegaDetail = () => {
 		[associatedProductIds],
 	);
 
-	// Actions
 	const loadWarehouseDetail = useCallback(
 		async (targetId: number) => {
 			if (!branchId) return;

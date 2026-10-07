@@ -35,7 +35,6 @@ const AttachProductModal: React.FC<AttachProductModalProps> = ({
 	const [sync, setSync] = useState(true);
 	const [quantity, setQuantity] = useState(1);
 
-	// Reset state when modal opens
 	useEffect(() => {
 		if (isOpen) {
 			setSync(true);
@@ -45,24 +44,18 @@ const AttachProductModal: React.FC<AttachProductModalProps> = ({
 
 	if (!product) return null;
 
-	/**
-	 * Validaciones mejoradas antes de confirmar asociación
-	 */
 	const handleConfirm = async () => {
-		// Validación 1: Verificar que el producto no esté ya asociado
 		const isAlreadyAssociated = associatedProducts.some((p) => p.id === product.id);
 		if (isAlreadyAssociated) {
 			toast.warning('El producto ya está asociado a esta bodega');
 			return;
 		}
 
-		// Validación 2: Si es modo manual, validar cantidad > 0
 		if (!sync && quantity <= 0) {
 			toast.error('La cantidad debe ser mayor a 0 para el modo manual');
 			return;
 		}
 
-		// Validación 3: Si es modo auto-sync, verificar que el producto tenga stock disponible
 		if (sync) {
 			const productWithStock = allProducts.find((p) => p.id === product.id);
 			const availableStock = productWithStock?.stock ?? 0;
@@ -75,7 +68,6 @@ const AttachProductModal: React.FC<AttachProductModalProps> = ({
 			}
 		}
 
-		// Si pasa todas las validaciones, proceder con la asociación
 		await onConfirm(product.id, sync, quantity);
 	};
 

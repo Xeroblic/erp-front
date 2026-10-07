@@ -10,6 +10,7 @@ import { useBodegas } from '../hooks/useBodegas';
 
 const branchContext = vi.hoisted(() => ({ branchId: 1 as number | null }));
 const fetchData = vi.hoisted(() => vi.fn());
+const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({
@@ -20,6 +21,7 @@ vi.mock('@/hooks/useCurrentBranch', () => ({
 	}),
 }));
 vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
+vi.mock('react-toastify', () => ({ toast: toastMock }));
 vi.mock('@/store', async () => {
 	const reactRedux = await vi.importActual<typeof import('react-redux')>('react-redux');
 	return { useAppDispatch: reactRedux.useDispatch, useAppSelector: reactRedux.useSelector };
@@ -34,6 +36,43 @@ const warehouse: IWarehouse = {
 	maximum_capacity: null,
 	is_active: true,
 	requires_serial_tracking: false,
+};
+
+const renderUseBodegas = () => {
+	const store = configureStore({ reducer: { warehouse: warehouseReducer } });
+	const Wrapper = ({ children }: PropsWithChildren) => (
+		<Provider store={store}>{children}</Provider>
+	);
+	return { store, hook: renderHook(() => useBodegas(), { wrapper: Wrapper }) };
+};
+
+const listResponse = (items: IWarehouse[], page = 1, lastPage = 1) => ({
+	data: {
+		data: items,
+		meta: { total: items.length, current_page: page, per_page: 100, last_page: lastPage },
+	},
+});
+
+interface IRequest {
+	url: string;
+	method: string;
+	params?: { page?: number };
+	data?: unknown;
+}
+
+const requestsWith = (method: string): IRequest[] =>
+	fetchData.mock.calls
+		.map((call) => call[0] as IRequest)
+		.filter((request) => request.method === method);
+
+const deferred = () => {
+	let resolve: (value: unknown) => void = () => undefined;
+	let reject: (reason: unknown) => void = () => undefined;
+	const promise = new Promise((onResolve, onReject) => {
+		resolve = onResolve;
+		reject = onReject;
+	});
+	return { promise, resolve, reject };
 };
 
 describe('useBodegas con cambio de sucursal', () => {
@@ -150,5 +189,187 @@ describe('useBodegas filtros y resumen', () => {
 		act(() => hook.result.current.actions.clearFilters());
 		expect(hook.result.current.state.hasFilters).toBe(false);
 		expect(hook.result.current.state.warehouses).toHaveLength(2);
+	});
+});
+
+describe('useBodegas listado completo', () => {
+	beforeEach(() => {
+		branchContext.branchId = 1;
+		fetchData.mockReset();
+	});
+
+	it('carga todas las páginas para que filtros y resumen cubran todas las bodegas', async () => {
+		const pageOne = Array.from({ length: 100 }, (_, index) => ({
+			...warehouse,
+			id: index + 1,
+			code: `B-${index + 1}`,
+		}));
+		const lastOne: IWarehouse = {
+			...warehouse,
+			id: 101,
+			name: 'Bodega Sur',
+			code: 'SUR-101',
+			warehouse_type: 'Tránsito',
+			is_active: false,
+		};
+		fetchData.mockImplementation(({ params }: IRequest) =>
+			Promise.resolve(
+				params?.page === 2 ? listResponse([lastOne], 2, 2) : listResponse(pageOne, 1, 2),
+			),
+		);
+
+		const { hook } = renderUseBodegas();
+
+		await waitFor(() => expect(hook.result.current.state.warehouses).toHaveLength(101));
+		expect(hook.result.current.state.summary).toMatchObject({ total: 101, actives: 100 });
+		expect(hook.result.current.state.typeOptions).toEqual(['Secundaria', 'Tránsito']);
+
+		act(() => hook.result.current.actions.setGlobalFilter('sur-101'));
+		expect(hook.result.current.state.warehouses.map((w) => w.id)).toEqual([101]);
+	});
+});
+
+describe('useBodegas mutaciones', () => {
+	beforeEach(() => {
+		branchContext.branchId = 1;
+		fetchData.mockReset();
+		toastMock.success.mockReset();
+		toastMock.error.mockReset();
+	});
+
+	it('no avisa ni recarga cuando la edición termina después de cambiar de sucursal', async () => {
+		const pendingUpdate = deferred();
+		fetchData.mockImplementation(({ method }: IRequest) =>
+			method === 'patch' ? pendingUpdate.promise : Promise.resolve(listResponse([warehouse])),
+		);
+		const { hook } = renderUseBodegas();
+		await waitFor(() => expect(hook.result.current.state.warehouses).toHaveLength(1));
+
+		act(() => hook.result.current.actions.handleEdit(warehouse));
+		let submit: Promise<unknown> = Promise.resolve();
+		act(() => {
+			submit = hook.result.current.forms.edit.submitForm();
+		});
+		await waitFor(() => expect(requestsWith('patch')).toHaveLength(1));
+
+		act(() => {
+			branchContext.branchId = 2;
+			hook.rerender();
+		});
+		await act(async () => {
+			pendingUpdate.resolve({ data: { data: warehouse } });
+			await submit;
+		});
+
+		expect(toastMock.success).not.toHaveBeenCalled();
+		const branchOneLoads = requestsWith('get').filter(
+			(request) => request.url === '/branches/1/warehouses',
+		);
+		expect(branchOneLoads).toHaveLength(1);
+	});
+
+	it('no avisa el fallo de una baja que termina después de cambiar de sucursal', async () => {
+		const pendingDelete = deferred();
+		fetchData.mockImplementation(({ method }: IRequest) =>
+			method === 'delete'
+				? pendingDelete.promise
+				: Promise.resolve(listResponse([warehouse])),
+		);
+		const { hook } = renderUseBodegas();
+		await waitFor(() => expect(hook.result.current.state.warehouses).toHaveLength(1));
+
+		act(() => hook.result.current.actions.handleDelete(warehouse));
+		let confirm: Promise<boolean> = Promise.resolve(true);
+		act(() => {
+			confirm = hook.result.current.actions.confirmDelete();
+		});
+
+		act(() => {
+			branchContext.branchId = 2;
+			hook.rerender();
+		});
+		let result = true;
+		await act(async () => {
+			pendingDelete.reject({ response: { data: { message: 'fallo en sucursal 1' } } });
+			result = await confirm;
+		});
+
+		expect(result).toBe(false);
+		expect(toastMock.error).not.toHaveBeenCalled();
+	});
+
+	it('mantiene visible el listado cuando la baja falla por tener productos', async () => {
+		fetchData.mockImplementation(({ method }: IRequest) =>
+			method === 'delete'
+				? Promise.reject(
+						Object.assign(new Error('Request failed with status code 422'), {
+							response: {
+								data: {
+									message:
+										'No se puede eliminar la bodega porque tiene productos.',
+									error: 'WAREHOUSE_HAS_PRODUCTS',
+								},
+							},
+						}),
+					)
+				: Promise.resolve(listResponse([warehouse])),
+		);
+		const { hook } = renderUseBodegas();
+		await waitFor(() => expect(hook.result.current.state.warehouses).toHaveLength(1));
+
+		act(() => hook.result.current.actions.handleDelete(warehouse));
+		await act(async () => {
+			await hook.result.current.actions.confirmDelete();
+		});
+
+		expect(toastMock.error).toHaveBeenCalledWith(
+			'No se puede eliminar, tiene productos asociados',
+		);
+		expect(hook.result.current.state.error).toBeNull();
+		expect(hook.result.current.state.warehouses).toHaveLength(1);
+	});
+
+	it('la edición envía null para borrar encargado, capacidad, comuna y textos opcionales', async () => {
+		const stored: IWarehouse = {
+			...warehouse,
+			maximum_capacity: 500,
+			manager_id: 3,
+			commune_id: 9,
+			address: 'Calle 1',
+			schedule: 'L-V',
+			description: 'Bodega norte',
+		};
+		fetchData.mockImplementation(({ method }: IRequest) =>
+			Promise.resolve(
+				method === 'patch' ? { data: { data: stored } } : listResponse([stored]),
+			),
+		);
+		const { hook } = renderUseBodegas();
+		await waitFor(() => expect(hook.result.current.state.warehouses).toHaveLength(1));
+
+		act(() => hook.result.current.actions.handleEdit(stored));
+		await act(async () => {
+			await hook.result.current.forms.edit.setValues({
+				...hook.result.current.forms.edit.values,
+				maximum_capacity: null,
+				manager_id: null,
+				commune_id: null,
+				address: '',
+				schedule: '  ',
+				description: '',
+			});
+		});
+		await act(async () => {
+			await hook.result.current.forms.edit.submitForm();
+		});
+
+		expect(requestsWith('patch')[0]?.data).toMatchObject({
+			maximum_capacity: null,
+			manager_id: null,
+			commune_id: null,
+			address: null,
+			schedule: null,
+			description: null,
+		});
 	});
 });
