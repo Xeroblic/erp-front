@@ -76,6 +76,7 @@ const FiltersHarness = ({
 			onStatusChange={common.onStatusChange}
 			onClearFilters={common.onClearFilters}
 			warehouseId=''
+			warehouseOptions={[]}
 			onWarehouseIdChange={noop}
 			receivedFrom={from}
 			onReceivedFromChange={changeFrom}

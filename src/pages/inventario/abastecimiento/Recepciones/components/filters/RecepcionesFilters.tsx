@@ -1,12 +1,12 @@
 import React from 'react';
 import type { MultiValue, SingleValue } from 'react-select';
-import { procurementWarehouses } from '@/mocks/db/procurement.db';
 import DateInput from '@/components/form/DateInput';
 import Input from '@/components/form/Input';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import type { IWarehouseCompact } from '@/interface/procurement.interface';
 import type { TStockReceiptStatusFilter } from '../../types';
 
 /** Ninguno de estos selects es `isMulti`, pero `SelectReact` tipa el `onChange` genérico. */
@@ -44,6 +44,8 @@ interface IRecepcionesFiltersProps {
 	statusOptions: { value: TStockReceiptStatusFilter; label: string }[];
 	onStatusChange: (value: TStockReceiptStatusFilter) => void;
 	warehouseId: number | '';
+	/** Bodegas de las sucursales autorizadas, desde la fachada de recepciones. */
+	warehouseOptions: IWarehouseCompact[];
 	onWarehouseIdChange: (value: number | '') => void;
 	receivedFrom: string;
 	onReceivedFromChange: (value: string) => void;
@@ -62,6 +64,7 @@ const RecepcionesFilters: React.FC<IRecepcionesFiltersProps> = ({
 	statusOptions,
 	onStatusChange,
 	warehouseId,
+	warehouseOptions,
 	onWarehouseIdChange,
 	receivedFrom,
 	onReceivedFromChange,
@@ -70,10 +73,19 @@ const RecepcionesFilters: React.FC<IRecepcionesFiltersProps> = ({
 	onClearFilters,
 }) => {
 	const statusSelectOptions = withoutAllOption(statusOptions);
-	const warehouseSelectOptions: TSelectOption[] = procurementWarehouses.map((warehouse) => ({
+	const warehouseSelectOptions: TSelectOption[] = warehouseOptions.map((warehouse) => ({
 		value: String(warehouse.id),
 		label: warehouse.name,
 	}));
+	// Una bodega de la URL que no está entre las ofrecidas sigue filtrando:
+	// se muestra igual para que el select no diga «Todas» mientras filtra.
+	const selectedWarehouseOption =
+		warehouseId === ''
+			? null
+			: (warehouseSelectOptions.find((option) => option.value === String(warehouseId)) ?? {
+					value: String(warehouseId),
+					label: `Bodega #${warehouseId}`,
+				});
 
 	return (
 		<Card>
@@ -132,11 +144,7 @@ const RecepcionesFilters: React.FC<IRecepcionesFiltersProps> = ({
 							inputId='recepciones-warehouse'
 							name='warehouse_id'
 							options={warehouseSelectOptions}
-							value={
-								warehouseSelectOptions.find(
-									(option) => option.value === String(warehouseId),
-								) ?? null
-							}
+							value={selectedWarehouseOption}
 							placeholder='Todas'
 							isClearable
 							onChange={(selected) => {

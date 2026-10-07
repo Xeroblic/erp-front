@@ -16,11 +16,10 @@ import RecepcionesTable from './components/tables/RecepcionesTable';
 import StockReceiptFormModal from './components/modals/StockReceiptFormModal';
 
 /**
- * Listado de recepciones físicas (card 05, sección 7 del contrato de
- * abastecimiento). La fila resumida no trae `items`, `reason` ni
- * `processing` — esos son caros y sólo viajan en el detalle
- * (`RecepcionDetalle`), que también es donde vive editar, publicar,
- * reintentar, anular y revertir vía `AllowedActionsToolbar`.
+ * Listado de recepciones físicas (sección 7 del contrato de abastecimiento).
+ * La fila resumida no trae `items`, `reason` ni `processing` — esos son caros
+ * y sólo viajan en el detalle (`RecepcionDetalle`), que también es donde vive
+ * editar, publicar, reintentar, anular y revertir vía `AllowedActionsToolbar`.
  *
  * `?purchase_document_id=` abre el alta «con documento» ya seleccionado:
  * es el destino de `create_receipt` desde la ficha de un documento de
@@ -33,7 +32,7 @@ const RecepcionesView = () => {
 	const {
 		branchId,
 		subsidiaryId,
-		visibleBranches,
+		authorizedBranchIds,
 		items,
 		meta,
 		loading,
@@ -41,6 +40,7 @@ const RecepcionesView = () => {
 		search,
 		status,
 		warehouseId,
+		warehouseOptions,
 		receivedFrom,
 		receivedTo,
 		statusOptions,
@@ -57,9 +57,8 @@ const RecepcionesView = () => {
 
 	const { authorize } = useAuthorization();
 	/**
-	 * Mismo permiso + scope que exige `useStockReceiptForm` al enviar (hallazgo
-	 * 4): la ruta sólo pide `view-product`, así que el alta necesita su propio
-	 * guard — no basta con ocultar el botón «Nueva recepción», porque
+	 * Mismo permiso + scope que exige `useStockReceiptForm` al enviar: la ruta
+	 * sólo pide `view-product`, así que el alta necesita su propio guard — no basta con ocultar el botón «Nueva recepción», porque
 	 * `?purchase_document_id=` puede abrir el mismo formulario por URL directa
 	 * sin pasar por ese botón.
 	 */
@@ -72,15 +71,16 @@ const RecepcionesView = () => {
 
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	/**
-	 * Se llegó con `?purchase_document_id=` sin poder registrar recepciones. Vive
-	 * en estado porque el parámetro se limpia en el acto; cada intento lo vuelve
-	 * a abrir aunque se haya cerrado antes. Se deriva contra `canWriteReceipts`
-	 * para que el aviso desaparezca si el permiso llega después (cambio de
-	 * sucursal, permisos refrescados).
+	 * Documento con el que se llegó (`?purchase_document_id=`) sin poder
+	 * registrar recepciones. Vive en estado porque el parámetro se limpia en el
+	 * acto; cada intento lo vuelve a fijar aunque el aviso se haya cerrado. Si
+	 * el permiso llega después con el aviso abierto (perfil que termina de
+	 * cargar, cambio de sucursal), abre el alta que se había pedido.
 	 */
-	const [isDeniedCreateNoticeOpen, setIsDeniedCreateNoticeOpen] = useState(false);
-	const showDeniedCreateNotice = isDeniedCreateNoticeOpen && !canWriteReceipts;
+	const [deniedDocumentId, setDeniedDocumentId] = useState<string | null>(null);
+	const showDeniedCreateNotice = deniedDocumentId !== null && !canWriteReceipts;
 	const preselectedDocumentId = searchParams.get('purchase_document_id');
+	const requestedDocumentId = preselectedDocumentId ?? deniedDocumentId;
 
 	/**
 	 * La ficha recibe la query del listado para que «Volver al listado» la
@@ -99,6 +99,7 @@ const RecepcionesView = () => {
 	// Quita sólo `purchase_document_id`: los filtros del listado comparten la query.
 	const handleCloseCreateModal = (open: boolean) => {
 		setIsCreateModalOpen(open);
+		if (!open) setDeniedDocumentId(null);
 		if (!open && preselectedDocumentId) {
 			setSearchParams(
 				(previous) => {
@@ -119,22 +120,24 @@ const RecepcionesView = () => {
 		}
 		// Sin permiso no se abre el alta: se avisa y se quita el parámetro para
 		// que recargar o volver no repita el intento.
-		setIsDeniedCreateNoticeOpen(true);
 		handleCloseCreateModal(false);
+		setDeniedDocumentId(preselectedDocumentId);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [preselectedDocumentId, canWriteReceipts]);
 
+	useEffect(() => {
+		if (canWriteReceipts && deniedDocumentId !== null) setIsCreateModalOpen(true);
+	}, [canWriteReceipts, deniedDocumentId]);
+
 	/**
-	 * Revalida al vuelo (hallazgo 4): si se pierde `edit-product` o el scope
-	 * de la filial/sucursal mientras el formulario está abierto — cambio de
-	 * contexto, permisos que se refrescan — lo cierra. Corre también al
-	 * montar sin query param: sin autorización y sin nada que abrir, no pasa
-	 * de un `setState` en falso.
+	 * Revalida al vuelo: si se pierde `edit-product` o el scope de la
+	 * filial/sucursal con el formulario abierto, lo cierra. Sólo con el
+	 * formulario abierto: al montar sin permiso no debe descartar el aviso.
 	 */
 	useEffect(() => {
-		if (!canWriteReceipts) handleCloseCreateModal(false);
+		if (!canWriteReceipts && isCreateModalOpen) handleCloseCreateModal(false);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [canWriteReceipts]);
+	}, [canWriteReceipts, isCreateModalOpen]);
 
 	return (
 		<PageWrapper isProtectedRoute title='Recepciones'>
@@ -178,7 +181,7 @@ const RecepcionesView = () => {
 								variant='outline'
 								icon='HeroXMark'
 								aria-label='Cerrar aviso'
-								onClick={() => setIsDeniedCreateNoticeOpen(false)}
+								onClick={() => setDeniedDocumentId(null)}
 							/>
 						</div>
 					</Alert>
@@ -190,6 +193,7 @@ const RecepcionesView = () => {
 					statusOptions={statusOptions}
 					onStatusChange={setStatusValue}
 					warehouseId={warehouseId}
+					warehouseOptions={warehouseOptions}
 					onWarehouseIdChange={setWarehouseIdValue}
 					receivedFrom={receivedFrom}
 					onReceivedFromChange={setReceivedFromValue}
@@ -227,11 +231,9 @@ const RecepcionesView = () => {
 				setIsOpen={handleCloseCreateModal}
 				subsidiaryId={subsidiaryId}
 				branchId={branchId}
-				authorizedBranchIds={visibleBranches.map((branch) => branch.id)}
+				authorizedBranchIds={authorizedBranchIds}
 				receipt={null}
-				initialDocumentId={
-					preselectedDocumentId ? Number(preselectedDocumentId) : undefined
-				}
+				initialDocumentId={requestedDocumentId ? Number(requestedDocumentId) : undefined}
 				onSuccess={(created) => {
 					// Navega a la ficha recién creada: no hace falta refrescar un
 					// listado que se está abandonando.

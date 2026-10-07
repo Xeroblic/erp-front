@@ -22,7 +22,7 @@ vi.mock('../hooks/useRecepciones', () => ({
 	default: () => ({
 		branchId: 4,
 		subsidiaryId: 2,
-		visibleBranches: [{ id: 4, name: 'Central' }],
+		authorizedBranchIds: [4],
 		items: [],
 		meta: null,
 		loading: false,
@@ -30,6 +30,7 @@ vi.mock('../hooks/useRecepciones', () => ({
 		search: '',
 		status: '',
 		warehouseId: '',
+		warehouseOptions: [],
 		receivedFrom: '',
 		receivedTo: '',
 		statusOptions: [],
@@ -145,6 +146,34 @@ describe('RecepcionesView — alta desde ?purchase_document_id=', () => {
 
 		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 		expect(screen.getByTestId('location')).toHaveTextContent('');
+	});
+
+	it('si el permiso llega con el aviso abierto, abre el alta con ese documento', async () => {
+		authDouble.canWrite = false;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByText(DENIED_MESSAGE)).toBeInTheDocument();
+		await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(''));
+
+		authDouble.canWrite = true;
+		rerender(page(entry));
+
+		expect(await screen.findByRole('dialog', { name: 'Alta de recepción' })).toHaveTextContent(
+			'documento 9',
+		);
+		expect(screen.queryByText(DENIED_MESSAGE)).not.toBeInTheDocument();
+	});
+
+	it('cerrado el aviso, un permiso posterior ya no abre el alta', async () => {
+		authDouble.canWrite = false;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		fireEvent.click(await screen.findByRole('button', { name: 'Cerrar aviso' }));
+
+		authDouble.canWrite = true;
+		rerender(page(entry));
+
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 	});
 
 	it('sin parámetro y sin permiso no muestra el aviso', () => {
