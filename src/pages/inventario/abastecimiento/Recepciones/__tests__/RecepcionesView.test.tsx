@@ -247,6 +247,56 @@ describe('RecepcionesView — alta desde ?purchase_document_id=', () => {
 		);
 	});
 
+	it('el alta abierta con permiso desde la URL se cierra y limpia el parámetro si cambia la filial', async () => {
+		authDouble.canWrite = true;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9&status=draft';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByRole('dialog')).toHaveTextContent('documento 9');
+
+		contextDouble.subsidiaryId = 3;
+		rerender(page(entry));
+
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+		await waitFor(() =>
+			expect(screen.getByTestId('location')).toHaveTextContent('?status=draft'),
+		);
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+		expect(screen.queryByText(DENIED_MESSAGE)).not.toBeInTheDocument();
+	});
+
+	it('si cambia a una filial sin permiso con el alta de la URL abierta, no deja pendiente el documento de la anterior', async () => {
+		authDouble.canWrite = true;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByRole('dialog')).toHaveTextContent('documento 9');
+
+		contextDouble.subsidiaryId = 3;
+		authDouble.canWrite = false;
+		rerender(page(entry));
+
+		await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(''));
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+		expect(screen.queryByText(DENIED_MESSAGE)).not.toBeInTheDocument();
+
+		authDouble.canWrite = true;
+		rerender(page(entry));
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+	});
+
+	it('el alta abierta desde la URL con la filial aún sin resolver sigue abierta cuando el perfil termina de cargar', async () => {
+		authDouble.canWrite = true;
+		contextDouble.subsidiaryId = null;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByRole('dialog')).toHaveTextContent('documento 9');
+
+		contextDouble.subsidiaryId = 2;
+		rerender(page(entry));
+
+		expect(screen.getByRole('dialog')).toHaveTextContent('documento 9');
+		expect(screen.getByTestId('location')).toHaveTextContent('?purchase_document_id=9');
+	});
+
 	it('sin parámetro y sin permiso no muestra el aviso', () => {
 		authDouble.canWrite = false;
 		renderPage('/inventario/abastecimiento/recepciones');

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
@@ -129,7 +129,28 @@ const RecepcionesView = () => {
 		}
 	};
 
+	/**
+	 * `?purchase_document_id=` también es de la filial en la que se llegó. Al
+	 * cambiar de filial se descarta: se cierra el alta y se quita el parámetro.
+	 * Como quitarlo es asíncrono, el ID descartado se recuerda para que el
+	 * efecto del parámetro no lo reabra mientras siga en la URL. Pasar de
+	 * `null` a una filial es el perfil terminando de cargar, no un cambio.
+	 */
+	const lastSubsidiaryIdRef = useRef(subsidiaryId);
+	const discardedDocumentParamRef = useRef<string | null>(null);
+
 	useEffect(() => {
+		const previousSubsidiaryId = lastSubsidiaryIdRef.current;
+		lastSubsidiaryIdRef.current = subsidiaryId;
+		const isSubsidiarySwitch =
+			previousSubsidiaryId !== null && previousSubsidiaryId !== subsidiaryId;
+
+		if (isSubsidiarySwitch && preselectedDocumentId) {
+			discardedDocumentParamRef.current = preselectedDocumentId;
+			handleCloseCreateModal(false);
+			return;
+		}
+
 		if (deniedRequest === null || deniedRequest.subsidiaryId === subsidiaryId) return;
 		if (deniedRequest.subsidiaryId === null) {
 			setDeniedRequest({ ...deniedRequest, subsidiaryId });
@@ -142,7 +163,11 @@ const RecepcionesView = () => {
 	}, [subsidiaryId]);
 
 	useEffect(() => {
-		if (!preselectedDocumentId) return;
+		if (!preselectedDocumentId) {
+			discardedDocumentParamRef.current = null;
+			return;
+		}
+		if (preselectedDocumentId === discardedDocumentParamRef.current) return;
 		if (canWriteReceipts) {
 			setIsCreateModalOpen(true);
 			return;
