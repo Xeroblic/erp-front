@@ -1,13 +1,8 @@
 import type { IProcurementSupplierRutConflict } from '@/interface/procurement.interface';
 
 /**
- * Mapa de errores estables del contrato de abastecimiento (sección 16 del
- * `frontend-guide.md`, PR #67).
- *
- * El backend responde `{"message":"Texto en español","code":"CODIGO_ESTABLE"}`.
- * El `message` es el texto de autoridad; este mapa aporta la **acción** que
- * corresponde ofrecer y un texto de respaldo para cuando la respuesta no traiga
- * mensaje (timeout, error de red, respuesta truncada).
+ * El backend responde `{"message","code"}` y su `message` manda; este mapa aporta
+ * la acción a ofrecer y un texto de respaldo para cuando no llega mensaje.
  */
 
 /**
@@ -26,11 +21,9 @@ export type TProcurementErrorAction =
 	| 'blocked';
 
 export interface IProcurementErrorDefinition {
-	/** Código estable del contrato. */
 	code: string;
-	/** Estado HTTP con el que el contrato lo emite. */
 	status: number;
-	/** Texto de respaldo, sólo si la respuesta no trae `message`. */
+	/** Sólo se usa si la respuesta no trae `message`. */
 	fallbackMessage: string;
 	action: TProcurementErrorAction;
 }
@@ -42,7 +35,6 @@ const define = (
 	action: TProcurementErrorAction,
 ): IProcurementErrorDefinition => ({ code, status, fallbackMessage, action });
 
-/** Tabla completa de la sección 16, en el mismo orden del contrato. */
 export const PROCUREMENT_ERROR_DEFINITIONS: Record<string, IProcurementErrorDefinition> = {
 	SUPPLIER_RUT_ALREADY_EXISTS: define(
 		'SUPPLIER_RUT_ALREADY_EXISTS',
@@ -199,33 +191,18 @@ export const PROCUREMENT_ERROR_DEFINITIONS: Record<string, IProcurementErrorDefi
 	),
 };
 
-// Códigos propios del mock de documentos de compra (card 03), sin código
-// estable en la sección 16 del contrato — misma licencia que
-// `PROCUREMENT_SUPPLIER_NOT_FOUND` en la card 02: se usan directamente en el
-// `fail(...)` del servicio, nunca acá, para que este mapa siga copiando
-// exactamente la tabla de la sección 16 (la prueba de
-// `procurementErrors.util.test.ts` verifica ese conteo).
+// Rechazos del mock sin código estable en el contrato: se usan en el `fail(...)`
+// del servicio y quedan fuera de `PROCUREMENT_ERROR_DEFINITIONS`.
 export const PURCHASE_DOCUMENT_ITEMS_EMPTY_MESSAGE = 'El documento necesita al menos una línea.';
 export const PURCHASE_DOCUMENT_HAS_ACTIVE_RECEIPTS_MESSAGE =
 	'No se puede anular: el documento ya tiene recepciones o asignaciones de stock inicial.';
 export const PURCHASE_DOCUMENT_NOT_DRAFT_MESSAGE = 'El documento ya no está en borrador.';
 
-/**
- * Código propio del mock de vinculación posterior de documento (card 07,
- * sección 8): el contrato exige «proveedor ya conocido debe coincidir», pero
- * no da un código estable para el rechazo — misma licencia que los códigos
- * propios de documentos de compra de arriba. Se define acá, fuera de
- * `PROCUREMENT_ERROR_DEFINITIONS`, para no alterar la tabla que copia
- * literalmente la sección 16.
- */
 export const RECEIPT_DOCUMENT_SUPPLIER_MISMATCH_MESSAGE =
 	'El proveedor del documento no coincide con el proveedor ya conocido de la recepción.';
 
-/**
- * `428` no trae código estable: el contrato lo emite cuando falta la precondición
- * `If-Match`. Se trata como recarga porque el ETag vigente es lo que falta.
- */
-export const PRECONDITION_REQUIRED_STATUS = 428;
+/** `428` (falta `If-Match`) no trae código: se recarga para obtener el ETag vigente. */
+const PRECONDITION_REQUIRED_STATUS = 428;
 
 const PRECONDITION_REQUIRED_DEFINITION: IProcurementErrorDefinition = define(
 	'PRECONDITION_REQUIRED',
@@ -242,11 +219,8 @@ const GENERIC_DEFINITION: IProcurementErrorDefinition = define(
 );
 
 /**
- * Fallo de transporte: la petición salió y no volvió respuesta (timeout, red
- * caída, petición abortada). **No prueba que la escritura no haya llegado**, así
- * que la única recuperación segura es reintentar con la misma
- * `Idempotency-Key`; generar otra convierte el reintento en una segunda
- * operación.
+ * Sin respuesta no se sabe si la escritura llegó: sólo es seguro reintentar con
+ * la misma `Idempotency-Key`, porque una nueva duplicaría la operación.
  */
 const TRANSPORT_DEFINITION: IProcurementErrorDefinition = define(
 	'TRANSPORT_FAILURE',
@@ -260,12 +234,7 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
 		? (value as Record<string, unknown>)
 		: undefined;
 
-/**
- * Detecta el fallo de transporte. Vive acá, junto al resto de la clasificación,
- * para que `action` y los helpers de reintento no puedan discrepar: cuando cada
- * uno decidía por su cuenta, un timeout devolvía `fix_input` («corrige los
- * datos», que implica clave nueva) y a la vez «reintenta con la misma clave».
- */
+/** Vive junto a la clasificación para que `action` y los helpers de reintento no discrepen. */
 export const isTransportError = (error: unknown): boolean => {
 	const record = asRecord(error);
 	if (!record) return false;
@@ -284,7 +253,6 @@ const asNumber = (value: unknown): number | undefined =>
 export interface IProcurementResolvedError {
 	code: string;
 	status: number | null;
-	/** Mensaje a mostrar: el del backend si vino, si no el de respaldo. */
 	message: string;
 	action: TProcurementErrorAction;
 	/** `errors` por campo de un 422, tal como los envía Laravel. */
@@ -292,10 +260,8 @@ export interface IProcurementResolvedError {
 	/** `context` que un 409 puede traer con IDs/saldos para refrescar. */
 	context: Record<string, unknown> | null;
 	/**
-	 * `existing_supplier` del 409 `SUPPLIER_RUT_ALREADY_EXISTS` (sección 5 del
-	 * contrato). Esa respuesta es la única excepción de compatibilidad que **no**
-	 * usa el envoltorio común, así que se lee del mismo nivel que `message` y
-	 * `code`, no de `context`. `null` fuera de ese error.
+	 * Del 409 `SUPPLIER_RUT_ALREADY_EXISTS`, la única respuesta que no usa el
+	 * envoltorio común: se lee al nivel de `message`, no de `context`.
 	 */
 	existingSupplier: IProcurementSupplierRutConflict | null;
 }
@@ -330,10 +296,8 @@ const parseFieldErrors = (value: unknown): Record<string, string[]> | null => {
 };
 
 /**
- * Traduce cualquier error del módulo a `{code, message, action}`.
- *
- * Acepta el error de Axios completo, el `data` de la respuesta ya extraído, o el
- * string plano con el que un thunk rechaza vía `rejectWithValue`.
+ * Acepta el error de Axios, el `data` de la respuesta ya extraído o el string
+ * con el que un thunk rechaza vía `rejectWithValue`.
  */
 export const resolveProcurementError = (
 	error: unknown,
@@ -351,9 +315,7 @@ export const resolveProcurementError = (
 		};
 	}
 
-	// Antes de leer `code`: sin respuesta, el `code` que trae el error es el de
-	// Axios (`ECONNABORTED`, `ERR_NETWORK`), no un código estable del contrato.
-	// Presentarlo como tal haría pasar un fallo de red por un error de negocio.
+	// Sin respuesta, el `code` del error es el de Axios (`ECONNABORTED`), no uno del contrato.
 	if (isTransportError(error)) {
 		return {
 			code: TRANSPORT_DEFINITION.code,
@@ -368,8 +330,10 @@ export const resolveProcurementError = (
 
 	const errorRecord = asRecord(error);
 	const responseRecord = asRecord(errorRecord?.response);
-	// El error de Axios trae `response.data`; un `data` ya desempaquetado llega plano.
-	const dataRecord = asRecord(responseRecord?.data) ?? errorRecord;
+	// Con respuesta, el cuerpo es lo único que vale: si no es un objeto (428 vacío,
+	// HTML de un proxy), caer al error de Axios mostraría su `code` y su `message`
+	// en inglés como si fueran del contrato.
+	const dataRecord = responseRecord ? asRecord(responseRecord.data) : errorRecord;
 	const status = asNumber(responseRecord?.status) ?? asNumber(dataRecord?.status) ?? null;
 	const code = asString(dataRecord?.code);
 

@@ -185,4 +185,17 @@ describe('AllowedActionsToolbar', () => {
 		expect(screen.getByText('Sin acciones disponibles')).toBeInTheDocument();
 		expect(screen.queryByRole('button')).not.toBeInTheDocument();
 	});
+
+	it('dice que no hay acciones cuando ninguna corresponde al recurso', () => {
+		render(
+			<AllowedActionsToolbar
+				allowedActions={['confirm', 'add_attachment']}
+				resource='stock_receipt'
+				onAction={vi.fn()}
+			/>,
+		);
+
+		expect(screen.getByText('Sin acciones disponibles')).toBeInTheDocument();
+		expect(screen.queryByRole('button')).not.toBeInTheDocument();
+	});
 });

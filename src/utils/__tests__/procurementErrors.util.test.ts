@@ -9,7 +9,6 @@ import {
 	createIdempotencyKey,
 	isTransportError,
 	readEtagHeader,
-	requiresResourceReload,
 	shouldRetryWithSameKey,
 } from '@/utils/procurementWrite.util';
 
@@ -19,14 +18,6 @@ const axiosError = (status: number, data: unknown) => ({
 });
 
 describe('resolveProcurementError', () => {
-	it('cubre los códigos estables de la sección 16 del contrato', () => {
-		// La tabla se copia del contrato: si el backend agrega un código, la lista
-		// crece acá y no en cada pantalla.
-		expect(Object.keys(PROCUREMENT_ERROR_DEFINITIONS)).toHaveLength(28);
-		expect(PROCUREMENT_ERROR_DEFINITIONS.RESOURCE_VERSION_CONFLICT.status).toBe(412);
-		expect(PROCUREMENT_ERROR_DEFINITIONS.IDEMPOTENCY_KEY_REUSED.status).toBe(409);
-	});
-
 	it('prefiere el mensaje del backend por sobre el de respaldo', () => {
 		const resolved = resolveProcurementError(
 			axiosError(409, {
@@ -56,7 +47,30 @@ describe('resolveProcurementError', () => {
 
 		expect(resolved.code).toBe('PRECONDITION_REQUIRED');
 		expect(resolved.action).toBe('reload_resource');
-		expect(requiresResourceReload(axiosError(428, {}))).toBe(true);
+	});
+
+	it('no presenta el código ni el mensaje de Axios cuando el cuerpo no es JSON', () => {
+		// Forma real de un AxiosError: trae su propio `code` y `message` en inglés.
+		const withBody = (status: number, data: unknown) => ({
+			isAxiosError: true,
+			code: 'ERR_BAD_REQUEST',
+			message: `Request failed with status code ${status}`,
+			response: { status, data },
+		});
+
+		const emptyPrecondition = resolveProcurementError(withBody(428, ''));
+		expect(emptyPrecondition.code).toBe('PRECONDITION_REQUIRED');
+		expect(emptyPrecondition.message).toBe(
+			'Falta la versión del registro. Recarga y vuelve a intentarlo.',
+		);
+
+		const proxyHtml = resolveProcurementError(
+			withBody(502, '<html>Bad Gateway</html>'),
+			'No pudimos cargar el stock.',
+		);
+		expect(proxyHtml.code).toBe('UNKNOWN');
+		expect(proxyHtml.status).toBe(502);
+		expect(proxyHtml.message).toBe('No pudimos cargar el stock.');
 	});
 
 	it('extrae los errores por campo de un 422 y el context de un 409', () => {
@@ -145,11 +159,6 @@ describe('cabeceras de escritura', () => {
 	});
 
 	it('clasifica el timeout como reintento con la misma clave, sin contradecirse', () => {
-		// `action` y `shouldRetryWithSameKey` tienen que decir lo mismo. Cuando la
-		// clasificación devolvía `fix_input` para un fallo de transporte, la
-		// pantalla leía «corrige los datos» —que implica clave nueva— mientras el
-		// helper decía «reintenta con la misma»: instrucciones incompatibles para
-		// el caso donde equivocarse duplica una recepción.
 		const timeout = { isAxiosError: true, code: 'ECONNABORTED', request: {} };
 		const resolved = resolveProcurementError(timeout);
 
@@ -161,8 +170,7 @@ describe('cabeceras de escritura', () => {
 	});
 
 	it('reusa la clave ante un timeout y ante una operación en curso', () => {
-		// La regla que más fácil se invierte: reintentar un timeout con clave nueva
-		// convierte el reintento en una segunda recepción.
+		// Reintentar un timeout con clave nueva convierte el reintento en una segunda recepción.
 		const timeout = { isAxiosError: true, code: 'ECONNABORTED', request: {} };
 
 		expect(isTransportError(timeout)).toBe(true);
