@@ -212,8 +212,10 @@ describe('useBodegas listado completo', () => {
 			warehouse_type: 'Tránsito',
 			is_active: false,
 		};
-		fetchData.mockImplementation(async ({ params }: IRequest) =>
-			params?.page === 2 ? listResponse([lastOne], 2, 2) : listResponse(pageOne, 1, 2),
+		fetchData.mockImplementation(({ params }: IRequest) =>
+			Promise.resolve(
+				params?.page === 2 ? listResponse([lastOne], 2, 2) : listResponse(pageOne, 1, 2),
+			),
 		);
 
 		const { hook } = renderUseBodegas();
@@ -299,14 +301,17 @@ describe('useBodegas mutaciones', () => {
 	it('mantiene visible el listado cuando la baja falla por tener productos', async () => {
 		fetchData.mockImplementation(({ method }: IRequest) =>
 			method === 'delete'
-				? Promise.reject({
-						response: {
-							data: {
-								message: 'No se puede eliminar la bodega porque tiene productos.',
-								error: 'WAREHOUSE_HAS_PRODUCTS',
+				? Promise.reject(
+						Object.assign(new Error('Request failed with status code 422'), {
+							response: {
+								data: {
+									message:
+										'No se puede eliminar la bodega porque tiene productos.',
+									error: 'WAREHOUSE_HAS_PRODUCTS',
+								},
 							},
-						},
-					})
+						}),
+					)
 				: Promise.resolve(listResponse([warehouse])),
 		);
 		const { hook } = renderUseBodegas();

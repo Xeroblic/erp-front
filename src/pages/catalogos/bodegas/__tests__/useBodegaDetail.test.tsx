@@ -53,17 +53,17 @@ const detail: IWarehouseDetail = {
 
 describe('useBodegaDetail catálogo de productos', () => {
 	it('recorre todas las páginas de productos de la sucursal', async () => {
-		fetchData.mockImplementation(async ({ url, params }: IRequest) => {
-			if (url.endsWith('/detail')) return { data: { data: detail } };
+		fetchData.mockImplementation(({ url, params }: IRequest) => {
+			if (url.endsWith('/detail')) return Promise.resolve({ data: { data: detail } });
 			const page = params?.page ?? 1;
 			const ids =
-				page === 1 ? Array.from({ length: 100 }, (_, index) => index + 1) : [101, 102];
-			return {
+				page === 1 ? Array.from({ length: 100 }, (_, index) => index + 1) : [99 + page];
+			return Promise.resolve({
 				data: {
 					data: ids.map(product),
-					meta: { total: 102, current_page: page, per_page: 100, last_page: 2 },
+					meta: { total: 105, current_page: page, per_page: 100, last_page: 6 },
 				},
-			};
+			});
 		});
 		const store = configureStore({ reducer: { warehouse: warehouseReducer } });
 		const Wrapper = ({ children }: PropsWithChildren) => (
@@ -78,11 +78,11 @@ describe('useBodegaDetail catálogo de productos', () => {
 
 		const hook = renderHook(() => useBodegaDetail(), { wrapper: Wrapper });
 
-		await waitFor(() => expect(hook.result.current.state.allProducts).toHaveLength(102));
+		await waitFor(() => expect(hook.result.current.state.allProducts).toHaveLength(105));
 		expect(hook.result.current.state.productsLoading).toBe(false);
 		const availableIds = hook.result.current.derived.availableProducts.map((p) => p.id);
-		expect(availableIds).toContain(102);
+		expect(availableIds).toContain(105);
 		expect(availableIds).not.toContain(101);
-		expect(availableIds).toHaveLength(101);
+		expect(availableIds).toHaveLength(104);
 	});
 });
