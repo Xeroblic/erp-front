@@ -4,6 +4,7 @@ import {
 	filtraItems,
 	inventoryLocationParams,
 	operacionTipoInfo,
+	parseBodegaParam,
 	parseInventarioFilters,
 	serializeInventarioFilters,
 	trazabilidadParams,
@@ -48,6 +49,19 @@ describe('Filtros de Inventario en la URL', () => {
 			page: 1,
 			perPage: DEFAULT_INVENTARIO_FILTROS.perPage,
 		});
+	});
+
+	it('no acepta un tamaño de página sobre el tope del backend ni un ID de bodega desbordado', () => {
+		expect(parseInventarioFilters(new URLSearchParams('per_page=100')).perPage).toBe(100);
+		expect(parseInventarioFilters(new URLSearchParams('per_page=500')).perPage).toBe(
+			DEFAULT_INVENTARIO_FILTROS.perPage,
+		);
+		expect(
+			parseInventarioFilters(new URLSearchParams('bodega=12345678901234567890')).ubicacion,
+		).toBe('branch');
+		expect(parseBodegaParam('12345678901234567890')).toBeNull();
+		expect(parseBodegaParam('12')).toBe('warehouse:12');
+		expect(parseBodegaParam('sin-ubicacion')).toBe('unlocated');
 	});
 
 	it('Sin ubicación gana a una bodega y se traduce al filtro del contrato', () => {

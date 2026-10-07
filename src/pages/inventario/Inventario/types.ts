@@ -15,9 +15,15 @@ import type { TIcons } from '@/types/icons.type';
 import {
 	locationStockParams,
 	locationToken,
+	warehouseIdFromToken,
 	type TLocationToken,
 } from '@/utils/inventoryLocation.util';
-import { parseBusinessDateParam, parsePageParam } from '@/utils/listSearchParams.util';
+import {
+	LIST_MAX_PER_PAGE,
+	parseBusinessDateParam,
+	parseIdParam,
+	parsePageParam,
+} from '@/utils/listSearchParams.util';
 
 export const INVENTARIO_PATH = '/inventario/stock';
 export const inventarioProductoPath = (productId: number): string =>
@@ -47,8 +53,8 @@ export const inventarioBodegaLink = (warehouseId: number | null): IPageLink => (
 /** Lee el segmento de la ficha de bodega: `null` si no es una ubicación válida. */
 export const parseBodegaParam = (param: string | undefined): TInventarioUbicacion | null => {
 	if (param === SIN_UBICACION_SLUG) return 'unlocated';
-	if (param && /^[1-9]\d*$/.test(param)) return locationToken(Number(param));
-	return null;
+	const warehouseId = parseIdParam(param ?? null);
+	return warehouseId === null ? null : locationToken(warehouseId);
 };
 
 /** Vista General (productos), Por bodega o Trazabilidad. Viaja en `?vista=`. */
@@ -185,11 +191,10 @@ export const isInventarioVista = (value: string | null): value is TInventarioVis
  * vez de romper la vista: los enlaces viejos o editados a mano siguen abriendo.
  */
 export const parseInventarioFilters = (params: URLSearchParams): IInventarioFilters => {
-	const bodega = params.get('bodega');
+	const bodega = parseIdParam(params.get('bodega'));
 	let ubicacion: TInventarioUbicacion = 'branch';
 	if (params.get('sin_ubicacion') === '1') ubicacion = 'unlocated';
-	else if (bodega !== null && /^[1-9]\d*$/.test(bodega))
-		ubicacion = locationToken(Number(bodega));
+	else if (bodega !== null) ubicacion = locationToken(bodega);
 
 	const vista = params.get('vista');
 	const estado = params.get('estado');
@@ -205,7 +210,11 @@ export const parseInventarioFilters = (params: URLSearchParams): IInventarioFilt
 		desde: parseBusinessDateParam(params.get('desde')),
 		hasta: parseBusinessDateParam(params.get('hasta')),
 		page: parsePageParam(params.get('page'), 1),
-		perPage: parsePageParam(params.get('per_page'), INVENTARIO_PER_PAGE_DEFAULT),
+		perPage: parsePageParam(
+			params.get('per_page'),
+			INVENTARIO_PER_PAGE_DEFAULT,
+			LIST_MAX_PER_PAGE,
+		),
 	};
 };
 
@@ -215,7 +224,7 @@ export const serializeInventarioFilters = (filtros: IInventarioFilters): URLSear
 	if (filtros.vista !== 'general') params.set('vista', filtros.vista);
 	if (filtros.ubicacion === 'unlocated') params.set('sin_ubicacion', '1');
 	else if (filtros.ubicacion !== 'branch')
-		params.set('bodega', filtros.ubicacion.slice('warehouse:'.length));
+		params.set('bodega', String(warehouseIdFromToken(filtros.ubicacion)));
 	if (filtros.estado) params.set('estado', filtros.estado);
 	if (filtros.busqueda.trim()) params.set('q', filtros.busqueda);
 	if (filtros.orden !== 'name') params.set('orden', filtros.orden);

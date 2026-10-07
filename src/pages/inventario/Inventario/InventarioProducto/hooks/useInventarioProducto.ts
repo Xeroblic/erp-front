@@ -8,13 +8,12 @@ import {
 	selectInventoryUpdatingThreshold,
 	updateInventoryThresholdThunk,
 } from '@/store/slices/procurement/inventoryOverviewSlice';
+import { UmbralSchema, type IUmbralFormValues } from '@/pages/inventario/Inventario/types';
 import {
-	inventoryLocationParams,
-	UmbralSchema,
-	type IUmbralFormValues,
-	type TInventarioUbicacion,
-} from '@/pages/inventario/Inventario/types';
-import { locationToken } from '@/utils/inventoryLocation.util';
+	locationStockParams,
+	locationToken,
+	type TLocationToken,
+} from '@/utils/inventoryLocation.util';
 
 /**
  * Ficha de un producto en la sucursal activa (A4): totales, estado, desglose
@@ -32,7 +31,7 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 	const [retry, setRetry] = useState(0);
 	const [umbralOpen, setUmbralOpen] = useState(false);
 	/** Ubicación de las procedencias. `null` = aún no elegida: se usa la primera con saldo. */
-	const [ubicacionElegida, setUbicacionElegida] = useState<TInventarioUbicacion | null>(null);
+	const [ubicacionElegida, setUbicacionElegida] = useState<TLocationToken | null>(null);
 
 	const request = useMemo(
 		() => ({ branchId, productId, ownerContext: `${owner}:${session}` }),
@@ -66,7 +65,7 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 		ubicaciones[0]?.value ??
 		null;
 	const locationParams = useMemo(
-		() => (ubicacion ? inventoryLocationParams(ubicacion) : null),
+		() => (ubicacion ? locationStockParams(ubicacion) : null),
 		[ubicacion],
 	);
 
