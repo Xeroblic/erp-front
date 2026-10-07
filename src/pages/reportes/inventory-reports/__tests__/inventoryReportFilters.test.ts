@@ -58,7 +58,8 @@ describe('Filtros de Reportes › Inventario en la URL', () => {
 			busqueda: 'mouse',
 		});
 		expect(parseInventoryReportFilters(params, [4, 9]).sucursal).toBe(9);
-		expect(parseInventoryReportFilters(params, []).sucursal).toBe(9);
+		expect(parseInventoryReportFilters(params, []).sucursal).toBeNull();
+		expect(parseInventoryReportFilters(params, null).sucursal).toBe(9);
 	});
 
 	it('el primer clic ordena ascendente, el segundo descendente y otra columna vuelve a ascendente', () => {

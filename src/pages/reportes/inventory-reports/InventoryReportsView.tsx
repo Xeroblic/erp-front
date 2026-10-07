@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from 'react';
-import { shallowEqual } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
@@ -12,7 +11,7 @@ import Tabs, { Tab } from '@/components/ui/Tabs';
 import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { selectBranchesBySubsidiary } from '@/store/selectors/subsidiarySelectors';
+import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
 import { clearInventoryReports } from '@/store/slices/reports/reportSlice';
 import type { IInventoryReportBranch } from '@/interface/inventoryReports.interface';
 import { INVENTARIO_PATH } from '@/pages/inventario/Inventario/types';
@@ -35,7 +34,7 @@ import {
 interface IInventoryReportsSessionProps {
 	subsidiaryId: number;
 	owner: string;
-	/** Sucursal activa: respaldo si la personalización no lista las de la filial. */
+	/** Sucursal activa: se suma a la lista si el perfil no la trae entre las de la filial. */
 	activeBranch: IInventoryReportBranch | null;
 }
 
@@ -52,24 +51,20 @@ const InventoryReportsSession = ({
 		if (user?.branch?.subsidiary?.id === subsidiaryId) return user.branch.subsidiary.name;
 		return null;
 	});
-	const subsidiaryBranches = useAppSelector(
-		(state) => selectBranchesBySubsidiary(state, subsidiaryId),
-		shallowEqual,
-	);
+	const userBranches = useAppSelector(selectUserBranches);
 
+	// Sucursales de la filial según `/perfil` (`access`/`visible`), más la activa.
+	// La misma lista alimenta el selector y valida `?sucursal=`.
 	const branches = useMemo<IInventoryReportBranch[]>(() => {
-		const list = subsidiaryBranches.map((branch) => ({
-			id: branch.id,
-			name: branch.branch_name,
-		}));
-		return list.length === 0 && activeBranch ? [activeBranch] : list;
-	}, [subsidiaryBranches, activeBranch]);
-	// Sólo la lista de la filial sirve para validar `?sucursal=`: el respaldo
-	// con la sucursal activa descartaría otra sucursal válida de la misma filial.
-	const branchIds = useMemo(
-		() => subsidiaryBranches.map((branch) => branch.id),
-		[subsidiaryBranches],
-	);
+		const list = userBranches
+			.filter((branch) => branch.subsidiaryId === subsidiaryId)
+			.map((branch) => ({ id: branch.id, name: branch.name }));
+		if (activeBranch && !list.some((branch) => branch.id === activeBranch.id)) {
+			list.push(activeBranch);
+		}
+		return list;
+	}, [userBranches, subsidiaryId, activeBranch]);
+	const branchIds = useMemo(() => branches.map((branch) => branch.id), [branches]);
 	const filtersApi = useInventoryReportFilters(branchIds);
 	const { filters, setVista } = filtersApi;
 

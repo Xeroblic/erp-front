@@ -84,20 +84,19 @@ const parseOrden = (value: string | null): IInventoryReportSort | null => {
  * Lee los filtros de la URL. Un valor desconocido cae al valor por defecto en
  * vez de romper la vista: los enlaces viejos o editados a mano siguen abriendo.
  *
- * Con `branchIds` (las sucursales de la filial activa), una `sucursal` ajena
- * cae a «todas»: tras cambiar de empresa la URL conserva la de la anterior, y
- * pedirla haría fallar el reporte. Sin lista no hay con qué comparar y se
- * respeta la de la URL.
+ * Con `branchIds` (las sucursales de la filial activa), una `sucursal` que no
+ * está entre ellas cae a «todas»: tras cambiar de empresa la URL conserva la de
+ * la anterior, y pedirla haría fallar el reporte. Una lista vacía no admite
+ * ninguna; sólo `null` (sin contexto de filial) respeta la de la URL.
  */
 export const parseInventoryReportFilters = (
 	params: URLSearchParams,
-	branchIds: readonly number[] = [],
+	branchIds: readonly number[] | null = null,
 ): IInventoryReportFilters => {
 	const vista = params.get('vista');
 	const sucursal = parseIdParam(params.get('sucursal'));
 	const estado = params.get('estado');
-	const sucursalInScope =
-		sucursal === null || branchIds.length === 0 || branchIds.includes(sucursal);
+	const sucursalInScope = sucursal === null || branchIds === null || branchIds.includes(sucursal);
 	return {
 		vista: isInventoryReportView(vista) ? vista : INVENTORY_REPORT_DEFAULT_VIEW,
 		busqueda: params.get('q') ?? '',
