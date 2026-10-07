@@ -123,10 +123,10 @@ const kpiBlock = (doc: IExportDocument) => ({
 });
 
 /** Horizontal cuando alguna tabla tiene muchas columnas. */
-export const pdfOrientationOf = (doc: IExportDocument): 'portrait' | 'landscape' =>
+const pdfOrientationOf = (doc: IExportDocument): 'portrait' | 'landscape' =>
 	doc.tables.some((table) => table.columns.length > 4) ? 'landscape' : 'portrait';
 
-export const reportToPdfDefinition = (doc: IExportDocument): TDocumentDefinitions => {
+const reportToPdfDefinition = (doc: IExportDocument): TDocumentDefinitions => {
 	const orientation = pdfOrientationOf(doc);
 	const availableWidth = A4_WIDTH[orientation] - PAGE_MARGIN * 2;
 	return {

@@ -37,7 +37,7 @@ import {
  *   las operaciones del §14, que incluyen las salidas.
  */
 
-export type TInventoryReportMockType = Exclude<TInventoryReportType, 'stock'>;
+type TInventoryReportMockType = Exclude<TInventoryReportType, 'stock'>;
 
 const DAY_MS = 86_400_000;
 
@@ -70,10 +70,6 @@ const branchesInScope = (
 	return [branch];
 };
 
-/* =================================================
-   R1 · stock_health
-   ================================================= */
-
 const stockHealthRows = (branches: IInventoryReportBranch[]): IStockHealthReportRow[] =>
 	branches.flatMap((branch) =>
 		readInventoryBranchRows(branch.id).flatMap((row): IStockHealthReportRow[] => {
@@ -92,10 +88,6 @@ const stockHealthRows = (branches: IInventoryReportBranch[]): IStockHealthReport
 			];
 		}),
 	);
-
-/* =================================================
-   R2 · replenishment
-   ================================================= */
 
 type TPurchaseOrigin = IInventorySeedOrigin & { supplier: ISupplierCompact; received_on: string };
 
@@ -208,12 +200,8 @@ const replenishmentRows = (
 	);
 };
 
-/* =================================================
-   R3 · dead_stock
-   ================================================= */
-
 /** El contrato usa 90 días por defecto; `0` devuelve todo el stock con su antigüedad. */
-export const DEAD_STOCK_DEFAULT_DAYS = 90;
+const DEAD_STOCK_DEFAULT_DAYS = 90;
 
 const deadStockRows = (
 	branches: IInventoryReportBranch[],
@@ -244,10 +232,6 @@ const deadStockRows = (
 			];
 		});
 	});
-
-/* =================================================
-   GET S/reports/{type}
-   ================================================= */
 
 /**
  * `branches` son las sucursales de la filial: el mock no las conoce y las

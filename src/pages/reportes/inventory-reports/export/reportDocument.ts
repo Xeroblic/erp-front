@@ -21,7 +21,7 @@ import {
 
 export type TExportCell = string | number | null;
 
-export interface IExportColumn {
+interface IExportColumn {
 	header: string;
 	/** `number` alinea a la derecha y usa formato de miles. */
 	kind?: 'text' | 'number';
@@ -47,7 +47,7 @@ export interface IExportDocument {
 	tables: IExportTable[];
 }
 
-export interface IExportMeta {
+interface IExportMeta {
 	companyName: string | null;
 	scopeLabel: string;
 	/** Búsqueda y estado aplicados, ya en texto; `null` si no hay. */
@@ -61,7 +61,7 @@ export const SIMULATED_EXPORT_NOTICE =
 
 const pad = (value: number): string => String(value).padStart(2, '0');
 
-export const formatExportDateTime = (date: Date): string =>
+const formatExportDateTime = (date: Date): string =>
 	`${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
 /** `reporte-umbrales-20260922-1530`: ordena bien y no choca entre descargas. */
@@ -89,10 +89,6 @@ const businessDate = (date: string): string => {
 	const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(date);
 	return match ? `${match[3]}-${match[2]}-${match[1]}` : date;
 };
-
-/* =================================================
-   Datos
-   ================================================= */
 
 export const buildDatosDocument = (
 	rows: IStockReportRow[],
@@ -122,10 +118,6 @@ export const buildDatosDocument = (
 		},
 	],
 });
-
-/* =================================================
-   Umbrales
-   ================================================= */
 
 export const buildUmbralesDocument = (
 	rows: IStockHealthReportRow[],
@@ -161,10 +153,6 @@ export const buildUmbralesDocument = (
 		},
 	],
 });
-
-/* =================================================
-   Acciones
-   ================================================= */
 
 export const buildAccionesDocument = (
 	rows: IReplenishmentReportRow[],
@@ -202,10 +190,6 @@ export const buildAccionesDocument = (
 		},
 	],
 });
-
-/* =================================================
-   Estadísticas
-   ================================================= */
 
 export const buildEstadisticasDocument = (
 	stats: IInventoryReportStats,

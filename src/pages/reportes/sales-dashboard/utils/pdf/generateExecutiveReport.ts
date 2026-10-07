@@ -27,14 +27,13 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 	const pdfMakeModule = await import('pdfmake/build/pdfmake');
 	const pdfMake = pdfMakeModule.default || pdfMakeModule;
 
-	// 1.1 Cargar las fuentes también de forma dinámica
+	// Las fuentes también se cargan bajo demanda, junto con pdfmake.
 	const { loadPdfFonts } = await import('../../../../comercial/cotizaciones/utils/pdf/fonts');
 	loadPdfFonts(pdfMake as any);
 
-	// 2. Extraer insights automáticos
 	const insights = generateSmartInsights(data.stats, data.previousStats);
 
-	// 3. Ensamblaje Multipágina (Cover -> Dashboard -> Analytics -> Methodology)
+	// Orden de las páginas: portada, dashboard, analítica y metodología.
 	const content: PdfContent[] = [
 		buildCoverPage(data.filters.dateFrom, data.filters.dateTo),
 		buildExecutiveSummary(insights),
@@ -82,7 +81,6 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 		},
 	};
 
-	// 4. Descargar PDF
 	const fileName = `Reporte_Ejecutivo_Ventas_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
 	pdfMake.createPdf(docDefinition).download(fileName);
 };
