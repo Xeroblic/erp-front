@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchListaMovimientoSucursalThunk,
@@ -6,7 +7,9 @@ import {
 	selectInventarioPagination,
 	selectInventarioLoading,
 	selectInventarioError,
+	selectInventarioListBranchId,
 	clearListaMovimientoSucursal,
+	EMPTY_INVENTORY_PAGINATION,
 	IInventoryFilters,
 	FetchMovimientosParams,
 } from '@/store/slices/inventory/inventorySlice';
@@ -16,61 +19,117 @@ import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 type FetchStatus = 'idle' | 'loading' | 'loading-more' | 'success' | 'timeout' | 'error';
 
 const TIMEOUT_MS = 15000;
+const LOAD_MORE_ERROR = 'No se pudieron cargar más movimientos. Intenta de nuevo.';
+const LOAD_MORE_TIMEOUT = 'Tiempo de espera agotado al cargar más movimientos.';
 
 interface UseTraceabilityMovementsOptions {
 	autoFetch?: boolean;
 	perPage?: number;
 }
 
+type TraceabilityRequest = ReturnType<ReturnType<typeof fetchListaMovimientoSucursalThunk>>;
+
+/** Estado local de la consulta, etiquetado con la sucursal que lo produjo. */
+interface IRequestState {
+	branchId: number | null;
+	status: FetchStatus;
+	hasFetched: boolean;
+	isLoadingMore: boolean;
+}
+
+const EMPTY_MOVEMENTS: ReturnType<typeof selectMovimientosSucursal> = [];
+
 export function useTraceabilityMovements(options: UseTraceabilityMovementsOptions = {}) {
 	const { autoFetch = true, perPage = 20 } = options;
 
 	const dispatch = useAppDispatch();
 
-	// Selectores de Redux
-	const movimientos = useAppSelector(selectMovimientosSucursal);
-	const pagination = useAppSelector(selectInventarioPagination);
-	const loading = useAppSelector(selectInventarioLoading);
-	const error = useAppSelector(selectInventarioError);
+	const rawMovimientos = useAppSelector(selectMovimientosSucursal);
+	const rawPagination = useAppSelector(selectInventarioPagination);
+	const rawLoading = useAppSelector(selectInventarioLoading);
+	const rawError = useAppSelector(selectInventarioError);
+	const listBranchId = useAppSelector(selectInventarioListBranchId);
+	const branches = useAppSelector(selectUserBranches);
 	const { branchId } = useCurrentBranch();
 
-	// Estados locales
-	const [fetchStatus, setFetchStatus] = useState<FetchStatus>('idle');
-	const [hasFetched, setHasFetched] = useState(false);
+	const [requestState, setRequestState] = useState<IRequestState>({
+		branchId,
+		status: 'idle',
+		hasFetched: false,
+		isLoadingMore: false,
+	});
 	const [filters, setFilters] = useState<IInventoryFilters>({});
-	const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-	// Refs
+	// La limpieza al cambiar de sucursal corre en un efecto, después del primer render con la
+	// sucursal nueva: hasta entonces sólo se expone lo que pertenece a la sucursal vigente.
+	const ownsList = branchId !== null && listBranchId === branchId;
+	const ownsRequestState = requestState.branchId === branchId;
+	const movimientos = ownsList ? rawMovimientos : EMPTY_MOVEMENTS;
+	const pagination = ownsList ? rawPagination : EMPTY_INVENTORY_PAGINATION;
+	const loading = ownsList && rawLoading;
+	const error = ownsList ? rawError : undefined;
+	const fetchStatus: FetchStatus = ownsRequestState ? requestState.status : 'idle';
+	const hasFetched = ownsRequestState && requestState.hasFetched;
+	const isLoadingMore = ownsRequestState && requestState.isLoadingMore;
+
+	const updateRequestState = useCallback(
+		(owner: number | null, patch: Partial<Omit<IRequestState, 'branchId'>>) => {
+			setRequestState((prev) => {
+				const base: IRequestState =
+					prev.branchId === owner
+						? prev
+						: {
+								branchId: owner,
+								status: 'idle',
+								hasFetched: false,
+								isLoadingMore: false,
+							};
+				return { ...base, ...patch };
+			});
+		},
+		[],
+	);
+
 	const fetchedBranchRef = useRef<number | null>(null);
-	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-	const abortControllerRef = useRef<AbortController | null>(null);
+	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	// Sólo la petición guardada aquí puede escribir el estado local; las canceladas,
+	// vencidas o de otra sucursal se descartan al resolver.
+	const requestRef = useRef<TraceabilityRequest | null>(null);
 
-	const branches = useAppSelector(selectUserBranches);
-	const branchesLoading = false;
-
-	// Nombre de la sucursal actual
 	const currentBranchName = useMemo(() => {
 		if (!branchId) return null;
 		const branch = branches.find((b) => b.id === branchId);
 		return branch?.name ?? null;
 	}, [branchId, branches]);
 
-	// Limpiar timeout y abort controller al desmontar
+	const clearRequestTimer = useCallback(() => {
+		if (timeoutRef.current) {
+			clearTimeout(timeoutRef.current);
+			timeoutRef.current = null;
+		}
+	}, []);
+
+	const cancelInFlight = useCallback(() => {
+		clearRequestTimer();
+		const request = requestRef.current;
+		requestRef.current = null;
+		request?.abort();
+	}, [clearRequestTimer]);
+
 	useEffect(() => {
 		return () => {
-			if (timeoutRef.current) clearTimeout(timeoutRef.current);
-			if (abortControllerRef.current) abortControllerRef.current.abort();
+			cancelInFlight();
 			dispatch(clearListaMovimientoSucursal());
 		};
-	}, [dispatch]);
+	}, [cancelInFlight, dispatch]);
 
 	useEffect(() => {
+		cancelInFlight();
+		dispatch(clearListaMovimientoSucursal());
 		fetchedBranchRef.current = null;
-		setFetchStatus('idle');
-		setHasFetched(false);
-	}, [branchId]);
+		setRequestState({ branchId, status: 'idle', hasFetched: false, isLoadingMore: false });
+	}, [branchId, cancelInFlight, dispatch]);
 
-	// Función para hacer fetch
 	const fetchData = useCallback(
 		async (
 			page: number = 1,
@@ -79,67 +138,77 @@ export function useTraceabilityMovements(options: UseTraceabilityMovementsOption
 		) => {
 			if (!branchId) return;
 
-			// Evitar fetch duplicado (solo para carga inicial, no para append)
 			if (!append && fetchedBranchRef.current === branchId && fetchStatus === 'loading') {
 				return;
 			}
 
-			// Cancelar request anterior
-			if (abortControllerRef.current) {
-				abortControllerRef.current.abort();
-			}
-			abortControllerRef.current = new AbortController();
-
-			// Limpiar timeout anterior
-			if (timeoutRef.current) {
-				clearTimeout(timeoutRef.current);
-			}
+			cancelInFlight();
 
 			fetchedBranchRef.current = branchId;
-			setFetchStatus(append ? 'loading-more' : 'loading');
-			if (append) setIsLoadingMore(true);
+			updateRequestState(branchId, {
+				status: append ? 'loading-more' : 'loading',
+				isLoadingMore: append,
+			});
 
-			// Configurar timeout
+			const params: FetchMovimientosParams & { append?: boolean } = {
+				branch_id: branchId,
+				page,
+				per_page: perPage,
+				append,
+				...currentFilters,
+			};
+			const request = dispatch(fetchListaMovimientoSucursalThunk(params));
+			requestRef.current = request;
+
 			timeoutRef.current = setTimeout(() => {
-				setFetchStatus('timeout');
-				setIsLoadingMore(false);
-				if (abortControllerRef.current) {
-					abortControllerRef.current.abort();
+				if (requestRef.current !== request) return;
+				cancelInFlight();
+				if (append) {
+					// Conserva las páginas ya cargadas: sólo falla la página siguiente.
+					toast.error(LOAD_MORE_TIMEOUT);
+					updateRequestState(branchId, { status: 'success', isLoadingMore: false });
+					return;
 				}
+				updateRequestState(branchId, { status: 'timeout', isLoadingMore: false });
 			}, TIMEOUT_MS);
 
+			let failure: string | null = null;
 			try {
-				const params: FetchMovimientosParams & { append?: boolean } = {
-					branch_id: branchId,
-					page,
-					per_page: perPage,
-					append,
-					...currentFilters,
-				};
-
-				await dispatch(fetchListaMovimientoSucursalThunk(params)).unwrap();
-
-				if (timeoutRef.current) {
-					clearTimeout(timeoutRef.current);
-				}
-				setFetchStatus('success');
-				setHasFetched(true);
-				setIsLoadingMore(false);
+				await request.unwrap();
 			} catch (err) {
-				if (timeoutRef.current) {
-					clearTimeout(timeoutRef.current);
-				}
-				if (!(err instanceof DOMException && err.name === 'AbortError')) {
-					setFetchStatus('error');
-				}
-				setHasFetched(true);
-				setIsLoadingMore(false);
+				failure = typeof err === 'string' ? err : LOAD_MORE_ERROR;
 			}
+
+			if (requestRef.current !== request) return;
+			clearRequestTimer();
+			requestRef.current = null;
+			if (failure !== null && append) {
+				toast.error(failure);
+				updateRequestState(branchId, {
+					status: 'success',
+					hasFetched: true,
+					isLoadingMore: false,
+				});
+				return;
+			}
+			updateRequestState(branchId, {
+				status: failure === null ? 'success' : 'error',
+				hasFetched: true,
+				isLoadingMore: false,
+			});
 		},
-		[branchId, dispatch, fetchStatus, filters, perPage],
+		[
+			branchId,
+			cancelInFlight,
+			clearRequestTimer,
+			dispatch,
+			fetchStatus,
+			filters,
+			perPage,
+			updateRequestState,
+		],
 	);
 
-	// Fetch inicial cuando cambia el branchId
 	useEffect(() => {
 		if (
 			autoFetch &&
@@ -147,23 +216,20 @@ export function useTraceabilityMovements(options: UseTraceabilityMovementsOption
 			fetchedBranchRef.current !== branchId &&
 			fetchStatus !== 'loading'
 		) {
-			fetchData(1);
+			void fetchData(1);
 		}
 	}, [autoFetch, branchId, fetchData, fetchStatus]);
 
-	// Handler para recargar
 	const reload = useCallback(() => {
 		fetchedBranchRef.current = null;
-		setFetchStatus('idle');
-		setHasFetched(false);
-		fetchData(1, filters, false);
-	}, [fetchData, filters]);
+		updateRequestState(branchId, { status: 'idle', hasFetched: false });
+		void fetchData(1, filters, false);
+	}, [branchId, fetchData, filters, updateRequestState]);
 
-	// Handler para cargar más (append)
 	const loadMore = useCallback(() => {
 		if (pagination.hasNextPage && !isLoadingMore && fetchStatus !== 'loading') {
 			const nextPage = pagination.currentPage + 1;
-			fetchData(nextPage, filters, true);
+			void fetchData(nextPage, filters, true);
 		}
 	}, [
 		pagination.hasNextPage,
@@ -174,64 +240,38 @@ export function useTraceabilityMovements(options: UseTraceabilityMovementsOption
 		filters,
 	]);
 
-	// Handler para cambiar de página (legacy - por si se necesita)
-	const goToPage = useCallback(
-		(page: number) => {
-			fetchData(page, filters, false);
-		},
-		[fetchData, filters],
-	);
-
-	// Handler para aplicar filtros (resetea la paginación)
 	const applyFilters = useCallback(
 		(newFilters: IInventoryFilters) => {
 			setFilters(newFilters);
 			fetchedBranchRef.current = null;
-			setFetchStatus('idle');
-			setHasFetched(false);
-			fetchData(1, newFilters, false);
+			updateRequestState(branchId, { status: 'idle', hasFetched: false });
+			void fetchData(1, newFilters, false);
 		},
-		[fetchData],
+		[branchId, fetchData, updateRequestState],
 	);
 
-	// Handler para limpiar filtros
 	const clearFilters = useCallback(() => {
 		setFilters({});
 		fetchedBranchRef.current = null;
-		setFetchStatus('idle');
-		setHasFetched(false);
-		fetchData(1, {}, false);
-	}, [fetchData]);
+		updateRequestState(branchId, { status: 'idle', hasFetched: false });
+		void fetchData(1, {}, false);
+	}, [branchId, fetchData, updateRequestState]);
 
 	return {
-		// Data
 		movimientos,
 		pagination,
 		loading,
 		error,
-
-		// Branch info
 		branchId,
 		currentBranchName,
-		branches,
-		branchesLoading,
-
-		// Status
 		fetchStatus,
 		hasFetched,
 		isLoadingMore,
-
-		// Filters
 		filters,
-		setFilters,
 		applyFilters,
 		clearFilters,
-
-		// Actions
 		reload,
 		loadMore,
-		goToPage,
-		fetchData,
 	};
 }
 
