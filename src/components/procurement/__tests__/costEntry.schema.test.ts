@@ -5,15 +5,9 @@ import { costEntrySchema, optionalCostEntrySchema, toCostEntryPayload } from '..
 import type { ICostEntryFormValues } from '../costEntry.schema';
 
 /**
- * El costo opcional cubre la recepción sin documento y sin proveedor conocido,
- * donde el contrato admite que el costo quede desconocido pero exige que monto y
- * base viajen juntos: «monto presente exige base y viceversa».
- *
- * Se ejercita a través de Formik real y no con `validateAt`, porque el defecto
- * sólo aparece con el ciclo completo: Formik normaliza `''` a `undefined` antes
- * de validar, mientras que un campo con espacios llega sin tocar. El schema
- * comparaba contra `''` y por eso rechazaba una ausencia legítima. Validado
- * fuera de Formik el caso ni siquiera se reproduce.
+ * Se ejercita con Formik real y no con `validateAt`: Formik normaliza `''` a
+ * `undefined` antes de validar, pero deja pasar un campo con espacios, y sólo
+ * el ciclo completo reproduce ambas formas de ausencia.
  */
 const renderCostForm = (
 	initialValues: ICostEntryFormValues,
@@ -54,7 +48,7 @@ describe('optionalCostEntrySchema con Formik', () => {
 		});
 		expect(afterFilling).toEqual({});
 
-		// Borrar deja `''`, no `undefined`: es el caso que fallaba.
+		// Borrar deja `''`, no `undefined`.
 		await act(async () => {
 			await result.current.setValues(emptyValues);
 		});
@@ -124,12 +118,40 @@ describe('costEntrySchema con Formik', () => {
 			errors = (await result.current.validateForm()) as Record<string, string>;
 		});
 
-		expect(errors.unit_cost).toBeDefined();
-		expect(errors.unit_cost_basis).toBeDefined();
+		expect(errors.unit_cost).toBe('Indica el costo unitario.');
+		expect(errors.unit_cost_basis).toBe('Indica si el monto es neto o bruto.');
+	});
+});
+
+describe('costEntrySchema', () => {
+	it('rechaza un monto de más de dos decimales y un monto cero', async () => {
+		await expect(
+			costEntrySchema.validate({ unit_cost: '100.123', unit_cost_basis: 'net' }),
+		).rejects.toThrow('Usa un monto con hasta dos decimales.');
+		await expect(
+			costEntrySchema.validate({ unit_cost: '0', unit_cost_basis: 'net' }),
+		).rejects.toThrow('El costo debe ser mayor que cero.');
+	});
+
+	it('acepta la coma decimal que se escribe en es-CL', async () => {
+		await expect(
+			costEntrySchema.validate({ unit_cost: '5712,50', unit_cost_basis: 'gross' }),
+		).resolves.toEqual({ unit_cost: '5712,50', unit_cost_basis: 'gross' });
 	});
 });
 
 describe('toCostEntryPayload', () => {
+	it('normaliza el monto a dos decimales y envía solo los dos campos', () => {
+		expect(toCostEntryPayload({ unit_cost: '5712', unit_cost_basis: 'gross' })).toEqual({
+			unit_cost: '5712.00',
+			unit_cost_basis: 'gross',
+		});
+		expect(toCostEntryPayload({ unit_cost: '5712,5', unit_cost_basis: 'net' })).toEqual({
+			unit_cost: '5712.50',
+			unit_cost_basis: 'net',
+		});
+	});
+
 	it('devuelve null para la ausencia, incluida la escrita con espacios', () => {
 		expect(toCostEntryPayload(emptyValues)).toBeNull();
 		expect(toCostEntryPayload({ unit_cost: '   ', unit_cost_basis: '' })).toBeNull();
