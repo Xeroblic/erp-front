@@ -10,7 +10,7 @@ import purchaseDocumentsReducer from '@/store/slices/procurement/purchaseDocumen
 import useDocumentosCompra from '../useDocumentosCompra';
 
 /**
- * Propiedad de contexto del listado (ZF-12). El store guarda lo de la última
+ * Propiedad de contexto del listado. El store guarda lo de la última
  * filial que respondió y la petición nueva sale en un efecto: el hook no
  * puede mostrar filas ni dejar abierto el alta de la filial anterior.
  */

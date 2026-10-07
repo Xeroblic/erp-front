@@ -33,30 +33,16 @@ import { EMPTY_PRODUCTO_COMPRA_VALUES, procurementProductFormSchema } from '../t
 import type { IProcurementProductFormValues } from '../types';
 
 /**
- * Formik del alta en línea de producto desde el documento de compra. Crea el
- * producto en el catálogo real (`createPurchasableProduct`), con las marcas,
- * categorías, tipos de dispositivo e interruptores del alta de
- * `catalogos/productos`.
+ * Alta en línea de producto desde el documento de compra.
  *
- * El SKU no lo escribe el usuario: se genera con el mismo `generateSmartSKU`
- * del catálogo (marca + tipo, modelo y sufijo aleatorio). El backend lo exige
- * único en la filial; si el generado ya existe (422 en `sku`), se genera otro
- * y se reintenta sin que el usuario tenga que volver a enviar. Un 422 no crea
- * nada, así que reintentar no duplica el producto.
+ * El SKU se genera con `generateSmartSKU`; si el backend lo rechaza por
+ * repetido (422, que no crea nada), se genera otro y se reintenta solo.
  *
- * El alta no admite `Idempotency-Key`. Si el `POST` falla sin una respuesta
- * que diga qué pasó (red, timeout o 5xx), el producto pudo haberse creado: el
- * intento queda pendiente con su filial y su payload, el formulario se
- * bloquea con esos valores y «Reintentar» lo concilia
- * (`reconcileProductAttempt`) en vez de crear otro.
- *
- * El intento se guarda en el store, uno por filial
- * (`purchaseDocuments.pendingProductAttempts`), desde que empieza el `POST`, no
- * en este hook: sobrevive al cierre y al desmontaje del modal —cambio de filial
- * en la ficha, salida de la página—. Al volver a su filial el formulario sigue
- * bloqueado mientras la petición vuela, queda para «Reintentar» si su resultado
- * no se supo, o entrega el producto si se creó sin nadie que lo recibiera.
- * Sólo un cierre de sesión o una recarga lo descartan.
+ * El alta no admite `Idempotency-Key`: si el `POST` falla sin respuesta clara
+ * (red, timeout o 5xx), el producto pudo crearse. El intento queda en el store,
+ * uno por filial, desde que empieza el `POST`, para sobrevivir al desmontaje
+ * del modal; el formulario se bloquea con sus valores y «Reintentar» lo
+ * concilia (`reconcileProductAttempt`) en vez de crear otro.
  */
 
 const FORM_FIELDS: ReadonlyArray<keyof IProcurementProductFormValues> = [
@@ -121,10 +107,8 @@ const useProcurementProductForm = ({
 	const loadingCategories = useAppSelector((state) => state.categories.loading);
 
 	/**
-	 * Marcas propias del modal, atadas a la sucursal que las pidió. No se leen
-	 * del slice compartido: puede traer las de otra sucursal o el resultado de
-	 * una búsqueda del catálogo, y una carga ajena en curso no avisa al
-	 * terminar. Se piden al abrir si no están las de la sucursal activa.
+	 * Marcas propias del modal, atadas a la sucursal que las pidió: el slice
+	 * compartido puede traer las de otra sucursal o una búsqueda del catálogo.
 	 */
 	const [branchBrands, setBranchBrands] = useState<IBranchBrands | null>(null);
 	const brandsForBranch =
@@ -174,17 +158,9 @@ const useProcurementProductForm = ({
 		[categories],
 	);
 
-	/**
-	 * SKU que se mostrará y enviará. Se regenera al cambiar nombre, marca o
-	 * tipo, o cuando el backend rechaza el generado por repetido.
-	 */
 	const [sku, setSku] = useState('');
 
-	/**
-	 * Alta sin cerrar de la filial activa, desde que empieza su `POST`: mientras
-	 * exista, el formulario muestra sus valores sin permitir cambiarlos ni enviar
-	 * otra. La de otra filial sigue guardada y reaparece al volver a ella.
-	 */
+	/** Mientras exista, el formulario muestra sus valores y no permite otra alta. */
 	const pendingAttempt = useAppSelector((state) =>
 		selectPendingProductAttempt(state, subsidiaryId),
 	);
@@ -205,10 +181,8 @@ const useProcurementProductForm = ({
 	}, []);
 
 	/**
-	 * Identidad del borrador que abrió el modal. Cambia al cambiar de filial y
-	 * al cerrarse el modal desde afuera: con eso el documento descarta su
-	 * borrador y la línea que lo abrió. Volver A → B → A deja la misma filial,
-	 * pero no el mismo borrador, así que la filial sola no alcanza.
+	 * Identidad del borrador: cambia con la filial y al cerrarse el modal. Volver
+	 * A → B → A deja la misma filial pero no el mismo borrador.
 	 */
 	const draftRef = useRef({ subsidiaryId, isOpen, id: 0 });
 	if (draftRef.current.subsidiaryId !== subsidiaryId || (draftRef.current.isOpen && !isOpen)) {
@@ -237,10 +211,8 @@ const useProcurementProductForm = ({
 	});
 
 	/**
-	 * Cierra un alta que creó el producto y lo entrega sólo al borrador que lo
-	 * pidió. Sin un modal montado que lo reciba, o si ese borrador ya se
-	 * descartó aunque se haya vuelto a su filial, queda en el store para
-	 * «Usar producto»: el callback del envío apunta a una línea que ya no existe.
+	 * Entrega el producto sólo al borrador que lo pidió. Si ese borrador ya no
+	 * está, queda en el store para «Usar producto».
 	 */
 	const finish = (
 		product: ICreatedPurchasableProduct,
@@ -314,9 +286,8 @@ const useProcurementProductForm = ({
 						);
 						return;
 					}
-					// Este SKU se generó recién y su 422 es definitivo: nada se creó, así
-					// que otro SKU no duplica. El SKU de un intento incierto nunca llega
-					// acá: ese camino es `reconcileProductAttempt`, que no lo regenera.
+					// Un 422 no crea nada: otro SKU no duplica. Un intento incierto
+					// nunca llega acá (lo concilia `reconcileProductAttempt`).
 					const onlySkuTaken =
 						isSkuTakenError(resolved) &&
 						Object.keys(resolved.fieldErrors ?? {}).length === 1;
@@ -393,11 +364,7 @@ const useProcurementProductForm = ({
 		setSku(generateSmartSKU({ name: trimmedName, brandName: selectedBrandName, productType }));
 	}, [trimmedName, selectedBrandName, productType]);
 
-	/**
-	 * El intento puede llegar con el modal ya montado: lo empezó un montaje
-	 * anterior y su respuesta llegó después de volver. El formulario pasa a
-	 * mostrar sus valores, que son los que se concilian.
-	 */
+	/** Un intento de un montaje anterior puede llegar con el modal ya abierto. */
 	const attemptKey = pendingAttempt
 		? `${pendingAttempt.subsidiaryId}:${JSON.stringify(pendingAttempt.payload)}`
 		: null;
@@ -409,11 +376,7 @@ const useProcurementProductForm = ({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [attemptKey]);
 
-	/**
-	 * Otra filial es otro catálogo: el borrador de la anterior se descarta y se
-	 * muestra el intento pendiente de la nueva, si tiene. El de la anterior no
-	 * se pierde: sigue en el store, ligado a su filial.
-	 */
+	/** Otra filial es otro catálogo: se descarta el borrador y se muestra su intento, si tiene. */
 	const draftSubsidiaryRef = useRef(subsidiaryId);
 	useEffect(() => {
 		if (draftSubsidiaryRef.current === subsidiaryId) return;
@@ -426,9 +389,8 @@ const useProcurementProductForm = ({
 	}, [subsidiaryId]);
 
 	/**
-	 * Al cerrar se limpia, salvo un intento sin cerrar: vuelve a mostrar sus
-	 * valores. Un producto ya creado que se cierra sin usar se descarta: está en
-	 * el catálogo y se puede buscar en la línea.
+	 * Al cerrar se limpia, salvo un intento sin cerrar. Un producto ya creado y
+	 * no usado se descarta: está en el catálogo y se puede buscar en la línea.
 	 */
 	const reset = useCallback(() => {
 		const attempt = pendingAttemptRef.current;

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-	DEFAULT_DOCUMENTOS_COMPRA_FILTERS,
 	EMPTY_DOCUMENTO_LINE,
 	parseDocumentosCompraFilters,
 	purchaseDocumentFormSchema,
@@ -9,11 +8,9 @@ import {
 import type { IDocumentosCompraFilters, IPurchaseDocumentFormValues } from '../types';
 
 /**
- * Validación del formulario de documento de compra (sección 6 del
- * contrato). La factura exige proveedor y la boleta lo permite `null`; el
- * costo unitario reutiliza `costEntrySchema` de `@/components/procurement`
- * (card 02): estas pruebas verifican que ese reuso realmente ata monto y
- * base a cada línea, no sólo que el schema exista.
+ * La factura exige proveedor y la boleta lo permite `null`. El costo unitario
+ * reutiliza `costEntrySchema`: estas pruebas verifican que ese reuso ata monto
+ * y base a cada línea.
  */
 
 const validLine = {
@@ -97,10 +94,22 @@ describe('purchaseDocumentFormSchema', () => {
 	});
 });
 
+const DEFAULT_FILTERS: IDocumentosCompraFilters = {
+	search: '',
+	documentType: 'all',
+	status: 'all',
+	receptionStatus: 'all',
+	supplierId: null,
+	issuedFrom: '',
+	issuedTo: '',
+	page: 1,
+	perPage: 20,
+};
+
 describe('Filtros del listado en la URL', () => {
 	it('sin parámetros son los valores por defecto y no escriben nada', () => {
 		const filters = parseDocumentosCompraFilters(new URLSearchParams());
-		expect(filters).toEqual(DEFAULT_DOCUMENTOS_COMPRA_FILTERS);
+		expect(filters).toEqual(DEFAULT_FILTERS);
 		expect(serializeDocumentosCompraFilters(filters).toString()).toBe('');
 	});
 
@@ -129,6 +138,6 @@ describe('Filtros del listado en la URL', () => {
 				'document_type=nota&status=all&reception_status=x&supplier_id=abc&issued_from=2026-02-30&page=0&per_page=500',
 			),
 		);
-		expect(filters).toEqual(DEFAULT_DOCUMENTOS_COMPRA_FILTERS);
+		expect(filters).toEqual(DEFAULT_FILTERS);
 	});
 });

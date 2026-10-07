@@ -17,16 +17,9 @@ import type {
 } from '@/interface/procurement.interface';
 
 /**
- * Tipos y validación de la pantalla de documentos de compra (card 03,
- * sección 6 del contrato de abastecimiento). Los tipos de dominio —
- * `IPurchaseDocument`, `IPurchaseDocumentCreatePayload`, etc.— viven en
- * `@/interface/procurement.interface.ts`; acá sólo lo propio de esta
- * pantalla: filtros con «Todos» y el formulario de alta/edición.
+ * Sólo lo propio de esta pantalla (filtros con «Todos» y formularios); los
+ * tipos de dominio viven en `@/interface/procurement.interface.ts`.
  */
-
-/* =================================================
-   Filtros del listado
-   ================================================= */
 
 export type TDocumentTypeFilter = TPurchaseDocumentType | 'all';
 export type TDocumentStatusFilter = TPurchaseDocumentStatus | 'all';
@@ -56,9 +49,8 @@ export const DOCUMENT_RECEPTION_STATUS_FILTER_OPTIONS: {
 ];
 
 /**
- * El contrato usa 15 por defecto, pero el paginador estándar sólo ofrece 5,
- * 10, 20, 30, 40 y 50: con 15 el selector mostraba «Mostrar 5» mientras la
- * tabla listaba 15. Se pide 20, una de sus opciones.
+ * El contrato usa 15 por defecto, pero el paginador estándar no ofrece 15 y
+ * mostraría un tamaño distinto al listado. Se pide 20, una de sus opciones.
  */
 export const DOCUMENTOS_COMPRA_PER_PAGE_DEFAULT = 20;
 
@@ -79,18 +71,6 @@ export interface IDocumentosCompraFilters {
 	page: number;
 	perPage: number;
 }
-
-export const DEFAULT_DOCUMENTOS_COMPRA_FILTERS: IDocumentosCompraFilters = {
-	search: '',
-	documentType: 'all',
-	status: 'all',
-	receptionStatus: 'all',
-	supplierId: null,
-	issuedFrom: '',
-	issuedTo: '',
-	page: 1,
-	perPage: DOCUMENTOS_COMPRA_PER_PAGE_DEFAULT,
-};
 
 /** Claves de la query que son del listado; cualquier otra se deja intacta. */
 export const DOCUMENTOS_COMPRA_FILTER_KEYS = [
@@ -174,10 +154,6 @@ export const DOCUMENT_RECEPTION_STATUS_LABELS: Record<TPurchaseDocumentReception
 	received: 'Recibida',
 };
 
-/* =================================================
-   Formulario de alta/edición
-   ================================================= */
-
 /** Todo string/'' para que Formik e `Input`/`SelectReact` no controlen a medias. */
 export interface IDocumentoCompraLineFormValues {
 	/** Presente sólo al editar una línea existente: la distingue de una nueva. */
@@ -223,11 +199,7 @@ export const EMPTY_DOCUMENTO_VALUES: IPurchaseDocumentFormValues = {
 	items: [{ ...EMPTY_DOCUMENTO_LINE }],
 };
 
-/**
- * Reusa los campos de `costEntrySchema` (`@/components/procurement`) en vez
- * de repetir la validación del costo unitario: monto y base obligatorios en
- * toda línea, factura o boleta (sección 6).
- */
+/** Monto y base de costo obligatorios en toda línea, factura o boleta. */
 const lineSchema = Yup.object({
 	id: Yup.number().optional(),
 	product_id: Yup.number()
@@ -242,19 +214,12 @@ const lineSchema = Yup.object({
 	notes: Yup.string().max(500, 'Máximo 500 caracteres.'),
 });
 
-/**
- * `supplier_id` es obligatorio sólo para factura — «la boleta lo permite
- * null» (sección 6). El resto de los obligatorios del contrato: folio, fecha
- * de emisión y al menos una línea.
- */
+/** `supplier_id` es obligatorio sólo para factura; la boleta lo permite `null`. */
 export const purchaseDocumentFormSchema = Yup.object({
 	document_type: Yup.string().oneOf(['invoice', 'receipt']).required(),
 	supplier_id: Yup.number()
-		// `''` (sin seleccionar) castea a `NaN`, no a `null`/`undefined`: sin este
-		// transform, la boleta —que permite proveedor sin especificar— rechazaba
-		// igual que si fuera obligatorio, con el mensaje genérico de Yup en vez
-		// del propio. Mismo defecto que `absentToUndefined` resuelve en
-		// `costEntry.schema.ts` para el costo opcional.
+		// `''` (sin seleccionar) castea a `NaN`: sin esto, la boleta sin proveedor
+		// fallaría con el error de tipo de Yup.
 		.transform((value: number, originalValue: unknown) =>
 			originalValue === '' ? undefined : value,
 		)
@@ -265,10 +230,8 @@ export const purchaseDocumentFormSchema = Yup.object({
 		}),
 	document_number: Yup.string().required('Indica el folio.').max(50, 'Máximo 50 caracteres.'),
 	issue_date: Yup.string().required('Indica la fecha de emisión.'),
-	// Informativo y opcional (sección 6), pero si se escribe algo tiene que ser
-	// un decimal real: sin esta prueba, un texto no numérico se serializaba
-	// como `null` en silencio (`toOptionalDecimal` en `usePurchaseDocumentForm`)
-	// y el usuario nunca se enteraba de que lo que escribió no se guardó.
+	// Opcional, pero si se escribe tiene que ser un decimal: el envío convierte
+	// en `null` lo que no lo es, y lo escrito se perdería en silencio.
 	total_amount: Yup.string()
 		.max(20, 'Monto demasiado largo.')
 		.test('decimal-valido', 'Usa un monto con hasta dos decimales.', (value) => {
@@ -299,10 +262,6 @@ export const purchaseDocumentFormSchema = Yup.object({
 	notes: Yup.string().max(1000, 'Máximo 1000 caracteres.'),
 	items: Yup.array().of(lineSchema).min(1, 'Agrega al menos una línea.'),
 });
-
-/* =================================================
-   Alta en línea de producto
-   ================================================= */
 
 /**
  * Mismas reglas que el alta de producto por filial (`StoreSubsidiaryProductRequest`):

@@ -71,3 +71,28 @@ describe('toUpdatePayload — proveedor en la edición de un documento', () => {
 		expect(toUpdatePayload(values, document)).toHaveProperty('supplier_id', null);
 	});
 });
+
+describe('toUpdatePayload — costo de las líneas', () => {
+	it('envía el costo de cada línea con dos decimales y su base', async () => {
+		const { data: document } = await getPurchaseDocument(SUBSIDIARY_ID, DRAFT_INVOICE_ID);
+		const values = toFormValues(document, 'invoice');
+		const [firstLine] = values.items;
+		values.items = [{ ...firstLine, unit_cost: '5712', unit_cost_basis: 'gross' }];
+
+		expect(toUpdatePayload(values, document).items?.[0]).toMatchObject({
+			unit_cost: '5712.00',
+			unit_cost_basis: 'gross',
+		});
+	});
+
+	it.each([
+		['sin monto', { unit_cost: '', unit_cost_basis: 'net' as const }],
+		['sin base', { unit_cost: '100', unit_cost_basis: '' as const }],
+	])('una línea %s no se envía con un costo inventado', async (_case, cost) => {
+		const { data: document } = await getPurchaseDocument(SUBSIDIARY_ID, DRAFT_INVOICE_ID);
+		const values = toFormValues(document, 'invoice');
+		values.items = [{ ...values.items[0], ...cost }];
+
+		expect(() => toUpdatePayload(values, document)).toThrow();
+	});
+});

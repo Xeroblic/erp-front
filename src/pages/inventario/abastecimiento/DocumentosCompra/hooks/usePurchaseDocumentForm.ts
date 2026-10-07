@@ -7,7 +7,7 @@ import {
 	createPurchaseDocumentThunk,
 	updatePurchaseDocumentThunk,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
-import { normalizeCostInput } from '@/components/procurement';
+import { normalizeCostInput, toCostEntryPayload } from '@/components/procurement';
 import { formatDecimalCents, parseDecimalString } from '@/utils/procurementDecimal.util';
 import type {
 	IPurchaseDocument,
@@ -20,14 +20,9 @@ import { EMPTY_DOCUMENTO_LINE, EMPTY_DOCUMENTO_VALUES, purchaseDocumentFormSchem
 import type { IPurchaseDocumentFormValues, IDocumentoCompraLineFormValues } from '../types';
 
 /**
- * Formik + `useIdempotentWrite` del alta y edición de documento de compra
- * (card 03, sección 6). Un solo hook para las dos: el contrato usa el mismo
- * cuerpo en `POST` y en los campos editables de `PATCH`, con la diferencia de
- * que la edición exige `If-Match` con el `ETag` vigente.
- *
- * La edición sólo se ofrece en `draft` (la ficha ya filtra `allowed_actions`
- * antes de abrir este formulario), así que no hay que resolver acá qué pasa
- * si el documento está confirmado.
+ * Alta y edición de documento de compra: el contrato usa el mismo cuerpo en
+ * `POST` y en `PATCH`, que además exige `If-Match` con el `ETag` vigente. La
+ * edición sólo se ofrece en `draft` (la ficha filtra `allowed_actions`).
  */
 
 const toOptionalDecimal = (value: string): string | null => {
@@ -66,14 +61,21 @@ export const toFormValues = (
 				})),
 			};
 
-const toLineInput = (line: IDocumentoCompraLineFormValues): IPurchaseDocumentLineInput => ({
-	id: line.id,
-	product_id: Number(line.product_id),
-	quantity: Number(line.quantity),
-	unit_cost: toOptionalDecimal(line.unit_cost) ?? '0.00',
-	unit_cost_basis: line.unit_cost_basis || 'gross',
-	notes: line.notes.trim() || null,
-});
+/**
+ * El schema exige monto y base en toda línea. Si aun así faltan, se aborta el
+ * envío: inventar un costo guardaría la compra con un monto que nadie escribió.
+ */
+const toLineInput = (line: IDocumentoCompraLineFormValues): IPurchaseDocumentLineInput => {
+	const cost = toCostEntryPayload(line);
+	if (cost === null) throw new Error('La línea no tiene un costo unitario válido.');
+	return {
+		id: line.id,
+		product_id: Number(line.product_id),
+		quantity: Number(line.quantity),
+		...cost,
+		notes: line.notes.trim() || null,
+	};
+};
 
 const toPayload = (values: IPurchaseDocumentFormValues): IPurchaseDocumentCreatePayload => ({
 	document_type: values.document_type,
@@ -89,11 +91,10 @@ const toPayload = (values: IPurchaseDocumentFormValues): IPurchaseDocumentCreate
 });
 
 /**
- * En edición, un proveedor que no cambió no se reenvía. Enviarlo obliga a
- * resolverlo de nuevo, y quien puede editar el documento sin
- * `view-procurement-supplier` terminaba con «El proveedor no existe» aunque
- * no lo hubiera tocado. El backend completa el `supplier_id` guardado cuando
- * sólo llega `document_type`, así que omitirlo no rompe la regla de factura.
+ * En edición, un proveedor que no cambió no se reenvía: el backend lo
+ * resolvería de nuevo y, sin `view-procurement-supplier`, respondería «El
+ * proveedor no existe». Con sólo `document_type`, el backend completa el
+ * `supplier_id` guardado, así que la regla de factura se mantiene.
  */
 export const toUpdatePayload = (
 	values: IPurchaseDocumentFormValues,
@@ -148,7 +149,7 @@ interface IUsePurchaseDocumentFormArgs {
 	 * Tipo con que abre un alta. Quien no puede listar proveedores no puede
 	 * elegir el que exige la factura, así que su alta abre como boleta.
 	 */
-	defaultDocumentType?: TPurchaseDocumentType;
+	defaultDocumentType: TPurchaseDocumentType;
 	onSuccess?: (document: IPurchaseDocument) => void;
 }
 
@@ -156,7 +157,7 @@ const usePurchaseDocumentForm = ({
 	subsidiaryId,
 	document = null,
 	etag = null,
-	defaultDocumentType = 'invoice',
+	defaultDocumentType,
 	onSuccess,
 }: IUsePurchaseDocumentFormArgs) => {
 	const dispatch = useAppDispatch();
@@ -199,10 +200,8 @@ const usePurchaseDocumentForm = ({
 			);
 
 			if (result) {
-				// Sólo en alta: en edición el modal cierra sobre la ficha que ya se
-				// está viendo. `EMPTY_DOCUMENTO_VALUES` es un objeto compartido —
-				// sin resetear con una copia fresca de líneas, «Nuevo documento»
-				// reabriría con las líneas del envío anterior.
+				// Copia fresca de líneas: `EMPTY_DOCUMENTO_VALUES` es compartido y el
+				// próximo «Nuevo documento» reabriría con las líneas de este envío.
 				if (!isEdit)
 					resetForm({
 						values: {
@@ -217,25 +216,15 @@ const usePurchaseDocumentForm = ({
 	});
 
 	/**
-	 * `true` mientras el ETag con el que se abrió este formulario quedó
-	 * obsoleto (412). El contrato exige recargar el recurso antes de volver a
-	 * editar: reintentar con la misma clave y el ETag viejo repetiría el
-	 * mismo 412, y renovar sólo la clave no soluciona nada porque el problema
-	 * es la versión, no la idempotencia.
+	 * El ETag con que se abrió quedó obsoleto (412). Reintentar, con la misma
+	 * clave o con otra, repetiría el 412: hay que recargar el documento.
 	 */
 	const [hasVersionConflict, setHasVersionConflict] = useState(false);
 
 	/**
-	 * Igual criterio que `useSupplierForm`: un 422 con `fieldErrors` se pinta
-	 * sobre el input correspondiente —también los de línea, `items.N.campo`— y
-	 * siempre se toastea. La clave se renueva salvo que el error admita
-	 * reintentar con la misma.
-	 *
-	 * `RESOURCE_VERSION_CONFLICT` es la excepción: acá no alcanza con
-	 * renovar la clave, porque lo que quedó obsoleto es el ETag, no la
-	 * `Idempotency-Key`. El formulario se bloquea y `hasVersionConflict`
-	 * le pide al contenedor (el modal) que recargue el documento — ver
-	 * `PurchaseDocumentFormModal`.
+	 * Un 422 se pinta sobre su campo (también `items.N.campo`) y la clave se
+	 * renueva salvo que el error admita reintentar con la misma. El conflicto de
+	 * versión no se arregla con otra clave: bloquea el formulario hasta recargar.
 	 */
 	useEffect(() => {
 		const resolved = idempotentWrite.error;

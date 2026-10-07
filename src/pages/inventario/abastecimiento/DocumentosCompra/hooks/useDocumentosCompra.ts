@@ -170,22 +170,6 @@ const useDocumentosCompra = () => {
 		[dispatch, subsidiaryId, params],
 	);
 
-	/**
-	 * Tras confirmar o anular, la fila puede salir del filtro vigente (un
-	 * confirmado deja de calzar con «Borrador»). Igual criterio que
-	 * `refreshAfterMutation` de proveedores: si era la única fila de una
-	 * página que no es la primera, retrocede una en vez de dejarla vacía.
-	 */
-	const refreshAfterMutation = useCallback(() => {
-		const isLastRowOnLastPage =
-			items.length === 1 && page > 1 && meta !== null && meta.current_page === meta.last_page;
-		if (isLastRowOnLastPage) {
-			update({ page: Math.max(1, page - 1) });
-			return undefined;
-		}
-		return refresh();
-	}, [items.length, meta, page, refresh, update]);
-
 	const setSearchValue = useCallback((value: string) => update({ search: value }), [update]);
 	const clearFilters = useCallback(
 		() =>
@@ -267,7 +251,6 @@ const useDocumentosCompra = () => {
 		setIssuedToValue,
 		onPaginationChange,
 		refresh,
-		refreshAfterMutation,
 		isCreateModalOpen,
 		setIsCreateModalOpen,
 	};
