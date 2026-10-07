@@ -45,21 +45,26 @@ export interface IInventoryState {
 	listaMovimientoSucursal: IInventoryMovement[];
 	pagination: IInventoryPagination;
 	listRequestId: string | null;
+	/** Sucursal a la que pertenecen lista, paginación, carga y error. */
+	listBranchId: number | null;
 }
+
+export const EMPTY_INVENTORY_PAGINATION: IInventoryPagination = {
+	currentPage: 1,
+	totalPages: 1,
+	totalItems: 0,
+	perPage: 20,
+	hasNextPage: false,
+	hasPrevPage: false,
+};
 
 const initialState: IInventoryState = {
 	loading: false,
 	error: undefined,
 	listaMovimientoSucursal: [],
-	pagination: {
-		currentPage: 1,
-		totalPages: 1,
-		totalItems: 0,
-		perPage: 20,
-		hasNextPage: false,
-		hasPrevPage: false,
-	},
+	pagination: EMPTY_INVENTORY_PAGINATION,
 	listRequestId: null,
+	listBranchId: null,
 };
 
 export interface FetchMovimientosParams {
@@ -129,14 +134,20 @@ const inventorySlice = createSlice({
 			state.loading = false;
 			state.error = undefined;
 			state.listRequestId = null;
+			state.listBranchId = null;
 		},
 	},
 	extraReducers: (builder) => {
 		builder
 			.addCase(fetchListaMovimientoSucursalThunk.pending, (state, action) => {
+				if (state.listBranchId !== action.meta.arg.branch_id) {
+					state.listaMovimientoSucursal = [];
+					state.pagination = EMPTY_INVENTORY_PAGINATION;
+				}
 				state.loading = true;
 				state.error = undefined;
 				state.listRequestId = action.meta.requestId;
+				state.listBranchId = action.meta.arg.branch_id;
 			})
 			.addCase(fetchListaMovimientoSucursalThunk.fulfilled, (state, action) => {
 				if (state.listRequestId !== action.meta.requestId) return;
@@ -174,6 +185,7 @@ export const selectMovimientosSucursal = (state: RootState) =>
 export const selectInventarioPagination = (state: RootState) => state.inventario.pagination;
 export const selectInventarioLoading = (state: RootState) => state.inventario.loading;
 export const selectInventarioError = (state: RootState) => state.inventario.error;
+export const selectInventarioListBranchId = (state: RootState) => state.inventario.listBranchId;
 
 export const { clearListaMovimientoSucursal } = inventorySlice.actions;
 export default inventorySlice.reducer;

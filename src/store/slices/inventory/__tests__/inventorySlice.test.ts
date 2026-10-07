@@ -71,6 +71,29 @@ describe('inventorySlice · lista de movimientos por sucursal', () => {
 		expect(state.loading).toBe(false);
 	});
 
+	it('registra la sucursal dueña de la lista y no conserva la de otra al pedir una nueva', () => {
+		let state = initial();
+		state = reducer(state, fetchListaMovimientoSucursalThunk.pending('one', branchOne));
+		state = reducer(
+			state,
+			fetchListaMovimientoSucursalThunk.fulfilled(
+				makeResponse([makeMovement(10, 1)], '/page/2'),
+				'one',
+				branchOne,
+			),
+		);
+		expect(state.listBranchId).toBe(1);
+
+		state = reducer(state, fetchListaMovimientoSucursalThunk.pending('two', branchTwo));
+
+		expect(state.listBranchId).toBe(2);
+		expect(state.listaMovimientoSucursal).toEqual([]);
+		expect(state.pagination.hasNextPage).toBe(false);
+
+		state = reducer(state, clearListaMovimientoSucursal());
+		expect(state.listBranchId).toBeNull();
+	});
+
 	it('no agrega a la lista vigente una página «cargar más» de una consulta reemplazada', () => {
 		const appendArg = { ...branchOne, page: 2, append: true };
 		let state = initial();

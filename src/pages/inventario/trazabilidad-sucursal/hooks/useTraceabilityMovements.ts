@@ -7,7 +7,9 @@ import {
 	selectInventarioPagination,
 	selectInventarioLoading,
 	selectInventarioError,
+	selectInventarioListBranchId,
 	clearListaMovimientoSucursal,
+	EMPTY_INVENTORY_PAGINATION,
 	IInventoryFilters,
 	FetchMovimientosParams,
 } from '@/store/slices/inventory/inventorySlice';
@@ -27,22 +29,66 @@ interface UseTraceabilityMovementsOptions {
 
 type TraceabilityRequest = ReturnType<ReturnType<typeof fetchListaMovimientoSucursalThunk>>;
 
+/** Estado local de la consulta, etiquetado con la sucursal que lo produjo. */
+interface IRequestState {
+	branchId: number | null;
+	status: FetchStatus;
+	hasFetched: boolean;
+	isLoadingMore: boolean;
+}
+
+const EMPTY_MOVEMENTS: ReturnType<typeof selectMovimientosSucursal> = [];
+
 export function useTraceabilityMovements(options: UseTraceabilityMovementsOptions = {}) {
 	const { autoFetch = true, perPage = 20 } = options;
 
 	const dispatch = useAppDispatch();
 
-	const movimientos = useAppSelector(selectMovimientosSucursal);
-	const pagination = useAppSelector(selectInventarioPagination);
-	const loading = useAppSelector(selectInventarioLoading);
-	const error = useAppSelector(selectInventarioError);
+	const rawMovimientos = useAppSelector(selectMovimientosSucursal);
+	const rawPagination = useAppSelector(selectInventarioPagination);
+	const rawLoading = useAppSelector(selectInventarioLoading);
+	const rawError = useAppSelector(selectInventarioError);
+	const listBranchId = useAppSelector(selectInventarioListBranchId);
 	const branches = useAppSelector(selectUserBranches);
 	const { branchId } = useCurrentBranch();
 
-	const [fetchStatus, setFetchStatus] = useState<FetchStatus>('idle');
-	const [hasFetched, setHasFetched] = useState(false);
+	const [requestState, setRequestState] = useState<IRequestState>({
+		branchId,
+		status: 'idle',
+		hasFetched: false,
+		isLoadingMore: false,
+	});
 	const [filters, setFilters] = useState<IInventoryFilters>({});
-	const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+	// La limpieza al cambiar de sucursal corre en un efecto, después del primer render con la
+	// sucursal nueva: hasta entonces sólo se expone lo que pertenece a la sucursal vigente.
+	const ownsList = branchId !== null && listBranchId === branchId;
+	const ownsRequestState = requestState.branchId === branchId;
+	const movimientos = ownsList ? rawMovimientos : EMPTY_MOVEMENTS;
+	const pagination = ownsList ? rawPagination : EMPTY_INVENTORY_PAGINATION;
+	const loading = ownsList && rawLoading;
+	const error = ownsList ? rawError : undefined;
+	const fetchStatus: FetchStatus = ownsRequestState ? requestState.status : 'idle';
+	const hasFetched = ownsRequestState && requestState.hasFetched;
+	const isLoadingMore = ownsRequestState && requestState.isLoadingMore;
+
+	const updateRequestState = useCallback(
+		(owner: number | null, patch: Partial<Omit<IRequestState, 'branchId'>>) => {
+			setRequestState((prev) => {
+				const base: IRequestState =
+					prev.branchId === owner
+						? prev
+						: {
+								branchId: owner,
+								status: 'idle',
+								hasFetched: false,
+								isLoadingMore: false,
+							};
+				return { ...base, ...patch };
+			});
+		},
+		[],
+	);
 
 	const fetchedBranchRef = useRef<number | null>(null);
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -81,9 +127,7 @@ export function useTraceabilityMovements(options: UseTraceabilityMovementsOption
 		cancelInFlight();
 		dispatch(clearListaMovimientoSucursal());
 		fetchedBranchRef.current = null;
-		setFetchStatus('idle');
-		setHasFetched(false);
-		setIsLoadingMore(false);
+		setRequestState({ branchId, status: 'idle', hasFetched: false, isLoadingMore: false });
 	}, [branchId, cancelInFlight, dispatch]);
 
 	const fetchData = useCallback(
@@ -101,8 +145,10 @@ export function useTraceabilityMovements(options: UseTraceabilityMovementsOption
 			cancelInFlight();
 
 			fetchedBranchRef.current = branchId;
-			setFetchStatus(append ? 'loading-more' : 'loading');
-			setIsLoadingMore(append);
+			updateRequestState(branchId, {
+				status: append ? 'loading-more' : 'loading',
+				isLoadingMore: append,
+			});
 
 			const params: FetchMovimientosParams & { append?: boolean } = {
 				branch_id: branchId,
@@ -117,14 +163,13 @@ export function useTraceabilityMovements(options: UseTraceabilityMovementsOption
 			timeoutRef.current = setTimeout(() => {
 				if (requestRef.current !== request) return;
 				cancelInFlight();
-				setIsLoadingMore(false);
 				if (append) {
 					// Conserva las páginas ya cargadas: sólo falla la página siguiente.
 					toast.error(LOAD_MORE_TIMEOUT);
-					setFetchStatus('success');
+					updateRequestState(branchId, { status: 'success', isLoadingMore: false });
 					return;
 				}
-				setFetchStatus('timeout');
+				updateRequestState(branchId, { status: 'timeout', isLoadingMore: false });
 			}, TIMEOUT_MS);
 
 			let failure: string | null = null;
@@ -137,16 +182,31 @@ export function useTraceabilityMovements(options: UseTraceabilityMovementsOption
 			if (requestRef.current !== request) return;
 			clearRequestTimer();
 			requestRef.current = null;
-			setHasFetched(true);
-			setIsLoadingMore(false);
 			if (failure !== null && append) {
 				toast.error(failure);
-				setFetchStatus('success');
+				updateRequestState(branchId, {
+					status: 'success',
+					hasFetched: true,
+					isLoadingMore: false,
+				});
 				return;
 			}
-			setFetchStatus(failure === null ? 'success' : 'error');
+			updateRequestState(branchId, {
+				status: failure === null ? 'success' : 'error',
+				hasFetched: true,
+				isLoadingMore: false,
+			});
 		},
-		[branchId, cancelInFlight, clearRequestTimer, dispatch, fetchStatus, filters, perPage],
+		[
+			branchId,
+			cancelInFlight,
+			clearRequestTimer,
+			dispatch,
+			fetchStatus,
+			filters,
+			perPage,
+			updateRequestState,
+		],
 	);
 
 	useEffect(() => {
@@ -162,10 +222,9 @@ export function useTraceabilityMovements(options: UseTraceabilityMovementsOption
 
 	const reload = useCallback(() => {
 		fetchedBranchRef.current = null;
-		setFetchStatus('idle');
-		setHasFetched(false);
+		updateRequestState(branchId, { status: 'idle', hasFetched: false });
 		void fetchData(1, filters, false);
-	}, [fetchData, filters]);
+	}, [branchId, fetchData, filters, updateRequestState]);
 
 	const loadMore = useCallback(() => {
 		if (pagination.hasNextPage && !isLoadingMore && fetchStatus !== 'loading') {
@@ -185,20 +244,18 @@ export function useTraceabilityMovements(options: UseTraceabilityMovementsOption
 		(newFilters: IInventoryFilters) => {
 			setFilters(newFilters);
 			fetchedBranchRef.current = null;
-			setFetchStatus('idle');
-			setHasFetched(false);
+			updateRequestState(branchId, { status: 'idle', hasFetched: false });
 			void fetchData(1, newFilters, false);
 		},
-		[fetchData],
+		[branchId, fetchData, updateRequestState],
 	);
 
 	const clearFilters = useCallback(() => {
 		setFilters({});
 		fetchedBranchRef.current = null;
-		setFetchStatus('idle');
-		setHasFetched(false);
+		updateRequestState(branchId, { status: 'idle', hasFetched: false });
 		void fetchData(1, {}, false);
-	}, [fetchData]);
+	}, [branchId, fetchData, updateRequestState]);
 
 	return {
 		movimientos,

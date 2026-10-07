@@ -84,6 +84,40 @@ const renderTraceability = () => {
 	return renderHook(() => useTraceabilityMovements(), { wrapper: Wrapper });
 };
 
+interface IRenderSnapshot {
+	branch: number | null;
+	ids: number[];
+	status: string;
+	next: boolean;
+	hasFetched: boolean;
+	error: string | undefined;
+}
+
+/** Registra cada render, no sólo el estado final tras los efectos. */
+const renderRecordingTraceability = () => {
+	const renders: IRenderSnapshot[] = [];
+	const store = configureStore({ reducer: { inventario: inventarioReducer } });
+	const Wrapper = ({ children }: PropsWithChildren) => (
+		<Provider store={store}>{children}</Provider>
+	);
+	const hook = renderHook(
+		() => {
+			const result = useTraceabilityMovements();
+			renders.push({
+				branch: result.branchId,
+				ids: result.movimientos.map((m) => m.id),
+				status: result.fetchStatus,
+				next: result.pagination.hasNextPage,
+				hasFetched: result.hasFetched,
+				error: result.error,
+			});
+			return result;
+		},
+		{ wrapper: Wrapper },
+	);
+	return { hook, renders };
+};
+
 describe('useTraceabilityMovements', () => {
 	beforeEach(() => {
 		branchContext.branchId = 1;
@@ -165,6 +199,51 @@ describe('useTraceabilityMovements', () => {
 
 		expect(hook.result.current.movimientos).toEqual([]);
 		expect(hook.result.current.pagination.hasNextPage).toBe(false);
+	});
+
+	it('desde el primer render tras cambiar de sucursal no expone datos, paginación ni estado de la anterior', async () => {
+		const { hook, renders } = renderRecordingTraceability();
+		await act(async () => {
+			requests[0].resolve(okResponse([makeMovement(10, 1)], true));
+			await Promise.resolve();
+		});
+		await waitFor(() => expect(hook.result.current.fetchStatus).toBe('success'));
+
+		renders.length = 0;
+		act(() => {
+			branchContext.branchId = 2;
+			hook.rerender();
+		});
+
+		const branchTwoRenders = renders.filter((r) => r.branch === 2);
+		expect(branchTwoRenders.length).toBeGreaterThan(0);
+		branchTwoRenders.forEach((snapshot) => {
+			expect(snapshot).toMatchObject({ ids: [], next: false, hasFetched: false });
+			expect(snapshot.status).not.toBe('success');
+		});
+	});
+
+	it('desde el primer render tras cambiar de sucursal no muestra el error de la anterior', async () => {
+		const { hook, renders } = renderRecordingTraceability();
+		await act(async () => {
+			requests[0].reject({ response: { data: { message: 'Falla sucursal uno' } } });
+			await Promise.resolve();
+		});
+		await waitFor(() => expect(hook.result.current.fetchStatus).toBe('error'));
+		expect(hook.result.current.error).toBe('Falla sucursal uno');
+
+		renders.length = 0;
+		act(() => {
+			branchContext.branchId = 2;
+			hook.rerender();
+		});
+
+		const branchTwoRenders = renders.filter((r) => r.branch === 2);
+		expect(branchTwoRenders.length).toBeGreaterThan(0);
+		branchTwoRenders.forEach((snapshot) => {
+			expect(snapshot.error).toBeUndefined();
+			expect(snapshot.status).not.toBe('error');
+		});
 	});
 
 	it('si falla «cargar más» conserva las páginas cargadas y avisa sin pantalla de error', async () => {
