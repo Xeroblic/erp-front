@@ -305,6 +305,11 @@ export default function useInventoryAdjustment(
 		firstPageError ??
 		(lookupFailed ? 'No se pudo consultar el saldo de todos los productos elegidos.' : null);
 
+	const retryStock = useCallback(() => {
+		if (firstPageError) setRetry((value) => value + 1);
+		else setPagedLookup((previous) => ({ ...previous, failedFor: null }));
+	}, [firstPageError]);
+
 	/** `null`: la ubicación no tiene el producto; `undefined`: saldo desconocido. */
 	const totalsFor = useCallback(
 		(productId: number | ''): IInventoryStockRow | null | undefined => {
@@ -433,6 +438,7 @@ export default function useInventoryAdjustment(
 		stockRows,
 		loadingStock,
 		stockError,
+		retryStock,
 		hasLocation,
 		totalsFor,
 		errorFor,

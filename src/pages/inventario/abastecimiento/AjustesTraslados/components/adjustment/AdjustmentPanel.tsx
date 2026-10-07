@@ -60,6 +60,7 @@ const AdjustmentPanel = ({
 		stockRows,
 		loadingStock,
 		stockError,
+		retryStock,
 		hasLocation,
 		totalsFor,
 		errorFor,
@@ -181,7 +182,17 @@ const AdjustmentPanel = ({
 								<Alert
 									color='red'
 									title='No se pudo cargar el stock de la ubicación'>
-									{stockError}
+									<div className='flex flex-wrap items-center gap-3'>
+										<span>{stockError}</span>
+										<Button
+											variant='outline'
+											color='red'
+											size='sm'
+											icon='HeroArrowPath'
+											onClick={retryStock}>
+											Reintentar
+										</Button>
+									</div>
 								</Alert>
 							)}
 							{hasLocation &&

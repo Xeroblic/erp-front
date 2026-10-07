@@ -482,8 +482,8 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			);
 		});
 
-		it('si falla la búsqueda en otras páginas, el saldo queda desconocido y no en cero', async () => {
-			await installPagedShelf();
+		it('si falla la búsqueda en otras páginas, el saldo queda desconocido hasta reintentar', async () => {
+			const mouseFit = await installPagedShelf();
 			const paged = stockDouble.list;
 			stockDouble.list = (branchId, params, signal) => {
 				if (params?.page === 2) return Promise.reject(new Error('Sin red'));
@@ -499,6 +499,20 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			).toBeInTheDocument();
 			const lines = screen.getByRole('table', { name: 'Líneas del ajuste' });
 			expect(within(lines).getAllByRole('cell')[2]).toHaveTextContent(/^—$/);
+
+			// Con la red de vuelta, «Reintentar» recupera el saldo sin cambiar la línea.
+			stockDouble.list = paged;
+			fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+			await waitFor(() =>
+				expect(within(lines).getAllByRole('cell')[2]).toHaveTextContent(
+					new RegExp(`^${mouseFit}$`),
+				),
+			);
+			expect(
+				screen.queryByText(
+					'No se pudo consultar el saldo de todos los productos elegidos.',
+				),
+			).not.toBeInTheDocument();
 		});
 	});
 });
