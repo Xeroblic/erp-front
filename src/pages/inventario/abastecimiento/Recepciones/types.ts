@@ -11,16 +11,12 @@ import type { TCostEntryBasis, TStockReceiptStatus } from '@/interface/procureme
 import { withinPendingPerDocumentLine } from './utils/pendingPerDocumentLine';
 
 /**
- * Tipos y validación de la pantalla de recepciones físicas (card 05,
- * sección 7 del contrato de abastecimiento). Los tipos de dominio —
- * `IStockReceipt`, `IStockReceiptCreatePayload`, etc.— viven en
+ * Tipos y validación de la pantalla de recepciones físicas (sección 7 del
+ * contrato de abastecimiento). Los tipos de dominio —`IStockReceipt`,
+ * `IStockReceiptCreatePayload`, etc.— viven en
  * `@/interface/procurement.interface.ts`; acá sólo lo propio de esta
  * pantalla: filtros con «Todos» y el formulario de alta con sus dos modos.
  */
-
-/* =================================================
-   Filtros del listado
-   ================================================= */
 
 export type TStockReceiptStatusFilter = TStockReceiptStatus | 'all';
 
@@ -69,16 +65,6 @@ export interface IRecepcionesFilters {
 	perPage: number;
 }
 
-export const DEFAULT_RECEPCIONES_FILTERS: IRecepcionesFilters = {
-	search: '',
-	status: 'all',
-	warehouseId: '',
-	receivedFrom: '',
-	receivedTo: '',
-	page: 1,
-	perPage: RECEPCIONES_PER_PAGE_DEFAULT,
-};
-
 /** Claves de la query que son del listado; cualquier otra se deja intacta. */
 export const RECEPCIONES_FILTER_KEYS = [
 	'search',
@@ -120,10 +106,6 @@ export const serializeRecepcionesFilters = (filters: IRecepcionesFilters): URLSe
 		params.set('per_page', String(filters.perPage));
 	return params;
 };
-
-/* =================================================
-   Formulario de alta (y corrección de `draft`/`failed`)
-   ================================================= */
 
 /** Dos caminos de alta (sección 7): con documento confirmado, o sin él. */
 export type TStockReceiptFormMode = 'with_document' | 'manual';

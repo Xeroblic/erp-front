@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
@@ -11,8 +11,12 @@ import {
 	selectStockReceiptsListSubsidiaryId,
 	selectStockReceiptsMeta,
 } from '@/store/slices/procurement/stockReceiptsSlice';
+import { listWarehousesForStockReceipts } from '@/services/procurement/stockReceipts.service';
 import { mergeListParams } from '@/utils/listSearchParams.util';
-import type { IStockReceiptListParams } from '@/interface/procurement.interface';
+import type {
+	IStockReceiptListParams,
+	IStockReceiptListRow,
+} from '@/interface/procurement.interface';
 import {
 	parseRecepcionesFilters,
 	RECEPCIONES_FILTER_KEYS,
@@ -21,12 +25,16 @@ import {
 } from '../types';
 import type { IRecepcionesFilters, TStockReceiptStatusFilter } from '../types';
 
+const NO_ROWS: IStockReceiptListRow[] = [];
+
+/** Lo que se descarta al cambiar de filial: la página y la bodega son de la anterior. */
+const SUBSIDIARY_RESET: Partial<IRecepcionesFilters> = { page: 1, warehouseId: '' };
+
 /**
- * Listado de recepciones (card 05, sección 7). Mismo patrón que
+ * Listado de recepciones (sección 7 del contrato). Mismo patrón que
  * `useDocumentosCompra`: filtros y paginación en la URL (con `replace`, sin
- * tocar `?purchase_document_id=`, que abre el alta), búsqueda debounced,
- * `params` memoizado y `refreshAfterMutation` para no dejar una página vacía
- * tras anular/revertir la última fila visible.
+ * tocar `?purchase_document_id=`, que abre el alta), búsqueda debounced y
+ * `params` memoizado.
  */
 const useRecepciones = () => {
 	const dispatch = useAppDispatch();
@@ -37,24 +45,27 @@ const useRecepciones = () => {
 	const rawError = useAppSelector(selectStockReceiptsListError);
 	const listSubsidiaryId = useAppSelector(selectStockReceiptsListSubsidiaryId);
 	/**
-	 * Propiedad de contexto (ZF-12, hallazgo 3): `items`/`meta`/`error` del
-	 * store sólo se muestran si pertenecen a la filial activa. El `pending`
-	 * del thunk ya limpia `items`/`meta` al empezar una petición nueva, pero
-	 * esto cubre la ventana **antes** de que esa petición llegue a salir —
-	 * mientras el debounce de búsqueda todavía retiene el `dispatch` — para
-	 * que un cambio de filial nunca pinte, ni por un instante, datos ajenos.
+	 * `items`/`meta`/`error` del store sólo se muestran si pertenecen a la
+	 * filial activa: cubre la ventana en que el debounce de búsqueda todavía
+	 * retiene la petición nueva. Sin filial activa, el thunk rechaza con
+	 * `listSubsidiaryId = null` y ese error sí es de este contexto.
 	 */
-	const isCurrentSubsidiaryData = listSubsidiaryId !== null && listSubsidiaryId === subsidiaryId;
-	const items = isCurrentSubsidiaryData ? rawItems : [];
+	const isCurrentSubsidiaryData = listSubsidiaryId === subsidiaryId;
+	const items = isCurrentSubsidiaryData ? rawItems : NO_ROWS;
 	const meta = isCurrentSubsidiaryData ? rawMeta : null;
 	const error = isCurrentSubsidiaryData ? rawError : null;
 
-	const [searchParams, setSearchParams] = useSearchParams();
-	const { search, status, warehouseId, receivedFrom, receivedTo, page, perPage } = useMemo(
-		() => parseRecepcionesFilters(searchParams),
-		[searchParams],
+	const authorizedBranchIds = useMemo(
+		() => visibleBranches.map((branch) => branch.id),
+		[visibleBranches],
 	);
-	const [debouncedSearch] = useDebounce(search, 300);
+	const warehouseOptions = useMemo(
+		() => listWarehousesForStockReceipts(authorizedBranchIds),
+		[authorizedBranchIds],
+	);
+
+	const [searchParams, setSearchParams] = useSearchParams();
+	const urlFilters = useMemo(() => parseRecepcionesFilters(searchParams), [searchParams]);
 
 	/** Cualquier cambio de filtro vuelve a la página 1; sólo paginar la conserva. */
 	const update = useCallback(
@@ -75,6 +86,34 @@ const useRecepciones = () => {
 		},
 		[setSearchParams],
 	);
+
+	/**
+	 * Otra filial es otro listado: la página puede no existir y la bodega es de
+	 * la anterior. Se descartan en el mismo render —la petición nunca sale con
+	 * ellos— y siguen descartados hasta que la URL los refleje: el router
+	 * aplica `setSearchParams` en una transición (`v7_startTransition`), después
+	 * del estado de este hook. Pasar de `null` a una filial no es un cambio: es
+	 * el perfil que terminó de cargar, y un enlace con `?warehouse_id=` debe
+	 * sobrevivirlo.
+	 */
+	const [filtersSubsidiaryId, setFiltersSubsidiaryId] = useState(subsidiaryId);
+	const isSubsidiarySwitch = filtersSubsidiaryId !== null && filtersSubsidiaryId !== subsidiaryId;
+	const isUrlReset = urlFilters.page === 1 && urlFilters.warehouseId === '';
+	const filters = useMemo(
+		() => (isSubsidiarySwitch ? { ...urlFilters, ...SUBSIDIARY_RESET } : urlFilters),
+		[isSubsidiarySwitch, urlFilters],
+	);
+	useEffect(() => {
+		if (filtersSubsidiaryId === subsidiaryId) return;
+		if (isSubsidiarySwitch && !isUrlReset) {
+			update(SUBSIDIARY_RESET);
+			return;
+		}
+		setFiltersSubsidiaryId(subsidiaryId);
+	}, [filtersSubsidiaryId, isSubsidiarySwitch, isUrlReset, subsidiaryId, update]);
+
+	const { search, status, warehouseId, receivedFrom, receivedTo, page, perPage } = filters;
+	const [debouncedSearch] = useDebounce(search, 300);
 
 	const isSearchDebouncing = search !== debouncedSearch;
 	const normalizedSearch = debouncedSearch.trim();
@@ -101,22 +140,6 @@ const useRecepciones = () => {
 		() => dispatch(fetchStockReceipts({ subsidiaryId, params })),
 		[dispatch, subsidiaryId, params],
 	);
-
-	/**
-	 * Tras anular/publicar, la fila puede salir del filtro vigente. Igual
-	 * criterio que `refreshAfterMutation` de documentos: si era la única fila
-	 * de una página que no es la primera, retrocede una en vez de dejarla
-	 * vacía.
-	 */
-	const refreshAfterMutation = useCallback(() => {
-		const isLastRowOnLastPage =
-			items.length === 1 && page > 1 && meta !== null && meta.current_page === meta.last_page;
-		if (isLastRowOnLastPage) {
-			update({ page: Math.max(1, page - 1) });
-			return undefined;
-		}
-		return refresh();
-	}, [items.length, meta, page, refresh, update]);
 
 	const setSearchValue = useCallback((value: string) => update({ search: value }), [update]);
 	const clearFilters = useCallback(
@@ -158,7 +181,7 @@ const useRecepciones = () => {
 	return {
 		branchId,
 		subsidiaryId,
-		visibleBranches,
+		authorizedBranchIds,
 		items,
 		meta,
 		loading: listLoading || isSearchDebouncing || !isCurrentSubsidiaryData,
@@ -166,6 +189,7 @@ const useRecepciones = () => {
 		search,
 		status,
 		warehouseId,
+		warehouseOptions,
 		receivedFrom,
 		receivedTo,
 		statusOptions: STOCK_RECEIPT_STATUS_FILTER_OPTIONS,
@@ -178,7 +202,6 @@ const useRecepciones = () => {
 		setReceivedToValue,
 		onPaginationChange,
 		refresh,
-		refreshAfterMutation,
 	};
 };
 

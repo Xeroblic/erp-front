@@ -201,7 +201,7 @@ const ReceiptDetailsStep: React.FC<IReceiptDetailsStepProps> = ({
 									id='recepcion-received-on'
 									className={RECEPCION_FIELD_CLASSNAME}
 									name='received_on'
-									// Hallazgo 6: `received_on` es inmutable en `failed`
+									// `received_on` es inmutable en `failed`
 									// (sección 7) — se corrige el resto del formulario, y
 									// recién al guardar (que vuelve la recepción a
 									// `draft`) la fecha vuelve a ser editable.

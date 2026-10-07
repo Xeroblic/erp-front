@@ -24,7 +24,7 @@ import type { TStockReceiptFormMode } from '../../types';
 
 /**
  * Alta (con documento o sin él) y corrección de recepción `draft`/`failed`
- * (card 05, sección 7). La corrección sólo se ofrece desde `allowed_actions`
+ * (sección 7 del contrato). La corrección sólo se ofrece desde `allowed_actions`
  * de la ficha, así que acá no hay que resolver ese caso; el `mode` queda
  * fijo al abrir en edición.
  *
@@ -46,7 +46,7 @@ interface IStockReceiptFormModalProps {
 	etag?: string | null;
 	/** Sólo en alta: preselecciona modo «con documento» y ese documento. */
 	initialDocumentId?: number;
-	/** Sucursales autorizadas del actor (hallazgo 5); `null`/vacío no filtra. */
+	/** Sucursales autorizadas del actor; `null`/vacío no filtra. */
 	authorizedBranchIds?: number[] | null;
 	onSuccess?: (receipt: IStockReceipt) => void;
 	/**
@@ -152,8 +152,8 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 			return;
 		}
 		setIsOpen(false);
-		// Hallazgo 8: con un resultado incierto pendiente (`canRetry`), cerrar
-		// no debe perder el comando — `reset()` limpia el formulario y la
+		// Con un resultado incierto pendiente (`canRetry`), cerrar no debe
+		// perder el comando: `reset()` limpia el formulario y la
 		// clave de idempotencia, y reabrir con datos en blanco pero la misma
 		// operación en curso llevaría a `IDEMPOTENCY_KEY_REUSED` en cuanto se
 		// vuelva a escribir algo, o a perder la única recuperación segura
@@ -221,8 +221,8 @@ const StockReceiptFormModal: React.FC<IStockReceiptFormModalProps> = ({
 							retryLabel={retryLabel}
 						/>
 
-						{/* Hallazgo 8: bloquea todo el comando mientras el resultado
-						    anterior sigue incierto — un `<fieldset disabled>` nativo
+						{/* Bloquea todo el comando mientras el resultado anterior
+						    sigue incierto: un `<fieldset disabled>` nativo
 						    deshabilita inputs, selects nativos y botones descendientes de
 						    una sola vez, así que un reintento reenvía exactamente lo que
 						    ya se había enviado. */}

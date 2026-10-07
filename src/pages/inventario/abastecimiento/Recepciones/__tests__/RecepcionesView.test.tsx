@@ -3,7 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import RecepcionesView from '../RecepcionesView';
 
 /**
@@ -14,6 +14,7 @@ import RecepcionesView from '../RecepcionesView';
  */
 
 const authDouble = vi.hoisted(() => ({ canWrite: true }));
+const contextDouble = vi.hoisted(() => ({ subsidiaryId: 2 as number | null }));
 
 vi.mock('@/hooks/useAuthorization', () => ({
 	default: () => ({ authorize: () => authDouble.canWrite }),
@@ -21,8 +22,8 @@ vi.mock('@/hooks/useAuthorization', () => ({
 vi.mock('../hooks/useRecepciones', () => ({
 	default: () => ({
 		branchId: 4,
-		subsidiaryId: 2,
-		visibleBranches: [{ id: 4, name: 'Central' }],
+		subsidiaryId: contextDouble.subsidiaryId,
+		authorizedBranchIds: [4],
 		items: [],
 		meta: null,
 		loading: false,
@@ -30,6 +31,7 @@ vi.mock('../hooks/useRecepciones', () => ({
 		search: '',
 		status: '',
 		warehouseId: '',
+		warehouseOptions: [],
 		receivedFrom: '',
 		receivedTo: '',
 		statusOptions: [],
@@ -97,6 +99,10 @@ const page = (entry: string) => (
 const renderPage = (entry: string) => render(page(entry));
 
 describe('RecepcionesView — alta desde ?purchase_document_id=', () => {
+	beforeEach(() => {
+		contextDouble.subsidiaryId = 2;
+	});
+
 	it('sin permiso avisa, limpia sólo el parámetro y no abre el alta', async () => {
 		authDouble.canWrite = false;
 		renderPage('/inventario/abastecimiento/recepciones?purchase_document_id=9&status=draft');
@@ -145,6 +151,150 @@ describe('RecepcionesView — alta desde ?purchase_document_id=', () => {
 
 		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 		expect(screen.getByTestId('location')).toHaveTextContent('');
+	});
+
+	it('si el permiso llega con el aviso abierto, abre el alta con ese documento', async () => {
+		authDouble.canWrite = false;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByText(DENIED_MESSAGE)).toBeInTheDocument();
+		await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(''));
+
+		authDouble.canWrite = true;
+		rerender(page(entry));
+
+		expect(await screen.findByRole('dialog', { name: 'Alta de recepción' })).toHaveTextContent(
+			'documento 9',
+		);
+		expect(screen.queryByText(DENIED_MESSAGE)).not.toBeInTheDocument();
+	});
+
+	it('cerrado el aviso, un permiso posterior ya no abre el alta', async () => {
+		authDouble.canWrite = false;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		fireEvent.click(await screen.findByRole('button', { name: 'Cerrar aviso' }));
+
+		authDouble.canWrite = true;
+		rerender(page(entry));
+
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+	});
+
+	it('si cambia la filial con el aviso abierto, descarta el alta pedida aunque la nueva tenga permiso', async () => {
+		authDouble.canWrite = false;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByText(DENIED_MESSAGE)).toBeInTheDocument();
+		await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(''));
+
+		contextDouble.subsidiaryId = 3;
+		authDouble.canWrite = true;
+		rerender(page(entry));
+
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+		// Volver a la filial de origen tampoco revive la intención descartada.
+		contextDouble.subsidiaryId = 2;
+		rerender(page(entry));
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+		expect(screen.queryByText(DENIED_MESSAGE)).not.toBeInTheDocument();
+	});
+
+	it('el alta abierta desde el aviso se cierra si después cambia la filial', async () => {
+		authDouble.canWrite = false;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByText(DENIED_MESSAGE)).toBeInTheDocument();
+		await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(''));
+		authDouble.canWrite = true;
+		rerender(page(entry));
+		expect(await screen.findByRole('dialog')).toHaveTextContent('documento 9');
+
+		contextDouble.subsidiaryId = 3;
+		rerender(page(entry));
+
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+	});
+
+	it('si cambia la filial sin permiso en ninguna, el aviso de la anterior desaparece', async () => {
+		authDouble.canWrite = false;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByText(DENIED_MESSAGE)).toBeInTheDocument();
+
+		contextDouble.subsidiaryId = 3;
+		rerender(page(entry));
+
+		expect(screen.queryByText(DENIED_MESSAGE)).not.toBeInTheDocument();
+	});
+
+	it('si la filial aún no cargó al llegar sin permiso, el alta se abre cuando el perfil termina de cargar', async () => {
+		authDouble.canWrite = false;
+		contextDouble.subsidiaryId = null;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByText(DENIED_MESSAGE)).toBeInTheDocument();
+		await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(''));
+
+		contextDouble.subsidiaryId = 2;
+		authDouble.canWrite = true;
+		rerender(page(entry));
+
+		expect(await screen.findByRole('dialog', { name: 'Alta de recepción' })).toHaveTextContent(
+			'documento 9',
+		);
+	});
+
+	it('el alta abierta con permiso desde la URL se cierra y limpia el parámetro si cambia la filial', async () => {
+		authDouble.canWrite = true;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9&status=draft';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByRole('dialog')).toHaveTextContent('documento 9');
+
+		contextDouble.subsidiaryId = 3;
+		rerender(page(entry));
+
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+		await waitFor(() =>
+			expect(screen.getByTestId('location')).toHaveTextContent('?status=draft'),
+		);
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+		expect(screen.queryByText(DENIED_MESSAGE)).not.toBeInTheDocument();
+	});
+
+	it('si cambia a una filial sin permiso con el alta de la URL abierta, no deja pendiente el documento de la anterior', async () => {
+		authDouble.canWrite = true;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByRole('dialog')).toHaveTextContent('documento 9');
+
+		contextDouble.subsidiaryId = 3;
+		authDouble.canWrite = false;
+		rerender(page(entry));
+
+		await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(''));
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+		expect(screen.queryByText(DENIED_MESSAGE)).not.toBeInTheDocument();
+
+		authDouble.canWrite = true;
+		rerender(page(entry));
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+	});
+
+	it('el alta abierta desde la URL con la filial aún sin resolver sigue abierta cuando el perfil termina de cargar', async () => {
+		authDouble.canWrite = true;
+		contextDouble.subsidiaryId = null;
+		const entry = '/inventario/abastecimiento/recepciones?purchase_document_id=9';
+		const { rerender } = renderPage(entry);
+		expect(await screen.findByRole('dialog')).toHaveTextContent('documento 9');
+
+		contextDouble.subsidiaryId = 2;
+		rerender(page(entry));
+
+		expect(screen.getByRole('dialog')).toHaveTextContent('documento 9');
+		expect(screen.getByTestId('location')).toHaveTextContent('?purchase_document_id=9');
 	});
 
 	it('sin parámetro y sin permiso no muestra el aviso', () => {

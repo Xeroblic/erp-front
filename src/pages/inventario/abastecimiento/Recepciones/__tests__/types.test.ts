@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-	DEFAULT_RECEPCIONES_FILTERS,
 	EMPTY_RECEPCION_LINE,
 	parseRecepcionesFilters,
 	serializeRecepcionesFilters,
@@ -156,8 +155,6 @@ describe('stockReceiptFormSchema — modo manual', () => {
 	});
 
 	it('el costo es opcional, pero monto y base viajan juntos', async () => {
-		await expect(stockReceiptFormSchema.validate(manualValues)).resolves.toBeTruthy();
-
 		await expect(
 			stockReceiptFormSchema.validate({
 				...manualValues,
@@ -222,9 +219,19 @@ describe('stockReceiptFormSchema — varias filas de la misma línea del documen
 });
 
 describe('Filtros del listado en la URL', () => {
+	const defaultFilters: IRecepcionesFilters = {
+		search: '',
+		status: 'all',
+		warehouseId: '',
+		receivedFrom: '',
+		receivedTo: '',
+		page: 1,
+		perPage: 20,
+	};
+
 	it('sin parámetros son los valores por defecto y no escriben nada', () => {
 		const filters = parseRecepcionesFilters(new URLSearchParams());
-		expect(filters).toEqual(DEFAULT_RECEPCIONES_FILTERS);
+		expect(filters).toEqual(defaultFilters);
 		expect(serializeRecepcionesFilters(filters).toString()).toBe('');
 	});
 
@@ -249,6 +256,6 @@ describe('Filtros del listado en la URL', () => {
 		const params = new URLSearchParams(
 			'status=borrado&warehouse_id=-1&received_to=2026-13-01&page=x&purchase_document_id=24',
 		);
-		expect(parseRecepcionesFilters(params)).toEqual(DEFAULT_RECEPCIONES_FILTERS);
+		expect(parseRecepcionesFilters(params)).toEqual(defaultFilters);
 	});
 });

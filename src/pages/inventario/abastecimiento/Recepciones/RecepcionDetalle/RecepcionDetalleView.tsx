@@ -16,7 +16,7 @@ import LinkPurchaseDocumentModal from './components/modals/LinkPurchaseDocumentM
 import StockReceiptFormModal from '../components/modals/StockReceiptFormModal';
 
 /**
- * Ficha de recepción física (card 05, sección 7 del contrato). El polling
+ * Ficha de recepción física (sección 7 del contrato). El polling
  * mientras está `queued` (espera creciente, tope y pausa con la pestaña
  * oculta) vive en `useRecepcionDetalle`; acá sólo se pinta lo
  * que el store tiene en cada momento — la pantalla nunca afirma que hay
@@ -101,7 +101,7 @@ const RecepcionDetalleView = () => {
 								allowedActions={receipt.allowed_actions}
 								resource='stock_receipt'
 								onAction={handleAction}
-								// Hallazgo 5: autoriza contra la sucursal **real** de la
+								// Autoriza contra la sucursal **real** de la
 								// recepción, no la sucursal activa de quien mira la
 								// pantalla — una bodega puede pertenecer a otra sucursal
 								// que la del usuario en ese momento.

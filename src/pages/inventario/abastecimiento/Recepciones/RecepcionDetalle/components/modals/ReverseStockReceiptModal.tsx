@@ -52,7 +52,7 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 	const handleClose = () => {
 		if (idempotentWrite.isSubmitting) return;
 		setIsOpen(false);
-		// Hallazgo 8: con un resultado incierto (`canRetry`), conserva el
+		// Con un resultado incierto (`canRetry`), conserva el
 		// motivo y la clave para poder reabrir y reintentar exactamente el
 		// mismo comando en vez de perderlo.
 		if (!idempotentWrite.canRetry) {
