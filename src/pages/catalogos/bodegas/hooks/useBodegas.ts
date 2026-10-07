@@ -26,7 +26,21 @@ import {
 	type TBodegaEstadoFiltro,
 } from '../types';
 
-const LIST_PARAMS: IFetchWarehousesParams = { page: 1, per_page: 15 };
+const LIST_PARAMS: IFetchWarehousesParams = { page: 1, per_page: 100 };
+
+const positiveOrNull = (value: unknown): number | null =>
+	typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
+
+/**
+ * Los vacíos del formulario viajan como `null` (o texto vacío, que el slice traduce): en la
+ * edición es lo que borra el valor guardado. Una capacidad `0` equivale a «sin límite».
+ */
+const toWarehousePayload = (values: ICreateWarehouseForm): ICreateWarehouseRequest => ({
+	...values,
+	maximum_capacity: positiveOrNull(values.maximum_capacity),
+	manager_id: positiveOrNull(values.manager_id),
+	commune_id: positiveOrNull(values.commune_id),
+});
 
 export const useBodegas = () => {
 	const dispatch = useAppDispatch();
@@ -41,7 +55,6 @@ export const useBodegas = () => {
 	);
 	const { stats, loading, error, deleting } = warehouseState;
 
-	// UI state
 	const [globalFilter, setGlobalFilter] = useState('');
 	const [typeFilter, setTypeFilter] = useState<string | null>(null);
 	const [statusFilter, setStatusFilter] = useState<TBodegaEstadoFiltro | null>(null);
@@ -63,12 +76,11 @@ export const useBodegas = () => {
 		[selection.selectedId, warehouses],
 	);
 
-	// CRUD handlers
 	const loadWarehouses = useCallback(
 		async (params?: IFetchWarehousesParams) => {
 			if (!branchId) return;
 			// El error queda en `state.error` y la vista lo muestra con «Reintentar».
-			await dispatch(fetchWarehouses({ branchId, params }));
+			await dispatch(fetchWarehouses({ branchId, params, allPages: true }));
 		},
 		[dispatch, branchId],
 	);
@@ -94,11 +106,16 @@ export const useBodegas = () => {
 	const handleUpdateWarehouse = useCallback(
 		async (warehouseId: number, data: IUpdateWarehouseRequest) => {
 			if (!branchId) return false;
+			const requestBranchId = branchId;
 			try {
-				await dispatch(updateWarehouse({ branchId, warehouseId, data })).unwrap();
+				await dispatch(
+					updateWarehouse({ branchId: requestBranchId, warehouseId, data }),
+				).unwrap();
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				toast.success('Bodega actualizada');
 				return true;
 			} catch (e: unknown) {
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				toast.error((e as IWarehouseApiError).message || 'Error al actualizar la bodega');
 				return false;
 			}
@@ -109,11 +126,16 @@ export const useBodegas = () => {
 	const handleDeleteWarehouse = useCallback(
 		async (warehouseId: number) => {
 			if (!branchId) return false;
+			const requestBranchId = branchId;
 			try {
-				await dispatch(deleteWarehouse({ branchId, warehouseId })).unwrap();
+				await dispatch(
+					deleteWarehouse({ branchId: requestBranchId, warehouseId }),
+				).unwrap();
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				toast.success('Bodega eliminada');
 				return true;
 			} catch (e: unknown) {
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				const apiError = e as IWarehouseApiError;
 				if (apiError.code === 'WAREHOUSE_HAS_PRODUCTS') {
 					toast.error('No se puede eliminar, tiene productos asociados');
@@ -126,21 +148,11 @@ export const useBodegas = () => {
 		[dispatch, branchId],
 	);
 
-	// Create Formik
 	const createForm = useFormik<ICreateWarehouseForm>({
 		initialValues: CREATE_WAREHOUSE_INITIAL_VALUES,
 		validationSchema: WarehouseSchema,
 		onSubmit: async (values, { setSubmitting, resetForm }) => {
-			const cleaned: ICreateWarehouseRequest = { ...values };
-			if (!cleaned.manager_id) delete cleaned.manager_id;
-			if (!cleaned.commune_id) delete cleaned.commune_id;
-			if (!cleaned.maximum_capacity) delete cleaned.maximum_capacity;
-			if (!cleaned.address || cleaned.address.trim() === '') delete cleaned.address;
-			if (!cleaned.schedule || cleaned.schedule.trim() === '') delete cleaned.schedule;
-			if (!cleaned.description || cleaned.description.trim() === '')
-				delete cleaned.description;
-
-			const success = await handleCreateWarehouse(cleaned);
+			const success = await handleCreateWarehouse(toWarehousePayload(values));
 			setSubmitting(false);
 			if (success) {
 				resetForm();
@@ -150,23 +162,16 @@ export const useBodegas = () => {
 		},
 	});
 
-	// Edit Formik
 	const editForm = useFormik<ICreateWarehouseForm>({
 		initialValues: CREATE_WAREHOUSE_INITIAL_VALUES,
 		validationSchema: WarehouseSchema,
 		enableReinitialize: true,
 		onSubmit: async (values, { setSubmitting }) => {
 			if (!selectedWarehouse) return;
-			const cleaned: IUpdateWarehouseRequest = { ...values };
-			if (!cleaned.manager_id) delete cleaned.manager_id;
-			if (!cleaned.commune_id) delete cleaned.commune_id;
-			if (!cleaned.maximum_capacity) delete cleaned.maximum_capacity;
-			if (!cleaned.address || cleaned.address.trim() === '') delete cleaned.address;
-			if (!cleaned.schedule || cleaned.schedule.trim() === '') delete cleaned.schedule;
-			if (!cleaned.description || cleaned.description.trim() === '')
-				delete cleaned.description;
-
-			const success = await handleUpdateWarehouse(selectedWarehouse.id, cleaned);
+			const success = await handleUpdateWarehouse(
+				selectedWarehouse.id,
+				toWarehousePayload(values),
+			);
 			setSubmitting(false);
 			if (success) {
 				setEditModalOpen(false);
@@ -176,21 +181,18 @@ export const useBodegas = () => {
 		},
 	});
 
-	// Load data
 	useEffect(() => {
 		if (branchId) {
 			void loadWarehouses(LIST_PARAMS);
 		}
 	}, [branchId, loadWarehouses]);
 
-	// Cleanup
 	useEffect(() => {
 		return () => {
 			dispatch(clearWarehouseError());
 		};
 	}, [dispatch]);
 
-	// Filtered warehouses
 	const filteredWarehouses = useMemo(() => {
 		const searchLower = globalFilter.trim().toLowerCase();
 		return warehouses.filter((w) => {
@@ -236,10 +238,12 @@ export const useBodegas = () => {
 		void loadWarehouses(LIST_PARAMS);
 	}, [loadWarehouses]);
 
-	// Actions
+	const { setValues: setEditValues } = editForm;
+	const { resetForm: resetCreateForm } = createForm;
+
 	const handleEdit = useCallback(
 		(warehouse: IWarehouse) => {
-			editForm.setValues({
+			setEditValues({
 				name: warehouse.name || '',
 				code: warehouse.code || '',
 				warehouse_type: warehouse.warehouse_type || 'Secundaria',
@@ -255,7 +259,7 @@ export const useBodegas = () => {
 			selection.select(warehouse.id);
 			setEditModalOpen(true);
 		},
-		[editForm, selection],
+		[setEditValues, selection],
 	);
 
 	const handleDelete = useCallback(
@@ -277,19 +281,19 @@ export const useBodegas = () => {
 	}, [selectedWarehouse, handleDeleteWarehouse, loadWarehouses, selection]);
 
 	const openCreateModal = useCallback(() => {
-		createForm.resetForm();
+		resetCreateForm();
 		createSelection.select('create');
-	}, [createForm, createSelection]);
+	}, [resetCreateForm, createSelection]);
 	const setCreateModalOpen = useCallback(
 		(nextIsOpen: boolean) => {
 			if (nextIsOpen) {
-				createForm.resetForm();
+				resetCreateForm();
 				createSelection.select('create');
 				return;
 			}
 			createSelection.clear();
 		},
-		[createForm, createSelection],
+		[resetCreateForm, createSelection],
 	);
 
 	const state = useMemo(
@@ -330,13 +334,7 @@ export const useBodegas = () => {
 		],
 	);
 
-	const forms = useMemo(
-		() => ({
-			create: createForm,
-			edit: editForm,
-		}),
-		[createForm, editForm],
-	);
+	const forms = { create: createForm, edit: editForm };
 
 	const actions = useMemo(
 		() => ({

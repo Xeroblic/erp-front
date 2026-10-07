@@ -1,5 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
+import { normalizeProduct } from '@/components/helper/product.helper';
+import type { IProduct } from '@/interface/product.interface';
 import type {
 	IWarehouse,
 	IWarehouseDetail,
@@ -11,8 +13,6 @@ import type {
 	IAttachProductRequest,
 	IDetachProductRequest,
 } from '@/interface/warehouse.interface';
-
-// ==================== Error Helper ====================
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -50,9 +50,7 @@ const extractApiError = (error: unknown): IWarehouseApiError => {
 	};
 };
 
-// ==================== State Interface ====================
-
-export interface WarehouseState {
+interface WarehouseState {
 	warehouses: IWarehouse[];
 	meta: IWarehouseListMeta;
 	stats: IWarehouseStats;
@@ -64,6 +62,7 @@ export interface WarehouseState {
 	deleting: boolean;
 	attachingProducts: boolean;
 	detachingProduct: boolean;
+	/** Sólo el fallo de carga del listado: los de alta, edición y baja se avisan con toast. */
 	error: string | null;
 	warehouseDetailError: string | null;
 	listBranchId: number | null;
@@ -72,8 +71,6 @@ export interface WarehouseState {
 	/** Última carga de detalle: una respuesta tardía de otra bodega o sucursal se descarta. */
 	detailRequestId: string | null;
 }
-
-// ==================== Initial State ====================
 
 const initialState: WarehouseState = {
 	warehouses: [],
@@ -106,8 +103,6 @@ const initialState: WarehouseState = {
 	createRequestId: null,
 	detailRequestId: null,
 };
-
-// ==================== Helper Functions ====================
 
 const computeWarehouseStats = (warehouses: IWarehouse[]): IWarehouseStats => {
 	const stats: IWarehouseStats = {
@@ -150,44 +145,131 @@ const computeWarehouseStats = (warehouses: IWarehouse[]): IWarehouseStats => {
 const defaultError = (action: { payload?: IWarehouseApiError }, fallback: string): string =>
 	action.payload?.message ?? fallback;
 
-// ==================== Async Thunks ====================
+const WAREHOUSE_PAGE_SIZE_DEFAULT = 15;
 
-export const fetchWarehouses = createAsyncThunk<
-	{ items: IWarehouse[]; meta: IWarehouseListMeta; stats: IWarehouseStats },
-	{ branchId: number; params?: IFetchWarehousesParams },
-	{ rejectValue: IWarehouseApiError }
->('warehouses/fetchWarehouses', async ({ branchId, params }, { rejectWithValue }) => {
-	try {
-		const response = await ApiService.fetchData<{
-			data?: IWarehouse[];
-			meta?: Partial<IWarehouseListMeta> & UnknownRecord;
-		}>({
-			url: `/branches/${branchId}/warehouses`,
-			method: 'get',
-			params: {
-				page: params?.page ?? 1,
-				per_page: params?.per_page ?? 15,
-				q: params?.q,
-				warehouse_type: params?.warehouse_type,
-				is_active: params?.is_active,
-			},
-		});
+const fetchWarehousePage = async (
+	branchId: number,
+	params?: IFetchWarehousesParams,
+): Promise<{ items: IWarehouse[]; meta: IWarehouseListMeta }> => {
+	const response = await ApiService.fetchData<{
+		data?: IWarehouse[];
+		meta?: Partial<IWarehouseListMeta> & UnknownRecord;
+	}>({
+		url: `/branches/${branchId}/warehouses`,
+		method: 'get',
+		params: {
+			page: params?.page ?? 1,
+			per_page: params?.per_page ?? WAREHOUSE_PAGE_SIZE_DEFAULT,
+			q: params?.q,
+			warehouse_type: params?.warehouse_type,
+			is_active: params?.is_active,
+		},
+	});
 
-		const items = Array.isArray(response.data?.data)
-			? response.data.data
-			: Array.isArray(response.data)
-				? response.data
-				: [];
+	const items = Array.isArray(response.data?.data)
+		? response.data.data
+		: Array.isArray(response.data)
+			? response.data
+			: [];
 
-		const metaSource = asRecord(response.data?.meta) ?? {};
-		const meta: IWarehouseListMeta = {
+	const metaSource = asRecord(response.data?.meta) ?? {};
+	return {
+		items,
+		meta: {
 			total: Number(metaSource.total ?? items.length),
 			current_page: Number(metaSource.current_page ?? params?.page ?? 1),
 			per_page: Number(metaSource.per_page ?? params?.per_page ?? (items.length || 1)),
 			last_page: Number(metaSource.last_page ?? 1),
-		};
+		},
+	};
+};
 
-		return { items, meta, stats: computeWarehouseStats(items) };
+/**
+ * Con `allPages` recorre todas las páginas y entrega el listado completo de la sucursal
+ * como una sola página: el backend sólo filtra por `q`, así que los filtros por tipo y
+ * estado y los totales del resumen se calculan en el cliente y necesitan todas las bodegas.
+ */
+export const fetchWarehouses = createAsyncThunk<
+	{ items: IWarehouse[]; meta: IWarehouseListMeta; stats: IWarehouseStats },
+	{ branchId: number; params?: IFetchWarehousesParams; allPages?: boolean },
+	{ rejectValue: IWarehouseApiError }
+>('warehouses/fetchWarehouses', async ({ branchId, params, allPages }, { rejectWithValue }) => {
+	try {
+		const first = await fetchWarehousePage(branchId, params);
+		if (!allPages || first.meta.last_page <= first.meta.current_page) {
+			return { ...first, stats: computeWarehouseStats(first.items) };
+		}
+
+		const remainingPages = Array.from(
+			{ length: first.meta.last_page - first.meta.current_page },
+			(_, index) => first.meta.current_page + index + 1,
+		);
+		const rest = await Promise.all(
+			remainingPages.map((page) => fetchWarehousePage(branchId, { ...params, page })),
+		);
+		const items = [...first.items, ...rest.flatMap((pageResult) => pageResult.items)];
+		return {
+			items,
+			meta: {
+				total: items.length,
+				current_page: 1,
+				per_page: items.length,
+				last_page: 1,
+			},
+			stats: computeWarehouseStats(items),
+		};
+	} catch (error: unknown) {
+		return rejectWithValue(extractApiError(error));
+	}
+});
+
+const BRANCH_PRODUCTS_PAGE_SIZE = 100;
+const BRANCH_PRODUCTS_PARALLEL_PAGES = 4;
+
+const fetchBranchProductsPage = async (
+	branchId: number,
+	page: number,
+): Promise<{ items: IProduct[]; lastPage: number }> => {
+	const response = await ApiService.fetchData<unknown>({
+		url: `/branches/${branchId}/products`,
+		method: 'get',
+		params: { page, per_page: BRANCH_PRODUCTS_PAGE_SIZE },
+	});
+	const body = asRecord(response.data);
+	const rawItems: unknown[] = Array.isArray(body?.data) ? body.data : [];
+	const lastPage = Number(asRecord(body?.meta)?.last_page ?? 1);
+	return {
+		items: rawItems.map(normalizeProduct),
+		lastPage: Number.isFinite(lastPage) ? lastPage : 1,
+	};
+};
+
+/**
+ * Catálogo completo de la sucursal para la ficha de bodega: de él salen los productos que
+ * se pueden asociar y la marca y el stock de los ya asociados. No pasa por el slice de
+ * productos porque cada página pisaría el listado que muestran otras pantallas, y las
+ * páginas se piden por tandas para no disparar decenas de peticiones a la vez.
+ */
+export const fetchBranchProductCatalog = createAsyncThunk<
+	IProduct[],
+	{ branchId: number },
+	{ rejectValue: IWarehouseApiError }
+>('warehouses/fetchBranchProductCatalog', async ({ branchId }, { rejectWithValue }) => {
+	try {
+		const first = await fetchBranchProductsPage(branchId, 1);
+		const products = [...first.items];
+		for (let start = 2; start <= first.lastPage; start += BRANCH_PRODUCTS_PARALLEL_PAGES) {
+			const pages = Array.from(
+				{ length: Math.min(BRANCH_PRODUCTS_PARALLEL_PAGES, first.lastPage - start + 1) },
+				(_, index) => start + index,
+			);
+			// eslint-disable-next-line no-await-in-loop
+			const results = await Promise.all(
+				pages.map((page) => fetchBranchProductsPage(branchId, page)),
+			);
+			results.forEach((result) => products.push(...result.items));
+		}
+		return products;
 	} catch (error: unknown) {
 		return rejectWithValue(extractApiError(error));
 	}
@@ -226,7 +308,9 @@ export const createWarehouse = createAsyncThunk<
 			key: string,
 			val: string | number | boolean | null | undefined,
 		) => {
-			if (val !== undefined && val !== null && val !== '') body[key] = val;
+			if (val === undefined || val === null) return;
+			if (typeof val === 'string' && val.trim() === '') return;
+			body[key] = val;
 		};
 
 		assignIfDefined('name', data.name);
@@ -272,13 +356,20 @@ export const updateWarehouse = createAsyncThunk<
 			key: string,
 			val: string | number | boolean | null | undefined,
 		) => {
-			if (val !== undefined && val !== null && val !== '') body[key] = val;
+			if (val === undefined || val === null) return;
+			if (typeof val === 'string' && val.trim() === '') return;
+			body[key] = val;
 		};
 
 		assignIfDefined('name', data.name);
 		assignIfDefined('code', data.code);
 		assignIfDefined('warehouse_type', data.warehouse_type);
-		assignIfDefined('description', data.description);
+		// En la edición, un texto opcional vacío viaja como `null`: es lo que borra el valor guardado.
+		const assignNullableText = (key: string, val: string | null | undefined) => {
+			if (val === undefined) return;
+			body[key] = val === null || val.trim() === '' ? null : val;
+		};
+		assignNullableText('description', data.description);
 
 		if (data.maximum_capacity !== undefined) {
 			body.maximum_capacity =
@@ -287,11 +378,11 @@ export const updateWarehouse = createAsyncThunk<
 		if (data.manager_id !== undefined) {
 			body.manager_id = data.manager_id === null ? null : Number(data.manager_id);
 		}
-		assignIfDefined('address', data.address);
+		assignNullableText('address', data.address);
 		if (data.commune_id !== undefined) {
 			body.commune_id = data.commune_id === null ? null : Number(data.commune_id);
 		}
-		assignIfDefined('schedule', data.schedule);
+		assignNullableText('schedule', data.schedule);
 		if (data.is_active !== undefined) body.is_active = Boolean(data.is_active);
 		if (data.requires_serial_tracking !== undefined)
 			body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
@@ -366,8 +457,6 @@ export const detachWarehouseProduct = createAsyncThunk<
 	}
 });
 
-// ==================== Slice ====================
-
 const warehouseSlice = createSlice({
 	name: 'warehouses/warehouseSlice',
 	initialState,
@@ -436,7 +525,6 @@ const warehouseSlice = createSlice({
 			.addCase(createWarehouse.pending, (state, action) => {
 				state.createRequestId = action.meta.requestId;
 				state.creating = true;
-				state.error = null;
 			})
 			.addCase(createWarehouse.fulfilled, (state, action) => {
 				if (state.createRequestId !== action.meta.requestId) return;
@@ -451,12 +539,9 @@ const warehouseSlice = createSlice({
 				if (state.createRequestId !== action.meta.requestId) return;
 				state.createRequestId = null;
 				state.creating = false;
-				if (state.listBranchId !== action.meta.arg.branchId) return;
-				state.error = defaultError(action, 'No se pudo crear la bodega');
 			})
 			.addCase(updateWarehouse.pending, (state) => {
 				state.updating = true;
-				state.error = null;
 			})
 			.addCase(updateWarehouse.fulfilled, (state, action) => {
 				state.updating = false;
@@ -469,13 +554,11 @@ const warehouseSlice = createSlice({
 					state.warehouseDetail = { ...state.warehouseDetail, ...action.payload };
 				}
 			})
-			.addCase(updateWarehouse.rejected, (state, action) => {
+			.addCase(updateWarehouse.rejected, (state) => {
 				state.updating = false;
-				state.error = defaultError(action, 'No se pudo actualizar la bodega');
 			})
 			.addCase(deleteWarehouse.pending, (state) => {
 				state.deleting = true;
-				state.error = null;
 			})
 			.addCase(deleteWarehouse.fulfilled, (state, action) => {
 				state.deleting = false;
@@ -486,9 +569,8 @@ const warehouseSlice = createSlice({
 					state.warehouseDetail = null;
 				}
 			})
-			.addCase(deleteWarehouse.rejected, (state, action) => {
+			.addCase(deleteWarehouse.rejected, (state) => {
 				state.deleting = false;
-				state.error = defaultError(action, 'No se pudo eliminar la bodega');
 			})
 			.addCase(attachWarehouseProducts.pending, (state) => {
 				state.attachingProducts = true;
