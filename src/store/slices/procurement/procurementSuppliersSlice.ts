@@ -40,8 +40,9 @@ export interface ProcurementSuppliersState {
 	current: IProcurementSupplier | null;
 	currentLoading: boolean;
 	currentError: string | null;
-	/** Filial dueña de `current`/`currentError`, mismo criterio que `listSubsidiaryId`. */
+	/** Filial y proveedor dueños de `current`/`currentError`, mismo criterio que `listSubsidiaryId`. */
 	currentSubsidiaryId: number | null;
+	currentSupplierId: number | null;
 	/** Descarta la respuesta tardía de una ficha anterior que llega después de pedir la siguiente. */
 	currentRequestId: string | null;
 	creating: boolean;
@@ -61,6 +62,7 @@ const initialState: ProcurementSuppliersState = {
 	currentLoading: false,
 	currentError: null,
 	currentSubsidiaryId: null,
+	currentSupplierId: null,
 	currentRequestId: null,
 	creating: false,
 	updating: false,
@@ -242,6 +244,7 @@ const procurementSuppliersSlice = createSlice({
 			state.current = null;
 			state.currentError = null;
 			state.currentSubsidiaryId = null;
+			state.currentSupplierId = null;
 			// Sin esto, una respuesta en vuelo de la ficha que se abandona
 			// podría llegar tarde y repoblar `current`.
 			state.currentRequestId = null;
@@ -288,6 +291,7 @@ const procurementSuppliersSlice = createSlice({
 				state.currentLoading = false;
 				state.current = action.payload;
 				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
+				state.currentSupplierId = action.meta.arg.id;
 			})
 			.addCase(fetchProcurementSupplierDetail.rejected, (state, action) => {
 				if (action.meta.requestId !== state.currentRequestId) return;
@@ -298,6 +302,7 @@ const procurementSuppliersSlice = createSlice({
 				);
 				state.current = null;
 				state.currentSubsidiaryId = action.meta.arg.subsidiaryId;
+				state.currentSupplierId = action.meta.arg.id;
 			})
 
 			.addCase(createProcurementSupplierThunk.pending, (state) => {
@@ -373,5 +378,9 @@ export const selectProcurementSupplierCurrentLoading = (state: RootState) =>
 	state.procurementSuppliers.currentLoading;
 export const selectProcurementSupplierCurrentError = (state: RootState) =>
 	state.procurementSuppliers.currentError;
+export const selectProcurementSupplierCurrentSubsidiaryId = (state: RootState) =>
+	state.procurementSuppliers.currentSubsidiaryId;
+export const selectProcurementSupplierCurrentSupplierId = (state: RootState) =>
+	state.procurementSuppliers.currentSupplierId;
 
 export default procurementSuppliersSlice.reducer;

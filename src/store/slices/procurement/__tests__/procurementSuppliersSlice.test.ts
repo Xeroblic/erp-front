@@ -167,7 +167,7 @@ describe('mutaciones', () => {
 		await store.dispatch(fetchProcurementSupplierDetail({ subsidiaryId: 5, id: 7 }));
 		const originalName = store.getState().current?.display_name;
 
-		await store.dispatch(
+		const updated = await store.dispatch(
 			updateProcurementSupplierThunk({
 				subsidiaryId: 4,
 				id: 7,
@@ -175,13 +175,23 @@ describe('mutaciones', () => {
 				headers: { idempotencyKey: 'clave-edicion-filial-4' },
 			}),
 		);
-		await store.dispatch(
+		const deactivated = await store.dispatch(
 			deactivateProcurementSupplierThunk({
 				subsidiaryId: 4,
 				id: 7,
 				headers: { idempotencyKey: 'clave-desactivar-filial-4' },
 			}),
 		);
+		const restored = await store.dispatch(
+			restoreProcurementSupplierThunk({
+				subsidiaryId: 4,
+				id: 7,
+				headers: { idempotencyKey: 'clave-restaurar-filial-4' },
+			}),
+		);
+		expect(updateProcurementSupplierThunk.fulfilled.match(updated)).toBe(true);
+		expect(deactivateProcurementSupplierThunk.fulfilled.match(deactivated)).toBe(true);
+		expect(restoreProcurementSupplierThunk.fulfilled.match(restored)).toBe(true);
 
 		const row = store.getState().items.find((item) => item.id === 7);
 		expect(store.getState().current?.display_name).toBe(originalName);
