@@ -6,7 +6,7 @@ import procurementSuppliersReducer, {
 import type { IProcurementSupplier } from '@/interface/procurement.interface';
 
 /**
- * Propiedad de contexto (ZF-12): una ficha de proveedor que resuelve tarde no
+ * Una ficha de proveedor que resuelve tarde no
  * puede pisar la que el usuario ya pidió después (proveedor distinto, o el
  * mismo tras cambiar de filial). El servicio real siempre resuelve en el
  * mismo orden en que se llama, así que esta carrera se simula mockeándolo con

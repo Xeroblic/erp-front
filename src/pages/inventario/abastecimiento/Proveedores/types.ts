@@ -3,17 +3,8 @@ import { validateRut } from '@/utils/validateRut';
 import type { IProcurementSupplierCommune } from '@/interface/procurement.interface';
 
 /**
- * Tipos y validación de la pantalla de maestro de proveedores (card 02,
- * sección 5 del contrato de abastecimiento). Los tipos de dominio —
- * `IProcurementSupplier`, `IProcurementSupplierPayload`, etc.— viven en
- * `@/interface/procurement.interface.ts`, compartidos con la ficha; acá sólo
- * lo propio de esta pantalla: el filtro de estado y el formulario.
- */
-
-/**
- * Modela «activos por defecto / inactivos / todos» como una sola elección en
- * vez de dos checkboxes independientes — así `is_active` e `include_inactive`
- * no pueden combinarse desde la UI, la restricción del contrato.
+ * Una sola elección en vez de dos checkboxes: el contrato prohíbe combinar
+ * `is_active` e `include_inactive`.
  */
 export type TSupplierStatusFilter = 'active' | 'inactive' | 'all';
 
@@ -29,10 +20,8 @@ export const SUPPLIER_STATUS_FILTER_OPTIONS: ISupplierStatusFilterOption[] = [
 ];
 
 /**
- * Valores del formulario de alta/edición. Todo string para que Formik e
- * `Input` trabajen sin controlar/no controlar; `toPayload` en
- * `useSupplierForm` convierte a `IProcurementSupplierPayload` recién al
- * enviar. Sin `display_name` ni `is_active`: no son campos del formulario.
+ * Todo string para que `Input` no alterne entre controlado y no controlado;
+ * `toPayload` (en `useSupplierForm`) convierte recién al enviar.
  */
 export interface ISupplierFormValues {
 	rut: string;
@@ -48,14 +37,9 @@ export interface ISupplierFormValues {
 }
 
 /**
- * El `TestContext` es de Yup, no del componente: definidas fuera del schema
- * para que `this.parent` no dispare `react/no-this-in-sfc` (mismo criterio
- * que `hasUsableName` en `CreateCustomerSaleModal`).
- *
- * Es una regla "al menos uno de los dos", validada en CADA campo (no un
- * `.test()` del objeto con un único `path` fijo): así, si ambos quedan
- * vacíos, los dos se marcan en rojo al enviar — no sólo `company_name` al
- * azar, dejando `contact_name` sin ningún indicio del error.
+ * Fuera del schema para que `this.parent` no dispare `react/no-this-in-sfc`.
+ * La regla «al menos uno de los dos» se valida en cada campo y no en el
+ * objeto: así, si ambos quedan vacíos, se marcan los dos.
  */
 function hasContactName(this: Yup.TestContext, company?: string) {
 	if (company?.trim()) return true;
@@ -72,11 +56,10 @@ function hasCompanyName(this: Yup.TestContext, contact?: string) {
 const NOMBRE_UTILIZABLE_MESSAGE = 'Ingresa razón social o nombre de contacto.';
 
 /**
- * Mismo formato que valida el backend: `+56` y 9 dígitos. Cubre celulares
- * (`+569…`), fijos de Santiago (`+562…`) y regionales (`+5632…`, `+5641…`).
- * No reutilizar el de `profile.validation.ts`: ese sólo admite celulares.
+ * Mismo formato que el backend: `+56` y 9 dígitos, celulares, fijos y
+ * regionales. El de `profile.validation.ts` sólo admite celulares.
  */
-export const PHONE_CL_REGEX = /^\+56\d{9}$/;
+const PHONE_CL_REGEX = /^\+56\d{9}$/;
 // Sin «ej.»: `Validation` parte el mensaje en cada punto.
 const PHONE_CL_MESSAGE = 'Ingresa 9 dígitos, por ejemplo 9 1234 5678 o 2 2123 4567.';
 
@@ -84,15 +67,10 @@ const PHONE_CL_MESSAGE = 'Ingresa 9 dígitos, por ejemplo 9 1234 5678 o 2 2123 4
 export const PHONE_CL_MAX_LENGTH = 12;
 
 /**
- * Completa el teléfono como lo haría el usuario, igual que
- * `normalizePhoneInput` del backend: quita espacios, guiones, puntos y
- * paréntesis, y agrega lo que falte del prefijo.
- * - `9 1234 5678` o `2 2123 4567` (9 dígitos) → `+56` delante.
- * - `56 9 1234 5678` (56 y 9 dígitos) → `+` delante.
- *
- * Nueve dígitos que empiezan con `56` quedan como están: ningún número
- * chileno empieza así (no hay código de área 56), así que es alguien
- * tecleando `56…` a medias y completarlo daría `+5656…`.
+ * Igual que `normalizePhoneInput` del backend: quita separadores y completa
+ * el prefijo `+56`. Nueve dígitos que empiezan con `56` quedan como están:
+ * no hay código de área 56, así que es alguien tecleando `56…` a medias y
+ * completarlo daría `+5656…`.
  */
 export const normalizePhone = (value: string): string => {
 	const phone = value.replace(/[\s\-.()]/g, '');
@@ -113,10 +91,9 @@ export const pastePhone = (current: string, pasted: string, start: number, end: 
 	);
 
 /**
- * Únicos obligatorios del contrato: RUT válido y razón social o contacto. El
- * resto —incluidos giro y ambas direcciones— es opcional acá: el contrato los
- * exige recién para confirmar una factura, no para guardar el proveedor
- * (sección 5). Ese requisito se advierte en la vista, no se bloquea acá.
+ * Sólo RUT y razón social o contacto son obligatorios: giro y direcciones los
+ * exige el contrato recién al confirmar una factura, así que la vista los
+ * advierte sin bloquear el guardado.
  */
 export const supplierFormSchema = Yup.object({
 	rut: Yup.string()
@@ -162,6 +139,5 @@ export const getMissingInvoicingFields = (values: ISupplierFormValues): string[]
 		values.shipping_commune_id === null && 'comuna de despacho',
 	].filter((field): field is string => typeof field === 'string');
 
-/** `true` cuando falta algo de lo que exige confirmar una factura. */
 export const isIncompleteForInvoicing = (values: ISupplierFormValues): boolean =>
 	getMissingInvoicingFields(values).length > 0;

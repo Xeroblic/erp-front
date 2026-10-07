@@ -18,13 +18,8 @@ import type { ISupplierFormValues } from '../types';
 import useSupplierRestore from './useSupplierRestore';
 
 /**
- * Formik + `useIdempotentWrite` del alta y edición de proveedor. Un solo
- * hook para las dos, porque el contrato usa el mismo cuerpo en `POST` y en
- * los campos editables de `PATCH` (sección 5) — la única diferencia es qué
- * thunk se llama.
- *
- * Compartido entre el listado (`Proveedores`) y la ficha
- * (`ProveedoresDetalle`): ambos abren el mismo modal para editar.
+ * Un solo hook para alta y edición: el contrato usa el mismo cuerpo en `POST`
+ * y en `PATCH`; sólo cambia el thunk.
  */
 
 const FORM_FIELD_BY_API_FIELD: Record<string, keyof ISupplierFormValues> = {
@@ -98,10 +93,8 @@ const useSupplierForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseSuppl
 			: 'No se pudo crear el proveedor.',
 	});
 	/**
-	 * Estado propio, no derivado de `idempotentWrite.error`: `renewKey()`
-	 * limpia ese error como parte de su contrato, y necesitamos poder renovar
-	 * la clave (abajo) sin que eso apague el banner de conflicto que el
-	 * usuario todavía tiene que resolver.
+	 * Estado propio, no derivado de `idempotentWrite.error`: `renewKey()` limpia
+	 * ese error y apagaría el banner de conflicto que el usuario aún no resolvió.
 	 */
 	const [conflict, setConflict] = useState<IProcurementSupplierRutConflict | null>(null);
 	const { restore, isRestoring } = useSupplierRestore({
@@ -138,11 +131,9 @@ const useSupplierForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseSuppl
 			);
 
 			if (result) {
-				// Sólo en alta: en edición el modal cierra y el próximo `enableReinitialize`
-				// parte de la ficha que corresponda. En alta, `initialValues` es
-				// siempre el mismo `EMPTY_VALUES` — sin resetear acá, la próxima
-				// apertura para «Nuevo proveedor» conservaría lo recién enviado,
-				// porque Formik no detecta un cambio en `initialValues` idéntico.
+				// En alta `initialValues` es siempre el mismo `EMPTY_VALUES`, así que
+				// `enableReinitialize` no dispara: sin resetear, el próximo «Nuevo
+				// proveedor» abriría con lo recién enviado.
 				if (!isEdit) resetForm({ values: EMPTY_VALUES });
 				onSuccess?.(result);
 			}
@@ -150,16 +141,10 @@ const useSupplierForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseSuppl
 	});
 
 	/**
-	 * Un 422 con `fieldErrors` se pinta sobre cada input y además se toastea.
-	 * El 409 de RUT duplicado **no** se toastea: lo resuelve el banner de
-	 * conflicto de la propia modal (`conflict`, abajo), no una notificación
-	 * que desaparece sola mientras la decisión de restaurar sigue pendiente.
-	 *
-	 * En ambos casos la clave se renueva: el contrato exige clave nueva tras
-	 * un error definitivo y la corrección del payload (sección 1), y ninguno
-	 * de estos dos es `retry_same_key`. Conservarla producía
-	 * `409 IDEMPOTENCY_KEY_REUSED` en el siguiente intento con datos
-	 * corregidos.
+	 * El 409 de RUT duplicado no se toastea: lo resuelve el banner de conflicto,
+	 * que no desaparece solo mientras la decisión de restaurar sigue pendiente.
+	 * Salvo `retry_same_key`, la clave se renueva: reusarla con el payload
+	 * corregido devolvería `409 IDEMPOTENCY_KEY_REUSED`.
 	 */
 	useEffect(() => {
 		const resolved = idempotentWrite.error;
@@ -176,17 +161,12 @@ const useSupplierForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseSuppl
 		}
 
 		if (resolved.action !== 'retry_same_key') idempotentWrite.renewKey();
-		// Sólo reacciona a un error nuevo: `formik` e `idempotentWrite` cambian
-		// de identidad en cada render y no son lo que este efecto observa.
+		// Sólo reacciona a un error nuevo; `formik` e `idempotentWrite` cambian
+		// de identidad en cada render.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [idempotentWrite.error]);
 
-	/**
-	 * El conflicto se limpia al tocar el RUT: seguir mostrando el proveedor en
-	 * conflicto de un RUT que el usuario ya cambió confundiría más de lo que
-	 * ayuda. La clave ya quedó renovada cuando llegó el 409 (arriba), así que
-	 * acá sólo se oculta el banner.
-	 */
+	/** El banner de conflicto deja de aplicar en cuanto el RUT cambia. */
 	const handleRutChange = useCallback(
 		(value: string) => {
 			setConflict(null);
@@ -196,11 +176,7 @@ const useSupplierForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseSuppl
 		[],
 	);
 
-	/**
-	 * Se normaliza al teclear: los separadores se descartan (con `maxLength`
-	 * contarían como caracteres y truncarían el número) y, al completar los 9
-	 * dígitos, se antepone el `+56` sin pedírselo al usuario.
-	 */
+	/** Se normaliza al teclear: con `maxLength`, los separadores truncarían el número. */
 	const handlePhoneChange = useCallback(
 		(value: string) => {
 			formik.setFieldValue('phone', normalizePhone(value)).catch(() => undefined);
@@ -226,14 +202,7 @@ const useSupplierForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseSuppl
 		[],
 	);
 
-	/**
-	 * Restaurar desde el conflicto es una decisión explícita del usuario,
-	 * nunca un efecto lateral de guardar: acción propia, separada del submit.
-	 * El contrato es explícito en que nunca se restaura solo. Delegada en
-	 * `useSupplierRestore`, la misma pieza que usan la fila del listado y la
-	 * ficha, para que las tres compartan `Idempotency-Key` y no cada una la
-	 * omita a su manera.
-	 */
+	/** El contrato exige que restaurar sea una acción explícita, nunca parte del submit. */
 	const restoreConflicting = useCallback(async () => {
 		if (!conflict) return;
 		await restore(conflict.id);
