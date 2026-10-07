@@ -21,9 +21,9 @@ import {
 	INVENTARIO_PATH,
 	inventarioProductoPath,
 	parseBodegaParam,
-	ubicacionFromWarehouseId,
 	type TInventarioUbicacion,
 } from '@/pages/inventario/Inventario/types';
+import { locationToken } from '@/utils/inventoryLocation.util';
 
 const BodegaSession = ({
 	branchId,
@@ -45,9 +45,8 @@ const BodegaSession = ({
 	);
 	const data = useInventario(branchId, owner, filtrosBodega, { withSummary: false });
 	const aggregate =
-		data.warehouses.find(
-			(item) => ubicacionFromWarehouseId(item.warehouse?.id ?? null) === ubicacion,
-		) ?? null;
+		data.warehouses.find((item) => locationToken(item.warehouse?.id ?? null) === ubicacion) ??
+		null;
 
 	const openProducto = useCallback(
 		(row: IInventoryOverviewRow) =>

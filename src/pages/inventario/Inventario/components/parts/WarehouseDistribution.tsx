@@ -11,8 +11,7 @@ interface IWarehouseDistributionProps {
 
 /**
  * «Dónde está» un producto: una pastilla por ubicación con sus unidades, en
- * el orden de A1 (Sin ubicación primero). Responde de un vistazo lo que antes
- * obligaba a filtrar bodega por bodega.
+ * el orden de A1 (Sin ubicación primero).
  */
 const WarehouseDistribution: React.FC<IWarehouseDistributionProps> = ({
 	warehouses,

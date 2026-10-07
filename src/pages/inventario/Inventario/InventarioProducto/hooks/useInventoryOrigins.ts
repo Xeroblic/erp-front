@@ -18,7 +18,7 @@ import type {
 	IInventoryStockOriginRow,
 } from '@/interface/procurement.interface';
 
-export interface IInventoryOriginLinks {
+interface IInventoryOriginLinks {
 	receipt: IPageLink | null;
 	supplier: IPageLink | null;
 	document: IPageLink | null;

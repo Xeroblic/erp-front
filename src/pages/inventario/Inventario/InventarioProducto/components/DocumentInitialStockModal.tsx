@@ -20,15 +20,13 @@ import usePurchaseDocumentPicker from '@/pages/inventario/abastecimiento/Recepci
 import type { IInventoryStockOriginRow } from '@/interface/procurement.interface';
 
 /**
- * `POST B/inventory-stock/{product}/document-allocations` (card 07, sección
- * 8): respalda documentalmente una porción del stock inicial de un `origin`
- * todavía sin documento. **Nunca ingresa mercadería**: `physical_stock_delta`
- * es siempre `0`, el mismo criterio de aceptación explícito que
- * `LinkPurchaseDocumentModal` — el texto va en la pantalla, no sólo en un
- * comentario de código.
+ * `POST B/inventory-stock/{product}/document-allocations` (§8): respalda
+ * documentalmente una porción del stock inicial de un `origin` todavía sin
+ * documento. **Nunca ingresa mercadería**: `physical_stock_delta` es siempre
+ * `0`, igual que en `LinkPurchaseDocumentModal`, y la pantalla lo dice.
  *
- * `warehouse_id` no viaja en `IInventoryStockOriginRow` (sección 3 del
- * contrato: la fila de procedencia no lo declara) — lo resuelve el llamador
+ * `warehouse_id` no viaja en `IInventoryStockOriginRow` (§3: la fila de
+ * procedencia no lo declara) — lo resuelve el llamador
  * desde el `context` de la consulta vigente (`InventoryOrigins`), que sólo es
  * inequívoco cuando el filtro de ubicación ya apunta a una bodega concreta o
  * a Sin ubicación, nunca a «sucursal completa» (ambigua entre bodegas).
@@ -112,9 +110,8 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 	const handleClose = () => {
 		if (idempotentWrite.isSubmitting) return;
 		setIsOpen(false);
-		// Hallazgo 8: con un resultado incierto (`canRetry`), conserva la
-		// selección y la clave para poder reabrir y reintentar exactamente el
-		// mismo comando en vez de perderlo.
+		// Con un resultado incierto (`canRetry`) conserva la selección y la clave:
+		// al reabrir se reintenta exactamente el mismo comando, sin duplicarlo.
 		if (!idempotentWrite.canRetry) {
 			setDocumentId('');
 			setLineId('');
@@ -181,8 +178,6 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 				<p className='text-lg'>
 					Respaldar unidades de la procedencia <strong>#{origin?.origin_id}</strong>
 				</p>
-				{/* Requisito de aceptación explícito del issue: delta físico cero
-				    visible antes de confirmar, no sólo un comentario de código. */}
 				<Alert
 					color='blue'
 					variant='outline'

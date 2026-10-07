@@ -10,11 +10,11 @@ import {
 } from '@/store/slices/procurement/inventoryOverviewSlice';
 import {
 	inventoryLocationParams,
-	ubicacionFromWarehouseId,
 	UmbralSchema,
 	type IUmbralFormValues,
 	type TInventarioUbicacion,
 } from '@/pages/inventario/Inventario/types';
+import { locationToken } from '@/utils/inventoryLocation.util';
 
 /**
  * Ficha de un producto en la sucursal activa (A4): totales, estado, desglose
@@ -54,7 +54,7 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 	const ubicaciones = useMemo(
 		() =>
 			(detail?.warehouses ?? []).map((location) => ({
-				value: ubicacionFromWarehouseId(location.warehouse?.id ?? null),
+				value: locationToken(location.warehouse?.id ?? null),
 				warehouse: location.warehouse,
 				quantity: location.physical_quantity,
 			})),
@@ -95,13 +95,12 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 		},
 	});
 
+	const { resetForm } = formik;
 	const openUmbral = useCallback(() => setUmbralOpen(true), []);
 	const closeUmbral = useCallback(() => {
 		setUmbralOpen(false);
-		formik.resetForm();
-		// `formik` cambia en cada render; sólo se necesita su `resetForm` estable.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [formik.resetForm]);
+		resetForm();
+	}, [resetForm]);
 
 	return {
 		detail,

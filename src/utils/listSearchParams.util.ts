@@ -63,7 +63,7 @@ export const mergeListParams = (
  * `state` de la navegación de un listado a una ficha: guarda su query para que
  * «Volver al listado» regrese a la misma vista filtrada.
  */
-export interface IListReturnState {
+interface IListReturnState {
 	listSearch: string;
 }
 

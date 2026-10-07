@@ -414,6 +414,8 @@ const ProductoSession = ({
 								))}
 							</div>
 						)}
+						{/* La `key` incluye la ubicación: cambiarla remonta la lista en la
+						    página 1 y sin filtros, que podrían no existir en la nueva. */}
 						<InventoryOrigins
 							key={`${owner}:${productId}:${ubicacion}`}
 							branchId={branchId}
@@ -451,7 +453,7 @@ const ProductoSession = ({
 
 /**
  * Ficha de un producto en el inventario de la sucursal: estado, dónde está y
- * de dónde vino. Reemplaza al detalle de Stock por ubicación.
+ * de dónde vino.
  */
 const InventarioProductoView = () => {
 	const navigate = useNavigate();

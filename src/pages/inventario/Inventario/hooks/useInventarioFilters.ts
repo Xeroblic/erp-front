@@ -31,7 +31,7 @@ const SIN_FILTROS: Partial<IInventarioFilters> = {
  * Viven en la URL y no en `useState` para que cada alerta pueda enlazar a su
  * lista filtrada, el botón «atrás» deshaga un filtro y un enlace copiado abra
  * exactamente lo mismo. No son un formulario que se envía: no hay nada que
- * validar, así que no usan Formik (mismo criterio que `useStockPorUbicacion`).
+ * validar, así que no usan Formik.
  *
  * Cualquier cambio de filtro vuelve a la página 1; sólo paginar la conserva.
  */

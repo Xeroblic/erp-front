@@ -6,19 +6,21 @@ import type { IInventoryStockListParams } from '@/interface/procurement.interfac
  * (`null`, una ubicación real, vendible y trasladable) y «no se eligió nada»
  * (cadena vacía) — una distinción que un `<select>` con `value={null}` borra.
  *
- * A diferencia del filtro de `StockPorUbicacion`, acá **no existe el token
- * `branch`**: un traslado y un ajuste ocurren en una ubicación concreta;
- * «sucursal completa» no es un lugar del que se pueda sacar ni al que se pueda
- * meter stock.
+ * A diferencia del filtro de ubicación de Inventario (`TInventarioUbicacion`),
+ * acá **no existe el token `branch`**: un traslado y un ajuste ocurren en una
+ * ubicación concreta; «sucursal completa» no es un lugar del que se pueda
+ * sacar ni al que se pueda meter stock.
  */
 export const UNLOCATED_TOKEN = 'unlocated';
 const WAREHOUSE_TOKEN_PREFIX = 'warehouse:';
+
+export type TLocationToken = typeof UNLOCATED_TOKEN | `${typeof WAREHOUSE_TOKEN_PREFIX}${number}`;
 
 export const LOCATION_TOKEN_PATTERN = new RegExp(
 	`^(${UNLOCATED_TOKEN}|${WAREHOUSE_TOKEN_PREFIX}[1-9]\\d*)$`,
 );
 
-export const locationToken = (warehouseId: number | null): string =>
+export const locationToken = (warehouseId: number | null): TLocationToken =>
 	warehouseId === null ? UNLOCATED_TOKEN : `${WAREHOUSE_TOKEN_PREFIX}${warehouseId}`;
 
 export const warehouseIdFromToken = (token: string): number | null =>

@@ -26,7 +26,7 @@ import InventoryTraceability from '@/pages/inventario/Inventario/components/trac
 import {
 	inventarioBodegaPath,
 	inventarioProductoPath,
-	type TInventarioVista,
+	isInventarioVista,
 } from '@/pages/inventario/Inventario/types';
 
 interface IInventarioSessionProps {
@@ -96,11 +96,12 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 			)}
 			<Tabs
 				activeTab={filtros.vista}
-				onTabChange={(tabId) => setVista(tabId as TInventarioVista)}
+				onTabChange={(tabId) => {
+					if (isInventarioVista(tabId)) setVista(tabId);
+				}}
 				variant='pills'
 				contentClassName='!mt-4'>
 				<Tab id='general' text='Por producto' icon='HeroListBullet'>
-					{/* Filtros y lista son dos tarjetas separadas, como en Recepciones. */}
 					{filtros.vista === 'general' && (
 						<div className='space-y-4'>
 							<InventarioFilters
@@ -165,8 +166,8 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 
 /**
  * Inventario de la sucursal activa: una sola vista para «cuánto hay, dónde
- * está y qué pide atención» (reemplaza a Stock por ubicación). Los reportes
- * con historia y comparaciones viven en Reportes › Inventario.
+ * está y qué pide atención». Los reportes con historia y comparaciones viven
+ * en Reportes › Inventario.
  */
 const InventarioView = () => {
 	const navigate = useNavigate();
