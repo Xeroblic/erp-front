@@ -13,11 +13,9 @@ export interface ITransferResultCardProps {
 }
 
 /**
- * Confirmación de lo aplicado.
- *
- * El encabezado enuncia el **neto cero** con las unidades contadas una vez: el
- * criterio de aceptación de la card es que un traslado de 5 unidades se lea
- * como 5 movidas, nunca como 10, aunque la operación tenga dos efectos.
+ * El encabezado enuncia el **neto cero** con las unidades contadas una vez: un
+ * traslado de 5 unidades se lee como 5 movidas, nunca como 10, aunque la
+ * operación tenga dos efectos.
  */
 const TransferResultCard: FC<ITransferResultCardProps> = ({ result, onDismiss }) => {
 	const { movement, products, fromLabel, toLabel } = result;

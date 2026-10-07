@@ -4,7 +4,7 @@ import { locationToken, UNLOCATED_TOKEN } from '@/utils/inventoryLocation.util';
 import type { IWarehouseCompact } from '@/interface/procurement.interface';
 
 /** Pestañas de la página: cada una es un flujo de escritura independiente. */
-export const AJUSTES_TRASLADOS_TABS = ['ajuste', 'traslado'] as const;
+const AJUSTES_TRASLADOS_TABS = ['ajuste', 'traslado'] as const;
 
 export type AjustesTrasladosTab = (typeof AJUSTES_TRASLADOS_TABS)[number];
 

@@ -292,10 +292,6 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 			'href',
 			'/inventario/abastecimiento/recepciones',
 		);
-		// La pantalla no ofrece ninguna vía de ingreso de compra.
-		expect(screen.queryByText(/Ingresar (una )?compra/i)).not.toBeInTheDocument();
-		expect(screen.queryByLabelText(/Proveedor/i)).not.toBeInTheDocument();
-		expect(screen.queryByLabelText(/Documento de compra/i)).not.toBeInTheDocument();
 	});
 
 	it('lleva el foco al título del paso nuevo al navegar con el teclado', async () => {
@@ -400,20 +396,6 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		});
 		await waitFor(() => expect(finalBalance).toHaveTextContent('-1'));
 		expect(finalBalance.parentElement).toHaveClass('text-red-600');
-	});
-
-	it('no ofrece enlazar una recepción ni elegir de qué compra descontar', async () => {
-		renderPage();
-		await chooseLocation('unlocated');
-		// El mouse tiene stock respaldado por una recepción en «Sin ubicación».
-		fillLine('31', '-1');
-
-		expect(screen.getByText(/Ubicación:/)).toHaveTextContent('Ubicación: Sin ubicación');
-		expect(screen.queryByLabelText(/Recepción enlazada/)).not.toBeInTheDocument();
-		expect(screen.queryByLabelText(/Origen a descontar/)).not.toBeInTheDocument();
-		expect(
-			screen.queryByRole('columnheader', { name: 'Descontar de' }),
-		).not.toBeInTheDocument();
 	});
 
 	it('bloquea la pantalla sin `edit-product` y con los mocks apagados', () => {

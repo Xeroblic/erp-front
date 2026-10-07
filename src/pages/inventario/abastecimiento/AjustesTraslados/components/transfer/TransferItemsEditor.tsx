@@ -29,12 +29,9 @@ export interface ITransferItemsEditorProps {
 }
 
 /**
- * Líneas de un traslado.
- *
  * **Una sola condición por línea, sin condición de destino.** El contrato
- * prohíbe la conversión entre condiciones dentro de un traslado (sección 9), y
- * la card lo exige como criterio de aceptación: la UI no puede ofrecer el
- * control que haría posible convertir apto en no apto al mover.
+ * prohíbe convertir entre condiciones dentro de un traslado, así que la UI no
+ * ofrece el control que permitiría pasar apto a no apto al mover.
  */
 const TransferItemsEditor: FC<ITransferItemsEditorProps> = ({
 	items,

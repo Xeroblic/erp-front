@@ -26,8 +26,8 @@ const useAjustesTraslados = () => {
 	const userId = useAppSelector((state) => state.auth.user?.id);
 	const [searchParams, setSearchParams] = useSearchParams();
 
-	// Sección 15 del contrato: traslados y ajustes son `edit-product` sobre las
-	// ubicaciones de la sucursal, no un permiso propio inventado.
+	// El contrato no define un permiso propio: traslados y ajustes son
+	// `edit-product` sobre las ubicaciones de la sucursal.
 	const canWrite = authorize({
 		permission: 'edit-product',
 		branchId,

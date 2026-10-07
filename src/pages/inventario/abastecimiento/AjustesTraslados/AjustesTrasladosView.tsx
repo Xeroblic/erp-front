@@ -41,8 +41,7 @@ const AjustesTrasladosTabs = ({
 
 	return (
 		<>
-			{/* Criterio de aceptación de la card: la pantalla no ofrece «ingresar una
-			    compra» — deriva a la recepción antes de elegir ajuste o traslado. */}
+			{/* La pantalla no ofrece «ingresar una compra»: deriva a la recepción. */}
 			<Alert
 				color='blue'
 				variant='outline'
@@ -146,7 +145,6 @@ const AjustesTrasladosView = () => {
 
 	return (
 		<PageWrapper isProtectedRoute title='Ajustes y traslados'>
-			{/* Mismo encabezado que el resto del módulo (Proveedores, Documentos, Recepciones). */}
 			<Subheader>
 				<SubheaderLeft>
 					<SubheaderTitle
