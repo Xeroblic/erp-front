@@ -16,14 +16,9 @@ import SupplierFormModal from './components/modals/SupplierFormModal';
 import DeactivateSupplierModal from './components/modals/DeactivateSupplierModal';
 
 /**
- * Listado del maestro de proveedores (card 02, sección 5 del contrato de
- * abastecimiento).
- *
- * Esta pantalla trabaja con la fila resumida del listado, que a propósito no
- * trae `purchase_summary` ni `allowed_actions` (esos son caros y no van por
- * fila). Por eso «Editar» no vive acá: el formulario de edición necesita la
- * ficha completa, así que se ofrece desde `ProveedoresDetalle`, que ya la
- * tiene cargada. Acá sólo hay alta, ver, desactivar y restaurar.
+ * La fila del listado no trae `purchase_summary` ni `allowed_actions`, así que
+ * «Editar» se ofrece desde `ProveedoresDetalle`, que ya tiene la ficha
+ * completa. Acá sólo hay alta, ver, desactivar y restaurar.
  */
 const ProveedoresView = () => {
 	const navigate = useNavigate();

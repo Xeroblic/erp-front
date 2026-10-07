@@ -27,10 +27,9 @@ import type { ISupplierSuppliedProductRow } from '../types';
  * permiso no se pide nada: la ruta de la ficha sólo exige
  * `view-procurement-supplier`, que no habilita leer recepciones.
  *
- * El estado se guarda junto con la filial y el proveedor que lo pidieron
- * (patrón ZF-12): al navegar a otro proveedor, el render intermedio ya no
- * muestra las filas ni el error del anterior, sin esperar al efecto de
- * limpieza.
+ * El estado se guarda junto con la filial y el proveedor que lo pidieron: al
+ * navegar a otro proveedor, el render intermedio no muestra las filas ni el
+ * error del anterior.
  *
  * El proveedor de la ficha es real y Recepciones todavía trabaja con
  * proveedores de prueba (`STOCK_RECEIPTS_USE_TEST_SUPPLIERS`): mientras sea

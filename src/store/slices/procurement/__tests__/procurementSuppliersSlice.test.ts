@@ -160,4 +160,43 @@ describe('mutaciones', () => {
 		expect(store.getState().current?.is_active).toBe(true);
 		expect(store.getState().items.find((row) => row.id === 7)?.is_active).toBe(true);
 	});
+
+	it('una escritura de otra filial no pisa la lista ni la ficha cargadas aunque el ID coincida', async () => {
+		const store = createStore();
+		await store.dispatch(fetchProcurementSuppliers({ subsidiaryId: 5 }));
+		await store.dispatch(fetchProcurementSupplierDetail({ subsidiaryId: 5, id: 7 }));
+		const originalName = store.getState().current?.display_name;
+
+		const updated = await store.dispatch(
+			updateProcurementSupplierThunk({
+				subsidiaryId: 4,
+				id: 7,
+				payload: { ...newSupplierPayload, rut: '76123456-0', company_name: 'Otra filial' },
+				headers: { idempotencyKey: 'clave-edicion-filial-4' },
+			}),
+		);
+		const deactivated = await store.dispatch(
+			deactivateProcurementSupplierThunk({
+				subsidiaryId: 4,
+				id: 7,
+				headers: { idempotencyKey: 'clave-desactivar-filial-4' },
+			}),
+		);
+		const restored = await store.dispatch(
+			restoreProcurementSupplierThunk({
+				subsidiaryId: 4,
+				id: 7,
+				headers: { idempotencyKey: 'clave-restaurar-filial-4' },
+			}),
+		);
+		expect(updateProcurementSupplierThunk.fulfilled.match(updated)).toBe(true);
+		expect(deactivateProcurementSupplierThunk.fulfilled.match(deactivated)).toBe(true);
+		expect(restoreProcurementSupplierThunk.fulfilled.match(restored)).toBe(true);
+
+		const row = store.getState().items.find((item) => item.id === 7);
+		expect(store.getState().current?.display_name).toBe(originalName);
+		expect(store.getState().current?.is_active).toBe(true);
+		expect(row?.display_name).toBe(originalName);
+		expect(row?.is_active).toBe(true);
+	});
 });

@@ -7,12 +7,7 @@ import { resetProcurementSuppliersStoreForTests } from '@/mocks/services/procure
 import procurementSuppliersReducer from '@/store/slices/procurement/procurementSuppliersSlice';
 import useSupplierRestore from '../useSupplierRestore';
 
-/**
- * `restore` es una escritura del contrato como cualquier otra: necesita su
- * propia `Idempotency-Key` (sección 1). Antes de esta pieza compartida, los
- * tres lugares que restauran (fila del listado, ficha, banner de conflicto)
- * la omitían.
- */
+/** `restore` es una escritura como cualquier otra: necesita su propia `Idempotency-Key`. */
 
 vi.mock(
 	'@/services/procurement/procurementSuppliers.service',

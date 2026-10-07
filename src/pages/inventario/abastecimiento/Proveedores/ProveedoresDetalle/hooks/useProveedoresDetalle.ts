@@ -8,32 +8,49 @@ import {
 	selectProcurementSupplierCurrent,
 	selectProcurementSupplierCurrentError,
 	selectProcurementSupplierCurrentLoading,
+	selectProcurementSupplierCurrentSubsidiaryId,
+	selectProcurementSupplierCurrentSupplierId,
 } from '@/store/slices/procurement/procurementSuppliersSlice';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
 import useSupplierRestore from '../../hooks/useSupplierRestore';
 import { formatCommuneWithRegion } from '../../types';
 
-/**
- * Ficha de proveedor (sección 5 del contrato). A diferencia del listado, acá
- * sí viaja `purchase_summary` y `allowed_actions`: es la única pantalla del
- * módulo que los pide, porque el resumen de compras es caro y no va por fila.
- */
+type TSupplierModal = 'update' | 'deactivate';
+
+interface IOpenModal {
+	modal: TSupplierModal;
+	subsidiaryId: number | null;
+	id: number | null;
+}
+
 const useProveedoresDetalle = () => {
 	const { proveedorId } = useParams();
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
 
-	const supplier = useAppSelector(selectProcurementSupplierCurrent);
-	const loading = useAppSelector(selectProcurementSupplierCurrentLoading);
-	const error = useAppSelector(selectProcurementSupplierCurrentError);
+	const storedSupplier = useAppSelector(selectProcurementSupplierCurrent);
+	const storedLoading = useAppSelector(selectProcurementSupplierCurrentLoading);
+	const storedError = useAppSelector(selectProcurementSupplierCurrentError);
+	const ownerSubsidiaryId = useAppSelector(selectProcurementSupplierCurrentSubsidiaryId);
+	const ownerSupplierId = useAppSelector(selectProcurementSupplierCurrentSupplierId);
+
+	const parsedId = Number(proveedorId);
+	const id = proveedorId !== undefined && Number.isFinite(parsedId) ? parsedId : null;
+
+	/**
+	 * La carga nueva y la limpieza de la anterior ocurren en el efecto, después
+	 * del render: hasta entonces la ficha de otra filial u otro proveedor no se
+	 * muestra, para que sus acciones no apunten al contexto nuevo.
+	 */
+	const isCurrentForContext = ownerSubsidiaryId === subsidiaryId && ownerSupplierId === id;
+	const supplier = isCurrentForContext ? storedSupplier : null;
+	const error = isCurrentForContext ? storedError : null;
+	const loading = storedLoading || (id !== null && !isCurrentForContext);
 
 	// La ficha trae la comuna anidada: no hace falta cargar el catálogo completo.
 	const billingCommuneName = formatCommuneWithRegion(supplier?.billing_commune);
 	const shippingCommuneName = formatCommuneWithRegion(supplier?.shipping_commune);
-
-	const parsedId = Number(proveedorId);
-	const id = proveedorId !== undefined && Number.isFinite(parsedId) ? parsedId : null;
 
 	useEffect(() => {
 		if (id === null) return undefined;
@@ -43,8 +60,27 @@ const useProveedoresDetalle = () => {
 		};
 	}, [dispatch, subsidiaryId, id]);
 
-	const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-	const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+	// Cada modal queda atado a la filial y al proveedor en que se abrió: fuera
+	// de ese contexto se cierra, y volver a él no lo reabre.
+	const [openModal, setOpenModal] = useState<IOpenModal | null>(null);
+	const activeModal =
+		openModal !== null && openModal.subsidiaryId === subsidiaryId && openModal.id === id
+			? openModal.modal
+			: null;
+	if (openModal !== null && activeModal === null) setOpenModal(null);
+	const setModalOpen = useCallback(
+		(modal: TSupplierModal, open: boolean) =>
+			setOpenModal(open ? { modal, subsidiaryId, id } : null),
+		[subsidiaryId, id],
+	);
+	const setIsFormModalOpen = useCallback(
+		(open: boolean) => setModalOpen('update', open),
+		[setModalOpen],
+	);
+	const setIsDeactivateModalOpen = useCallback(
+		(open: boolean) => setModalOpen('deactivate', open),
+		[setModalOpen],
+	);
 
 	const goToSupplier = useCallback(
 		(supplierId: number) => navigate(`/inventario/abastecimiento/proveedores/${supplierId}`),
@@ -60,35 +96,25 @@ const useProveedoresDetalle = () => {
 		void dispatch(fetchProcurementSupplierDetail({ subsidiaryId, id }));
 	}, [dispatch, subsidiaryId, id]);
 
-	/**
-	 * `restore` (sección 5) devuelve la ficha completa y ya la refleja en
-	 * `current` vía el propio thunk — a diferencia de `deactivate`, acá no
-	 * hace falta un `retry()` explícito tras el éxito.
-	 */
+	// `restore` devuelve la ficha completa y el thunk ya la refleja en `current`.
 	const { restore, isRestoring } = useSupplierRestore({ subsidiaryId });
 	const handleRestore = useCallback(async () => {
 		if (!supplier) return;
 		await restore(supplier.id);
 	}, [restore, supplier]);
 
-	/**
-	 * `deactivate` es 204 sin cuerpo (sección 5): el store sólo puede marcar
-	 * `is_active` con certeza, no `allowed_actions`. La ficha necesita el
-	 * dato fresco del backend para saber qué ofrece después, así que se
-	 * vuelve a pedir explícitamente.
-	 */
+	// `deactivate` es 204 sin cuerpo: `allowed_actions` sólo llega volviendo a pedir la ficha.
 	const handleDeactivated = useCallback(() => {
 		retry();
 	}, [retry]);
 
-	/** Traduce el click de `AllowedActionsToolbar` a la interacción de esta pantalla. */
 	const handleAction = useCallback(
 		(action: TProcurementAllowedAction) => {
 			if (action === 'update') setIsFormModalOpen(true);
 			else if (action === 'deactivate') setIsDeactivateModalOpen(true);
 			else if (action === 'restore') void handleRestore();
 		},
-		[handleRestore],
+		[handleRestore, setIsFormModalOpen, setIsDeactivateModalOpen],
 	);
 
 	return {
@@ -98,9 +124,9 @@ const useProveedoresDetalle = () => {
 		supplier,
 		loading,
 		error,
-		isFormModalOpen,
+		isFormModalOpen: activeModal === 'update',
 		setIsFormModalOpen,
-		isDeactivateModalOpen,
+		isDeactivateModalOpen: activeModal === 'deactivate',
 		setIsDeactivateModalOpen,
 		isRestoring,
 		handleAction,
