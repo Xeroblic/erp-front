@@ -7,17 +7,8 @@ import { resetPurchaseDocumentsStoreForTests } from '@/mocks/services/purchaseDo
 import { PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT } from '@/interface/procurement.interface';
 import useDocumentAttachments from '../useDocumentAttachments';
 
-/**
- * `useDocumentAttachments` es el único lugar que decide, del lado del
- * cliente, si un archivo se sube antes de golpear el servicio mock (sección
- * 6: «los límites se muestran antes de intentar subir, no sólo cuando el
- * servidor rechaza»). Estas pruebas verifican esa decisión y el ciclo
- * subir/descargar/eliminar, no las reglas del servicio — esas ya las cubre
- * `purchaseDocumentAttachments.mock.test.ts`.
- */
-
-// El servicio de adjuntos ya es real: estas pruebas ejercen el hook contra su
-// doble en memoria, que valida estado y cupo como el backend.
+// Las reglas del servicio las cubre `purchaseDocumentAttachments.mock.test.ts`;
+// acá se ejerce el hook contra ese doble en memoria, que valida estado y cupo.
 vi.mock(
 	'@/services/procurement/purchaseDocumentAttachments.service',
 	() => import('@/mocks/services/purchaseDocumentAttachments.mock'),
@@ -85,8 +76,7 @@ describe('useDocumentAttachments', () => {
 		await act(async () => {
 			await result.current.addFiles(asFileList([pdfFile('nueva-factura.pdf')]));
 		});
-		// `addFiles` no espera al refetch que dispara al terminar: la lista se
-		// actualiza en un efecto aparte, así que se espera por su resultado.
+		// La lista se refresca en un efecto aparte, después de `addFiles`.
 		await waitFor(() => expect(result.current.attachments).toHaveLength(1));
 
 		expect(result.current.attachments[0].file_name).toBe('nueva-factura.pdf');
@@ -95,12 +85,8 @@ describe('useDocumentAttachments', () => {
 	});
 
 	it('si la tanda falla a mitad de camino, refresca igual lo que sí se subió y deja el fallido en cola', async () => {
-		// Simula un 422 del servidor en el segundo archivo de la tanda (por
-		// ejemplo, otra pestaña agotó el cupo entre el chequeo del cliente y
-		// esta subida). Sin el fix, la lista se quedaba sin el primer archivo
-		// —que sí se guardó en el store mock— hasta el próximo refresco manual.
-		// El segundo ya no se descarta: queda en `uploadQueue` con su propio
-		// error, listo para reintentar sin afectar al primero.
+		// 422 en el segundo archivo: otra pestaña agotó el cupo entre el chequeo
+		// del cliente y esta subida.
 		const originalUpload = purchaseDocumentAttachmentsService.uploadPurchaseDocumentAttachment;
 		const uploadSpy = vi.spyOn(
 			purchaseDocumentAttachmentsService,
@@ -147,10 +133,6 @@ describe('useDocumentAttachments', () => {
 	});
 
 	it('reintentar un archivo fallido reutiliza la misma Idempotency-Key, no una nueva', async () => {
-		// Ante un timeout con resultado incierto, reintentar con clave nueva
-		// puede duplicar la subida en el backend real que este mock simula —
-		// por eso el reintento debe viajar con la misma clave del intento
-		// original, nunca con una recién generada.
 		const originalUpload = purchaseDocumentAttachmentsService.uploadPurchaseDocumentAttachment;
 		const uploadSpy = vi.spyOn(
 			purchaseDocumentAttachmentsService,
@@ -198,11 +180,8 @@ describe('useDocumentAttachments', () => {
 	});
 
 	it('una subida en curso al cambiar de documento no refresca el documento abandonado', async () => {
-		// Propiedad de contexto (ZF-12): el router reutiliza esta misma
-		// instancia del hook al navegar de un documento a otro. Sin la guarda
-		// de generación, la subida tardía de A resolvía después de navegar a
-		// B y llamaba a `onChanged` de A — que en la pantalla real recarga el
-		// documento equivocado por encima del que el usuario está mirando.
+		// En la pantalla real, `onChanged` de A recargaría el documento
+		// equivocado por encima del que el usuario está mirando.
 		const onChangedA = vi.fn();
 		const onChangedB = vi.fn();
 		const { result, rerender } = renderHook(
@@ -223,8 +202,6 @@ describe('useDocumentAttachments', () => {
 			addFilesPromise = result.current.addFiles(asFileList([pdfFile('tardio.pdf')]));
 		});
 
-		// Navega a otro documento antes de que la subida (con latencia
-		// artificial del mock) resuelva.
 		rerender({ documentId: CONFIRMED_WITH_ATTACHMENT_ID, onChanged: onChangedB });
 
 		await act(async () => {
@@ -232,8 +209,80 @@ describe('useDocumentAttachments', () => {
 		});
 
 		expect(onChangedA).not.toHaveBeenCalled();
-		// El documento nuevo tampoco debe heredar la cola ni el resultado del anterior.
 		expect(result.current.uploadQueue).toEqual([]);
+	});
+
+	it('la cola del documento nuevo se sube aunque la del abandonado siga en vuelo', async () => {
+		const originalUpload = purchaseDocumentAttachmentsService.uploadPurchaseDocumentAttachment;
+		const uploadSpy = vi.spyOn(
+			purchaseDocumentAttachmentsService,
+			'uploadPurchaseDocumentAttachment',
+		);
+		let releaseA!: () => void;
+		let releaseB!: () => void;
+		uploadSpy.mockImplementationOnce((...args) =>
+			new Promise<void>((resolve) => {
+				releaseA = resolve;
+			}).then(() => originalUpload(...args)),
+		);
+		uploadSpy.mockImplementationOnce((...args) =>
+			new Promise<void>((resolve) => {
+				releaseB = resolve;
+			}).then(() => originalUpload(...args)),
+		);
+
+		const onChangedA = vi.fn();
+		const onChangedB = vi.fn();
+		const { result, rerender } = renderHook(
+			({ documentId, onChanged }) =>
+				useDocumentAttachments({
+					subsidiaryId: SUBSIDIARY_A,
+					documentId,
+					canUpload: true,
+					canDelete: true,
+					onChanged,
+				}),
+			{ initialProps: { documentId: DRAFT_INVOICE_ID, onChanged: onChangedA } },
+		);
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		let addFilesA!: Promise<void>;
+		act(() => {
+			addFilesA = result.current.addFiles(asFileList([pdfFile('de-a.pdf')]));
+		});
+		await waitFor(() => expect(uploadSpy).toHaveBeenCalledTimes(1));
+
+		rerender({ documentId: CONFIRMED_WITH_ATTACHMENT_ID, onChanged: onChangedB });
+		await waitFor(() => expect(result.current.attachments).toHaveLength(1));
+
+		let addFilesB!: Promise<void>;
+		act(() => {
+			addFilesB = result.current.addFiles(asFileList([pdfFile('de-b.pdf')]));
+		});
+		await waitFor(() => expect(uploadSpy).toHaveBeenCalledTimes(2));
+		expect(uploadSpy.mock.calls[1][1]).toBe(CONFIRMED_WITH_ATTACHMENT_ID);
+
+		// El bucle abandonado termina mientras el de B sigue subiendo.
+		await act(async () => {
+			releaseA();
+			await addFilesA;
+		});
+		expect(result.current.isUploading).toBe(true);
+		expect(result.current.uploadQueue.map((item) => item.status)).toEqual(['uploading']);
+
+		await act(async () => {
+			releaseB();
+			await addFilesB;
+		});
+		await waitFor(() => expect(result.current.attachments).toHaveLength(2));
+
+		expect(result.current.attachments.map((item) => item.file_name)).toContain('de-b.pdf');
+		expect(result.current.uploadQueue).toEqual([]);
+		expect(result.current.isUploading).toBe(false);
+		expect(onChangedB).toHaveBeenCalledTimes(1);
+		expect(onChangedA).not.toHaveBeenCalled();
+
+		uploadSpy.mockRestore();
 	});
 
 	it('un tipo no permitido se rechaza en el cliente, sin llamar al servicio', async () => {
@@ -465,9 +514,8 @@ describe('useDocumentAttachments', () => {
 
 		expect(createObjectUrl).toHaveBeenCalledTimes(1);
 		expect(click).toHaveBeenCalledTimes(1);
-		// El `revokeObjectURL` corre en un `setTimeout(0)` real, aparte del
-		// `act` de arriba: se espera su resultado en vez de forzar timers
-		// falsos, que bloquearían el propio `waitFor` de esta prueba.
+		// `revokeObjectURL` corre en un `setTimeout(0)` real; timers falsos
+		// bloquearían el propio `waitFor`.
 		await waitFor(() => expect(revokeObjectUrl).toHaveBeenCalledTimes(1));
 
 		vi.unstubAllGlobals();
