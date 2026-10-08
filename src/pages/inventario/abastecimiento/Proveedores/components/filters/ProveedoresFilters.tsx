@@ -1,23 +1,11 @@
 import React from 'react';
-import type { MultiValue, SingleValue } from 'react-select';
 import Input from '@/components/form/Input';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import { singleSelectValue } from '@/utils/selectFilter.util';
 import type { ISupplierStatusFilterOption, TSupplierStatusFilter } from '../../types';
-
-/** Ninguno de estos selects es `isMulti`, pero `SelectReact` tipa el `onChange` genérico. */
-const isMultiValue = (
-	value: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
-): value is MultiValue<TSelectOption> => Array.isArray(value);
-
-const singleSelectValue = (
-	value: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
-): TSelectOption | null => {
-	if (value === null) return null;
-	return isMultiValue(value) ? (value[0] ?? null) : value;
-};
 
 interface IProveedoresFiltersProps {
 	search: string;

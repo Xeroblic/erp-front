@@ -1,5 +1,4 @@
 import React from 'react';
-import type { MultiValue, SingleValue } from 'react-select';
 import Input from '@/components/form/Input';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Icon from '@/components/icon/Icon';
@@ -15,18 +14,7 @@ import {
 	type IInventarioFilters,
 	type TInventarioUbicacion,
 } from '@/pages/inventario/Inventario/types';
-
-/** Ninguno de estos selects es `isMulti`, pero `SelectReact` tipa el `onChange` genérico. */
-const isMultiValue = (
-	value: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
-): value is MultiValue<TSelectOption> => Array.isArray(value);
-
-const singleSelectValue = (
-	value: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
-): TSelectOption | null => {
-	if (value === null) return null;
-	return isMultiValue(value) ? (value[0] ?? null) : value;
-};
+import { singleSelectValue } from '@/utils/selectFilter.util';
 
 const ESTADO_OPTIONS: TInventoryStockStatusFilter[] = [
 	'critical',
