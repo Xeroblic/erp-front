@@ -14,6 +14,12 @@ export { default as ConditionLabel, CONDITION_LABELS, CONDITION_OPTIONS } from '
 export type { IConditionLabelProps } from './ConditionLabel';
 
 export { default as StatusPill } from './StatusPill';
+export {
+	STOCK_STATUS_COLORS,
+	STOCK_STATUS_LABELS,
+	STOCK_STATUS_ORDER,
+	visibleStockStatus,
+} from './stockStatus';
 export type { IStatusPillProps, TStatusPillColor } from './StatusPill';
 
 export {

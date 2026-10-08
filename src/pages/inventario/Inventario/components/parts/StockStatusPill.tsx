@@ -1,18 +1,7 @@
 import React from 'react';
-import { StatusPill, type TStatusPillColor } from '@/components/procurement';
+import { STOCK_STATUS_COLORS, StatusPill } from '@/components/procurement';
 import type { IInventoryCriticalStock } from '@/interface/inventoryOverview.interface';
-import {
-	ESTADO_LABELS,
-	estadoVisible,
-	type TInventarioEstadoVisible,
-} from '@/pages/inventario/Inventario/types';
-
-const ESTADO_COLORS: Record<TInventarioEstadoVisible, TStatusPillColor> = {
-	critical: 'amber',
-	out: 'red',
-	unconfigured: 'zinc',
-	healthy: 'emerald',
-};
+import { ESTADO_LABELS, estadoVisible } from '@/pages/inventario/Inventario/types';
 
 interface IStockStatusPillProps {
 	critical: IInventoryCriticalStock | null;
@@ -44,7 +33,7 @@ const StockStatusPill: React.FC<IStockStatusPillProps> = ({ critical, fit = fals
 			</StatusPill>
 		);
 	return (
-		<StatusPill color={ESTADO_COLORS[estado]} width={9} fit={fit}>
+		<StatusPill color={STOCK_STATUS_COLORS[estado]} width={9} fit={fit}>
 			{ESTADO_LABELS[estado]}
 		</StatusPill>
 	);

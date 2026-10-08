@@ -5,7 +5,12 @@ import type {
 	TInventoryReportType,
 	TReplenishmentStatus,
 } from '@/interface/inventoryReports.interface';
-import type { TStatusPillColor } from '@/components/procurement';
+import {
+	STOCK_STATUS_COLORS,
+	STOCK_STATUS_LABELS,
+	STOCK_STATUS_ORDER,
+	type TStatusPillColor,
+} from '@/components/procurement';
 import {
 	isInventoryReportView,
 	type TInventoryReportView,
@@ -138,19 +143,11 @@ export const nextInventoryReportSort = (
 });
 
 /** Mismo texto y color que la etiqueta de estado de Inventario. */
-export const ESTADO_OPTIONS: { value: TInventoryStockStatusFilter; label: string }[] = [
-	{ value: 'out', label: 'Sin disponible' },
-	{ value: 'critical', label: 'Bajo el umbral' },
-	{ value: 'unconfigured', label: 'Sin umbral' },
-	{ value: 'healthy', label: 'Normal' },
-];
+export const ESTADO_OPTIONS: { value: TInventoryStockStatusFilter; label: string }[] =
+	STOCK_STATUS_ORDER.map((value) => ({ value, label: STOCK_STATUS_LABELS[value] }));
 
-export const ESTADO_COLORS: Record<TInventoryStockStatusFilter, TStatusPillColor> = {
-	out: 'red',
-	critical: 'amber',
-	unconfigured: 'zinc',
-	healthy: 'emerald',
-};
+export const ESTADO_COLORS: Record<TInventoryStockStatusFilter, TStatusPillColor> =
+	STOCK_STATUS_COLORS;
 
 export const REPLENISHMENT_LABELS: Record<TReplenishmentStatus, string> = {
 	suggested: 'Proveedor sugerido',
