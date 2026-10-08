@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReportsService } from '@/services/reports/reports.service';
+import type { RootState } from '@/store/rootReducer';
 import reducer, {
 	clearInventoryReports,
+	selectSalesResults,
 	type ReportsState,
 } from '@/store/slices/reports/reportSlice';
 import {
@@ -94,19 +96,35 @@ describe('reportSlice · Reportes › Inventario', () => {
 		expect(failed.inventory.stock_health?.error).toBe('No pudimos cargar el reporte.');
 	});
 
-	it('no toca `loading` ni `error`, que comparten Ventas y el dashboard', () => {
-		const shared: ReportsState = { ...initial, loading: true, error: 'ventas' };
+	it('no toca los resultados de ventas ni su carga', () => {
+		const salesArgs = {
+			consumer: 'sales' as const,
+			subsidiaryId: 2,
+			type: 'sales',
+			filters: {},
+		};
+		const withSales = reducer(initial, fetchReportResults.pending('s1', salesArgs));
 
-		let state = pending(shared, 'r1');
+		let state = pending(withSales, 'r1');
 		state = reducer(state, fetchInventoryReport.rejected(new Error('boom'), 'r1', request()));
 
-		expect(state).toMatchObject({ loading: true, error: 'ventas' });
+		expect(state.sales).toEqual(withSales.sales);
 		expect(reducer(state, clearInventoryReports()).inventory).toEqual({});
 	});
 });
 
-describe('reportSlice · resultados agregados (Ventas y dashboard)', () => {
-	const args = { subsidiaryId: 2, type: 'sales', filters: { date_from: '2026-01-01' } };
+describe('reportSlice · resultados de ventas (Ventas e Inicio)', () => {
+	const args = {
+		consumer: 'sales' as const,
+		subsidiaryId: 2,
+		type: 'sales',
+		filters: { date_from: '2026-01-01' },
+	};
+	const rootOf = (reports: ReportsState) => ({ reports }) as unknown as RootState;
+
+	beforeEach(() => {
+		getResults.mockReset();
+	});
 	const abortError = Object.assign(new Error('cancelada'), { name: 'AbortError' });
 
 	it('el abort de la consulta anterior no apaga el `loading` de la nueva ni pisa sus filas', () => {
@@ -114,13 +132,55 @@ describe('reportSlice · resultados agregados (Ventas y dashboard)', () => {
 		state = reducer(state, fetchReportResults.pending('new', args));
 		state = reducer(state, fetchReportResults.rejected(abortError, 'old', args));
 
-		expect(state).toMatchObject({ loading: true, error: null });
+		expect(state.sales.sales).toMatchObject({ loading: true, error: null });
 
 		state = reducer(state, fetchReportResults.fulfilled([{ id: 1 }], 'old', args));
-		expect(state.aggregatedResults).toBeNull();
+		expect(state.sales.sales.data).toBeNull();
 
 		state = reducer(state, fetchReportResults.fulfilled([{ id: 2 }], 'new', args));
-		expect(state).toMatchObject({ loading: false, aggregatedResults: [{ id: 2 }] });
+		expect(state.sales.sales).toMatchObject({ loading: false, data: [{ id: 2 }] });
+	});
+
+	it('Inicio y Ventas guardan sus resultados por separado', () => {
+		const dashboardArgs = { ...args, consumer: 'dashboard' as const, filters: {} };
+		let state = reducer(initial, fetchReportResults.pending('sales-1', args));
+		state = reducer(state, fetchReportResults.pending('home-1', dashboardArgs));
+		state = reducer(state, fetchReportResults.fulfilled([{ id: 1 }], 'sales-1', args));
+
+		expect(state.sales.sales).toMatchObject({ loading: false, data: [{ id: 1 }] });
+		expect(state.sales.dashboard).toMatchObject({ loading: true, data: null });
+
+		state = reducer(
+			state,
+			fetchReportResults.rejected(new Error('boom'), 'home-1', dashboardArgs, 'Sin red'),
+		);
+		expect(state.sales.dashboard.error).toBe('Sin red');
+		expect(state.sales.sales.error).toBeNull();
+	});
+
+	it('las filas de otra filial no se muestran ni se conservan al pedir la nueva', () => {
+		let state = reducer(initial, fetchReportResults.pending('a', args));
+		state = reducer(state, fetchReportResults.fulfilled([{ id: 1 }], 'a', args));
+
+		expect(selectSalesResults(rootOf(state), 'sales', 2).data).toEqual([{ id: 1 }]);
+		expect(selectSalesResults(rootOf(state), 'sales', 3).data).toBeNull();
+
+		const otherArgs = { ...args, subsidiaryId: 3 };
+		state = reducer(state, fetchReportResults.pending('b', otherArgs));
+		expect(state.sales.sales.data).toBeNull();
+	});
+
+	it('se detiene en last_page aunque la última página venga llena', async () => {
+		const page = (size: number, offset: number) =>
+			Array.from({ length: size }, (_, index) => ({ id: offset + index }));
+		getResults
+			.mockResolvedValueOnce({ data: page(200, 0), last_page: 2 })
+			.mockResolvedValueOnce({ data: page(200, 200), last_page: 2 });
+
+		const action = await fetchReportResults(args)(vi.fn(), () => ({}), undefined);
+
+		expect(action.payload).toHaveLength(400);
+		expect(getResults).toHaveBeenCalledTimes(2);
 	});
 
 	it('pide de a 200 filas hasta una página incompleta y las junta', async () => {

@@ -5,6 +5,7 @@ import Chart from '@/components/Chart';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
+import Alert from '@/components/ui/Alert';
 import Badge from '@/components/ui/Badge';
 import SalesAnalytics from '../components/SalesAnalytics';
 import { useSalesDashboard } from './hooks/useSalesDashboard';
@@ -86,6 +87,7 @@ const SalesDashboard: React.FC = () => {
 		stats,
 		topCustomers,
 		currentSubsidiaryId,
+		reportsError,
 		filters,
 		setFilters,
 		mapFilters,
@@ -246,6 +248,18 @@ const SalesDashboard: React.FC = () => {
 							onReset={() => setFilters({})}
 						/>
 					</div>
+
+					{/* Sin esto, una carga fallida dejaba los gráficos en cero sin explicación. */}
+					{reportsError && (
+						<Alert
+							className='order-1'
+							color='red'
+							variant='outline'
+							icon='HeroExclamationTriangle'
+							title='No pudimos cargar las ventas'>
+							{reportsError}
+						</Alert>
+					)}
 
 					{/* Fila de KPIs (Métricas Principales) */}
 					<div

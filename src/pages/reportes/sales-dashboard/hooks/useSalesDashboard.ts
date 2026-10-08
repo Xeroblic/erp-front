@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import { fetchReportResults } from '@/store/slices/reports/reportsThunks';
+import { selectSalesResults } from '@/store/slices/reports/reportSlice';
 import type { IReportResult } from '@/interface/reports.interface';
 import type {
 	SaleRecord,
@@ -73,7 +74,7 @@ const extractDate = (r: SaleRecord): string | null =>
 	r.sale_date || r.date || r.created_at || r.updated_at || null;
 
 const extractAmount = (r: SaleRecord): number => {
-	const raw = r.total_amount ?? (r as any).total ?? 0;
+	const raw = r.total_amount ?? r.total ?? 0;
 	return typeof raw === 'string' ? parseFloat(raw) || 0 : Number(raw) || 0;
 };
 
@@ -105,14 +106,15 @@ export function useSalesDashboard() {
 	const dispatch = useAppDispatch();
 	const currentSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 
-	// Normalizar datos del API
-	const resultsData = useAppSelector((s) => s.reports.aggregatedResults);
-	const results: SaleRecord[] = useMemo(() => {
-		if (!resultsData) return [];
-		return resultsData as SaleRecord[];
-	}, [resultsData]);
-
-	const reportsLoading = useAppSelector((s) => s.reports.loading);
+	const {
+		data: resultsData,
+		loading: reportsLoading,
+		error: reportsError,
+	} = useAppSelector((s) => selectSalesResults(s, 'sales', currentSubsidiaryId));
+	const results: SaleRecord[] = useMemo(
+		() => (resultsData ?? []) as unknown as SaleRecord[],
+		[resultsData],
+	);
 
 	// Mapear filtros al formato API
 	const mapFilters = (f: ReportFiltersState): MappedFilters => {
@@ -146,7 +148,12 @@ export function useSalesDashboard() {
 		if (!sid) return;
 
 		const promise = dispatch(
-			fetchReportResults({ subsidiaryId: sid, type: 'sales', filters: mapFilters(filters) }),
+			fetchReportResults({
+				consumer: 'sales',
+				subsidiaryId: sid,
+				type: 'sales',
+				filters: mapFilters(filters),
+			}),
 		);
 
 		return () => {
@@ -297,7 +304,7 @@ export function useSalesDashboard() {
 			const amount = Math.max(0, rawAmount); // Solo sumamos positivos para las barras
 			const retVal = extractReturns(r);
 
-			let statusRaw = String(r.status || (r as any).estado || '')
+			let statusRaw = String(r.status || r.estado || '')
 				.toLowerCase()
 				.trim();
 			if (statusRaw.startsWith('wc-')) statusRaw = statusRaw.substring(3);
@@ -453,6 +460,7 @@ export function useSalesDashboard() {
 		stats,
 		topCustomers,
 		reportsLoading,
+		reportsError,
 		currentSubsidiaryId,
 		mapFilters,
 		currentMonthRange,
