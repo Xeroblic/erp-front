@@ -319,6 +319,8 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		context.branchId = 4;
 		context.enabled = false;
 		renderPage();
-		expect(screen.getByText('Ajustes y traslados no habilitados')).toBeInTheDocument();
+		// El backend no publica los traslados: la pestaña lo explica y no monta el formulario.
+		expect(screen.getByText('Traslados internos no habilitados')).toBeInTheDocument();
+		expect(screen.queryAllByLabelText('Origen')).toHaveLength(0);
 	});
 });

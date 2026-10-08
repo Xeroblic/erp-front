@@ -19,6 +19,12 @@ const loadFacade = async (useMocks: boolean) => {
 	return { ...facade, ProcurementEndpointNotPublishedError };
 };
 
+const page = <T>(data: T[], total = data.length) => ({
+	data,
+	links: { first: null, last: null, prev: null, next: null },
+	meta: { current_page: 1, last_page: 1, per_page: 20, total },
+});
+
 afterEach(() => {
 	vi.doUnmock('@/config/inventoryStock.config');
 	fetchData.mockReset();
@@ -31,6 +37,9 @@ describe('inventoryStock.service (fachada)', () => {
 
 		expect(facade.listInventoryStock).toBe(mock.listInventoryStock);
 		expect(facade.listInventoryOrigins).toBe(mock.listInventoryOrigins);
+		expect(facade.searchInventoryAdjustableProducts).toBe(
+			mock.searchInventoryAdjustableProducts,
+		);
 		expect(facade.createWarehouseStockMovement).toBe(mock.createWarehouseStockMovement);
 		expect(facade.createInventoryAdjustment).toBe(mock.createInventoryAdjustment);
 		expect(facade.createInventoryDocumentAllocation).toBe(
@@ -39,49 +48,170 @@ describe('inventoryStock.service (fachada)', () => {
 		expect(facade.getInventoryWarehouses).toBe(mock.getInventoryWarehouses);
 	});
 
-	it('sin datos simulados rechaza con un error tipado y nunca inventa datos', async () => {
-		const facade = await loadFacade(false);
+	describe('sin datos simulados', () => {
+		it('lista el stock de la sucursal con los filtros tal cual y la señal de cancelación', async () => {
+			const facade = await loadFacade(false);
+			const body = {
+				...page([]),
+				context: { scope: 'unlocated', branch_id: 4, warehouse: null },
+			};
+			fetchData.mockResolvedValueOnce({ data: body });
+			const controller = new AbortController();
 
-		const results = await Promise.allSettled([
-			facade.listInventoryStock(4),
-			facade.listInventoryOrigins(4, 31),
-			facade.createWarehouseStockMovement(4, {
-				from_warehouse_id: 8,
-				to_warehouse_id: 15,
-				reason: 'Orden de bodega',
-				items: [],
-			}),
-			facade.createInventoryAdjustment(4, {
-				warehouse_id: 8,
-				reason: 'Conteo',
-				items: [],
-			}),
-			facade.listInitialStockAllocationsForPurchaseDocument(1, 24),
-		]);
+			const response = await facade.listInventoryStock(
+				4,
+				{ unlocated: 1, search: 'mouse', page: 2, per_page: 50 },
+				controller.signal,
+			);
 
-		results.forEach((result) => {
-			expect(result.status).toBe('rejected');
-			if (result.status === 'rejected') {
-				expect(result.reason).toBeInstanceOf(facade.ProcurementEndpointNotPublishedError);
-			}
+			expect(response).toBe(body);
+			expect(fetchData).toHaveBeenCalledWith({
+				url: '/branches/4/inventory-stock',
+				method: 'get',
+				params: { unlocated: 1, search: 'mouse', page: 2, per_page: 50 },
+				signal: controller.signal,
+			});
 		});
-		expect(fetchData).not.toHaveBeenCalled();
-		expect(() => facade.getInventoryWarehouses(4)).toThrow(
-			facade.ProcurementEndpointNotPublishedError,
-		);
-		expect(() => facade.getInventoryAdjustableProducts(1)).toThrow(
-			facade.ProcurementEndpointNotPublishedError,
-		);
-		expect(() => facade.getInventoryStockAvailability(4, 31)).toThrow(
-			facade.ProcurementEndpointNotPublishedError,
-		);
-	});
 
-	it('el rechazo nombra la ruta pendiente del contrato', async () => {
-		const facade = await loadFacade(false);
+		it('lista las procedencias de un producto con sus filtros', async () => {
+			const facade = await loadFacade(false);
+			const body = {
+				...page([]),
+				context: {
+					scope: 'warehouse',
+					branch_id: 4,
+					warehouse: { id: 8, name: 'Bodega' },
+					physical_quantity: 8,
+					unattributed_quantity: 3,
+				},
+			};
+			fetchData.mockResolvedValueOnce({ data: body });
 
-		const error = await facade.listInventoryStock(4).catch((reason: unknown) => reason);
+			const response = await facade.listInventoryOrigins(4, 31, {
+				warehouse_id: 8,
+				supplier_id: 7,
+			});
 
-		expect(error).toMatchObject({ endpoint: 'GET /branches/{branch}/inventory-stock' });
+			expect(response.context).toMatchObject({ unattributed_quantity: 3 });
+			expect(fetchData).toHaveBeenCalledWith(
+				expect.objectContaining({
+					url: '/branches/4/inventory-stock/31/origins',
+					method: 'get',
+					params: { warehouse_id: 8, supplier_id: 7 },
+				}),
+			);
+		});
+
+		it('busca productos corregibles con include_empty y avisa si hay más', async () => {
+			const facade = await loadFacade(false);
+			const row = { product: { id: 31, name: 'Mouse USB' }, physical_quantity: 0 };
+			fetchData.mockResolvedValueOnce({ data: { ...page([row], 45), context: {} } });
+
+			const result = await facade.searchInventoryAdjustableProducts(
+				4,
+				2,
+				{ unlocated: 1 },
+				'  mou ',
+			);
+
+			expect(result).toEqual({ data: [row], has_more: true });
+			expect(fetchData).toHaveBeenCalledWith(
+				expect.objectContaining({
+					url: '/branches/4/inventory-stock',
+					params: {
+						unlocated: 1,
+						search: 'mou',
+						include_empty: 1,
+						page: 1,
+						per_page: 20,
+					},
+				}),
+			);
+		});
+
+		it('recorta la búsqueda a los 100 caracteres que admite el backend', async () => {
+			const facade = await loadFacade(false);
+			fetchData.mockResolvedValueOnce({ data: { ...page([]), context: {} } });
+
+			await facade.searchInventoryAdjustableProducts(4, 2, { unlocated: 1 }, 'x'.repeat(150));
+
+			const [[request]] = fetchData.mock.calls as [[{ params: { search: string } }]];
+			expect(request.params.search).toHaveLength(100);
+		});
+
+		it('registra el ajuste con su Idempotency-Key y devuelve la operación', async () => {
+			const facade = await loadFacade(false);
+			const operation = { id: 'uuid', operation_type: 'inventory_adjustment', items: [] };
+			fetchData.mockResolvedValueOnce({ data: { data: operation } });
+			const payload = {
+				warehouse_id: null,
+				reason: 'Conteo físico semanal',
+				notes: null,
+				items: [{ product_id: 31, quantity_delta: -2, condition: 'fit' as const }],
+			};
+
+			const response = await facade.createInventoryAdjustment(4, payload, {
+				idempotencyKey: 'key-1',
+			});
+
+			expect(response).toEqual({ data: operation });
+			expect(fetchData).toHaveBeenCalledWith({
+				url: '/branches/4/inventory-adjustments',
+				method: 'post',
+				data: payload,
+				headers: { 'Idempotency-Key': 'key-1' },
+			});
+		});
+
+		it('etapa 1: sin bodegas ni disponible', async () => {
+			const facade = await loadFacade(false);
+
+			expect(facade.getInventoryWarehouses(4)).toEqual([]);
+			expect(facade.getInventoryStockAvailability(4, 31)).toBeNull();
+		});
+
+		it('rechaza con un error tipado lo que el backend no publica, sin llamar a la red', async () => {
+			const facade = await loadFacade(false);
+
+			const results = await Promise.allSettled([
+				facade.createWarehouseStockMovement(4, {
+					from_warehouse_id: 8,
+					to_warehouse_id: 15,
+					reason: 'Orden de bodega',
+					items: [],
+				}),
+				facade.listInitialStockAllocationsForPurchaseDocument(1, 24),
+			]);
+
+			results.forEach((result) => {
+				expect(result.status).toBe('rejected');
+				if (result.status === 'rejected') {
+					expect(result.reason).toBeInstanceOf(
+						facade.ProcurementEndpointNotPublishedError,
+					);
+				}
+			});
+			expect(fetchData).not.toHaveBeenCalled();
+			expect(() => facade.getInventoryOriginFilterOptions(4, 31, {})).toThrow(
+				facade.ProcurementEndpointNotPublishedError,
+			);
+		});
+
+		it('el rechazo nombra la ruta pendiente del contrato', async () => {
+			const facade = await loadFacade(false);
+
+			const error = await facade
+				.createWarehouseStockMovement(4, {
+					from_warehouse_id: 8,
+					to_warehouse_id: 15,
+					reason: 'x',
+					items: [],
+				})
+				.catch((reason: unknown) => reason);
+
+			expect(error).toMatchObject({
+				endpoint: 'POST /branches/{branch}/warehouse-stock-movements',
+			});
+		});
 	});
 });

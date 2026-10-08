@@ -88,7 +88,13 @@ const AjustesTrasladosTabs = ({
 					text='Traslados internos'
 					icon='HeroArrowsRightLeft'
 					disabled={busy && activeTab !== 'traslado'}>
-					{activeTab === 'traslado' && (
+					{activeTab === 'traslado' && !INVENTORY_STOCK_USE_MOCKS && (
+						<Alert title='Traslados internos no habilitados'>
+							El servidor todavía no publica los traslados entre ubicaciones. Por
+							ahora el stock se corrige con un ajuste sobre «Sin ubicación».
+						</Alert>
+					)}
+					{activeTab === 'traslado' && INVENTORY_STOCK_USE_MOCKS && (
 						<TransferPanel
 							owner={owner}
 							branchId={branchId}
@@ -118,13 +124,6 @@ const AjustesTrasladosView = () => {
 		content = (
 			<Alert color='amber' title='Sin permiso'>
 				No tienes permiso para ajustar ni mover el stock de esta sucursal.
-			</Alert>
-		);
-	else if (access === 'disabled')
-		content = (
-			<Alert title='Ajustes y traslados no habilitados'>
-				El ajuste por conteo y los traslados internos aún no están habilitados en este
-				entorno.
 			</Alert>
 		);
 	// La sesión autorizada se monta con `key` ANTES de renderizar: un cambio de

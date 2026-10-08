@@ -1,9 +1,22 @@
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import * as inventoryStockMock from '@/mocks/services/inventoryStock.mock';
+import ApiService from '@/services/ApiService';
+import { buildProcurementWriteHeaders } from '@/utils/procurementWrite.util';
 import {
 	rejectEndpointNotPublished,
 	throwEndpointNotPublished,
 } from '@/utils/procurementEndpoint.util';
+import type {
+	IApiResourceEnvelope,
+	IInventoryAdjustableProductsPage,
+	IInventoryAdjustment,
+	IInventoryAdjustmentPayload,
+	IInventoryOriginsParams,
+	IInventoryOriginsResponse,
+	IInventoryStockAvailability,
+	IInventoryStockListParams,
+	IInventoryStockResponse,
+} from '@/interface/procurement.interface';
 
 export type { IInventoryStockAvailability } from '@/interface/procurement.interface';
 
@@ -16,14 +29,22 @@ export type { IInventoryStockAvailability } from '@/interface/procurement.interf
  * doble (`@/mocks/services/inventoryStock.mock`), que guarda las procedencias
  * simuladas que también escriben las recepciones. Apagada, usa la API real.
  *
- * **El backend todavía no publica estas rutas** (Laravel Boost, 01-10-2026:
- * no hay `inventory-stock`, `warehouse-stock-movements` ni
- * `inventory-adjustments`; `stock-adjustments` e `inventory-movements` son
- * rutas legadas con otro contrato). La rama real rechaza con
- * `ProcurementEndpointNotPublishedError` en vez de inventar datos. Las rutas
- * anotadas salen de `frontend-guide.md` y quedan
- * **pendientes de confirmar**. Permiso previsto (§15): `view-product` para
- * leer y `edit-product` para escribir, en la sucursal.
+ * **Publicadas** (backend `feat/procurement-stock-read-adjust`, sólo productos
+ * no serializados), verificadas contra sus FormRequests y Resources:
+ * - `GET B/inventory-stock` y `GET B/inventory-stock/{product}/origins`:
+ *   `view-product` y acceso a la sucursal; los `*-member` también leen.
+ *   `origins` responde 404 si el producto es serializado o de otra filial.
+ * - `POST B/inventory-adjustments`: `edit-product` y además **operar** en la
+ *   sucursal (los `subsidiary-member`/`company-member` reciben 403 aunque
+ *   tengan el permiso). Exige `Idempotency-Key`: sin ella, 428.
+ *
+ * **Sin publicar** (rechazan con `ProcurementEndpointNotPublishedError` en vez
+ * de inventar datos): traslados (`warehouse-stock-movements`), documentación
+ * posterior (`document-allocations`) y las lecturas auxiliares de bodegas y
+ * filtros de procedencia.
+ *
+ * Sin caché de `ApiService`: el saldo cambia con cada ajuste, recepción o
+ * venta, y el slice ya descarta respuestas tardías por `requestId`.
  */
 
 const RESOURCE = 'el inventario por ubicación';
@@ -36,36 +57,129 @@ const rejectNotPublished = (endpoint: string): Promise<never> =>
 const throwNotPublished = (endpoint: string): never =>
 	throwEndpointNotPublished(RESOURCE, endpoint);
 
+interface IInventoryWriteHeaders {
+	idempotencyKey?: string;
+}
+
 type TInventoryStockService = Pick<
 	typeof inventoryStockMock,
 	| 'listInventoryStock'
 	| 'listInventoryOrigins'
+	| 'searchInventoryAdjustableProducts'
 	| 'createInventoryDocumentAllocation'
 	| 'listInitialStockAllocationsForPurchaseDocument'
 	| 'createWarehouseStockMovement'
-	| 'createInventoryAdjustment'
 	| 'getInventoryWarehouses'
-	| 'getInventoryAdjustableProducts'
-	| 'getInventoryStockAvailability'
 	| 'getInventoryOriginFilterOptions'
->;
+> & {
+	createInventoryAdjustment: (
+		branchId: number,
+		payload: IInventoryAdjustmentPayload,
+		headers?: IInventoryWriteHeaders,
+	) => Promise<{ data: IInventoryAdjustment }>;
+	/** `null`: el entorno no publica reservas, así que el disponible no se conoce. */
+	getInventoryStockAvailability: (
+		branchId: number,
+		productId: number,
+	) => IInventoryStockAvailability | null;
+};
+
+const branchUrl = (branchId: number): string => `/branches/${branchId}`;
+
+/** Coincidencias por búsqueda del ajuste: el selector muestra una página corta. */
+const ADJUSTABLE_SEARCH_PER_PAGE = inventoryStockMock.INVENTORY_ADJUSTABLE_SEARCH_LIMIT;
+const ADJUSTABLE_SEARCH_MAX_LENGTH = 100;
+
+const listInventoryStockApi = async (
+	branchId: number,
+	params: IInventoryStockListParams = {},
+	signal?: AbortSignal,
+): Promise<IInventoryStockResponse> => {
+	const response = await ApiService.fetchData<IInventoryStockResponse>({
+		url: `${branchUrl(branchId)}/inventory-stock`,
+		method: 'get',
+		params,
+		signal,
+	});
+	return response.data;
+};
 
 const apiInventoryStock: TInventoryStockService = {
-	listInventoryStock: () => rejectNotPublished(`GET ${B}/inventory-stock`),
-	listInventoryOrigins: () => rejectNotPublished(`GET ${B}/inventory-stock/{product}/origins`),
+	listInventoryStock: listInventoryStockApi,
+	listInventoryOrigins: async (
+		branchId: number,
+		productId: number,
+		params: IInventoryOriginsParams = {},
+		signal?: AbortSignal,
+	) => {
+		const response = await ApiService.fetchData<IInventoryOriginsResponse>({
+			url: `${branchUrl(branchId)}/inventory-stock/${productId}/origins`,
+			method: 'get',
+			params,
+			signal,
+		});
+		return response.data;
+	},
+	// `include_empty=1` es la lectura que el contrato reserva a las pantallas
+	// de conteo: trae los productos asignados a la sucursal aunque estén en
+	// cero en la ubicación, con su saldo ahí. `search` ya cubre nombre, `sku` y
+	// `commercial_sku`. La filial la resuelve el backend desde la sucursal.
+	searchInventoryAdjustableProducts: async (
+		branchId: number,
+		_subsidiaryId: number | null,
+		location: IInventoryStockListParams,
+		search: string,
+		signal?: AbortSignal,
+	): Promise<IInventoryAdjustableProductsPage> => {
+		// `search` admite hasta 100 caracteres: más largo sería un 422 que el
+		// selector mostraría como «sin resultados» de un término imposible.
+		const term = search.trim().slice(0, ADJUSTABLE_SEARCH_MAX_LENGTH);
+		const response = await listInventoryStockApi(
+			branchId,
+			{
+				...location,
+				...(term ? { search: term } : {}),
+				include_empty: 1,
+				page: 1,
+				per_page: ADJUSTABLE_SEARCH_PER_PAGE,
+			},
+			signal,
+		);
+		return {
+			data: response.data,
+			has_more: response.meta.total > response.data.length,
+		};
+	},
+	createInventoryAdjustment: async (branchId, payload, headers = {}) => {
+		const response = await ApiService.fetchData<
+			IApiResourceEnvelope<IInventoryAdjustment>,
+			IInventoryAdjustmentPayload
+		>({
+			url: `${branchUrl(branchId)}/inventory-adjustments`,
+			method: 'post',
+			data: payload,
+			// Sin clave el backend responde 428: no se inventa una acá, porque
+			// sólo quien reintenta sabe si la tentativa es la misma.
+			headers: headers.idempotencyKey
+				? buildProcurementWriteHeaders({ idempotencyKey: headers.idempotencyKey })
+				: undefined,
+		});
+		return { data: response.data.data };
+	},
 	createInventoryDocumentAllocation: () =>
 		rejectNotPublished(`POST ${B}/inventory-stock/{product}/document-allocations`),
 	listInitialStockAllocationsForPurchaseDocument: () =>
 		rejectNotPublished(`GET ${P}/purchase-documents/{document}/initial-stock-allocations`),
 	createWarehouseStockMovement: () => rejectNotPublished(`POST ${B}/warehouse-stock-movements`),
-	createInventoryAdjustment: () => rejectNotPublished(`POST ${B}/inventory-adjustments`),
-	// Síncronas: leen el store simulado sin pasar por la red. Con la API real
-	// serían lecturas asíncronas (bodegas, catálogo, saldo) que estas firmas no
-	// admiten; se resuelven cuando se publiquen las rutas. Hoy sólo las llaman
-	// pantallas que no se montan con la bandera apagada.
-	getInventoryWarehouses: () => throwNotPublished(`GET ${B}/warehouses`),
-	getInventoryAdjustableProducts: () => throwNotPublished('catálogo de productos corregibles'),
-	getInventoryStockAvailability: () => throwNotPublished(`GET ${B}/inventory-stock`),
+	// Etapa 1 del contrato: el ajuste real sólo se ofrece sobre «Sin
+	// ubicación» (`warehouse_id: null`). Sin bodegas que listar, el selector de
+	// ubicación queda con esa única opción y el traslado no se monta.
+	getInventoryWarehouses: () => [],
+	// El contrato no publica reservas: sin ellas el disponible no se conoce, y
+	// mostrar el apto como «disponible» sería afirmar que no hay faltante.
+	getInventoryStockAvailability: () => null,
+	// Síncrona: el backend no publica las opciones de filtro de procedencias.
+	// Sólo la llama la ficha de producto, que no se monta con la bandera apagada.
 	getInventoryOriginFilterOptions: () =>
 		throwNotPublished(`GET ${B}/inventory-stock/{product}/origins`),
 };
@@ -74,11 +188,14 @@ const inventoryStock: TInventoryStockService = INVENTORY_STOCK_USE_MOCKS
 	? inventoryStockMock
 	: apiInventoryStock;
 
-/** `GET B/inventory-stock` (§3): stock actual por ubicación. */
+/** `GET B/inventory-stock` (§3): stock actual por producto, nombre ASC e id ASC. */
 export const { listInventoryStock } = inventoryStock;
 
-/** `GET B/inventory-stock/{product}/origins` (§3): procedencias de un producto. */
+/** `GET B/inventory-stock/{product}/origins` (§3): procedencias FIFO de un producto. */
 export const { listInventoryOrigins } = inventoryStock;
+
+/** Productos que un ajuste puede nombrar en una ubicación, con su saldo ahí. */
+export const { searchInventoryAdjustableProducts } = inventoryStock;
 
 /** `POST B/inventory-stock/{product}/document-allocations` (§8): documentar stock inicial. */
 export const { createInventoryDocumentAllocation } = inventoryStock;
@@ -89,16 +206,13 @@ export const { listInitialStockAllocationsForPurchaseDocument } = inventoryStock
 /** `POST B/warehouse-stock-movements` (§9): traslado entre ubicaciones. */
 export const { createWarehouseStockMovement } = inventoryStock;
 
-/** `POST B/inventory-adjustments` (§11): ajuste por conteo o corrección. */
+/** `POST B/inventory-adjustments` (§11): ajuste por conteo, todo o nada. */
 export const { createInventoryAdjustment } = inventoryStock;
 
-/** Bodegas de la sucursal para traslados y ajustes. */
+/** Bodegas de la sucursal que traslados y ajustes ofrecen como ubicación. */
 export const { getInventoryWarehouses } = inventoryStock;
 
-/** Productos que un ajuste puede corregir: los no serializados de la filial. */
-export const { getInventoryAdjustableProducts } = inventoryStock;
-
-/** Saldo vigente de un producto en la sucursal, tras aplicar un ajuste. */
+/** Disponible de un producto en la sucursal tras un ajuste, o `null` si no se conoce. */
 export const { getInventoryStockAvailability } = inventoryStock;
 
 /** Proveedores y documentos con los que filtrar las procedencias de un producto. */

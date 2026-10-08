@@ -11,6 +11,7 @@ import {
 	listInventoryOrigins,
 	listInventoryStock,
 	resetInventoryStockStoreForTests,
+	searchInventoryAdjustableProducts,
 	simulateInventoryStockReloadForTests,
 } from '@/mocks/services/inventoryStock.mock';
 import {
@@ -1092,5 +1093,106 @@ describe('createInventoryAdjustment', () => {
 		expect(await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID })).toEqual(
 			afterWrite,
 		);
+	});
+});
+
+describe('contrato de stock y ajuste publicado (etapa 1)', () => {
+	it('`include_empty=1` agrega en cero lo que la ubicación no tiene', async () => {
+		const location = { unlocated: 1 as const, search: 'cbl-hdmi', per_page: 100 };
+
+		const plain = await listInventoryStock(BRANCH_ID, location);
+		const withEmpty = await listInventoryStock(BRANCH_ID, { ...location, include_empty: 1 });
+
+		expect(plain.data.some((row) => row.product.id === CABLE_PRODUCT_ID)).toBe(false);
+		expect(withEmpty.data.find((row) => row.product.id === CABLE_PRODUCT_ID)).toMatchObject({
+			physical_quantity: 0,
+			fit_quantity: 0,
+			unfit_quantity: 0,
+			documented_quantity: 0,
+			undocumented_quantity: 0,
+		});
+	});
+
+	it('el buscador del ajuste trae el producto con su saldo en la ubicación', async () => {
+		const before = await balanceAt(CABLE_PRODUCT_ID, { warehouse_id: MAIN_WAREHOUSE_ID });
+
+		const result = await searchInventoryAdjustableProducts(
+			BRANCH_ID,
+			SUBSIDIARY_ID,
+			{ warehouse_id: MAIN_WAREHOUSE_ID },
+			'CBL-HDMI',
+		);
+
+		const row = result.data.find((candidate) => candidate.product.id === CABLE_PRODUCT_ID);
+		expect(row).toMatchObject({ physical_quantity: before.physical, fit_quantity: before.fit });
+		expect(result.has_more).toBe(false);
+	});
+
+	it('las procedencias informan el físico del alcance y no inventan unidades sin procedencia', async () => {
+		const all = await listInventoryOrigins(BRANCH_ID, CABLE_PRODUCT_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+		});
+		const filtered = await listInventoryOrigins(BRANCH_ID, CABLE_PRODUCT_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			supplier_id: 999_999,
+		});
+
+		const physical = all.data.reduce((total, origin) => total + origin.physical_quantity, 0);
+		expect(all.context).toMatchObject({
+			physical_quantity: physical,
+			unattributed_quantity: 0,
+		});
+		// Se calcula sin los filtros de proveedor y documento.
+		expect(filtered.data).toHaveLength(0);
+		expect(filtered.context).toMatchObject({
+			physical_quantity: physical,
+			unattributed_quantity: 0,
+		});
+	});
+
+	it('la 201 no devuelve `notes` ni la fecha, como el backend', async () => {
+		const { data } = await createInventoryAdjustment(BRANCH_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			reason: 'Conteo',
+			notes: 'Estante revisado',
+			items: [{ product_id: CABLE_PRODUCT_ID, quantity_delta: -1, condition: 'fit' }],
+		});
+
+		expect(data).not.toHaveProperty('notes');
+		expect(data).not.toHaveProperty('created_at');
+	});
+
+	it('pide la diferencia neta en vez de un ingreso y una salida FIFO del mismo producto', async () => {
+		const error = await readError(
+			createInventoryAdjustment(BRANCH_ID, {
+				warehouse_id: MAIN_WAREHOUSE_ID,
+				reason: 'Conteo',
+				items: [
+					{ product_id: CABLE_PRODUCT_ID, quantity_delta: 3, condition: 'fit' },
+					{ product_id: CABLE_PRODUCT_ID, quantity_delta: -1, condition: 'fit' },
+				],
+			}),
+		);
+
+		expect(error.status).toBe(422);
+		expect(error.data.code).toBe('ADJUSTMENT_NET_DELTA_REQUIRED');
+	});
+
+	it('admite una salida FIFO y otra de un origen puntual del mismo producto', async () => {
+		const { data } = await createInventoryAdjustment(BRANCH_ID, {
+			warehouse_id: MAIN_WAREHOUSE_ID,
+			reason: 'Conteo',
+			items: [
+				{ product_id: CABLE_PRODUCT_ID, quantity_delta: -1, condition: 'fit' },
+				{
+					product_id: CABLE_PRODUCT_ID,
+					quantity_delta: -1,
+					condition: 'fit',
+					origin_id: CANONICAL_ORIGIN_ID,
+				},
+			],
+		});
+
+		expect(data.items).toHaveLength(2);
 	});
 });

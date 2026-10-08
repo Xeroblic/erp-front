@@ -75,7 +75,9 @@ vi.mock('framer-motion', () => ({
 /**
  * `react-select` no expone sus opciones como controles nativos en jsdom; como
  * en `InventarioBodega.test.tsx`, `SelectReact` se sustituye por un `<select>`
- * nativo cableado a las mismas props.
+ * nativo cableado a las mismas props. Cuando el llamador busca en el servidor
+ * (`onInputChange`), el doble agrega la caja de búsqueda «Buscar <etiqueta>», y
+ * el valor elegido se lista aunque no esté entre las opciones de la búsqueda.
  */
 vi.mock('@/components/form/SelectReact', () => ({
 	default: ({
@@ -84,6 +86,7 @@ vi.mock('@/components/form/SelectReact', () => ({
 		options,
 		value,
 		onChange,
+		onInputChange,
 		placeholder,
 	}: {
 		'aria-label'?: string;
@@ -91,25 +94,43 @@ vi.mock('@/components/form/SelectReact', () => ({
 		options?: { value: string; label: string }[];
 		value?: { value: string; label: string } | null;
 		onChange?: (option: { value: string; label: string } | null) => void;
+		onInputChange?: (input: string, meta: { action: string }) => void;
 		placeholder?: string;
-	}) => (
-		<select
-			aria-label={ariaLabel}
-			disabled={isDisabled}
-			value={value?.value ?? ''}
-			onChange={(event) => {
-				const selected =
-					options?.find((option) => option.value === event.target.value) ?? null;
-				onChange?.(selected);
-			}}>
-			<option value=''>{placeholder}</option>
-			{options?.map((option) => (
-				<option key={option.value} value={option.value}>
-					{option.label}
-				</option>
-			))}
-		</select>
-	),
+	}) => {
+		const listed =
+			value && !options?.some((option) => option.value === value.value)
+				? [value, ...(options ?? [])]
+				: (options ?? []);
+		return (
+			<>
+				{onInputChange && (
+					<input
+						aria-label={`Buscar ${ariaLabel}`}
+						disabled={isDisabled}
+						onChange={(event) =>
+							onInputChange(event.target.value, { action: 'input-change' })
+						}
+					/>
+				)}
+				<select
+					aria-label={ariaLabel}
+					disabled={isDisabled}
+					value={value?.value ?? ''}
+					onChange={(event) => {
+						const selected =
+							listed.find((option) => option.value === event.target.value) ?? null;
+						onChange?.(selected);
+					}}>
+					<option value=''>{placeholder}</option>
+					{listed.map((option) => (
+						<option key={option.value} value={option.value}>
+							{option.label}
+						</option>
+					))}
+				</select>
+			</>
+		);
+	},
 }));
 
 const auth = createSlice({
@@ -251,11 +272,14 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			expect(screen.getByLabelText('Ubicación')).toHaveValue('');
 		});
 
-		it('conserva la ubicación válida e ignora un producto que no está en el catálogo', async () => {
+		it('conserva la ubicación válida y descarta un producto que la ubicación no tiene', async () => {
 			renderPage(`/?tab=ajuste&warehouse_id=${SHELF_ID}&product_id=999999`);
 
 			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
-			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue('');
+			// Sin fila de stock no hay cómo nombrarlo: se descarta al terminar de cargar.
+			await waitFor(() =>
+				expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(''),
+			);
 		});
 
 		it('el traslado toma la bodega como origen y elige el producto cuando el origen lo tiene', async () => {

@@ -132,6 +132,22 @@ const InventoryOrigins = ({
 					</Button>
 				</Alert>
 			)}
+			{/* `unattributed_quantity` lo calcula el backend sin los filtros de
+			    documento y proveedor: no se recalcula con las filas visibles. Un
+			    negativo no bloquea la ficha, sólo avisa. */}
+			{!loading && !error && response && response.context.unattributed_quantity > 0 && (
+				<p className='text-sm text-zinc-600 dark:text-zinc-300'>
+					{response.context.unattributed_quantity}{' '}
+					{response.context.unattributed_quantity === 1
+						? 'unidad sin procedencia registrada.'
+						: 'unidades sin procedencia registrada.'}
+				</p>
+			)}
+			{!loading && !error && response && response.context.unattributed_quantity < 0 && (
+				<Alert color='amber' title='Procedencia en revisión'>
+					Las procedencias registradas suman más que el stock físico de esta ubicación.
+				</Alert>
+			)}
 			{!loading && !error && response && (
 				<div className='overflow-x-auto'>
 					<Table aria-label='Procedencias en esta ubicación' className='min-w-[640px]'>

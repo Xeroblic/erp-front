@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppSelector } from '@/store';
@@ -27,7 +26,10 @@ const useAjustesTraslados = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
 
 	// El contrato no define un permiso propio: traslados y ajustes son
-	// `edit-product` sobre las ubicaciones de la sucursal.
+	// `edit-product` sobre las ubicaciones de la sucursal. El backend además
+	// exige *operar* en ella (excluye a `subsidiary-member`/`company-member`),
+	// algo que el perfil no expone por sucursal: ese 403 llega al enviar y el
+	// panel lo muestra con el mensaje del servidor, sin ofrecer reintento.
 	const canWrite = authorize({
 		permission: 'edit-product',
 		branchId,
@@ -39,7 +41,6 @@ const useAjustesTraslados = () => {
 	if (isLoading) access = 'loading';
 	else if (!branchId) access = 'no-branch';
 	else if (!canWrite) access = 'forbidden';
-	else if (!INVENTORY_STOCK_USE_MOCKS) access = 'disabled';
 
 	const requestedTab = searchParams.get(AJUSTES_TRASLADOS_TAB_PARAM);
 	const activeTab: AjustesTrasladosTab = isAjustesTrasladosTab(requestedTab)

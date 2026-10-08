@@ -1,5 +1,6 @@
 import React, { FC, useMemo } from 'react';
 import classNames from 'classnames';
+import type { InputActionMeta } from 'react-select';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import SelectReact from '@/components/form/SelectReact';
@@ -14,15 +15,37 @@ import type {
 	TStockCondition,
 } from '@/interface/procurement.interface';
 import type { IAjusteItemDraft } from '@/pages/inventario/abastecimiento/AjustesTraslados/adjustment.types';
-import {
-	filterProductOption,
-	productNoOptionsMessage,
-} from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/productSearch';
+import { productNoOptionsMessage } from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/productSearch';
+
+/** Búsqueda en el servidor del selector de producto (`useAdjustableProductSearch`). */
+export interface IAdjustmentProductSearch {
+	/** Coincidencias del término vigente. */
+	options: IProcurementProduct[];
+	loading: boolean;
+	error: string | null;
+	onSearchChange: (search: string) => void;
+	clearSearch: () => void;
+}
+
+const productLabel = (product: Pick<IProcurementProduct, 'sku' | 'name'>): string =>
+	`${product.sku} · ${product.name}`;
+
+const toOption = (product: IProcurementProduct): TSelectOption => ({
+	value: String(product.id),
+	label: productLabel(product),
+});
+
+// El servidor ya filtró por nombre, SKU y SKU comercial: filtrar de nuevo por
+// la etiqueta escondería las coincidencias por SKU comercial. Sin texto no se
+// lista nada.
+const keepServerMatches = (_option: unknown, inputValue: string): boolean =>
+	inputValue.trim() !== '';
 
 export interface IAdjustmentItemsEditorProps {
 	items: IAjusteItemDraft[];
-	/** Catálogo corregible: no depende del saldo vigente en la ubicación. */
+	/** Productos ya conocidos (buscados o con saldo): nombran el valor de cada línea. */
 	products: IProcurementProduct[];
+	productSearch: IAdjustmentProductSearch;
 	loadingStock: boolean;
 	hasLocation: boolean;
 	disabled: boolean;
@@ -47,6 +70,7 @@ export interface IAdjustmentItemsEditorProps {
 const AdjustmentItemsEditor: FC<IAdjustmentItemsEditorProps> = ({
 	items,
 	products,
+	productSearch,
 	loadingStock,
 	hasLocation,
 	disabled,
@@ -56,15 +80,28 @@ const AdjustmentItemsEditor: FC<IAdjustmentItemsEditorProps> = ({
 	onAddItem,
 	onRemoveItem,
 }) => {
-	// El buscador filtra por la etiqueta (SKU y nombre) y no lista nada sin texto.
-	const productOptions = useMemo<TSelectOption[]>(
-		() =>
-			products.map((product) => ({
-				value: String(product.id),
-				label: `${product.sku} · ${product.name}`,
-			})),
+	const productOptions = useMemo(
+		() => productSearch.options.map(toOption),
+		[productSearch.options],
+	);
+	const knownOptions = useMemo(
+		() => new Map(products.map((product) => [product.id, toOption(product)])),
 		[products],
 	);
+	const valueFor = (productId: number | ''): TSelectOption | null => {
+		if (productId === '') return null;
+		// Una línea preseleccionada desde la URL puede no tener nombre todavía.
+		return (
+			knownOptions.get(productId) ?? {
+				value: String(productId),
+				label: `Producto #${productId}`,
+			}
+		);
+	};
+	const noOptionsMessage = ({ inputValue }: { inputValue: string }): string =>
+		productSearch.error && inputValue.trim() !== ''
+			? productSearch.error
+			: productNoOptionsMessage({ inputValue });
 
 	return (
 		<div className='space-y-3'>
@@ -141,14 +178,19 @@ const AdjustmentItemsEditor: FC<IAdjustmentItemsEditorProps> = ({
 												isDisabled={disabled || !hasLocation}
 												options={productOptions}
 												placeholder='Buscar por SKU o nombre…'
-												filterOption={filterProductOption}
-												noOptionsMessage={productNoOptionsMessage}
-												value={
-													productOptions.find(
-														(option) =>
-															option.value === String(item.productId),
-													) ?? null
-												}
+												filterOption={keepServerMatches}
+												isLoading={productSearch.loading}
+												loadingMessage={() => 'Buscando…'}
+												noOptionsMessage={noOptionsMessage}
+												onInputChange={(
+													value: string,
+													meta?: InputActionMeta,
+												) => {
+													if (meta?.action === 'input-change')
+														productSearch.onSearchChange(value);
+												}}
+												onMenuClose={productSearch.clearSearch}
+												value={valueFor(item.productId)}
 												onChange={(option) => {
 													if (Array.isArray(option)) return;
 													const selected = option as TSelectOption | null;

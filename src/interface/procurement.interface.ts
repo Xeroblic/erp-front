@@ -297,7 +297,13 @@ export type IInventoryLocationParams =
 
 export type IInventoryStockListParams = IInventoryLocationParams &
 	Partial<IProcurementPageParams> & {
+		/** Nombre, `sku` y `commercial_sku`, sin distinguir mayúsculas. Máx. 100. */
 		search?: string;
+		/**
+		 * `1` agrega los productos asignados a la sucursal sin stock, con todas las
+		 * cantidades en `0`. Para pantallas de conteo, no para el listado general.
+		 */
+		include_empty?: 1;
 	};
 
 export type IInventoryOriginsParams = IInventoryLocationParams &
@@ -326,8 +332,26 @@ export type IInventoryStockResponse = IApiCollectionEnvelope<
 	IInventoryLocationContext
 > & { context: IInventoryLocationContext };
 
+/**
+ * Productos que un conteo puede nombrar en una ubicación, con su saldo ahí
+ * (ceros si no tiene). Sale de `inventory-stock?include_empty=1&search=`.
+ */
+export interface IInventoryAdjustableProductsPage {
+	data: IInventoryStockRow[];
+	/** Hay más coincidencias que las devueltas: conviene afinar la búsqueda. */
+	has_more: boolean;
+}
+
 export interface IInventoryOriginsContext extends IInventoryLocationContext {
 	product: IProcurementProduct;
+	/** Físico del producto en el alcance pedido. */
+	physical_quantity: number;
+	/**
+	 * Físico menos la suma de los orígenes del alcance, calculado **sin** los
+	 * filtros de documento y proveedor: no se recalcula en el cliente. Positivo,
+	 * unidades sin procedencia registrada; negativo, procedencia en revisión.
+	 */
+	unattributed_quantity: number;
 }
 
 export type IInventoryOriginsResponse = IApiCollectionEnvelope<
@@ -1079,7 +1103,12 @@ export interface IInventoryAdjustmentItem {
 	unfit_quantity_after: number;
 }
 
-/** 201 `data` de `inventory-adjustments`. */
+/**
+ * 201 `data` de `inventory-adjustments` (`InventoryAdjustmentResource`). No
+ * devuelve `notes` ni la fecha. `items` sale en el orden del request, y dos
+ * líneas del mismo producto informan el mismo par antes/después (el total del
+ * producto). Los `*_before` pueden ser negativos si el balance legacy lo era.
+ */
 export interface IInventoryAdjustment {
 	/** UUID de la operación de inventario. */
 	id: string;
@@ -1087,8 +1116,6 @@ export interface IInventoryAdjustment {
 	branch_id: number;
 	warehouse_id: number | null;
 	reason: string;
-	notes: string | null;
 	related_stock_receipt_id: number | null;
 	items: IInventoryAdjustmentItem[];
-	created_at: TIsoTimestamp;
 }

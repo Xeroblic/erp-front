@@ -10,6 +10,8 @@ import AdjustmentItemsEditor from '@/pages/inventario/abastecimiento/AjustesTras
 import AdjustmentResultCard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/adjustment/AdjustmentResultCard';
 import StepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
 import type { IWizardStepConfig } from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
+import { unattributedFromContext } from '@/pages/inventario/abastecimiento/AjustesTraslados/adjustment.types';
+import { AJUSTE_STEPS } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import type { IAjustesTrasladosPreselection } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 
 export interface AdjustmentPanelProps {
@@ -57,6 +59,7 @@ const AdjustmentPanel = ({
 		formik,
 		locationOptions,
 		products,
+		productSearch,
 		stockRows,
 		loadingStock,
 		stockError,
@@ -64,6 +67,7 @@ const AdjustmentPanel = ({
 		hasLocation,
 		totalsFor,
 		errorFor,
+		serverLineErrorCount,
 		setLocation,
 		setItem,
 		addItem,
@@ -76,6 +80,11 @@ const AdjustmentPanel = ({
 	} = useInventoryAdjustment(branchId, owner, subsidiaryId, preselection);
 
 	const frozen = idempotentWrite.isSubmitting || idempotentWrite.canRetry;
+	const writeError = idempotentWrite.error;
+	const unattributed =
+		writeError?.code === 'INSUFFICIENT_LOCATION_STOCK'
+			? unattributedFromContext(writeError.context)
+			: 0;
 
 	useEffect(() => {
 		onBusyChange?.(frozen);
@@ -208,6 +217,7 @@ const AdjustmentPanel = ({
 							<AdjustmentItemsEditor
 								items={formik.values.items}
 								products={products}
+								productSearch={productSearch}
 								loadingStock={loadingStock}
 								hasLocation={hasLocation}
 								disabled={frozen}
@@ -229,10 +239,7 @@ const AdjustmentPanel = ({
 									<strong>No apto</strong>: no disponible para la venta.
 								</li>
 								<li>Los egresos se descuentan por orden de antigüedad (FIFO).</li>
-								<li>
-									El stock resultante no puede ser negativo. Si hay unidades
-									reservadas, la confirmación informa cuántas quedan sin respaldo.
-								</li>
+								<li>El stock resultante no puede ser negativo.</li>
 							</ul>
 						</div>
 					)}
@@ -281,9 +288,42 @@ const AdjustmentPanel = ({
 								</Validation>
 							</div>
 
-							{idempotentWrite.error && (
+							{writeError && (
 								<Alert color='red' title='No se pudo registrar el ajuste'>
-									<span role='alert'>{idempotentWrite.error.message}</span>
+									<div role='alert' className='space-y-1'>
+										<p>{writeError.message}</p>
+										{serverLineErrorCount > 0 && (
+											<div className='flex flex-wrap items-center gap-3'>
+												<span>
+													{serverLineErrorCount === 1
+														? 'Una línea tiene errores: está marcada en «Productos».'
+														: `${serverLineErrorCount} líneas tienen errores: están marcadas en «Productos».`}
+												</span>
+												<Button
+													variant='outline'
+													color='red'
+													size='sm'
+													icon='HeroArrowUturnLeft'
+													onClick={() => {
+														void wizard.stepClick(
+															AJUSTE_STEPS.indexOf('items'),
+														);
+													}}>
+													Revisar productos
+												</Button>
+											</div>
+										)}
+										{unattributed > 0 && (
+											<p>
+												Hay {unattributed}{' '}
+												{unattributed === 1
+													? 'unidad sin procedencia registrada'
+													: 'unidades sin procedencia registrada'}
+												. Se regularizan automáticamente cada 15 minutos:
+												vuelve a intentarlo más tarde.
+											</p>
+										)}
+									</div>
 								</Alert>
 							)}
 						</div>
