@@ -8,14 +8,12 @@ proyecto, sin reinventar layouts, autorización ni manejo de estado.
 
 ## 1. Stack real (verificado en el código)
 
-- **React 18 + TypeScript 5 (strict)** · Bundler **Vite 5** · estilos **Tailwind CSS 3**.
 - **Estado global:** Redux Toolkit con `createSlice` + `createAsyncThunk` (39+ slices) y
   persistencia. RTK Query existe (`RtkQueryService.ts`) pero es minoritario — el patrón
   dominante es slice + thunk + `ApiService`.
 - **Formularios:** **Formik + Yup**. Es el estándar de facto (Formik en ~81 archivos, Yup
   en ~52). **NO se usa Zod** en el código (0 imports). Hay ~35 archivos legacy con
   `react-hook-form`; **no lo propagues**, en código nuevo usa Formik + Yup.
-- **Tablas:** TanStack Table (`@tanstack/react-table`).
 - **HTTP:** Axios vía `BaseService` → envuelto por `ApiService`.
 - **Backend:** Laravel 12 + JWT. Multi-empresa / multi-subsidiaria / multi-sucursal.
 - **Alias de imports:** `@/*` → `./src/*` (tsconfig). Usa `@/...` siempre.
@@ -63,50 +61,11 @@ dominio compartidos → `src/interface/*.interface.ts`.
 
 ## 4. Layout de página (Design System obligatorio)
 
-Todas las páginas internas envuelven su contenido en este árbol. `PageWrapper` con
+Todas las páginas internas envuelven su contenido en el árbol `PageWrapper isProtectedRoute`
+→ `Subheader` (`SubheaderLeft`/`SubheaderRight`) → `Container`. `PageWrapper` con
 `isProtectedRoute` además dispara `userMeThunk()` (carga perfil + personalización) y
-redirige a login si no hay sesión.
-
-```tsx
-import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
-import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
-import Container from '@/components/layouts/Container/Container';
-import Icon from '@/components/icon/Icon';
-import ProtectedButton from '@/components/ui/ProtectedButton';
-
-const ModuloView = () => (
-	<PageWrapper isProtectedRoute title='Clientes'>
-		<Subheader>
-			<SubheaderLeft>
-				<Icon icon='HeroUsers' />
-				<span>Catálogos / Clientes</span>
-			</SubheaderLeft>
-			<SubheaderRight>
-				{/* Botón con permiso + scope de sucursal */}
-				<ProtectedButton
-					permission='create-customer'
-					branchId={currentBranchId}
-					scope='access'
-					variant='solid'
-					color='blue'
-					icon='HeroPlus'
-					onClick={onCreate}>
-					Nuevo
-				</ProtectedButton>
-			</SubheaderRight>
-		</Subheader>
-
-		<Container>{/* Card, tablas, modales... */}</Container>
-	</PageWrapper>
-);
-```
-
-Componentes UI clave (rutas reales):
-
-- Layouts: `@/components/layouts/{PageWrapper,Subheader,Container}/...`
-- Form: `@/components/form/*` (Input, SelectReact, Label, etc.)
-- UI: `@/components/ui/*` (`Button`, `ProtectedButton`, Card/Modal system)
-- Icono: `@/components/icon/Icon`
+redirige a login si no hay sesión. La plantilla completa, con `ProtectedButton` + scope de
+sucursal, está en **`.claude/skills/ui-ux/SKILL.md`**.
 
 ---
 
@@ -173,14 +132,8 @@ llamadas API innecesarias. Prefiere `useCurrentBranch` + `useAuthorization`.
 
 ## 7. Store (Redux Toolkit)
 
-Estructura en `src/store/`:
-
-- `storeSetup.ts` — configura el store (+ persistencia). `rootReducer.ts` — combina.
-- `hook.ts` — **usa siempre** `useAppDispatch` y `useAppSelector` (tipados), no los de
-  `react-redux` crudos.
-- `index.ts` — barrel: reexporta store, hooks y los slices principales.
-- `slices/<modulo>/<modulo>Slice.ts` — un slice por dominio.
-- `selectors/`, `selectors.ts` — selectores reutilizables.
+**Usa siempre** `useAppDispatch` y `useAppSelector` (tipados, de `@/store`), no los de
+`react-redux` crudos. Un slice por dominio en `src/store/slices/<modulo>/<modulo>Slice.ts`.
 
 Patrón de slice (ver `slices/products/productsSlice.ts` como referencia):
 
@@ -207,26 +160,9 @@ await dispatch(createCustomerSupplier(payload)).unwrap(); // .unwrap() para try/
 
 - **`BaseService`** — instancia Axios con interceptores (token JWT, refresh, 401/403,
   abort). No llamar Axios directo.
-- **`ApiService`** (`src/services/ApiService.ts`) — envuelve `BaseService` y añade:
-    - **Caché en memoria por TTL** para GETs: pasa `cacheTTLms` y opcional `forceRefetch`.
-    - **Dedupe** de requests en vuelo: `dedupe: true` (+ `dedupeKey` opcional).
-    - `fetchData<Resp, Req>(config)` → `AxiosResponse<Resp>`.
-    - `fetchNormalized<T>(config)` → devuelve `data.data ?? data` (desempaqueta el wrapper).
-    - Invalidación: `clearCache()`, `invalidateCache(urlPattern)`, `invalidateExact(config)`.
-- Servicios por dominio: `documentsService`, `salesService`, `integrationsService`,
-  `falabellaApi.service`, `reports/`, `lockers/`, `auth/`, etc.
-
-Uso típico dentro de un thunk:
-
-```ts
-const resp = await ApiService.fetchData<IProductListResponse>({
-	url: '/products',
-	method: 'get',
-	params: { subsidiary_id, page, per_page },
-	cacheTTLms: 30_000, // opcional
-	dedupe: true, // opcional
-});
-```
+- Todo pasa por **`ApiService`** (`src/services/ApiService.ts`), que envuelve `BaseService`
+  y añade caché TTL para GETs, dedupe de requests en vuelo, `fetchNormalized` (desempaqueta
+  `data.data ?? data`) e invalidación de caché.
 
 ---
 
