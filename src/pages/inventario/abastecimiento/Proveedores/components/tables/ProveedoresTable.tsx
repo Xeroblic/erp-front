@@ -1,10 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import type { PaginationState, Updater } from '@tanstack/react-table';
 import Button from '@/components/ui/Button';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-// eslint-disable-next-line import/extensions
-import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import TableCardFooterTemplateV2, {
 	type TablePaginationController,
@@ -30,43 +28,6 @@ interface IProveedoresTableProps {
 }
 
 const COLUMN_COUNT = 6;
-
-type SortKey = 'rut' | 'display_name' | 'business_activity' | 'contact' | 'status';
-type SortState = TableSortState<SortKey>;
-
-const getSortValue = (supplier: IProcurementSupplierListRow, key: SortKey): string | number => {
-	switch (key) {
-		case 'rut':
-			return supplier.rut;
-		case 'display_name':
-			return supplier.display_name;
-		case 'business_activity':
-			return supplier.business_activity ?? '';
-		case 'contact':
-			return supplier.email ?? supplier.phone ?? '';
-		case 'status':
-			return Number(supplier.is_active);
-		default:
-			return '';
-	}
-};
-
-const compareRows = (
-	left: IProcurementSupplierListRow,
-	right: IProcurementSupplierListRow,
-	sort: NonNullable<SortState>,
-): number => {
-	const leftValue = getSortValue(left, sort.key);
-	const rightValue = getSortValue(right, sort.key);
-	const comparison =
-		typeof leftValue === 'number' && typeof rightValue === 'number'
-			? leftValue - rightValue
-			: String(leftValue).localeCompare(String(rightValue), 'es', {
-					numeric: true,
-					sensitivity: 'base',
-				});
-	return sort.direction === 'asc' ? comparison : -comparison;
-};
 
 const ProveedoresPagination: React.FC<{
 	meta: IApiPaginationMeta;
@@ -111,19 +72,8 @@ const ProveedoresTable: React.FC<IProveedoresTableProps> = ({
 	branchId,
 	subsidiaryId,
 }) => {
-	const [sort, setSort] = useState<SortState>(null);
-	const sortedRows = useMemo(
-		() =>
-			sort === null ? rows : [...rows].sort((left, right) => compareRows(left, right, sort)),
-		[rows, sort],
-	);
-	const handleSort = (key: SortKey) => {
-		setSort((current) => ({
-			key,
-			direction: current?.key === key && current.direction === 'asc' ? 'desc' : 'asc',
-		}));
-	};
-
+	// Sin orden por columna: la lista viene paginada del servidor, que ordena por
+	// nombre y no acepta otro criterio; ordenar en el cliente sólo reordenaría la página.
 	return (
 		<Card>
 			<CardHeader>
@@ -138,41 +88,11 @@ const ProveedoresTable: React.FC<IProveedoresTableProps> = ({
 				<Table className='min-w-[980px]'>
 					<THead>
 						<Tr>
-							<SortableTableHeader
-								label='RUT'
-								sortKey='rut'
-								sort={sort}
-								onSort={handleSort}
-								align='center'
-							/>
-							<SortableTableHeader
-								label='Proveedor'
-								sortKey='display_name'
-								sort={sort}
-								onSort={handleSort}
-								align='center'
-							/>
-							<SortableTableHeader
-								label='Giro'
-								sortKey='business_activity'
-								sort={sort}
-								onSort={handleSort}
-								align='center'
-							/>
-							<SortableTableHeader
-								label='Contacto'
-								sortKey='contact'
-								sort={sort}
-								onSort={handleSort}
-								align='center'
-							/>
-							<SortableTableHeader
-								label='Estado'
-								sortKey='status'
-								sort={sort}
-								onSort={handleSort}
-								align='center'
-							/>
+							<Th className='text-center'>RUT</Th>
+							<Th className='text-center'>Proveedor</Th>
+							<Th className='text-center'>Giro</Th>
+							<Th className='text-center'>Contacto</Th>
+							<Th className='text-center'>Estado</Th>
 							<Th className='text-center'>Acciones</Th>
 						</Tr>
 					</THead>
@@ -218,7 +138,7 @@ const ProveedoresTable: React.FC<IProveedoresTableProps> = ({
 						)}
 						{!loading &&
 							!hasError &&
-							sortedRows.map((supplier) => (
+							rows.map((supplier) => (
 								<Tr key={supplier.id}>
 									<Td className='font-mono'>{supplier.rut}</Td>
 									<Td>
