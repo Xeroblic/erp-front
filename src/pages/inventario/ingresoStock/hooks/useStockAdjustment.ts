@@ -14,6 +14,7 @@
 import { useCallback, useState } from 'react';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
+import { readSessionItem, removeSessionItem, writeSessionItem } from '@/utils/sessionStorage.util';
 import type {
 	IWorkItem,
 	IMovementType,
@@ -37,29 +38,9 @@ type ApiErrorLike = {
 // Si el storage no está disponible (modo privado, cuota, política del navegador)
 // sólo se pierde el recordatorio del último lote: no debe romper el montaje ni el
 // cierre de un envío que el backend ya aceptó.
-const persistLastBatchId = (batchId: string) => {
-	try {
-		window.sessionStorage.setItem(LAST_BATCH_STORAGE_KEY, batchId);
-	} catch {
-		/* storage no disponible */
-	}
-};
-
-const readLastBatchId = (): string | null => {
-	try {
-		return window.sessionStorage.getItem(LAST_BATCH_STORAGE_KEY);
-	} catch {
-		return null;
-	}
-};
-
-const clearPersistedLastBatchId = () => {
-	try {
-		window.sessionStorage.removeItem(LAST_BATCH_STORAGE_KEY);
-	} catch {
-		/* storage no disponible */
-	}
-};
+const persistLastBatchId = (batchId: string) => writeSessionItem(LAST_BATCH_STORAGE_KEY, batchId);
+const readLastBatchId = (): string | null => readSessionItem(LAST_BATCH_STORAGE_KEY);
+const clearPersistedLastBatchId = () => removeSessionItem(LAST_BATCH_STORAGE_KEY);
 
 const showValidationErrors = (errors?: Record<string, string[] | string>) => {
 	if (!errors) return;

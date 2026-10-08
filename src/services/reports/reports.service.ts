@@ -5,6 +5,7 @@ import type {
 	IReportExportParams,
 	IReportDownload,
 } from '@/interface/reports.interface';
+import { isRecord } from '@/utils/isRecord.util';
 
 /** Nombre del archivo en `Content-Disposition` (`filename*=UTF-8''…` o `filename="…"`). */
 export const reportFileNameFrom = (disposition: unknown): string | null => {
@@ -15,6 +16,35 @@ export const reportFileNameFrom = (disposition: unknown): string | null => {
 		return encodedName ? decodeURIComponent(encodedName) : (quotedName ?? null);
 	} catch {
 		return encodedName ?? quotedName ?? null;
+	}
+};
+
+/** `Blob.text()` donde existe; `FileReader` en entornos que no lo implementan (jsdom). */
+const readBlobText = (blob: Blob): Promise<string> => {
+	if (typeof blob.text === 'function') return blob.text();
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+		reader.onerror = () => reject(reader.error);
+		reader.readAsText(blob);
+	});
+};
+
+/**
+ * Mensaje del backend en un error de exportación. Como la petición pide
+ * `responseType: 'blob'`, el cuerpo JSON de un 422 o 403 llega como `Blob` y
+ * hay que leerlo para no mostrar un aviso genérico.
+ */
+export const readExportErrorMessage = async (error: unknown): Promise<string | null> => {
+	const data = isRecord(error) && isRecord(error.response) ? error.response.data : null;
+	if (!(data instanceof Blob)) return null;
+	try {
+		const parsed: unknown = JSON.parse(await readBlobText(data));
+		return isRecord(parsed) && typeof parsed.message === 'string' && parsed.message.trim()
+			? parsed.message.trim()
+			: null;
+	} catch {
+		return null;
 	}
 };
 

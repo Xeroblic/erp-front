@@ -20,15 +20,15 @@ const renderFilters = (url: string) => {
 };
 
 describe('useInventoryReportFilters', () => {
-	it('ignora la sucursal de otra empresa que quedó en la URL y la quita al filtrar', () => {
-		const { result } = renderFilters('/reportes/inventario?sucursal=9');
+	it('ignora la sucursal de otra empresa que quedó en la URL y la quita de inmediato', () => {
+		const { result } = renderFilters('/reportes/inventario?sucursal=9&q=mouse');
 
 		expect(result.current.api.filters.sucursal).toBeNull();
-		expect(result.current.api.hasFilters).toBe(false);
-
-		act(() => result.current.api.setBusqueda('mouse'));
-
 		expect(result.current.search).toBe('?q=mouse');
+
+		act(() => result.current.api.setBusqueda('teclado'));
+
+		expect(result.current.search).toBe('?q=teclado');
 	});
 
 	it('conserva una sucursal de la filial', () => {

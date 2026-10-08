@@ -17,9 +17,7 @@ import type {
 import type { IReportFilters } from '@/interface/reports.interface';
 import { ReportsService } from '@/services/reports/reports.service';
 import { getInventoryReportMock } from '@/services/reports/inventoryReportsMock.service';
-
-export const isRecord = (value: unknown): value is Record<string, unknown> =>
-	typeof value === 'object' && value !== null && !Array.isArray(value);
+import { isRecord } from '@/utils/isRecord.util';
 
 /** Filas del cuerpo: paginador de Laravel o sobre `{ data }`; ambos traen `data[]`. */
 export const reportRowsOf = (body: unknown): unknown[] => {

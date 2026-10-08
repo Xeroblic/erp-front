@@ -2,6 +2,11 @@
 export type PdfContent = Record<string, unknown> | string | PdfContent[];
 export type PdfTableCell = Record<string, unknown> | string | PdfContent[];
 
+/** Lo que pdfmake pasa a las funciones de `layout`: sólo se lee el largo del cuerpo. */
+interface IPdfTableNode {
+	table: { body: unknown[] };
+}
+
 import type { SalesDashboardStats, SaleRecord } from '../../../types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -403,7 +408,7 @@ const extractCustomerName = (r: SaleRecord): string => {
 };
 
 const extractAmount = (r: SaleRecord): number => {
-	const raw = r.total_amount ?? (r as any).total ?? 0;
+	const raw = r.total_amount ?? r.total ?? 0;
 	return typeof raw === 'string' ? parseFloat(raw) || 0 : Number(raw) || 0;
 };
 
@@ -567,7 +572,7 @@ export const buildYearlyAnalytics = (filteredResults: SaleRecord[]): PdfContent 
 					],
 				},
 				layout: {
-					hLineWidth: (i: number, node: any) =>
+					hLineWidth: (i: number, node: IPdfTableNode) =>
 						i === 1 || i === node.table.body.length ? 1 : 0,
 					hLineColor: () => '#cbd5e1',
 					vLineWidth: () => 0,
@@ -713,8 +718,8 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 		];
 		const vibrantPalette = ['#0ea5e9', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#eab308'];
 
-		const pieCanvas: any[] = [];
-		const legendBody: any[] = [];
+		const pieCanvas: PdfContent[] = [];
+		const legendBody: PdfTableCell[][] = [];
 		const semesterMonths = current.semester === 1 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11];
 
 		let currentAngle = -Math.PI / 2;
@@ -1074,10 +1079,10 @@ export const buildRiskAnalytics = (filteredResults: SaleRecord[]): PdfContent =>
 
 	filteredResults.forEach((r) => {
 		const amount = extractAmount(r);
-		let statusRaw = String(r.status || (r as any).estado || '')
+		let statusRaw = String(r.status || r.estado || '')
 			.toLowerCase()
 			.trim();
-		let pStatusRaw = String((r as any).payment_status || (r as any).estado_pago || '')
+		let pStatusRaw = String(r.payment_status || r.estado_pago || '')
 			.toLowerCase()
 			.trim();
 
@@ -1319,7 +1324,7 @@ export const buildRiskAnalytics = (filteredResults: SaleRecord[]): PdfContent =>
 											],
 										},
 										layout: {
-											hLineWidth: (i: number, node: any) =>
+											hLineWidth: (i: number, node: IPdfTableNode) =>
 												i === node.table.body.length ? 0 : 1,
 											hLineColor: () => '#f1f5f9',
 											vLineWidth: () => 0,

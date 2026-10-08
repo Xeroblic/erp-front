@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { ReportsService } from '@/services/reports/reports.service';
+import { ReportsService, readExportErrorMessage } from '@/services/reports/reports.service';
 import type { IReportExportParams, ReportFormat } from '@/interface/reports.interface';
 import Button from '@/components/ui/Button';
 
@@ -28,8 +28,11 @@ const ReportExportButton: React.FC<Props> = ({ subsidiaryId, type, filters }) =>
 			a.click();
 			a.remove();
 			window.URL.revokeObjectURL(url);
-		} catch {
-			toast.error('No pudimos descargar el reporte. Intenta nuevamente.');
+		} catch (error: unknown) {
+			toast.error(
+				(await readExportErrorMessage(error)) ??
+					'No pudimos descargar el reporte. Intenta nuevamente.',
+			);
 		} finally {
 			setLoading(false);
 		}

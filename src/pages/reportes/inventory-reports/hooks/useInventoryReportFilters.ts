@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { TInventoryStockStatusFilter } from '@/interface/inventoryOverview.interface';
 import type { TInventoryReportView } from '@/pages/reportes/inventory-reports/inventoryReportTabs';
@@ -19,8 +19,8 @@ import {
  * Cualquier cambio de filtro vuelve a la página 1; sólo paginar la conserva.
  *
  * `branchIds` son las sucursales de la filial: una `?sucursal=` que no está
- * entre ellas se lee como «todas» y desaparece de la URL al próximo cambio.
- * Debe venir memoizado.
+ * entre ellas se lee como «todas» y se quita de la URL de inmediato, para que
+ * copiar el enlace no arrastre una sucursal que no aplica. Debe venir memoizado.
  */
 const useInventoryReportFilters = (branchIds: readonly number[]) => {
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -28,6 +28,19 @@ const useInventoryReportFilters = (branchIds: readonly number[]) => {
 		() => parseInventoryReportFilters(searchParams, branchIds),
 		[searchParams, branchIds],
 	);
+
+	const hasDiscardedSucursal = searchParams.has('sucursal') && filters.sucursal === null;
+	useEffect(() => {
+		if (!hasDiscardedSucursal) return;
+		setSearchParams(
+			(previousParams) => {
+				const next = new URLSearchParams(previousParams);
+				next.delete('sucursal');
+				return next;
+			},
+			{ replace: true },
+		);
+	}, [hasDiscardedSucursal, setSearchParams]);
 
 	const update = useCallback(
 		(patch: (previous: IInventoryReportFilters) => Partial<IInventoryReportFilters>) => {

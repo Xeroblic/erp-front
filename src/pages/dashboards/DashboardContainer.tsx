@@ -14,12 +14,39 @@ import LatestProductsTable from './components/redesign/LatestProductsTable';
 import { fetchDashboardStats } from '@/store/slices/technicalReviews/thunks/dashboardThunks';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import { fetchReportResults } from '@/store/slices/reports/reportsThunks';
+import { selectSalesResults } from '@/store/slices/reports/reportSlice';
+import { readSessionItem, writeSessionItem } from '@/utils/sessionStorage.util';
 
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Badge from '@/components/ui/Badge';
 import useDashboardTour from '@/hooks/tour/home/useDashboardTour';
 import Tabs, { Tab } from '@/components/ui/Tabs';
 import QuickLinks from './components/redesign/QuickLinks';
+
+type TSaleRow = Record<string, unknown>;
+
+/** Monto de una venta: el reporte lo trae como número o texto según el modo. */
+const saleAmountOf = (row: TSaleRow): number => {
+	const raw = row.total_amount ?? row.total ?? row.amount ?? 0;
+	const value = typeof raw === 'string' ? parseFloat(raw) : Number(raw);
+	return Number.isFinite(value) ? value : 0;
+};
+
+/** Fecha de una venta, del primer campo que la traiga y sea válida. */
+const saleDateOf = (row: TSaleRow): Date | null => {
+	const raw = [
+		row.sale_date,
+		row.date,
+		row.created_at,
+		row.updated_at,
+		row.createdAt,
+		row.period,
+		row.fecha,
+	].find((value) => typeof value === 'string' && value !== '');
+	if (typeof raw !== 'string') return null;
+	const parsed = new Date(raw);
+	return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
 
 // Llave para la caché de columnas
 const SESSION_COLUMNS_KEY = 'dashboard_quicklinks_columns';
@@ -30,7 +57,9 @@ const DashboardContainer: React.FC = () => {
 	const { branchId } = useCurrentBranch();
 	const { dashboardStats } = useAppSelector((state) => state.technicalReviews);
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
-	const reportsResults = useAppSelector((state) => state.reports.aggregatedResults);
+	const { data: salesRows } = useAppSelector((state) =>
+		selectSalesResults(state, 'dashboard', subsidiaryId),
+	);
 	const { startTour } = useDashboardTour();
 
 	const [dateRange, setDateRange] = useState<'7d' | '30d'>('7d');
@@ -38,13 +67,13 @@ const DashboardContainer: React.FC = () => {
 
 	// --- ESTADO DE COLUMNAS (Subido desde QuickLinks) ---
 	const [columnCount, setColumnCount] = useState<number>(() => {
-		const savedCols = sessionStorage.getItem(SESSION_COLUMNS_KEY);
+		const savedCols = readSessionItem(SESSION_COLUMNS_KEY);
 		return savedCols ? parseInt(savedCols, 10) : 3;
 	});
 
 	const handleColumnCountChange = (cols: number) => {
 		setColumnCount(cols);
-		sessionStorage.setItem(SESSION_COLUMNS_KEY, cols.toString());
+		writeSessionItem(SESSION_COLUMNS_KEY, cols.toString());
 	};
 	// -----------------------------------------------------
 
@@ -52,63 +81,40 @@ const DashboardContainer: React.FC = () => {
 		if (branchId) {
 			dispatch(fetchDashboardStats({ branchId }));
 		}
-		if (subsidiaryId) {
-			const today = new Date();
-			const start = new Date();
-			start.setDate(today.getDate() - 30);
-			const dateFrom = start.toISOString().split('T')[0];
+	}, [dispatch, branchId]);
 
-			dispatch(
-				fetchReportResults({
-					subsidiaryId: Number(subsidiaryId),
-					type: 'sales',
-					filters: { date_from: dateFrom },
-				}),
-			);
-		}
-	}, [dispatch, branchId, subsidiaryId]);
+	// Al cambiar de filial o salir de Inicio se cancela la consulta en curso.
+	useEffect(() => {
+		if (!subsidiaryId) return undefined;
+		const start = new Date();
+		start.setDate(start.getDate() - 30);
+		const request = dispatch(
+			fetchReportResults({
+				consumer: 'dashboard',
+				subsidiaryId: Number(subsidiaryId),
+				type: 'sales',
+				filters: { date_from: start.toISOString().split('T')[0] },
+			}),
+		);
+		return () => request.abort();
+	}, [dispatch, subsidiaryId]);
+
+	const chartResults = useMemo<TSaleRow[]>(() => salesRows ?? [], [salesRows]);
 
 	const weeklyStats = useMemo(() => {
-		if (!reportsResults) return { count: 0, amount: 0 };
-
-		let data: any[] = [];
-		if (Array.isArray(reportsResults)) data = reportsResults;
-		else if (typeof reportsResults === 'object' && 'data' in reportsResults) {
-			data = (reportsResults as any).data || [];
-		}
-
 		const today = new Date();
 		const oneWeekAgo = new Date();
 		oneWeekAgo.setDate(today.getDate() - 7);
 
-		let count = 0;
-		let amount = 0;
-
-		data.forEach((r: any) => {
-			const rawDate = r?.sale_date || r?.date || r?.created_at;
-			if (!rawDate) return;
-
-			const d = new Date(rawDate);
-			if (d >= oneWeekAgo && d <= today) {
-				count++;
-				const rawAmt = r?.total_amount ?? r?.total ?? r?.amount ?? 0;
-				const val = typeof rawAmt === 'string' ? parseFloat(rawAmt) : Number(rawAmt) || 0;
-				amount += val;
-			}
-		});
-
-		return { count, amount };
-	}, [reportsResults]);
-
-	const chartResults = useMemo(() => {
-		if (!reportsResults) return [];
-		if (Array.isArray(reportsResults)) return reportsResults;
-		if (typeof reportsResults === 'object' && 'data' in reportsResults) {
-			const extracted = (reportsResults as any).data;
-			return Array.isArray(extracted) ? extracted : [];
-		}
-		return [];
-	}, [reportsResults]);
+		return chartResults.reduce<{ count: number; amount: number }>(
+			(stats, row) => {
+				const date = saleDateOf(row);
+				if (!date || date < oneWeekAgo || date > today) return stats;
+				return { count: stats.count + 1, amount: stats.amount + saleAmountOf(row) };
+			},
+			{ count: 0, amount: 0 },
+		);
+	}, [chartResults]);
 
 	const { chartSeries, chartCategories, totalAmount } = useMemo(() => {
 		const dateMap = new Map<string, number>();
@@ -126,34 +132,14 @@ const DashboardContainer: React.FC = () => {
 
 		let total = 0;
 
-		chartResults.forEach((r: any) => {
-			const rawAmt = r?.total_amount ?? r?.total ?? r?.amount ?? 0;
-			const amount = typeof rawAmt === 'string' ? parseFloat(rawAmt) : Number(rawAmt) || 0;
-
-			const rawDate =
-				r?.sale_date ||
-				r?.date ||
-				r?.created_at ||
-				r?.updated_at ||
-				r?.createdAt ||
-				r?.period ||
-				r?.fecha;
-			if (!rawDate) return;
-
-			let d: Date | null = null;
-			if (rawDate instanceof Date) d = rawDate;
-			else {
-				const parsed = new Date(rawDate);
-				if (!Number.isNaN(parsed.getTime())) d = parsed;
-			}
-
-			if (d) {
-				const key = d.toISOString().split('T')[0];
-				if (dateMap.has(key)) {
-					dateMap.set(key, (dateMap.get(key) || 0) + amount);
-					total += amount;
-				}
-			}
+		chartResults.forEach((row) => {
+			const date = saleDateOf(row);
+			if (!date) return;
+			const key = date.toISOString().split('T')[0];
+			if (!dateMap.has(key)) return;
+			const amount = saleAmountOf(row);
+			dateMap.set(key, (dateMap.get(key) || 0) + amount);
+			total += amount;
 		});
 
 		const dataSales = categories.map((key) => dateMap.get(key) || 0);
