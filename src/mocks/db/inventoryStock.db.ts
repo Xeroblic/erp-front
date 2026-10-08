@@ -248,7 +248,7 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 	 * agregados ya cerrados de mouse/teclado que ejercen otras pruebas.
 	 * Respaldar documentalmente una porción parcial (10) tiene que dejar
 	 * «100 físicos = 10 documentados + 90 sin documento», demostrable
-	 * navegando `StockPorUbicacion` sin tocar más fixtures.
+	 * navegando Inventario por bodega sin tocar más fixtures.
 	 */
 	{
 		origin_id: 220,
@@ -269,7 +269,7 @@ export const inventoryOrigins: IInventorySeedOrigin[] = [
 	 * Ejemplos de la sucursal Ecopc (`branch_id: 1`, ver `ecopcWarehouse` en
 	 * `procurement.db.ts`): mouse con las dos procedencias — 8 documentadas
 	 * (recepción con proveedor) y 4 sin documento — y teclado sin documento,
-	 * para que `StockPorUbicacion` no aparezca vacío con la sesión real del
+	 * para que Inventario por bodega no aparezca vacío con la sesión real del
 	 * equipo.
 	 */
 	{

@@ -11,7 +11,6 @@ import InventoryOrigins from '@/pages/inventario/Inventario/InventarioProducto/c
 import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 import { resetStockReceiptsStoreForTests } from '@/mocks/services/stockReceipts.mock';
 import { resetInventoryCriticalThresholdsForTests } from '@/mocks/services/inventoryOverview.mock';
-import { clearAllPersistedMockState } from '@/services/procurement/procurementMockPersistence.util';
 
 const context = vi.hoisted(() => ({
 	branchId: 4 as number | null,
@@ -160,7 +159,6 @@ afterEach(() => {
 	resetStockReceiptsStoreForTests();
 	resetInventoryStockStoreForTests();
 	resetInventoryCriticalThresholdsForTests();
-	clearAllPersistedMockState('inventory-critical-thresholds');
 	vi.restoreAllMocks();
 });
 

@@ -1323,7 +1323,7 @@ export const listInitialStockAllocationsForPurchaseDocument = async (
 
    Ambas escrituras mutan el **mismo** store de procedencias que las secciones
    3 y 8, así que viven acá y no en un servicio aparte: un traslado que no
-   moviera los `origins` reales dejaría a `StockPorUbicacion` mostrando saldos
+   moviera los `origins` reales dejaría a Inventario por bodega mostrando saldos
    que ninguna otra pantalla podría reproducir.
    ================================================= */
 

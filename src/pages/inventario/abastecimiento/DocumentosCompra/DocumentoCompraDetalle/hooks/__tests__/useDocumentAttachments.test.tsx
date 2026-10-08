@@ -34,6 +34,9 @@ const mockAxiosError = (status: number, data: Record<string, unknown>) => ({
 });
 
 afterEach(() => {
+	// Restaura los `vi.spyOn` aunque una aserción haya fallado antes: si no, el
+	// espía queda instalado y hace fallar también la prueba siguiente.
+	vi.restoreAllMocks();
 	resetPurchaseDocumentAttachmentsStoreForTests();
 	resetPurchaseDocumentsStoreForTests();
 	toastSpies.success.mockReset();
@@ -128,8 +131,6 @@ describe('useDocumentAttachments', () => {
 		expect(result.current.uploadQueue[0].errorMessage).toContain(
 			'Este documento ya tiene 10 adjuntos, el máximo permitido.',
 		);
-
-		uploadSpy.mockRestore();
 	});
 
 	it('reintentar un archivo fallido reutiliza la misma Idempotency-Key, no una nueva', async () => {
@@ -175,8 +176,6 @@ describe('useDocumentAttachments', () => {
 		expect(capturedKeys[0]).toBeDefined();
 		expect(capturedKeys[1]).toBe(capturedKeys[0]);
 		expect(result.current.uploadQueue).toHaveLength(0);
-
-		uploadSpy.mockRestore();
 	});
 
 	it('una subida en curso al cambiar de documento no refresca el documento abandonado', async () => {
@@ -281,8 +280,6 @@ describe('useDocumentAttachments', () => {
 		expect(result.current.isUploading).toBe(false);
 		expect(onChangedB).toHaveBeenCalledTimes(1);
 		expect(onChangedA).not.toHaveBeenCalled();
-
-		uploadSpy.mockRestore();
 	});
 
 	it('un tipo no permitido se rechaza en el cliente, sin llamar al servicio', async () => {
@@ -461,7 +458,6 @@ describe('useDocumentAttachments', () => {
 		expect(toastSpies.error).toHaveBeenCalledTimes(1);
 		expect(toastSpies.info).toHaveBeenCalledWith('El adjunto ya se había eliminado.');
 		expect(result.current.deletingId).toBeNull();
-		deleteSpy.mockRestore();
 	});
 
 	it('no elimina cuando canDelete es false (documento confirmed)', async () => {

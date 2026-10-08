@@ -8,7 +8,6 @@ import {
 	updateInventoryCriticalThreshold,
 } from '@/mocks/services/inventoryOverview.mock';
 import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
-import { clearAllPersistedMockState } from '@/services/procurement/procurementMockPersistence.util';
 import type { IInventoryReportBranch } from '@/interface/inventoryReports.interface';
 
 // Fixtures de `inventoryStock.db.ts`, sucursal 4.
@@ -26,7 +25,6 @@ afterEach(() => {
 	vi.useRealTimers();
 	resetInventoryStockStoreForTests();
 	resetInventoryCriticalThresholdsForTests();
-	clearAllPersistedMockState('inventory-critical-thresholds');
 });
 
 const healthRows = async () => {
