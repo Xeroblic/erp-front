@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
 	PROCUREMENT_ERROR_DEFINITIONS,
+	applyProcurementFieldErrors,
 	getProcurementErrorMessage,
 	resolveProcurementError,
 } from '@/utils/procurementErrors.util';
@@ -178,6 +179,25 @@ describe('cabeceras de escritura', () => {
 		expect(shouldRetryWithSameKey(axiosError(409, { code: 'OPERATION_IN_PROGRESS' }))).toBe(
 			true,
 		);
+	});
+
+	it('pinta el primer mensaje de cada campo traducible y omite el resto', () => {
+		const setFieldError = vi.fn();
+
+		applyProcurementFieldErrors(
+			{ supplier_id: ['Elige un proveedor.', 'Otro'], unknown: ['x'], sku: [] },
+			(apiField) => ({ supplier_id: 'supplierId', sku: 'sku' })[apiField] ?? null,
+			setFieldError,
+		);
+
+		expect(setFieldError.mock.calls).toEqual([['supplierId', 'Elige un proveedor.']]);
+	});
+
+	it('una escritura cancelada se trata como resultado incierto y reusa la clave', () => {
+		const canceled = { isAxiosError: true, code: 'ERR_CANCELED', request: {} };
+
+		expect(isTransportError(canceled)).toBe(true);
+		expect(shouldRetryWithSameKey(canceled)).toBe(true);
 	});
 
 	it('no reusa la clave tras un error definitivo de validación', () => {

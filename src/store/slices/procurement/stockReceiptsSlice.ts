@@ -10,7 +10,12 @@ import {
 	reverseStockReceipt,
 	updateStockReceipt,
 } from '@/services/procurement/stockReceipts.service';
-import { readEtagHeader } from '@/utils/procurementWrite.util';
+import {
+	MISSING_SUBSIDIARY_MESSAGE,
+	mutationBelongsToCurrent,
+	mutationBelongsToList,
+	readEtagHeader,
+} from '@/utils/procurementWrite.util';
 import { getProcurementErrorMessage } from '@/utils/procurementErrors.util';
 import type { RootState } from '@/store';
 import type {
@@ -70,8 +75,6 @@ interface IWriteHeaders {
 	idempotencyKey?: string;
 	etag?: string | null;
 }
-
-const MISSING_SUBSIDIARY_MESSAGE = 'No se pudo determinar la filial activa.';
 
 export const fetchStockReceipts = createAsyncThunk(
 	'stockReceipts/fetchList',
@@ -344,14 +347,10 @@ const applyReceiptMutation = (
 	etag: string | null,
 	subsidiaryId: number | null,
 ) => {
-	if (subsidiaryId !== null && subsidiaryId === state.listSubsidiaryId) {
+	if (mutationBelongsToList(state, subsidiaryId)) {
 		state.items = state.items.map((row) => (row.id === receipt.id ? toListRow(receipt) : row));
 	}
-	if (
-		state.current?.id === receipt.id &&
-		subsidiaryId !== null &&
-		subsidiaryId === state.currentSubsidiaryId
-	) {
+	if (mutationBelongsToCurrent(state, subsidiaryId, receipt.id)) {
 		state.current = receipt;
 		state.currentEtag = etag;
 	}

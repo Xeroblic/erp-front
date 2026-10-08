@@ -235,6 +235,13 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
 		: undefined;
 
 /** Vive junto a la clasificación para que `action` y los helpers de reintento no discrepen. */
+/**
+ * Sin respuesta del servidor: timeout, red caída o petición cancelada
+ * (`ERR_CANCELED`). La cancelación cuenta igual a propósito: una escritura
+ * abortada pudo haber llegado, y reintentarla con la misma clave es lo que
+ * evita duplicarla. Las lecturas canceladas las descartan los slices por
+ * `meta.aborted` antes de mostrar nada.
+ */
 export const isTransportError = (error: unknown): boolean => {
 	const record = asRecord(error);
 	if (!record) return false;
@@ -356,6 +363,22 @@ export const resolveProcurementError = (
 		context: asRecord(dataRecord?.context) ?? null,
 		existingSupplier: parseSupplierConflict(dataRecord?.existing_supplier),
 	};
+};
+
+/**
+ * Pinta el primer mensaje de cada campo de un 422 sobre el formulario.
+ * `toFormField` traduce el nombre del backend al del formulario; los campos
+ * sin equivalente se omiten (el mensaje general ya se muestra aparte).
+ */
+export const applyProcurementFieldErrors = (
+	fieldErrors: Record<string, string[]> | null,
+	toFormField: (apiField: string) => string | null | undefined,
+	setFieldError: (field: string, message: string) => void,
+): void => {
+	Object.entries(fieldErrors ?? {}).forEach(([apiField, messages]) => {
+		const formField = toFormField(apiField);
+		if (formField && messages[0]) setFieldError(formField, messages[0]);
+	});
 };
 
 /** Atajo para los slices, que solo necesitan el texto. */

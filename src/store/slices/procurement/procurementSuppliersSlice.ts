@@ -16,6 +16,11 @@ import type {
 	IProcurementSupplierListRow,
 	IProcurementSupplierPayload,
 } from '@/interface/procurement.interface';
+import {
+	MISSING_SUBSIDIARY_MESSAGE,
+	mutationBelongsToCurrent,
+	mutationBelongsToList,
+} from '@/utils/procurementWrite.util';
 
 /**
  * `subsidiaryId` viaja en cada thunk porque el contrato ata el RUT único a la
@@ -73,8 +78,6 @@ const initialState: ProcurementSuppliersState = {
 interface IWriteHeaders {
 	idempotencyKey: string;
 }
-
-const MISSING_SUBSIDIARY_MESSAGE = 'No se pudo determinar la filial activa.';
 
 export const fetchProcurementSuppliers = createAsyncThunk(
 	'procurementSuppliers/fetchList',
@@ -207,16 +210,6 @@ const toListRow = (supplier: IProcurementSupplier): IProcurementSupplierListRow 
 	is_active: supplier.is_active,
 });
 
-const belongsToList = (state: ProcurementSuppliersState, subsidiaryId: number | null) =>
-	subsidiaryId !== null && subsidiaryId === state.listSubsidiaryId;
-
-const belongsToCurrent = (
-	state: ProcurementSuppliersState,
-	subsidiaryId: number | null,
-	id: number,
-) =>
-	state.current?.id === id && subsidiaryId !== null && subsidiaryId === state.currentSubsidiaryId;
-
 /**
  * Refleja en `items` y `current` el resultado de una escritura, sin refetch.
  * `subsidiaryId` es el de la propia mutación: una escritura resuelta después
@@ -228,12 +221,12 @@ const applySupplierMutation = (
 	supplier: IProcurementSupplier,
 	subsidiaryId: number | null,
 ) => {
-	if (belongsToList(state, subsidiaryId)) {
+	if (mutationBelongsToList(state, subsidiaryId)) {
 		state.items = state.items.map((row) =>
 			row.id === supplier.id ? toListRow(supplier) : row,
 		);
 	}
-	if (belongsToCurrent(state, subsidiaryId, supplier.id)) state.current = supplier;
+	if (mutationBelongsToCurrent(state, subsidiaryId, supplier.id)) state.current = supplier;
 };
 
 const procurementSuppliersSlice = createSlice({
@@ -336,12 +329,12 @@ const procurementSuppliersSlice = createSlice({
 				// `false`; `allowed_actions` llega con el próximo `fetch`.
 				const { id } = action.payload;
 				const { subsidiaryId } = action.meta.arg;
-				if (belongsToList(state, subsidiaryId)) {
+				if (mutationBelongsToList(state, subsidiaryId)) {
 					state.items = state.items.map((row) =>
 						row.id === id ? { ...row, is_active: false } : row,
 					);
 				}
-				if (state.current && belongsToCurrent(state, subsidiaryId, id))
+				if (state.current && mutationBelongsToCurrent(state, subsidiaryId, id))
 					state.current = { ...state.current, is_active: false };
 			})
 			.addCase(deactivateProcurementSupplierThunk.rejected, (state) => {

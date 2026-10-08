@@ -23,6 +23,11 @@ import type {
 	IPurchaseDocumentListRow,
 	IPurchaseDocumentUpdatePayload,
 } from '@/interface/procurement.interface';
+import {
+	MISSING_SUBSIDIARY_MESSAGE,
+	mutationBelongsToCurrent,
+	mutationBelongsToList,
+} from '@/utils/procurementWrite.util';
 
 /**
  * Documentos de compra. Se guarda el `ETag` del recurso junto con `current`:
@@ -99,8 +104,6 @@ interface IWriteHeaders {
 interface IUpdateHeaders extends IWriteHeaders {
 	etag: string | null;
 }
-
-const MISSING_SUBSIDIARY_MESSAGE = 'No se pudo determinar la filial activa.';
 
 export const fetchPurchaseDocuments = createAsyncThunk(
 	'purchaseDocuments/fetchList',
@@ -269,16 +272,12 @@ const applyDocumentMutation = (
 	etag: string | null,
 	subsidiaryId: number | null,
 ) => {
-	if (subsidiaryId !== null && subsidiaryId === state.listSubsidiaryId) {
+	if (mutationBelongsToList(state, subsidiaryId)) {
 		state.items = state.items.map((row) =>
 			row.id === document.id ? toListRow(document) : row,
 		);
 	}
-	if (
-		state.current?.id === document.id &&
-		subsidiaryId !== null &&
-		subsidiaryId === state.currentSubsidiaryId
-	) {
+	if (mutationBelongsToCurrent(state, subsidiaryId, document.id)) {
 		state.current = document;
 		state.currentEtag = etag;
 	}
