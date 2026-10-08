@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import Modal, {
 	ModalHeader,
@@ -18,6 +19,11 @@ import { useAppDispatch } from '@/store';
 import { createInventoryDocumentAllocationThunk } from '@/store/slices/procurement/inventoryStockSlice';
 import usePurchaseDocumentPicker from '@/pages/inventario/abastecimiento/Recepciones/hooks/usePurchaseDocumentPicker';
 import type { IInventoryStockOriginRow } from '@/interface/procurement.interface';
+import {
+	createDocumentInitialStockSchema,
+	DOCUMENT_INITIAL_STOCK_INITIAL_VALUES,
+	type IDocumentInitialStockValues,
+} from './documentInitialStock.schema';
 
 /**
  * `POST B/inventory-stock/{product}/document-allocations` (§8): respalda
@@ -54,10 +60,6 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 	onDocumented,
 }) => {
 	const dispatch = useAppDispatch();
-	const [documentId, setDocumentId] = useState<number | ''>('');
-	const [lineId, setLineId] = useState<number | ''>('');
-	const [quantity, setQuantity] = useState('');
-	const [reason, setReason] = useState('');
 	const isMountedRef = useRef(true);
 	useEffect(() => {
 		isMountedRef.current = true;
@@ -70,8 +72,11 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 		renewKeyOnDefinitiveError: true,
 	});
 
+	// Las líneas dependen del documento elegido, y los límites de la cantidad de
+	// esas líneas: el picker lee el documento antes de que exista el formulario.
+	const [pickerDocumentId, setPickerDocumentId] = useState<number | ''>('');
 	const { documents, loadingDocuments, selectedDocument, loadingSelectedDocument } =
-		usePurchaseDocumentPicker(subsidiaryId, isOpen, documentId);
+		usePurchaseDocumentPicker(subsidiaryId, isOpen, pickerDocumentId);
 
 	const documentOptions = documents.map((document) => ({
 		value: String(document.id),
@@ -81,31 +86,59 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 	// El producto ya está fijo (viene del origin): sólo se ofrecen líneas del
 	// mismo producto — una línea de otro producto siempre terminaría en
 	// `DOCUMENT_LINE_MISMATCH` al confirmar.
-	const compatibleLines = (selectedDocument?.items ?? []).filter(
-		(line) => line.product.id === productId,
+	const compatibleLines = useMemo(
+		() => (selectedDocument?.items ?? []).filter((line) => line.product.id === productId),
+		[selectedDocument, productId],
 	);
 	const lineOptions = compatibleLines.map((line) => ({
 		value: String(line.id),
 		label: `${line.sku_snapshot} · ${line.name_snapshot} (quedan ${line.remaining_quantity})`,
 	}));
-	const selectedLine = compatibleLines.find((line) => line.id === lineId);
 
-	const parsedQuantity = Number(quantity);
-	const isQuantityValid =
-		quantity.trim() !== '' && Number.isInteger(parsedQuantity) && parsedQuantity > 0;
-	const exceedsUndocumentedBalance = Boolean(
-		origin && isQuantityValid && parsedQuantity > origin.physical_quantity,
-	);
-	const exceedsDocumentCapacity = Boolean(
-		selectedLine && isQuantityValid && parsedQuantity > selectedLine.remaining_quantity,
+	const schema = useMemo(
+		() =>
+			createDocumentInitialStockSchema(
+				origin?.physical_quantity ?? 0,
+				(lineId) => compatibleLines.find((line) => line.id === lineId)?.remaining_quantity,
+			),
+		[origin?.physical_quantity, compatibleLines],
 	);
 
-	let quantityFeedback = 'La cantidad debe ser un entero positivo.';
-	if (exceedsUndocumentedBalance) {
-		quantityFeedback = `No hay suficiente stock sin documentar (saldo: ${origin?.physical_quantity}).`;
-	} else if (exceedsDocumentCapacity) {
-		quantityFeedback = `La línea del documento sólo tiene ${selectedLine?.remaining_quantity} de capacidad.`;
-	}
+	const formik = useFormik<IDocumentInitialStockValues>({
+		initialValues: DOCUMENT_INITIAL_STOCK_INITIAL_VALUES,
+		validationSchema: schema,
+		onSubmit: async (values) => {
+			if (!origin) return;
+			const result = await idempotentWrite.submit((headers) =>
+				dispatch(
+					createInventoryDocumentAllocationThunk({
+						subsidiaryId,
+						branchId,
+						productId,
+						payload: {
+							origin_id: origin.origin_id,
+							warehouse_id: warehouseId,
+							purchase_document_line_id: Number(values.lineId),
+							quantity: Number(values.quantity),
+							reason: values.reason.trim(),
+						},
+						headers: { idempotencyKey: headers['Idempotency-Key'] },
+					}),
+				).unwrap(),
+			);
+
+			if (result && isMountedRef.current) {
+				toast.success(
+					`Respaldadas ${result.quantity} unidades de la procedencia #${origin.origin_id}.`,
+				);
+				setIsOpen(false);
+				formik.resetForm();
+				setPickerDocumentId('');
+				idempotentWrite.clearError();
+				onDocumented(result.quantity);
+			}
+		},
+	});
 
 	const handleClose = () => {
 		if (idempotentWrite.isSubmitting) return;
@@ -113,52 +146,13 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 		// Con un resultado incierto (`canRetry`) conserva la selección y la clave:
 		// al reabrir se reintenta exactamente el mismo comando, sin duplicarlo.
 		if (!idempotentWrite.canRetry) {
-			setDocumentId('');
-			setLineId('');
-			setQuantity('');
-			setReason('');
+			formik.resetForm();
+			setPickerDocumentId('');
 			idempotentWrite.clearError();
 		}
 	};
 
-	const canSubmit = Boolean(
-		origin &&
-			documentId !== '' &&
-			lineId !== '' &&
-			isQuantityValid &&
-			!exceedsUndocumentedBalance &&
-			!exceedsDocumentCapacity &&
-			reason.trim(),
-	);
-
-	const handleConfirm = async () => {
-		if (!origin || lineId === '' || !canSubmit) return;
-		const result = await idempotentWrite.submit((headers) =>
-			dispatch(
-				createInventoryDocumentAllocationThunk({
-					subsidiaryId,
-					branchId,
-					productId,
-					payload: {
-						origin_id: origin.origin_id,
-						warehouse_id: warehouseId,
-						purchase_document_line_id: Number(lineId),
-						quantity: parsedQuantity,
-						reason: reason.trim(),
-					},
-					headers: { idempotencyKey: headers['Idempotency-Key'] },
-				}),
-			).unwrap(),
-		);
-
-		if (result && isMountedRef.current) {
-			toast.success(
-				`Respaldadas ${result.quantity} unidades de la procedencia #${origin.origin_id}.`,
-			);
-			handleClose();
-			onDocumented(result.quantity);
-		}
-	};
+	const canSubmit = Boolean(origin) && schema.isValidSync(formik.values);
 
 	return (
 		<Modal
@@ -192,21 +186,29 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 				<div className='space-y-1'>
 					<Label htmlFor='allocation-document'>Documento confirmado</Label>
 					<SelectReact
-						name='purchase_document_id'
+						name='documentId'
 						inputId='allocation-document'
 						isDisabled={idempotentWrite.canRetry}
 						isLoading={loadingDocuments}
 						options={documentOptions}
 						placeholder='Selecciona un documento…'
 						value={
-							documentOptions.find((option) => option.value === String(documentId)) ??
-							null
+							documentOptions.find(
+								(option) => option.value === formik.values.documentId,
+							) ?? null
 						}
 						onChange={(option) => {
 							const selected = option as TSelectOption | null;
 							if (Array.isArray(selected)) return;
-							setDocumentId(selected ? Number(selected.value) : '');
-							setLineId('');
+							const nextDocumentId = selected ? selected.value : '';
+							void formik.setValues({
+								...formik.values,
+								documentId: nextDocumentId,
+								lineId: '',
+							});
+							setPickerDocumentId(
+								nextDocumentId === '' ? '' : Number(nextDocumentId),
+							);
 						}}
 					/>
 				</div>
@@ -224,19 +226,20 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 					<div className='space-y-1'>
 						<Label htmlFor='allocation-line'>Línea del documento</Label>
 						<SelectReact
-							name='purchase_document_line_id'
+							name='lineId'
 							inputId='allocation-line'
 							isDisabled={idempotentWrite.canRetry}
 							options={lineOptions}
 							placeholder='Selecciona una línea…'
 							value={
-								lineOptions.find((option) => option.value === String(lineId)) ??
-								null
+								lineOptions.find(
+									(option) => option.value === formik.values.lineId,
+								) ?? null
 							}
 							onChange={(option) => {
 								const selected = option as TSelectOption | null;
 								if (Array.isArray(selected)) return;
-								setLineId(selected ? Number(selected.value) : '');
+								void formik.setFieldValue('lineId', selected ? selected.value : '');
 							}}
 						/>
 					</div>
@@ -251,16 +254,14 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 						min={1}
 						max={origin?.physical_quantity}
 						disabled={idempotentWrite.canRetry}
-						value={quantity}
-						onChange={(event) => setQuantity(event.target.value)}
-						isValid={
-							quantity === '' ||
-							(isQuantityValid &&
-								!exceedsUndocumentedBalance &&
-								!exceedsDocumentCapacity)
+						value={formik.values.quantity}
+						onChange={formik.handleChange}
+						onBlur={formik.handleBlur}
+						isValid={!formik.errors.quantity}
+						isTouched={
+							formik.values.quantity !== '' || Boolean(formik.touched.quantity)
 						}
-						isTouched={quantity !== ''}
-						invalidFeedback={quantityFeedback}
+						invalidFeedback={formik.errors.quantity}
 					/>
 					<p className='text-xs text-zinc-500'>
 						Saldo sin documento: {origin?.physical_quantity ?? 0} unidades.
@@ -274,11 +275,12 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 						name='reason'
 						rows={3}
 						disabled={idempotentWrite.canRetry}
-						value={reason}
-						onChange={(event) => setReason(event.target.value)}
-						isValid={reason.trim().length > 0}
-						isTouched={reason.length > 0}
-						invalidFeedback='Indica el motivo del respaldo documental.'
+						value={formik.values.reason}
+						onChange={formik.handleChange}
+						onBlur={formik.handleBlur}
+						isValid={!formik.errors.reason}
+						isTouched={formik.values.reason !== '' || Boolean(formik.touched.reason)}
+						invalidFeedback={formik.errors.reason}
 					/>
 				</div>
 
@@ -301,7 +303,7 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 					<Button
 						variant='solid'
 						color='blue'
-						onClick={handleConfirm}
+						onClick={() => formik.handleSubmit()}
 						isDisable={idempotentWrite.isSubmitting || !canSubmit}
 						isLoading={idempotentWrite.isSubmitting}>
 						{idempotentWrite.canRetry ? 'Reintentar' : 'Documentar'}

@@ -211,7 +211,7 @@ export const southBranchWarehouse: IWarehouseCompact = { id: 15, name: 'Bodega S
 /**
  * Bodega de la sucursal Ecopc (`branch_id: 1`, `subsidiary_id: 1` — la que
  * devuelve `/perfil` en este entorno de desarrollo, ver
- * `orgContext.util.test.ts`). Sirve para que `StockPorUbicacion` muestre
+ * `orgContext.util.test.ts`). Sirve para que Inventario por bodega muestre
  * ejemplos reales al navegar con la sesión propia del equipo, no sólo con las
  * sucursales 4/6 del resto del mock.
  *

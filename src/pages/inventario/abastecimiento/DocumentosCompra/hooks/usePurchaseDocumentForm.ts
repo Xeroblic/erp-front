@@ -16,6 +16,7 @@ import type {
 	IPurchaseDocumentUpdatePayload,
 	TPurchaseDocumentType,
 } from '@/interface/procurement.interface';
+import { applyProcurementFieldErrors } from '@/utils/procurementErrors.util';
 import { EMPTY_DOCUMENTO_LINE, EMPTY_DOCUMENTO_VALUES, purchaseDocumentFormSchema } from '../types';
 import type { IPurchaseDocumentFormValues, IDocumentoCompraLineFormValues } from '../types';
 
@@ -236,10 +237,7 @@ const usePurchaseDocumentForm = ({
 			return;
 		}
 
-		Object.entries(resolved.fieldErrors ?? {}).forEach(([apiField, messages]) => {
-			const formField = toFormFieldPath(apiField);
-			if (formField && messages[0]) formik.setFieldError(formField, messages[0]);
-		});
+		applyProcurementFieldErrors(resolved.fieldErrors, toFormFieldPath, formik.setFieldError);
 		toast.error(resolved.message);
 
 		if (resolved.action !== 'retry_same_key') idempotentWrite.renewKey();

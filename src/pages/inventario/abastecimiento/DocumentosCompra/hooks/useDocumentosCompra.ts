@@ -88,21 +88,27 @@ const useDocumentosCompra = () => {
 	/**
 	 * Otra filial es otro listado: la página puede no existir y el proveedor
 	 * es de la anterior (el backend respondería 422). Se descartan en el mismo
-	 * render —la petición nunca sale con ellos— y la URL se alinea en el
-	 * efecto. Pasar de `null` a una filial no es un cambio: es el perfil que
-	 * terminó de cargar, y un enlace con `?supplier_id=` debe sobrevivirlo.
+	 * render —la petición nunca sale con ellos— y siguen descartados hasta que
+	 * la URL los refleje: el router aplica `setSearchParams` en una transición
+	 * (`v7_startTransition`), después del estado de este hook. Pasar de `null`
+	 * a una filial no es un cambio: es el perfil que terminó de cargar, y un
+	 * enlace con `?supplier_id=` debe sobrevivirlo.
 	 */
 	const [filtersSubsidiaryId, setFiltersSubsidiaryId] = useState(subsidiaryId);
 	const isSubsidiarySwitch = filtersSubsidiaryId !== null && filtersSubsidiaryId !== subsidiaryId;
+	const isUrlReset = urlFilters.page === 1 && urlFilters.supplierId === null;
 	const filters = useMemo(
 		() => (isSubsidiarySwitch ? { ...urlFilters, ...SUBSIDIARY_RESET } : urlFilters),
 		[isSubsidiarySwitch, urlFilters],
 	);
 	useEffect(() => {
 		if (filtersSubsidiaryId === subsidiaryId) return;
-		if (isSubsidiarySwitch) update(SUBSIDIARY_RESET);
+		if (isSubsidiarySwitch && !isUrlReset) {
+			update(SUBSIDIARY_RESET);
+			return;
+		}
 		setFiltersSubsidiaryId(subsidiaryId);
-	}, [filtersSubsidiaryId, isSubsidiarySwitch, subsidiaryId, update]);
+	}, [filtersSubsidiaryId, isSubsidiarySwitch, isUrlReset, subsidiaryId, update]);
 
 	const {
 		search,

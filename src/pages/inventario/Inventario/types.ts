@@ -1,4 +1,5 @@
 import * as Yup from 'yup';
+import { STOCK_STATUS_LABELS, visibleStockStatus } from '@/components/procurement';
 import Pages from '@/config/pages.config';
 import type { IPageLink } from '@/config/procurementLinks';
 import type { IInventoryStockListParams } from '@/interface/procurement.interface';
@@ -280,16 +281,10 @@ export const estadoVisible = (
 	critical: IInventoryCriticalStock | null,
 ): TInventarioEstadoVisible | null => {
 	if (!critical) return null;
-	if (critical.available_quantity <= 0) return 'out';
-	return critical.status;
+	return visibleStockStatus(critical.available_quantity, critical.status);
 };
 
-export const ESTADO_LABELS: Record<TInventoryStockStatusFilter, string> = {
-	critical: 'Bajo el umbral',
-	out: 'Sin disponible',
-	unconfigured: 'Sin umbral',
-	healthy: 'Normal',
-};
+export const ESTADO_LABELS: Record<TInventoryStockStatusFilter, string> = STOCK_STATUS_LABELS;
 
 /* =================================================
    Umbral crítico (§13) — formulario de la ficha

@@ -1,3 +1,4 @@
+import { STOCK_STATUS_ORDER, visibleStockStatus } from '@/components/procurement';
 import type { TInventoryStockStatusFilter } from '@/interface/inventoryOverview.interface';
 import type {
 	IDeadStockReportRow,
@@ -68,18 +69,15 @@ export const paginateReportRows = <T>(rows: T[], page: number, perPage: number):
 	};
 };
 
-/** «Sin disponible» gana a los estados del §13, como la etiqueta de Inventario. */
+/** Mismo estado que la etiqueta de Inventario. */
 export const visibleStatusOf = (
 	row: Pick<IStockHealthReportRow, 'available_quantity' | 'status'>,
-): TInventoryStockStatusFilter => (row.available_quantity <= 0 ? 'out' : row.status);
+): TInventoryStockStatusFilter => visibleStockStatus(row.available_quantity, row.status);
 
 /** De más a menos urgente, para ordenar por estado. */
-export const STATUS_RANK: Record<TInventoryStockStatusFilter, number> = {
-	out: 0,
-	critical: 1,
-	unconfigured: 2,
-	healthy: 3,
-};
+export const STATUS_RANK = Object.fromEntries(
+	STOCK_STATUS_ORDER.map((status, rank) => [status, rank]),
+) as Record<TInventoryStockStatusFilter, number>;
 
 const sum = (values: number[]): number => values.reduce((total, value) => total + value, 0);
 

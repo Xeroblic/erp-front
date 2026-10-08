@@ -14,6 +14,7 @@ import {
 	listWarehousesForStockReceipts,
 } from '@/services/procurement/stockReceipts.service';
 import type { IStockReceipt } from '@/interface/procurement.interface';
+import { applyProcurementFieldErrors } from '@/utils/procurementErrors.util';
 import useReceiptActor from './useReceiptActor';
 import { stockReceiptFormSchema } from '../types';
 import type { IStockReceiptFormValues, TStockReceiptSubmitIntent } from '../types';
@@ -409,10 +410,11 @@ const useStockReceiptForm = ({
 			return;
 		}
 
-		Object.entries(resolved.fieldErrors ?? {}).forEach(([apiField, messages]) => {
-			const formField = FORM_FIELD_BY_API_FIELD[apiField];
-			if (formField && messages[0]) formik.setFieldError(formField, messages[0]);
-		});
+		applyProcurementFieldErrors(
+			resolved.fieldErrors,
+			(apiField) => FORM_FIELD_BY_API_FIELD[apiField],
+			formik.setFieldError,
+		);
 		toast.error(resolved.message);
 
 		if (resolved.action !== 'retry_same_key') idempotentWrite.renewKey();

@@ -161,8 +161,6 @@ const fetchWarehousePage = async (
 			page: params?.page ?? 1,
 			per_page: params?.per_page ?? WAREHOUSE_PAGE_SIZE_DEFAULT,
 			q: params?.q,
-			warehouse_type: params?.warehouse_type,
-			is_active: params?.is_active,
 		},
 	});
 

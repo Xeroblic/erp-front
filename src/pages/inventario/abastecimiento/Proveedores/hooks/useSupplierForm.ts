@@ -13,6 +13,7 @@ import type {
 	IProcurementSupplierPayload,
 	IProcurementSupplierRutConflict,
 } from '@/interface/procurement.interface';
+import { applyProcurementFieldErrors } from '@/utils/procurementErrors.util';
 import { normalizePhone, pastePhone, supplierFormSchema } from '../types';
 import type { ISupplierFormValues } from '../types';
 import useSupplierRestore from './useSupplierRestore';
@@ -153,10 +154,11 @@ const useSupplierForm = ({ subsidiaryId, supplier = null, onSuccess }: IUseSuppl
 		if (resolved.code === 'SUPPLIER_RUT_ALREADY_EXISTS' && resolved.existingSupplier) {
 			setConflict(resolved.existingSupplier);
 		} else {
-			Object.entries(resolved.fieldErrors ?? {}).forEach(([apiField, messages]) => {
-				const formField = FORM_FIELD_BY_API_FIELD[apiField];
-				if (formField && messages[0]) formik.setFieldError(formField, messages[0]);
-			});
+			applyProcurementFieldErrors(
+				resolved.fieldErrors,
+				(apiField) => FORM_FIELD_BY_API_FIELD[apiField],
+				formik.setFieldError,
+			);
 			toast.error(resolved.message);
 		}
 

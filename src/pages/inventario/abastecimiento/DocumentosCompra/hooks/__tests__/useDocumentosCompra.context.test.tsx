@@ -51,7 +51,8 @@ const UrlProbe = () => {
 const createWrapper = (initialEntry = '/inventario/abastecimiento/documentos-compra') => {
 	const store = configureStore({ reducer: { purchaseDocuments: purchaseDocumentsReducer } });
 	const Wrapper = ({ children }: PropsWithChildren) => (
-		<MemoryRouter initialEntries={[initialEntry]}>
+		// Misma bandera que la app: `setSearchParams` se aplica en una transición.
+		<MemoryRouter initialEntries={[initialEntry]} future={{ v7_startTransition: true }}>
 			<Provider store={store}>
 				{children}
 				<UrlProbe />

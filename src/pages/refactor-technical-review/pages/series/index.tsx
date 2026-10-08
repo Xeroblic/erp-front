@@ -119,11 +119,14 @@ const RefactorSeries: React.FC = () => {
 		}));
 	}, [productsWithSerial]);
 
+	// El backend no filtra por estado: sólo se ofrecen las bodegas activas.
 	const warehouseOptionsMemo = useMemo<TSelectOption[]>(() => {
-		return warehouses.map((warehouse) => ({
-			value: String(warehouse.id),
-			label: `${warehouse.name} ${warehouse.code ? `(${warehouse.code})` : ''}`.trim(),
-		}));
+		return warehouses
+			.filter((warehouse) => warehouse.is_active)
+			.map((warehouse) => ({
+				value: String(warehouse.id),
+				label: `${warehouse.name} ${warehouse.code ? `(${warehouse.code})` : ''}`.trim(),
+			}));
 	}, [warehouses]);
 
 	const customerSupplierOptionsMemo = useMemo<TSelectOption[]>(() => {
@@ -273,7 +276,8 @@ const RefactorSeries: React.FC = () => {
 			dispatch(
 				fetchWarehouses({
 					branchId,
-					params: { page: 1, per_page: 200, is_active: true },
+					params: { per_page: 100 },
+					allPages: true,
 				}),
 			);
 		}

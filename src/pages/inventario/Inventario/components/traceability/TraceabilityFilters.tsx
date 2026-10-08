@@ -1,5 +1,4 @@
 import React from 'react';
-import type { MultiValue, SingleValue } from 'react-select';
 import DateInput from '@/components/form/DateInput';
 import Input from '@/components/form/Input';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
@@ -15,18 +14,7 @@ import {
 	type TInventarioUbicacion,
 	type TOperacionTipo,
 } from '@/pages/inventario/Inventario/types';
-
-/** Ninguno de estos selects es `isMulti`, pero `SelectReact` tipa el `onChange` genérico. */
-const isMultiValue = (
-	value: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
-): value is MultiValue<TSelectOption> => Array.isArray(value);
-
-const singleSelectValue = (
-	value: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
-): TSelectOption | null => {
-	if (value === null) return null;
-	return isMultiValue(value) ? (value[0] ?? null) : value;
-};
+import { singleSelectValue } from '@/utils/selectFilter.util';
 
 const tipoSelectOptions: TSelectOption[] = Object.entries(OPERACION_TIPOS).map(([value, info]) => ({
 	value,

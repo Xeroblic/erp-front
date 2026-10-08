@@ -1,5 +1,4 @@
 import React from 'react';
-import type { MultiValue, SingleValue } from 'react-select';
 import Input from '@/components/form/Input';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Icon from '@/components/icon/Icon';
@@ -8,19 +7,9 @@ import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import type { TInventoryStockStatusFilter } from '@/interface/inventoryOverview.interface';
 import type { IInventoryReportBranch } from '@/interface/inventoryReports.interface';
 import { ESTADO_OPTIONS, isEstado } from '@/pages/reportes/inventory-reports/types';
+import { singleSelectValue } from '@/utils/selectFilter.util';
 
 /** Ningún select es `isMulti`, pero `SelectReact` tipa el `onChange` genérico. */
-const isMultiValue = (
-	value: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
-): value is MultiValue<TSelectOption> => Array.isArray(value);
-
-const singleSelectValue = (
-	value: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
-): TSelectOption | null => {
-	if (value === null) return null;
-	return isMultiValue(value) ? (value[0] ?? null) : value;
-};
-
 const fieldLabelClass = 'block text-sm font-medium text-zinc-700 dark:text-zinc-300';
 const selectBackgroundClass = '!bg-zinc-50 dark:!bg-zinc-900';
 

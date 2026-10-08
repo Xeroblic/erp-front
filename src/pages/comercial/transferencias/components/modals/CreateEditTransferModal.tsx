@@ -219,7 +219,11 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 			try {
 				setOriginWarehousesLoading(true);
 				const result = await dispatch(
-					fetchWarehouses({ branchId: currentBranchId, params: { per_page: 100 } }),
+					fetchWarehouses({
+						branchId: currentBranchId,
+						params: { per_page: 100 },
+						allPages: true,
+					}),
 				).unwrap();
 				setOriginWarehouses(result.items);
 			} catch {
@@ -273,7 +277,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 			try {
 				setDestinationWarehousesLoading(true);
 				const result = await dispatch(
-					fetchWarehouses({ branchId, params: { per_page: 100 } }),
+					fetchWarehouses({ branchId, params: { per_page: 100 }, allPages: true }),
 				).unwrap();
 				setDestinationWarehouses(result.items);
 			} catch {

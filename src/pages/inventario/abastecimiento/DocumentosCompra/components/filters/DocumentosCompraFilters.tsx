@@ -1,44 +1,16 @@
 import React from 'react';
-import type { MultiValue, SingleValue } from 'react-select';
 import DateInput from '@/components/form/DateInput';
 import Input from '@/components/form/Input';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import { allOptionLabel, singleSelectValue, withoutAllOption } from '@/utils/selectFilter.util';
 import type {
 	TDocumentReceptionStatusFilter,
 	TDocumentStatusFilter,
 	TDocumentTypeFilter,
 } from '../../types';
-
-/** Ninguno de estos selects es `isMulti`, pero `SelectReact` tipa el `onChange` genérico. */
-const isMultiValue = (
-	value: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
-): value is MultiValue<TSelectOption> => Array.isArray(value);
-
-const singleSelectValue = (
-	value: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
-): TSelectOption | null => {
-	if (value === null) return null;
-	return isMultiValue(value) ? (value[0] ?? null) : value;
-};
-
-/**
- * Mismo criterio que el «Estado» de pagos diferidos: «Todos»/«Todas» no es
- * una opción más de la lista (se vería negra, como cualquier selección real);
- * es la ausencia de selección — `value=null`, texto de `placeholder` (gris) y
- * `isClearable` para volver a ese estado con la X.
- */
-const withoutAllOption = <TValue extends string>(
-	options: { value: TValue | 'all'; label: string }[],
-): TSelectOption[] =>
-	options
-		.filter((option): option is { value: TValue; label: string } => option.value !== 'all')
-		.map((option) => ({ value: option.value, label: option.label }));
-
-const allOptionLabel = (options: { value: string; label: string }[], fallback: string): string =>
-	options.find((option) => option.value === 'all')?.label ?? fallback;
 
 interface IDocumentosCompraFiltersProps {
 	search: string;

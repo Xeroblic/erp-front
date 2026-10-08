@@ -74,7 +74,7 @@ vi.mock('framer-motion', () => ({
 }));
 /**
  * `react-select` no expone sus opciones como controles nativos en jsdom; como
- * en `StockPorUbicacion.test.tsx`, `SelectReact` se sustituye por un `<select>`
+ * en `InventarioBodega.test.tsx`, `SelectReact` se sustituye por un `<select>`
  * nativo cableado a las mismas props.
  */
 vi.mock('@/components/form/SelectReact', () => ({
