@@ -79,12 +79,15 @@ describe('StockSeriesModal — sucursal de destino', () => {
 						],
 					},
 				});
-			return Promise.reject({
-				response: {
-					status: 403,
-					data: { message: 'No tienes permiso para realizar esta acción.' },
-				},
-			});
+			// Mismo envoltorio que un rechazo de Axios: un Error con `response`.
+			return Promise.reject(
+				Object.assign(new Error('Request failed with status code 403'), {
+					response: {
+						status: 403,
+						data: { message: 'No tienes permiso para realizar esta acción.' },
+					},
+				}),
+			);
 		});
 		renderModal();
 
