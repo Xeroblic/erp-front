@@ -12,6 +12,7 @@ import {
 	fetchProductSeries,
 	unassignStockFromProduct,
 } from '@/store/slices/products/productStockSlice';
+import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
 
 interface StockSeriesModalProps {
 	isOpen: boolean;
@@ -28,6 +29,13 @@ interface ISeriesItem {
 	branch_id?: number | null;
 }
 
+/**
+ * Los thunks de stock rechazan con el mensaje del backend: un 403 por no
+ * alcanzar la sucursal elegida o un 422 de validación se muestran tal cual.
+ */
+const rejectionMessage = (error: unknown, fallback: string): string =>
+	typeof error === 'string' && error.trim() ? error : fallback;
+
 const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 	isOpen,
 	onClose,
@@ -39,22 +47,25 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 	const [series, setSeries] = useState<ISeriesItem[]>([]);
 	const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
 
-	const user = useAppSelector((state) => state.auth.user);
+	const defaultBranchId = useAppSelector((state) => state.auth.user?.branch?.id);
+	const userBranches = useAppSelector(selectUserBranches);
 	const { isLoadingSeries, isAssigning, isUnassigning } = useAppSelector(
 		(state) => state.productStock,
 	);
 
-	const visibleBranches = (user?.visible as any)?.branches || [];
-	const accessibleBranches = visibleBranches.filter(
-		(b: any) => b.subsidiary?.id === subsidiaryId,
+	// Sucursales del usuario en esta filial: el backend exige alcance sobre la
+	// sucursal elegida (estar asignado a una no alcanza a las demás), y ese
+	// alcance es el que el perfil publica como sucursales visibles.
+	const accessibleBranches = userBranches.filter(
+		(branch) => branch.subsidiaryId === subsidiaryId,
 	);
 
-	const defaultBranchId = user?.branch?.id || '';
-	const initialBranchId = accessibleBranches.some((b: any) => b.id === defaultBranchId)
-		? defaultBranchId
-		: accessibleBranches.length > 0
-			? accessibleBranches[0].id
-			: '';
+	const fallbackBranchId: number | '' = accessibleBranches[0]?.id ?? '';
+	const initialBranchId: number | '' = accessibleBranches.some(
+		(branch) => branch.id === defaultBranchId,
+	)
+		? (defaultBranchId ?? fallbackBranchId)
+		: fallbackBranchId;
 
 	const [selectedBranchId, setSelectedBranchId] = useState<number | ''>(initialBranchId);
 
@@ -168,15 +179,14 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 				}),
 			).unwrap();
 			const destinationBranch =
-				accessibleBranches.find((b: any) => b.id === selectedBranchId)?.name ||
+				accessibleBranches.find((branch) => branch.id === selectedBranchId)?.name ||
 				'la sucursal seleccionada';
 			toast.success(
 				`Stock asignado exitosamente desde la Bodega Central hacia ${destinationBranch}.`,
 			);
 			onClose();
 		} catch (error) {
-			console.error('Error assigning stock:', error);
-			toast.error('Ocurrió un error al intentar asignar el stock.');
+			toast.error(rejectionMessage(error, 'Ocurrió un error al intentar asignar el stock.'));
 		}
 	};
 
@@ -218,8 +228,7 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 			);
 			onClose();
 		} catch (error) {
-			console.error('Error returning stock:', error);
-			toast.error('Ocurrió un error al intentar devolver el stock.');
+			toast.error(rejectionMessage(error, 'Ocurrió un error al intentar devolver el stock.'));
 		}
 	};
 
@@ -284,9 +293,9 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 							value={selectedBranchId}
 							onChange={(e) => setSelectedBranchId(Number(e.target.value))}>
 							<option value=''>-- Seleccione una sucursal --</option>
-							{accessibleBranches.map((b: any) => (
-								<option key={b.id} value={b.id}>
-									{b.name}
+							{accessibleBranches.map((branch) => (
+								<option key={branch.id} value={branch.id}>
+									{branch.name}
 								</option>
 							))}
 						</select>

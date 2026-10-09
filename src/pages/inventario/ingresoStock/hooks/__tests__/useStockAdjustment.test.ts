@@ -72,6 +72,43 @@ describe('useStockAdjustment con sessionStorage no disponible', () => {
 	});
 });
 
+describe('useStockAdjustment ante un 403', () => {
+	beforeEach(() => {
+		fetchData.mockReset().mockRejectedValue({
+			response: {
+				status: 403,
+				data: { message: 'No tienes permiso para realizar esta acción.' },
+			},
+		});
+		toastError.mockReset();
+		toastSuccess.mockReset();
+	});
+
+	it('atribuye el rechazo a la sucursal del ajuste, no a la filial', async () => {
+		const { result } = renderHook(() => useStockAdjustment());
+		const onSuccess = vi.fn();
+
+		let ok = true;
+		await act(async () => {
+			ok = await result.current.submitBatchAdjustment(
+				[item],
+				'2',
+				'Compra factura 123',
+				'',
+				4,
+				'ingreso',
+				onSuccess,
+			);
+		});
+
+		expect(ok).toBe(false);
+		expect(onSuccess).not.toHaveBeenCalled();
+		expect(toastError).toHaveBeenCalledWith(
+			'No tienes permiso para ajustar el stock de esta sucursal. Elige una sucursal a la que tengas acceso.',
+		);
+	});
+});
+
 describe('useStockAdjustment después de un 202', () => {
 	beforeEach(() => {
 		fetchData.mockReset().mockResolvedValue({ status: 202, data: { batch_id: 'b-2' } });
