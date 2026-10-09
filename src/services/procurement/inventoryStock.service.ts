@@ -1,5 +1,6 @@
 import INVENTORY_ADJUSTMENTS_USE_MOCKS from '@/config/inventoryAdjustments.config';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
+import INVENTORY_TRANSFERS_USE_MOCKS from '@/config/inventoryTransfers.config';
 import * as inventoryStockMock from '@/mocks/services/inventoryStock.mock';
 import ApiService from '@/services/ApiService';
 import { buildProcurementWriteHeaders } from '@/utils/procurementWrite.util';
@@ -18,6 +19,9 @@ import type {
 	IInventoryStockAvailability,
 	IInventoryStockListParams,
 	IInventoryStockResponse,
+	ITransferWarehouse,
+	IWarehouseStockMovement,
+	IWarehouseStockMovementPayload,
 } from '@/interface/procurement.interface';
 
 export type { IInventoryStockAvailability } from '@/interface/procurement.interface';
@@ -36,14 +40,15 @@ export type { IInventoryStockAvailability } from '@/interface/procurement.interf
  * - `GET B/inventory-stock` y `GET B/inventory-stock/{product}/origins`:
  *   `view-product` y acceso a la sucursal; los `*-member` también leen.
  *   `origins` responde 404 si el producto es serializado o de otra filial.
- * - `POST B/inventory-adjustments`: `edit-product` y además **operar** en la
- *   sucursal (los `subsidiary-member`/`company-member` reciben 403 aunque
- *   tengan el permiso). Exige `Idempotency-Key`: sin ella, 428.
+ * - `POST B/inventory-adjustments` y `POST B/warehouse-stock-movements`
+ *   (backend `feat/procurement-warehouse-stock-movements`): `edit-product` y
+ *   además **operar** en la sucursal (los `subsidiary-member`/`company-member`
+ *   reciben 403 aunque tengan el permiso). Exigen `Idempotency-Key`: sin ella,
+ *   428.
  *
  * **Sin publicar** (rechazan con `ProcurementEndpointNotPublishedError` en vez
- * de inventar datos): traslados (`warehouse-stock-movements`), documentación
- * posterior (`document-allocations`) y las lecturas auxiliares de bodegas y
- * filtros de procedencia.
+ * de inventar datos): documentación posterior (`document-allocations`) y la
+ * lectura auxiliar de filtros de procedencia.
  *
  * Sin caché de `ApiService`: el saldo cambia con cada ajuste, recepción o
  * venta, y el slice ya descarta respuestas tardías por `requestId`.
@@ -71,7 +76,6 @@ type TInventoryStockService = Pick<
 	| 'getInventoryAdjustableProduct'
 	| 'createInventoryDocumentAllocation'
 	| 'listInitialStockAllocationsForPurchaseDocument'
-	| 'createWarehouseStockMovement'
 	| 'getInventoryWarehouses'
 	| 'getInventoryOriginFilterOptions'
 > & {
@@ -80,6 +84,16 @@ type TInventoryStockService = Pick<
 		payload: IInventoryAdjustmentPayload,
 		headers?: IInventoryWriteHeaders,
 	) => Promise<{ data: IInventoryAdjustment }>;
+	createWarehouseStockMovement: (
+		branchId: number,
+		payload: IWarehouseStockMovementPayload,
+		headers?: IInventoryWriteHeaders,
+	) => Promise<{ data: IWarehouseStockMovement }>;
+	/** Bodegas de la sucursal con su estado, para el origen y el destino del traslado. */
+	listTransferWarehouses: (
+		branchId: number,
+		signal?: AbortSignal,
+	) => Promise<ITransferWarehouse[]>;
 	/** `null`: el entorno no publica reservas, así que el disponible no se conoce. */
 	getInventoryStockAvailability: (
 		branchId: number,
@@ -89,12 +103,50 @@ type TInventoryStockService = Pick<
 
 const branchUrl = (branchId: number): string => `/branches/${branchId}`;
 
+/** Sin clave el backend responde 428: no se inventa una acá, porque sólo quien reintenta sabe si la tentativa es la misma. */
+const writeHeaders = (headers: IInventoryWriteHeaders) =>
+	headers.idempotencyKey
+		? buildProcurementWriteHeaders({ idempotencyKey: headers.idempotencyKey })
+		: undefined;
+
 const asRecord = (value: unknown): Record<string, unknown> | null =>
 	value !== null && typeof value === 'object' && !Array.isArray(value)
 		? (value as Record<string, unknown>)
 		: null;
 
 const NOT_FOUND_STATUS = 404;
+
+const WAREHOUSES_PER_PAGE = 100;
+
+/** Una fila sin `id`, `name` o `is_active` legibles no se ofrece: no se podría nombrar ni validar. */
+const toTransferWarehouse = (value: unknown): ITransferWarehouse[] => {
+	const record = asRecord(value);
+	const { id, name, is_active: isActive } = record ?? {};
+	if (typeof id !== 'number' || typeof name !== 'string' || typeof isActive !== 'boolean')
+		return [];
+	return [{ id, name, is_active: isActive }];
+};
+
+/** `GET B/warehouses` (`view-warehouse`): una página del listado de bodegas de la sucursal. */
+const fetchWarehousePage = async (
+	branchId: number,
+	page: number,
+	signal?: AbortSignal,
+): Promise<{ warehouses: ITransferWarehouse[]; lastPage: number }> => {
+	const response = await ApiService.fetchData<unknown>({
+		url: `${branchUrl(branchId)}/warehouses`,
+		method: 'get',
+		params: { page, per_page: WAREHOUSES_PER_PAGE },
+		signal,
+	});
+	const body = asRecord(response.data);
+	const rows = Array.isArray(body?.data) ? body.data : [];
+	const lastPage = asRecord(body?.meta)?.last_page;
+	return {
+		warehouses: rows.flatMap(toTransferWarehouse),
+		lastPage: typeof lastPage === 'number' && lastPage > 0 ? lastPage : 1,
+	};
+};
 
 /**
  * `ProductResource` (envuelto en `data`) es mucho más ancho que lo que nombra
@@ -202,22 +254,41 @@ const apiInventoryStock: TInventoryStockService = {
 			url: `${branchUrl(branchId)}/inventory-adjustments`,
 			method: 'post',
 			data: payload,
-			// Sin clave el backend responde 428: no se inventa una acá, porque
-			// sólo quien reintenta sabe si la tentativa es la misma.
-			headers: headers.idempotencyKey
-				? buildProcurementWriteHeaders({ idempotencyKey: headers.idempotencyKey })
-				: undefined,
+			headers: writeHeaders(headers),
 		});
 		return { data: response.data.data };
+	},
+	createWarehouseStockMovement: async (branchId, payload, headers = {}) => {
+		const response = await ApiService.fetchData<
+			IApiResourceEnvelope<IWarehouseStockMovement>,
+			IWarehouseStockMovementPayload
+		>({
+			url: `${branchUrl(branchId)}/warehouse-stock-movements`,
+			method: 'post',
+			data: payload,
+			headers: writeHeaders(headers),
+		});
+		return { data: response.data.data };
+	},
+	// El listado de bodegas pagina: se recorren todas, porque una que falte no
+	// se podría elegir ni como origen ni como destino.
+	listTransferWarehouses: async (branchId, signal) => {
+		const first = await fetchWarehousePage(branchId, 1, signal);
+		const rest = await Promise.all(
+			Array.from({ length: Math.max(first.lastPage - 1, 0) }, (_, index) =>
+				fetchWarehousePage(branchId, index + 2, signal),
+			),
+		);
+		return [first, ...rest].flatMap((page) => page.warehouses);
 	},
 	createInventoryDocumentAllocation: () =>
 		rejectNotPublished(`POST ${B}/inventory-stock/{product}/document-allocations`),
 	listInitialStockAllocationsForPurchaseDocument: () =>
 		rejectNotPublished(`GET ${P}/purchase-documents/{document}/initial-stock-allocations`),
-	createWarehouseStockMovement: () => rejectNotPublished(`POST ${B}/warehouse-stock-movements`),
 	// Etapa 1 del contrato: el ajuste real sólo se ofrece sobre «Sin
-	// ubicación» (`warehouse_id: null`). Sin bodegas que listar, el selector de
-	// ubicación queda con esa única opción y el traslado no se monta.
+	// ubicación» (`warehouse_id: null`). Sin bodegas que listar, su selector de
+	// ubicación queda con esa única opción. El traslado lee las suyas aparte
+	// (`listTransferWarehouses`): necesita dos ubicaciones distintas.
 	getInventoryWarehouses: () => [],
 	// El contrato no publica reservas: sin ellas el disponible no se conoce, y
 	// mostrar el apto como «disponible» sería afirmar que no hay faltante.
@@ -228,8 +299,19 @@ const apiInventoryStock: TInventoryStockService = {
 		throwNotPublished(`GET ${B}/inventory-stock/{product}/origins`),
 };
 
+/** El doble no distingue bodegas inactivas: todas las que lista están activas. */
+const mockInventoryStock: TInventoryStockService = {
+	...inventoryStockMock,
+	listTransferWarehouses: (branchId) =>
+		Promise.resolve(
+			inventoryStockMock
+				.getInventoryWarehouses(branchId)
+				.map((warehouse) => ({ ...warehouse, is_active: true })),
+		),
+};
+
 const inventoryStock: TInventoryStockService = INVENTORY_STOCK_USE_MOCKS
-	? inventoryStockMock
+	? mockInventoryStock
 	: apiInventoryStock;
 
 /**
@@ -238,8 +320,22 @@ const inventoryStock: TInventoryStockService = INVENTORY_STOCK_USE_MOCKS
  * Todo lo que lee o escribe el ajuste sale de acá.
  */
 const adjustmentStock: TInventoryStockService = INVENTORY_ADJUSTMENTS_USE_MOCKS
-	? inventoryStockMock
+	? mockInventoryStock
 	: apiInventoryStock;
+
+/**
+ * El traslado también tiene bandera propia (`VITE_INVENTORY_TRANSFERS_USE_MOCKS`).
+ * Todo lo que lee o escribe el traslado sale de acá.
+ */
+const transferStock: TInventoryStockService = INVENTORY_TRANSFERS_USE_MOCKS
+	? mockInventoryStock
+	: apiInventoryStock;
+
+/** Stock de la ubicación de origen del traslado. */
+export const listTransferStock = transferStock.listInventoryStock;
+
+/** Bodegas que el traslado ofrece como origen y destino. */
+export const { listTransferWarehouses } = transferStock;
 
 /** Stock de la ubicación que corrige el ajuste. */
 export const listAdjustmentStock = adjustmentStock.listInventoryStock;
@@ -268,14 +364,11 @@ export const { createInventoryDocumentAllocation } = inventoryStock;
 /** `GET P/purchase-documents/{document}/initial-stock-allocations` (§6). */
 export const { listInitialStockAllocationsForPurchaseDocument } = inventoryStock;
 
-/** `POST B/warehouse-stock-movements` (§9): traslado entre ubicaciones. */
-export const { createWarehouseStockMovement } = inventoryStock;
+/** `POST B/warehouse-stock-movements` (§9): traslado entre ubicaciones, todo o nada. */
+export const { createWarehouseStockMovement } = transferStock;
 
 /** `POST B/inventory-adjustments` (§11): ajuste por conteo, todo o nada. */
 export const { createInventoryAdjustment } = adjustmentStock;
-
-/** Bodegas de la sucursal que traslados y ajustes ofrecen como ubicación. */
-export const { getInventoryWarehouses } = inventoryStock;
 
 /** Disponible de un producto en la sucursal tras un ajuste, o `null` si no se conoce. */
 export const { getInventoryStockAvailability } = inventoryStock;

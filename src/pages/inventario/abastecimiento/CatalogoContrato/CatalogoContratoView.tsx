@@ -353,7 +353,7 @@ const CatalogoContratoView = () => {
 					<CatalogSection
 						id='catalogo-simulado'
 						title='Aviso de datos simulados'
-						summary='Recepciones, inventario y ajustes y traslados comparten la bandera VITE_INVENTORY_STOCK_USE_MOCKS: se encienden o se apagan juntos. Proveedores y documentos de compra ya usan el backend real y no dependen de ella.'>
+						summary='Recepciones e inventario comparten la bandera VITE_INVENTORY_STOCK_USE_MOCKS: se encienden o se apagan juntos. El ajuste y los traslados tienen bandera propia (VITE_INVENTORY_ADJUSTMENTS_USE_MOCKS y VITE_INVENTORY_TRANSFERS_USE_MOCKS). Proveedores y documentos de compra ya usan el backend real y no dependen de ellas.'>
 						<div className='grid gap-3 md:grid-cols-2'>
 							<CatalogSample
 								title='Bandera encendida'

@@ -8,10 +8,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const fetchData = vi.hoisted(() => vi.fn());
 vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
 
-const loadFacade = async (useMocks: boolean) => {
+const loadFacade = async (useMocks: boolean, transferMocks = useMocks) => {
 	vi.resetModules();
 	vi.doMock('@/config/inventoryStock.config', () => ({ default: useMocks }));
 	vi.doMock('@/config/inventoryAdjustments.config', () => ({ default: useMocks }));
+	vi.doMock('@/config/inventoryTransfers.config', () => ({ default: transferMocks }));
 	const facade = await import('@/services/procurement/inventoryStock.service');
 	// Tras resetModules, la clase del error es la del registro nuevo, no la de arriba.
 	const { ProcurementEndpointNotPublishedError } = await import(
@@ -29,6 +30,7 @@ const page = <T>(data: T[], total = data.length) => ({
 afterEach(() => {
 	vi.doUnmock('@/config/inventoryStock.config');
 	vi.doUnmock('@/config/inventoryAdjustments.config');
+	vi.doUnmock('@/config/inventoryTransfers.config');
 	fetchData.mockReset();
 });
 
@@ -47,7 +49,28 @@ describe('inventoryStock.service (fachada)', () => {
 		expect(facade.createInventoryDocumentAllocation).toBe(
 			mock.createInventoryDocumentAllocation,
 		);
-		expect(facade.getInventoryWarehouses).toBe(mock.getInventoryWarehouses);
+		expect(facade.getAdjustmentWarehouses).toBe(mock.getInventoryWarehouses);
+	});
+
+	it('con datos simulados ofrece al traslado las bodegas del doble, todas activas', async () => {
+		const facade = await loadFacade(true);
+		const mock = await import('@/mocks/services/inventoryStock.mock');
+
+		const warehouses = await facade.listTransferWarehouses(4);
+
+		expect(warehouses).toEqual(
+			mock.getInventoryWarehouses(4).map((warehouse) => ({ ...warehouse, is_active: true })),
+		);
+		expect(fetchData).not.toHaveBeenCalled();
+	});
+
+	it('el traslado sigue su propia bandera, no la del resto de Inventario', async () => {
+		const facade = await loadFacade(true, false);
+		const mock = await import('@/mocks/services/inventoryStock.mock');
+
+		expect(facade.listInventoryStock).toBe(mock.listInventoryStock);
+		expect(facade.listTransferStock).not.toBe(mock.listInventoryStock);
+		expect(facade.createWarehouseStockMovement).not.toBe(mock.createWarehouseStockMovement);
 	});
 
 	describe('sin datos simulados', () => {
@@ -194,23 +217,100 @@ describe('inventoryStock.service (fachada)', () => {
 			});
 		});
 
-		it('etapa 1: sin bodegas ni disponible', async () => {
+		it('etapa 1: el ajuste no ofrece bodegas y el disponible no se conoce', async () => {
 			const facade = await loadFacade(false);
 
-			expect(facade.getInventoryWarehouses(4)).toEqual([]);
+			expect(facade.getAdjustmentWarehouses(4)).toEqual([]);
 			expect(facade.getInventoryStockAvailability(4, 31)).toBeNull();
+		});
+
+		it('registra el traslado con su Idempotency-Key y devuelve la operación', async () => {
+			const facade = await loadFacade(false);
+			const movement = {
+				id: 'uuid',
+				operation_type: 'warehouse_stock_placement',
+				branch_id: 4,
+				from_warehouse_id: null,
+				to_warehouse_id: 8,
+				reason: 'Ubicar productos del conteo inicial',
+				global_stock_delta: 0,
+				created_at: '2026-09-23T10:15:00-04:00',
+				items: [
+					{
+						product_id: 31,
+						quantity: 5,
+						condition: 'fit',
+						origin_quantity_after: 0,
+						destination_quantity_after: 5,
+					},
+				],
+			};
+			fetchData.mockResolvedValueOnce({ data: { data: movement } });
+			const payload = {
+				from_warehouse_id: null,
+				to_warehouse_id: 8,
+				reason: 'Ubicar productos del conteo inicial',
+				items: [{ product_id: 31, quantity: 5, condition: 'fit' as const }],
+			};
+
+			const response = await facade.createWarehouseStockMovement(4, payload, {
+				idempotencyKey: 'key-2',
+			});
+
+			expect(response).toEqual({ data: movement });
+			expect(fetchData).toHaveBeenCalledWith({
+				url: '/branches/4/warehouse-stock-movements',
+				method: 'post',
+				data: payload,
+				headers: { 'Idempotency-Key': 'key-2' },
+			});
+		});
+
+		it('lee todas las páginas de bodegas, con su estado, y descarta las filas ilegibles', async () => {
+			const facade = await loadFacade(false);
+			const warehousePage = (data: unknown[], currentPage: number) => ({
+				data: {
+					data,
+					meta: { current_page: currentPage, last_page: 2, per_page: 100, total: 3 },
+				},
+			});
+			fetchData
+				.mockResolvedValueOnce(
+					warehousePage(
+						[
+							{ id: 8, name: 'Bodega Central', is_active: true, branch_id: 4 },
+							{ id: 9, name: 'Sin estado' },
+						],
+						1,
+					),
+				)
+				.mockResolvedValueOnce(
+					warehousePage([{ id: 12, name: 'Bodega Vieja', is_active: false }], 2),
+				);
+			const controller = new AbortController();
+
+			const warehouses = await facade.listTransferWarehouses(4, controller.signal);
+
+			expect(warehouses).toEqual([
+				{ id: 8, name: 'Bodega Central', is_active: true },
+				{ id: 12, name: 'Bodega Vieja', is_active: false },
+			]);
+			expect(fetchData).toHaveBeenNthCalledWith(1, {
+				url: '/branches/4/warehouses',
+				method: 'get',
+				params: { page: 1, per_page: 100 },
+				signal: controller.signal,
+			});
+			expect(fetchData).toHaveBeenNthCalledWith(
+				2,
+				expect.objectContaining({ params: { page: 2, per_page: 100 } }),
+			);
 		});
 
 		it('rechaza con un error tipado lo que el backend no publica, sin llamar a la red', async () => {
 			const facade = await loadFacade(false);
 
 			const results = await Promise.allSettled([
-				facade.createWarehouseStockMovement(4, {
-					from_warehouse_id: 8,
-					to_warehouse_id: 15,
-					reason: 'Orden de bodega',
-					items: [],
-				}),
 				facade.listInitialStockAllocationsForPurchaseDocument(1, 24),
 			]);
 
@@ -232,16 +332,12 @@ describe('inventoryStock.service (fachada)', () => {
 			const facade = await loadFacade(false);
 
 			const error = await facade
-				.createWarehouseStockMovement(4, {
-					from_warehouse_id: 8,
-					to_warehouse_id: 15,
-					reason: 'x',
-					items: [],
-				})
+				.listInitialStockAllocationsForPurchaseDocument(1, 24)
 				.catch((reason: unknown) => reason);
 
 			expect(error).toMatchObject({
-				endpoint: 'POST /branches/{branch}/warehouse-stock-movements',
+				endpoint:
+					'GET /subsidiaries/{subsidiary}/procurement/purchase-documents/{document}/initial-stock-allocations',
 			});
 		});
 	});
