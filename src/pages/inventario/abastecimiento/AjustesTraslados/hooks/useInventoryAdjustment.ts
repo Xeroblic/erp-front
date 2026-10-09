@@ -12,6 +12,7 @@ import {
 	getInventoryAdjustableProduct,
 	getAdjustmentStockAvailability,
 	getAdjustmentWarehouses,
+	listAdjustmentStock,
 } from '@/services/procurement/inventoryStock.service';
 import type { IInventoryStockAvailability } from '@/services/procurement/inventoryStock.service';
 import {
@@ -285,6 +286,7 @@ export default function useInventoryAdjustment(
 		const productIds = missingProductKey.split(',').map(Number);
 		const controller = new AbortController();
 		findLocationStockRows(
+			listAdjustmentStock,
 			branchId,
 			values.location,
 			productIds,
