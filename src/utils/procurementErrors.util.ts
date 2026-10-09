@@ -177,6 +177,13 @@ export const PROCUREMENT_ERROR_DEFINITIONS: Record<string, IProcurementErrorDefi
 		'La clave de la operación ya se usó con otros datos. Vuelve a intentarlo desde cero.',
 		'fix_input',
 	),
+	// Trae `code`, así que no cae en el 428 de `If-Match`: recargar no lo arregla.
+	IDEMPOTENCY_KEY_REQUIRED: define(
+		'IDEMPOTENCY_KEY_REQUIRED',
+		428,
+		'Falta la clave de la operación. Vuelve a intentarlo; si persiste, avisa a soporte.',
+		'fix_input',
+	),
 	OPERATION_IN_PROGRESS: define(
 		'OPERATION_IN_PROGRESS',
 		409,

@@ -8,7 +8,11 @@ import inventoryOverview from '@/store/slices/procurement/inventoryOverviewSlice
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import InventarioProductoView from '@/pages/inventario/Inventario/InventarioProducto/InventarioProductoView';
 import InventoryOrigins from '@/pages/inventario/Inventario/InventarioProducto/components/InventoryOrigins';
-import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
+import {
+	listInventoryOrigins as listMockOrigins,
+	resetInventoryStockStoreForTests,
+} from '@/mocks/services/inventoryStock.mock';
+import * as inventoryStockService from '@/services/procurement/inventoryStock.service';
 import { resetStockReceiptsStoreForTests } from '@/mocks/services/stockReceipts.mock';
 import { resetInventoryCriticalThresholdsForTests } from '@/mocks/services/inventoryOverview.mock';
 
@@ -205,6 +209,32 @@ describe('Ficha de inventario', () => {
 		expect(within(shelf).queryByText('Recepción #80')).not.toBeInTheDocument();
 		expect(within(shelf).getByRole('button', { name: 'Documentar' })).toBeInTheDocument();
 	});
+
+	it.each([
+		[3, '3 unidades sin procedencia registrada.', null],
+		[-2, null, 'Procedencia en revisión'],
+	])(
+		'informa las unidades sin procedencia que calcula el servidor (%i)',
+		async (unattributed, note, warning) => {
+			vi.spyOn(inventoryStockService, 'listInventoryOrigins').mockImplementation(
+				async (...args) => {
+					const response = await listMockOrigins(...args);
+					return {
+						...response,
+						context: { ...response.context, unattributed_quantity: unattributed },
+					};
+				},
+			);
+			renderFicha(MOUSE_ID);
+			const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+			await within(region).findByText('Recepción #80');
+
+			if (note) expect(within(region).getByText(note)).toBeInTheDocument();
+			else expect(within(region).queryByText(/sin procedencia registrada/)).toBeNull();
+			if (warning) expect(within(region).getByText(warning)).toBeInTheDocument();
+			else expect(within(region).queryByText('Procedencia en revisión')).toBeNull();
+		},
+	);
 
 	it('cambiar de ubicación descarta el filtro de proveedor de la anterior', async () => {
 		renderFicha(MOUSE_ID);

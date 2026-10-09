@@ -101,7 +101,7 @@ export const ajustesTrasladosLink = ({
  * Motivo por el que la página no monta los formularios. `ready` es el único
  * estado que los monta: el resto se resuelve antes de pintar pestañas.
  */
-export type AjustesTrasladosAccess = 'loading' | 'no-branch' | 'forbidden' | 'disabled' | 'ready';
+export type AjustesTrasladosAccess = 'loading' | 'no-branch' | 'forbidden' | 'ready';
 
 /** Pasos del asistente de ajuste, en orden. */
 export const AJUSTE_STEPS = ['location', 'items', 'reason'] as const;

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { configureStore } from '@reduxjs/toolkit';
 import reducer, {
+	createWarehouseStockMovementThunk,
 	fetchInventoryStock,
 	fetchInventoryOrigins,
 } from '@/store/slices/procurement/inventoryStockSlice';
@@ -51,14 +52,26 @@ describe('inventoryStockSlice — identidad de consultas', () => {
 		);
 		expect(state.origins).toMatchObject({ response: null, loading: false, error: null });
 	});
-	it('el flag apagado bloquea ambos thunks incluso si se despachan directamente', async () => {
-		const stock = vi.spyOn(service, 'listInventoryStock');
-		const origins = vi.spyOn(service, 'listInventoryOrigins');
+	it('con el flag apagado las lecturas van a la API real; el traslado sigue bloqueado', async () => {
+		const stock = vi.spyOn(service, 'listInventoryStock').mockResolvedValue(response);
+		const origins = vi
+			.spyOn(service, 'listInventoryOrigins')
+			.mockRejectedValue(new Error('sin red'));
+		const movement = vi.spyOn(service, 'createWarehouseStockMovement');
 		const store = configureStore({ reducer });
 		await store.dispatch(fetchInventoryStock(request));
 		await store.dispatch(fetchInventoryOrigins({ ...request, productId: 31 }));
-		expect(stock).not.toHaveBeenCalled();
-		expect(origins).not.toHaveBeenCalled();
+		await store.dispatch(
+			createWarehouseStockMovementThunk({
+				branchId: 4,
+				payload: { from_warehouse_id: 8, to_warehouse_id: 15, reason: 'x', items: [] },
+			}),
+		);
+		expect(stock).toHaveBeenCalledWith(4, {}, expect.any(AbortSignal));
+		expect(origins).toHaveBeenCalledTimes(1);
+		expect(movement).not.toHaveBeenCalled();
+		expect(store.getState().list.response).toBe(response);
+		expect(store.getState().origins.error).toBe('sin red');
 		vi.restoreAllMocks();
 	});
 });

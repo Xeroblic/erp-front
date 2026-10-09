@@ -8,7 +8,10 @@ import {
 	fetchInventoryStock,
 	inventoryStockQueryKey,
 } from '@/store/slices/procurement/inventoryStockSlice';
-import { getInventoryWarehouses } from '@/services/procurement/inventoryStock.service';
+import {
+	getInventoryWarehouses,
+	listInventoryStock,
+} from '@/services/procurement/inventoryStock.service';
 import {
 	locationStockParams,
 	locationToken,
@@ -251,7 +254,14 @@ export default function useInternalTransfer(
 		if (!productLookup) return undefined;
 		const controller = new AbortController();
 		const { from, productId, lastPage } = productLookup;
-		findLocationStockRows(branchId, from, [productId], lastPage, controller.signal).then(
+		findLocationStockRows(
+			listInventoryStock,
+			branchId,
+			from,
+			[productId],
+			lastPage,
+			controller.signal,
+		).then(
 			(found) => {
 				if (controller.signal.aborted) return;
 				const row = found.get(productId);

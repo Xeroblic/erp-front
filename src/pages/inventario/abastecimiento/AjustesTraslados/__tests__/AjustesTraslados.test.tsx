@@ -7,6 +7,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
 import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
+import {
+	adjustmentFakeService,
+	FAKE_ALFA,
+	FAKE_BETA,
+	FAKE_SHELF,
+	resetAdjustmentFake,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/__tests__/adjustmentFakeBackend';
 import type * as InventoryStockService from '@/services/procurement/inventoryStock.service';
 import type {
 	IInventoryStockListParams,
@@ -20,26 +27,46 @@ type TListInventoryStock = (
 ) => Promise<IInventoryStockResponse>;
 
 /**
- * El stock pasa por el servicio real salvo que una prueba instale un doble
- * (`stockDouble.list`): así se simula un origen con más de una página sin
- * sembrar cien productos en el mock compartido.
+ * Un doble por fuente de stock, como en desarrollo: el traslado lee el mock
+ * (`stockDouble`) y el ajuste su backend (`adjustmentDouble`, sobre el backend
+ * falso). Cada uno pasa por su fuente salvo que la prueba instale `list`: así
+ * se simula una ubicación con más de una página, y una fuente equivocada no
+ * queda tapada por la otra.
  */
 const stockDouble = vi.hoisted(() => ({
 	list: null as TListInventoryStock | null,
 	calls: [] as IInventoryStockListParams[],
 }));
+const adjustmentDouble = vi.hoisted(() => ({
+	list: null as TListInventoryStock | null,
+	calls: [] as IInventoryStockListParams[],
+}));
 vi.mock('@/services/procurement/inventoryStock.service', async (importOriginal) => {
 	const actual = await importOriginal<typeof InventoryStockService>();
-	const listInventoryStock: TListInventoryStock = (branchId, params, signal) => {
-		stockDouble.calls.push(params ?? {});
-		return stockDouble.list
-			? stockDouble.list(branchId, params, signal)
-			: actual.listInventoryStock(branchId, params, signal);
+	const { adjustmentFakeService: fake } = await import(
+		'@/pages/inventario/abastecimiento/AjustesTraslados/__tests__/adjustmentFakeBackend'
+	);
+	const withDouble =
+		(double: typeof stockDouble, fallback: TListInventoryStock): TListInventoryStock =>
+		(branchId, params, signal) => {
+			double.calls.push(params ?? {});
+			return double.list
+				? double.list(branchId, params, signal)
+				: fallback(branchId, params, signal);
+		};
+	return {
+		...actual,
+		// El ajuste lee y escribe en un backend falso con datos propios de la prueba;
+		// el traslado no tiene backend y sigue con el mock.
+		...fake,
+		listInventoryStock: withDouble(stockDouble, actual.listInventoryStock),
+		listAdjustmentStock: withDouble(adjustmentDouble, fake.listAdjustmentStock),
 	};
-	return { ...actual, listInventoryStock };
 });
 
+// Como en desarrollo: inventario y traslados con mock, el ajuste con backend.
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
+vi.mock('@/config/inventoryAdjustments.config', () => ({ default: false }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ branchId: 4, subsidiaryId: 2 }),
 }));
@@ -75,7 +102,9 @@ vi.mock('framer-motion', () => ({
 /**
  * `react-select` no expone sus opciones como controles nativos en jsdom; como
  * en `InventarioBodega.test.tsx`, `SelectReact` se sustituye por un `<select>`
- * nativo cableado a las mismas props.
+ * nativo cableado a las mismas props. Cuando el llamador busca en el servidor
+ * (`onInputChange`), el doble agrega la caja de búsqueda «Buscar <etiqueta>», y
+ * el valor elegido se lista aunque no esté entre las opciones de la búsqueda.
  */
 vi.mock('@/components/form/SelectReact', () => ({
 	default: ({
@@ -84,6 +113,7 @@ vi.mock('@/components/form/SelectReact', () => ({
 		options,
 		value,
 		onChange,
+		onInputChange,
 		placeholder,
 	}: {
 		'aria-label'?: string;
@@ -91,25 +121,43 @@ vi.mock('@/components/form/SelectReact', () => ({
 		options?: { value: string; label: string }[];
 		value?: { value: string; label: string } | null;
 		onChange?: (option: { value: string; label: string } | null) => void;
+		onInputChange?: (input: string, meta: { action: string }) => void;
 		placeholder?: string;
-	}) => (
-		<select
-			aria-label={ariaLabel}
-			disabled={isDisabled}
-			value={value?.value ?? ''}
-			onChange={(event) => {
-				const selected =
-					options?.find((option) => option.value === event.target.value) ?? null;
-				onChange?.(selected);
-			}}>
-			<option value=''>{placeholder}</option>
-			{options?.map((option) => (
-				<option key={option.value} value={option.value}>
-					{option.label}
-				</option>
-			))}
-		</select>
-	),
+	}) => {
+		const listed =
+			value && !options?.some((option) => option.value === value.value)
+				? [value, ...(options ?? [])]
+				: (options ?? []);
+		return (
+			<>
+				{onInputChange && (
+					<input
+						aria-label={`Buscar ${ariaLabel}`}
+						disabled={isDisabled}
+						onChange={(event) =>
+							onInputChange(event.target.value, { action: 'input-change' })
+						}
+					/>
+				)}
+				<select
+					aria-label={ariaLabel}
+					disabled={isDisabled}
+					value={value?.value ?? ''}
+					onChange={(event) => {
+						const selected =
+							listed.find((option) => option.value === event.target.value) ?? null;
+						onChange?.(selected);
+					}}>
+					<option value=''>{placeholder}</option>
+					{listed.map((option) => (
+						<option key={option.value} value={option.value}>
+							{option.label}
+						</option>
+					))}
+				</select>
+			</>
+		);
+	},
 }));
 
 const auth = createSlice({
@@ -146,7 +194,10 @@ const renderPage = (entry: string) => {
 afterEach(() => {
 	stockDouble.list = null;
 	stockDouble.calls = [];
+	adjustmentDouble.list = null;
+	adjustmentDouble.calls = [];
 	resetInventoryStockStoreForTests();
+	resetAdjustmentFake();
 	vi.restoreAllMocks();
 });
 
@@ -210,28 +261,33 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		).not.toBeInTheDocument();
 	});
 	describe('preselección por URL', () => {
+		/** Traslado (mock): mouse en el Estante A3 de la sucursal 4. */
 		const MOUSE_ID = 31;
-		/** Estante A3, bodega de la sucursal 4 con stock del mouse. */
 		const SHELF_ID = 12;
+		/** Ajuste (backend falso): alfa con 4 en el Estante A3 y en cero en «Sin ubicación». */
+		const ALFA_ID = FAKE_ALFA.id;
+		/** Ajuste (backend falso): beta con saldo en «Sin ubicación». */
+		const BETA_ID = FAKE_BETA.id;
+		const ADJUSTMENT_SHELF_ID = FAKE_SHELF.id;
 		/** Bodega Sucursal Sur: existe, pero es de la sucursal 6. */
 		const SOUTH_BRANCH_WAREHOUSE_ID = 15;
 
 		it('abre el ajuste en «Productos» con la ubicación y el producto elegidos', async () => {
-			renderPage(`/?tab=ajuste&warehouse_id=${SHELF_ID}&product_id=${MOUSE_ID}`);
+			renderPage(`/?tab=ajuste&warehouse_id=${ADJUSTMENT_SHELF_ID}&product_id=${ALFA_ID}`);
 
 			expect(
 				await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ }),
 			).toBeInTheDocument();
-			expect(screen.getByText('Estante A3')).toBeInTheDocument();
-			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(MOUSE_ID));
+			expect(screen.getByText(FAKE_SHELF.name)).toBeInTheDocument();
+			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(ALFA_ID));
 		});
 
 		it('«Sin ubicación» viaja como `warehouse_id=unlocated`', async () => {
-			renderPage(`/?tab=ajuste&warehouse_id=unlocated&product_id=${MOUSE_ID}`);
+			renderPage(`/?tab=ajuste&warehouse_id=unlocated&product_id=${BETA_ID}`);
 
 			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
 			expect(screen.getByText('Sin ubicación')).toBeInTheDocument();
-			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(MOUSE_ID));
+			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(BETA_ID));
 		});
 
 		it.each([
@@ -252,10 +308,28 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		});
 
 		it('conserva la ubicación válida e ignora un producto que no está en el catálogo', async () => {
-			renderPage(`/?tab=ajuste&warehouse_id=${SHELF_ID}&product_id=999999`);
+			renderPage(`/?tab=ajuste&warehouse_id=${ADJUSTMENT_SHELF_ID}&product_id=999999`);
 
 			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
-			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue('');
+			// La elegibilidad se confirma al montar: el producto inexistente se descarta.
+			await waitFor(() =>
+				expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(''),
+			);
+		});
+
+		it('conserva un producto válido aunque la ubicación lo tenga en cero', async () => {
+			// «Sin ubicación» no tiene ni una unidad de alfa: es el acceso directo
+			// para registrar unidades encontradas, así que el producto se mantiene.
+			renderPage(`/?tab=ajuste&warehouse_id=unlocated&product_id=${ALFA_ID}`);
+
+			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+			const product = screen.getByLabelText('Producto de la línea 1');
+			await waitFor(() =>
+				expect(
+					within(product).getByRole('option', { name: new RegExp(FAKE_ALFA.name) }),
+				).toBeInTheDocument(),
+			);
+			expect(product).toHaveValue(String(ALFA_ID));
 		});
 
 		it('el traslado toma la bodega como origen y elige el producto cuando el origen lo tiene', async () => {
@@ -310,7 +384,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		});
 
 		it('cambiar de pestaña descarta la preselección', async () => {
-			renderPage(`/?tab=ajuste&warehouse_id=${SHELF_ID}&product_id=${MOUSE_ID}`);
+			renderPage(`/?tab=ajuste&warehouse_id=${ADJUSTMENT_SHELF_ID}&product_id=${ALFA_ID}`);
 			// Deja terminar la carga del stock del ajuste antes de desmontarlo: el
 			// saldo de la línea pasa de «—» a una cifra.
 			const lines = await screen.findByRole('table', { name: 'Líneas del ajuste' });
@@ -391,6 +465,9 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			expect(stockDouble.calls).toContainEqual(
 				expect.objectContaining({ warehouse_id: SHELF_ID, page: 2, per_page: 100 }),
 			);
+			// Las páginas siguientes salen de la misma fuente que la primera: el
+			// traslado nunca consulta la fuente del ajuste.
+			expect(adjustmentDouble.calls).toEqual([]);
 		});
 
 		it('cambiar el origen mientras se busca descarta el producto', async () => {
@@ -429,25 +506,24 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		});
 	});
 	describe('saldo del ajuste con la ubicación paginada', () => {
-		const SHELF_ID = 12;
-		const MOUSE_ID = 31;
+		const SHELF_ID = FAKE_SHELF.id;
+		const MOUSE_ID = FAKE_ALFA.id;
 
 		/**
-		 * Estante A3 con 120 productos de relleno delante de sus filas reales: con
-		 * 100 por página, el mouse cae en la página 2.
+		 * Estante A3 del backend falso con 120 productos de relleno delante de sus
+		 * filas: con 100 por página, alfa cae en la página 2.
 		 */
 		const installPagedShelf = async () => {
-			const { listInventoryStock } = await vi.importActual<typeof InventoryStockService>(
-				'@/services/procurement/inventoryStock.service',
-			);
-			const base = await listInventoryStock(4, { warehouse_id: SHELF_ID });
+			const base = await adjustmentFakeService.listAdjustmentStock(4, {
+				warehouse_id: SHELF_ID,
+			});
 			const template = base.data[0];
 			const fillers = Array.from({ length: 120 }, (_, index) => ({
 				...template,
 				product: { ...template.product, id: 7001 + index, sku: `REL-${7001 + index}` },
 			}));
 			const rows = [...fillers, ...base.data];
-			stockDouble.list = (_branchId, params) => {
+			adjustmentDouble.list = (_branchId, params) => {
 				const perPage = params?.per_page ?? 15;
 				const lastPage = Math.ceil(rows.length / perPage);
 				const current = Math.min(params?.page ?? 1, lastPage);
@@ -477,15 +553,17 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 					new RegExp(`^${mouseFit}$`),
 				),
 			);
-			expect(stockDouble.calls).toContainEqual(
+			expect(adjustmentDouble.calls).toContainEqual(
 				expect.objectContaining({ warehouse_id: SHELF_ID, page: 2, per_page: 100 }),
 			);
+			// Las páginas siguientes salen de la fuente del ajuste, no de la del traslado.
+			expect(stockDouble.calls).toEqual([]);
 		});
 
 		it('si falla la búsqueda en otras páginas, el saldo queda desconocido hasta reintentar', async () => {
 			const mouseFit = await installPagedShelf();
-			const paged = stockDouble.list;
-			stockDouble.list = (branchId, params, signal) => {
+			const paged = adjustmentDouble.list;
+			adjustmentDouble.list = (branchId, params, signal) => {
 				if (params?.page === 2) return Promise.reject(new Error('Sin red'));
 				if (!paged) throw new Error('Falta la ubicación paginada.');
 				return paged(branchId, params, signal);
@@ -501,7 +579,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			expect(within(lines).getAllByRole('cell')[2]).toHaveTextContent(/^—$/);
 
 			// Con la red de vuelta, «Reintentar» recupera el saldo sin cambiar la línea.
-			stockDouble.list = paged;
+			adjustmentDouble.list = paged;
 			fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 			await waitFor(() =>
 				expect(within(lines).getAllByRole('cell')[2]).toHaveTextContent(

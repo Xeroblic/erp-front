@@ -180,66 +180,74 @@ const AdjustmentResultCard: FC<IAdjustmentResultCardProps> = ({ result, onDismis
 				{/*
 				 * Un conteo puede dejar el disponible negativo frente a las reservas:
 				 * truncarlo en cero escondería unidades comprometidas que no existen.
+				 * Sin reservas publicadas (`availability` vacío) el disponible no se
+				 * conoce, y una tabla vacía parecería un error: no se pinta.
 				 */}
-				<section className='space-y-2'>
-					<h3 className='text-sm font-semibold'>Disponible para venta en la sucursal</h3>
-					{shortages.length > 0 && (
-						<Alert
-							color='red'
-							icon='HeroExclamationTriangle'
-							title='Reservas sin respaldo de stock'>
-							<ul className='list-disc pl-5'>
-								{shortages.map((row) => (
-									<li key={row.product_id} role='alert'>
-										{productName(row.product_id)}:{' '}
-										{Math.abs(row.available_quantity) === 1
-											? '1 unidad reservada no tiene stock que la respalde.'
-											: `${Math.abs(row.available_quantity)} unidades reservadas no tienen stock que las respalde.`}{' '}
-										Se requiere reponer stock o liberar la reserva.
-									</li>
-								))}
-							</ul>
-						</Alert>
-					)}
-					<div className='overflow-x-auto'>
-						<Table
-							aria-label='Disponible en la sucursal frente a reservas'
-							className='min-w-[520px]'>
-							<THead>
-								<Tr>
-									<Th scope='col'>Producto</Th>
-									<Th scope='col'>Stock apto</Th>
-									<Th scope='col'>Reservado</Th>
-									<Th scope='col'>Disponible</Th>
-								</Tr>
-							</THead>
-							<TBody>
-								{availability.map((row) => (
-									<Tr key={row.product_id}>
-										<Td className='font-medium'>
-											{productName(row.product_id)}
-										</Td>
-										<Td className='tabular-nums'>{row.fit_quantity}</Td>
-										<Td className='tabular-nums'>{row.reserved_quantity}</Td>
-										<Td className='tabular-nums'>
-											<span
-												data-testid={`ajuste-disponible-${row.product_id}`}
-												className={classNames('font-semibold', {
-													'text-red-600 dark:text-red-400':
-														row.available_quantity < 0,
-												})}>
-												{row.available_quantity}
-											</span>
-										</Td>
+				{availability.length > 0 && (
+					<section className='space-y-2'>
+						<h3 className='text-sm font-semibold'>
+							Disponible para venta en la sucursal
+						</h3>
+						{shortages.length > 0 && (
+							<Alert
+								color='red'
+								icon='HeroExclamationTriangle'
+								title='Reservas sin respaldo de stock'>
+								<ul className='list-disc pl-5'>
+									{shortages.map((row) => (
+										<li key={row.product_id} role='alert'>
+											{productName(row.product_id)}:{' '}
+											{Math.abs(row.available_quantity) === 1
+												? '1 unidad reservada no tiene stock que la respalde.'
+												: `${Math.abs(row.available_quantity)} unidades reservadas no tienen stock que las respalde.`}{' '}
+											Se requiere reponer stock o liberar la reserva.
+										</li>
+									))}
+								</ul>
+							</Alert>
+						)}
+						<div className='overflow-x-auto'>
+							<Table
+								aria-label='Disponible en la sucursal frente a reservas'
+								className='min-w-[520px]'>
+								<THead>
+									<Tr>
+										<Th scope='col'>Producto</Th>
+										<Th scope='col'>Stock apto</Th>
+										<Th scope='col'>Reservado</Th>
+										<Th scope='col'>Disponible</Th>
 									</Tr>
-								))}
-							</TBody>
-						</Table>
-					</div>
-					<p className='text-xs text-zinc-500'>
-						Disponible = stock apto de toda la sucursal − unidades reservadas.
-					</p>
-				</section>
+								</THead>
+								<TBody>
+									{availability.map((row) => (
+										<Tr key={row.product_id}>
+											<Td className='font-medium'>
+												{productName(row.product_id)}
+											</Td>
+											<Td className='tabular-nums'>{row.fit_quantity}</Td>
+											<Td className='tabular-nums'>
+												{row.reserved_quantity}
+											</Td>
+											<Td className='tabular-nums'>
+												<span
+													data-testid={`ajuste-disponible-${row.product_id}`}
+													className={classNames('font-semibold', {
+														'text-red-600 dark:text-red-400':
+															row.available_quantity < 0,
+													})}>
+													{row.available_quantity}
+												</span>
+											</Td>
+										</Tr>
+									))}
+								</TBody>
+							</Table>
+						</div>
+						<p className='text-xs text-zinc-500'>
+							Disponible = stock apto de toda la sucursal − unidades reservadas.
+						</p>
+					</section>
+				)}
 			</CardBody>
 		</Card>
 	);

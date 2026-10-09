@@ -2,7 +2,9 @@ import type {
 	IApiCollectionEnvelope,
 	IApiPaginationLinks,
 	IApiPaginationMeta,
+	IInventoryAdjustableProductsPage,
 	IInventoryAdjustment,
+	IInventoryProductRef,
 	IInventoryAdjustmentItem,
 	IInventoryAdjustmentPayload,
 	IInventoryDocumentAllocation,
@@ -110,9 +112,19 @@ interface IInventoryStockBranchStore {
 	/** Traslados internos confirmados (sección 9). */
 	movements: IWarehouseStockMovement[];
 	/** Ajustes por conteo confirmados (sección 11). */
-	adjustments: IInventoryAdjustment[];
+	adjustments: IInventoryAdjustmentRecord[];
 	/** Ingresos de recepciones publicadas en la sucursal (sección 7). */
 	stockReceiptEffects: IStockReceiptInventoryEffect[];
+}
+
+/**
+ * Ajuste guardado en el store. La 201 real no devuelve `notes` ni la fecha,
+ * pero la trazabilidad simulada (§14) necesita ambas para reconstruir la
+ * operación: viven acá y se recortan al responder.
+ */
+export interface IInventoryAdjustmentRecord extends IInventoryAdjustment {
+	notes: string | null;
+	created_at: string;
 }
 
 /**
@@ -195,7 +207,7 @@ interface IPersistedInventoryStockState {
 	origins: IInventorySeedOrigin[];
 	allocations: IInventoryDocumentAllocation[];
 	movements: IWarehouseStockMovement[];
-	adjustments: IInventoryAdjustment[];
+	adjustments: IInventoryAdjustmentRecord[];
 	stockReceiptEffects: IStockReceiptInventoryEffect[];
 	nextOriginId: number;
 	nextAllocationId: number;
@@ -539,7 +551,7 @@ const applyInventoryAdjustment = (
 	payload: IInventoryAdjustmentPayload,
 	id: string,
 	createdAt: string,
-): IInventoryAdjustment => {
+): IInventoryAdjustmentRecord => {
 	let working: IInventorySeedOrigin[] = store.origins;
 	const items: IInventoryAdjustmentItem[] = payload.items.map((item) => {
 		const before = locationTotalsAt(working, item.product_id, payload.warehouse_id);
@@ -593,7 +605,7 @@ const applyInventoryAdjustment = (
 	});
 	store.origins = working;
 
-	const adjustment: IInventoryAdjustment = {
+	const adjustment: IInventoryAdjustmentRecord = {
 		id,
 		operation_type: 'inventory_adjustment',
 		branch_id: branchId,
@@ -853,6 +865,13 @@ const aggregateStockRows = (origins: readonly IInventorySeedOrigin[]): IInventor
 	return [...rows.values()];
 };
 
+/** `search` del contrato: nombre, `sku` y `commercial_sku`, sin distinguir mayúsculas. */
+const matchesProductSearch = (product: IProcurementProduct, search: string): boolean =>
+	!search ||
+	[product.name, product.sku, product.commercial_sku].some((field) =>
+		field?.toLocaleLowerCase().includes(search),
+	);
+
 export const getInventoryWarehouses = (branchId: number): IWarehouseCompact[] =>
 	(inventoryWarehousesByBranch[branchId] ?? []).map((warehouse) => ({ ...warehouse }));
 
@@ -934,7 +953,7 @@ export const readInventoryBranchOrigins = (branchId: number): IInventorySeedOrig
 export interface IInventoryBranchLedger {
 	seedOrigins: IInventorySeedOrigin[];
 	movements: IWarehouseStockMovement[];
-	adjustments: IInventoryAdjustment[];
+	adjustments: IInventoryAdjustmentRecord[];
 	allocations: IInventoryDocumentAllocation[];
 	stockReceiptEffects: IStockReceiptInventoryEffect[];
 }
@@ -972,12 +991,7 @@ export const listInventoryStock = async (
 	const store = getStore(branchId);
 	const rows = aggregateStockRows(store.origins)
 		.filter((row) => matchesLocation(row, context) && !row.product.serial_tracking)
-		.filter(
-			(row) =>
-				!search ||
-				row.product.name.toLocaleLowerCase().includes(search) ||
-				row.product.sku.toLocaleLowerCase().includes(search),
-		);
+		.filter((row) => matchesProductSearch(row.product, search));
 	const products = new Map<number, IInventoryStockRow>();
 	rows.forEach(({ branch_id: _branch, warehouse_id: _warehouse, ...row }) => {
 		const previous = products.get(row.product.id);
@@ -991,6 +1005,22 @@ export const listInventoryStock = async (
 		previous.documented_quantity += row.documented_quantity;
 		previous.undocumented_quantity += row.undocumented_quantity;
 	});
+	// `include_empty=1`: el catálogo corregible completa con ceros lo que la
+	// ubicación no tiene, como el backend con los productos de la sucursal.
+	if (params.include_empty === 1)
+		getInventoryAdjustableProducts()
+			.filter((product) => !products.has(product.id))
+			.filter((product) => matchesProductSearch(product, search))
+			.forEach((product) =>
+				products.set(product.id, {
+					product,
+					physical_quantity: 0,
+					fit_quantity: 0,
+					unfit_quantity: 0,
+					documented_quantity: 0,
+					undocumented_quantity: 0,
+				}),
+			);
 	const sortedRows = [...products.values()].sort(
 		(a, b) => a.product.name.localeCompare(b.product.name) || a.product.id - b.product.id,
 	);
@@ -998,6 +1028,74 @@ export const listInventoryStock = async (
 		{ ...page(sortedRows, `/api/branches/${branchId}/inventory-stock`, params), context },
 		signal,
 	);
+};
+
+/** Coincidencias por búsqueda: las mismas que pide la rama real. */
+export const INVENTORY_ADJUSTABLE_SEARCH_LIMIT = 20;
+
+/**
+ * Buscador del ajuste. A diferencia de `include_empty`, parte del catálogo de
+ * la **filial** (`getInventoryAdjustableProducts(subsidiaryId)`), que también
+ * incluye lo creado desde compras en esta sesión simulada.
+ */
+export const searchInventoryAdjustableProducts = async (
+	branchId: number,
+	subsidiaryId: number | null,
+	location: IInventoryStockListParams,
+	search: string,
+	signal?: AbortSignal,
+): Promise<IInventoryAdjustableProductsPage> => {
+	let context: IInventoryLocationContext;
+	try {
+		context = locationContext(branchId, location);
+	} catch (error) {
+		return Promise.reject(error);
+	}
+	const term = search.trim().toLocaleLowerCase();
+	const matches = getInventoryAdjustableProducts(subsidiaryId).filter((product) =>
+		matchesProductSearch(product, term),
+	);
+	const balances = aggregateStockRows(getStore(branchId).origins).filter((row) =>
+		matchesLocation(row, context),
+	);
+	const data = matches.slice(0, INVENTORY_ADJUSTABLE_SEARCH_LIMIT).map((product) =>
+		balances
+			.filter((row) => row.product.id === product.id)
+			.reduce<IInventoryStockRow>(
+				(total, row) => ({
+					product,
+					physical_quantity: total.physical_quantity + row.physical_quantity,
+					fit_quantity: total.fit_quantity + row.fit_quantity,
+					unfit_quantity: total.unfit_quantity + row.unfit_quantity,
+					documented_quantity: total.documented_quantity + row.documented_quantity,
+					undocumented_quantity: total.undocumented_quantity + row.undocumented_quantity,
+				}),
+				{
+					product,
+					physical_quantity: 0,
+					fit_quantity: 0,
+					unfit_quantity: 0,
+					documented_quantity: 0,
+					undocumented_quantity: 0,
+				},
+			),
+	);
+	return delay({ data, has_more: matches.length > data.length }, signal);
+};
+
+/**
+ * Elegibilidad de un producto para el ajuste, sin mirar su saldo: no
+ * serializado y de la filial. `null` si no lo es.
+ */
+export const getInventoryAdjustableProduct = async (
+	subsidiaryId: number,
+	productId: number,
+	signal?: AbortSignal,
+): Promise<IInventoryProductRef | null> => {
+	const product = getInventoryAdjustableProducts(subsidiaryId).find(
+		(candidate) => candidate.id === productId,
+	);
+	return delay(product ? { id: product.id, sku: product.sku, name: product.name } : null, signal);
 };
 
 const originsFor = (
@@ -1041,7 +1139,12 @@ export const listInventoryOrigins = async (
 	} catch (error) {
 		return Promise.reject(error);
 	}
-	const origins = originsFor(branchId, productId, context)
+	const scoped = originsFor(branchId, productId, context);
+	// El físico del doble es, por construcción, la suma de sus orígenes: no hay
+	// unidades sin procedencia que simular. Igual que el backend, se calcula
+	// sin los filtros de documento y proveedor.
+	const physicalQuantity = scoped.reduce((total, origin) => total + origin.physical_quantity, 0);
+	const origins = scoped
 		.filter(
 			(origin) =>
 				params.purchase_document_id === undefined ||
@@ -1069,7 +1172,12 @@ export const listInventoryOrigins = async (
 				`/api/branches/${branchId}/inventory-stock/${productId}/origins`,
 				params,
 			),
-			context: { ...context, product },
+			context: {
+				...context,
+				product,
+				physical_quantity: physicalQuantity,
+				unattributed_quantity: 0,
+			},
 		},
 		signal,
 	);
@@ -1534,6 +1642,9 @@ export const createInventoryAdjustment = (
 			// la respuesta describe el motivo por el que la operación se detuvo,
 			// no el último problema que quedó por revisar.
 			const seenItems = new Set<string>();
+			// Ingreso y egreso FIFO del mismo producto y condición: el contrato pide
+			// una sola línea con la diferencia neta.
+			const fifoDirections = new Map<string, number>();
 			const itemError = payload.items.reduce<Error | null>((found, item) => {
 				if (found) return found;
 				if (!Number.isInteger(item.quantity_delta) || item.quantity_delta === 0)
@@ -1548,16 +1659,28 @@ export const createInventoryAdjustment = (
 						'ADJUSTMENT_CONDITION_REQUIRED',
 						'Indica si las unidades son aptas o no aptas.',
 					);
-				const key = `${item.product_id}:${item.condition}`;
+				const originId = item.origin_id ?? null;
+				const key = `${item.product_id}:${item.condition}:${originId ?? 'fifo'}`;
+				if (originId === null) {
+					const directionKey = `${item.product_id}:${item.condition}`;
+					const direction = Math.sign(item.quantity_delta);
+					const previous = fifoDirections.get(directionKey);
+					if (previous !== undefined && previous !== direction)
+						return apiError(
+							422,
+							'ADJUSTMENT_NET_DELTA_REQUIRED',
+							'Un ingreso y una salida del mismo producto y condición van en una sola línea con la diferencia neta.',
+						);
+					fifoDirections.set(directionKey, direction);
+				}
 				if (seenItems.has(key))
 					return apiError(
 						422,
 						'ADJUSTMENT_DUPLICATE_ITEM',
-						'Hay dos líneas del mismo producto y condición: únelas en una.',
+						'Hay dos líneas del mismo producto, condición y origen: únelas en una.',
 					);
 				seenItems.add(key);
 
-				const originId = item.origin_id ?? null;
 				if (item.quantity_delta > 0 && originId !== null)
 					return apiError(
 						422,
@@ -1625,7 +1748,18 @@ export const createInventoryAdjustment = (
 				crypto.randomUUID(),
 				new Date().toISOString(),
 			);
-			return delay({ data: structuredClone(adjustment) });
+			// La 201 real no devuelve `notes` ni la fecha: el registro las guarda
+			// para la trazabilidad, la respuesta no.
+			const response: IInventoryAdjustment = {
+				id: adjustment.id,
+				operation_type: adjustment.operation_type,
+				branch_id: adjustment.branch_id,
+				warehouse_id: adjustment.warehouse_id,
+				reason: adjustment.reason,
+				related_stock_receipt_id: adjustment.related_stock_receipt_id,
+				items: adjustment.items,
+			};
+			return delay({ data: structuredClone(response) });
 		},
 	);
 

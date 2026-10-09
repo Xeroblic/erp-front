@@ -16,6 +16,7 @@ import {
 	createInventoryAdjustment,
 	createInventoryDocumentAllocation,
 	createWarehouseStockMovement,
+	listAdjustmentStock,
 	listInventoryStock,
 	listInventoryOrigins,
 } from '@/services/procurement/inventoryStock.service';
@@ -25,6 +26,8 @@ interface StockRequest {
 	branchId: number;
 	ownerContext: string;
 	params: IInventoryStockListParams;
+	/** El ajuste lee su stock con su propia bandera (`listAdjustmentStock`). */
+	forAdjustment?: boolean;
 }
 interface OriginsRequest extends Omit<StockRequest, 'params'> {
 	productId: number;
@@ -37,22 +40,27 @@ export const inventoryStockQueryKey = (request: StockRequest): string =>
 export const inventoryOriginsQueryKey = (request: OriginsRequest): string =>
 	JSON.stringify([request.ownerContext, request.branchId, request.productId, request.params]);
 
+/*
+ * Stock, procedencias y ajuste ya tienen ruta real: no se condicionan a la
+ * bandera de datos simulados. Traslado y documentación posterior sí, porque
+ * su rama real todavía rechaza por ruta no publicada.
+ */
 export const fetchInventoryStock = createAsyncThunk<
 	IInventoryStockResponse,
 	StockRequest,
 	{ rejectValue: string }
 >(
 	'inventoryStock/list',
-	async ({ branchId, params }, { signal, rejectWithValue }) => {
+	async ({ branchId, params, forAdjustment }, { signal, rejectWithValue }) => {
 		try {
-			return await listInventoryStock(branchId, params, signal);
+			const list = forAdjustment ? listAdjustmentStock : listInventoryStock;
+			return await list(branchId, params, signal);
 		} catch (error: unknown) {
 			return rejectWithValue(
 				getProcurementErrorMessage(error, 'No pudimos cargar el stock.'),
 			);
 		}
 	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
 export const fetchInventoryOrigins = createAsyncThunk<
 	IInventoryOriginsResponse,
@@ -69,7 +77,6 @@ export const fetchInventoryOrigins = createAsyncThunk<
 			);
 		}
 	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
 
 interface IWriteHeaders {
@@ -156,7 +163,6 @@ export const createInventoryAdjustmentThunk = createAsyncThunk<
 			return rejectWithValue(error);
 		}
 	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
 
 interface QueryState<T> {

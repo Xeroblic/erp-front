@@ -6,7 +6,13 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
-import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
+import {
+	FAKE_ALFA,
+	FAKE_BETA,
+	resetAdjustmentFake,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/__tests__/adjustmentFakeBackend';
+import * as service from '@/services/procurement/inventoryStock.service';
+import type { IInventoryStockRow } from '@/interface/procurement.interface';
 
 const context = vi.hoisted(() => ({
 	branchId: 4 as number | null,
@@ -18,6 +24,19 @@ vi.mock('@/config/inventoryStock.config', () => ({
 		return context.enabled;
 	},
 }));
+vi.mock('@/config/inventoryAdjustments.config', () => ({
+	get default() {
+		return context.enabled;
+	},
+}));
+/** El ajuste lee y escribe en un backend falso con datos propios de la prueba. */
+vi.mock('@/services/procurement/inventoryStock.service', async (importOriginal) => {
+	const actual = await importOriginal<object>();
+	const { adjustmentFakeService } = await import(
+		'@/pages/inventario/abastecimiento/AjustesTraslados/__tests__/adjustmentFakeBackend'
+	);
+	return { ...actual, ...adjustmentFakeService };
+});
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
 vi.mock('@/store', async () => {
 	const redux = await import('react-redux');
@@ -51,7 +70,9 @@ vi.mock('framer-motion', () => ({
 /**
  * `react-select` no expone sus opciones como controles nativos en jsdom; como
  * en `InventarioBodega.test.tsx`, `SelectReact` se sustituye por un `<select>`
- * nativo cableado a las mismas props.
+ * nativo cableado a las mismas props. Cuando el llamador busca en el servidor
+ * (`onInputChange`), el doble agrega la caja de búsqueda «Buscar <etiqueta>», y
+ * el valor elegido se lista aunque no esté entre las opciones de la búsqueda.
  */
 vi.mock('@/components/form/SelectReact', () => ({
 	default: ({
@@ -60,6 +81,7 @@ vi.mock('@/components/form/SelectReact', () => ({
 		options,
 		value,
 		onChange,
+		onInputChange,
 		placeholder,
 	}: {
 		'aria-label'?: string;
@@ -67,25 +89,43 @@ vi.mock('@/components/form/SelectReact', () => ({
 		options?: { value: string; label: string }[];
 		value?: { value: string; label: string } | null;
 		onChange?: (option: { value: string; label: string } | null) => void;
+		onInputChange?: (input: string, meta: { action: string }) => void;
 		placeholder?: string;
-	}) => (
-		<select
-			aria-label={ariaLabel}
-			disabled={isDisabled}
-			value={value?.value ?? ''}
-			onChange={(event) => {
-				const selected =
-					options?.find((option) => option.value === event.target.value) ?? null;
-				onChange?.(selected);
-			}}>
-			<option value=''>{placeholder}</option>
-			{options?.map((option) => (
-				<option key={option.value} value={option.value}>
-					{option.label}
-				</option>
-			))}
-		</select>
-	),
+	}) => {
+		const listed =
+			value && !options?.some((option) => option.value === value.value)
+				? [value, ...(options ?? [])]
+				: (options ?? []);
+		return (
+			<>
+				{onInputChange && (
+					<input
+						aria-label={`Buscar ${ariaLabel}`}
+						disabled={isDisabled}
+						onChange={(event) =>
+							onInputChange(event.target.value, { action: 'input-change' })
+						}
+					/>
+				)}
+				<select
+					aria-label={ariaLabel}
+					disabled={isDisabled}
+					value={value?.value ?? ''}
+					onChange={(event) => {
+						const selected =
+							listed.find((option) => option.value === event.target.value) ?? null;
+						onChange?.(selected);
+					}}>
+					<option value=''>{placeholder}</option>
+					{listed.map((option) => (
+						<option key={option.value} value={option.value}>
+							{option.label}
+						</option>
+					))}
+				</select>
+			</>
+		);
+	},
 }));
 
 const auth = createSlice({
@@ -135,12 +175,9 @@ const clickNext = async () => {
 const chooseLocation = async (token: string) => {
 	fireEvent.change(screen.getByLabelText('Ubicación'), { target: { value: token } });
 	await clickNext();
-	const product = await screen.findByLabelText('Producto de la línea 1');
-	// El catálogo no depende del saldo, pero el saldo por línea sí: esperar a
-	// que cargue evita leer «…» en vez de un número.
-	await waitFor(() =>
-		expect(within(product).getByRole('option', { name: /Cable/ })).toBeInTheDocument(),
-	);
+	await screen.findByLabelText('Producto de la línea 1');
+	// El saldo por línea depende de la ubicación: esperar a que cargue evita
+	// leer «…» en vez de un número.
 	await waitFor(() => expect(screen.queryByText('…')).not.toBeInTheDocument());
 };
 
@@ -151,14 +188,29 @@ const goToReason = async (reason?: string) => {
 	if (reason) fireEvent.change(field, { target: { value: reason } });
 };
 
-/** La bodega principal es la del fixture canónico del cable: 100 aptos. */
+/** Bodega principal del backend falso: 100 aptos de «Producto alfa». */
 const chooseMainWarehouse = () => chooseLocation('warehouse:8');
 
-/** Completa una línea del ajuste con producto y delta firmado. */
-const fillLine = (productId: string, delta: string) => {
-	fireEvent.change(screen.getByLabelText('Producto de la línea 1'), {
-		target: { value: productId },
+const ALFA = String(FAKE_ALFA.id);
+const BETA = String(FAKE_BETA.id);
+
+/** Término que encuentra cada producto del backend falso en el buscador. */
+const SEARCH_TERMS: Record<string, string> = { [ALFA]: FAKE_ALFA.sku, [BETA]: FAKE_BETA.sku };
+
+/**
+ * Completa una línea del ajuste con producto y delta firmado. El selector
+ * busca en el servidor: se escribe el término y se espera la opción.
+ */
+const fillLine = async (productId: string, delta: string) => {
+	const term = SEARCH_TERMS[productId];
+	fireEvent.change(screen.getByLabelText('Buscar Producto de la línea 1'), {
+		target: { value: term },
 	});
+	const product = screen.getByLabelText('Producto de la línea 1');
+	await waitFor(() =>
+		expect(within(product).getByRole('option', { name: new RegExp(term) })).toBeInTheDocument(),
+	);
+	fireEvent.change(product, { target: { value: productId } });
 	fireEvent.change(screen.getByLabelText('Cantidad de ajuste de la línea 1'), {
 		target: { value: delta },
 	});
@@ -170,7 +222,7 @@ beforeEach(() => {
 	context.enabled = true;
 });
 afterEach(() => {
-	resetInventoryStockStoreForTests();
+	resetAdjustmentFake();
 	vi.restoreAllMocks();
 });
 
@@ -178,7 +230,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 	it('aplica un egreso y muestra la tabla antes/después de físico, apto y no apto', async () => {
 		renderPage();
 		await chooseMainWarehouse();
-		fillLine('58', '-2');
+		await fillLine(ALFA, '-2');
 		await goToReason('Conteo físico: faltan dos unidades');
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 
@@ -186,13 +238,13 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 			name: 'Saldos antes y después del ajuste',
 		});
 		expect(screen.getByText(/Egreso de/)).toHaveTextContent(
-			'Egreso de 2 unidades aptas de Cable HDMI 2 m.',
+			'Egreso de 2 unidades aptas de Producto alfa.',
 		);
 
 		const row = within(table).getAllByRole('row')[1];
 		const cells = within(row).getAllByRole('cell');
 		expect(cells[2]).toHaveTextContent('-2');
-		// El fixture canónico del cable son 100 físicos aptos en la bodega principal:
+		// Alfa tiene 100 físicos aptos en la bodega principal:
 		// «Stock anterior» y «Stock final» son de la condición ajustada (apto).
 		expect(cells[3]).toHaveTextContent('100');
 		expect(cells[4]).toHaveTextContent('98');
@@ -214,7 +266,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 	it('registra un ingreso positivo sin procedencia y lo confirma', async () => {
 		renderPage();
 		await chooseMainWarehouse();
-		fillLine('58', '3');
+		await fillLine(ALFA, '3');
 		await goToReason('Conteo: aparecen tres unidades');
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 
@@ -225,16 +277,76 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		expect(cells[2]).toHaveTextContent('+3');
 		expect(cells[4]).toHaveTextContent('103');
 		expect(screen.getByText(/Ingreso de/)).toHaveTextContent(
-			'Ingreso de 3 unidades aptas de Cable HDMI 2 m.',
+			'Ingreso de 3 unidades aptas de Producto alfa.',
+		);
+	});
+
+	it('no ofrece las coincidencias del término anterior mientras se escribe otro', async () => {
+		// Datos propios de la prueba: cada término devuelve un único producto.
+		const resultFor = (term: string): IInventoryStockRow[] => {
+			const name = { alfa: 'Producto alfa', beta: 'Producto beta' }[term];
+			if (!name) return [];
+			return [
+				{
+					product: {
+						id: term === 'alfa' ? 9001 : 9002,
+						sku: term.toUpperCase(),
+						commercial_sku: null,
+						name,
+						short_description: null,
+						serial_tracking: false,
+						grade: null,
+						currency_code: 'CLP',
+						price: null,
+						offer_price: null,
+						cost: null,
+						cost_basis: 'unknown',
+						brand: null,
+						categories: [],
+						image: null,
+						is_active: true,
+					},
+					physical_quantity: 0,
+					fit_quantity: 0,
+					unfit_quantity: 0,
+					documented_quantity: 0,
+					undocumented_quantity: 0,
+				},
+			];
+		};
+		vi.spyOn(service, 'searchInventoryAdjustableProducts').mockImplementation(
+			(_branchId, _subsidiaryId, _location, term) =>
+				Promise.resolve({ data: resultFor(term), has_more: false }),
+		);
+		renderPage();
+		await chooseMainWarehouse();
+		const search = screen.getByLabelText('Buscar Producto de la línea 1');
+		const product = screen.getByLabelText('Producto de la línea 1');
+		fireEvent.change(search, { target: { value: 'alfa' } });
+		await waitFor(() =>
+			expect(
+				within(product).getByRole('option', { name: /Producto alfa/ }),
+			).toBeInTheDocument(),
+		);
+
+		// Sin esperar el debounce: «alfa» ya no responde a lo escrito.
+		fireEvent.change(search, { target: { value: 'beta' } });
+		expect(
+			within(product).queryByRole('option', { name: /Producto alfa/ }),
+		).not.toBeInTheDocument();
+		await waitFor(() =>
+			expect(
+				within(product).getByRole('option', { name: /Producto beta/ }),
+			).toBeInTheDocument(),
 		);
 	});
 
 	it('ofrece el catálogo aunque el producto no tenga saldo en esa ubicación', async () => {
 		renderPage();
-		// «Sin ubicación» no tiene ni una unidad de cable: el conteo que las
+		// «Sin ubicación» no tiene ni una unidad de alfa: el conteo que las
 		// encuentra tiene que poder nombrarlo igual.
 		await chooseLocation('unlocated');
-		fillLine('58', '3');
+		await fillLine(ALFA, '3');
 		await goToReason('Conteo: aparecen tres sin ubicar');
 
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
@@ -267,13 +379,13 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 	it('muestra el faltante frente a reservas sin truncarlo en cero', async () => {
 		renderPage();
 		await chooseLocation('unlocated');
-		fillLine('31', '-3');
-		await goToReason('Conteo físico: faltan tres mouse');
+		await fillLine(BETA, '-3');
+		await goToReason('Conteo físico: faltan tres unidades');
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 
-		// El fixture reserva 16 de los 17 aptos de la sucursal: restar 3 deja el
+		// El backend falso reserva 16 de los 17 aptos de beta: restar 3 deja el
 		// disponible en −2, y eso se muestra.
-		const available = await screen.findByTestId('ajuste-disponible-31');
+		const available = await screen.findByTestId(`ajuste-disponible-${BETA}`);
 		expect(available).toHaveTextContent('-2');
 		expect(screen.getByRole('alert')).toHaveTextContent(
 			'2 unidades reservadas no tienen stock que las respalde.',
@@ -319,7 +431,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		expect(follows(products, product)).toBe(true);
 		expect(follows(product, screen.getByRole('button', { name: 'Siguiente' }))).toBe(true);
 
-		fillLine('58', '-1');
+		await fillLine(ALFA, '-1');
 		await activate('Siguiente');
 		// «Siguiente» desaparece en el último paso: el foco no puede caer en <body>.
 		const confirmation = await screen.findByRole('heading', {
@@ -344,7 +456,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 	it('no avanza con una cantidad de cero ni envía sin motivo', async () => {
 		renderPage();
 		await chooseMainWarehouse();
-		fillLine('58', '0');
+		await fillLine(ALFA, '0');
 		await clickNext();
 		expect(
 			await screen.findByText('La cantidad de ajuste no puede ser cero.'),
@@ -366,7 +478,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 	it('explica el rechazo cuando el egreso dejaría el saldo bajo cero', async () => {
 		renderPage();
 		await chooseMainWarehouse();
-		fillLine('58', '-9999');
+		await fillLine(ALFA, '-9999');
 
 		// Aviso en la línea antes de intentar escribir.
 		expect(
@@ -382,13 +494,73 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		).not.toBeInTheDocument();
 	});
 
+	it('explica los rechazos del servidor: unidades sin procedencia y errores por línea', async () => {
+		const write = vi
+			.spyOn(service, 'createInventoryAdjustment')
+			.mockRejectedValueOnce({
+				isAxiosError: true,
+				response: {
+					status: 409,
+					data: {
+						message: 'La ubicación no tiene stock suficiente.',
+						code: 'INSUFFICIENT_LOCATION_STOCK',
+						context: { requested: 2, available: 0, unattributed_quantity: 3 },
+					},
+				},
+			})
+			.mockRejectedValueOnce({
+				isAxiosError: true,
+				response: {
+					status: 422,
+					data: {
+						message: 'Los datos no son válidos.',
+						errors: { 'items.0.product_id': ['El producto no es de la filial.'] },
+					},
+				},
+			});
+		renderPage();
+		await chooseMainWarehouse();
+		await fillLine(ALFA, '-2');
+		await goToReason('Conteo');
+
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
+		expect(
+			await screen.findByText(/Hay 3 unidades sin procedencia registrada/),
+		).toBeInTheDocument();
+
+		const submit = screen.getByRole('button', { name: 'Registrar ajuste' });
+		await waitFor(() => expect(submit).toBeEnabled());
+		fireEvent.click(submit);
+		// El 422 de `items.0.product_id` no se lista en el aviso general: se marca
+		// en el campo de la línea, en el paso «Productos».
+		expect(
+			await screen.findByText('Una línea tiene errores: está marcada en «Productos».'),
+		).toBeInTheDocument();
+		expect(screen.queryByText('El producto no es de la filial.')).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Revisar productos' }));
+		expect(await screen.findByText('El producto no es de la filial.')).toBeInTheDocument();
+
+		// Un rechazo definitivo no aplicó nada: el siguiente envío lleva clave nueva.
+		const keys = write.mock.calls.map(([, , headers]) => headers?.idempotencyKey);
+		expect(keys).toHaveLength(2);
+		expect(keys[0]).not.toBe(keys[1]);
+
+		// Al corregir las líneas, el rechazo deja de describir el lote: se retira.
+		fireEvent.change(screen.getByLabelText('Cantidad de ajuste de la línea 1'), {
+			target: { value: '-1' },
+		});
+		await waitFor(() =>
+			expect(screen.queryByText('El producto no es de la filial.')).not.toBeInTheDocument(),
+		);
+	});
+
 	it('muestra el stock resultante de la ubicación según la cantidad de ajuste', async () => {
 		renderPage();
 		await chooseMainWarehouse();
 		const finalBalance = screen.getByTestId('ajuste-stock-resultante-0');
 		expect(finalBalance).toHaveTextContent('—');
 
-		fillLine('58', '-2');
+		await fillLine(ALFA, '-2');
 		await waitFor(() => expect(finalBalance).toHaveTextContent('98'));
 
 		fireEvent.change(screen.getByLabelText('Cantidad de ajuste de la línea 1'), {
@@ -398,10 +570,10 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		expect(finalBalance.parentElement).toHaveClass('text-red-600');
 	});
 
-	it('bloquea la pantalla sin `edit-product` y con los mocks apagados', () => {
+	it('bloquea la pantalla sin `edit-product`; con los mocks apagados sólo deja de avisar la simulación', () => {
 		const store = configureStore({ reducer: { inventoryStock, auth: auth.reducer } });
 		store.dispatch(auth.actions.deny());
-		render(
+		const denied = render(
 			<Provider store={store}>
 				<MemoryRouter initialEntries={['/?tab=ajuste']}>
 					<AjustesTrasladosView />
@@ -410,9 +582,11 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		);
 		expect(screen.getByText('Sin permiso')).toBeInTheDocument();
 		expect(screen.queryByLabelText('Ubicación')).not.toBeInTheDocument();
+		denied.unmount();
 
 		context.enabled = false;
 		renderPage();
-		expect(screen.getByText('Ajustes y traslados no habilitados')).toBeInTheDocument();
+		expect(screen.queryByText('Datos simulados')).not.toBeInTheDocument();
+		expect(screen.getByLabelText('Ubicación')).toBeInTheDocument();
 	});
 });

@@ -34,10 +34,8 @@ const adjustmentResult = (
 		branch_id: 4,
 		warehouse_id: warehouseId,
 		reason: 'Conteo',
-		notes: null,
 		related_stock_receipt_id: null,
 		items: productIds.map(adjustmentItem),
-		created_at: '2026-10-05T10:00:00Z',
 	},
 	products: {},
 	locationLabel: 'Estante A3',
@@ -96,6 +94,11 @@ describe('«Ver en inventario» tras un ajuste', () => {
 		renderAs(<AdjustmentResultCard result={adjustmentResult([31])} onDismiss={() => {}} />);
 		followInventory();
 		expect(screen.getByTestId('destino')).toHaveTextContent('/inventario/stock/31');
+	});
+
+	it('sin reservas publicadas no pinta una tabla de disponible vacía', () => {
+		renderAs(<AdjustmentResultCard result={adjustmentResult([31])} onDismiss={() => {}} />);
+		expect(screen.queryByText('Disponible para venta en la sucursal')).not.toBeInTheDocument();
 	});
 
 	it('con varios productos abre la ficha de la bodega ajustada', () => {

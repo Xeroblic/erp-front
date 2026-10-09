@@ -9,9 +9,10 @@ import {
 	inventoryStockQueryKey,
 } from '@/store/slices/procurement/inventoryStockSlice';
 import {
-	getInventoryAdjustableProducts,
-	getInventoryStockAvailability,
-	getInventoryWarehouses,
+	getInventoryAdjustableProduct,
+	getAdjustmentStockAvailability,
+	getAdjustmentWarehouses,
+	listAdjustmentStock,
 } from '@/services/procurement/inventoryStock.service';
 import type { IInventoryStockAvailability } from '@/services/procurement/inventoryStock.service';
 import {
@@ -19,8 +20,11 @@ import {
 	locationToken,
 	warehouseIdFromToken,
 } from '@/utils/inventoryLocation.util';
+import { applyProcurementFieldErrors } from '@/utils/procurementErrors.util';
 import {
+	AJUSTE_FORM_FIELDS,
 	AjusteSchema,
+	ajusteLineErrorsFrom,
 	emptyAjusteItem,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/adjustment.types';
 import type {
@@ -28,6 +32,7 @@ import type {
 	IAjusteItemDraft,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/adjustment.types';
 import useStepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useStepWizard';
+import useAdjustableProductSearch from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useAdjustableProductSearch';
 import {
 	AJUSTE_STEPS,
 	NO_PRESELECTION,
@@ -42,8 +47,8 @@ import {
 import type {
 	IInventoryAdjustment,
 	IInventoryAdjustmentPayload,
+	IInventoryProductRef,
 	IInventoryStockRow,
-	IProcurementProduct,
 } from '@/interface/procurement.interface';
 
 export type TProductNames = Record<number, { name: string; sku: string }>;
@@ -52,7 +57,10 @@ export interface IAjusteResult {
 	adjustment: IInventoryAdjustment;
 	products: TProductNames;
 	locationLabel: string;
-	/** Disponible de la sucursal frente a reservas, después del ajuste. */
+	/**
+	 * Disponible de la sucursal frente a reservas, después del ajuste. Vacío
+	 * cuando el entorno no publica reservas: el disponible no se conoce.
+	 */
 	availability: IInventoryStockAvailability[];
 }
 
@@ -93,27 +101,15 @@ export default function useInventoryAdjustment(
 
 	const [pagedLookup, setPagedLookup] = useState<IPagedStockLookup>(NO_PAGED_LOOKUP);
 
-	const warehouses = useMemo(() => getInventoryWarehouses(branchId), [branchId]);
-	/**
-	 * Los productos elegibles salen del **catálogo**, no del stock vigente de la
-	 * ubicación: un conteo que encuentra unidades de un producto que quedó en
-	 * cero —o que nunca estuvo en esa bodega— tiene que poder nombrarlo. El
-	 * stock sólo informa el saldo y valida los egresos.
-	 */
-	const products = useMemo<IProcurementProduct[]>(
-		() => getInventoryAdjustableProducts(subsidiaryId),
-		[subsidiaryId],
-	);
+	const warehouses = useMemo(() => getAdjustmentWarehouses(branchId), [branchId]);
 	// Preselección de la URL: se resuelve una vez, al montar. Es el valor
-	// inicial del formulario, no un filtro que lo siga.
+	// inicial del formulario, no un filtro que lo siga. El catálogo no está
+	// cargado —se busca en el servidor—, así que el producto se confirma
+	// después, al montar (ver `preselectedProductId`).
 	const [initialSelection] = useState(() => {
 		const location = resolvePreselectedLocation(preselection.location, warehouses);
 		const productId: number | '' =
-			location !== null &&
-			preselection.productId !== null &&
-			products.some((product) => product.id === preselection.productId)
-				? preselection.productId
-				: '';
+			location !== null && preselection.productId !== null ? preselection.productId : '';
 		return { location: location ?? '', productId };
 	});
 
@@ -125,8 +121,7 @@ export default function useInventoryAdjustment(
 	const stockRowsRef = useRef<IInventoryStockRow[]>([]);
 	// `onSubmit` no puede depender del catálogo por cierre sin volver a crear el
 	// formulario en cada render: la ref le da el valor vigente al escribir.
-	const productsRef = useRef<IProcurementProduct[]>([]);
-	productsRef.current = products;
+	const productsRef = useRef<IInventoryProductRef[]>([]);
 
 	const labelFor = useCallback(
 		(token: string): string => {
@@ -168,22 +163,38 @@ export default function useInventoryAdjustment(
 			});
 			const locationLabel = labelFor(formValues.location);
 
-			const adjustment = await idempotentWrite.submit((headers) =>
-				dispatch(
-					createInventoryAdjustmentThunk({
-						branchId,
-						payload,
-						headers: { idempotencyKey: headers['Idempotency-Key'] },
-					}),
-				).unwrap(),
+			const adjustment = await idempotentWrite.submit(
+				(headers) =>
+					dispatch(
+						createInventoryAdjustmentThunk({
+							branchId,
+							payload,
+							headers: { idempotencyKey: headers['Idempotency-Key'] },
+						}),
+					).unwrap(),
+				{
+					onError: (error) => {
+						// Motivo y notas están en el paso visible; los errores de línea
+						// (`items.N.campo`) los marca `errorFor` en su línea.
+						applyProcurementFieldErrors(
+							error.fieldErrors,
+							(apiField) => AJUSTE_FORM_FIELDS[apiField],
+							helpers.setFieldError,
+						);
+						// El lote se rechazó entero por saldo: el que muestran las
+						// líneas ya no es el vigente.
+						if (error.code === 'INSUFFICIENT_LOCATION_STOCK')
+							setRetry((value) => value + 1);
+					},
+				},
 			);
 			if (!adjustment) return;
 
 			// El disponible se lee **después** de aplicar: es el estado que la
 			// pantalla tiene que mostrar, faltante incluido.
-			const availability = [...new Set(adjustment.items.map((item) => item.product_id))].map(
-				(productId) => getInventoryStockAvailability(branchId, productId),
-			);
+			const availability = [
+				...new Set(adjustment.items.map((item) => item.product_id)),
+			].flatMap((productId) => getAdjustmentStockAvailability(branchId, productId) ?? []);
 			setResult({ adjustment, products: names, locationLabel, availability });
 			toast.success(`Ajuste registrado en ${locationLabel}.`);
 			helpers.resetForm({
@@ -202,10 +213,21 @@ export default function useInventoryAdjustment(
 	const { values, touched, setFieldValue, setValues, setTouched, setFieldTouched, validateForm } =
 		formik;
 
+	/**
+	 * Los productos elegibles salen del **catálogo**, no del stock vigente de la
+	 * ubicación: un conteo que encuentra unidades de un producto que quedó en
+	 * cero —o que nunca estuvo en esa bodega— tiene que poder nombrarlo. El
+	 * stock sólo informa el saldo y valida los egresos.
+	 */
+	const productSearch = useAdjustableProductSearch(branchId, subsidiaryId, values.location);
+	const { remember: rememberProducts, knownProducts: products } = productSearch;
+	productsRef.current = products;
+
 	const request = useMemo(
 		() => ({
 			branchId,
 			ownerContext: `ajuste:${context}:${session}`,
+			forAdjustment: true,
 			params: values.location
 				? {
 						...locationStockParams(values.location),
@@ -264,6 +286,7 @@ export default function useInventoryAdjustment(
 		const productIds = missingProductKey.split(',').map(Number);
 		const controller = new AbortController();
 		findLocationStockRows(
+			listAdjustmentStock,
 			branchId,
 			values.location,
 			productIds,
@@ -300,6 +323,12 @@ export default function useInventoryAdjustment(
 	}, [firstPageRows, paged.rows]);
 	stockRowsRef.current = stockRows;
 
+	// Una línea preseleccionada desde la URL nombra su producto con la fila de
+	// stock, antes de cualquier búsqueda.
+	useEffect(() => {
+		rememberProducts(stockRows.map((row) => row.product));
+	}, [stockRows, rememberProducts]);
+
 	const loadingStock = loadingFirstPage || searchingPages;
 	const stockError =
 		firstPageError ??
@@ -319,6 +348,48 @@ export default function useInventoryAdjustment(
 		},
 		[stockRows, unresolvedIds],
 	);
+
+	/*
+	 * El producto de la URL se valida por elegibilidad —de la filial y no
+	 * serializado, la misma regla con que el backend acepta `items.*.product_id`—
+	 * y no por su saldo: el acceso directo sirve justamente para registrar
+	 * unidades encontradas de un producto en cero. Si no es elegible se
+	 * descarta; si la consulta falla, se conserva y el backend lo valida al
+	 * enviar, en su línea.
+	 */
+	const itemsRef = useRef(values.items);
+	itemsRef.current = values.items;
+	const preselectedProductId = initialSelection.productId;
+	useEffect(() => {
+		if (preselectedProductId === '' || subsidiaryId === null) return undefined;
+		const controller = new AbortController();
+		getInventoryAdjustableProduct(subsidiaryId, preselectedProductId, controller.signal).then(
+			(product) => {
+				if (controller.signal.aborted) return;
+				if (product) {
+					rememberProducts([product]);
+					return;
+				}
+				// Sólo si la línea todavía lo tiene: el usuario pudo cambiarlo.
+				const [line, ...rest] = itemsRef.current;
+				if (line?.productId !== preselectedProductId) return;
+				void setFieldValue('items', [{ ...line, productId: '' }, ...rest]);
+			},
+			// Incierto (red, permiso): el producto queda y lo valida el envío.
+			() => undefined,
+		);
+		return () => controller.abort();
+	}, [preselectedProductId, subsidiaryId, rememberProducts, setFieldValue]);
+
+	// Un rechazo definitivo describe el lote que se envió: al editar ubicación
+	// o líneas deja de ser cierto. Uno reintentable congela el formulario, así
+	// que nunca llega a limpiarse por esta vía.
+	const { error: writeError, canRetry, clearError } = idempotentWrite;
+	useEffect(() => {
+		if (writeError && !canRetry) clearError();
+		// Sólo ante cambios del lote, no cuando aparece el error.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [values.location, values.items]);
 
 	const setItem = useCallback(
 		(index: number, patch: Partial<IAjusteItemDraft>) => {
@@ -366,23 +437,38 @@ export default function useInventoryAdjustment(
 		[setValues, setTouched, values, touched],
 	);
 
+	/*
+	 * Errores de línea del último 422 (`items.N.campo`). Se derivan del error de
+	 * escritura, así que desaparecen con él al editar la ubicación o las líneas.
+	 */
+	const serverLineErrors = useMemo(
+		() => ajusteLineErrorsFrom(writeError?.fieldErrors ?? null),
+		[writeError],
+	);
+	const serverLineErrorCount = Object.keys(serverLineErrors).length;
+
 	/**
 	 * Formik guarda los errores de un arreglo como `FormikErrors<T>[]` o como la
 	 * cadena del `test` de nivel arreglo; sólo el primero trae mensajes por línea.
 	 *
-	 * Se esperan al primer intento de avanzar o enviar: cambiar la ubicación
-	 * valida el formulario entero y marcaría en rojo líneas que nadie editó aún.
+	 * Los de Yup se esperan al primer intento de avanzar o enviar: cambiar la
+	 * ubicación valida el formulario entero y marcaría en rojo líneas que nadie
+	 * editó aún. Los del servidor existen sólo tras un envío y valen siempre;
+	 * uno de Yup sobre el mismo campo tiene prioridad porque describe el valor
+	 * actual.
 	 */
+
 	const errorFor = useCallback(
 		(index: number, field: keyof IAjusteItemDraft): string | undefined => {
-			if (formik.submitCount === 0 && !itemsChecked) return undefined;
-			if (!Array.isArray(formik.errors.items)) return undefined;
+			const serverMessage = serverLineErrors[index]?.[field];
+			if (formik.submitCount === 0 && !itemsChecked) return serverMessage;
+			if (!Array.isArray(formik.errors.items)) return serverMessage;
 			const lineErrors = formik.errors.items[index];
-			if (!lineErrors || typeof lineErrors === 'string') return undefined;
+			if (!lineErrors || typeof lineErrors === 'string') return serverMessage;
 			const message = (lineErrors as Record<string, unknown>)[field];
-			return typeof message === 'string' ? message : undefined;
+			return typeof message === 'string' ? message : serverMessage;
 		},
-		[formik.errors.items, formik.submitCount, itemsChecked],
+		[formik.errors.items, formik.submitCount, itemsChecked, serverLineErrors],
 	);
 
 	/** Marca como tocados sólo los campos del paso validado. */
@@ -435,6 +521,7 @@ export default function useInventoryAdjustment(
 		formik,
 		locationOptions,
 		products,
+		productSearch,
 		stockRows,
 		loadingStock,
 		stockError,
@@ -442,6 +529,7 @@ export default function useInventoryAdjustment(
 		hasLocation,
 		totalsFor,
 		errorFor,
+		serverLineErrorCount,
 		setLocation,
 		setItem,
 		addItem,
