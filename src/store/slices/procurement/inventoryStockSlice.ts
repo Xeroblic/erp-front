@@ -16,6 +16,7 @@ import {
 	createInventoryAdjustment,
 	createInventoryDocumentAllocation,
 	createWarehouseStockMovement,
+	listAdjustmentStock,
 	listInventoryStock,
 	listInventoryOrigins,
 } from '@/services/procurement/inventoryStock.service';
@@ -25,6 +26,8 @@ interface StockRequest {
 	branchId: number;
 	ownerContext: string;
 	params: IInventoryStockListParams;
+	/** El ajuste lee su stock con su propia bandera (`listAdjustmentStock`). */
+	forAdjustment?: boolean;
 }
 interface OriginsRequest extends Omit<StockRequest, 'params'> {
 	productId: number;
@@ -46,13 +49,19 @@ export const fetchInventoryStock = createAsyncThunk<
 	IInventoryStockResponse,
 	StockRequest,
 	{ rejectValue: string }
->('inventoryStock/list', async ({ branchId, params }, { signal, rejectWithValue }) => {
-	try {
-		return await listInventoryStock(branchId, params, signal);
-	} catch (error: unknown) {
-		return rejectWithValue(getProcurementErrorMessage(error, 'No pudimos cargar el stock.'));
-	}
-});
+>(
+	'inventoryStock/list',
+	async ({ branchId, params, forAdjustment }, { signal, rejectWithValue }) => {
+		try {
+			const list = forAdjustment ? listAdjustmentStock : listInventoryStock;
+			return await list(branchId, params, signal);
+		} catch (error: unknown) {
+			return rejectWithValue(
+				getProcurementErrorMessage(error, 'No pudimos cargar el stock.'),
+			);
+		}
+	},
+);
 export const fetchInventoryOrigins = createAsyncThunk<
 	IInventoryOriginsResponse,
 	OriginsRequest,

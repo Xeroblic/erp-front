@@ -11,6 +11,7 @@ vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
 const loadFacade = async (useMocks: boolean) => {
 	vi.resetModules();
 	vi.doMock('@/config/inventoryStock.config', () => ({ default: useMocks }));
+	vi.doMock('@/config/inventoryAdjustments.config', () => ({ default: useMocks }));
 	const facade = await import('@/services/procurement/inventoryStock.service');
 	// Tras resetModules, la clase del error es la del registro nuevo, no la de arriba.
 	const { ProcurementEndpointNotPublishedError } = await import(
@@ -27,6 +28,7 @@ const page = <T>(data: T[], total = data.length) => ({
 
 afterEach(() => {
 	vi.doUnmock('@/config/inventoryStock.config');
+	vi.doUnmock('@/config/inventoryAdjustments.config');
 	fetchData.mockReset();
 });
 

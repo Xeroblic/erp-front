@@ -10,8 +10,8 @@ import {
 } from '@/store/slices/procurement/inventoryStockSlice';
 import {
 	getInventoryAdjustableProduct,
-	getInventoryStockAvailability,
-	getInventoryWarehouses,
+	getAdjustmentStockAvailability,
+	getAdjustmentWarehouses,
 } from '@/services/procurement/inventoryStock.service';
 import type { IInventoryStockAvailability } from '@/services/procurement/inventoryStock.service';
 import {
@@ -100,7 +100,7 @@ export default function useInventoryAdjustment(
 
 	const [pagedLookup, setPagedLookup] = useState<IPagedStockLookup>(NO_PAGED_LOOKUP);
 
-	const warehouses = useMemo(() => getInventoryWarehouses(branchId), [branchId]);
+	const warehouses = useMemo(() => getAdjustmentWarehouses(branchId), [branchId]);
 	// Preselección de la URL: se resuelve una vez, al montar. Es el valor
 	// inicial del formulario, no un filtro que lo siga. El catálogo no está
 	// cargado —se busca en el servidor—, así que el producto se confirma
@@ -193,7 +193,7 @@ export default function useInventoryAdjustment(
 			// pantalla tiene que mostrar, faltante incluido.
 			const availability = [
 				...new Set(adjustment.items.map((item) => item.product_id)),
-			].flatMap((productId) => getInventoryStockAvailability(branchId, productId) ?? []);
+			].flatMap((productId) => getAdjustmentStockAvailability(branchId, productId) ?? []);
 			setResult({ adjustment, products: names, locationLabel, availability });
 			toast.success(`Ajuste registrado en ${locationLabel}.`);
 			helpers.resetForm({
@@ -226,6 +226,7 @@ export default function useInventoryAdjustment(
 		() => ({
 			branchId,
 			ownerContext: `ajuste:${context}:${session}`,
+			forAdjustment: true,
 			params: values.location
 				? {
 						...locationStockParams(values.location),

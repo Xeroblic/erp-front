@@ -1,4 +1,4 @@
-import { listInventoryStock } from '@/services/procurement/inventoryStock.service';
+import { listAdjustmentStock } from '@/services/procurement/inventoryStock.service';
 import { locationStockParams } from '@/utils/inventoryLocation.util';
 import {
 	PROCUREMENT_PER_PAGE_MAX,
@@ -27,7 +27,7 @@ export const findLocationStockRows = async (
 	for (let page = 2; page <= lastPage && pending.size > 0; page += 1) {
 		// Secuencial a propósito: se detiene en la página que completa la búsqueda.
 		// eslint-disable-next-line no-await-in-loop
-		const response = await listInventoryStock(
+		const response = await listAdjustmentStock(
 			branchId,
 			{ ...locationStockParams(location), page, per_page: LOCATION_STOCK_PAGE_SIZE },
 			signal,

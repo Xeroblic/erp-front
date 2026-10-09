@@ -1,3 +1,4 @@
+import INVENTORY_ADJUSTMENTS_USE_MOCKS from '@/config/inventoryAdjustments.config';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import * as inventoryStockMock from '@/mocks/services/inventoryStock.mock';
 import ApiService from '@/services/ApiService';
@@ -231,6 +232,24 @@ const inventoryStock: TInventoryStockService = INVENTORY_STOCK_USE_MOCKS
 	? inventoryStockMock
 	: apiInventoryStock;
 
+/**
+ * El ajuste tiene bandera propia (`VITE_INVENTORY_ADJUSTMENTS_USE_MOCKS`): en
+ * desarrollo usa el backend mientras el resto de Inventario sigue simulado.
+ * Todo lo que lee o escribe el ajuste sale de acá.
+ */
+const adjustmentStock: TInventoryStockService = INVENTORY_ADJUSTMENTS_USE_MOCKS
+	? inventoryStockMock
+	: apiInventoryStock;
+
+/** Stock de la ubicación que corrige el ajuste. */
+export const listAdjustmentStock = adjustmentStock.listInventoryStock;
+
+/** Ubicaciones que ofrece el ajuste. */
+export const getAdjustmentWarehouses = adjustmentStock.getInventoryWarehouses;
+
+/** Disponible tras el ajuste, o `null` si no se conoce. */
+export const getAdjustmentStockAvailability = adjustmentStock.getInventoryStockAvailability;
+
 /** `GET B/inventory-stock` (§3): stock actual por producto, nombre ASC e id ASC. */
 export const { listInventoryStock } = inventoryStock;
 
@@ -238,10 +257,10 @@ export const { listInventoryStock } = inventoryStock;
 export const { listInventoryOrigins } = inventoryStock;
 
 /** Productos que un ajuste puede nombrar en una ubicación, con su saldo ahí. */
-export const { searchInventoryAdjustableProducts } = inventoryStock;
+export const { searchInventoryAdjustableProducts } = adjustmentStock;
 
 /** Si un producto puede nombrarse en un ajuste, sin mirar su saldo; `null` si no. */
-export const { getInventoryAdjustableProduct } = inventoryStock;
+export const { getInventoryAdjustableProduct } = adjustmentStock;
 
 /** `POST B/inventory-stock/{product}/document-allocations` (§8): documentar stock inicial. */
 export const { createInventoryDocumentAllocation } = inventoryStock;
@@ -253,7 +272,7 @@ export const { listInitialStockAllocationsForPurchaseDocument } = inventoryStock
 export const { createWarehouseStockMovement } = inventoryStock;
 
 /** `POST B/inventory-adjustments` (§11): ajuste por conteo, todo o nada. */
-export const { createInventoryAdjustment } = inventoryStock;
+export const { createInventoryAdjustment } = adjustmentStock;
 
 /** Bodegas de la sucursal que traslados y ajustes ofrecen como ubicación. */
 export const { getInventoryWarehouses } = inventoryStock;

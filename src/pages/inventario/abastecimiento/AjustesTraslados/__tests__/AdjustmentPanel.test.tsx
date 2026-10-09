@@ -19,6 +19,11 @@ vi.mock('@/config/inventoryStock.config', () => ({
 		return context.enabled;
 	},
 }));
+vi.mock('@/config/inventoryAdjustments.config', () => ({
+	get default() {
+		return context.enabled;
+	},
+}));
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
 vi.mock('@/store', async () => {
 	const redux = await import('react-redux');

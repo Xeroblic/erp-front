@@ -30,16 +30,24 @@ const stockDouble = vi.hoisted(() => ({
 }));
 vi.mock('@/services/procurement/inventoryStock.service', async (importOriginal) => {
 	const actual = await importOriginal<typeof InventoryStockService>();
-	const listInventoryStock: TListInventoryStock = (branchId, params, signal) => {
-		stockDouble.calls.push(params ?? {});
-		return stockDouble.list
-			? stockDouble.list(branchId, params, signal)
-			: actual.listInventoryStock(branchId, params, signal);
+	const withDouble =
+		(fallback: TListInventoryStock): TListInventoryStock =>
+		(branchId, params, signal) => {
+			stockDouble.calls.push(params ?? {});
+			return stockDouble.list
+				? stockDouble.list(branchId, params, signal)
+				: fallback(branchId, params, signal);
+		};
+	return {
+		...actual,
+		listInventoryStock: withDouble(actual.listInventoryStock),
+		// El ajuste lee su stock por su propia bandera: mismo doble.
+		listAdjustmentStock: withDouble(actual.listAdjustmentStock),
 	};
-	return { ...actual, listInventoryStock };
 });
 
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
+vi.mock('@/config/inventoryAdjustments.config', () => ({ default: true }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ branchId: 4, subsidiaryId: 2 }),
 }));

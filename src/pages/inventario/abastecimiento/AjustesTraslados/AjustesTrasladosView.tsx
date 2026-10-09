@@ -6,6 +6,7 @@ import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subhead
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Alert from '@/components/ui/Alert';
 import Tabs, { Tab } from '@/components/ui/Tabs';
+import INVENTORY_ADJUSTMENTS_USE_MOCKS from '@/config/inventoryAdjustments.config';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import Pages from '@/config/pages.config';
 import useAjustesTraslados from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useAjustesTraslados';
@@ -157,10 +158,11 @@ const AjustesTrasladosView = () => {
 			    descendiente pesa más que la utilidad del componente, y `:not(:disabled)`
 			    conserva el gris de los campos bloqueados. */}
 			<Container className='space-y-6 [&_input:not(:disabled)]:bg-white dark:[&_input:not(:disabled)]:bg-zinc-900 [&_select:not(:disabled)]:bg-white dark:[&_select:not(:disabled)]:bg-zinc-900 [&_textarea:not(:disabled)]:bg-white dark:[&_textarea:not(:disabled)]:bg-zinc-900'>
-				{INVENTORY_STOCK_USE_MOCKS && (
+				{(INVENTORY_STOCK_USE_MOCKS || INVENTORY_ADJUSTMENTS_USE_MOCKS) && (
 					<Alert color='amber' title='Datos simulados'>
-						Pantalla de demostración. Los ajustes y traslados no afectan al inventario
-						real.
+						{INVENTORY_ADJUSTMENTS_USE_MOCKS
+							? 'Pantalla de demostración. Los ajustes y traslados no afectan al inventario real.'
+							: 'Los traslados usan datos simulados. El ajuste escribe en el backend.'}
 					</Alert>
 				)}
 				{content}
