@@ -9,6 +9,7 @@ import {
 	inventoryStockQueryKey,
 } from '@/store/slices/procurement/inventoryStockSlice';
 import {
+	getInventoryAdjustableProduct,
 	getInventoryStockAvailability,
 	getInventoryWarehouses,
 } from '@/services/procurement/inventoryStock.service';
@@ -45,8 +46,8 @@ import {
 import type {
 	IInventoryAdjustment,
 	IInventoryAdjustmentPayload,
+	IInventoryProductRef,
 	IInventoryStockRow,
-	IProcurementProduct,
 } from '@/interface/procurement.interface';
 
 export type TProductNames = Record<number, { name: string; sku: string }>;
@@ -101,9 +102,9 @@ export default function useInventoryAdjustment(
 
 	const warehouses = useMemo(() => getInventoryWarehouses(branchId), [branchId]);
 	// Preselección de la URL: se resuelve una vez, al montar. Es el valor
-	// inicial del formulario, no un filtro que lo siga. El producto no se
-	// contrasta con el catálogo —se busca en el servidor, no está cargado—: lo
-	// confirma la fila de stock de la ubicación (ver `preselectionChecked`).
+	// inicial del formulario, no un filtro que lo siga. El catálogo no está
+	// cargado —se busca en el servidor—, así que el producto se confirma
+	// después, al montar (ver `preselectedProductId`).
 	const [initialSelection] = useState(() => {
 		const location = resolvePreselectedLocation(preselection.location, warehouses);
 		const productId: number | '' =
@@ -119,7 +120,7 @@ export default function useInventoryAdjustment(
 	const stockRowsRef = useRef<IInventoryStockRow[]>([]);
 	// `onSubmit` no puede depender del catálogo por cierre sin volver a crear el
 	// formulario en cada render: la ref le da el valor vigente al escribir.
-	const productsRef = useRef<IProcurementProduct[]>([]);
+	const productsRef = useRef<IInventoryProductRef[]>([]);
 
 	const labelFor = useCallback(
 		(token: string): string => {
@@ -346,32 +347,36 @@ export default function useInventoryAdjustment(
 	);
 
 	/*
-	 * El producto de la URL se nombra con su fila de stock. Si la ubicación ya
-	 * terminó de cargar y no lo tiene, no hay cómo nombrarlo ni de saber si es
-	 * de la filial: se descarta y el asistente pide buscarlo, como cuando el
-	 * catálogo estaba cargado entero.
+	 * El producto de la URL se valida por elegibilidad —de la filial y no
+	 * serializado, la misma regla con que el backend acepta `items.*.product_id`—
+	 * y no por su saldo: el acceso directo sirve justamente para registrar
+	 * unidades encontradas de un producto en cero. Si no es elegible se
+	 * descarta; si la consulta falla, se conserva y el backend lo valida al
+	 * enviar, en su línea.
 	 */
-	const [preselectionChecked, setPreselectionChecked] = useState(
-		initialSelection.productId === '',
-	);
+	const itemsRef = useRef(values.items);
+	itemsRef.current = values.items;
+	const preselectedProductId = initialSelection.productId;
 	useEffect(() => {
-		if (preselectionChecked || loadingStock || stockError) return;
-		setPreselectionChecked(true);
-		const { productId } = initialSelection;
-		const line = values.items[0];
-		if (line?.productId !== productId || totalsFor(productId) !== null) return;
-		if (products.some((product) => product.id === productId)) return;
-		void setFieldValue('items', [{ ...line, productId: '' }, ...values.items.slice(1)]);
-	}, [
-		preselectionChecked,
-		loadingStock,
-		stockError,
-		initialSelection,
-		values.items,
-		totalsFor,
-		products,
-		setFieldValue,
-	]);
+		if (preselectedProductId === '' || subsidiaryId === null) return undefined;
+		const controller = new AbortController();
+		getInventoryAdjustableProduct(subsidiaryId, preselectedProductId, controller.signal).then(
+			(product) => {
+				if (controller.signal.aborted) return;
+				if (product) {
+					rememberProducts([product]);
+					return;
+				}
+				// Sólo si la línea todavía lo tiene: el usuario pudo cambiarlo.
+				const [line, ...rest] = itemsRef.current;
+				if (line?.productId !== preselectedProductId) return;
+				void setFieldValue('items', [{ ...line, productId: '' }, ...rest]);
+			},
+			// Incierto (red, permiso): el producto queda y lo valida el envío.
+			() => undefined,
+		);
+		return () => controller.abort();
+	}, [preselectedProductId, subsidiaryId, rememberProducts, setFieldValue]);
 
 	// Un rechazo definitivo describe el lote que se envió: al editar ubicación
 	// o líneas deja de ser cierto. Uno reintentable congela el formulario, así

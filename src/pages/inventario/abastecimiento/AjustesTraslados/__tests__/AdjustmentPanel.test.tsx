@@ -260,6 +260,24 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		);
 	});
 
+	it('no ofrece las coincidencias del término anterior mientras se escribe otro', async () => {
+		renderPage();
+		await chooseMainWarehouse();
+		const search = screen.getByLabelText('Buscar Producto de la línea 1');
+		const product = screen.getByLabelText('Producto de la línea 1');
+		fireEvent.change(search, { target: { value: 'CBL-HDMI-2' } });
+		await waitFor(() =>
+			expect(within(product).getByRole('option', { name: /Cable/ })).toBeInTheDocument(),
+		);
+
+		// Sin esperar el debounce: el cable ya no responde a lo escrito.
+		fireEvent.change(search, { target: { value: 'MOUSE-001' } });
+		expect(within(product).queryByRole('option', { name: /Cable/ })).not.toBeInTheDocument();
+		await waitFor(() =>
+			expect(within(product).getByRole('option', { name: /Mouse USB/ })).toBeInTheDocument(),
+		);
+	});
+
 	it('ofrece el catálogo aunque el producto no tenga saldo en esa ubicación', async () => {
 		renderPage();
 		// «Sin ubicación» no tiene ni una unidad de cable: el conteo que las

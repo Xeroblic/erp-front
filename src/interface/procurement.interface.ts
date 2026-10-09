@@ -333,6 +333,12 @@ export type IInventoryStockResponse = IApiCollectionEnvelope<
 > & { context: IInventoryLocationContext };
 
 /**
+ * Lo mínimo para nombrar un producto en una línea de ajuste. `sku` vacío
+ * cuando el catálogo no lo tiene.
+ */
+export type IInventoryProductRef = Pick<IProcurementProduct, 'id' | 'sku' | 'name'>;
+
+/**
  * Productos que un conteo puede nombrar en una ubicación, con su saldo ahí
  * (ceros si no tiene). Sale de `inventory-stock?include_empty=1&search=`.
  */

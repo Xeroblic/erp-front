@@ -129,6 +129,35 @@ describe('inventoryStock.service (fachada)', () => {
 			);
 		});
 
+		it('valida un producto preseleccionado por elegibilidad, no por saldo', async () => {
+			const facade = await loadFacade(false);
+			fetchData
+				.mockResolvedValueOnce({
+					data: { data: { id: 58, sku: 'CBL', name: 'Cable', serial_tracking: false } },
+				})
+				.mockResolvedValueOnce({
+					data: { data: { id: 7, sku: 'NB', name: 'Notebook', serial_tracking: true } },
+				})
+				.mockRejectedValueOnce({ isAxiosError: true, response: { status: 404, data: {} } })
+				.mockRejectedValueOnce({ isAxiosError: true, response: { status: 500, data: {} } })
+				.mockResolvedValueOnce({ data: '<html>' });
+
+			await expect(facade.getInventoryAdjustableProduct(2, 58)).resolves.toEqual({
+				id: 58,
+				sku: 'CBL',
+				name: 'Cable',
+			});
+			// Serializado o de otra filial (404): el backend rechazaría la línea.
+			await expect(facade.getInventoryAdjustableProduct(2, 7)).resolves.toBeNull();
+			await expect(facade.getInventoryAdjustableProduct(2, 99)).resolves.toBeNull();
+			// Un 500 o un cuerpo ilegible no prueban nada: se propaga como incierto.
+			await expect(facade.getInventoryAdjustableProduct(2, 58)).rejects.toBeDefined();
+			await expect(facade.getInventoryAdjustableProduct(2, 58)).rejects.toThrow();
+			expect(fetchData).toHaveBeenCalledWith(
+				expect.objectContaining({ url: '/subsidiaries/2/products/58', method: 'get' }),
+			);
+		});
+
 		it('recorta la búsqueda a los 100 caracteres que admite el backend', async () => {
 			const facade = await loadFacade(false);
 			fetchData.mockResolvedValueOnce({ data: { ...page([]), context: {} } });

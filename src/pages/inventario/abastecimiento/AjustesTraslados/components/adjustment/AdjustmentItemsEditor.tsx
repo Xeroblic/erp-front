@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { CONDITION_OPTIONS } from '@/components/procurement';
 import type {
+	IInventoryProductRef,
 	IInventoryStockRow,
 	IProcurementProduct,
 	TStockCondition,
@@ -27,10 +28,10 @@ export interface IAdjustmentProductSearch {
 	clearSearch: () => void;
 }
 
-const productLabel = (product: Pick<IProcurementProduct, 'sku' | 'name'>): string =>
-	`${product.sku} · ${product.name}`;
+const productLabel = (product: IInventoryProductRef): string =>
+	product.sku ? `${product.sku} · ${product.name}` : product.name;
 
-const toOption = (product: IProcurementProduct): TSelectOption => ({
+const toOption = (product: IInventoryProductRef): TSelectOption => ({
 	value: String(product.id),
 	label: productLabel(product),
 });
@@ -43,8 +44,8 @@ const keepServerMatches = (_option: unknown, inputValue: string): boolean =>
 
 export interface IAdjustmentItemsEditorProps {
 	items: IAjusteItemDraft[];
-	/** Productos ya conocidos (buscados o con saldo): nombran el valor de cada línea. */
-	products: IProcurementProduct[];
+	/** Productos ya conocidos (buscados, con saldo o de la URL): nombran cada línea. */
+	products: IInventoryProductRef[];
 	productSearch: IAdjustmentProductSearch;
 	loadingStock: boolean;
 	hasLocation: boolean;

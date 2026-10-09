@@ -232,6 +232,8 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 	});
 	describe('preselección por URL', () => {
 		const MOUSE_ID = 31;
+		/** Cable HDMI: sin unidades en «Sin ubicación» de la sucursal 4. */
+		const CABLE_ID = 58;
 		/** Estante A3, bodega de la sucursal 4 con stock del mouse. */
 		const SHELF_ID = 12;
 		/** Bodega Sucursal Sur: existe, pero es de la sucursal 6. */
@@ -272,14 +274,29 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			expect(screen.getByLabelText('Ubicación')).toHaveValue('');
 		});
 
-		it('conserva la ubicación válida y descarta un producto que la ubicación no tiene', async () => {
+		it('conserva la ubicación válida e ignora un producto que no está en el catálogo', async () => {
 			renderPage(`/?tab=ajuste&warehouse_id=${SHELF_ID}&product_id=999999`);
 
 			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
-			// Sin fila de stock no hay cómo nombrarlo: se descarta al terminar de cargar.
+			// La elegibilidad se confirma al montar: el producto inexistente se descarta.
 			await waitFor(() =>
 				expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(''),
 			);
+		});
+
+		it('conserva un producto válido aunque la ubicación lo tenga en cero', async () => {
+			// «Sin ubicación» no tiene ni una unidad del cable: es el acceso directo
+			// para registrar unidades encontradas, así que el producto se mantiene.
+			renderPage(`/?tab=ajuste&warehouse_id=unlocated&product_id=${CABLE_ID}`);
+
+			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+			const product = screen.getByLabelText('Producto de la línea 1');
+			await waitFor(() =>
+				expect(
+					within(product).getByRole('option', { name: /Cable HDMI 2 m/ }),
+				).toBeInTheDocument(),
+			);
+			expect(product).toHaveValue(String(CABLE_ID));
 		});
 
 		it('el traslado toma la bodega como origen y elige el producto cuando el origen lo tiene', async () => {

@@ -13,6 +13,7 @@ import type {
 	IInventoryAdjustmentPayload,
 	IInventoryOriginsParams,
 	IInventoryOriginsResponse,
+	IInventoryProductRef,
 	IInventoryStockAvailability,
 	IInventoryStockListParams,
 	IInventoryStockResponse,
@@ -66,6 +67,7 @@ type TInventoryStockService = Pick<
 	| 'listInventoryStock'
 	| 'listInventoryOrigins'
 	| 'searchInventoryAdjustableProducts'
+	| 'getInventoryAdjustableProduct'
 	| 'createInventoryDocumentAllocation'
 	| 'listInitialStockAllocationsForPurchaseDocument'
 	| 'createWarehouseStockMovement'
@@ -85,6 +87,29 @@ type TInventoryStockService = Pick<
 };
 
 const branchUrl = (branchId: number): string => `/branches/${branchId}`;
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+	value !== null && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: null;
+
+const NOT_FOUND_STATUS = 404;
+
+/**
+ * `ProductResource` (envuelto en `data`) es mucho más ancho que lo que nombra
+ * una línea. `null` si es serializado: el ajuste lo rechazaría igual. Un cuerpo
+ * que no se puede leer no prueba que el producto no sea elegible: se lanza, y
+ * el llamador lo trata como resultado incierto.
+ */
+const toAdjustableProductRef = (body: unknown): IInventoryProductRef | null => {
+	const record = asRecord(asRecord(body)?.data ?? body);
+	const id = record?.id;
+	const name = record?.name;
+	if (!record || typeof id !== 'number' || typeof name !== 'string')
+		throw new Error('Respuesta de producto ilegible.');
+	if (record.serial_tracking === true) return null;
+	return { id, name, sku: typeof record.sku === 'string' ? record.sku : '' };
+};
 
 /** Coincidencias por búsqueda del ajuste: el selector muestra una página corta. */
 const ADJUSTABLE_SEARCH_PER_PAGE = inventoryStockMock.INVENTORY_ADJUSTABLE_SEARCH_LIMIT;
@@ -150,6 +175,24 @@ const apiInventoryStock: TInventoryStockService = {
 			has_more: response.meta.total > response.data.length,
 		};
 	},
+	// `GET /subsidiaries/{subsidiary}/products/{product}` (`view-product`):
+	// responde 404 si el producto es de otra filial. Es la regla con que el
+	// backend valida `items.*.product_id` (de la filial y no serializado), sin
+	// depender del saldo: un conteo puede nombrar un producto en cero.
+	getInventoryAdjustableProduct: async (subsidiaryId, productId, signal) => {
+		try {
+			const response = await ApiService.fetchData<unknown>({
+				url: `/subsidiaries/${subsidiaryId}/products/${productId}`,
+				method: 'get',
+				signal,
+			});
+			return toAdjustableProductRef(response.data);
+		} catch (error: unknown) {
+			const status = asRecord(asRecord(error)?.response)?.status;
+			if (status === NOT_FOUND_STATUS) return null;
+			throw error;
+		}
+	},
 	createInventoryAdjustment: async (branchId, payload, headers = {}) => {
 		const response = await ApiService.fetchData<
 			IApiResourceEnvelope<IInventoryAdjustment>,
@@ -196,6 +239,9 @@ export const { listInventoryOrigins } = inventoryStock;
 
 /** Productos que un ajuste puede nombrar en una ubicación, con su saldo ahí. */
 export const { searchInventoryAdjustableProducts } = inventoryStock;
+
+/** Si un producto puede nombrarse en un ajuste, sin mirar su saldo; `null` si no. */
+export const { getInventoryAdjustableProduct } = inventoryStock;
 
 /** `POST B/inventory-stock/{product}/document-allocations` (§8): documentar stock inicial. */
 export const { createInventoryDocumentAllocation } = inventoryStock;

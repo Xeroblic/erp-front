@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { searchInventoryAdjustableProducts } from '@/services/procurement/inventoryStock.service';
 import { locationStockParams } from '@/utils/inventoryLocation.util';
 import { getProcurementErrorMessage } from '@/utils/procurementErrors.util';
-import type { IProcurementProduct } from '@/interface/procurement.interface';
+import type { IInventoryProductRef, IProcurementProduct } from '@/interface/procurement.interface';
 
 export const ADJUSTABLE_SEARCH_DEBOUNCE_MS = 300;
 
@@ -31,14 +31,14 @@ export default function useAdjustableProductSearch(
 	const [search, setSearch] = useState('');
 	const [query, setQuery] = useState('');
 	const [result, setResult] = useState<ISearchResult | null>(null);
-	const [known, setKnown] = useState<ReadonlyMap<number, IProcurementProduct>>(() => new Map());
+	const [known, setKnown] = useState<ReadonlyMap<number, IInventoryProductRef>>(() => new Map());
 
 	useEffect(() => {
 		const timer = setTimeout(() => setQuery(search.trim()), ADJUSTABLE_SEARCH_DEBOUNCE_MS);
 		return () => clearTimeout(timer);
 	}, [search]);
 
-	const remember = useCallback((products: readonly IProcurementProduct[]) => {
+	const remember = useCallback((products: readonly IInventoryProductRef[]) => {
 		if (products.length === 0) return;
 		setKnown((previous) => {
 			if (products.every((product) => previous.get(product.id) === product)) return previous;
@@ -82,7 +82,15 @@ export default function useAdjustableProductSearch(
 	}, [branchId, subsidiaryId, location, query, key, enabled, remember]);
 
 	const current = result?.key === key ? result : null;
-	const options = useMemo(() => (enabled && current ? current.products : []), [enabled, current]);
+	// Mientras corre el debounce, `query` todavía es el término anterior: sus
+	// coincidencias no responden a lo que está escrito y elegir una nombraría un
+	// producto ajeno a la búsqueda. Se ofrecen sólo cuando el texto y el término
+	// consultado coinciden.
+	const settled = search.trim() === query;
+	const options = useMemo(
+		() => (enabled && settled && current ? current.products : []),
+		[enabled, settled, current],
+	);
 
 	/** Sin esperar el debounce: el próximo menú no debe abrir con el término anterior. */
 	const clearSearch = useCallback(() => {
@@ -95,7 +103,7 @@ export default function useAdjustableProductSearch(
 	return {
 		options,
 		/** También mientras corre el debounce: lo que se ve aún no es de este término. */
-		loading: search.trim() !== '' && (search.trim() !== query || (enabled && !current)),
+		loading: search.trim() !== '' && (!settled || (enabled && !current)),
 		error: current?.error ?? null,
 		onSearchChange: setSearch,
 		clearSearch,

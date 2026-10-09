@@ -4,6 +4,7 @@ import type {
 	IApiPaginationMeta,
 	IInventoryAdjustableProductsPage,
 	IInventoryAdjustment,
+	IInventoryProductRef,
 	IInventoryAdjustmentItem,
 	IInventoryAdjustmentPayload,
 	IInventoryDocumentAllocation,
@@ -1080,6 +1081,21 @@ export const searchInventoryAdjustableProducts = async (
 			),
 	);
 	return delay({ data, has_more: matches.length > data.length }, signal);
+};
+
+/**
+ * Elegibilidad de un producto para el ajuste, sin mirar su saldo: no
+ * serializado y de la filial. `null` si no lo es.
+ */
+export const getInventoryAdjustableProduct = async (
+	subsidiaryId: number,
+	productId: number,
+	signal?: AbortSignal,
+): Promise<IInventoryProductRef | null> => {
+	const product = getInventoryAdjustableProducts(subsidiaryId).find(
+		(candidate) => candidate.id === productId,
+	);
+	return delay(product ? { id: product.id, sku: product.sku, name: product.name } : null, signal);
 };
 
 const originsFor = (
