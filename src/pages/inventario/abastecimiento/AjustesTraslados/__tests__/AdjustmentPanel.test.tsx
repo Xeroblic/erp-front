@@ -6,8 +6,13 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
-import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
+import {
+	FAKE_ALFA,
+	FAKE_BETA,
+	resetAdjustmentFake,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/__tests__/adjustmentFakeBackend';
 import * as service from '@/services/procurement/inventoryStock.service';
+import type { IInventoryStockRow } from '@/interface/procurement.interface';
 
 const context = vi.hoisted(() => ({
 	branchId: 4 as number | null,
@@ -24,6 +29,14 @@ vi.mock('@/config/inventoryAdjustments.config', () => ({
 		return context.enabled;
 	},
 }));
+/** El ajuste lee y escribe en un backend falso con datos propios de la prueba. */
+vi.mock('@/services/procurement/inventoryStock.service', async (importOriginal) => {
+	const actual = await importOriginal<object>();
+	const { adjustmentFakeService } = await import(
+		'@/pages/inventario/abastecimiento/AjustesTraslados/__tests__/adjustmentFakeBackend'
+	);
+	return { ...actual, ...adjustmentFakeService };
+});
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
 vi.mock('@/store', async () => {
 	const redux = await import('react-redux');
@@ -175,11 +188,14 @@ const goToReason = async (reason?: string) => {
 	if (reason) fireEvent.change(field, { target: { value: reason } });
 };
 
-/** La bodega principal es la del fixture canónico del cable: 100 aptos. */
+/** Bodega principal del backend falso: 100 aptos de «Producto alfa». */
 const chooseMainWarehouse = () => chooseLocation('warehouse:8');
 
-/** Término que encuentra cada producto de los fixtures en el buscador. */
-const SEARCH_TERMS: Record<string, string> = { '58': 'CBL-HDMI-2', '31': 'MOUSE-001' };
+const ALFA = String(FAKE_ALFA.id);
+const BETA = String(FAKE_BETA.id);
+
+/** Término que encuentra cada producto del backend falso en el buscador. */
+const SEARCH_TERMS: Record<string, string> = { [ALFA]: FAKE_ALFA.sku, [BETA]: FAKE_BETA.sku };
 
 /**
  * Completa una línea del ajuste con producto y delta firmado. El selector
@@ -206,7 +222,7 @@ beforeEach(() => {
 	context.enabled = true;
 });
 afterEach(() => {
-	resetInventoryStockStoreForTests();
+	resetAdjustmentFake();
 	vi.restoreAllMocks();
 });
 
@@ -214,7 +230,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 	it('aplica un egreso y muestra la tabla antes/después de físico, apto y no apto', async () => {
 		renderPage();
 		await chooseMainWarehouse();
-		await fillLine('58', '-2');
+		await fillLine(ALFA, '-2');
 		await goToReason('Conteo físico: faltan dos unidades');
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 
@@ -222,13 +238,13 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 			name: 'Saldos antes y después del ajuste',
 		});
 		expect(screen.getByText(/Egreso de/)).toHaveTextContent(
-			'Egreso de 2 unidades aptas de Cable HDMI 2 m.',
+			'Egreso de 2 unidades aptas de Producto alfa.',
 		);
 
 		const row = within(table).getAllByRole('row')[1];
 		const cells = within(row).getAllByRole('cell');
 		expect(cells[2]).toHaveTextContent('-2');
-		// El fixture canónico del cable son 100 físicos aptos en la bodega principal:
+		// Alfa tiene 100 físicos aptos en la bodega principal:
 		// «Stock anterior» y «Stock final» son de la condición ajustada (apto).
 		expect(cells[3]).toHaveTextContent('100');
 		expect(cells[4]).toHaveTextContent('98');
@@ -250,7 +266,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 	it('registra un ingreso positivo sin procedencia y lo confirma', async () => {
 		renderPage();
 		await chooseMainWarehouse();
-		await fillLine('58', '3');
+		await fillLine(ALFA, '3');
 		await goToReason('Conteo: aparecen tres unidades');
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 
@@ -261,34 +277,76 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		expect(cells[2]).toHaveTextContent('+3');
 		expect(cells[4]).toHaveTextContent('103');
 		expect(screen.getByText(/Ingreso de/)).toHaveTextContent(
-			'Ingreso de 3 unidades aptas de Cable HDMI 2 m.',
+			'Ingreso de 3 unidades aptas de Producto alfa.',
 		);
 	});
 
 	it('no ofrece las coincidencias del término anterior mientras se escribe otro', async () => {
+		// Datos propios de la prueba: cada término devuelve un único producto.
+		const resultFor = (term: string): IInventoryStockRow[] => {
+			const name = { alfa: 'Producto alfa', beta: 'Producto beta' }[term];
+			if (!name) return [];
+			return [
+				{
+					product: {
+						id: term === 'alfa' ? 9001 : 9002,
+						sku: term.toUpperCase(),
+						commercial_sku: null,
+						name,
+						short_description: null,
+						serial_tracking: false,
+						grade: null,
+						currency_code: 'CLP',
+						price: null,
+						offer_price: null,
+						cost: null,
+						cost_basis: 'unknown',
+						brand: null,
+						categories: [],
+						image: null,
+						is_active: true,
+					},
+					physical_quantity: 0,
+					fit_quantity: 0,
+					unfit_quantity: 0,
+					documented_quantity: 0,
+					undocumented_quantity: 0,
+				},
+			];
+		};
+		vi.spyOn(service, 'searchInventoryAdjustableProducts').mockImplementation(
+			(_branchId, _subsidiaryId, _location, term) =>
+				Promise.resolve({ data: resultFor(term), has_more: false }),
+		);
 		renderPage();
 		await chooseMainWarehouse();
 		const search = screen.getByLabelText('Buscar Producto de la línea 1');
 		const product = screen.getByLabelText('Producto de la línea 1');
-		fireEvent.change(search, { target: { value: 'CBL-HDMI-2' } });
+		fireEvent.change(search, { target: { value: 'alfa' } });
 		await waitFor(() =>
-			expect(within(product).getByRole('option', { name: /Cable/ })).toBeInTheDocument(),
+			expect(
+				within(product).getByRole('option', { name: /Producto alfa/ }),
+			).toBeInTheDocument(),
 		);
 
-		// Sin esperar el debounce: el cable ya no responde a lo escrito.
-		fireEvent.change(search, { target: { value: 'MOUSE-001' } });
-		expect(within(product).queryByRole('option', { name: /Cable/ })).not.toBeInTheDocument();
+		// Sin esperar el debounce: «alfa» ya no responde a lo escrito.
+		fireEvent.change(search, { target: { value: 'beta' } });
+		expect(
+			within(product).queryByRole('option', { name: /Producto alfa/ }),
+		).not.toBeInTheDocument();
 		await waitFor(() =>
-			expect(within(product).getByRole('option', { name: /Mouse USB/ })).toBeInTheDocument(),
+			expect(
+				within(product).getByRole('option', { name: /Producto beta/ }),
+			).toBeInTheDocument(),
 		);
 	});
 
 	it('ofrece el catálogo aunque el producto no tenga saldo en esa ubicación', async () => {
 		renderPage();
-		// «Sin ubicación» no tiene ni una unidad de cable: el conteo que las
+		// «Sin ubicación» no tiene ni una unidad de alfa: el conteo que las
 		// encuentra tiene que poder nombrarlo igual.
 		await chooseLocation('unlocated');
-		await fillLine('58', '3');
+		await fillLine(ALFA, '3');
 		await goToReason('Conteo: aparecen tres sin ubicar');
 
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
@@ -321,13 +379,13 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 	it('muestra el faltante frente a reservas sin truncarlo en cero', async () => {
 		renderPage();
 		await chooseLocation('unlocated');
-		await fillLine('31', '-3');
-		await goToReason('Conteo físico: faltan tres mouse');
+		await fillLine(BETA, '-3');
+		await goToReason('Conteo físico: faltan tres unidades');
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
 
-		// El fixture reserva 16 de los 17 aptos de la sucursal: restar 3 deja el
+		// El backend falso reserva 16 de los 17 aptos de beta: restar 3 deja el
 		// disponible en −2, y eso se muestra.
-		const available = await screen.findByTestId('ajuste-disponible-31');
+		const available = await screen.findByTestId(`ajuste-disponible-${BETA}`);
 		expect(available).toHaveTextContent('-2');
 		expect(screen.getByRole('alert')).toHaveTextContent(
 			'2 unidades reservadas no tienen stock que las respalde.',
@@ -373,7 +431,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		expect(follows(products, product)).toBe(true);
 		expect(follows(product, screen.getByRole('button', { name: 'Siguiente' }))).toBe(true);
 
-		await fillLine('58', '-1');
+		await fillLine(ALFA, '-1');
 		await activate('Siguiente');
 		// «Siguiente» desaparece en el último paso: el foco no puede caer en <body>.
 		const confirmation = await screen.findByRole('heading', {
@@ -398,7 +456,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 	it('no avanza con una cantidad de cero ni envía sin motivo', async () => {
 		renderPage();
 		await chooseMainWarehouse();
-		await fillLine('58', '0');
+		await fillLine(ALFA, '0');
 		await clickNext();
 		expect(
 			await screen.findByText('La cantidad de ajuste no puede ser cero.'),
@@ -420,7 +478,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 	it('explica el rechazo cuando el egreso dejaría el saldo bajo cero', async () => {
 		renderPage();
 		await chooseMainWarehouse();
-		await fillLine('58', '-9999');
+		await fillLine(ALFA, '-9999');
 
 		// Aviso en la línea antes de intentar escribir.
 		expect(
@@ -462,7 +520,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 			});
 		renderPage();
 		await chooseMainWarehouse();
-		await fillLine('58', '-2');
+		await fillLine(ALFA, '-2');
 		await goToReason('Conteo');
 
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
@@ -502,7 +560,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		const finalBalance = screen.getByTestId('ajuste-stock-resultante-0');
 		expect(finalBalance).toHaveTextContent('—');
 
-		await fillLine('58', '-2');
+		await fillLine(ALFA, '-2');
 		await waitFor(() => expect(finalBalance).toHaveTextContent('98'));
 
 		fireEvent.change(screen.getByLabelText('Cantidad de ajuste de la línea 1'), {
