@@ -181,8 +181,13 @@ export const useStockAdjustment = () => {
 				const status = apiError?.response?.status;
 				const apiMessage = apiError?.response?.data?.message;
 
+				// El backend exige alcance sobre la sucursal del ajuste, no sólo sobre
+				// la filial: estar asignado a una sucursal no alcanza a las demás. Su
+				// mensaje de 403 es genérico, así que se nombra la causa acá.
 				if (status === 403) {
-					toast.error('No tienes permisos para ajustar stock en esta subsidiaria (403).');
+					toast.error(
+						'No tienes permiso para ajustar el stock de esta sucursal. Elige una sucursal a la que tengas acceso.',
+					);
 					return false;
 				}
 
