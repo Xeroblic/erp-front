@@ -23,6 +23,11 @@ vi.mock('@/config/inventoryAdjustments.config', () => ({
 		return context.enabled;
 	},
 }));
+vi.mock('@/config/inventoryTransfers.config', () => ({
+	get default() {
+		return context.enabled;
+	},
+}));
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
 vi.mock('@/store', async () => {
 	const redux = await import('react-redux');
@@ -123,6 +128,13 @@ const renderPage = () => {
 	return { ...view, store };
 };
 
+/** Las bodegas llegan después del primer render: el asistente se monta con ellas. */
+const renderReadyPage = async () => {
+	const view = renderPage();
+	await screen.findByLabelText('Origen');
+	return view;
+};
+
 /**
  * `Button` descarta un segundo clic mientras dura su guarda anti doble clic: se
  * espera a que «Siguiente» vuelva a estar habilitado antes de pulsarlo.
@@ -176,7 +188,7 @@ afterEach(() => {
 
 describe('Traslados internos — integración de vista, hook, slice y servicio', () => {
 	it('registra un traslado y lo confirma como 5 unidades movidas con neto cero', async () => {
-		renderPage();
+		await renderReadyPage();
 		expect(screen.getByText('Datos simulados')).toBeInTheDocument();
 
 		await chooseRoute();
@@ -213,7 +225,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 	});
 
 	it('antes de registrar resume qué se mueve, de dónde y a dónde', async () => {
-		renderPage();
+		await renderReadyPage();
 		await chooseRoute();
 		fillLine('31', '5');
 
@@ -230,7 +242,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 	});
 
 	it('no marca en rojo las líneas en blanco al elegir el origen', async () => {
-		renderPage();
+		await renderReadyPage();
 		fireEvent.change(screen.getByLabelText('Origen'), { target: { value: 'unlocated' } });
 		// El origen recién elegido no se valida como vacío.
 		await waitFor(() => expect(screen.getByLabelText('Origen')).toHaveValue('unlocated'));
@@ -245,7 +257,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 	});
 
 	it('no avanza sin destino', async () => {
-		renderPage();
+		await renderReadyPage();
 		fireEvent.change(screen.getByLabelText('Origen'), { target: { value: 'unlocated' } });
 		await clickNext();
 		expect(await screen.findByText('Selecciona una ubicación de destino.')).toBeInTheDocument();
@@ -253,7 +265,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 	});
 
 	it('no ofrece cambiar la condición dentro del traslado', async () => {
-		renderPage();
+		await renderReadyPage();
 		await chooseRoute();
 
 		expect(screen.getByLabelText('Condición de la línea 1')).toBeInTheDocument();
@@ -261,7 +273,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 	});
 
 	it('no ofrece una ubicación de otra sucursal como destino, y excluye el origen elegido', async () => {
-		renderPage();
+		await renderReadyPage();
 		const destination = screen.getByLabelText('Destino');
 		const optionNames = () =>
 			within(destination)
@@ -277,7 +289,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 	});
 
 	it('explica el 409 de saldo insuficiente sin dejar el mensaje en genérico', async () => {
-		renderPage();
+		await renderReadyPage();
 		await chooseRoute();
 		fillLine('31', '999');
 		await goToReason('Mover de más');
@@ -292,7 +304,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 	});
 
 	it('no envía sin motivo', async () => {
-		renderPage();
+		await renderReadyPage();
 		await chooseRoute();
 		fillLine('31', '1');
 		await goToReason();
@@ -304,7 +316,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		).not.toBeInTheDocument();
 	});
 
-	it('bloquea la pantalla sin `edit-product`, sin sucursal y con los mocks apagados', () => {
+	it('bloquea la pantalla sin `edit-product` y sin sucursal', () => {
 		const store = configureStore({ reducer: { inventoryStock, auth: auth.reducer } });
 		store.dispatch(auth.actions.deny());
 		render(
@@ -320,12 +332,6 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		context.branchId = null;
 		renderPage();
 		expect(screen.getByText('Selecciona una sucursal')).toBeInTheDocument();
-
-		context.branchId = 4;
-		context.enabled = false;
-		renderPage();
-		// El backend no publica los traslados: la pestaña lo explica y no monta el formulario.
-		expect(screen.getByText('Traslados internos no habilitados')).toBeInTheDocument();
 		expect(screen.queryAllByLabelText('Origen')).toHaveLength(0);
 	});
 });

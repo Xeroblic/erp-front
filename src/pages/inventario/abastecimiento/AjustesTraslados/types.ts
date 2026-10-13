@@ -110,3 +110,46 @@ export type TAjusteStep = (typeof AJUSTE_STEPS)[number];
 /** Pasos del asistente de traslado, en orden. */
 export const TRASLADO_STEPS = ['route', 'items', 'reason'] as const;
 export type TTrasladoStep = (typeof TRASLADO_STEPS)[number];
+
+/** Errores del servidor por línea: índice del formulario → campo → mensaje. */
+export type TItemLineErrors<TField extends string> = Record<
+	number,
+	Partial<Record<TField, string>>
+>;
+
+const ITEM_FIELD_PATTERN = /^items\.(\d+)\.(\w+)$/;
+
+/**
+ * Errores de línea de un 422 (`items.N.campo`) por línea del formulario: el
+ * backend no reordena, así que `N` es la posición enviada. Un campo que el
+ * formulario no conoce se marca en `fallback`. Se queda con el primer mensaje
+ * de cada campo.
+ */
+export const itemLineErrorsFrom = <TField extends string>(
+	fieldErrors: Record<string, string[]> | null,
+	fieldMap: Readonly<Record<string, TField>>,
+	fallback: TField,
+): TItemLineErrors<TField> => {
+	const lines: TItemLineErrors<TField> = {};
+	Object.entries(fieldErrors ?? {}).forEach(([apiField, messages]) => {
+		const match = ITEM_FIELD_PATTERN.exec(apiField);
+		if (!match || !messages[0]) return;
+		const index = Number(match[1]);
+		const field = fieldMap[match[2]] ?? fallback;
+		const line: Partial<Record<TField, string>> = lines[index] ?? {};
+		line[field] ??= messages[0];
+		lines[index] = line;
+	});
+	return lines;
+};
+
+/**
+ * Unidades sin procedencia que un `409 INSUFFICIENT_LOCATION_STOCK` informa en
+ * `context`. Ajuste y traslado sólo pueden tomar unidades con procedencia; un
+ * respaldo automático las regulariza cada 15 minutos, así que la misma
+ * operación puede pasar más tarde (con una clave nueva).
+ */
+export const unattributedFromContext = (context: Record<string, unknown> | null): number => {
+	const value = context?.unattributed_quantity;
+	return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+};

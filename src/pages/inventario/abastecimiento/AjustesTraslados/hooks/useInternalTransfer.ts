@@ -8,18 +8,18 @@ import {
 	fetchInventoryStock,
 	inventoryStockQueryKey,
 } from '@/store/slices/procurement/inventoryStockSlice';
-import {
-	getInventoryWarehouses,
-	listInventoryStock,
-} from '@/services/procurement/inventoryStock.service';
+import { listTransferStock } from '@/services/procurement/inventoryStock.service';
 import {
 	locationStockParams,
 	locationToken,
 	warehouseIdFromToken,
 } from '@/utils/inventoryLocation.util';
+import { applyProcurementFieldErrors } from '@/utils/procurementErrors.util';
 import {
 	emptyTrasladoItem,
+	TRASLADO_FORM_FIELDS,
 	TrasladoSchema,
+	trasladoLineErrorsFrom,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/transfer.types';
 import type {
 	ITrasladoFormValues,
@@ -39,6 +39,7 @@ import {
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/locationStockLookup';
 import type {
 	IInventoryStockRow,
+	ITransferWarehouse,
 	IWarehouseStockMovement,
 	IWarehouseStockMovementPayload,
 	TStockCondition,
@@ -64,10 +65,14 @@ export interface ITrasladoResult {
  * Lo monta una sesión con `key` de usuario/filial/sucursal: un cambio de
  * contexto desmonta el formulario en vez de dejar que un efecto de limpieza
  * alcance a borrarlo.
+ *
+ * Recibe las bodegas ya cargadas: la preselección de la URL se resuelve contra
+ * ellas al montar, así que no puede llegar antes que la lista.
  */
 export default function useInternalTransfer(
 	branchId: number,
 	context: string,
+	warehouses: readonly ITransferWarehouse[],
 	preselection: IAjustesTrasladosPreselection = NO_PRESELECTION,
 ) {
 	const session = useId();
@@ -79,7 +84,6 @@ export default function useInternalTransfer(
 	// paso de productos, no sólo tras un envío.
 	const [itemsChecked, setItemsChecked] = useState(false);
 
-	const warehouses = useMemo(() => getInventoryWarehouses(branchId), [branchId]);
 	const [initialOrigin] = useState(
 		() => resolvePreselectedLocation(preselection.location, warehouses) ?? '',
 	);
@@ -141,14 +145,30 @@ export default function useInternalTransfer(
 			const fromLabel = labelFor(formValues.from);
 			const toLabel = labelFor(formValues.to);
 
-			const movement = await idempotentWrite.submit((headers) =>
-				dispatch(
-					createWarehouseStockMovementThunk({
-						branchId,
-						payload,
-						headers: { idempotencyKey: headers['Idempotency-Key'] },
-					}),
-				).unwrap(),
+			const movement = await idempotentWrite.submit(
+				(headers) =>
+					dispatch(
+						createWarehouseStockMovementThunk({
+							branchId,
+							payload,
+							headers: { idempotencyKey: headers['Idempotency-Key'] },
+						}),
+					).unwrap(),
+				{
+					onError: (error) => {
+						// Motivo, origen y destino se marcan en su campo; los errores
+						// de línea (`items.N.campo`) los marca `errorFor` en su línea.
+						applyProcurementFieldErrors(
+							error.fieldErrors,
+							(apiField) => TRASLADO_FORM_FIELDS[apiField],
+							helpers.setFieldError,
+						);
+						// El traslado se rechazó entero por saldo: el que muestran las
+						// líneas ya no es el vigente.
+						if (error.code === 'INSUFFICIENT_LOCATION_STOCK')
+							setRetry((value) => value + 1);
+					},
+				},
 			);
 			if (!movement) return;
 
@@ -181,6 +201,7 @@ export default function useInternalTransfer(
 		() => ({
 			branchId,
 			ownerContext: `traslado:${context}:${session}`,
+			source: 'transfer' as const,
 			params: values.from
 				? {
 						...locationStockParams(values.from),
@@ -255,7 +276,7 @@ export default function useInternalTransfer(
 		const controller = new AbortController();
 		const { from, productId, lastPage } = productLookup;
 		findLocationStockRows(
-			listInventoryStock,
+			listTransferStock,
 			branchId,
 			from,
 			[productId],
@@ -276,6 +297,26 @@ export default function useInternalTransfer(
 		);
 		return () => controller.abort();
 	}, [branchId, productLookup]);
+
+	// Un rechazo definitivo describe el traslado que se envió: al editar la ruta
+	// o las líneas deja de ser cierto. Uno reintentable congela el formulario,
+	// así que nunca llega a limpiarse por esta vía.
+	const { error: writeError, canRetry, clearError } = idempotentWrite;
+	useEffect(() => {
+		if (writeError && !canRetry) clearError();
+		// Sólo ante cambios del traslado, no cuando aparece el error.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [values.from, values.to, values.items]);
+
+	/*
+	 * Errores de línea del último 422 (`items.N.campo`). Se derivan del error de
+	 * escritura, así que desaparecen con él al editar la ruta o las líneas.
+	 */
+	const serverLineErrors = useMemo(
+		() => trasladoLineErrorsFrom(writeError?.fieldErrors ?? null),
+		[writeError],
+	);
+	const serverLineErrorCount = Object.keys(serverLineErrors).length;
 
 	const balanceFor = useCallback(
 		(productId: number | '', condition: TStockCondition): number | null => {
@@ -341,14 +382,29 @@ export default function useInternalTransfer(
 		[values.items],
 	);
 
+	// Una bodega inactiva puede ser origen, para vaciarla, pero no destino: el
+	// backend la rechaza con 422 en `to_warehouse_id`.
+	const originOptions = useMemo(
+		() => [
+			{ value: locationToken(null), label: 'Sin ubicación' },
+			...warehouses.map((warehouse) => ({
+				value: locationToken(warehouse.id),
+				label: warehouse.is_active ? warehouse.name : `${warehouse.name} (inactiva)`,
+			})),
+		],
+		[warehouses],
+	);
+
 	const destinationOptions = useMemo(
 		() =>
 			[
 				{ value: locationToken(null), label: 'Sin ubicación' },
-				...warehouses.map((warehouse) => ({
-					value: locationToken(warehouse.id),
-					label: warehouse.name,
-				})),
+				...warehouses
+					.filter((warehouse) => warehouse.is_active)
+					.map((warehouse) => ({
+						value: locationToken(warehouse.id),
+						label: warehouse.name,
+					})),
 			].filter((option) => option.value !== values.from),
 		[warehouses, values.from],
 	);
@@ -387,19 +443,23 @@ export default function useInternalTransfer(
 	 * Formik guarda los errores de un arreglo como `FormikErrors<T>[]` o como la
 	 * cadena del `test` de nivel arreglo; sólo el primero trae mensajes por línea.
 	 *
-	 * Se esperan al primer intento de avanzar o enviar: elegir el origen valida
-	 * el formulario entero y marcaría en rojo líneas que nadie editó aún.
+	 * Los de Yup se esperan al primer intento de avanzar o enviar: elegir el
+	 * origen valida el formulario entero y marcaría en rojo líneas que nadie
+	 * editó aún. Los del servidor existen sólo tras un envío y valen siempre;
+	 * uno de Yup sobre el mismo campo tiene prioridad porque describe el valor
+	 * actual.
 	 */
 	const errorFor = useCallback(
 		(index: number, field: keyof ITrasladoItemDraft): string | undefined => {
-			if (formik.submitCount === 0 && !itemsChecked) return undefined;
-			if (!Array.isArray(formik.errors.items)) return undefined;
+			const serverMessage = serverLineErrors[index]?.[field];
+			if (formik.submitCount === 0 && !itemsChecked) return serverMessage;
+			if (!Array.isArray(formik.errors.items)) return serverMessage;
 			const lineErrors = formik.errors.items[index];
-			if (!lineErrors || typeof lineErrors === 'string') return undefined;
+			if (!lineErrors || typeof lineErrors === 'string') return serverMessage;
 			const message = (lineErrors as Record<string, unknown>)[field];
-			return typeof message === 'string' ? message : undefined;
+			return typeof message === 'string' ? message : serverMessage;
 		},
-		[formik.errors.items, formik.submitCount, itemsChecked],
+		[formik.errors.items, formik.submitCount, itemsChecked, serverLineErrors],
 	);
 
 	/** Marca como tocados sólo los campos del paso validado. */
@@ -438,7 +498,7 @@ export default function useInternalTransfer(
 
 	return {
 		formik,
-		warehouses,
+		originOptions,
 		destinationOptions,
 		summary,
 		originRows,
@@ -446,6 +506,7 @@ export default function useInternalTransfer(
 		originError,
 		balanceFor,
 		errorFor,
+		serverLineErrorCount,
 		setOrigin,
 		setItem,
 		addItem,

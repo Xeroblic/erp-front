@@ -227,7 +227,7 @@ export default function useInventoryAdjustment(
 		() => ({
 			branchId,
 			ownerContext: `ajuste:${context}:${session}`,
-			forAdjustment: true,
+			source: 'adjustment' as const,
 			params: values.location
 				? {
 						...locationStockParams(values.location),

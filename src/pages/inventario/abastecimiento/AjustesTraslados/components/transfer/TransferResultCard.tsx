@@ -20,6 +20,9 @@ export interface ITransferResultCardProps {
 const TransferResultCard: FC<ITransferResultCardProps> = ({ result, onDismiss }) => {
 	const { movement, products, fromLabel, toLabel } = result;
 	const units = movement.items.reduce((total, item) => total + item.quantity, 0);
+	const hasInheritedShortfall = movement.items.some(
+		(item) => item.destination_quantity_after < item.quantity,
+	);
 	// Un solo producto: su ficha. Varios: la bodega de destino, donde quedaron.
 	const productIds = [...new Set(movement.items.map((item) => item.product_id))];
 	const inventoryLink =
@@ -117,6 +120,15 @@ const TransferResultCard: FC<ITransferResultCardProps> = ({ result, onDismiss })
 					Los saldos «queda en» son de la condición de cada línea, no del físico total de
 					la ubicación.
 				</p>
+				{/* Un saldo negativo heredado en el destino no bloquea el traslado: las
+				    unidades tapan primero el hueco, así que el saldo final puede quedar
+				    bajo cero o por debajo de lo trasladado. */}
+				{hasInheritedShortfall && (
+					<p className='text-xs text-amber-700 dark:text-amber-400'>
+						El destino tenía saldo negativo: las unidades trasladadas cubrieron primero
+						ese faltante, por eso su saldo final es menor que lo movido.
+					</p>
+				)}
 			</CardBody>
 		</Card>
 	);

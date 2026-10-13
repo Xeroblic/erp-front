@@ -19,6 +19,7 @@ import {
 	listAdjustmentStock,
 	listInventoryStock,
 	listInventoryOrigins,
+	listTransferStock,
 } from '@/services/procurement/inventoryStock.service';
 import { getProcurementErrorMessage } from '@/utils/procurementErrors.util';
 
@@ -26,9 +27,21 @@ interface StockRequest {
 	branchId: number;
 	ownerContext: string;
 	params: IInventoryStockListParams;
-	/** El ajuste lee su stock con su propia bandera (`listAdjustmentStock`). */
-	forAdjustment?: boolean;
+	/**
+	 * Ajuste y traslado leen su stock con su propia bandera (`listAdjustmentStock`,
+	 * `listTransferStock`); sin fuente, la del resto de Inventario.
+	 */
+	source?: TInventoryStockSource;
 }
+
+export type TInventoryStockSource = 'adjustment' | 'transfer';
+
+/** Se resuelve al pedir, no al cargar el módulo: cada consumidor lee su fuente vigente. */
+const stockListerFor = (source: TInventoryStockSource | undefined) => {
+	if (source === 'adjustment') return listAdjustmentStock;
+	if (source === 'transfer') return listTransferStock;
+	return listInventoryStock;
+};
 interface OriginsRequest extends Omit<StockRequest, 'params'> {
 	productId: number;
 	params: IInventoryOriginsParams;
@@ -41,27 +54,21 @@ export const inventoryOriginsQueryKey = (request: OriginsRequest): string =>
 	JSON.stringify([request.ownerContext, request.branchId, request.productId, request.params]);
 
 /*
- * Stock, procedencias y ajuste ya tienen ruta real: no se condicionan a la
- * bandera de datos simulados. Traslado y documentación posterior sí, porque
- * su rama real todavía rechaza por ruta no publicada.
+ * Stock, procedencias, ajuste y traslado ya tienen ruta real: no se condicionan
+ * a la bandera de datos simulados. La documentación posterior sí, porque su
+ * rama real todavía rechaza por ruta no publicada.
  */
 export const fetchInventoryStock = createAsyncThunk<
 	IInventoryStockResponse,
 	StockRequest,
 	{ rejectValue: string }
->(
-	'inventoryStock/list',
-	async ({ branchId, params, forAdjustment }, { signal, rejectWithValue }) => {
-		try {
-			const list = forAdjustment ? listAdjustmentStock : listInventoryStock;
-			return await list(branchId, params, signal);
-		} catch (error: unknown) {
-			return rejectWithValue(
-				getProcurementErrorMessage(error, 'No pudimos cargar el stock.'),
-			);
-		}
-	},
-);
+>('inventoryStock/list', async ({ branchId, params, source }, { signal, rejectWithValue }) => {
+	try {
+		return await stockListerFor(source)(branchId, params, signal);
+	} catch (error: unknown) {
+		return rejectWithValue(getProcurementErrorMessage(error, 'No pudimos cargar el stock.'));
+	}
+});
 export const fetchInventoryOrigins = createAsyncThunk<
 	IInventoryOriginsResponse,
 	OriginsRequest,
@@ -137,7 +144,6 @@ export const createWarehouseStockMovementThunk = createAsyncThunk<
 			return rejectWithValue(error);
 		}
 	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
 
 /**
