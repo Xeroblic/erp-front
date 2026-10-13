@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppSelector } from '@/store';
 import { listWarehousesForStockReceipts } from '@/services/procurement/stockReceipts.service';
@@ -16,10 +17,11 @@ const NO_WAREHOUSES: IStockReceiptWarehouse[] = [];
 
 /**
  * Bodegas activas en las que la recepción puede recibir: las de las
- * sucursales visibles del usuario **en la filial activa**. Una sucursal de
- * otra filial se descarta antes de pedir sus bodegas, porque el backend
- * rechaza una bodega ajena a la filial de la ruta. Sin sucursales visibles se
- * usa la activa.
+ * sucursales del usuario **en la filial activa** a las que tiene acceso. Se
+ * descartan antes de pedir sus bodegas una sucursal de otra filial (el backend
+ * rechaza una bodega ajena a la filial de la ruta) y una sólo visible (el
+ * listado exige acceso efectivo a la sucursal y respondería 403). Sin
+ * sucursales visibles se usa la activa.
  *
  * El listado exige `view-warehouse`, aparte del `edit-product` de la
  * recepción: sin él, el 403 se muestra con el mensaje del servidor.
@@ -30,6 +32,7 @@ const NO_WAREHOUSES: IStockReceiptWarehouse[] = [];
  */
 const useStockReceiptWarehouses = (subsidiaryId: number | null, isEnabled = true) => {
 	const { branchId, visibleBranches } = useCurrentBranch();
+	const { canAccessBranch } = useAuthorization();
 	const user = useAppSelector((state) => state.auth.user) as ContextUser | null | undefined;
 
 	const branchIds = useMemo(() => {
@@ -40,8 +43,10 @@ const useStockReceiptWarehouses = (subsidiaryId: number | null, isEnabled = true
 		// Una sucursal cuya filial no se conoce se conserva: el backend la valida.
 		return candidates.filter((id) => {
 			const owner = resolveSubsidiaryFromBranch(id, user);
-			return owner === null || owner === subsidiaryId;
+			return canAccessBranch(id) && (owner === null || owner === subsidiaryId);
 		});
+		// `canAccessBranch` se recrea en cada render; depende de lo mismo que `user`.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [visibleBranches, branchId, user, subsidiaryId]);
 
 	const key = `${subsidiaryId ?? 'null'}:${branchIds.join(',')}`;

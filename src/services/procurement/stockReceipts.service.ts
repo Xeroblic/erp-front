@@ -6,6 +6,7 @@ import { listProcurementSuppliers } from '@/services/procurement/procurementSupp
 import { searchPurchasableProducts } from '@/services/procurement/purchasableProducts.service';
 import type { IPurchasableProductsPage } from '@/services/procurement/purchasableProducts.service';
 import { rejectEndpointNotPublished } from '@/utils/procurementEndpoint.util';
+import { resolveProcurementError } from '@/utils/procurementErrors.util';
 import { buildProcurementWriteHeaders, readEtagHeader } from '@/utils/procurementWrite.util';
 import type {
 	IApiCollectionEnvelope,
@@ -71,6 +72,8 @@ export const STOCK_RECEIPTS_USE_TEST_SUPPLIERS = INVENTORY_RECEIPTS_USE_MOCKS;
 export const STOCK_RECEIPTS_ENTER_UNLOCATED = !INVENTORY_RECEIPTS_USE_MOCKS;
 
 const RESOURCE = 'las recepciones';
+
+const FORBIDDEN_STATUS = 403;
 const P = '/subsidiaries/{subsidiary}/procurement';
 
 interface IStockReceiptWriteHeaders {
@@ -270,11 +273,22 @@ const apiStockReceipts: IStockReceiptsService = {
 		rejectEndpointNotPublished(RESOURCE, `PUT ${P}/stock-receipts/{receipt}/purchase-document`),
 	// Sólo activas: el backend rechaza una bodega inactiva salvo la que la
 	// recepción ya tenía, y esa la agrega el formulario al corregir.
+	// Una sucursal que responde 403 no tumba a las demás: sin acceso a ella
+	// tampoco se podría recibir ahí. Cualquier otro fallo sí se informa, porque
+	// escondería bodegas en las que el usuario sí opera.
 	listWarehousesForStockReceipts: async (branchIds, signal) => {
-		const perBranch = await Promise.all(
+		const perBranch = await Promise.allSettled(
 			branchIds.map((branchId) => listBranchWarehouses(branchId, signal)),
 		);
-		return perBranch.flat().filter((warehouse) => warehouse.is_active);
+		const failure = perBranch.find(
+			(result): result is PromiseRejectedResult =>
+				result.status === 'rejected' &&
+				resolveProcurementError(result.reason).status !== FORBIDDEN_STATUS,
+		);
+		if (failure) throw failure.reason;
+		return perBranch
+			.flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
+			.filter((warehouse) => warehouse.is_active);
 	},
 	// Envoltorios y no la referencia: el servicio de proveedores carga
 	// `ApiService`, que carga el store, que carga el slice de recepciones, que

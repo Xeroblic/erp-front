@@ -30,6 +30,14 @@ const context = vi.hoisted(() => ({
 	},
 }));
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context.branch }));
+// Sucursales con acceso efectivo; vacío = sin restricción, como `useAuthorization`.
+const access = vi.hoisted(() => ({ branchIds: [] as number[] }));
+vi.mock('@/hooks/useAuthorization', () => ({
+	default: () => ({
+		canAccessBranch: (id: number) =>
+			access.branchIds.length === 0 || access.branchIds.includes(id),
+	}),
+}));
 vi.mock('@/store', () => ({
 	useAppSelector: (selector: (state: unknown) => unknown) =>
 		selector({ auth: { user: context.user } }),
@@ -40,6 +48,7 @@ const listMock = vi.mocked(listWarehousesForStockReceipts);
 afterEach(() => {
 	listMock.mockClear();
 	context.branch = { branchId: 4, visibleBranches: [] };
+	access.branchIds = [];
 });
 
 describe('useStockReceiptWarehouses', () => {
@@ -58,6 +67,20 @@ describe('useStockReceiptWarehouses', () => {
 		expect(result.current.warehouses).toEqual([
 			{ id: 8, name: 'Central', is_active: true, branch_id: 4 },
 		]);
+	});
+
+	it('descarta una sucursal sólo visible: el listado exige acceso a ella', async () => {
+		context.branch.visibleBranches = [
+			{ id: 4, name: 'Central' },
+			{ id: 6, name: 'Sur' },
+		];
+		access.branchIds = [4];
+
+		const { result } = renderHook(() => useStockReceiptWarehouses(2));
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		expect(listMock).toHaveBeenCalledWith([4], expect.any(AbortSignal));
+		expect(result.current.warehouses).toHaveLength(1);
 	});
 
 	it('sin sucursales visibles usa la activa', async () => {

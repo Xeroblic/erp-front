@@ -7,6 +7,31 @@ import type {
 	IPurchaseDocumentListRow,
 } from '@/interface/procurement.interface';
 
+type TPurchaseDocumentSource = typeof purchaseDocumentsMock | typeof purchaseDocumentsApi;
+
+/** Máximo del contrato para `per_page`. */
+const DOCUMENTS_PER_PAGE = 100;
+
+/**
+ * Todos los documentos confirmados de la filial: el listado pagina y un
+ * documento que falte no se podría elegir. Las páginas siguientes se piden a
+ * la vez, una vez conocido `meta.last_page`.
+ */
+export const listAllConfirmedDocuments = async (
+	source: TPurchaseDocumentSource,
+	subsidiaryId: number,
+): Promise<IPurchaseDocumentListRow[]> => {
+	const params = { status: 'confirmed' as const, per_page: DOCUMENTS_PER_PAGE };
+	const first = await source.listPurchaseDocuments(subsidiaryId, { ...params, page: 1 });
+	const lastPage = Math.max(first.meta?.last_page ?? 1, 1);
+	const rest = await Promise.all(
+		Array.from({ length: lastPage - 1 }, (_, index) =>
+			source.listPurchaseDocuments(subsidiaryId, { ...params, page: index + 2 }),
+		),
+	);
+	return [first, ...rest].flatMap((page) => page.data);
+};
+
 /**
  * Documentos confirmados para el `Select` del alta «con documento» y, una
  * vez elegido uno, su ficha completa (para las líneas con
@@ -35,10 +60,9 @@ const usePurchaseDocumentPicker = (
 		// No deja la lista de la filial anterior visible mientras se pide la nueva.
 		setDocuments([]);
 		setLoadingDocuments(true);
-		source
-			.listPurchaseDocuments(subsidiaryId, { status: 'confirmed', per_page: 100 })
-			.then((response) => {
-				if (!cancelled) setDocuments(response.data);
+		listAllConfirmedDocuments(source, subsidiaryId)
+			.then((rows) => {
+				if (!cancelled) setDocuments(rows);
 			})
 			.catch(() => {
 				if (!cancelled) setDocuments([]);

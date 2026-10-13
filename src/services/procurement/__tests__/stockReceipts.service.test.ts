@@ -237,6 +237,41 @@ describe('stockReceipts.service — API real', () => {
 		]);
 	});
 
+	it('una sucursal que responde 403 no esconde las bodegas de las demás', async () => {
+		const facade = await loadFacade(false);
+		fetchData.mockImplementation(({ url }: { url: string }) =>
+			url === '/branches/6/warehouses'
+				? Promise.reject(
+						Object.assign(new Error('Forbidden'), {
+							isAxiosError: true,
+							response: { status: 403, data: {} },
+						}),
+					)
+				: Promise.resolve({
+						data: { data: [{ id: 8, name: 'Central', is_active: true }], meta: {} },
+					}),
+		);
+
+		const warehouses = await facade.listWarehousesForStockReceipts([4, 6]);
+
+		expect(warehouses).toEqual([{ id: 8, name: 'Central', is_active: true, branch_id: 4 }]);
+	});
+
+	it('cualquier otro fallo de una sucursal se informa', async () => {
+		const facade = await loadFacade(false);
+		const failure = Object.assign(new Error('Server error'), {
+			isAxiosError: true,
+			response: { status: 500, data: {} },
+		});
+		fetchData.mockImplementation(({ url }: { url: string }) =>
+			url === '/branches/6/warehouses'
+				? Promise.reject(failure)
+				: Promise.resolve({ data: { data: [], meta: {} } }),
+		);
+
+		await expect(facade.listWarehousesForStockReceipts([4, 6])).rejects.toBe(failure);
+	});
+
 	it('busca productos en el catálogo que usa Documentos de compra: activos y sin serie', async () => {
 		const facade = await loadFacade(false);
 		fetchData.mockResolvedValue({
