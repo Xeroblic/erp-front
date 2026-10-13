@@ -23,7 +23,9 @@ vi.mock('@/services/procurement/stockReceipts.service', async (importOriginal) =
 		await importOriginal<typeof import('@/services/procurement/stockReceipts.service')>();
 	return {
 		...original,
-		listWarehousesForStockReceipts: vi.fn(() => [{ id: 8, name: 'Bodega Central' }]),
+		listWarehousesForStockReceipts: vi.fn(() =>
+			Promise.resolve([{ id: 8, name: 'Bodega Central', is_active: true, branch_id: 4 }]),
+		),
 		listStockReceipts: vi.fn(() =>
 			Promise.resolve({
 				data: [],
@@ -80,7 +82,10 @@ const UrlProbe = () => {
 };
 
 const createWrapper = (initialEntry: string) => {
-	const store = configureStore({ reducer: { stockReceipts: stockReceiptsReducer } });
+	const store = configureStore({
+		// `auth` sin usuario: la filial de cada sucursal no se conoce y ninguna se descarta.
+		reducer: { stockReceipts: stockReceiptsReducer, auth: () => ({ user: null }) },
+	});
 	const Wrapper = ({ children }: PropsWithChildren) => (
 		// Mismo flag que el `BrowserRouter` de la app: la URL se actualiza en
 		// una transición, después que el estado urgente del hook.
@@ -170,7 +175,7 @@ describe('useRecepciones — filial activa', () => {
 });
 
 describe('useRecepciones — bodegas del filtro', () => {
-	it('las pide a la fachada de recepciones con las sucursales del usuario', () => {
+	it('las pide a la fachada de recepciones con las sucursales del usuario', async () => {
 		setBranch(4, [
 			{ id: 4, name: 'Central' },
 			{ id: 6, name: 'Sur' },
@@ -179,8 +184,12 @@ describe('useRecepciones — bodegas del filtro', () => {
 			wrapper: createWrapper(LIST_URL),
 		});
 
-		expect(warehouseCalls).toHaveBeenCalledWith([4, 6]);
-		expect(result.current.warehouseOptions).toEqual([{ id: 8, name: 'Bodega Central' }]);
+		expect(warehouseCalls).toHaveBeenCalledWith([4, 6], expect.any(AbortSignal));
+		await waitFor(() =>
+			expect(result.current.warehouseOptions).toEqual([
+				{ id: 8, name: 'Bodega Central', is_active: true, branch_id: 4 },
+			]),
+		);
 		expect(result.current.authorizedBranchIds).toEqual([4, 6]);
 	});
 });

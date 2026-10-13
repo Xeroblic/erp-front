@@ -7,6 +7,7 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import { ProcurementMockNotice } from '@/components/procurement';
+import INVENTORY_RECEIPTS_USE_MOCKS from '@/config/inventoryReceipts.config';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import useAuthorization from '@/hooks/useAuthorization';
 import { listReturnState } from '@/utils/listSearchParams.util';
@@ -218,7 +219,7 @@ const RecepcionesView = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
-				<ProcurementMockNotice />
+				<ProcurementMockNotice isActive={INVENTORY_RECEIPTS_USE_MOCKS} />
 				{showDeniedCreateNotice && (
 					<Alert
 						color='blue'

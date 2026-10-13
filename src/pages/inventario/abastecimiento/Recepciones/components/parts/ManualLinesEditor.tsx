@@ -1,20 +1,32 @@
 import React from 'react';
 import { FieldArray } from 'formik';
+import type { InputActionMeta } from 'react-select';
 import type { FormikProps } from 'formik';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import Input from '@/components/form/Input';
 import Validation from '@/components/form/Validation';
 import Label from '@/components/form/Label';
 import SelectReact from '@/components/form/SelectReact';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import { CostInput } from '@/components/procurement';
+import type usePurchasableProductOptions from '@/pages/inventario/abastecimiento/DocumentosCompra/hooks/usePurchasableProductOptions';
 import { EMPTY_RECEPCION_LINE } from '../../types';
 import type { IRecepcionLineFormValues, IStockReceiptFormValues } from '../../types';
 
 interface IManualLinesEditorProps {
 	formik: FormikProps<IStockReceiptFormValues>;
-	productOptions: TSelectOption[];
+	subsidiaryId: number | null;
+	/** Búsqueda en el catálogo (`usePurchasableProductOptions`), compartida con Documentos de compra. */
+	productOptions: ReturnType<typeof usePurchasableProductOptions>;
+	/**
+	 * Ofrece «Nuevo producto». Con datos simulados no: el doble sólo reconoce
+	 * los productos de su semilla.
+	 */
+	canCreateProduct: boolean;
+	/** Abre el alta de producto en línea para la línea indicada. */
+	onCreateProduct: (lineIndex: number) => void;
 	/** Con proveedor conocido el costo unitario es obligatorio (lo valida el servicio). */
 	isCostRequired: boolean;
 	disabled: boolean;
@@ -37,10 +49,16 @@ const readRecord = (value: unknown, index: number): Record<string, unknown> | un
  * Líneas de una recepción sin documento: producto, cantidad y costo. El costo
  * usa `CostInput` (monto + base Neto/Bruto, con vista previa del IVA) en vez de
  * una casilla que cambiaba el significado del campo.
+ *
+ * Un producto que todavía no existe se crea desde la línea («Nuevo producto»)
+ * sin perder lo escrito: la recepción no crea productos, sólo los nombra.
  */
 const ManualLinesEditor: React.FC<IManualLinesEditorProps> = ({
 	formik,
+	subsidiaryId,
 	productOptions,
+	canCreateProduct,
+	onCreateProduct,
 	isCostRequired,
 	disabled,
 	fieldClassName,
@@ -73,10 +91,32 @@ const ManualLinesEditor: React.FC<IManualLinesEditorProps> = ({
 							className={itemClassName}>
 							<div className='grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_110px_auto] sm:items-start'>
 								<div className='space-y-1'>
-									<Label htmlFor={`items.${index}.product_id`}>
-										Producto
-										<span className='text-red-500'> *</span>
-									</Label>
+									<div className='relative'>
+										<Label
+											htmlFor={`items.${index}.product_id`}
+											className={canCreateProduct ? 'pe-36' : undefined}>
+											Producto
+											<span className='text-red-500'> *</span>
+										</Label>
+										{canCreateProduct && (
+											// Fuera del flujo: la fila del label mide lo mismo que en Cantidad.
+											<ProtectedButton
+												type='button'
+												permission='create-product'
+												subsidiaryId={subsidiaryId}
+												scope='access'
+												fallbackMode='hidden'
+												size='xs'
+												variant='outline'
+												color='blue'
+												icon='HeroPlus'
+												className='absolute -top-1 right-0 whitespace-nowrap'
+												isDisable={disabled}
+												onClick={() => onCreateProduct(index)}>
+												Nuevo producto
+											</ProtectedButton>
+										)}
+									</div>
 									<Validation
 										isValid={!errorFor('product_id')}
 										isTouched={Boolean(errorFor('product_id'))}
@@ -86,14 +126,26 @@ const ManualLinesEditor: React.FC<IManualLinesEditorProps> = ({
 											name={`items.${index}.product_id`}
 											inputId={`items.${index}.product_id`}
 											isDisabled={disabled}
-											options={productOptions}
-											placeholder='Busca un producto…'
-											value={
-												productOptions.find(
-													(option) =>
-														option.value === String(line.product_id),
-												) ?? null
+											options={productOptions.options}
+											placeholder='Busca por nombre o SKU…'
+											// La búsqueda la hace el servidor: filtrar otra vez acá escondería coincidencias por código de barras.
+											filterOption={null}
+											// Elegir o cerrar el menú vacía la caja: el término compartido se vacía con ella.
+											onInputChange={(
+												text: string,
+												meta: InputActionMeta,
+											) => {
+												if (meta.action === 'input-change')
+													productOptions.onSearchChange(text);
+												else productOptions.clearSearch();
+											}}
+											isLoading={productOptions.loading}
+											noOptionsMessage={() =>
+												productOptions.loading
+													? 'Buscando…'
+													: 'Sin productos no serializados que coincidan.'
 											}
+											value={productOptions.getOption(line.product_id)}
 											onChange={(option) => {
 												const selected = option as TSelectOption | null;
 												if (Array.isArray(selected)) return;

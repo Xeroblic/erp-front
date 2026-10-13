@@ -19,9 +19,9 @@ import type { ICreatedPurchasableProduct } from '@/services/procurement/purchasa
 import useProcurementProductForm from '../../hooks/useProcurementProductForm';
 
 /**
- * Alta en línea de producto desde una línea del documento de compra. El
- * producto se crea en el catálogo real de la filial
- * (`POST /subsidiaries/{subsidiary}/products`).
+ * Alta en línea de producto desde una línea del documento de compra o de una
+ * recepción sin documento. El producto se crea en el catálogo real de la
+ * filial (`POST /subsidiaries/{subsidiary}/products`).
  *
  * Replica el formulario de «Crear producto» de `catalogos/productos`: las mismas
  * dos secciones (`PRODUCT_FORM_SECTIONS`), el mismo orden de campos y los mismos
@@ -103,7 +103,8 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 						Crear producto
 					</h2>
 					<p className='text-sm font-normal text-zinc-600 dark:text-zinc-400'>
-						Crea el producto en la filial y úsalo en esta línea sin salir del documento.
+						Crea el producto en la filial y úsalo en esta línea sin salir del
+						formulario.
 					</p>
 				</div>
 			</ModalHeader>

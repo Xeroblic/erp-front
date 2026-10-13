@@ -36,11 +36,13 @@ vi.mock('@/hooks/useAuthorization', () => ({
 	default: () => ({ authorize: mocks.authorize }),
 }));
 vi.mock('react-toastify', () => ({ toast: mocks.toast }));
-// Recepciones sólo opera con datos simulados: la bodega se resuelve contra el doble.
-vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
-
 const MAIN_WAREHOUSE_ID = 8; // sucursal 4
 const SOUTH_BRANCH_WAREHOUSE_ID = 15; // sucursal 6
+
+/** Bodegas ofrecidas: sólo las de la sucursal autorizada 4. */
+const OFFERED_WAREHOUSES = [
+	{ id: MAIN_WAREHOUSE_ID, name: 'Bodega Central', is_active: true, branch_id: 4 },
+];
 
 const createdReceipt = { id: 501 } as IStockReceipt;
 
@@ -71,6 +73,7 @@ const renderForm = (onSuccess: (receipt: IStockReceipt) => void) =>
 				subsidiaryId,
 				branchId: 4,
 				authorizedBranchIds: [4],
+				warehouses: OFFERED_WAREHOUSES,
 				onSuccess,
 			}),
 		{ initialProps: { subsidiaryId: 2 } },

@@ -6,7 +6,8 @@ import {
 	inventoryOriginsQueryKey,
 } from '@/store/slices/procurement/inventoryStockSlice';
 import { getInventoryOriginFilterOptions } from '@/services/procurement/inventoryStock.service';
-import { STOCK_RECEIPTS_USE_TEST_SUPPLIERS } from '@/services/procurement/stockReceipts.service';
+import INVENTORY_RECEIPTS_USE_MOCKS from '@/config/inventoryReceipts.config';
+import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import {
 	purchaseDocumentDetailLink,
 	stockReceiptDetailLink,
@@ -25,18 +26,19 @@ interface IInventoryOriginLinks {
 }
 
 /**
- * Destinos de una procedencia. La recepción vive en el mismo mundo que el
- * inventario (las dos fachadas cambian juntas con
- * `VITE_INVENTORY_STOCK_USE_MOCKS`), así que su ficha siempre existe. El
- * proveedor y el documento, en cambio, salen de la semilla de prueba mientras
- * Recepciones sea simulada (`STOCK_RECEIPTS_USE_TEST_SUPPLIERS`), y sus fichas
- * leen la API real: hasta entonces quedan como texto.
+ * Destinos de una procedencia. Con Inventario simulado, el proveedor y el
+ * documento salen de la semilla de prueba, y sus fichas leen la API real: en
+ * ese caso quedan como texto. La recepción sólo enlaza si Recepciones lee la
+ * misma fuente que Inventario; si no, el id apuntaría a otra recepción.
  */
 export const inventoryOriginLinks = (origin: IInventoryStockOriginRow): IInventoryOriginLinks => {
-	const linksToMasterData = !STOCK_RECEIPTS_USE_TEST_SUPPLIERS;
+	const linksToMasterData = !INVENTORY_STOCK_USE_MOCKS;
+	const linksToReceipts = INVENTORY_STOCK_USE_MOCKS === INVENTORY_RECEIPTS_USE_MOCKS;
 	return {
 		receipt:
-			origin.origin_type === 'stock_receipt' && origin.stock_receipt_id !== null
+			linksToReceipts &&
+			origin.origin_type === 'stock_receipt' &&
+			origin.stock_receipt_id !== null
 				? stockReceiptDetailLink(origin.stock_receipt_id)
 				: null,
 		supplier:

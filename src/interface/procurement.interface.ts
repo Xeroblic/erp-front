@@ -121,6 +121,14 @@ export interface ITransferWarehouse extends IWarehouseCompact {
 	is_active: boolean;
 }
 
+/**
+ * Bodega que la recepción ofrece. La sucursal es la de la recepción: con ella
+ * se autoriza la escritura (`edit-product` en esa sucursal), no con la activa.
+ */
+export interface IStockReceiptWarehouse extends ITransferWarehouse {
+	branch_id: number;
+}
+
 /* =================================================
    Costo de compra: entrada y respuesta son diferentes
    ================================================= */
@@ -860,7 +868,11 @@ export interface IStockReceipt extends IStockReceiptListRow {
 	failure_code: string | null;
 	failure_message: string | null;
 	processing: IStockReceiptProcessing;
-	posted_by: IProcurementActorCompact | null;
+	/**
+	 * Sólo lo trae el doble: el `StockReceiptResource` del backend (tarea 12)
+	 * no lo publica todavía. Ausente no significa «sin solicitante».
+	 */
+	posted_by?: IProcurementActorCompact | null;
 	updated_at: TIsoTimestamp;
 }
 

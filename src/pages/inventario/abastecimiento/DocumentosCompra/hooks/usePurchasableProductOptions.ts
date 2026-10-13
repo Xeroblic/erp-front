@@ -4,7 +4,10 @@ import {
 	searchPurchasableProducts,
 } from '@/services/procurement/purchasableProducts.service';
 import { resolveProcurementError } from '@/utils/procurementErrors.util';
-import type { IPurchasableProduct } from '@/services/procurement/purchasableProducts.service';
+import type {
+	IPurchasableProduct,
+	IPurchasableProductsPage,
+} from '@/services/procurement/purchasableProducts.service';
 import type { IProcurementProduct } from '@/interface/procurement.interface';
 
 /**
@@ -27,6 +30,10 @@ import type { IProcurementProduct } from '@/interface/procurement.interface';
  *
  * El catálogo exige `view-product`, que no exige crear documentos: un 403 se
  * informa como `forbidden` en vez de mostrarse como «sin resultados».
+ *
+ * `searchProducts` cambia de dónde salen las coincidencias. Por omisión es el
+ * catálogo real; Recepciones pasa el de su fachada, que con datos simulados
+ * busca en la semilla de su doble. Debe ser una referencia estable.
  */
 
 export type TProductOptionsUnavailableReason = 'forbidden' | 'failed';
@@ -44,11 +51,14 @@ interface IProductSearchResult {
 	unavailableReason: TProductOptionsUnavailableReason | null;
 }
 
+type TSearchProducts = (subsidiaryId: number, search: string) => Promise<IPurchasableProductsPage>;
+
 interface IUsePurchasableProductOptionsArgs {
 	subsidiaryId: number | null;
 	isEnabled: boolean;
 	/** Productos de las líneas ya guardadas: su etiqueta existe antes de buscar. */
 	initialProducts?: Pick<IProcurementProduct, 'id' | 'sku' | 'name'>[];
+	searchProducts?: TSearchProducts;
 }
 
 const FORBIDDEN_STATUS = 403;
@@ -61,6 +71,7 @@ const usePurchasableProductOptions = ({
 	subsidiaryId,
 	isEnabled,
 	initialProducts = [],
+	searchProducts = searchPurchasableProducts,
 }: IUsePurchasableProductOptionsArgs) => {
 	const [search, setSearch] = useState('');
 	const [query, setQuery] = useState('');
@@ -102,7 +113,7 @@ const usePurchasableProductOptions = ({
 		if (!isEnabled || subsidiaryId === null) return undefined;
 
 		let cancelled = false;
-		searchPurchasableProducts(subsidiaryId, query)
+		searchProducts(subsidiaryId, query)
 			.then((page) => {
 				if (cancelled) return;
 				rememberLabels(subsidiaryId, page.data);
@@ -129,7 +140,7 @@ const usePurchasableProductOptions = ({
 		return () => {
 			cancelled = true;
 		};
-	}, [subsidiaryId, isEnabled, query, reloadToken, rememberLabels]);
+	}, [subsidiaryId, isEnabled, query, reloadToken, rememberLabels, searchProducts]);
 
 	const currentResult =
 		subsidiaryId !== null && result?.subsidiaryId === subsidiaryId && result.query === query

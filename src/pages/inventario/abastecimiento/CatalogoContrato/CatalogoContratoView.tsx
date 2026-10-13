@@ -353,7 +353,7 @@ const CatalogoContratoView = () => {
 					<CatalogSection
 						id='catalogo-simulado'
 						title='Aviso de datos simulados'
-						summary='Recepciones e inventario comparten la bandera VITE_INVENTORY_STOCK_USE_MOCKS: se encienden o se apagan juntos. El ajuste y los traslados tienen bandera propia (VITE_INVENTORY_ADJUSTMENTS_USE_MOCKS y VITE_INVENTORY_TRANSFERS_USE_MOCKS). Proveedores y documentos de compra ya usan el backend real y no dependen de ellas.'>
+						summary='Inventario usa la bandera VITE_INVENTORY_STOCK_USE_MOCKS. El ajuste, los traslados y las recepciones tienen bandera propia (VITE_INVENTORY_ADJUSTMENTS_USE_MOCKS, VITE_INVENTORY_TRANSFERS_USE_MOCKS y VITE_INVENTORY_RECEIPTS_USE_MOCKS). Proveedores y documentos de compra ya usan el backend real y no dependen de ellas.'>
 						<div className='grid gap-3 md:grid-cols-2'>
 							<CatalogSample
 								title='Bandera encendida'
@@ -369,10 +369,10 @@ const CatalogoContratoView = () => {
 							</CatalogSample>
 							<CatalogSample
 								title='Bandera apagada'
-								description='En Recepciones, ProcurementMockGate reemplaza la vista desde su index.tsx antes de ejecutar el hook: no se siembra ni se persiste el store simulado. Inventario y ajustes y traslados muestran su propio aviso.'>
-								<Alert title='Pantalla no habilitada'>
-									Esta pantalla aún no está habilitada en este entorno.
-								</Alert>
+								description='La pantalla usa el backend real y no muestra el aviso. Si el backend todavía no publica una ruta, la fachada rechaza con un error que nombra la ruta pendiente.'>
+								<p className='text-sm text-zinc-500 dark:text-zinc-400'>
+									Sin aviso: la pantalla muestra los datos del backend.
+								</p>
 							</CatalogSample>
 						</div>
 					</CatalogSection>

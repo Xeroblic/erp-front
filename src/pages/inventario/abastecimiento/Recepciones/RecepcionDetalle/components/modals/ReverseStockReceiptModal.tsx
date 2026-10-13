@@ -21,11 +21,18 @@ const REVERSE_RECEIPT_CARD_CLASSNAME =
 	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
 
 /**
- * Reversión de `reverse` (sección 7): motivo obligatorio, sólo desde
- * `posted`. Si las unidades ya se consumieron, el mock responde `409
- * RECEIPT_ALREADY_CONSUMED` — acá se muestra inline y se propone un ajuste
- * explícito, **nunca** «descontar otros productos iguales».
+ * Reversión de `reverse` (sección 7): motivo obligatorio (máx. 500), sólo
+ * desde `posted`. Dos rechazos definitivos se muestran inline y bloquean la
+ * confirmación:
+ * - `409 RECEIPT_ALREADY_CONSUMED`: parte de lo ingresado ya no está donde
+ *   entró. Se propone un ajuste explícito, **nunca** «descontar otros
+ *   productos iguales».
+ * - `409 RECEIPT_STOCK_RESERVED`: revertir dejaría el disponible bajo lo que
+ *   ya está reservado. Hay que liberar las reservas primero.
  */
+
+/** Tope de `reason` en `ReverseStockReceiptRequest`. */
+const REVERSE_REASON_MAX_LENGTH = 500;
 
 interface IReverseStockReceiptModalProps {
 	isOpen: boolean;
@@ -82,6 +89,8 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 	};
 
 	const isAlreadyConsumed = idempotentWrite.error?.code === 'RECEIPT_ALREADY_CONSUMED';
+	const isStockReserved = idempotentWrite.error?.code === 'RECEIPT_STOCK_RESERVED';
+	const isBlocked = isAlreadyConsumed || isStockReserved;
 
 	return (
 		<Modal
@@ -113,6 +122,7 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 								id='reverse-recepcion-reason'
 								name='reason'
 								rows={3}
+								maxLength={REVERSE_REASON_MAX_LENGTH}
 								disabled={idempotentWrite.canRetry}
 								value={reason}
 								onChange={(event) => setReason(event.target.value)}
@@ -121,7 +131,7 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 								invalidFeedback='Indica el motivo de la reversión.'
 							/>
 						</div>
-						{idempotentWrite.error && !isAlreadyConsumed && (
+						{idempotentWrite.error && !isBlocked && (
 							<p role='alert' className='mt-3 text-sm text-red-600 dark:text-red-400'>
 								{idempotentWrite.error.message}
 							</p>
@@ -136,6 +146,18 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 								No se puede revertir esta recepción: parte del stock ya se usó.
 								Corrige con un ajuste explícito de inventario en vez de forzar la
 								reversión.
+							</Alert>
+						)}
+						{isStockReserved && (
+							<Alert
+								color='amber'
+								variant='outline'
+								icon='HeroExclamationTriangle'
+								title='Hay unidades reservadas'
+								className='mt-3'>
+								No se puede revertir esta recepción: dejaría menos stock disponible
+								que el ya reservado. Libera las reservas del producto y vuelve a
+								intentarlo.
 							</Alert>
 						)}
 					</CardBody>
@@ -155,9 +177,7 @@ const ReverseStockReceiptModal: React.FC<IReverseStockReceiptModalProps> = ({
 						variant='outline'
 						color='red'
 						onClick={handleConfirm}
-						isDisable={
-							idempotentWrite.isSubmitting || !reason.trim() || isAlreadyConsumed
-						}
+						isDisable={idempotentWrite.isSubmitting || !reason.trim() || isBlocked}
 						isLoading={idempotentWrite.isSubmitting}>
 						{idempotentWrite.canRetry ? 'Reintentar' : 'Revertir'}
 					</Button>
