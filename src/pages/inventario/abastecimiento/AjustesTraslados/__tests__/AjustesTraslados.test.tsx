@@ -27,9 +27,9 @@ type TListInventoryStock = (
 ) => Promise<IInventoryStockResponse>;
 
 /**
- * Un doble por fuente de stock, como en desarrollo: el traslado lee el mock
- * (`stockDouble`) y el ajuste su backend (`adjustmentDouble`, sobre el backend
- * falso). Cada uno pasa por su fuente salvo que la prueba instale `list`: así
+ * Un doble por fuente de stock: el traslado lee el mock (`stockDouble`, cuyos
+ * datos cubren el origen paginado y la preselección) y el ajuste su backend
+ * (`adjustmentDouble`, sobre el backend falso). Cada uno pasa por su fuente salvo que la prueba instale `list`: así
  * se simula una ubicación con más de una página, y una fuente equivocada no
  * queda tapada por la otra.
  */
@@ -57,16 +57,17 @@ vi.mock('@/services/procurement/inventoryStock.service', async (importOriginal) 
 	return {
 		...actual,
 		// El ajuste lee y escribe en un backend falso con datos propios de la prueba;
-		// el traslado no tiene backend y sigue con el mock.
+		// el traslado usa el mock. Su backend se prueba en `TransferPanelApi.test.tsx`.
 		...fake,
-		listInventoryStock: withDouble(stockDouble, actual.listInventoryStock),
+		listTransferStock: withDouble(stockDouble, actual.listTransferStock),
 		listAdjustmentStock: withDouble(adjustmentDouble, fake.listAdjustmentStock),
 	};
 });
 
-// Como en desarrollo: inventario y traslados con mock, el ajuste con backend.
+// Inventario y traslados con mock, el ajuste con backend: cada flujo con su bandera.
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
 vi.mock('@/config/inventoryAdjustments.config', () => ({ default: false }));
+vi.mock('@/config/inventoryTransfers.config', () => ({ default: true }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ branchId: 4, subsidiaryId: 2 }),
 }));
@@ -213,13 +214,13 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		expect(screen.queryByLabelText('Origen')).not.toBeInTheDocument();
 	});
 
-	it('respeta `?tab=traslado` y descarta un valor desconocido', () => {
+	it('respeta `?tab=traslado` y descarta un valor desconocido', async () => {
 		const { unmount } = renderPage('/?tab=traslado');
 		expect(screen.getByRole('tab', { name: 'Traslados internos' })).toHaveAttribute(
 			'aria-selected',
 			'true',
 		);
-		expect(screen.getByLabelText('Origen')).toBeInTheDocument();
+		expect(await screen.findByLabelText('Origen')).toBeInTheDocument();
 		expect(screen.queryByLabelText('Ubicación')).not.toBeInTheDocument();
 		unmount();
 
@@ -230,7 +231,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		);
 	});
 
-	it('cambia de pestaña en la URL y reinicia el progreso de la otra', () => {
+	it('cambia de pestaña en la URL y reinicia el progreso de la otra', async () => {
 		renderPage('/?tab=ajuste');
 		fireEvent.change(screen.getByLabelText('Ubicación'), {
 			target: { value: 'unlocated' },
@@ -238,7 +239,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 
 		fireEvent.click(screen.getByRole('tab', { name: 'Traslados internos' }));
 		expect(screen.getByTestId('location')).toHaveTextContent('?tab=traslado');
-		expect(screen.getByLabelText('Origen')).toBeInTheDocument();
+		expect(await screen.findByLabelText('Origen')).toBeInTheDocument();
 		// Sólo la pestaña activa queda montada.
 		expect(screen.queryByLabelText('Ubicación')).not.toBeInTheDocument();
 
@@ -247,9 +248,10 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		expect(screen.getByLabelText('Ubicación')).toHaveValue('');
 	});
 
-	it('nombra el paso de la pestaña activa con un título dentro de su sección', () => {
+	it('nombra el paso de la pestaña activa con un título dentro de su sección', async () => {
 		renderPage('/?tab=ajuste');
 		fireEvent.click(screen.getByRole('tab', { name: 'Traslados internos' }));
+		await screen.findByLabelText('Origen');
 
 		const sections = [...document.querySelectorAll('section[aria-labelledby]')];
 		expect(sections).toHaveLength(1);
@@ -335,7 +337,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		it('el traslado toma la bodega como origen y elige el producto cuando el origen lo tiene', async () => {
 			renderPage(`/?tab=traslado&warehouse_id=${SHELF_ID}&product_id=${MOUSE_ID}`);
 
-			expect(screen.getByLabelText('Origen')).toHaveValue(`warehouse:${SHELF_ID}`);
+			expect(await screen.findByLabelText('Origen')).toHaveValue(`warehouse:${SHELF_ID}`);
 			fireEvent.change(screen.getByLabelText('Destino'), {
 				target: { value: 'warehouse:8' },
 			});
@@ -350,7 +352,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		it('el traslado descarta un producto que el origen no tiene', async () => {
 			renderPage(`/?tab=traslado&warehouse_id=${SHELF_ID}&product_id=999999`);
 
-			fireEvent.change(screen.getByLabelText('Destino'), {
+			fireEvent.change(await screen.findByLabelText('Destino'), {
 				target: { value: 'warehouse:8' },
 			});
 			const next = screen.getByRole('button', { name: 'Siguiente' });
@@ -369,7 +371,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			// El `<select>` no tiene opción para esa bodega y se vería vacío aunque
 			// el formulario la guardara: lo que prueba que se ignoró es que el
 			// asistente no avanza sin origen.
-			fireEvent.change(screen.getByLabelText('Destino'), {
+			fireEvent.change(await screen.findByLabelText('Destino'), {
 				target: { value: 'warehouse:8' },
 			});
 			const next = screen.getByRole('button', { name: 'Siguiente' });
@@ -394,7 +396,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 
 			fireEvent.click(screen.getByRole('tab', { name: 'Traslados internos' }));
 			expect(screen.getByTestId('location')).toHaveTextContent(/^\?tab=traslado$/);
-			expect(screen.getByLabelText('Origen')).toHaveValue('');
+			expect(await screen.findByLabelText('Origen')).toHaveValue('');
 		});
 	});
 	describe('preselección de traslado con el origen paginado', () => {
@@ -407,10 +409,10 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		 * una respuesta real del Estante A3 y sólo reemplaza filas y `meta`.
 		 */
 		const installPagedOrigin = async () => {
-			const { listInventoryStock } = await vi.importActual<typeof InventoryStockService>(
+			const { listTransferStock } = await vi.importActual<typeof InventoryStockService>(
 				'@/services/procurement/inventoryStock.service',
 			);
-			const base = await listInventoryStock(4, { warehouse_id: SHELF_ID });
+			const base = await listTransferStock(4, { warehouse_id: SHELF_ID });
 			const template = base.data[0];
 			const rows = Array.from({ length: 150 }, (_, index) => ({
 				...template,
@@ -441,7 +443,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		};
 
 		const goToItems = async () => {
-			fireEvent.change(screen.getByLabelText('Destino'), {
+			fireEvent.change(await screen.findByLabelText('Destino'), {
 				target: { value: 'warehouse:8' },
 			});
 			const next = screen.getByRole('button', { name: 'Siguiente' });

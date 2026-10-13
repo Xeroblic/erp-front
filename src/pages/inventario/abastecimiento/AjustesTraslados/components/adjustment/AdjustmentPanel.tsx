@@ -10,8 +10,10 @@ import AdjustmentItemsEditor from '@/pages/inventario/abastecimiento/AjustesTras
 import AdjustmentResultCard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/adjustment/AdjustmentResultCard';
 import StepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
 import type { IWizardStepConfig } from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
-import { unattributedFromContext } from '@/pages/inventario/abastecimiento/AjustesTraslados/adjustment.types';
-import { AJUSTE_STEPS } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
+import {
+	AJUSTE_STEPS,
+	unattributedFromContext,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import type { IAjustesTrasladosPreselection } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 
 export interface AdjustmentPanelProps {

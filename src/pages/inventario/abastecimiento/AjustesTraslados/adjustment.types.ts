@@ -1,5 +1,9 @@
 import * as Yup from 'yup';
 import { LOCATION_TOKEN_PATTERN } from '@/utils/inventoryLocation.util';
+import {
+	itemLineErrorsFrom,
+	type TItemLineErrors,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import type { TStockCondition } from '@/interface/procurement.interface';
 
 export interface IAjusteItemDraft {
@@ -99,9 +103,7 @@ export const AJUSTE_FORM_FIELDS: Readonly<Record<string, string>> = {
 };
 
 /** Errores del servidor por línea: índice del formulario → campo → mensaje. */
-export type TAjusteLineErrors = Record<number, Partial<Record<keyof IAjusteItemDraft, string>>>;
-
-const ITEM_FIELD_PATTERN = /^items\.(\d+)\.(\w+)$/;
+export type TAjusteLineErrors = TItemLineErrors<keyof IAjusteItemDraft>;
 
 /**
  * Campo del formulario que muestra cada error de línea. `origin_id` no tiene
@@ -114,33 +116,7 @@ const ITEM_FORM_FIELDS: Readonly<Record<string, keyof IAjusteItemDraft>> = {
 	condition: 'condition',
 };
 
-/**
- * Errores de línea de un 422 (`items.N.campo`) por línea del formulario: el
- * backend no reordena, así que `N` es la posición enviada. Se queda con el
- * primer mensaje de cada campo.
- */
+/** Errores de línea de un 422 (`items.N.campo`) por línea del formulario de ajuste. */
 export const ajusteLineErrorsFrom = (
 	fieldErrors: Record<string, string[]> | null,
-): TAjusteLineErrors => {
-	const lines: TAjusteLineErrors = {};
-	Object.entries(fieldErrors ?? {}).forEach(([apiField, messages]) => {
-		const match = ITEM_FIELD_PATTERN.exec(apiField);
-		if (!match || !messages[0]) return;
-		const index = Number(match[1]);
-		const field = ITEM_FORM_FIELDS[match[2]] ?? 'productId';
-		const line = lines[index] ?? {};
-		line[field] ??= messages[0];
-		lines[index] = line;
-	});
-	return lines;
-};
-
-/**
- * Unidades sin procedencia que un `409 INSUFFICIENT_LOCATION_STOCK` informa en
- * `context`. Un respaldo automático las regulariza cada 15 minutos, así que
- * el mismo ajuste puede pasar más tarde (con una clave nueva).
- */
-export const unattributedFromContext = (context: Record<string, unknown> | null): number => {
-	const value = context?.unattributed_quantity;
-	return typeof value === 'number' && Number.isFinite(value) ? value : 0;
-};
+): TAjusteLineErrors => itemLineErrorsFrom(fieldErrors, ITEM_FORM_FIELDS, 'productId');

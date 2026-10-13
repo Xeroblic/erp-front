@@ -11,12 +11,18 @@ import TransferItemsEditor from '@/pages/inventario/abastecimiento/AjustesTrasla
 import TransferResultCard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/transfer/TransferResultCard';
 import StepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
 import type { IWizardStepConfig } from '@/pages/inventario/abastecimiento/AjustesTraslados/components/parts/StepWizard';
-import { locationToken } from '@/utils/inventoryLocation.util';
+import {
+	TRASLADO_STEPS,
+	unattributedFromContext,
+} from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import type { IAjustesTrasladosPreselection } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
+import type { ITransferWarehouse } from '@/interface/procurement.interface';
 
 export interface TransferPanelProps {
 	branchId: number;
 	owner: string;
+	/** Bodegas de la sucursal, ya cargadas (ver `TransferTab`). */
+	warehouses: readonly ITransferWarehouse[];
 	/** Origen (`location`) y producto con que abre el asistente (de la URL). */
 	preselection?: IAjustesTrasladosPreselection;
 	/** Avisa si hay una escritura en curso o pendiente de reintento. */
@@ -44,16 +50,25 @@ const TRASLADO_STEP_CONFIG: readonly IWizardStepConfig[] = [
 	},
 ];
 
+/** Errores de un 422 que se marcan en el paso «Origen y destino». */
+const ROUTE_API_FIELDS = ['from_warehouse_id', 'to_warehouse_id'];
+
 /**
- * Pestaña «Traslados internos». La autorización, la sucursal y la bandera de
- * mocks las resuelve `AjustesTrasladosView` antes de montarla.
+ * Asistente de «Traslados internos». La autorización y la sucursal las resuelve
+ * `AjustesTrasladosView`, y las bodegas `TransferTab`, antes de montarlo.
  *
  * Se lee en tres pasos: origen y destino, productos, y motivo.
  */
-const TransferPanel = ({ branchId, owner, preselection, onBusyChange }: TransferPanelProps) => {
+const TransferPanel = ({
+	branchId,
+	owner,
+	warehouses,
+	preselection,
+	onBusyChange,
+}: TransferPanelProps) => {
 	const {
 		formik,
-		warehouses,
+		originOptions,
 		destinationOptions,
 		summary,
 		originRows,
@@ -61,6 +76,7 @@ const TransferPanel = ({ branchId, owner, preselection, onBusyChange }: Transfer
 		originError,
 		balanceFor,
 		errorFor,
+		serverLineErrorCount,
 		setOrigin,
 		setItem,
 		addItem,
@@ -71,11 +87,19 @@ const TransferPanel = ({ branchId, owner, preselection, onBusyChange }: Transfer
 		clearResult,
 		wizard,
 		submit,
-	} = useInternalTransfer(branchId, owner, preselection);
+	} = useInternalTransfer(branchId, owner, warehouses, preselection);
 
 	// Con un resultado incierto (`canRetry`) el formulario se congela: el
 	// reintento tiene que llevar exactamente el mismo comando y la misma clave.
 	const frozen = idempotentWrite.isSubmitting || idempotentWrite.canRetry;
+	const writeError = idempotentWrite.error;
+	const unattributed =
+		writeError?.code === 'INSUFFICIENT_LOCATION_STOCK'
+			? unattributedFromContext(writeError.context)
+			: 0;
+	const hasRouteError = ROUTE_API_FIELDS.some((field) =>
+		Boolean(writeError?.fieldErrors?.[field]?.length),
+	);
 
 	useEffect(() => {
 		onBusyChange?.(frozen);
@@ -154,14 +178,9 @@ const TransferPanel = ({ branchId, owner, preselection, onBusyChange }: Transfer
 											isTouched={formik.touched.from}
 											invalidFeedback={formik.errors.from}>
 											<option value=''>Selecciona el origen…</option>
-											<option value={locationToken(null)}>
-												Sin ubicación
-											</option>
-											{warehouses.map((warehouse) => (
-												<option
-													key={warehouse.id}
-													value={locationToken(warehouse.id)}>
-													{warehouse.name}
+											{originOptions.map((option) => (
+												<option key={option.value} value={option.value}>
+													{option.label}
 												</option>
 											))}
 										</Select>
@@ -203,7 +222,8 @@ const TransferPanel = ({ branchId, owner, preselection, onBusyChange }: Transfer
 							</div>
 							<p className='mt-2 text-xs text-zinc-500'>
 								«Sin ubicación» agrupa el stock que aún no tiene ubicación asignada
-								y es válido como origen o destino.
+								y es válido como origen o destino. Una bodega inactiva sólo puede
+								ser origen, para vaciarla.
 							</p>
 						</div>
 					)}
@@ -312,9 +332,63 @@ const TransferPanel = ({ branchId, owner, preselection, onBusyChange }: Transfer
 								</Validation>
 							</div>
 
-							{idempotentWrite.error && (
+							{writeError && (
 								<Alert color='red' title='No se pudo registrar el traslado'>
-									<span role='alert'>{idempotentWrite.error.message}</span>
+									<div role='alert' className='space-y-1'>
+										<p>{writeError.message}</p>
+										{hasRouteError && (
+											<div className='flex flex-wrap items-center gap-3'>
+												<span>
+													El origen o el destino no son válidos: están
+													marcados en «Origen y destino».
+												</span>
+												<Button
+													variant='outline'
+													color='red'
+													size='sm'
+													icon='HeroArrowUturnLeft'
+													onClick={() => {
+														void wizard.stepClick(
+															TRASLADO_STEPS.indexOf('route'),
+														);
+													}}>
+													Revisar ubicaciones
+												</Button>
+											</div>
+										)}
+										{serverLineErrorCount > 0 && (
+											<div className='flex flex-wrap items-center gap-3'>
+												<span>
+													{serverLineErrorCount === 1
+														? 'Una línea tiene errores: está marcada en «Productos».'
+														: `${serverLineErrorCount} líneas tienen errores: están marcadas en «Productos».`}
+												</span>
+												<Button
+													variant='outline'
+													color='red'
+													size='sm'
+													icon='HeroArrowUturnLeft'
+													onClick={() => {
+														void wizard.stepClick(
+															TRASLADO_STEPS.indexOf('items'),
+														);
+													}}>
+													Revisar productos
+												</Button>
+											</div>
+										)}
+										{unattributed > 0 && (
+											<p>
+												Hay {unattributed}{' '}
+												{unattributed === 1
+													? 'unidad sin procedencia registrada'
+													: 'unidades sin procedencia registrada'}{' '}
+												en el origen, que el traslado todavía no puede
+												mover. Se regularizan automáticamente cada 15
+												minutos: vuelve a intentarlo más tarde.
+											</p>
+										)}
+									</div>
 								</Alert>
 							)}
 						</div>

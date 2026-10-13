@@ -7,11 +7,11 @@ import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Alert from '@/components/ui/Alert';
 import Tabs, { Tab } from '@/components/ui/Tabs';
 import INVENTORY_ADJUSTMENTS_USE_MOCKS from '@/config/inventoryAdjustments.config';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
+import INVENTORY_TRANSFERS_USE_MOCKS from '@/config/inventoryTransfers.config';
 import Pages from '@/config/pages.config';
 import useAjustesTraslados from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useAjustesTraslados';
 import AdjustmentPanel from '@/pages/inventario/abastecimiento/AjustesTraslados/components/adjustment/AdjustmentPanel';
-import TransferPanel from '@/pages/inventario/abastecimiento/AjustesTraslados/components/transfer/TransferPanel';
+import TransferTab from '@/pages/inventario/abastecimiento/AjustesTraslados/components/transfer/TransferTab';
 import type {
 	AjustesTrasladosTab,
 	IAjustesTrasladosPreselection,
@@ -89,14 +89,8 @@ const AjustesTrasladosTabs = ({
 					text='Traslados internos'
 					icon='HeroArrowsRightLeft'
 					disabled={busy && activeTab !== 'traslado'}>
-					{activeTab === 'traslado' && !INVENTORY_STOCK_USE_MOCKS && (
-						<Alert title='Traslados internos no habilitados'>
-							El servidor todavía no publica los traslados entre ubicaciones. Por
-							ahora el stock se corrige con un ajuste sobre «Sin ubicación».
-						</Alert>
-					)}
-					{activeTab === 'traslado' && INVENTORY_STOCK_USE_MOCKS && (
-						<TransferPanel
+					{activeTab === 'traslado' && (
+						<TransferTab
 							owner={owner}
 							branchId={branchId}
 							preselection={preselection}
@@ -109,7 +103,21 @@ const AjustesTrasladosTabs = ({
 	);
 };
 
+/** Aviso de datos simulados según qué flujo usa el mock; `null` si ambos escriben en el backend. */
+const mockNoticeFor = (adjustmentMock: boolean, transferMock: boolean): string | null => {
+	if (adjustmentMock && transferMock)
+		return 'Pantalla de demostración. Los ajustes y traslados no afectan al inventario real.';
+	if (transferMock) return 'Los traslados usan datos simulados. El ajuste escribe en el backend.';
+	if (adjustmentMock)
+		return 'El ajuste usa datos simulados. Los traslados escriben en el backend.';
+	return null;
+};
+
 const AjustesTrasladosView = () => {
+	const mockNotice = mockNoticeFor(
+		INVENTORY_ADJUSTMENTS_USE_MOCKS,
+		INVENTORY_TRANSFERS_USE_MOCKS,
+	);
 	const { access, branchId, subsidiaryId, owner, activeTab, changeTab, preselection } =
 		useAjustesTraslados();
 
@@ -158,11 +166,9 @@ const AjustesTrasladosView = () => {
 			    descendiente pesa más que la utilidad del componente, y `:not(:disabled)`
 			    conserva el gris de los campos bloqueados. */}
 			<Container className='space-y-6 [&_input:not(:disabled)]:bg-white dark:[&_input:not(:disabled)]:bg-zinc-900 [&_select:not(:disabled)]:bg-white dark:[&_select:not(:disabled)]:bg-zinc-900 [&_textarea:not(:disabled)]:bg-white dark:[&_textarea:not(:disabled)]:bg-zinc-900'>
-				{(INVENTORY_STOCK_USE_MOCKS || INVENTORY_ADJUSTMENTS_USE_MOCKS) && (
+				{mockNotice && (
 					<Alert color='amber' title='Datos simulados'>
-						{INVENTORY_ADJUSTMENTS_USE_MOCKS
-							? 'Pantalla de demostración. Los ajustes y traslados no afectan al inventario real.'
-							: 'Los traslados usan datos simulados. El ajuste escribe en el backend.'}
+						{mockNotice}
 					</Alert>
 				)}
 				{content}

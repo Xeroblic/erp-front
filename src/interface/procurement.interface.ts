@@ -113,6 +113,14 @@ export interface IWarehouseCompact {
 	name: string;
 }
 
+/**
+ * Bodega que el traslado ofrece como ubicación. Una inactiva no recibe stock
+ * (422 en `to_warehouse_id`), pero sí puede ser origen, para vaciarla.
+ */
+export interface ITransferWarehouse extends IWarehouseCompact {
+	is_active: boolean;
+}
+
 /* =================================================
    Costo de compra: entrada y respuesta son diferentes
    ================================================= */
