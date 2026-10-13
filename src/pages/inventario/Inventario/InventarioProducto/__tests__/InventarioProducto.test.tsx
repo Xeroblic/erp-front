@@ -27,6 +27,12 @@ vi.mock('@/config/inventoryStock.config', () => ({
 		return context.enabled;
 	},
 }));
+// Recepciones comparte la fuente de Inventario: sus procedencias enlazan a su ficha.
+vi.mock('@/config/inventoryReceipts.config', () => ({
+	get default() {
+		return context.enabled;
+	},
+}));
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
 vi.mock('@/store', async () => {
 	const redux = await import('react-redux');

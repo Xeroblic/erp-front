@@ -19,6 +19,13 @@ vi.mock(
 	() => import('@/mocks/services/purchaseDocuments.mock'),
 );
 
+const receiptsFlag = vi.hoisted(() => ({ useMocks: true }));
+vi.mock('@/config/inventoryReceipts.config', () => ({
+	get default() {
+		return receiptsFlag.useMocks;
+	},
+}));
+
 const branchContext = vi.hoisted(() => ({ branchId: 4, subsidiaryId: 4 }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ ...branchContext }),
@@ -136,7 +143,29 @@ describe('useDocumentoCompraDetalle — cambio de contexto', () => {
 });
 
 describe('useDocumentoCompraDetalle — recepción diferida', () => {
-	it('retira create_receipt de la botonera y lo marca como diferido para avisar', async () => {
+	afterEach(() => {
+		receiptsFlag.useMocks = true;
+	});
+
+	it('con Recepciones real ofrece create_receipt y abre el alta con el documento', async () => {
+		receiptsFlag.useMocks = false;
+		routeParams.documentoId = String(OTHER_DOCUMENT_ID);
+		const { result } = renderHook(() => useDocumentoCompraDetalle(), {
+			wrapper: createWrapper(),
+		});
+		await waitFor(() => expect(result.current.document?.id).toBe(OTHER_DOCUMENT_ID));
+
+		expect(result.current.allowedActions).toContain('create_receipt');
+		expect(result.current.isReceiptDeferred).toBe(false);
+
+		act(() => result.current.handleAction('create_receipt'));
+
+		expect(router.navigate).toHaveBeenCalledWith(
+			`/inventario/abastecimiento/recepciones?purchase_document_id=${OTHER_DOCUMENT_ID}`,
+		);
+	});
+
+	it('con Recepciones simulada retira create_receipt y lo marca como diferido para avisar', async () => {
 		routeParams.documentoId = String(OTHER_DOCUMENT_ID);
 		const { result } = renderHook(() => useDocumentoCompraDetalle(), {
 			wrapper: createWrapper(),

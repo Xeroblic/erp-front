@@ -1,6 +1,7 @@
 import React from 'react';
 import type { FormikProps } from 'formik';
 import Alert from '@/components/ui/Alert';
+import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import DateInput from '@/components/form/DateInput';
 import Input from '@/components/form/Input';
@@ -10,7 +11,8 @@ import SelectReact from '@/components/form/SelectReact';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import Validation from '@/components/form/Validation';
-import type { IStockReceipt } from '@/interface/procurement.interface';
+import { STOCK_RECEIPTS_USE_TEST_SUPPLIERS } from '@/services/procurement/stockReceipts.service';
+import type { IStockReceipt, IWarehouseCompact } from '@/interface/procurement.interface';
 import SupplierOptionsNotice from '@/pages/inventario/abastecimiento/DocumentosCompra/components/parts/SupplierOptionsNotice';
 import type { TSupplierOptionsUnavailableReason } from '@/pages/inventario/abastecimiento/DocumentosCompra/hooks/useActiveSupplierOptions';
 import {
@@ -36,7 +38,11 @@ interface IReceiptDetailsStepProps {
 	isLocked: boolean;
 	documentOptions: TSelectOption[];
 	loadingDocuments: boolean;
-	warehouseOptions: { id: number; name: string }[];
+	warehouseOptions: readonly IWarehouseCompact[];
+	loadingWarehouses: boolean;
+	/** Mensaje del fallo al cargar las bodegas; `null` si cargaron. */
+	warehousesError: string | null;
+	onRetryWarehouses: () => void;
 	supplierOptions: TSelectOption[];
 	loadingSuppliers: boolean;
 	suppliersUnavailableReason: TSupplierOptionsUnavailableReason | null;
@@ -55,6 +61,9 @@ const ReceiptDetailsStep: React.FC<IReceiptDetailsStepProps> = ({
 	documentOptions,
 	loadingDocuments,
 	warehouseOptions,
+	loadingWarehouses,
+	warehousesError,
+	onRetryWarehouses,
 	supplierOptions,
 	loadingSuppliers,
 	suppliersUnavailableReason,
@@ -64,11 +73,9 @@ const ReceiptDetailsStep: React.FC<IReceiptDetailsStepProps> = ({
 
 	return (
 		<>
-			{/* `usePurchaseDocumentPicker` lee el mock, no la API real que
-			    ya usa Documentos de compra: los documentos no coinciden. Se
-			    muestra sin depender de la bandera porque el selector lee el
-			    mock siempre, y con el estilo de los demás avisos del modal. */}
-			{!isManual && (
+			{/* Con datos simulados, `usePurchaseDocumentPicker` lee los documentos
+			    del doble, no los registrados en Documentos de compra. */}
+			{!isManual && STOCK_RECEIPTS_USE_TEST_SUPPLIERS && (
 				<Alert
 					color='amber'
 					variant='outline'
@@ -173,7 +180,9 @@ const ReceiptDetailsStep: React.FC<IReceiptDetailsStepProps> = ({
 									isValid={!formik.errors.warehouse_id}
 									isTouched={Boolean(formik.touched.warehouse_id)}
 									invalidFeedback={formik.errors.warehouse_id}>
-									<option value=''>Selecciona…</option>
+									<option value=''>
+										{loadingWarehouses ? 'Cargando bodegas…' : 'Selecciona…'}
+									</option>
 									{warehouseOptions.map((warehouse) => (
 										<option key={warehouse.id} value={warehouse.id}>
 											{warehouse.name}
@@ -181,11 +190,28 @@ const ReceiptDetailsStep: React.FC<IReceiptDetailsStepProps> = ({
 									))}
 								</Select>
 							</Validation>
-							{warehouseOptions.length === 0 && (
-								<p className='text-xs text-zinc-500'>
-									Tus sucursales autorizadas no tienen bodegas de recepción.
-								</p>
+							{warehousesError !== null && (
+								<div role='status' className='flex flex-wrap items-center gap-2'>
+									<p className='text-xs text-red-600 dark:text-red-400'>
+										{warehousesError}
+									</p>
+									<Button
+										type='button'
+										size='xs'
+										variant='ghost'
+										color='blue'
+										onClick={onRetryWarehouses}>
+										Reintentar
+									</Button>
+								</div>
 							)}
+							{!loadingWarehouses &&
+								warehousesError === null &&
+								warehouseOptions.length === 0 && (
+									<p className='text-xs text-zinc-500'>
+										Tus sucursales autorizadas no tienen bodegas activas.
+									</p>
+								)}
 						</div>
 
 						<div className='space-y-1'>
@@ -271,7 +297,8 @@ const ReceiptDetailsStep: React.FC<IReceiptDetailsStepProps> = ({
 								/>
 								<p className='text-xs text-zinc-500'>
 									Si lo indicas, el costo de cada producto pasa a ser obligatorio.
-									Son proveedores de prueba, no los registrados en Proveedores.
+									{STOCK_RECEIPTS_USE_TEST_SUPPLIERS &&
+										' Son proveedores de prueba, no los registrados en Proveedores.'}
 								</p>
 							</div>
 						)}

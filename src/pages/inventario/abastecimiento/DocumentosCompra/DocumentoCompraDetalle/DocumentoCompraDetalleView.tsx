@@ -137,8 +137,8 @@ const DocumentoCompraDetalleView = () => {
 						)}
 
 						{/*
-						 * El backend ofrece `create_receipt`, pero el hook la retira
-						 * porque Recepciones sigue sobre datos simulados. Se explica
+						 * Con Recepciones en datos simulados, el hook retira
+						 * `create_receipt` aunque el backend la ofrezca. Se explica
 						 * en vez de mostrar un botón deshabilitado.
 						 */}
 						{isReceiptDeferred && (
@@ -315,13 +315,14 @@ const DocumentoCompraDetalleView = () => {
 							<CardBody className='space-y-3'>
 								<RelatedCountsCard relatedCounts={document.related_counts} />
 								{/*
-								 * Los conteos son reales; el detalle de cada recepción o
-								 * asignación todavía no: esos módulos siguen sin backend y
-								 * sus datos simulados usan otros ids de documento.
+								 * Los conteos son reales; el detalle de cada asignación
+								 * todavía no: el backend no la publica, y con Recepciones
+								 * simulada tampoco el de sus recepciones.
 								 */}
 								<p className='text-sm text-zinc-500 dark:text-zinc-400'>
-									El detalle de recepciones y asignaciones de stock inicial estará
-									disponible cuando se habiliten las recepciones de mercadería.
+									{isReceiptDeferred
+										? 'El detalle de recepciones y asignaciones de stock inicial estará disponible cuando se habiliten las recepciones de mercadería.'
+										: 'El detalle de las asignaciones de stock inicial estará disponible cuando el sistema las publique.'}
 								</p>
 							</CardBody>
 						</Card>

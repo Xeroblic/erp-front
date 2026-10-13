@@ -5,7 +5,12 @@ import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import usePollingWhile from '@/hooks/usePollingWhile';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { STOCK_RECEIPTS_USE_TEST_SUPPLIERS } from '@/services/procurement/stockReceipts.service';
+import INVENTORY_RECEIPTS_USE_MOCKS from '@/config/inventoryReceipts.config';
+import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
+import {
+	STOCK_RECEIPTS_ENTER_UNLOCATED,
+	STOCK_RECEIPTS_USE_TEST_SUPPLIERS,
+} from '@/services/procurement/stockReceipts.service';
 import {
 	clearStockReceiptCurrent,
 	fetchStockReceiptDetail,
@@ -27,17 +32,35 @@ import { inventarioBodegaLink } from '@/pages/inventario/Inventario/types';
 import useReceiptActor from '../../hooks/useReceiptActor';
 
 /**
- * «Ver en inventario» de una recepción ingresada: la ficha de su bodega.
- * Inventario muestra la sucursal activa, así que sólo se ofrece cuando la
- * recepción es de esa sucursal; si no, la bodega no aparecería allí.
+ * Dónde quedó el stock de una recepción ingresada, visto desde Inventario.
+ * `null` cuando Inventario y Recepciones no leen la misma fuente (uno
+ * simulado y el otro real): la ubicación no mostraría lo recibido.
+ */
+export type TReceiptStockPlacement = 'warehouse' | 'unlocated';
+
+const resolveReceiptStockPlacement = (): TReceiptStockPlacement | null => {
+	if (INVENTORY_RECEIPTS_USE_MOCKS !== INVENTORY_STOCK_USE_MOCKS) return null;
+	return STOCK_RECEIPTS_ENTER_UNLOCATED ? 'unlocated' : 'warehouse';
+};
+
+const RECEIPT_STOCK_PLACEMENT = resolveReceiptStockPlacement();
+
+/**
+ * «Ver en inventario» de una recepción ingresada: la ubicación donde entró su
+ * stock — su bodega, o «Sin ubicación» en la etapa 1 del backend. Inventario
+ * muestra la sucursal activa, así que sólo se ofrece cuando la recepción es de
+ * esa sucursal; si no, lo recibido no aparecería allí.
  */
 export const receiptInventoryLink = (
 	receipt: IStockReceipt | null,
 	branchId: number | null,
-): IPageLink | null =>
-	receipt?.status === 'posted' && branchId !== null && receipt.branch_id === branchId
-		? inventarioBodegaLink(receipt.warehouse.id)
-		: null;
+	placement: TReceiptStockPlacement | null = RECEIPT_STOCK_PLACEMENT,
+): IPageLink | null => {
+	if (receipt?.status !== 'posted' || branchId === null || receipt.branch_id !== branchId)
+		return null;
+	if (placement === null) return null;
+	return inventarioBodegaLink(placement === 'unlocated' ? null : receipt.warehouse.id);
+};
 
 /**
  * Ficha de recepción (sección 7 del contrato). A diferencia del listado, acá
@@ -186,11 +209,11 @@ const useRecepcionDetalle = () => {
 	);
 
 	/**
-	 * Destinos de las referencias cruzadas de la ficha. Mientras Recepciones
-	 * sea simulada, su proveedor y su documento salen de la semilla de prueba
+	 * Destinos de las referencias cruzadas de la ficha. Con datos simulados, su
+	 * proveedor y su documento salen de la semilla de prueba
 	 * (`STOCK_RECEIPTS_USE_TEST_SUPPLIERS`), pero las fichas de Proveedores y
 	 * Documentos de compra leen la API real: el mismo id no existe allí, o es
-	 * otro registro. Hasta que Recepciones tenga backend se dejan como texto.
+	 * otro registro. En ese caso se dejan como texto.
 	 */
 	const links = useMemo<{ supplier: IPageLink | null; document: IPageLink | null }>(() => {
 		if (STOCK_RECEIPTS_USE_TEST_SUPPLIERS || !receipt)
@@ -216,6 +239,8 @@ const useRecepcionDetalle = () => {
 		receipt,
 		links,
 		inventoryLink,
+		/** El stock ingresado queda en «Sin ubicación», no en la bodega (etapa 1). */
+		entersUnlocated: STOCK_RECEIPTS_ENTER_UNLOCATED,
 		isPollingStalled,
 		resumePolling,
 		etag,

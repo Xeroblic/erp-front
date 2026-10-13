@@ -108,6 +108,8 @@ const CancelStockReceiptModal: React.FC<ICancelStockReceiptModalProps> = ({
 								id='cancel-recepcion-reason'
 								name='reason'
 								rows={3}
+								// Tope de `reason` en `CancelStockReceiptRequest`.
+								maxLength={500}
 								disabled={idempotentWrite.canRetry}
 								value={reason}
 								onChange={(event) => setReason(event.target.value)}

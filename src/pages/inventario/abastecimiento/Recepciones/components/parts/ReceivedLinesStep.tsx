@@ -1,8 +1,9 @@
 import React from 'react';
 import type { FormikProps } from 'formik';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import type { TSelectOption } from '@/components/form/SelectReact';
 import type { IPurchaseDocument } from '@/interface/procurement.interface';
+import ProductOptionsNotice from '@/pages/inventario/abastecimiento/DocumentosCompra/components/parts/ProductOptionsNotice';
+import type usePurchasableProductOptions from '@/pages/inventario/abastecimiento/DocumentosCompra/hooks/usePurchasableProductOptions';
 import DocumentLinesEditor from './DocumentLinesEditor';
 import ManualLinesEditor from './ManualLinesEditor';
 import {
@@ -18,8 +19,12 @@ interface IReceivedLinesStepProps {
 	formik: FormikProps<IStockReceiptFormValues>;
 	isEdit: boolean;
 	isLocked: boolean;
-	/** Modo sin documento: productos elegibles. */
-	productOptions: TSelectOption[];
+	subsidiaryId: number | null;
+	/** Modo sin documento: búsqueda en el catálogo de productos. */
+	productOptions: ReturnType<typeof usePurchasableProductOptions>;
+	/** Ofrece «Nuevo producto» en cada línea sin documento. */
+	canCreateProduct: boolean;
+	onCreateProduct: (lineIndex: number) => void;
 	/** Modo con documento: ficha del documento elegido y su carga. */
 	selectedDocument: IPurchaseDocument | null;
 	loadingSelectedDocument: boolean;
@@ -33,7 +38,10 @@ const ReceivedLinesStep: React.FC<IReceivedLinesStepProps> = ({
 	formik,
 	isEdit,
 	isLocked,
+	subsidiaryId,
 	productOptions,
+	canCreateProduct,
+	onCreateProduct,
 	selectedDocument,
 	loadingSelectedDocument,
 }) => {
@@ -57,15 +65,24 @@ const ReceivedLinesStep: React.FC<IReceivedLinesStepProps> = ({
 			</CardHeader>
 			<CardBody>
 				{isManual ? (
-					<ManualLinesEditor
-						formik={formik}
-						productOptions={productOptions}
-						isCostRequired={hasKnownSupplier}
-						disabled={isLocked}
-						fieldClassName={RECEPCION_FIELD_CLASSNAME}
-						selectClassName={RECEPCION_SELECT_CLASSNAME}
-						itemClassName={RECEPCION_ITEM_CLASSNAME}
-					/>
+					<div className='space-y-3'>
+						<ProductOptionsNotice
+							reason={productOptions.unavailableReason}
+							onRetry={productOptions.reload}
+						/>
+						<ManualLinesEditor
+							formik={formik}
+							subsidiaryId={subsidiaryId}
+							productOptions={productOptions}
+							canCreateProduct={canCreateProduct}
+							onCreateProduct={onCreateProduct}
+							isCostRequired={hasKnownSupplier}
+							disabled={isLocked}
+							fieldClassName={RECEPCION_FIELD_CLASSNAME}
+							selectClassName={RECEPCION_SELECT_CLASSNAME}
+							itemClassName={RECEPCION_ITEM_CLASSNAME}
+						/>
+					</div>
 				) : (
 					<DocumentLinesEditor
 						formik={formik}

@@ -1,100 +1,301 @@
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
+import INVENTORY_RECEIPTS_USE_MOCKS from '@/config/inventoryReceipts.config';
 import * as stockReceiptsMock from '@/mocks/services/stockReceipts.mock';
-import {
-	rejectEndpointNotPublished,
-	throwEndpointNotPublished,
-} from '@/utils/procurementEndpoint.util';
+import ApiService from '@/services/ApiService';
+import listBranchWarehouses from '@/services/procurement/branchWarehouses.service';
+import { listProcurementSuppliers } from '@/services/procurement/procurementSuppliers.service';
+import { searchPurchasableProducts } from '@/services/procurement/purchasableProducts.service';
+import type { IPurchasableProductsPage } from '@/services/procurement/purchasableProducts.service';
+import { rejectEndpointNotPublished } from '@/utils/procurementEndpoint.util';
+import { buildProcurementWriteHeaders, readEtagHeader } from '@/utils/procurementWrite.util';
+import type {
+	IApiCollectionEnvelope,
+	IApiResourceEnvelope,
+	IProcurementActorCompact,
+	IProcurementSupplierListParams,
+	IProcurementSupplierListRow,
+	IStockReceipt,
+	IStockReceiptCancelPayload,
+	IStockReceiptCreatePayload,
+	IStockReceiptLinkPurchaseDocumentPayload,
+	IStockReceiptListParams,
+	IStockReceiptListRow,
+	IStockReceiptReversePayload,
+	IStockReceiptUpdatePayload,
+	IStockReceiptWarehouse,
+} from '@/interface/procurement.interface';
 
 /**
  * Recepciones físicas — sección 7 del contrato de abastecimiento,
  * `/api/subsidiaries/{subsidiary}/procurement/stock-receipts`.
  *
  * Fachada con la firma pública de siempre: slices, hooks y vistas importan
- * sólo de aquí. Con `VITE_INVENTORY_STOCK_USE_MOCKS` encendida delega en el
+ * sólo de aquí. Con `VITE_INVENTORY_RECEIPTS_USE_MOCKS` encendida delega en el
  * doble (`@/mocks/services/stockReceipts.mock`), que además hace de backend en
- * los efectos cruzados sobre el documento y el stock simulado. Apagada, usa la
- * API real.
+ * los efectos cruzados sobre el documento y el stock simulados. Apagada, usa
+ * la API real.
  *
- * **El backend todavía no publica estas rutas** (Laravel Boost, 01-10-2026:
- * bajo `procurement` sólo existen `suppliers` y `purchase-documents`). Mientras
- * tanto, la rama real rechaza con `ProcurementEndpointNotPublishedError` en
- * vez de inventar datos. Las rutas anotadas en cada función salen del contrato
- * (`frontend-guide.md` §7–§8) y quedan **pendientes de
- * confirmar** —método, campos, nulabilidad y permiso efectivo— el día que se
- * publiquen. Permiso previsto (§15): `view-product` para leer y `edit-product`
- * para escribir, más `view-purchase-document` si la recepción tiene documento.
+ * Contrato verificado contra el backend (tareas 11 y 12, `StockReceipt*`):
+ * - Leer exige `view-product`; escribir, `edit-product` y operar en la
+ *   sucursal **de la bodega** de la recepción. Con documento, toda acción
+ *   exige además `view-purchase-document`.
+ * - Toda escritura exige `Idempotency-Key`; sólo el PATCH exige además
+ *   `If-Match` (428 sin él, 412 `RESOURCE_VERSION_CONFLICT` con uno viejo).
+ * - El detalle y cada escritura responden la ficha completa con su `ETag`.
+ * - `post` y `retry` responden 202 con la recepción `queued`: la ficha
+ *   consulta el detalle hasta `posted` o `failed`. `reverse` es síncrono.
+ * - Etapa 1 de la filial: el stock entra a «Sin ubicación» de la sucursal de
+ *   la recepción; la bodega queda registrada sólo en la recepción
+ *   (`STOCK_RECEIPTS_ENTER_UNLOCATED`).
+ *
+ * **Sin publicar**: vincular un documento a una recepción ya creada (tarea 13
+ * del backend). Rechaza con `ProcurementEndpointNotPublishedError`.
+ *
+ * Sin caché de `ApiService`: la ficha cambia con cada escritura y el slice ya
+ * descarta respuestas tardías por `requestId`.
  */
 
 /**
- * Recepciones trabaja con proveedores de prueba mientras no tenga backend.
- * Quien muestre datos de recepciones junto a un proveedor real (la ficha de
- * Proveedores) lo consulta para no cruzar un id real con la semilla. Lo mismo
- * vale para sus documentos vinculados, que salen de la semilla de documentos:
- * las fichas de recepción e inventario no enlazan proveedor ni documento a las
- * fichas reales mientras sea `true` (`@/config/procurementLinks`). Pasa a
- * `false` el día que la rama real de esta fachada llame a rutas publicadas.
+ * Recepciones usa los proveedores y documentos de prueba del doble mientras
+ * la bandera esté encendida. Quien muestre datos de recepciones junto a un
+ * proveedor o documento real (las fichas de Proveedores y Documentos de
+ * compra) lo consulta para no cruzar un id real con la semilla.
  */
-export const STOCK_RECEIPTS_USE_TEST_SUPPLIERS = true;
+export const STOCK_RECEIPTS_USE_TEST_SUPPLIERS = INVENTORY_RECEIPTS_USE_MOCKS;
+
+/**
+ * Dónde queda el stock de una recepción ingresada. El backend real está en la
+ * etapa 1 en todas las filiales (`inventory.multi_location_subsidiaries`
+ * vacío) y no publica la etapa: el stock entra a «Sin ubicación» de la
+ * sucursal, no a la bodega elegida. El doble sí lo ingresa a la bodega.
+ */
+export const STOCK_RECEIPTS_ENTER_UNLOCATED = !INVENTORY_RECEIPTS_USE_MOCKS;
 
 const RESOURCE = 'las recepciones';
 const P = '/subsidiaries/{subsidiary}/procurement';
 
-const rejectNotPublished = (endpoint: string): Promise<never> =>
-	rejectEndpointNotPublished(RESOURCE, endpoint);
+interface IStockReceiptWriteHeaders {
+	idempotencyKey?: string;
+	/** `ETag` vigente de la ficha. Sólo lo usa `PATCH`. */
+	etag?: string | null;
+}
 
-const throwNotPublished = (endpoint: string): never =>
-	throwEndpointNotPublished(RESOURCE, endpoint);
+export interface IStockReceiptResponse {
+	data: IStockReceipt;
+	headers: { etag: string | null };
+}
 
-type TStockReceiptsService = Pick<
-	typeof stockReceiptsMock,
-	| 'listStockReceipts'
-	| 'listStockReceiptsForPurchaseDocument'
-	| 'getStockReceipt'
-	| 'createStockReceipt'
-	| 'updateStockReceipt'
-	| 'cancelStockReceipt'
-	| 'postStockReceipt'
-	| 'retryStockReceipt'
-	| 'reverseStockReceipt'
-	| 'linkStockReceiptPurchaseDocument'
-	| 'listWarehousesForStockReceipts'
-	| 'getStockReceiptWarehouseBranchId'
-	| 'listStockReceiptSuppliers'
->;
+interface IStockReceiptsService {
+	listStockReceipts: (
+		subsidiaryId: number,
+		params?: IStockReceiptListParams,
+	) => Promise<IApiCollectionEnvelope<IStockReceiptListRow>>;
+	listStockReceiptsForPurchaseDocument: (
+		subsidiaryId: number,
+		documentId: number,
+		params?: { page?: number; per_page?: number },
+	) => Promise<IApiCollectionEnvelope<IStockReceiptListRow>>;
+	getStockReceipt: (subsidiaryId: number, id: number) => Promise<IStockReceiptResponse>;
+	createStockReceipt: (
+		subsidiaryId: number,
+		payload: IStockReceiptCreatePayload,
+		headers?: IStockReceiptWriteHeaders,
+		/** Sólo el doble lo usa: el backend autoriza por la sucursal de la bodega. */
+		authorizedBranchIds?: readonly number[] | null,
+	) => Promise<IStockReceiptResponse>;
+	updateStockReceipt: (
+		subsidiaryId: number,
+		id: number,
+		payload: IStockReceiptUpdatePayload,
+		headers?: IStockReceiptWriteHeaders,
+		authorizedBranchIds?: readonly number[] | null,
+	) => Promise<IStockReceiptResponse>;
+	cancelStockReceipt: (
+		subsidiaryId: number,
+		id: number,
+		payload: IStockReceiptCancelPayload,
+		headers?: IStockReceiptWriteHeaders,
+	) => Promise<IStockReceiptResponse>;
+	/** `actor` sólo lo usa el doble: el backend toma al solicitante del token. */
+	postStockReceipt: (
+		subsidiaryId: number,
+		id: number,
+		actor: IProcurementActorCompact,
+		headers?: IStockReceiptWriteHeaders,
+	) => Promise<IStockReceiptResponse>;
+	retryStockReceipt: (
+		subsidiaryId: number,
+		id: number,
+		actor: IProcurementActorCompact,
+		headers?: IStockReceiptWriteHeaders,
+	) => Promise<IStockReceiptResponse>;
+	reverseStockReceipt: (
+		subsidiaryId: number,
+		id: number,
+		payload: IStockReceiptReversePayload,
+		headers?: IStockReceiptWriteHeaders,
+	) => Promise<IStockReceiptResponse>;
+	linkStockReceiptPurchaseDocument: (
+		subsidiaryId: number,
+		id: number,
+		payload: IStockReceiptLinkPurchaseDocumentPayload,
+		headers?: IStockReceiptWriteHeaders,
+	) => Promise<IStockReceiptResponse>;
+	listWarehousesForStockReceipts: (
+		branchIds: readonly number[],
+		signal?: AbortSignal,
+	) => Promise<IStockReceiptWarehouse[]>;
+	listStockReceiptSuppliers: (
+		subsidiaryId: number,
+		params: IProcurementSupplierListParams,
+	) => Promise<IApiCollectionEnvelope<IProcurementSupplierListRow>>;
+	searchStockReceiptProducts: (
+		subsidiaryId: number,
+		search: string,
+	) => Promise<IPurchasableProductsPage>;
+}
 
-const apiStockReceipts: TStockReceiptsService = {
-	listStockReceipts: () => rejectNotPublished(`GET ${P}/stock-receipts`),
-	listStockReceiptsForPurchaseDocument: () =>
-		rejectNotPublished(`GET ${P}/purchase-documents/{document}/stock-receipts`),
-	getStockReceipt: () => rejectNotPublished(`GET ${P}/stock-receipts/{receipt}`),
-	createStockReceipt: () => rejectNotPublished(`POST ${P}/stock-receipts`),
-	updateStockReceipt: () => rejectNotPublished(`PATCH ${P}/stock-receipts/{receipt}`),
-	cancelStockReceipt: () => rejectNotPublished(`POST ${P}/stock-receipts/{receipt}/cancel`),
-	postStockReceipt: () => rejectNotPublished(`POST ${P}/stock-receipts/{receipt}/post`),
-	retryStockReceipt: () => rejectNotPublished(`POST ${P}/stock-receipts/{receipt}/retry`),
-	reverseStockReceipt: () => rejectNotPublished(`POST ${P}/stock-receipts/{receipt}/reverse`),
-	linkStockReceiptPurchaseDocument: () =>
-		rejectNotPublished(`PUT ${P}/stock-receipts/{receipt}/purchase-document`),
-	// Síncronas: el catálogo real de bodegas (`GET /branches/{branch}/warehouses`)
-	// exige una lectura asíncrona que esta firma no admite. Se resuelve cuando
-	// se publiquen las recepciones; hasta entonces no se ofrece la semilla.
-	listWarehousesForStockReceipts: () => throwNotPublished('catálogo de bodegas de recepción'),
-	getStockReceiptWarehouseBranchId: () => throwNotPublished('catálogo de bodegas de recepción'),
-	// El maestro real de proveedores sí está publicado, pero este selector sólo
-	// sirve para crear una recepción, que no lo está. Llamarlo desde aquí, aun
-	// con import dinámico, cierra el ciclo `ApiService → store →
-	// stockReceiptsSlice → fachada`. Se conecta junto con la rama real.
-	listStockReceiptSuppliers: () => rejectNotPublished(`POST ${P}/stock-receipts`),
+const receiptsUrl = (subsidiaryId: number): string =>
+	`/subsidiaries/${subsidiaryId}/procurement/stock-receipts`;
+
+const receiptUrl = (subsidiaryId: number, id: number): string =>
+	`${receiptsUrl(subsidiaryId)}/${id}`;
+
+/**
+ * Sin clave el backend responde 428 `IDEMPOTENCY_KEY_REQUIRED`: no se inventa
+ * una acá, porque sólo quien reintenta sabe si la tentativa es la misma.
+ */
+const writeHeaders = ({ idempotencyKey, etag }: IStockReceiptWriteHeaders = {}):
+	| Record<string, string>
+	| undefined =>
+	idempotencyKey ? buildProcurementWriteHeaders({ idempotencyKey, etag }) : undefined;
+
+/**
+ * Rechazo local del PATCH sin versión: misma forma que un 428 del backend
+ * para que la UI lo resuelva igual («recarga»), con un mensaje que nombra la
+ * causa real. `If-Match: *` pasaría la precondición y pisaría una edición ajena.
+ */
+export const MISSING_RECEIPT_ETAG_MESSAGE =
+	'No se pudo leer la versión de la recepción, así que no se puede corregir sin arriesgar cambios ajenos. Recarga la ficha.';
+
+const missingEtagError = (): Error =>
+	Object.assign(new Error(MISSING_RECEIPT_ETAG_MESSAGE), {
+		isAxiosError: true,
+		response: { status: 428, data: { message: MISSING_RECEIPT_ETAG_MESSAGE } },
+	});
+
+const toReceiptResponse = (response: {
+	data: IApiResourceEnvelope<IStockReceipt>;
+	headers: unknown;
+}): IStockReceiptResponse => ({
+	data: response.data.data,
+	headers: { etag: readEtagHeader(response.headers) },
+});
+
+const postReceiptAction = async (
+	subsidiaryId: number,
+	id: number,
+	action: 'cancel' | 'post' | 'retry' | 'reverse',
+	payload: IStockReceiptCancelPayload | IStockReceiptReversePayload | undefined,
+	headers: IStockReceiptWriteHeaders | undefined,
+): Promise<IStockReceiptResponse> => {
+	const response = await ApiService.fetchData<
+		IApiResourceEnvelope<IStockReceipt>,
+		IStockReceiptCancelPayload | IStockReceiptReversePayload | undefined
+	>({
+		url: `${receiptUrl(subsidiaryId, id)}/${action}`,
+		method: 'post',
+		data: payload,
+		headers: writeHeaders(headers),
+	});
+	return toReceiptResponse(response);
 };
 
-const stockReceipts: TStockReceiptsService = INVENTORY_STOCK_USE_MOCKS
+const apiStockReceipts: IStockReceiptsService = {
+	listStockReceipts: async (subsidiaryId, params = {}) => {
+		const response = await ApiService.fetchData<IApiCollectionEnvelope<IStockReceiptListRow>>({
+			url: receiptsUrl(subsidiaryId),
+			method: 'get',
+			params,
+		});
+		return response.data;
+	},
+	// No hay ruta propia: el listado filtra por documento con la misma
+	// autorización por sucursal que el resto.
+	listStockReceiptsForPurchaseDocument: (subsidiaryId, documentId, params = {}) =>
+		apiStockReceipts.listStockReceipts(subsidiaryId, {
+			...params,
+			purchase_document_id: documentId,
+		}),
+	getStockReceipt: async (subsidiaryId, id) => {
+		const response = await ApiService.fetchData<IApiResourceEnvelope<IStockReceipt>>({
+			url: receiptUrl(subsidiaryId, id),
+			method: 'get',
+		});
+		return toReceiptResponse(response);
+	},
+	createStockReceipt: async (subsidiaryId, payload, headers) => {
+		const response = await ApiService.fetchData<
+			IApiResourceEnvelope<IStockReceipt>,
+			IStockReceiptCreatePayload
+		>({
+			url: receiptsUrl(subsidiaryId),
+			method: 'post',
+			data: payload,
+			headers: writeHeaders(headers),
+		});
+		return toReceiptResponse(response);
+	},
+	updateStockReceipt: async (subsidiaryId, id, payload, headers) => {
+		if (!headers?.etag) throw missingEtagError();
+		const response = await ApiService.fetchData<
+			IApiResourceEnvelope<IStockReceipt>,
+			IStockReceiptUpdatePayload
+		>({
+			url: receiptUrl(subsidiaryId, id),
+			method: 'patch',
+			data: payload,
+			headers: writeHeaders(headers),
+		});
+		return toReceiptResponse(response);
+	},
+	cancelStockReceipt: (subsidiaryId, id, payload, headers) =>
+		postReceiptAction(subsidiaryId, id, 'cancel', payload, headers),
+	postStockReceipt: (subsidiaryId, id, _actor, headers) =>
+		postReceiptAction(subsidiaryId, id, 'post', undefined, headers),
+	retryStockReceipt: (subsidiaryId, id, _actor, headers) =>
+		postReceiptAction(subsidiaryId, id, 'retry', undefined, headers),
+	reverseStockReceipt: (subsidiaryId, id, payload, headers) =>
+		postReceiptAction(subsidiaryId, id, 'reverse', payload, headers),
+	linkStockReceiptPurchaseDocument: () =>
+		rejectEndpointNotPublished(RESOURCE, `PUT ${P}/stock-receipts/{receipt}/purchase-document`),
+	// Sólo activas: el backend rechaza una bodega inactiva salvo la que la
+	// recepción ya tenía, y esa la agrega el formulario al corregir.
+	listWarehousesForStockReceipts: async (branchIds, signal) => {
+		const perBranch = await Promise.all(
+			branchIds.map((branchId) => listBranchWarehouses(branchId, signal)),
+		);
+		return perBranch.flat().filter((warehouse) => warehouse.is_active);
+	},
+	// Envoltorios y no la referencia: el servicio de proveedores carga
+	// `ApiService`, que carga el store, que carga el slice de recepciones, que
+	// carga esta fachada. Leer la referencia al evaluar el módulo la vería sin
+	// inicializar.
+	listStockReceiptSuppliers: (subsidiaryId, params) =>
+		listProcurementSuppliers(subsidiaryId, params),
+	// El catálogo real que ya usa Documentos de compra: activos y sin serie,
+	// la regla con que el backend valida `items.*.product_id`.
+	searchStockReceiptProducts: (subsidiaryId, search) =>
+		searchPurchasableProducts(subsidiaryId, search),
+};
+
+const stockReceipts: IStockReceiptsService = INVENTORY_RECEIPTS_USE_MOCKS
 	? stockReceiptsMock
 	: apiStockReceipts;
 
 /** `GET /stock-receipts`. Orden `received_on` DESC, ID DESC. */
 export const { listStockReceipts } = stockReceipts;
 
-/** `GET /purchase-documents/{document}/stock-receipts`: resumen paginado. */
+/** `GET /stock-receipts?purchase_document_id=`: recepciones de un documento. */
 export const { listStockReceiptsForPurchaseDocument } = stockReceipts;
 
 /** `GET /stock-receipts/{receipt}`: detalle con `ETag`. */
@@ -121,11 +322,11 @@ export const { reverseStockReceipt } = stockReceipts;
 /** `PUT /stock-receipts/{receipt}/purchase-document`: vínculo posterior, único. */
 export const { linkStockReceiptPurchaseDocument } = stockReceipts;
 
-/** Bodegas que se ofrecen en el alta/edición, filtradas por sucursales autorizadas. */
+/** Bodegas activas de esas sucursales, cada una con la suya. */
 export const { listWarehousesForStockReceipts } = stockReceipts;
-
-/** Sucursal dueña de una bodega de recepción, o `null` si no existe. */
-export const { getStockReceiptWarehouseBranchId } = stockReceipts;
 
 /** Proveedores del selector del alta sin documento. */
 export const { listStockReceiptSuppliers } = stockReceipts;
+
+/** Productos activos y no serializados de la filial que coinciden con el término. */
+export const { searchStockReceiptProducts } = stockReceipts;

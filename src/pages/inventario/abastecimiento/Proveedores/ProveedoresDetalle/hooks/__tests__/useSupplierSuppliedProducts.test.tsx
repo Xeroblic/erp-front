@@ -33,8 +33,8 @@ vi.mock('@/hooks/useAuthorization', () => ({
 // Datos simulados encendidos, como en `.env.development`: la bandera no debe
 // bastar para cruzar un proveedor real con las recepciones de prueba.
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
-// `testSuppliers` modela `STOCK_RECEIPTS_USE_TEST_SUPPLIERS`. Hoy es `true`;
-// las pruebas de carga lo apagan para ejercer el día en que Recepciones sea real.
+// `testSuppliers` modela `STOCK_RECEIPTS_USE_TEST_SUPPLIERS`, que sigue la
+// bandera de Recepciones (`VITE_INVENTORY_RECEIPTS_USE_MOCKS`).
 const receiptsSource = vi.hoisted(() => ({ testSuppliers: false }));
 vi.mock('@/services/procurement/stockReceipts.service', () => ({
 	listStockReceipts: vi.fn(),
@@ -138,12 +138,15 @@ describe('useSupplierSuppliedProducts', () => {
 		receiptsSource.testSuppliers = false;
 	});
 
-	it('Recepciones trabaja hoy con proveedores de prueba', async () => {
+	it('los proveedores de prueba siguen la bandera de Recepciones', async () => {
 		const actual = await vi.importActual<
 			typeof import('@/services/procurement/stockReceipts.service')
 		>('@/services/procurement/stockReceipts.service');
+		const { default: receiptsUseMocks } = await vi.importActual<
+			typeof import('@/config/inventoryReceipts.config')
+		>('@/config/inventoryReceipts.config');
 
-		expect(actual.STOCK_RECEIPTS_USE_TEST_SUPPLIERS).toBe(true);
+		expect(actual.STOCK_RECEIPTS_USE_TEST_SUPPLIERS).toBe(receiptsUseMocks);
 	});
 
 	it('con proveedores de prueba no consulta recepciones aunque haya datos simulados y permiso', () => {

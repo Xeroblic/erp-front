@@ -1,11 +1,6 @@
 import React from 'react';
-import { ProcurementMockGate } from '@/components/procurement';
 import RecepcionesView from './RecepcionesView';
 
-const Recepciones = () => (
-	<ProcurementMockGate title='Recepciones' icon='HeroInboxArrowDown'>
-		<RecepcionesView />
-	</ProcurementMockGate>
-);
+const Recepciones = () => <RecepcionesView />;
 
 export default Recepciones;

@@ -17,6 +17,7 @@ import Textarea from '@/components/form/Textarea';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch } from '@/store';
 import { createInventoryDocumentAllocationThunk } from '@/store/slices/procurement/inventoryStockSlice';
+import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import usePurchaseDocumentPicker from '@/pages/inventario/abastecimiento/Recepciones/hooks/usePurchaseDocumentPicker';
 import type { IInventoryStockOriginRow } from '@/interface/procurement.interface';
 import {
@@ -76,7 +77,13 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 	// esas líneas: el picker lee el documento antes de que exista el formulario.
 	const [pickerDocumentId, setPickerDocumentId] = useState<number | ''>('');
 	const { documents, loadingDocuments, selectedDocument, loadingSelectedDocument } =
-		usePurchaseDocumentPicker(subsidiaryId, isOpen, pickerDocumentId);
+		// Los documentos de la misma fuente que el stock que se respalda.
+		usePurchaseDocumentPicker(
+			subsidiaryId,
+			isOpen,
+			pickerDocumentId,
+			INVENTORY_STOCK_USE_MOCKS,
+		);
 
 	const documentOptions = documents.map((document) => ({
 		value: String(document.id),

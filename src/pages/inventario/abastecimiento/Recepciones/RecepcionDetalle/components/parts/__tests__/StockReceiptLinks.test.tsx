@@ -116,15 +116,36 @@ describe('StockReceiptProgressCard', () => {
 });
 
 describe('receiptInventoryLink', () => {
-	it('enlaza la bodega sólo si la recepción está en stock y es de la sucursal activa', () => {
-		expect(receiptInventoryLink(receipt, receipt.branch_id)?.to).toBe(
+	it('enlaza sólo si la recepción está en stock y es de la sucursal activa', () => {
+		expect(receiptInventoryLink(receipt, receipt.branch_id, 'warehouse')?.to).toBe(
 			`/inventario/stock/bodegas/${receipt.warehouse.id}`,
 		);
-		expect(receiptInventoryLink(receipt, receipt.branch_id + 1)).toBeNull();
-		expect(receiptInventoryLink(receipt, null)).toBeNull();
+		expect(receiptInventoryLink(receipt, receipt.branch_id + 1, 'warehouse')).toBeNull();
+		expect(receiptInventoryLink(receipt, null, 'warehouse')).toBeNull();
 		expect(
-			receiptInventoryLink({ ...receipt, status: 'queued' }, receipt.branch_id),
+			receiptInventoryLink({ ...receipt, status: 'queued' }, receipt.branch_id, 'warehouse'),
 		).toBeNull();
-		expect(receiptInventoryLink(null, receipt.branch_id)).toBeNull();
+		expect(receiptInventoryLink(null, receipt.branch_id, 'warehouse')).toBeNull();
+	});
+
+	it('en la etapa 1 del backend enlaza «Sin ubicación», donde entró el stock', () => {
+		expect(receiptInventoryLink(receipt, receipt.branch_id, 'unlocated')?.to).toBe(
+			'/inventario/stock/bodegas/sin-ubicacion',
+		);
+	});
+
+	it('sin una fuente común con Inventario no ofrece el atajo', () => {
+		expect(receiptInventoryLink(receipt, receipt.branch_id, null)).toBeNull();
+	});
+});
+
+describe('StockReceiptProgressCard — dónde quedó el stock', () => {
+	it('en la etapa 1 no afirma que las unidades estén en la bodega', () => {
+		renderAs(<StockReceiptProgressCard receipt={receipt} entersUnlocated />, ['view-product']);
+
+		expect(
+			screen.getByText(/disponibles en la sucursal, en «Sin ubicación»/),
+		).toBeInTheDocument();
+		expect(screen.queryByText(/disponibles en la bodega/)).not.toBeInTheDocument();
 	});
 });

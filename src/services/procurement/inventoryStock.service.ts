@@ -3,6 +3,7 @@ import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import INVENTORY_TRANSFERS_USE_MOCKS from '@/config/inventoryTransfers.config';
 import * as inventoryStockMock from '@/mocks/services/inventoryStock.mock';
 import ApiService from '@/services/ApiService';
+import listBranchWarehouses from '@/services/procurement/branchWarehouses.service';
 import { buildProcurementWriteHeaders } from '@/utils/procurementWrite.util';
 import {
 	rejectEndpointNotPublished,
@@ -115,38 +116,6 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
 		: null;
 
 const NOT_FOUND_STATUS = 404;
-
-const WAREHOUSES_PER_PAGE = 100;
-
-/** Una fila sin `id`, `name` o `is_active` legibles no se ofrece: no se podría nombrar ni validar. */
-const toTransferWarehouse = (value: unknown): ITransferWarehouse[] => {
-	const record = asRecord(value);
-	const { id, name, is_active: isActive } = record ?? {};
-	if (typeof id !== 'number' || typeof name !== 'string' || typeof isActive !== 'boolean')
-		return [];
-	return [{ id, name, is_active: isActive }];
-};
-
-/** `GET B/warehouses` (`view-warehouse`): una página del listado de bodegas de la sucursal. */
-const fetchWarehousePage = async (
-	branchId: number,
-	page: number,
-	signal?: AbortSignal,
-): Promise<{ warehouses: ITransferWarehouse[]; lastPage: number }> => {
-	const response = await ApiService.fetchData<unknown>({
-		url: `${branchUrl(branchId)}/warehouses`,
-		method: 'get',
-		params: { page, per_page: WAREHOUSES_PER_PAGE },
-		signal,
-	});
-	const body = asRecord(response.data);
-	const rows = Array.isArray(body?.data) ? body.data : [];
-	const lastPage = asRecord(body?.meta)?.last_page;
-	return {
-		warehouses: rows.flatMap(toTransferWarehouse),
-		lastPage: typeof lastPage === 'number' && lastPage > 0 ? lastPage : 1,
-	};
-};
 
 /**
  * `ProductResource` (envuelto en `data`) es mucho más ancho que lo que nombra
@@ -270,17 +239,14 @@ const apiInventoryStock: TInventoryStockService = {
 		});
 		return { data: response.data.data };
 	},
-	// El listado de bodegas pagina: se recorren todas, porque una que falte no
-	// se podría elegir ni como origen ni como destino.
-	listTransferWarehouses: async (branchId, signal) => {
-		const first = await fetchWarehousePage(branchId, 1, signal);
-		const rest = await Promise.all(
-			Array.from({ length: Math.max(first.lastPage - 1, 0) }, (_, index) =>
-				fetchWarehousePage(branchId, index + 2, signal),
-			),
-		);
-		return [first, ...rest].flatMap((page) => page.warehouses);
-	},
+	// Una bodega que falte no se podría elegir ni como origen ni como destino:
+	// `listBranchWarehouses` recorre todas las páginas.
+	listTransferWarehouses: async (branchId, signal) =>
+		(await listBranchWarehouses(branchId, signal)).map(({ id, name, is_active }) => ({
+			id,
+			name,
+			is_active,
+		})),
 	createInventoryDocumentAllocation: () =>
 		rejectNotPublished(`POST ${B}/inventory-stock/{product}/document-allocations`),
 	listInitialStockAllocationsForPurchaseDocument: () =>

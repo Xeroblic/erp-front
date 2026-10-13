@@ -886,12 +886,13 @@ describe('la bodega elegida deriva la sucursal, no la sucursal activa', () => {
 		expect(updated.warehouse.id).toBe(SOUTH_BRANCH_WAREHOUSE_ID);
 	});
 
-	it('el catálogo de bodegas se filtra por sucursales autorizadas', () => {
-		expect(
-			listWarehousesForStockReceipts()
+	it('el catálogo de bodegas se filtra por sucursales autorizadas', async () => {
+		const ids = async (branchIds?: number[]) =>
+			(await listWarehousesForStockReceipts(branchIds))
 				.map((warehouse) => warehouse.id)
-				.sort(),
-		).toEqual(
+				.sort();
+
+		expect(await ids()).toEqual(
 			[
 				MAIN_WAREHOUSE_ID,
 				SHELF_WAREHOUSE_ID,
@@ -901,17 +902,15 @@ describe('la bodega elegida deriva la sucursal, no la sucursal activa', () => {
 			].sort(),
 		);
 
-		expect(
-			listWarehousesForStockReceipts([1])
-				.map((warehouse) => warehouse.id)
-				.sort(),
-		).toEqual([ECOPC_WAREHOUSE_ID, ECOPC_SHOWROOM_WAREHOUSE_ID].sort());
+		expect(await ids([1])).toEqual([ECOPC_WAREHOUSE_ID, ECOPC_SHOWROOM_WAREHOUSE_ID].sort());
+		expect(await ids([BRANCH_ID])).toEqual([MAIN_WAREHOUSE_ID, SHELF_WAREHOUSE_ID].sort());
+	});
 
-		expect(
-			listWarehousesForStockReceipts([BRANCH_ID])
-				.map((warehouse) => warehouse.id)
-				.sort(),
-		).toEqual([MAIN_WAREHOUSE_ID, SHELF_WAREHOUSE_ID].sort());
+	it('cada bodega lleva la sucursal con la que se autoriza la recepción', async () => {
+		const warehouses = await listWarehousesForStockReceipts([BRANCH_ID]);
+
+		expect(warehouses.every((warehouse) => warehouse.branch_id === BRANCH_ID)).toBe(true);
+		expect(warehouses.every((warehouse) => warehouse.is_active)).toBe(true);
 	});
 });
 

@@ -11,8 +11,13 @@ import type { IStockReceipt } from '@/interface/procurement.interface';
 
 interface IStockReceiptProgressCardProps {
 	receipt: IStockReceipt;
-	/** Ficha de la bodega en Inventario, o `null` si no corresponde ofrecerla. */
+	/** Ubicación de Inventario donde entró el stock, o `null` si no corresponde ofrecerla. */
 	inventoryLink?: IPageLink | null;
+	/**
+	 * El stock ingresado queda en «Sin ubicación» de la sucursal, no en la
+	 * bodega de la recepción (etapa 1 del backend).
+	 */
+	entersUnlocated?: boolean;
 	/**
 	 * La ficha dejó de actualizarse sola (tope de la consulta automática) con
 	 * la recepción todavía en `queued`.
@@ -31,7 +36,7 @@ interface IStep {
 }
 
 /** Los tres pasos del contrato (`draft` → `queued` → `posted`) con nombres de bodega. */
-const buildSteps = (status: IStockReceipt['status']): IStep[] => {
+const buildSteps = (status: IStockReceipt['status'], entersUnlocated: boolean): IStep[] => {
 	const isQueued = status === 'queued';
 	const isFailed = status === 'failed';
 	const isPosted = status === 'posted';
@@ -55,7 +60,7 @@ const buildSteps = (status: IStockReceipt['status']): IStep[] => {
 		},
 		{
 			title: 'En stock',
-			hint: 'Disponible en la bodega',
+			hint: entersUnlocated ? 'Disponible en la sucursal' : 'Disponible en la bodega',
 			state: isPosted ? 'done' : 'pending',
 		},
 	];
@@ -110,6 +115,7 @@ const STEP_STATE_LABEL: Record<TStepState, string> = {
 const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
 	receipt,
 	inventoryLink = null,
+	entersUnlocated = false,
 	isPollingStalled = false,
 	onRefresh,
 }) => {
@@ -134,13 +140,13 @@ const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
 				variant='outline'
 				icon='HeroArrowUturnLeft'
 				title='Recepción revertida'>
-				Las unidades que había ingresado se descontaron de la bodega. La historia se
+				Las unidades que había ingresado se descontaron de donde entraron. La historia se
 				conserva.
 			</Alert>
 		);
 	}
 
-	const steps = buildSteps(receipt.status);
+	const steps = buildSteps(receipt.status, entersUnlocated);
 
 	return (
 		<Card>
@@ -240,7 +246,9 @@ const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
 						title='Ingresada al stock'>
 						<div className='flex flex-wrap items-center justify-between gap-3'>
 							<span>
-								Las unidades ya están disponibles en la bodega
+								{entersUnlocated
+									? 'Las unidades ya están disponibles en la sucursal, en «Sin ubicación»'
+									: 'Las unidades ya están disponibles en la bodega'}
 								{receipt.posted_at &&
 									` desde el ${formatDateTime(receipt.posted_at)}`}
 								.

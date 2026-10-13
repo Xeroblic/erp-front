@@ -31,12 +31,10 @@ import type { ISupplierSuppliedProductRow } from '../types';
  * navegar a otro proveedor, el render intermedio no muestra las filas ni el
  * error del anterior.
  *
- * El proveedor de la ficha es real y Recepciones todavía trabaja con
- * proveedores de prueba (`STOCK_RECEIPTS_USE_TEST_SUPPLIERS`): mientras sea
- * así no se pide nada (`available: false`), ni siquiera con los datos
- * simulados encendidos. Si se pidiera, un proveedor real vería compras de la
- * semilla que comparten su id, o recepciones que no cuadran con su
- * `purchase_summary`.
+ * El proveedor de la ficha es real. Con Recepciones en datos simulados
+ * (`STOCK_RECEIPTS_USE_TEST_SUPPLIERS`) no se pide nada (`available: false`):
+ * un proveedor real vería compras de la semilla que comparten su id, o
+ * recepciones que no cuadran con su `purchase_summary`.
  */
 
 const DETAIL_CONCURRENCY = 4;

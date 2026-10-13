@@ -12,6 +12,7 @@ import {
 	selectPurchaseDocumentCurrentLoading,
 	selectPurchaseDocumentCurrentSubsidiaryId,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
+import INVENTORY_RECEIPTS_USE_MOCKS from '@/config/inventoryReceipts.config';
 import { supplierDetailLink } from '@/config/procurementLinks';
 import { readListReturnSearch } from '@/utils/listSearchParams.util';
 import type { TProcurementAllowedAction } from '@/interface/procurement.interface';
@@ -114,15 +115,20 @@ const useDocumentoCompraDetalle = () => {
 	const attachmentsCardRef = useRef<IDocumentAttachmentsCardHandle>(null);
 
 	/**
-	 * `create_receipt` se retira aunque el backend la ofrezca: el alta de
-	 * Recepciones todavía no recibe este documento. La vista lo avisa con
-	 * `isReceiptDeferred`.
+	 * Con Recepciones en datos simulados, `create_receipt` se retira aunque el
+	 * backend la ofrezca: el doble sólo reconoce los documentos de su semilla.
+	 * La vista lo avisa con `isReceiptDeferred`.
 	 */
 	const allowedActions = useMemo(
-		() => (document?.allowed_actions ?? []).filter((action) => action !== 'create_receipt'),
+		() =>
+			(document?.allowed_actions ?? []).filter(
+				(action) => !INVENTORY_RECEIPTS_USE_MOCKS || action !== 'create_receipt',
+			),
 		[document],
 	);
-	const isReceiptDeferred = (document?.allowed_actions ?? []).includes('create_receipt');
+	const isReceiptDeferred =
+		INVENTORY_RECEIPTS_USE_MOCKS &&
+		(document?.allowed_actions ?? []).includes('create_receipt');
 
 	/** Documento y proveedor salen de la API real: su ficha siempre existe. */
 	const supplierLink = useMemo(
@@ -136,8 +142,11 @@ const useDocumentoCompraDetalle = () => {
 			if (action === 'update' || action === 'confirm' || action === 'cancel')
 				setModalOpen(action, true);
 			else if (action === 'add_attachment') attachmentsCardRef.current?.openFilePicker();
+			// El listado de Recepciones abre el alta con este documento elegido.
+			else if (action === 'create_receipt' && id !== null)
+				navigate(`/inventario/abastecimiento/recepciones?purchase_document_id=${id}`);
 		},
-		[setModalOpen],
+		[setModalOpen, id, navigate],
 	);
 
 	return {

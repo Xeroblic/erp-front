@@ -9,11 +9,7 @@ import {
 	postStockReceiptThunk,
 	updateStockReceiptThunk,
 } from '@/store/slices/procurement/stockReceiptsSlice';
-import {
-	getStockReceiptWarehouseBranchId,
-	listWarehousesForStockReceipts,
-} from '@/services/procurement/stockReceipts.service';
-import type { IStockReceipt } from '@/interface/procurement.interface';
+import type { IStockReceipt, IStockReceiptWarehouse } from '@/interface/procurement.interface';
 import { applyProcurementFieldErrors } from '@/utils/procurementErrors.util';
 import useReceiptActor from './useReceiptActor';
 import { stockReceiptFormSchema } from '../types';
@@ -85,6 +81,8 @@ interface IUseStockReceiptFormArgs {
 	initialDocumentId?: number;
 	/** Sucursales autorizadas del actor; `null`/vacío no filtra. */
 	authorizedBranchIds?: number[] | null;
+	/** Bodegas que el formulario ofrece (`useStockReceiptWarehouses`), con su sucursal. */
+	warehouses: readonly IStockReceiptWarehouse[];
 	onSuccess?: (receipt: IStockReceipt) => void;
 }
 
@@ -96,6 +94,7 @@ const useStockReceiptForm = ({
 	etag = null,
 	initialDocumentId,
 	authorizedBranchIds,
+	warehouses,
 	onSuccess,
 }: IUseStockReceiptFormArgs) => {
 	const dispatch = useAppDispatch();
@@ -261,17 +260,17 @@ const useStockReceiptForm = ({
 			}
 
 			// La bodega decide la sucursal de la recepción: se autoriza contra
-			// **esa** sucursal y contra la lista autorizada, no sólo contra la
+			// **esa** sucursal y contra las bodegas ofrecidas, no sólo contra la
 			// sucursal activa. Cubre una bodega ajena que llegue por valor
-			// inicial o por una recepción existente.
+			// inicial. Al corregir, la bodega que la recepción ya tenía sigue
+			// valiendo aunque se haya desactivado: el backend la acepta.
 			const warehouseId = Number(values.warehouse_id);
-			const warehouseBranchId = getStockReceiptWarehouseBranchId(warehouseId);
-			const isOfferedWarehouse = listWarehousesForStockReceipts(authorizedBranchIds).some(
-				(warehouse) => warehouse.id === warehouseId,
-			);
+			const offered = warehouses.find((warehouse) => warehouse.id === warehouseId);
+			const keepsCurrentWarehouse = receipt !== null && receipt.warehouse.id === warehouseId;
+			const warehouseBranchId =
+				offered?.branch_id ?? (keepsCurrentWarehouse ? receipt.branch_id : null);
 			if (
 				warehouseBranchId === null ||
-				!isOfferedWarehouse ||
 				!authorize({
 					permission: 'edit-product',
 					scope: 'access',

@@ -116,6 +116,12 @@ export const PROCUREMENT_ERROR_DEFINITIONS: Record<string, IProcurementErrorDefi
 		'La recepción ya fue consumida: corrige con un ajuste explícito.',
 		'blocked',
 	),
+	RECEIPT_STOCK_RESERVED: define(
+		'RECEIPT_STOCK_RESERVED',
+		409,
+		'Revertir dejaría menos stock disponible que el ya reservado: libera las reservas primero.',
+		'blocked',
+	),
 	INSUFFICIENT_UNDOCUMENTED_STOCK: define(
 		'INSUFFICIENT_UNDOCUMENTED_STOCK',
 		409,

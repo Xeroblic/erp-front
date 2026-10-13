@@ -11,7 +11,6 @@ import {
 	selectStockReceiptsListSubsidiaryId,
 	selectStockReceiptsMeta,
 } from '@/store/slices/procurement/stockReceiptsSlice';
-import { listWarehousesForStockReceipts } from '@/services/procurement/stockReceipts.service';
 import { mergeListParams } from '@/utils/listSearchParams.util';
 import type {
 	IStockReceiptListParams,
@@ -24,6 +23,7 @@ import {
 	STOCK_RECEIPT_STATUS_FILTER_OPTIONS,
 } from '../types';
 import type { IRecepcionesFilters, TStockReceiptStatusFilter } from '../types';
+import useStockReceiptWarehouses from './useStockReceiptWarehouses';
 
 const NO_ROWS: IStockReceiptListRow[] = [];
 
@@ -59,10 +59,7 @@ const useRecepciones = () => {
 		() => visibleBranches.map((branch) => branch.id),
 		[visibleBranches],
 	);
-	const warehouseOptions = useMemo(
-		() => listWarehousesForStockReceipts(authorizedBranchIds),
-		[authorizedBranchIds],
-	);
+	const { warehouses: warehouseOptions } = useStockReceiptWarehouses(subsidiaryId);
 
 	const [searchParams, setSearchParams] = useSearchParams();
 	const urlFilters = useMemo(() => parseRecepcionesFilters(searchParams), [searchParams]);

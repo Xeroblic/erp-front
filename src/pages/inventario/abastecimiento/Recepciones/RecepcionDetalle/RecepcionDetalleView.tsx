@@ -6,6 +6,7 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import { AllowedActionsToolbar, ProcurementMockNotice } from '@/components/procurement';
+import INVENTORY_RECEIPTS_USE_MOCKS from '@/config/inventoryReceipts.config';
 import useRecepcionDetalle from './hooks/useRecepcionDetalle';
 import StockReceiptSummaryCard from './components/parts/StockReceiptSummaryCard';
 import StockReceiptProgressCard from './components/parts/StockReceiptProgressCard';
@@ -30,6 +31,7 @@ const RecepcionDetalleView = () => {
 		receipt,
 		links,
 		inventoryLink,
+		entersUnlocated,
 		isPollingStalled,
 		resumePolling,
 		etag,
@@ -71,7 +73,7 @@ const RecepcionDetalleView = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
-				<ProcurementMockNotice />
+				<ProcurementMockNotice isActive={INVENTORY_RECEIPTS_USE_MOCKS} />
 				{loading && (
 					<div className='space-y-4'>
 						<div className='h-24 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700' />
@@ -115,6 +117,7 @@ const RecepcionDetalleView = () => {
 						<StockReceiptProgressCard
 							receipt={receipt}
 							inventoryLink={inventoryLink}
+							entersUnlocated={entersUnlocated}
 							isPollingStalled={isPollingStalled}
 							onRefresh={resumePolling}
 						/>

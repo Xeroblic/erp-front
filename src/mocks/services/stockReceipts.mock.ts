@@ -12,7 +12,11 @@ import {
 	linkStockReceiptDocumentInInventory,
 	reverseStockReceiptInInventory,
 } from '@/mocks/services/inventoryStock.mock';
-import { findPurchasableProcurementProduct } from '@/services/procurement/procurementProducts.service';
+import {
+	findPurchasableProcurementProduct,
+	listPurchasableProcurementProducts,
+} from '@/services/procurement/procurementProducts.service';
+import type { IPurchasableProductsPage } from '@/services/procurement/purchasableProducts.service';
 import {
 	applyStockReceiptCoverageDelta,
 	bumpPurchaseDocumentStockReceiptsCount,
@@ -50,6 +54,7 @@ import type {
 	IStockReceiptListRow,
 	IStockReceiptReversePayload,
 	IStockReceiptUpdatePayload,
+	IStockReceiptWarehouse,
 	IWarehouseCompact,
 	TCostEntryBasis,
 	TProcurementAllowedAction,
@@ -760,23 +765,49 @@ const resolveWarehouseContext = (
 
 /**
  * Bodegas que corresponde ofrecer para dar de alta/editar una recepción:
- * filtra, si se conocen, por sucursales autorizadas. Se expone
- * desde el servicio para que la UI no importe el catálogo de fixtures
- * directamente para decidir qué mostrar en un selector — la misma disciplina
- * que ya siguen `listPurchaseDocuments`/`listProcurementSuppliers` para sus
- * propios pickers.
+ * filtra, si se conocen, por sucursales autorizadas, y cada una lleva su
+ * sucursal para autorizar contra ella. Se expone desde el servicio para que la
+ * UI no importe el catálogo de fixtures directamente para decidir qué mostrar
+ * en un selector — la misma disciplina que ya siguen
+ * `listPurchaseDocuments`/`listProcurementSuppliers` para sus propios pickers.
+ * El doble no distingue bodegas inactivas: todas las que lista están activas.
  */
 export const listWarehousesForStockReceipts = (
 	authorizedBranchIds?: readonly number[] | null,
-): IWarehouseCompact[] => getProcurementWarehousesForBranchContext(authorizedBranchIds);
+): Promise<IStockReceiptWarehouse[]> =>
+	delay(
+		getProcurementWarehousesForBranchContext(authorizedBranchIds).flatMap((warehouse) => {
+			const branchId = PROCUREMENT_WAREHOUSE_BRANCH_BY_ID[warehouse.id];
+			return branchId === undefined
+				? []
+				: [{ ...warehouse, is_active: true, branch_id: branchId }];
+		}),
+	);
 
 /**
- * Sucursal dueña de una bodega de recepción, o `null` si no existe. Permite a
- * la UI autorizar contra la sucursal **de la bodega elegida**, no contra la
- * sucursal activa de quien opera.
+ * Buscador del alta sin documento sobre los productos comprables del doble,
+ * con la forma de `searchPurchasableProducts`. Sin término lista los primeros.
  */
-export const getStockReceiptWarehouseBranchId = (warehouseId: number): number | null =>
-	resolveWarehouseContext(warehouseId)?.branchId ?? null;
+const PRODUCT_SEARCH_PER_PAGE = 20;
+
+export const searchStockReceiptProducts = (
+	subsidiaryId: number,
+	search: string,
+): Promise<IPurchasableProductsPage> => {
+	const term = search.trim().toLocaleLowerCase('es');
+	const matches = listPurchasableProcurementProducts(subsidiaryId).filter((product) =>
+		`${product.sku} ${product.name}`.toLocaleLowerCase('es').includes(term),
+	);
+	return delay({
+		data: matches.slice(0, PRODUCT_SEARCH_PER_PAGE).map(({ id, sku, name, brand }) => ({
+			id,
+			sku: sku || null,
+			name,
+			brand_name: brand?.name ?? null,
+		})),
+		has_more: matches.length > PRODUCT_SEARCH_PER_PAGE,
+	});
+};
 
 const todayBusinessDate = (): string => new Date().toISOString().slice(0, 10);
 
