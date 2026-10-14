@@ -3,12 +3,21 @@ import { toast } from 'react-toastify';
 import type { RootState } from '@/store/rootReducer';
 import salesService, {
 	type SalesListFilters,
-	type CloseSaleResponse,
 	type PaginatedResponse,
 	type PaginationMeta,
 	type PaginationLinks,
 } from '@/services/salesService';
-import type { ISale, ISaleItem, ICloseSaleRequest } from '@/interface/sales.interface';
+import type {
+	ISale,
+	ISaleItem,
+	ICloseSaleRequest,
+	ICloseSaleResponse,
+} from '@/interface/sales.interface';
+import {
+	isSerialsRequiredError,
+	resolveSaleCloseError,
+	type ISaleCloseError,
+} from '@/utils/saleCloseErrors.util';
 
 type CloseSalePayloadItem = ICloseSaleRequest['items'][number];
 type SaleDetail = ISale;
@@ -89,16 +98,16 @@ export const loadSaleItems = createAsyncThunk<
 	}
 });
 
+/** Rechaza con el error tipado: el 409 de stock y el 422 de series se leen por `code`/`context`. */
 export const closeSaleThunk = createAsyncThunk<
-	CloseSaleResponse,
+	ICloseSaleResponse,
 	{ subsidiaryId: number; saleId: number; items: CloseSalePayloadItem[] },
-	{ rejectValue: string }
+	{ rejectValue: ISaleCloseError }
 >('salesModule/closeSale', async ({ subsidiaryId, saleId, items }, { rejectWithValue }) => {
 	try {
-		const data = await salesService.closeSale(subsidiaryId, saleId, { items });
-		return data;
+		return await salesService.closeSale(subsidiaryId, saleId, { items });
 	} catch (err: unknown) {
-		return rejectWithValue(getErrorMessage(err, 'Error al cerrar la venta'));
+		return rejectWithValue(resolveSaleCloseError(err));
 	}
 });
 
@@ -170,16 +179,18 @@ const salesSlice = createSlice({
 			})
 			.addCase(
 				closeSaleThunk.fulfilled,
-				(state, action: PayloadAction<CloseSaleResponse>) => {
+				(state, action: PayloadAction<ICloseSaleResponse>) => {
 					state.loading = false;
 					toast.success(action.payload?.message || 'Venta cerrada correctamente');
 				},
 			)
 			.addCase(closeSaleThunk.rejected, (state, action) => {
 				state.loading = false;
-				const msg = action.payload || 'Error al cerrar la venta';
+				const msg = action.payload?.message ?? 'Error al cerrar la venta';
 				state.error = msg;
-				toast.error(String(msg));
+				// Faltar series no es un fallo: quien llamó abre el formulario de series.
+				if (action.payload && isSerialsRequiredError(action.payload)) return;
+				toast.error(msg);
 			});
 	},
 });

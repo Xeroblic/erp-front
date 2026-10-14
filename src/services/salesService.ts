@@ -5,6 +5,7 @@ import {
 	ISaleItem,
 	ICreateSaleRequest,
 	ICloseSaleRequest,
+	ICloseSaleResponse,
 } from '@/interface/sales.interface';
 
 // Filtros alineados a la documentación
@@ -15,12 +16,6 @@ export interface SalesListFilters {
 	per_page?: number;
 	page?: number;
 	with_customer?: 0 | 1;
-}
-
-// Interfaces de respuesta específicas del servicio
-export interface CloseSaleResponse {
-	message: string;
-	sale_id: number;
 }
 
 /**
@@ -177,19 +172,21 @@ export const fetchSaleItems = async (
 };
 
 /**
- * Cierra una venta asignando series (Change Status a Completed)
+ * Cierra una venta: vende las series indicadas y descuenta FIFO de «Sin ubicación»
+ * los ítems sin serie. Devuelve la raíz completa: `data` es lo que el cierre aplicó
+ * y `message` queda a su lado, no dentro.
  */
 export const closeSale = async (
 	subsidiaryId: number,
 	saleId: number,
 	payload: ICloseSaleRequest,
-): Promise<CloseSaleResponse> => {
-	const resp = await ApiService.fetchData<any>({
+): Promise<ICloseSaleResponse> => {
+	const resp = await ApiService.fetchData<ICloseSaleResponse, ICloseSaleRequest>({
 		url: `${base(subsidiaryId)}/${saleId}/close`,
 		method: 'post',
-		data: payload as any,
+		data: payload,
 	});
-	return (resp.data?.data ?? resp.data) as CloseSaleResponse;
+	return resp.data;
 };
 
 /** Ítem no serializado reingresado al inventario tras confirmar la devolución. */

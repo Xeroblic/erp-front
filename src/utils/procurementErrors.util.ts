@@ -146,11 +146,12 @@ export const PROCUREMENT_ERROR_DEFINITIONS: Record<string, IProcurementErrorDefi
 		'La ubicación no tiene stock suficiente.',
 		'reload_selection',
 	),
-	INSUFFICIENT_BRANCH_STOCK: define(
-		'INSUFFICIENT_BRANCH_STOCK',
+	// El mismo cierre responde lo mismo hasta que cambie el stock: no se reintenta.
+	SALE_STOCK_INSUFFICIENT: define(
+		'SALE_STOCK_INSUFFICIENT',
 		409,
-		'La sucursal no tiene stock suficiente.',
-		'reload_selection',
+		'No hay stock suficiente para cerrar la venta.',
+		'blocked',
 	),
 	SALE_ALREADY_CLOSED: define('SALE_ALREADY_CLOSED', 409, 'La venta ya fue cerrada.', 'blocked'),
 	RETURN_QUANTITY_MISMATCH: define(

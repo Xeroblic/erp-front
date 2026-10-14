@@ -122,6 +122,48 @@ export interface ICloseSaleRequest {
 	}>;
 }
 
+/** Cantidad descontada de una ubicación; en la etapa 1 siempre «Sin ubicación» (`null`). */
+export interface ISaleCloseAllocation {
+	warehouse_id: number | null;
+	quantity: number;
+}
+
+/**
+ * Lo que el cierre aplicó a una línea: `allocations` si es sin serie,
+ * `serial_numbers` (las series efectivamente vendidas) si es con serie.
+ */
+export interface ISaleCloseFulfilledItem {
+	sale_item_id: number;
+	allocations?: ISaleCloseAllocation[];
+	serial_numbers?: string[];
+}
+
+export interface ISaleCloseResult {
+	id: number;
+	is_closed: boolean;
+	fulfilled_items: ISaleCloseFulfilledItem[];
+}
+
+/** 200 de `POST /sales/{sale}/close`: `data` va junto a `message` y `sale_id`. */
+export interface ICloseSaleResponse {
+	message: string;
+	sale_id: number;
+	data: ISaleCloseResult;
+}
+
+/**
+ * Línea que no alcanza en el 409 `SALE_STOCK_INSUFFICIENT`. Las líneas de un mismo
+ * producto se juzgan juntas: ambas traen el `requested` sumado del producto.
+ * `branch_id` es `null` (con `available: 0`) si ni la venta ni el producto tienen sucursal.
+ */
+export interface ISaleStockShortageItem {
+	sale_item_id: number;
+	product_id: number;
+	branch_id: number | null;
+	requested: number;
+	available: number;
+}
+
 export interface ISaleResponse {
 	data: ISale;
 	success?: boolean;
