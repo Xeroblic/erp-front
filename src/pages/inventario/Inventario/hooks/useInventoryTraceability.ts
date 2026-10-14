@@ -31,7 +31,7 @@ export interface IOperationDetailState {
 }
 
 /**
- * Trazabilidad de los productos sin serie (§14): operaciones de la sucursal,
+ * Trazabilidad agrupada (§14): operaciones de la sucursal,
  * de la más nueva a la más antigua, y el detalle de cada una al desplegarla.
  *
  * Lo usan la pestaña Trazabilidad (filtros en la URL) y la ficha del producto

@@ -10,6 +10,7 @@ import {
 	trazabilidadParams,
 	type IInventarioFilters,
 	type TInventarioUbicacion,
+	type TOperacionSerie,
 	type TOperacionTipo,
 } from '@/pages/inventario/Inventario/types';
 
@@ -23,6 +24,7 @@ interface IInventoryTraceabilityProps {
 	warehouses: IInventoryWarehouseAggregate[];
 	onBusqueda: (value: string) => void;
 	onTipo: (value: TOperacionTipo | null) => void;
+	onSerie: (value: TOperacionSerie | null) => void;
 	onUbicacion: (value: TInventarioUbicacion) => void;
 	onDesde: (value: string) => void;
 	onHasta: (value: string) => void;
@@ -32,8 +34,8 @@ interface IInventoryTraceabilityProps {
 
 /**
  * Pestaña Trazabilidad: qué entró, salió o se movió en la sucursal, operación
- * por operación. Sólo productos sin serie; los serializados se siguen por su
- * número de serie en Revisión técnica.
+ * por operación. Incluye los productos con serie; el filtro «Serie» separa unos
+ * de otros.
  */
 const InventoryTraceability: React.FC<IInventoryTraceabilityProps> = ({
 	subsidiaryId,
@@ -45,21 +47,22 @@ const InventoryTraceability: React.FC<IInventoryTraceabilityProps> = ({
 	warehouses,
 	onBusqueda,
 	onTipo,
+	onSerie,
 	onUbicacion,
 	onDesde,
 	onHasta,
 	onLimpiar,
 	onPaginate,
 }) => {
-	const { ubicacion, tipo, busqueda, desde, hasta, page, perPage } = filtros;
+	const { ubicacion, tipo, serie, busqueda, desde, hasta, page, perPage } = filtros;
 	// `filtros` cambia de identidad con cada URL: la consulta depende sólo de estos campos.
 	const params = useMemo(
 		() =>
 			trazabilidadParams(
-				{ ubicacion, tipo, busqueda, desde, hasta, page, perPage },
+				{ ubicacion, tipo, serie, busqueda, desde, hasta, page, perPage },
 				branchId,
 			),
-		[branchId, ubicacion, tipo, busqueda, desde, hasta, page, perPage],
+		[branchId, ubicacion, tipo, serie, busqueda, desde, hasta, page, perPage],
 	);
 	const data = useInventoryTraceability({
 		subsidiaryId,
@@ -86,6 +89,7 @@ const InventoryTraceability: React.FC<IInventoryTraceabilityProps> = ({
 				warehouses={warehouses}
 				onBusqueda={onBusqueda}
 				onTipo={onTipo}
+				onSerie={onSerie}
 				onUbicacion={onUbicacion}
 				onDesde={onDesde}
 				onHasta={onHasta}
@@ -98,7 +102,7 @@ const InventoryTraceability: React.FC<IInventoryTraceabilityProps> = ({
 			)}
 			<OperationsTable
 				title='Operaciones'
-				description='Recepciones, traslados, ajustes y documentación de los productos sin serie, de la más nueva a la más antigua.'
+				description='Recepciones, ventas, traslados, ajustes y documentación de la sucursal, de la más nueva a la más antigua.'
 				data={data}
 				warehouses={warehouseCatalog}
 				hasFilters={hasFilters}

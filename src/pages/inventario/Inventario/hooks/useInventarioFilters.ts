@@ -11,6 +11,7 @@ import {
 	type IInventarioFilters,
 	type TInventarioUbicacion,
 	type TInventarioVista,
+	type TOperacionSerie,
 	type TOperacionTipo,
 } from '@/pages/inventario/Inventario/types';
 
@@ -21,6 +22,7 @@ const SIN_FILTROS: Partial<IInventarioFilters> = {
 	busqueda: DEFAULT_INVENTARIO_FILTROS.busqueda,
 	orden: DEFAULT_INVENTARIO_FILTROS.orden,
 	tipo: DEFAULT_INVENTARIO_FILTROS.tipo,
+	serie: DEFAULT_INVENTARIO_FILTROS.serie,
 	desde: DEFAULT_INVENTARIO_FILTROS.desde,
 	hasta: DEFAULT_INVENTARIO_FILTROS.hasta,
 };
@@ -72,6 +74,7 @@ const useInventarioFilters = () => {
 	const setBusqueda = useCallback((busqueda: string) => update({ busqueda }), [update]);
 	const setOrden = useCallback((orden: TInventoryStockSort) => update({ orden }), [update]);
 	const setTipo = useCallback((tipo: TOperacionTipo | null) => update({ tipo }), [update]);
+	const setSerie = useCallback((serie: TOperacionSerie | null) => update({ serie }), [update]);
 	const setDesde = useCallback((desde: string) => update({ desde }), [update]);
 	const setHasta = useCallback((hasta: string) => update({ hasta }), [update]);
 	const paginate = useCallback(
@@ -85,7 +88,10 @@ const useInventarioFilters = () => {
 		filtros.ubicacion !== 'branch' ||
 		filtros.busqueda.trim() !== '' ||
 		(filtros.vista === 'trazabilidad'
-			? filtros.tipo !== null || filtros.desde !== '' || filtros.hasta !== ''
+			? filtros.tipo !== null ||
+				filtros.serie !== null ||
+				filtros.desde !== '' ||
+				filtros.hasta !== ''
 			: filtros.estado !== null);
 
 	return {
@@ -97,6 +103,7 @@ const useInventarioFilters = () => {
 		setBusqueda,
 		setOrden,
 		setTipo,
+		setSerie,
 		setDesde,
 		setHasta,
 		paginate,

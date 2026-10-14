@@ -137,11 +137,19 @@ export const operacionTipoInfo = (type: string): IOperacionTipoInfo =>
 		? OPERACION_TIPOS[type]
 		: { label: type, icon: 'HeroQuestionMarkCircle', accent: 'bg-zinc-500' };
 
-/** Operaciones sin efecto físico: documentan unidades que ya estaban. */
-export const OPERACION_TIPOS_DOCUMENTALES: readonly string[] = [
-	'purchase_document_link',
-	'initial_stock_document_allocation',
-];
+/**
+ * Trazabilidad: operaciones con al menos un ítem sin (`sin`) o con (`con`)
+ * seguimiento por serie. Una venta mixta aparece con los dos.
+ */
+export type TOperacionSerie = 'sin' | 'con';
+
+export const OPERACION_SERIES: Record<TOperacionSerie, string> = {
+	sin: 'Sin serie',
+	con: 'Con serie',
+};
+
+export const isOperacionSerie = (value: string | null): value is TOperacionSerie =>
+	value === 'sin' || value === 'con';
 
 export interface IInventarioFilters {
 	vista: TInventarioVista;
@@ -151,6 +159,8 @@ export interface IInventarioFilters {
 	orden: TInventoryStockSort;
 	/** Trazabilidad: tipo de operación (`operation_type`). */
 	tipo: TOperacionTipo | null;
+	/** Trazabilidad: seguimiento por serie (`serial_tracking`); `null` = todas. */
+	serie: TOperacionSerie | null;
 	/** Trazabilidad: rango de fechas `AAAA-MM-DD`; vacío = sin límite. */
 	desde: string;
 	hasta: string;
@@ -167,6 +177,7 @@ export const DEFAULT_INVENTARIO_FILTROS: IInventarioFilters = {
 	busqueda: '',
 	orden: 'name',
 	tipo: null,
+	serie: null,
 	desde: '',
 	hasta: '',
 	page: 1,
@@ -213,6 +224,7 @@ export const parseInventarioFilters = (params: URLSearchParams): IInventarioFilt
 	const estado = params.get('estado');
 	const orden = params.get('orden');
 	const tipo = params.get('tipo');
+	const serie = params.get('serie');
 	return {
 		vista: isInventarioVista(vista) ? vista : 'general',
 		ubicacion,
@@ -220,6 +232,7 @@ export const parseInventarioFilters = (params: URLSearchParams): IInventarioFilt
 		busqueda: params.get('q') ?? '',
 		orden: isOrden(orden) ? orden : 'name',
 		tipo: isOperacionTipo(tipo) ? tipo : null,
+		serie: isOperacionSerie(serie) ? serie : null,
 		desde: parseBusinessDateParam(params.get('desde')),
 		hasta: parseBusinessDateParam(params.get('hasta')),
 		page: parsePageParam(params.get('page'), 1),
@@ -242,6 +255,7 @@ export const serializeInventarioFilters = (filtros: IInventarioFilters): URLSear
 	if (filtros.busqueda.trim()) params.set('q', filtros.busqueda);
 	if (filtros.orden !== 'name') params.set('orden', filtros.orden);
 	if (filtros.tipo) params.set('tipo', filtros.tipo);
+	if (filtros.serie) params.set('serie', filtros.serie);
 	if (filtros.desde) params.set('desde', filtros.desde);
 	if (filtros.hasta) params.set('hasta', filtros.hasta);
 	if (filtros.page !== 1) params.set('page', String(filtros.page));
@@ -255,17 +269,20 @@ export const inventoryLocationParams = (
 	ubicacion: TInventarioUbicacion,
 ): IInventoryStockListParams => (ubicacion === 'branch' ? {} : locationStockParams(ubicacion));
 
+const SERIAL_TRACKING_PARAM: Record<TOperacionSerie, 0 | 1> = { sin: 0, con: 1 };
+
 /** Filtros de la pestaña Trazabilidad como parámetros del §14, acotados a la sucursal activa. */
 export const trazabilidadParams = (
 	filtros: Pick<
 		IInventarioFilters,
-		'ubicacion' | 'tipo' | 'busqueda' | 'desde' | 'hasta' | 'page' | 'perPage'
+		'ubicacion' | 'tipo' | 'serie' | 'busqueda' | 'desde' | 'hasta' | 'page' | 'perPage'
 	>,
 	branchId: number,
 ): IInventoryOperationsParams => ({
 	branch_id: branchId,
 	...inventoryLocationParams(filtros.ubicacion),
 	operation_type: filtros.tipo ?? undefined,
+	serial_tracking: filtros.serie ? SERIAL_TRACKING_PARAM[filtros.serie] : undefined,
 	search: filtros.busqueda.trim() || undefined,
 	occurred_from: filtros.desde || undefined,
 	occurred_to: filtros.hasta || undefined,
@@ -280,6 +297,7 @@ export const filtraItems = (params: IInventoryOperationsParams): boolean =>
 	params.purchase_document_id !== undefined ||
 	params.warehouse_id !== undefined ||
 	params.unlocated !== undefined ||
+	params.serial_tracking !== undefined ||
 	Boolean(params.search);
 
 /* =================================================

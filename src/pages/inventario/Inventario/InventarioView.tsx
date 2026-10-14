@@ -48,6 +48,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 		setBusqueda,
 		setOrden,
 		setTipo,
+		setSerie,
 		setDesde,
 		setHasta,
 		paginate,
@@ -150,6 +151,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 								warehouses={data.warehouses}
 								onBusqueda={setBusqueda}
 								onTipo={setTipo}
+								onSerie={setSerie}
 								onUbicacion={setUbicacion}
 								onDesde={setDesde}
 								onHasta={setHasta}
