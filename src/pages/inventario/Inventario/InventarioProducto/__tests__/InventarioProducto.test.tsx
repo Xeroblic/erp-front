@@ -297,6 +297,67 @@ describe('Ficha de inventario', () => {
 		);
 	});
 
+	it('sin catálogo de bodegas, con unidades sin ubicación y en bodega, deja consultar la sucursal completa', async () => {
+		// 2 unidades en «Sin ubicación» y 7 en una bodega que no se puede nombrar.
+		vi.spyOn(inventoryOverviewService, 'getInventoryStockDetail').mockImplementation(
+			async (...args) => {
+				const response = await getMockDetail(...args);
+				const unlocated = response.data.warehouses.find(
+					(location) => location.warehouse === null,
+				);
+				if (!unlocated) throw new Error('La semilla no tiene «Sin ubicación»');
+				return {
+					...response,
+					data: {
+						...response.data,
+						physical_quantity: 9,
+						warehouses: [{ ...unlocated, physical_quantity: 2 }],
+						warehouses_complete: false,
+					},
+				};
+			},
+		);
+		const origins = vi.spyOn(inventoryStockService, 'listInventoryOrigins');
+		renderFicha(MOUSE_ID);
+
+		expect(
+			await screen.findByText(/7 unidades están en bodegas que no puedes ver/),
+		).toBeInTheDocument();
+		const alcance = await screen.findByRole('group', { name: 'Ubicación de las procedencias' });
+		const sucursal = within(alcance).getByRole('button', { name: 'Toda la sucursal · 9' });
+		const sinUbicacion = within(alcance).getByRole('button', { name: 'Sin ubicación · 2' });
+		// La sucursal completa va primero: es la única que alcanza las 7 de bodega.
+		expect(sucursal).toHaveAttribute('aria-pressed', 'true');
+		await waitFor(() =>
+			expect(origins).toHaveBeenLastCalledWith(
+				4,
+				MOUSE_ID,
+				{ page: 1, per_page: 15 },
+				expect.anything(),
+			),
+		);
+
+		fireEvent.click(sinUbicacion);
+		await waitFor(() =>
+			expect(origins).toHaveBeenLastCalledWith(
+				4,
+				MOUSE_ID,
+				{ unlocated: 1, page: 1, per_page: 15 },
+				expect.anything(),
+			),
+		);
+
+		fireEvent.click(within(alcance).getByRole('button', { name: 'Toda la sucursal · 9' }));
+		await waitFor(() =>
+			expect(origins).toHaveBeenLastCalledWith(
+				4,
+				MOUSE_ID,
+				{ page: 1, per_page: 15 },
+				expect.anything(),
+			),
+		);
+	});
+
 	it('cambiar de ubicación descarta el filtro de proveedor de la anterior', async () => {
 		renderFicha(MOUSE_ID);
 		const region = await screen.findByRole('region', { name: 'Procedencias del producto' });

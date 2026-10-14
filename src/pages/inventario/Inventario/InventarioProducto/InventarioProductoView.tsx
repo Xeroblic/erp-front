@@ -448,8 +448,7 @@ const ProductoSession = ({
 										variant={option.value === ubicacion ? 'solid' : 'outline'}
 										aria-pressed={option.value === ubicacion}
 										onClick={() => setUbicacion(option.value)}>
-										{option.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL} ·{' '}
-										{option.quantity}
+										{option.label} · {option.quantity}
 									</Button>
 								))}
 							</div>

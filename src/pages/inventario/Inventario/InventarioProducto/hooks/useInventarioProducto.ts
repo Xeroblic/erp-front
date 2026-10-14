@@ -8,12 +8,16 @@ import {
 	selectInventoryUpdatingThreshold,
 	updateInventoryThresholdThunk,
 } from '@/store/slices/procurement/inventoryOverviewSlice';
+import { UNLOCATED_WAREHOUSE_LABEL } from '@/components/procurement';
 import { UmbralSchema, type IUmbralFormValues } from '@/pages/inventario/Inventario/types';
 import {
 	locationStockParams,
 	locationToken,
 	type TLocationToken,
 } from '@/utils/inventoryLocation.util';
+
+/** Alcance de las procedencias: una ubicación conocida o la sucursal completa. */
+export type TOrigenAlcance = TLocationToken | 'branch';
 
 /**
  * Ficha de un producto en la sucursal activa (A4): totales, estado, desglose
@@ -31,7 +35,7 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 	const [retry, setRetry] = useState(0);
 	const [umbralOpen, setUmbralOpen] = useState(false);
 	/** Ubicación de las procedencias. `null` = aún no elegida: se usa la primera con saldo. */
-	const [ubicacionElegida, setUbicacionElegida] = useState<TLocationToken | null>(null);
+	const [ubicacionElegida, setUbicacionElegida] = useState<TOrigenAlcance | null>(null);
 
 	const request = useMemo(
 		() => ({ branchId, productId, ownerContext: `${owner}:${session}` }),
@@ -50,29 +54,37 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 	const error = isCurrent ? detailState.error : null;
 	const refresh = useCallback(() => setRetry((value) => value + 1), []);
 
-	const ubicaciones = useMemo(
-		() =>
-			(detail?.warehouses ?? []).map((location) => ({
+	const ubicaciones = useMemo(() => {
+		const conocidas = (detail?.warehouses ?? []).map(
+			(location): { value: TOrigenAlcance; label: string; quantity: number } => ({
 				value: locationToken(location.warehouse?.id ?? null),
-				warehouse: location.warehouse,
+				label: location.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL,
 				quantity: location.physical_quantity,
-			})),
-		[detail],
-	);
+			}),
+		);
+		// Sin acceso al catálogo de bodegas, las unidades de bodegas que no se
+		// pueden nombrar sólo se alcanzan pidiendo la sucursal completa (el
+		// backend la autoriza): va primero, porque es la única que las muestra todas.
+		if (detail && !detail.warehouses_complete && detail.physical_quantity > 0)
+			return [
+				{
+					value: 'branch' as const,
+					label: 'Toda la sucursal',
+					quantity: detail.physical_quantity,
+				},
+				...conocidas,
+			];
+		return conocidas;
+	}, [detail]);
 	// Si la ubicación elegida se vació (se trasladó todo), vuelve a la primera.
 	const ubicacion =
 		ubicaciones.find((option) => option.value === ubicacionElegida)?.value ??
 		ubicaciones[0]?.value ??
 		null;
-	// Sin acceso al catálogo de bodegas no se conocen todas las ubicaciones: si
-	// ninguna conocida tiene saldo, las procedencias se piden para la sucursal
-	// completa en vez de ocultarse.
-	const branchFallback =
-		detail !== null && !detail.warehouses_complete && detail.physical_quantity > 0;
 	const locationParams = useMemo(() => {
-		if (ubicacion) return locationStockParams(ubicacion);
-		return branchFallback ? {} : null;
-	}, [ubicacion, branchFallback]);
+		if (!ubicacion) return null;
+		return ubicacion === 'branch' ? {} : locationStockParams(ubicacion);
+	}, [ubicacion]);
 
 	const threshold = detail?.product.critical_stock_threshold ?? null;
 	const formik = useFormik<IUmbralFormValues>({
