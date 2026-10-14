@@ -455,7 +455,11 @@ export const createProduct = createAsyncThunk<
 			if (data.short_description !== undefined)
 				body.short_description = data.short_description;
 			if (data.long_description !== undefined) body.long_description = data.long_description;
-			if (data.stock !== undefined) body.stock = Number(data.stock);
+			// Un producto de filial no tiene sucursal y el stock siempre vive en una:
+			// StoreSubsidiaryProductRequest rechaza `stock > 0` con un 422. Se ingresa
+			// después por recepción o ajuste en la sucursal donde está.
+			if (data.stock !== undefined && entityParam !== 'subsidiaries')
+				body.stock = Number(data.stock);
 
 			if (Array.isArray(categoryIds) && categoryIds.length) body.category_ids = categoryIds;
 

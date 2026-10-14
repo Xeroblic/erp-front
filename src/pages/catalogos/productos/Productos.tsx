@@ -504,6 +504,7 @@ const Productos: React.FC = () => {
 				isLoading={creating}
 				brandsLoading={brandsLoading}
 				defaultBranchId={currentBranchId ?? activeBranchId ?? null}
+				isSubsidiaryProduct={viewMode === 'subsidiaries'}
 			/>
 
 			<DeleteProductModal
