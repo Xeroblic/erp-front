@@ -14,14 +14,25 @@ import type { IOperationDetailState } from '@/pages/inventario/Inventario/hooks/
 const signed = (value: number): string =>
 	value > 0 ? `+${value.toLocaleString('es-CL')}` : value.toLocaleString('es-CL');
 
-/** Ubicación de un efecto: el §14 trae sólo el ID; el nombre sale de las bodegas de la sucursal. */
+/** Saldo histórico: `null` es «no se guardó», distinto de un `0` real. */
+const balance = (value: number | null): string =>
+	value === null ? '—' : value.toLocaleString('es-CL');
+
+/**
+ * Ubicación de un efecto: el backend la trae con el nombre de hoy; el mock de
+ * stock la nombra desde las bodegas de la sucursal.
+ */
 const warehouseOf = (
-	warehouseId: number | null,
+	effect: IInventoryOperationEffect,
 	warehouses: ReadonlyMap<number, IWarehouseCompact>,
-): IWarehouseCompact | null =>
-	warehouseId === null
-		? null
-		: (warehouses.get(warehouseId) ?? { id: warehouseId, name: `Bodega #${warehouseId}` });
+): IWarehouseCompact | null => {
+	const { warehouse_id: warehouseId } = effect;
+	if (warehouseId === null) return null;
+	return (
+		effect.warehouse ??
+		warehouses.get(warehouseId) ?? { id: warehouseId, name: `Bodega #${warehouseId}` }
+	);
+};
 
 /**
  * Saldo de la ubicación antes y después: la historia, no el stock de hoy
@@ -37,11 +48,11 @@ const Efecto = ({
 	const delta = effect.physical_quantity_delta;
 	return (
 		<li className='flex flex-wrap items-center gap-x-3 gap-y-1'>
-			<WarehouseLabel warehouse={warehouseOf(effect.warehouse_id, warehouses)} />
+			<WarehouseLabel warehouse={warehouseOf(effect, warehouses)} />
 			<span className='tabular-nums text-zinc-600 dark:text-zinc-300'>
-				{effect.physical_quantity_before.toLocaleString('es-CL')} →{' '}
+				{balance(effect.physical_quantity_before)} →{' '}
 				<span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-					{effect.physical_quantity_after.toLocaleString('es-CL')}
+					{balance(effect.physical_quantity_after)}
 				</span>
 			</span>
 			{delta === 0 ? (
@@ -174,9 +185,11 @@ const OperationDetail: React.FC<IOperationDetailProps> = ({
 									</Td>
 									<Td>
 										<ul className='space-y-1'>
-											{item.effects.map((effect) => (
+											{item.effects.map((effect, index) => (
 												<Efecto
-													key={effect.warehouse_id ?? 'unlocated'}
+													// Un traslado entre sucursales repite «Sin ubicación»: el orden de escritura desempata.
+													// eslint-disable-next-line react/no-array-index-key
+													key={`${effect.branch_id}:${effect.warehouse_id ?? 'unlocated'}:${index}`}
 													effect={effect}
 													warehouses={warehouses}
 												/>

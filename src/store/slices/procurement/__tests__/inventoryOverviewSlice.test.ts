@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { configureStore } from '@reduxjs/toolkit';
+import { describe, expect, it, vi } from 'vitest';
 import reducer, {
 	fetchInventoryOperationDetail,
 	fetchInventoryOperations,
 	fetchInventorySummary,
+	INVENTORY_OPERATION_FORBIDDEN_MESSAGE,
 	inventoryBranchQueryKey,
 	inventoryOperationDetailQueryKey,
 	inventoryOperationsQueryKey,
@@ -10,6 +12,17 @@ import reducer, {
 } from '@/store/slices/procurement/inventoryOverviewSlice';
 import type { IInventoryStockSummaryResponse } from '@/interface/inventoryOverview.interface';
 import type { IInventoryOperationsResponse } from '@/interface/inventoryOperations.interface';
+
+// El resumen de Inventario sigue sin backend; la trazabilidad no debe depender de eso.
+vi.mock('@/config/inventoryStock.config', () => ({ default: false }));
+const { getInventoryOperation, listInventoryOperations } = vi.hoisted(() => ({
+	getInventoryOperation: vi.fn(),
+	listInventoryOperations: vi.fn(),
+}));
+vi.mock('@/services/procurement/inventoryOperations.service', () => ({
+	getInventoryOperation,
+	listInventoryOperations,
+}));
 
 const request = { branchId: 4, ownerContext: 'owner' };
 const summary = (products: number): IInventoryStockSummaryResponse => ({
@@ -91,6 +104,7 @@ describe('inventoryOverviewSlice · Trazabilidad (§14)', () => {
 			total,
 		},
 		links: { first: null, last: null, prev: null, next: null },
+		context: { pending_movements_count: 0 },
 	});
 
 	it('sólo la última petición resuelve la lista y cada lista nueva pliega los detalles', () => {
@@ -122,7 +136,10 @@ describe('inventoryOverviewSlice · Trazabilidad (§14)', () => {
 		state = reducer(state, fetchInventoryOperationDetail.pending('new', opRequest));
 		state = reducer(
 			state,
-			fetchInventoryOperationDetail.rejected(null, 'old', opRequest, 'Vieja'),
+			fetchInventoryOperationDetail.rejected(null, 'old', opRequest, {
+				message: 'Vieja',
+				forbidden: false,
+			}),
 		);
 
 		expect(state.operationDetails['op-1']).toMatchObject({
@@ -133,11 +150,81 @@ describe('inventoryOverviewSlice · Trazabilidad (§14)', () => {
 
 		state = reducer(
 			state,
-			fetchInventoryOperationDetail.rejected(null, 'new', opRequest, 'Sin conexión'),
+			fetchInventoryOperationDetail.rejected(null, 'new', opRequest, {
+				message: 'Sin conexión',
+				forbidden: false,
+			}),
 		);
 		expect(state.operationDetails['op-1']).toMatchObject({
 			loading: false,
 			error: 'Sin conexión',
+		});
+	});
+
+	it('un 403 del detalle cierra su vista; uno tardío no pisa la petición vigente', () => {
+		const opRequest = detailRequest('op-1');
+		const forbidden = { message: INVENTORY_OPERATION_FORBIDDEN_MESSAGE, forbidden: true };
+		let state = reducer(initial, fetchInventoryOperationDetail.pending('old', opRequest));
+		state = reducer(state, fetchInventoryOperationDetail.pending('new', opRequest));
+		state = reducer(
+			state,
+			fetchInventoryOperationDetail.rejected(null, 'old', opRequest, forbidden),
+		);
+		expect(state.operationDetails['op-1']).toMatchObject({ loading: true, error: null });
+
+		state = reducer(
+			state,
+			fetchInventoryOperationDetail.rejected(null, 'new', opRequest, forbidden),
+		);
+		expect(state.operationDetails).not.toHaveProperty('op-1');
+	});
+
+	it('pide la trazabilidad aunque el resumen de Inventario no tenga backend', async () => {
+		listInventoryOperations.mockResolvedValue(operations(3));
+		const store = configureStore({ reducer: { inventoryOverview: reducer } });
+
+		const action = await store.dispatch(fetchInventoryOperations(operationsRequest));
+
+		expect(fetchInventoryOperations.fulfilled.match(action)).toBe(true);
+		expect(listInventoryOperations).toHaveBeenCalledWith(2, operationsRequest.params, {
+			signal: expect.any(AbortSignal),
+			branchName: 'Casa Matriz',
+		});
+		expect(store.getState().inventoryOverview.operations.response?.meta.total).toBe(3);
+	});
+
+	it('el 403 del detalle llega como «sin acceso», no como error inesperado', async () => {
+		getInventoryOperation.mockRejectedValue(
+			Object.assign(new Error('Forbidden'), {
+				isAxiosError: true,
+				response: { status: 403, data: { message: 'This action is unauthorized.' } },
+			}),
+		);
+		const store = configureStore({ reducer: { inventoryOverview: reducer } });
+
+		const action = await store.dispatch(fetchInventoryOperationDetail(detailRequest('op-1')));
+
+		expect(action.payload).toEqual({
+			message: INVENTORY_OPERATION_FORBIDDEN_MESSAGE,
+			forbidden: true,
+		});
+		expect(store.getState().inventoryOverview.operationDetails).toEqual({});
+	});
+
+	it('otro rechazo del detalle queda como error reintentable', async () => {
+		getInventoryOperation.mockRejectedValue(
+			Object.assign(new Error('Server Error'), {
+				isAxiosError: true,
+				response: { status: 500, data: { message: 'Error del servidor.' } },
+			}),
+		);
+		const store = configureStore({ reducer: { inventoryOverview: reducer } });
+
+		await store.dispatch(fetchInventoryOperationDetail(detailRequest('op-1')));
+
+		expect(store.getState().inventoryOverview.operationDetails['op-1']).toMatchObject({
+			loading: false,
+			error: 'Error del servidor.',
 		});
 	});
 

@@ -34,6 +34,8 @@ vi.mock('@/config/inventoryStock.config', () => ({
 		return context.enabled;
 	},
 }));
+// La trazabilidad tiene bandera propia: estas pruebas la recorren contra el doble.
+vi.mock('@/config/inventoryOperations.config', () => ({ default: true }));
 // Recepciones comparte la fuente de Inventario: sus procedencias enlazan a su ficha.
 vi.mock('@/config/inventoryReceipts.config', () => ({
 	get default() {
@@ -377,8 +379,9 @@ describe('Ficha de inventario', () => {
 
 			const table = await screen.findByRole('table', { name: 'Trazabilidad' });
 
-			expect(await within(table).findByText('Saldo inicial')).toBeInTheDocument();
-			expect(within(table).getByText('Recepción #80')).toBeInTheDocument();
+			// El título es fijo por tipo, como lo entrega el backend.
+			expect(await within(table).findByText('Stock inicial')).toBeInTheDocument();
+			expect(within(table).getAllByText('Recepción de mercadería').length).toBeGreaterThan(0);
 		});
 
 		it('sin el permiso la ficha no muestra la trazabilidad', async () => {

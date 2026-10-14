@@ -101,10 +101,12 @@ describe('Filtros de Trazabilidad en la URL', () => {
 		expect(filtros).toMatchObject({ vista: 'trazabilidad', tipo: null, desde: '', hasta: '' });
 	});
 
-	it('acepta el saldo inicial como tipo y rotula un tipo legado con su propio nombre', () => {
-		expect(parseInventarioFilters(new URLSearchParams('tipo=initial_balance')).tipo).toBe(
-			'initial_balance',
+	it('acepta los tipos del backend, descarta el saldo inicial viejo y rotula un tipo desconocido con su nombre', () => {
+		expect(parseInventarioFilters(new URLSearchParams('tipo=initial_stock')).tipo).toBe(
+			'initial_stock',
 		);
+		// Un enlace guardado con el tipo del mock anterior: el backend lo rechazaría con 422.
+		expect(parseInventarioFilters(new URLSearchParams('tipo=initial_balance')).tipo).toBe(null);
 		expect(operacionTipoInfo('stock_receipt').label).toBe('Recepción');
 		expect(operacionTipoInfo('equipment_move')).toMatchObject({
 			label: 'equipment_move',

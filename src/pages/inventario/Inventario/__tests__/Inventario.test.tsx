@@ -22,6 +22,8 @@ vi.mock('@/config/inventoryStock.config', () => ({
 		return context.enabled;
 	},
 }));
+// La trazabilidad tiene bandera propia: estas pruebas la recorren contra el doble.
+vi.mock('@/config/inventoryOperations.config', () => ({ default: true }));
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
 // Los menús de la pestaña Trazabilidad leen la dirección del texto (`useDir`).
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: { dir: () => 'ltr' } }) }));
@@ -253,7 +255,7 @@ describe('Inventario — vista unificada', () => {
 
 			await waitFor(() => expect(location()).toBe('/inventario/stock?vista=trazabilidad'));
 			const table = await screen.findByRole('table', { name: 'Operaciones' });
-			expect(await within(table).findByText('Saldo inicial')).toBeInTheDocument();
+			expect(await within(table).findByText('Stock inicial')).toBeInTheDocument();
 
 			const [first] = within(table).getAllByRole('button', { name: 'Ver detalle' });
 			fireEvent.click(first);
@@ -270,9 +272,9 @@ describe('Inventario — vista unificada', () => {
 
 			await waitFor(() => expect(location()).toBe('/inventario/stock?vista=trazabilidad'));
 			expect(screen.getByLabelText('Búsqueda')).toHaveValue('');
-			// La recepción #76 no contiene el mouse: sólo aparece si `q=mouse` se descartó.
+			// La recepción #76 (29-08) no contiene el mouse: sólo aparece si `q=mouse` se descartó.
 			const table = await screen.findByRole('table', { name: 'Operaciones' });
-			expect(await within(table).findByText('Recepción #76')).toBeInTheDocument();
+			expect(await within(table).findByText('29-08-2026')).toBeInTheDocument();
 		});
 	});
 });

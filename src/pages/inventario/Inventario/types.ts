@@ -73,8 +73,8 @@ export type TInventarioUbicacion = 'branch' | TLocationToken;
    Trazabilidad (§14) — tipos de operación
    ================================================= */
 
-/** Tipos del §14 más el saldo inicial, tipo legado que se conserva con su nombre. */
-export type TOperacionTipo = TInventoryOperationType | 'initial_balance';
+/** Los tipos que acepta el filtro `operation_type`: otro valor es 422. */
+export type TOperacionTipo = TInventoryOperationType;
 
 interface IOperacionTipoInfo {
 	label: string;
@@ -113,7 +113,19 @@ export const OPERACION_TIPOS: Record<TOperacionTipo, IOperacionTipoInfo> = {
 		icon: 'HeroDocumentCheck',
 		accent: 'bg-zinc-600',
 	},
-	initial_balance: { label: 'Saldo inicial', icon: 'HeroArchiveBox', accent: 'bg-zinc-700' },
+	initial_stock: { label: 'Stock inicial', icon: 'HeroArchiveBox', accent: 'bg-zinc-700' },
+	branch_transfer: {
+		label: 'Traslado entre sucursales',
+		icon: 'HeroTruck',
+		accent: 'bg-violet-700',
+	},
+	legacy_movement: { label: 'Movimiento histórico', icon: 'HeroClock', accent: 'bg-zinc-500' },
+	serial_correction: { label: 'Corrección de serie', icon: 'HeroQrCode', accent: 'bg-zinc-600' },
+	stock_reconciliation: {
+		label: 'Conciliación de stock',
+		icon: 'HeroScale',
+		accent: 'bg-amber-700',
+	},
 };
 
 export const isOperacionTipo = (value: string | null): value is TOperacionTipo =>
