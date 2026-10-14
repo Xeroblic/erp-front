@@ -228,8 +228,6 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		[detail?.shipping_snapshot],
 	);
 
-	if (!isOpen) return null;
-
 	const handleCreateQuote = useCallback(async () => {
 		if (!subsidiaryId || !saleId || creatingQuote) return;
 
@@ -267,6 +265,10 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			setCreatingQuote(false);
 		}
 	}, [subsidiaryId, saleId, creatingQuote, navigate]);
+
+	// Va después de todos los hooks: si isOpen cambia con el componente montado,
+	// un return previo alteraría la cantidad de hooks entre renders.
+	if (!isOpen) return null;
 
 	const existingQuoteId =
 		detail?.quote_id ?? (detail?.documents_metadata as any)?.origin_quote_id;
