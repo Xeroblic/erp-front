@@ -66,6 +66,14 @@ const extractQuoteIdFromResponse = (
 	return null;
 };
 
+// El backend ya incluye el número en su mensaje («…número de cotización: 628»);
+// sólo se agrega cuando no lo trae, para no repetirlo.
+const buildQuoteCreatedMessage = (message: string, quoteId: number | null): string => {
+	if (!quoteId) return message;
+	const alreadyMentioned = new RegExp(`\\b${quoteId}\\b`).test(message);
+	return alreadyMentioned ? message : `${message}, número de cotización: ${quoteId}`;
+};
+
 const formatAddress = (address: any): string => {
 	if (!address) return '-';
 	if (typeof address === 'string') return address;
@@ -228,8 +236,6 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		[detail?.shipping_snapshot],
 	);
 
-	if (!isOpen) return null;
-
 	const handleCreateQuote = useCallback(async () => {
 		if (!subsidiaryId || !saleId || creatingQuote) return;
 
@@ -244,10 +250,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			if (resolvedQuoteId) {
 				setCreatedQuoteId(resolvedQuoteId);
 			}
-			const successMessage = resolvedQuoteId
-				? `${message}, número de cotización: ${resolvedQuoteId}`
-				: message;
-			toast.success(successMessage);
+			toast.success(buildQuoteCreatedMessage(message, resolvedQuoteId));
 		} catch (error) {
 			const axiosError = error as AxiosError<CreateQuoteFromSaleResponse>;
 			const status = axiosError.response?.status;
@@ -267,6 +270,10 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			setCreatingQuote(false);
 		}
 	}, [subsidiaryId, saleId, creatingQuote, navigate]);
+
+	// Va después de todos los hooks: si isOpen cambia con el componente montado,
+	// un return previo alteraría la cantidad de hooks entre renders.
+	if (!isOpen) return null;
 
 	const existingQuoteId =
 		detail?.quote_id ?? (detail?.documents_metadata as any)?.origin_quote_id;
