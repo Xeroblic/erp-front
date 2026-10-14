@@ -13,6 +13,7 @@ const context = vi.hoisted(() => ({
 	subsidiaryId: 2,
 	enabled: true,
 }));
+vi.mock('@/config/inventoryMultiLocation.config', () => ({ default: true }));
 vi.mock('@/config/inventoryStock.config', () => ({
 	get default() {
 		return context.enabled;

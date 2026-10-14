@@ -6,6 +6,7 @@ import Textarea from '@/components/form/Textarea';
 import Icon from '@/components/icon/Icon';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import { MULTI_LOCATION_NOT_ENABLED_REASON } from '@/utils/procurementErrors.util';
 import useInternalTransfer from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useInternalTransfer';
 import TransferItemsEditor from '@/pages/inventario/abastecimiento/AjustesTraslados/components/transfer/TransferItemsEditor';
 import TransferResultCard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/transfer/TransferResultCard';
@@ -97,6 +98,9 @@ const TransferPanel = ({
 		writeError?.code === 'INSUFFICIENT_LOCATION_STOCK'
 			? unattributedFromContext(writeError.context)
 			: 0;
+	// Respaldo si la bandera no coincide con la etapa real: en la etapa 1 todo
+	// traslado responde lo mismo, así que no se ofrece reenviarlo.
+	const singleLocation = writeError?.code === 'MULTI_LOCATION_NOT_ENABLED';
 	const hasRouteError = ROUTE_API_FIELDS.some((field) =>
 		Boolean(writeError?.fieldErrors?.[field]?.length),
 	);
@@ -142,7 +146,7 @@ const TransferPanel = ({
 								variant='solid'
 								color='emerald'
 								icon='HeroArrowsRightLeft'
-								isDisable={idempotentWrite.isSubmitting}
+								isDisable={idempotentWrite.isSubmitting || singleLocation}
 								isLoading={idempotentWrite.isSubmitting}>
 								{idempotentWrite.canRetry
 									? 'Reintentar traslado'
@@ -336,6 +340,13 @@ const TransferPanel = ({
 								<Alert color='red' title='No se pudo registrar el traslado'>
 									<div role='alert' className='space-y-1'>
 										<p>{writeError.message}</p>
+										{singleLocation && (
+											<p>
+												{MULTI_LOCATION_NOT_ENABLED_REASON} Los traslados se
+												habilitan cuando la sucursal opere con varias
+												ubicaciones.
+											</p>
+										)}
 										{hasRouteError && (
 											<div className='flex flex-wrap items-center gap-3'>
 												<span>

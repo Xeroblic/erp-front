@@ -16,6 +16,7 @@ import { inventoryStockEnvelope } from '@/mocks/db/procurement.db';
  */
 const fetchData = vi.hoisted(() => vi.fn());
 vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
+vi.mock('@/config/inventoryMultiLocation.config', () => ({ default: true }));
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
 vi.mock('@/config/inventoryAdjustments.config', () => ({ default: false }));
 vi.mock('@/config/inventoryTransfers.config', () => ({ default: false }));
@@ -262,6 +263,32 @@ describe('Traslados internos contra la API real', () => {
 		);
 		expect(
 			screen.queryByRole('table', { name: 'Saldos después del traslado' }),
+		).not.toBeInTheDocument();
+	});
+
+	it('explica el 409 de una sola ubicación y no ofrece reenviar el traslado', async () => {
+		installBackend(() =>
+			Promise.reject(
+				apiError(409, {
+					message: 'Esta filial todavía opera con una sola ubicación.',
+					code: 'MULTI_LOCATION_NOT_ENABLED',
+				}),
+			),
+		);
+		renderPage();
+		await fillTransfer();
+		submit();
+
+		const alert = await screen.findByRole('alert');
+		expect(alert).toHaveTextContent('Esta filial todavía opera con una sola ubicación.');
+		expect(alert).toHaveTextContent(
+			'el stock vive en «Sin ubicación», que es de donde salen las ventas. Los traslados se habilitan cuando la sucursal opere con varias ubicaciones.',
+		);
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: 'Registrar traslado' })).toBeDisabled(),
+		);
+		expect(
+			screen.queryByRole('button', { name: 'Reintentar traslado' }),
 		).not.toBeInTheDocument();
 	});
 

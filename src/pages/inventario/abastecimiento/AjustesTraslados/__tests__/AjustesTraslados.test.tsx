@@ -65,6 +65,13 @@ vi.mock('@/services/procurement/inventoryStock.service', async (importOriginal) 
 });
 
 // Inventario y traslados con mock, el ajuste con backend: cada flujo con su bandera.
+// Etapa del despliegue: encendida salvo en los casos de una sola ubicación.
+const multiLocation = vi.hoisted(() => ({ enabled: true }));
+vi.mock('@/config/inventoryMultiLocation.config', () => ({
+	get default() {
+		return multiLocation.enabled;
+	},
+}));
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
 vi.mock('@/config/inventoryAdjustments.config', () => ({ default: false }));
 vi.mock('@/config/inventoryTransfers.config', () => ({ default: true }));
@@ -200,6 +207,42 @@ afterEach(() => {
 	resetInventoryStockStoreForTests();
 	resetAdjustmentFake();
 	vi.restoreAllMocks();
+	multiLocation.enabled = true;
+});
+
+describe('Ajustes y traslados — una sola ubicación (etapa 1)', () => {
+	it('oculta la pestaña de traslados y un `?tab=traslado` cae al ajuste sin su preselección', async () => {
+		multiLocation.enabled = false;
+		renderPage(`/?tab=traslado&warehouse_id=unlocated&product_id=${FAKE_BETA.id}`);
+
+		expect(screen.queryByRole('tab', { name: 'Traslados internos' })).not.toBeInTheDocument();
+		expect(screen.getByRole('tab', { name: 'Ajuste de inventario' })).toHaveAttribute(
+			'aria-selected',
+			'true',
+		);
+		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+		expect(screen.queryByLabelText('Origen')).not.toBeInTheDocument();
+		// El producto era el de un traslado: el ajuste abre vacío.
+		expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue('');
+		// Los traslados ya no se mencionan como datos simulados.
+		expect(screen.queryByText(/Los traslados usan datos simulados/)).not.toBeInTheDocument();
+	});
+
+	it('ignora una bodega preseleccionada y conserva el producto de «Sin ubicación»', async () => {
+		multiLocation.enabled = false;
+		const { unmount } = renderPage(
+			`/?tab=ajuste&warehouse_id=${FAKE_SHELF.id}&product_id=${FAKE_ALFA.id}`,
+		);
+		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+		expect(screen.getByText('Sin ubicación')).toBeInTheDocument();
+		expect(screen.queryByText(FAKE_SHELF.name)).not.toBeInTheDocument();
+		expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue('');
+		unmount();
+
+		renderPage(`/?tab=ajuste&warehouse_id=unlocated&product_id=${FAKE_BETA.id}`);
+		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+		expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(FAKE_BETA.id));
+	});
 });
 
 describe('Ajustes y traslados — una página con dos pestañas', () => {

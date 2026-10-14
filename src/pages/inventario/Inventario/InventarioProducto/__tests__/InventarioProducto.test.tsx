@@ -22,6 +22,13 @@ const context = vi.hoisted(() => ({
 	visibleBranches: [] as { id: number; name: string }[],
 	enabled: true,
 }));
+// Etapa del despliegue: encendida salvo en los casos de una sola ubicación.
+const multiLocation = vi.hoisted(() => ({ enabled: true }));
+vi.mock('@/config/inventoryMultiLocation.config', () => ({
+	get default() {
+		return multiLocation.enabled;
+	},
+}));
 vi.mock('@/config/inventoryStock.config', () => ({
 	get default() {
 		return context.enabled;
@@ -158,6 +165,7 @@ beforeEach(() => {
 	context.branchId = 4;
 	context.subsidiaryId = 2;
 	context.enabled = true;
+	multiLocation.enabled = true;
 	// Los modales se montan en `#portal-root` (`Portal.tsx`).
 	const portalRoot = document.createElement('div');
 	portalRoot.id = 'portal-root';
@@ -411,6 +419,24 @@ describe('Ficha de inventario', () => {
 			).not.toBeInTheDocument();
 			expect(screen.queryByRole('button', { name: /^Ajustar / })).not.toBeInTheDocument();
 			expect(screen.queryByRole('button', { name: /^Trasladar / })).not.toBeInTheDocument();
+		});
+
+		it('con una sola ubicación sólo ofrece ajustar «Sin ubicación», sin traslados', async () => {
+			multiLocation.enabled = false;
+			renderFichaConAtajos();
+			const table = await screen.findByRole('table', { name: 'Unidades por ubicación' });
+
+			expect(
+				await within(table).findByRole('button', {
+					name: 'Ajustar Mouse USB en Sin ubicación',
+				}),
+			).toBeInTheDocument();
+			expect(
+				within(table).queryByRole('button', { name: 'Ajustar Mouse USB en Estante A3' }),
+			).not.toBeInTheDocument();
+			expect(
+				within(table).queryByRole('button', { name: /^Trasladar / }),
+			).not.toBeInTheDocument();
 		});
 	});
 });

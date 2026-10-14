@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
+import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import Pages from '@/config/pages.config';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -102,19 +103,24 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 							color='blue'
 							variant='outline'
 							icon='HeroInformationCircle'
-							title='Esta pantalla se está separando en tres'>
+							title={`Esta pantalla se está separando en ${INVENTORY_MULTI_LOCATION_ENABLED ? 'tres' : 'dos'}`}>
 							Para <strong>ingresar mercadería comprada</strong> usa{' '}
 							<Link
 								className='font-semibold underline'
 								to={Pages.inventory.subPages.recepciones.to}>
 								Recepciones
 							</Link>
-							; para <strong>mover unidades entre bodegas</strong>,{' '}
-							<Link
-								className='font-semibold underline'
-								to={`${Pages.inventory.subPages.ajustesTraslados.to}?tab=traslado`}>
-								Traslados internos
-							</Link>
+							{/* Con una sola ubicación (etapa 1) los traslados están ocultos. */}
+							{INVENTORY_MULTI_LOCATION_ENABLED && (
+								<>
+									; para <strong>mover unidades entre bodegas</strong>,{' '}
+									<Link
+										className='font-semibold underline'
+										to={`${Pages.inventory.subPages.ajustesTraslados.to}?tab=traslado`}>
+										Traslados internos
+									</Link>
+								</>
+							)}
 							; para <strong>corregir una diferencia de conteo</strong>,{' '}
 							<Link
 								className='font-semibold underline'

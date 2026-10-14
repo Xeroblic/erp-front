@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppSelector } from '@/store';
@@ -9,10 +10,15 @@ import {
 	AJUSTES_TRASLADOS_WAREHOUSE_PARAM,
 	DEFAULT_AJUSTES_TRASLADOS_TAB,
 	isAjustesTrasladosTab,
+	NO_PRESELECTION,
 	parsePreselection,
 	type AjustesTrasladosAccess,
 	type AjustesTrasladosTab,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
+
+/** En la etapa 1 (una sola ubicación) la pestaña de traslados no existe. */
+const isAvailableTab = (tab: string): boolean =>
+	INVENTORY_MULTI_LOCATION_ENABLED || tab !== 'traslado';
 
 /**
  * Contexto compartido por las dos pestañas: sucursal, autorización y pestaña
@@ -43,22 +49,27 @@ const useAjustesTraslados = () => {
 	else if (!canWrite) access = 'forbidden';
 
 	const requestedTab = searchParams.get(AJUSTES_TRASLADOS_TAB_PARAM);
-	const activeTab: AjustesTrasladosTab = isAjustesTrasladosTab(requestedTab)
-		? requestedTab
-		: DEFAULT_AJUSTES_TRASLADOS_TAB;
+	// Un enlace guardado a traslados cae al ajuste mientras la pestaña está oculta.
+	const tabHidden = requestedTab !== null && !isAvailableTab(requestedTab);
+	const activeTab: AjustesTrasladosTab =
+		isAjustesTrasladosTab(requestedTab) && !tabHidden
+			? requestedTab
+			: DEFAULT_AJUSTES_TRASLADOS_TAB;
 
 	// Producto y ubicación con que se abrió la página (p. ej. desde la ficha de
-	// inventario). Sólo se usan al montar el formulario de la pestaña activa.
+	// inventario). Sólo se usan al montar el formulario de la pestaña activa: la
+	// de una pestaña oculta era el origen de un traslado, no la ubicación de un
+	// ajuste, y se descarta.
 	const rawWarehouse = searchParams.get(AJUSTES_TRASLADOS_WAREHOUSE_PARAM);
 	const rawProduct = searchParams.get(AJUSTES_TRASLADOS_PRODUCT_PARAM);
 	const preselection = useMemo(
-		() => parsePreselection(rawWarehouse, rawProduct),
-		[rawWarehouse, rawProduct],
+		() => (tabHidden ? NO_PRESELECTION : parsePreselection(rawWarehouse, rawProduct)),
+		[tabHidden, rawWarehouse, rawProduct],
 	);
 
 	const changeTab = useCallback(
 		(tabId: string) => {
-			if (!isAjustesTrasladosTab(tabId)) return;
+			if (!isAjustesTrasladosTab(tabId) || !isAvailableTab(tabId)) return;
 			setSearchParams(
 				(prev) => {
 					const next = new URLSearchParams(prev);

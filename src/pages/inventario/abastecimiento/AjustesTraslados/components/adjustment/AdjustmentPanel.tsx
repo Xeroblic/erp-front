@@ -5,6 +5,8 @@ import Select from '@/components/form/Select';
 import Textarea from '@/components/form/Textarea';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
+import { MULTI_LOCATION_NOT_ENABLED_REASON } from '@/utils/procurementErrors.util';
 import useInventoryAdjustment from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useInventoryAdjustment';
 import AdjustmentItemsEditor from '@/pages/inventario/abastecimiento/AjustesTraslados/components/adjustment/AdjustmentItemsEditor';
 import AdjustmentResultCard from '@/pages/inventario/abastecimiento/AjustesTraslados/components/adjustment/AdjustmentResultCard';
@@ -87,6 +89,9 @@ const AdjustmentPanel = ({
 		writeError?.code === 'INSUFFICIENT_LOCATION_STOCK'
 			? unattributedFromContext(writeError.context)
 			: 0;
+	// Respaldo si la bandera no coincide con la etapa real: el mismo ajuste
+	// responde lo mismo, así que no se ofrece reenviarlo hasta cambiar la ubicación.
+	const singleLocation = writeError?.code === 'MULTI_LOCATION_NOT_ENABLED';
 
 	useEffect(() => {
 		onBusyChange?.(frozen);
@@ -130,7 +135,7 @@ const AdjustmentPanel = ({
 								variant='solid'
 								color='emerald'
 								icon='HeroScale'
-								isDisable={idempotentWrite.isSubmitting}
+								isDisable={idempotentWrite.isSubmitting || singleLocation}
 								isLoading={idempotentWrite.isSubmitting}>
 								{idempotentWrite.canRetry
 									? 'Reintentar ajuste'
@@ -146,7 +151,19 @@ const AdjustmentPanel = ({
 							)}
 						</>
 					}>
-					{wizard.stepKey === 'location' && (
+					{/* Una sola ubicación (etapa 1): el ajuste va siempre a «Sin ubicación». */}
+					{wizard.stepKey === 'location' && !INVENTORY_MULTI_LOCATION_ENABLED && (
+						<div className='space-y-1 md:max-w-md'>
+							<p className='text-sm text-zinc-600 dark:text-zinc-300'>
+								Ubicación: <strong>{locationLabel}</strong>
+							</p>
+							<p className='text-xs text-zinc-500'>
+								La sucursal opera con una sola ubicación: todo el ajuste se registra
+								en «Sin ubicación».
+							</p>
+						</div>
+					)}
+					{wizard.stepKey === 'location' && INVENTORY_MULTI_LOCATION_ENABLED && (
 						<div className='space-y-1 md:max-w-md'>
 							<Label htmlFor='ajuste-location'>Ubicación</Label>
 							<Validation
@@ -294,6 +311,12 @@ const AdjustmentPanel = ({
 								<Alert color='red' title='No se pudo registrar el ajuste'>
 									<div role='alert' className='space-y-1'>
 										<p>{writeError.message}</p>
+										{singleLocation && (
+											<p>
+												{MULTI_LOCATION_NOT_ENABLED_REASON} Registra el
+												ajuste en «Sin ubicación».
+											</p>
+										)}
 										{serverLineErrorCount > 0 && (
 											<div className='flex flex-wrap items-center gap-3'>
 												<span>

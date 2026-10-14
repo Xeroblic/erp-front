@@ -13,6 +13,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
@@ -208,8 +209,15 @@ const ProductoSession = ({
 	const threshold = product.critical_stock_threshold;
 	const hasUnfit = detail.warehouses.some((location) => location.unfit_quantity > 0);
 	// Ajustes y traslados mueven sólo stock por cantidad: los productos con
-	// serie no aparecen en sus asistentes.
-	const showMovements = canMoveStock && !product.serial_tracking;
+	// serie no aparecen en sus asistentes. Con una sola ubicación (etapa 1) no
+	// hay traslados y sólo se ajusta «Sin ubicación»: una fila de bodega no
+	// ofrece acciones.
+	const canMoveFrom = (warehouseId: number | null): boolean =>
+		INVENTORY_MULTI_LOCATION_ENABLED || warehouseId === null;
+	const showMovements =
+		canMoveStock &&
+		!product.serial_tracking &&
+		detail.warehouses.some((location) => canMoveFrom(location.warehouse?.id ?? null));
 
 	return (
 		<>
@@ -344,42 +352,47 @@ const ProductoSession = ({
 										</Td>
 										{showMovements && (
 											<Td>
-												<div className='flex justify-center gap-2'>
-													<ProtectedButton
-														permission='edit-product'
-														branchId={branchId}
-														subsidiaryId={subsidiaryId}
-														scope='access'
-														size='sm'
-														variant='outline'
-														icon='HeroScale'
-														aria-label={`Ajustar ${product.name} en ${location.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL}`}
-														onClick={() =>
-															openMovement(
-																'ajuste',
-																location.warehouse?.id ?? null,
-															)
-														}>
-														Ajustar
-													</ProtectedButton>
-													<ProtectedButton
-														permission='edit-product'
-														branchId={branchId}
-														subsidiaryId={subsidiaryId}
-														scope='access'
-														size='sm'
-														variant='outline'
-														icon='HeroArrowsRightLeft'
-														aria-label={`Trasladar ${product.name} desde ${location.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL}`}
-														onClick={() =>
-															openMovement(
-																'traslado',
-																location.warehouse?.id ?? null,
-															)
-														}>
-														Trasladar
-													</ProtectedButton>
-												</div>
+												{canMoveFrom(location.warehouse?.id ?? null) && (
+													<div className='flex justify-center gap-2'>
+														<ProtectedButton
+															permission='edit-product'
+															branchId={branchId}
+															subsidiaryId={subsidiaryId}
+															scope='access'
+															size='sm'
+															variant='outline'
+															icon='HeroScale'
+															aria-label={`Ajustar ${product.name} en ${location.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL}`}
+															onClick={() =>
+																openMovement(
+																	'ajuste',
+																	location.warehouse?.id ?? null,
+																)
+															}>
+															Ajustar
+														</ProtectedButton>
+														{INVENTORY_MULTI_LOCATION_ENABLED && (
+															<ProtectedButton
+																permission='edit-product'
+																branchId={branchId}
+																subsidiaryId={subsidiaryId}
+																scope='access'
+																size='sm'
+																variant='outline'
+																icon='HeroArrowsRightLeft'
+																aria-label={`Trasladar ${product.name} desde ${location.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL}`}
+																onClick={() =>
+																	openMovement(
+																		'traslado',
+																		location.warehouse?.id ??
+																			null,
+																	)
+																}>
+																Trasladar
+															</ProtectedButton>
+														)}
+													</div>
+												)}
 											</Td>
 										)}
 									</Tr>

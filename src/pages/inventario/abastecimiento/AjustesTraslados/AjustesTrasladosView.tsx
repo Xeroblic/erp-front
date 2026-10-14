@@ -7,6 +7,7 @@ import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Alert from '@/components/ui/Alert';
 import Tabs, { Tab } from '@/components/ui/Tabs';
 import INVENTORY_ADJUSTMENTS_USE_MOCKS from '@/config/inventoryAdjustments.config';
+import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import INVENTORY_TRANSFERS_USE_MOCKS from '@/config/inventoryTransfers.config';
 import Pages from '@/config/pages.config';
 import useAjustesTraslados from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useAjustesTraslados';
@@ -62,6 +63,19 @@ const AjustesTrasladosTabs = ({
 				</ul>
 			</Alert>
 
+			{/* Etapa 1: el backend rechaza traslados y ajustes con bodega (409). */}
+			{!INVENTORY_MULTI_LOCATION_ENABLED && (
+				<Alert
+					color='amber'
+					variant='outline'
+					icon='HeroMapPin'
+					title='La sucursal opera con una sola ubicación'>
+					Todo el stock está en «Sin ubicación», que es de donde salen las ventas. Los
+					ajustes se registran ahí y los traslados entre bodegas todavía no están
+					disponibles.
+				</Alert>
+			)}
+
 			{/* Mismo contenedor de pestañas que el catálogo de productos: pastillas
 			    dentro de una tarjeta blanca que también envuelve el contenido. */}
 			<Tabs
@@ -84,27 +98,38 @@ const AjustesTrasladosTabs = ({
 						/>
 					)}
 				</Tab>
-				<Tab
-					id='traslado'
-					text='Traslados internos'
-					icon='HeroArrowsRightLeft'
-					disabled={busy && activeTab !== 'traslado'}>
-					{activeTab === 'traslado' && (
-						<TransferTab
-							owner={owner}
-							branchId={branchId}
-							preselection={preselection}
-							onBusyChange={setBusy}
-						/>
-					)}
-				</Tab>
+				{INVENTORY_MULTI_LOCATION_ENABLED && (
+					<Tab
+						id='traslado'
+						text='Traslados internos'
+						icon='HeroArrowsRightLeft'
+						disabled={busy && activeTab !== 'traslado'}>
+						{activeTab === 'traslado' && (
+							<TransferTab
+								owner={owner}
+								branchId={branchId}
+								preselection={preselection}
+								onBusyChange={setBusy}
+							/>
+						)}
+					</Tab>
+				)}
 			</Tabs>
 		</>
 	);
 };
 
 /** Aviso de datos simulados según qué flujo usa el mock; `null` si ambos escriben en el backend. */
-const mockNoticeFor = (adjustmentMock: boolean, transferMock: boolean): string | null => {
+const mockNoticeFor = (
+	adjustmentMock: boolean,
+	transferMock: boolean,
+	transfersVisible: boolean,
+): string | null => {
+	// Sin la pestaña de traslados, su bandera no tiene nada que avisar.
+	if (!transfersVisible)
+		return adjustmentMock
+			? 'El ajuste usa datos simulados: no afecta al inventario real.'
+			: null;
 	if (adjustmentMock && transferMock)
 		return 'Pantalla de demostración. Los ajustes y traslados no afectan al inventario real.';
 	if (transferMock) return 'Los traslados usan datos simulados. El ajuste escribe en el backend.';
@@ -117,6 +142,7 @@ const AjustesTrasladosView = () => {
 	const mockNotice = mockNoticeFor(
 		INVENTORY_ADJUSTMENTS_USE_MOCKS,
 		INVENTORY_TRANSFERS_USE_MOCKS,
+		INVENTORY_MULTI_LOCATION_ENABLED,
 	);
 	const { access, branchId, subsidiaryId, owner, activeTab, changeTab, preselection } =
 		useAjustesTraslados();
@@ -158,7 +184,11 @@ const AjustesTrasladosView = () => {
 					<SubheaderTitle
 						icon='HeroArrowsRightLeft'
 						title='Ajustes y traslados'
-						description='Corrige diferencias de conteo o reubica productos dentro de la sucursal activa.'
+						description={
+							INVENTORY_MULTI_LOCATION_ENABLED
+								? 'Corrige diferencias de conteo o reubica productos dentro de la sucursal activa.'
+								: 'Corrige diferencias de conteo en la sucursal activa.'
+						}
 					/>
 				</SubheaderLeft>
 			</Subheader>
