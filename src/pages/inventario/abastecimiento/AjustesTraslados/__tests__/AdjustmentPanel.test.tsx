@@ -19,6 +19,13 @@ const context = vi.hoisted(() => ({
 	subsidiaryId: 2,
 	enabled: true,
 }));
+// Etapa del despliegue: encendida salvo en los casos de una sola ubicación.
+const multiLocation = vi.hoisted(() => ({ enabled: true }));
+vi.mock('@/config/inventoryMultiLocation.config', () => ({
+	get default() {
+		return multiLocation.enabled;
+	},
+}));
 vi.mock('@/config/inventoryStock.config', () => ({
 	get default() {
 		return context.enabled;
@@ -220,6 +227,7 @@ beforeEach(() => {
 	context.branchId = 4;
 	context.subsidiaryId = 2;
 	context.enabled = true;
+	multiLocation.enabled = true;
 });
 afterEach(() => {
 	resetAdjustmentFake();
@@ -588,5 +596,77 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		renderPage();
 		expect(screen.queryByText('Datos simulados')).not.toBeInTheDocument();
 		expect(screen.getByLabelText('Ubicación')).toBeInTheDocument();
+	});
+
+	it('explica el 409 de una sola ubicación y no ofrece reenviar el mismo ajuste', async () => {
+		vi.spyOn(service, 'createInventoryAdjustment').mockRejectedValueOnce({
+			isAxiosError: true,
+			response: {
+				status: 409,
+				data: {
+					message: 'Esta filial todavía opera con una sola ubicación.',
+					code: 'MULTI_LOCATION_NOT_ENABLED',
+				},
+			},
+		});
+		renderPage();
+		await chooseMainWarehouse();
+		await fillLine(ALFA, '-2');
+		await goToReason('Conteo');
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
+
+		const alert = await screen.findByRole('alert');
+		expect(alert).toHaveTextContent('Esta filial todavía opera con una sola ubicación.');
+		expect(alert).toHaveTextContent(
+			'el stock vive en «Sin ubicación», que es de donde salen las ventas. Registra el ajuste en «Sin ubicación».',
+		);
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: 'Registrar ajuste' })).toBeDisabled(),
+		);
+		expect(screen.queryByRole('button', { name: 'Reintentar ajuste' })).not.toBeInTheDocument();
+	});
+
+	describe('con una sola ubicación (etapa 1)', () => {
+		beforeEach(() => {
+			multiLocation.enabled = false;
+		});
+
+		it('fija el ajuste en «Sin ubicación» y envía `warehouse_id: null`', async () => {
+			const write = vi.spyOn(service, 'createInventoryAdjustment');
+			renderPage();
+
+			// Sin selector: el asistente abre en «Productos» con la ubicación fija.
+			expect(
+				await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ }),
+			).toBeInTheDocument();
+			expect(screen.getByText('Sin ubicación')).toBeInTheDocument();
+			expect(screen.queryByLabelText('Ubicación')).not.toBeInTheDocument();
+			expect(
+				screen.getByText('La sucursal opera con una sola ubicación'),
+			).toBeInTheDocument();
+			expect(
+				screen.queryByRole('tab', { name: 'Traslados internos' }),
+			).not.toBeInTheDocument();
+
+			await fillLine(BETA, '1');
+			await goToReason('Conteo: aparece una unidad');
+			fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
+
+			await screen.findByRole('table', { name: 'Saldos antes y después del ajuste' });
+			expect(write).toHaveBeenCalledTimes(1);
+			expect(write.mock.calls[0][1]).toMatchObject({ warehouse_id: null });
+		});
+
+		it('el paso «Ubicación» muestra la ubicación fija, sin bodegas que elegir', async () => {
+			renderPage();
+			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+			fireEvent.click(screen.getByRole('button', { name: 'Anterior' }));
+
+			expect(
+				await screen.findByText(/todo el ajuste se registra en «Sin ubicación»/),
+			).toBeInTheDocument();
+			expect(screen.queryByRole('combobox', { name: 'Ubicación' })).not.toBeInTheDocument();
+			expect(screen.queryByText('Bodega principal')).not.toBeInTheDocument();
+		});
 	});
 });

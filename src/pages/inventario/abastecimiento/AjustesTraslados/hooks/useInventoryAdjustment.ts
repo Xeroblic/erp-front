@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
+import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -18,6 +19,7 @@ import type { IInventoryStockAvailability } from '@/services/procurement/invento
 import {
 	locationStockParams,
 	locationToken,
+	UNLOCATED_TOKEN,
 	warehouseIdFromToken,
 } from '@/utils/inventoryLocation.util';
 import { applyProcurementFieldErrors } from '@/utils/procurementErrors.util';
@@ -101,7 +103,13 @@ export default function useInventoryAdjustment(
 
 	const [pagedLookup, setPagedLookup] = useState<IPagedStockLookup>(NO_PAGED_LOOKUP);
 
-	const warehouses = useMemo(() => getAdjustmentWarehouses(branchId), [branchId]);
+	// En la etapa 1 un ajuste con bodega responde `409 MULTI_LOCATION_NOT_ENABLED`:
+	// sin bodegas, la única ubicación es «Sin ubicación» y una bodega de la URL
+	// no resuelve, así que su producto tampoco se preselecciona.
+	const warehouses = useMemo(
+		() => (INVENTORY_MULTI_LOCATION_ENABLED ? getAdjustmentWarehouses(branchId) : []),
+		[branchId],
+	);
 	// Preselección de la URL: se resuelve una vez, al montar. Es el valor
 	// inicial del formulario, no un filtro que lo siga. El catálogo no está
 	// cargado —se busca en el servidor—, así que el producto se confirma
@@ -110,7 +118,8 @@ export default function useInventoryAdjustment(
 		const location = resolvePreselectedLocation(preselection.location, warehouses);
 		const productId: number | '' =
 			location !== null && preselection.productId !== null ? preselection.productId : '';
-		return { location: location ?? '', productId };
+		const fixedLocation = INVENTORY_MULTI_LOCATION_ENABLED ? '' : UNLOCATED_TOKEN;
+		return { location: location ?? fixedLocation, productId };
 	});
 
 	const idempotentWrite = useIdempotentWrite({

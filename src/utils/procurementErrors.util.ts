@@ -146,6 +146,13 @@ export const PROCUREMENT_ERROR_DEFINITIONS: Record<string, IProcurementErrorDefi
 		'La ubicación no tiene stock suficiente.',
 		'reload_selection',
 	),
+	// Etapa 1 del despliegue: no hay reintento útil hasta que la filial pase a la etapa 2.
+	MULTI_LOCATION_NOT_ENABLED: define(
+		'MULTI_LOCATION_NOT_ENABLED',
+		409,
+		'La sucursal todavía opera con una sola ubicación: no se puede trasladar entre bodegas ni ajustar una bodega.',
+		'blocked',
+	),
 	// El mismo cierre responde lo mismo hasta que cambie el stock: no se reintenta.
 	SALE_STOCK_INSUFFICIENT: define(
 		'SALE_STOCK_INSUFFICIENT',
@@ -204,6 +211,13 @@ export const PROCUREMENT_ERROR_DEFINITIONS: Record<string, IProcurementErrorDefi
 		'reload_resource',
 	),
 };
+
+/**
+ * Motivo del `409 MULTI_LOCATION_NOT_ENABLED`. El `message` del backend dice qué
+ * no se puede hacer; esto explica por qué, para que no parezca una falla.
+ */
+export const MULTI_LOCATION_NOT_ENABLED_REASON =
+	'Mientras la sucursal opera con una sola ubicación, el stock vive en «Sin ubicación», que es de donde salen las ventas.';
 
 // Rechazos del mock sin código estable en el contrato: se usan en el `fail(...)`
 // del servicio y quedan fuera de `PROCUREMENT_ERROR_DEFINITIONS`.
