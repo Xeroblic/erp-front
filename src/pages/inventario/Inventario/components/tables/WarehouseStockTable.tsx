@@ -1,5 +1,6 @@
 import React from 'react';
 import { WarehouseLabel } from '@/components/procurement';
+import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
@@ -15,6 +16,8 @@ interface IWarehouseStockTableProps {
 	warehouses: IInventoryWarehouseAggregate[];
 	loading: boolean;
 	hasError: boolean;
+	/** `false`: el catálogo de bodegas está denegado y la lista no es la completa. */
+	complete?: boolean;
 	onOpen: (aggregate: IInventoryWarehouseAggregate) => void;
 }
 
@@ -27,6 +30,7 @@ const WarehouseStockTable: React.FC<IWarehouseStockTableProps> = ({
 	warehouses,
 	loading,
 	hasError,
+	complete = true,
 	onOpen,
 }) => (
 	<Card>
@@ -38,6 +42,14 @@ const WarehouseStockTable: React.FC<IWarehouseStockTableProps> = ({
 				</span>
 			)}
 		</CardHeader>
+		{!loading && !hasError && !complete && (
+			<div className='px-4 pb-2'>
+				<Alert color='amber' variant='outline' icon='HeroEyeSlash'>
+					No tienes acceso al catálogo de bodegas de esta sucursal: sólo se muestra «Sin
+					ubicación». Puede haber bodegas con stock que no aparecen acá.
+				</Alert>
+			</div>
+		)}
 		<CardBody className='overflow-x-auto p-0'>
 			<Table aria-label='Inventario por bodega' className='min-w-[720px]'>
 				<THead>

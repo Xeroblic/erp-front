@@ -87,6 +87,9 @@ const useInventario = (
 		warehouses: isWarehousesCurrent ? (state.warehouses.response?.data ?? []) : [],
 		warehousesLoading: !isWarehousesCurrent || state.warehouses.loading,
 		warehousesError: isWarehousesCurrent ? state.warehouses.error : null,
+		/** `false`: sin acceso al catálogo de bodegas, sólo se conoce «Sin ubicación». */
+		warehousesComplete:
+			!isWarehousesCurrent || (state.warehouses.response?.warehouses_complete ?? true),
 		list: isListCurrent ? state.list.response : null,
 		listLoading: !isListCurrent || state.list.loading,
 		listError: isListCurrent ? state.list.error : null,

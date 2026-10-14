@@ -119,6 +119,14 @@ describe('inventoryOverview.service (fachada)', () => {
 		});
 	});
 
+	it('«Documentar» sólo se ofrece si la ficha lee el mismo stock simulado que lo guarda', async () => {
+		const overviewOnly = await loadFacade({ overview: true, stock: false });
+		expect(overviewOnly.INVENTORY_OVERVIEW_FEATURES.documentAllocation).toBe(false);
+
+		const both = await loadFacade({ overview: true, stock: true });
+		expect(both.INVENTORY_OVERVIEW_FEATURES.documentAllocation).toBe(true);
+	});
+
 	it('el umbral sigue la bandera de stock, que comparte con Reportes', async () => {
 		const simulated = await loadFacade({ overview: false, stock: true });
 		const mock = await import('@/mocks/services/inventoryOverview.mock');
@@ -254,10 +262,44 @@ describe('inventoryOverview.service (API real)', () => {
 		);
 		const { listInventoryWarehouseAggregates } = await loadFacade();
 
-		const { data } = await listInventoryWarehouseAggregates(4);
+		const response = await listInventoryWarehouseAggregates(4);
+		const { data } = response;
 
 		expect(data).toHaveLength(1);
 		expect(data[0]).toMatchObject({ warehouse: null, product_count: 7 });
+		expect(response.warehouses_complete).toBe(false);
+	});
+
+	it('la ficha sin catálogo de bodegas declara el reparto incompleto, no vacío', async () => {
+		const mouse = stockRow(31, 9, 'MOU-1');
+		fetchData.mockImplementation((config) => {
+			if (config.url === '/branches/4/warehouses') return Promise.reject(axiosError(403));
+			if (config.url.endsWith('/origins'))
+				return Promise.resolve({
+					data: {
+						...stockPage([]).data,
+						context: {
+							scope: 'branch',
+							branch_id: 4,
+							warehouse: null,
+							product: mouse.product,
+							physical_quantity: 9,
+							unattributed_quantity: 0,
+						},
+					},
+				});
+			// Las 9 unidades están en una bodega: «Sin ubicación» no lo tiene.
+			return Promise.resolve(stockPage(config.params?.unlocated === 1 ? [] : [mouse]));
+		});
+		const { getInventoryStockDetail } = await loadFacade();
+
+		const { data } = await getInventoryStockDetail(4, 31);
+
+		expect(data).toMatchObject({
+			physical_quantity: 9,
+			warehouses: [],
+			warehouses_complete: false,
+		});
 	});
 
 	it('la ficha toma el producto de `origins` y sus cifras de su fila en cada ubicación', async () => {
@@ -306,8 +348,9 @@ describe('inventoryOverview.service (API real)', () => {
 			critical_stock: null,
 			series_summary: null,
 		});
-		// La bodega 8 no tiene el producto: no aparece en el reparto.
+		// La bodega 8 no tiene el producto: no aparece en el reparto, que está completo.
 		expect(data.warehouses.map((location) => location.warehouse?.id ?? null)).toEqual([null]);
+		expect(data.warehouses_complete).toBe(true);
 	});
 
 	it('la ficha de un producto con serie o de otra filial es un 404 reconocible', async () => {

@@ -64,10 +64,15 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 		ubicaciones.find((option) => option.value === ubicacionElegida)?.value ??
 		ubicaciones[0]?.value ??
 		null;
-	const locationParams = useMemo(
-		() => (ubicacion ? locationStockParams(ubicacion) : null),
-		[ubicacion],
-	);
+	// Sin acceso al catálogo de bodegas no se conocen todas las ubicaciones: si
+	// ninguna conocida tiene saldo, las procedencias se piden para la sucursal
+	// completa en vez de ocultarse.
+	const branchFallback =
+		detail !== null && !detail.warehouses_complete && detail.physical_quantity > 0;
+	const locationParams = useMemo(() => {
+		if (ubicacion) return locationStockParams(ubicacion);
+		return branchFallback ? {} : null;
+	}, [ubicacion, branchFallback]);
 
 	const threshold = detail?.product.critical_stock_threshold ?? null;
 	const formik = useFormik<IUmbralFormValues>({

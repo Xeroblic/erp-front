@@ -80,7 +80,9 @@ export const INVENTORY_OVERVIEW_FEATURES: IInventoryOverviewFeatures = {
 	// El umbral simulado lo comparten la ficha y Reportes (bandera de stock):
 	// la ficha sólo lo ofrece si lee del mismo doble que lo guarda.
 	threshold: INVENTORY_OVERVIEW_USE_MOCKS && INVENTORY_STOCK_USE_MOCKS,
-	documentAllocation: INVENTORY_OVERVIEW_USE_MOCKS,
+	// Documentar escribe en el stock simulado (bandera de stock): sólo se ofrece
+	// si la ficha lee ese mismo doble, o el thunk rechazaría la operación.
+	documentAllocation: INVENTORY_OVERVIEW_USE_MOCKS && INVENTORY_STOCK_USE_MOCKS,
 	unitTotals: INVENTORY_OVERVIEW_USE_MOCKS,
 };
 
@@ -120,18 +122,19 @@ const countProducts = async (
 };
 
 /**
- * Bodegas de la sucursal. Sin permiso para el catálogo de bodegas (403) la
- * vista sigue con «Sin ubicación», que no depende de él; cualquier otro fallo
- * se informa, porque escondería bodegas con stock.
+ * Bodegas de la sucursal. Sin permiso para el catálogo (403) devuelve `null`:
+ * se conocen sólo «Sin ubicación» y el total, no qué bodegas hay, y quien lo
+ * consume lo declara (`warehouses_complete: false`) en vez de presentar un
+ * reparto incompleto como vacío. Cualquier otro fallo se informa.
  */
 const warehouseProfiles = async (
 	branchId: number,
 	signal?: AbortSignal,
-): Promise<IBranchWarehouseProfile[]> => {
+): Promise<IBranchWarehouseProfile[] | null> => {
 	try {
 		return await listBranchWarehouseProfiles(branchId, signal);
 	} catch (error: unknown) {
-		if (resolveProcurementError(error).status === FORBIDDEN_STATUS) return [];
+		if (resolveProcurementError(error).status === FORBIDDEN_STATUS) return null;
 		throw error;
 	}
 };
@@ -258,7 +261,7 @@ const apiInventoryOverview: TInventoryOverviewService = {
 		signal?: AbortSignal,
 	): Promise<IInventoryWarehouseAggregatesResponse> => {
 		const warehouses = await warehouseProfiles(branchId, signal);
-		const locations: (IBranchWarehouseProfile | null)[] = [null, ...warehouses];
+		const locations: (IBranchWarehouseProfile | null)[] = [null, ...(warehouses ?? [])];
 		const counts = await Promise.all(
 			locations.map((warehouse) =>
 				countProducts(branchId, locationQuery(warehouse?.id ?? null), signal),
@@ -274,6 +277,7 @@ const apiInventoryOverview: TInventoryOverviewService = {
 						aggregate.product_count > 0,
 				),
 			context: { scope: 'branch', branch_id: branchId, warehouse: null },
+			warehouses_complete: warehouses !== null,
 		};
 	},
 	// La ficha del producto sale de `origins` (también responde 404 si tiene
@@ -289,7 +293,7 @@ const apiInventoryOverview: TInventoryOverviewService = {
 			warehouseProfiles(branchId, signal),
 		]);
 		const { product } = origins.context;
-		const locations: (IBranchWarehouseProfile | null)[] = [null, ...warehouses];
+		const locations: (IBranchWarehouseProfile | null)[] = [null, ...(warehouses ?? [])];
 		const [branchRow, ...locationRows] = await Promise.all([
 			findProductRow(branchId, product, {}, signal),
 			...locations.map((warehouse) =>
@@ -307,6 +311,7 @@ const apiInventoryOverview: TInventoryOverviewService = {
 				const row = locationRows[index];
 				return row ? [toBreakdown(row, warehouse)] : [];
 			}),
+			warehouses_complete: warehouses !== null,
 			critical_stock: null,
 			series_summary: null,
 		};

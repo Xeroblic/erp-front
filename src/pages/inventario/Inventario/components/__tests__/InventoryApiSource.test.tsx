@@ -188,6 +188,33 @@ describe('Inventario con la API real', () => {
 		expect(within(table).queryByText('Todo en orden')).not.toBeInTheDocument();
 	});
 
+	it('por bodega: sin acceso al catálogo avisa que la lista no es completa', () => {
+		const { rerender } = renderUi(
+			<WarehouseStockTable
+				warehouses={[aggregate({ warehouse: null, maximum_capacity: null })]}
+				loading={false}
+				hasError={false}
+				complete={false}
+				onOpen={() => {}}
+			/>,
+		);
+
+		expect(screen.getByText(/No tienes acceso al catálogo de bodegas/)).toBeInTheDocument();
+
+		const { Wrapper } = withStore(buildAuthState({ permisos: ['view-product'] }));
+		rerender(
+			<Wrapper>
+				<WarehouseStockTable
+					warehouses={[aggregate({ warehouse: null, maximum_capacity: null })]}
+					loading={false}
+					hasError={false}
+					onOpen={() => {}}
+				/>
+			</Wrapper>,
+		);
+		expect(screen.queryByText(/No tienes acceso al catálogo de bodegas/)).toBeNull();
+	});
+
 	it('la capacidad informa el máximo sin inventar un porcentaje de uso', () => {
 		renderUi(<WarehouseCapacity aggregate={aggregate()} />);
 

@@ -13,8 +13,12 @@ import {
 	resetInventoryStockStoreForTests,
 } from '@/mocks/services/inventoryStock.mock';
 import * as inventoryStockService from '@/services/procurement/inventoryStock.service';
+import * as inventoryOverviewService from '@/services/procurement/inventoryOverview.service';
 import { resetStockReceiptsStoreForTests } from '@/mocks/services/stockReceipts.mock';
-import { resetInventoryCriticalThresholdsForTests } from '@/mocks/services/inventoryOverview.mock';
+import {
+	getInventoryStockDetail as getMockDetail,
+	resetInventoryCriticalThresholdsForTests,
+} from '@/mocks/services/inventoryOverview.mock';
 
 const context = vi.hoisted(() => ({
 	branchId: 4 as number | null,
@@ -257,6 +261,41 @@ describe('Ficha de inventario', () => {
 			else expect(within(region).queryByText('Procedencia en revisión')).toBeNull();
 		},
 	);
+
+	it('sin acceso al catálogo de bodegas no presenta el reparto incompleto como vacío', async () => {
+		// 9 unidades en una bodega que no se puede nombrar y ninguna en «Sin ubicación».
+		vi.spyOn(inventoryOverviewService, 'getInventoryStockDetail').mockImplementation(
+			async (...args) => {
+				const response = await getMockDetail(...args);
+				return {
+					...response,
+					data: {
+						...response.data,
+						physical_quantity: 9,
+						warehouses: [],
+						warehouses_complete: false,
+					},
+				};
+			},
+		);
+		const origins = vi.spyOn(inventoryStockService, 'listInventoryOrigins');
+		renderFicha(MOUSE_ID);
+
+		expect(
+			await screen.findByText(/9 unidades están en bodegas que no puedes ver/),
+		).toBeInTheDocument();
+		expect(screen.queryByText('No hay unidades de este producto en la sucursal.')).toBeNull();
+		// Las procedencias se piden para la sucursal completa en vez de ocultarse.
+		expect(
+			await screen.findByRole('region', { name: 'Procedencias del producto' }),
+		).toBeInTheDocument();
+		expect(origins).toHaveBeenCalledWith(
+			4,
+			MOUSE_ID,
+			{ page: 1, per_page: 15 },
+			expect.anything(),
+		);
+	});
 
 	it('cambiar de ubicación descarta el filtro de proveedor de la anterior', async () => {
 		renderFicha(MOUSE_ID);

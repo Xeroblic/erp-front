@@ -566,7 +566,11 @@ export const listInventoryWarehouseAggregates = async (
 		return a.warehouse.name.localeCompare(b.warehouse.name, 'es');
 	});
 	return inventoryMockDelay(
-		{ data, context: { scope: 'branch', branch_id: branchId, warehouse: null } },
+		{
+			data,
+			context: { scope: 'branch', branch_id: branchId, warehouse: null },
+			warehouses_complete: true,
+		},
 		signal,
 	);
 };
@@ -607,6 +611,7 @@ export const getInventoryStockDetail = async (
 				},
 				...quantitiesOf(aggregate.totals),
 				warehouses: sortedBreakdown(aggregate),
+				warehouses_complete: true,
 				critical_stock: criticalStockFor(branchId, aggregate),
 				// El mock no modela series en esta consulta (§3 excluye serializados).
 				series_summary: null,

@@ -68,6 +68,13 @@ const BodegaSession = ({
 				</div>
 			</Alert>
 		);
+	if (!aggregate && !data.warehousesComplete && ubicacion !== 'unlocated')
+		return (
+			<Alert color='amber' title='Sin acceso a las bodegas'>
+				No tienes acceso al catálogo de bodegas de esta sucursal, así que no se puede
+				mostrar esta bodega.
+			</Alert>
+		);
 	if (!aggregate)
 		return (
 			<Alert title={ubicacion === 'unlocated' ? 'Todo está ubicado' : 'Bodega no encontrada'}>

@@ -141,6 +141,11 @@ export interface IInventoryWarehouseAggregate {
 export interface IInventoryWarehouseAggregatesResponse {
 	data: IInventoryWarehouseAggregate[];
 	context: IInventoryLocationContext;
+	/**
+	 * `false`: el usuario no puede leer el catálogo de bodegas (403), así que
+	 * `data` trae sólo «Sin ubicación». No significa que la sucursal no tenga bodegas.
+	 */
+	warehouses_complete: boolean;
 }
 
 export interface IInventorySeriesSummary {
@@ -162,7 +167,14 @@ export interface IInventoryStockDetail {
 	unfit_quantity: number;
 	documented_quantity: number;
 	undocumented_quantity: number;
+	/** Ubicaciones con saldo que se conocen. Ver `warehouses_complete`. */
 	warehouses: IInventoryWarehouseBreakdown[];
+	/**
+	 * `false`: sin acceso al catálogo de bodegas sólo se conoce «Sin ubicación»;
+	 * el resto del físico está en bodegas que no se pueden nombrar. Un reparto
+	 * vacío con `true` sí significa que no hay unidades.
+	 */
+	warehouses_complete: boolean;
 	critical_stock: IInventoryCriticalStock | null;
 	series_summary: IInventorySeriesSummary | null;
 }
