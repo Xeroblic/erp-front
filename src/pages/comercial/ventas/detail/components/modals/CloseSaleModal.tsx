@@ -7,10 +7,22 @@ import Icon from '@/components/icon/Icon';
 import { useAppDispatch } from '@/store';
 import { closeSaleThunk } from '@/store/slices/salesSlice';
 import { ICloseSaleRequest, ISaleItem } from '@/interface';
-// import CloseSaleItemRow from './CloseSaleItemRow'; // Ensure this matches filename
+import type { ISaleStockShortageItem } from '@/interface/sales.interface';
+import { toSaleCloseError } from '@/utils/saleCloseErrors.util';
 import CloseSaleItemRow from './CloseSaleItemRow';
+import SaleStockShortageAlert from '../parts/SaleStockShortageAlert';
 
 type CloseSalePayloadItem = ICloseSaleRequest['items'][number];
+
+/** El backend agrupa los errores de series por `sale_item_id`, no por posición. */
+const toRowErrors = (fieldErrors: Record<string, string[]> | null): Record<number, string[]> => {
+	const byItem: Record<number, string[]> = {};
+	Object.entries(fieldErrors ?? {}).forEach(([key, messages]) => {
+		const itemId = Number(key);
+		if (Number.isInteger(itemId) && itemId > 0) byItem[itemId] = messages;
+	});
+	return byItem;
+};
 
 interface Props {
 	open: boolean;
@@ -18,6 +30,8 @@ interface Props {
 	subsidiaryId: number;
 	saleId: number;
 	items: ISaleItem[];
+	/** Todos los ítems de la venta, para nombrar un faltante sin serie que no tiene fila aquí. */
+	saleItems?: ISaleItem[];
 	onSuccess?: () => void;
 }
 
@@ -27,6 +41,7 @@ const CloseSaleModal: React.FC<Props> = ({
 	subsidiaryId,
 	saleId,
 	items,
+	saleItems,
 	onSuccess,
 }) => {
 	const dispatch = useAppDispatch();
@@ -38,30 +53,41 @@ const CloseSaleModal: React.FC<Props> = ({
 	const [inputErrors, setInputErrors] = useState<Record<number, Record<number, string>>>({});
 
 	const [globalError, setGlobalError] = useState<string | null>(null);
+	const [shortages, setShortages] = useState<ISaleStockShortageItem[]>([]);
+	const [rowErrors, setRowErrors] = useState<Record<number, string[]>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// Los llamadores pasan un arreglo nuevo en cada render (`items.filter(...)`): reiniciar
+	// por identidad borraba las series escaneadas y el faltante tras cada respuesta.
+	const itemsRef = useRef(items);
+	itemsRef.current = items;
+	const itemsKey = items.map((it) => `${it.id}:${it.quantity}`).join('|');
 
 	// Initialize state on open
 	useEffect(() => {
 		if (open) {
+			const currentItems = itemsRef.current;
 			const initial: Record<number, string[]> = {};
-			items.forEach((it) => {
+			currentItems.forEach((it) => {
 				const qty = Math.max(1, Math.round(it.quantity));
 				initial[it.id] = Array(qty).fill('');
 			});
 			setSerialInputs(initial);
 			setInputErrors({});
 			setGlobalError(null);
+			setShortages([]);
+			setRowErrors({});
 
 			// Auto-focus first input after a short delay to allow render
 			setTimeout(() => {
-				if (items.length > 0) {
-					const firstId = `serial-input-${items[0].id}-0`;
+				if (currentItems.length > 0) {
+					const firstId = `serial-input-${currentItems[0].id}-0`;
 					const el = document.getElementById(firstId);
 					el?.focus();
 				}
 			}, 100);
 		}
-	}, [open, items]);
+	}, [open, itemsKey]);
 
 	const handleSerialChange = React.useCallback(
 		(itemId: number, index: number, val: string) => {
@@ -157,63 +183,38 @@ const CloseSaleModal: React.FC<Props> = ({
 		return isValid;
 	};
 
+	const shortagesByItem = useMemo(
+		() => new Map(shortages.map((shortage) => [shortage.sale_item_id, shortage])),
+		[shortages],
+	);
+
 	const handleClose = () => {
 		setGlobalError(null);
+		setShortages([]);
+		setRowErrors({});
 		setInputErrors({});
 		setIsSubmitting(false);
 		onClose();
 	};
 
 	const handleConfirm = async () => {
+		setShortages([]);
+		setRowErrors({});
 		if (!validate()) return;
 
 		setIsSubmitting(true);
 		setGlobalError(null);
 		try {
-			const res = await dispatch(
-				closeSaleThunk({ subsidiaryId, saleId, items: parsedPayload }),
-			).unwrap();
-			// Success
+			await dispatch(closeSaleThunk({ subsidiaryId, saleId, items: parsedPayload })).unwrap();
 			onSuccess?.();
 			handleClose();
-		} catch (err: any) {
-			console.error('Close Sale Error', err);
-			// Try to map backend errors
-			// Assuming backend returns 422 with errors keyed by payload index or something
-			// For now, just show global
-			const msg = err.message || 'Error al cerrar venta';
-			setGlobalError(msg);
-
-			// If we could parse detailed errors from backend (e.g. "items.0.serial_numbers.1": "Duplicate"),
-			// we would map them to setInputErrors here.
-			// Currently generic mapping:
-			if (err.errors && typeof err.errors === 'object') {
-				// Example backend error: "items.0.serial_numbers.0": ["Has already been taken"]
-				// parsedPayload is what we sent. We need to map back to sale_item_id.
-
-				const newBackendErrors: Record<number, Record<number, string>> = {};
-
-				Object.keys(err.errors).forEach((key) => {
-					// Detect pattern items.X.serial_numbers.Y
-					// itemIndex X maps to parsedPayload[X]
-					const match = key.match(/items\.(\d+)\.serial_numbers\.(\d+)/);
-					if (match) {
-						const payloadIndex = Number(match[1]); // Index in the sent array
-						const serialIndex = Number(match[2]); // Index in the serials array
-
-						const payloadItem = parsedPayload[payloadIndex];
-						if (payloadItem) {
-							const itemId = payloadItem.sale_item_id;
-							if (!newBackendErrors[itemId]) newBackendErrors[itemId] = {};
-							newBackendErrors[itemId][serialIndex] = err.errors[key][0];
-						}
-					}
-				});
-
-				if (Object.keys(newBackendErrors).length > 0) {
-					setInputErrors(newBackendErrors);
-				}
-			}
+		} catch (err: unknown) {
+			// El 409 de stock no se reintenta solo: el mismo cierre responde lo mismo
+			// hasta que cambie el stock, así que se muestra qué falta y cómo resolverlo.
+			const error = toSaleCloseError(err);
+			setGlobalError(error.message);
+			setShortages(error.shortages);
+			setRowErrors(toRowErrors(error.fieldErrors));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -249,7 +250,14 @@ const CloseSaleModal: React.FC<Props> = ({
 			</ModalHeader>
 
 			<ModalBody className='space-y-4'>
-				{globalError && (
+				{globalError && shortages.length > 0 && (
+					<SaleStockShortageAlert
+						message={globalError}
+						shortages={shortages}
+						items={saleItems ?? items}
+					/>
+				)}
+				{globalError && shortages.length === 0 && (
 					<Alert
 						color='red'
 						colorIntensity='500'
@@ -269,6 +277,8 @@ const CloseSaleModal: React.FC<Props> = ({
 							onChange={handleSerialChange}
 							errors={inputErrors[it.id]}
 							onEnter={handleEnter}
+							shortage={shortagesByItem.get(it.id)}
+							rowErrors={rowErrors[it.id]}
 						/>
 					))}
 

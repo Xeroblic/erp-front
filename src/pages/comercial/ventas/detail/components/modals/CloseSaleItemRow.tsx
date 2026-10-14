@@ -4,6 +4,8 @@ import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
 import Input from '@/components/form/Input'; // Assuming Input component exists, else use standard input
 import { ISaleItem } from '@/interface';
+import type { ISaleStockShortageItem } from '@/interface/sales.interface';
+import { formatShortageQuantities } from '../parts/SaleStockShortageAlert';
 
 export interface ICloseSaleItemProps {
 	item: ISaleItem;
@@ -14,11 +16,23 @@ export interface ICloseSaleItemProps {
 	errors?: Record<number, string>;
 	// Helper to jump focus
 	onEnter: (currentId: number, currentIndex: number) => void;
+	/** Faltante de esta línea en el 409 `SALE_STOCK_INSUFFICIENT`. */
+	shortage?: ISaleStockShortageItem;
+	/** Errores del backend para la línea completa (no para un input). */
+	rowErrors?: string[];
 }
 
 // Extracted component to prevent re-renders of the whole list when typing in one field
 const CloseSaleItemRow = React.memo(
-	({ item, values, onChange, errors = {}, onEnter }: ICloseSaleItemProps) => {
+	({
+		item,
+		values,
+		onChange,
+		errors = {},
+		onEnter,
+		shortage,
+		rowErrors,
+	}: ICloseSaleItemProps) => {
 		const sku = item.sku || item.product?.sku || 'S/N';
 		const name = item.product?.name || item.name || 'Producto sin nombre';
 		const quantity = Math.max(1, Math.round(item.quantity));
@@ -26,8 +40,17 @@ const CloseSaleItemRow = React.memo(
 		// Generate an array of indices based on quantity
 		const iter = Array.from({ length: quantity }, (_, i) => i);
 
+		const hasIssue = Boolean(shortage) || (rowErrors?.length ?? 0) > 0;
+
 		return (
-			<div className='rounded-lg border border-zinc-200 bg-white/80 p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/60'>
+			<div
+				role='group'
+				aria-label={`${sku} — ${name}`}
+				className={`rounded-lg border bg-white/80 p-3 shadow-sm dark:bg-zinc-900/60 ${
+					hasIssue
+						? 'border-red-400 dark:border-red-700'
+						: 'border-zinc-200 dark:border-zinc-700'
+				}`}>
 				<div className='flex items-start justify-between gap-3'>
 					<div className='space-y-1.5'>
 						<p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
@@ -50,10 +73,33 @@ const CloseSaleItemRow = React.memo(
 							</Badge>
 						</Tooltip>
 					</div>
-					<Badge variant='outline' color='gray' className='px-2 py-1 text-[11px]'>
-						Ítem #{item.id}
-					</Badge>
+					<div className='flex flex-col items-end gap-1'>
+						<Badge variant='outline' color='gray' className='px-2 py-1 text-[11px]'>
+							Ítem #{item.id}
+						</Badge>
+						{shortage && (
+							<Badge
+								variant='solid'
+								color='red'
+								className='inline-flex items-center gap-1 whitespace-nowrap px-2 py-1 text-[11px] text-white'>
+								<Icon
+									icon='HeroExclamationTriangle'
+									color='white'
+									className='h-3 w-3'
+								/>
+								<span>{formatShortageQuantities(shortage)}</span>
+							</Badge>
+						)}
+					</div>
 				</div>
+
+				{rowErrors && rowErrors.length > 0 && (
+					<ul className='mt-2 space-y-0.5 text-xs text-red-600 dark:text-red-400'>
+						{rowErrors.map((message) => (
+							<li key={message}>{message}</li>
+						))}
+					</ul>
+				)}
 
 				<div className='mt-3 space-y-2'>
 					{iter.map((idx) => {

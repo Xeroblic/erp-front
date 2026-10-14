@@ -10,10 +10,8 @@ import salesReducer, {
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
 import { formatCLP } from '@/utils/format.utils';
-import { translateStatus } from '../../../utils';
-import SaleItemsTable from '../tables/SaleItemsTable';
-import CloseSaleModal from './CloseSaleModal';
-import CorrectSerialModal from './CorrectSerialModal';
+import type { ISaleStockShortageItem } from '@/interface/sales.interface';
+import { isSerialsRequiredError, toSaleCloseError } from '@/utils/saleCloseErrors.util';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -35,11 +33,21 @@ import { AxiosError } from 'axios';
 import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
 import Spinner from '@/components/ui/Spinner';
+import { translateStatus } from '../../../utils';
+import SaleItemsTable from '../tables/SaleItemsTable';
+import SaleStockShortageAlert from '../parts/SaleStockShortageAlert';
+import CloseSaleModal from './CloseSaleModal';
+import CorrectSerialModal from './CorrectSerialModal';
 interface Props {
 	subsidiaryId: number;
 	saleId: number;
 	isOpen: boolean;
 	onClose: () => void;
+}
+
+interface ICloseShortage {
+	message: string;
+	items: ISaleStockShortageItem[];
 }
 
 interface CreateQuoteFromSaleResponse {
@@ -119,6 +127,8 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	// IDs de ítems que el backend marca como pendientes de asignar serie.
 	// Fuente de la verdad: endpoint pending-serial-assignment (su serialized_items).
 	const [serialItemIds, setSerialItemIds] = useState<Set<number>>(new Set());
+	// Faltante del último cierre directo (409): se muestra junto a los ítems hasta reintentar.
+	const [closeShortage, setCloseShortage] = useState<ICloseShortage | null>(null);
 
 	useEffect(() => {
 		if (!isOpen) return;
@@ -163,11 +173,13 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 
 	useEffect(() => {
 		setCreatedQuoteId(null);
+		setCloseShortage(null);
 	}, [saleId]);
 
 	useEffect(() => {
 		if (!isOpen) {
 			setCreatedQuoteId(null);
+			setCloseShortage(null);
 		}
 	}, [isOpen]);
 
@@ -303,18 +315,27 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const handleConfirmClose = async () => {
 		setConfirmCloseOpen(false);
 		setIsClosing(true);
+		setCloseShortage(null);
 		try {
-			const res = await dispatch(
-				closeSaleThunk({ subsidiaryId, saleId, items: [] }),
-			).unwrap();
+			// El slice ya avisa el éxito con el `message` del backend.
+			await dispatch(closeSaleThunk({ subsidiaryId, saleId, items: [] })).unwrap();
 
 			dispatch(loadSaleDetail({ subsidiaryId, saleId }));
 			dispatch(loadSaleItems({ subsidiaryId, saleId }));
-			toast.success('Venta cerrada correctamente');
-		} catch (err) {
-			console.error('Direct close failed', err);
-			toast.info('Se requiere ingresar números de serie. Abriendo formulario...');
-			setCloseOpen(true);
+		} catch (err: unknown) {
+			const error = toSaleCloseError(err);
+			// Sólo el 422 `required` pide series; el 409, el 403 y el resto ya los
+			// avisó el slice y no abren el formulario.
+			if (isSerialsRequiredError(error)) {
+				// La bandeja de pendientes pudo no listar la venta: el backend manda.
+				setSerialItemIds((prev) => new Set([...prev, ...error.requiredSerialItemIds]));
+				toast.info('Esta venta requiere números de serie. Abriendo formulario...');
+				setCloseOpen(true);
+				return;
+			}
+			if (error.shortages.length > 0) {
+				setCloseShortage({ message: error.message, items: error.shortages });
+			}
 		} finally {
 			setIsClosing(false);
 		}
@@ -597,7 +618,14 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								</Tooltip>
 							)}
 					</CardHeader>
-					<CardBody>
+					<CardBody className='space-y-3'>
+						{closeShortage && (
+							<SaleStockShortageAlert
+								message={closeShortage.message}
+								shortages={closeShortage.items}
+								items={items}
+							/>
+						)}
 						<SaleItemsTable items={items} />
 					</CardBody>
 				</Card>
@@ -609,7 +637,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						subsidiaryId={subsidiaryId}
 						saleId={saleId}
 						items={items.filter(isItemTrackable)}
+						saleItems={items}
 						onSuccess={() => {
+							setCloseShortage(null);
 							dispatch(loadSaleDetail({ subsidiaryId, saleId }));
 							dispatch(loadSaleItems({ subsidiaryId, saleId }));
 						}}
