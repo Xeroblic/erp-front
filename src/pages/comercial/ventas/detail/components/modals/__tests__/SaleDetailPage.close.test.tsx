@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import salesReducer from '@/store/slices/salesSlice';
 import { SALE_CLOSE_FORBIDDEN_MESSAGE } from '@/utils/saleCloseErrors.util';
@@ -54,13 +54,21 @@ const items = [
 
 const SERIAL_MODAL_TITLE = 'Cerrar venta (Escanear Series)';
 
-/** Responde las lecturas del detalle y delega el cierre en `close`. */
-const routeApi = (close: () => Promise<unknown>) => {
+interface ISettle {
+	resolve: (value: unknown) => void;
+	reject: (reason: Error) => void;
+}
+
+const noPendingSerials = () => Promise.resolve({ data: { data: [] } });
+
+/** Responde las lecturas del detalle y delega el cierre en `close` y los pendientes en `pending`. */
+const routeApi = (
+	close: () => Promise<unknown>,
+	pending: () => Promise<unknown> = noPendingSerials,
+) => {
 	fetchData.mockImplementation((cfg: { url: string; method?: string }) => {
 		if (cfg.method === 'post' && cfg.url.endsWith('/close')) return close();
-		if (cfg.url.endsWith('/pending-serial-assignment')) {
-			return Promise.resolve({ data: { data: [] } });
-		}
+		if (cfg.url.endsWith('/pending-serial-assignment')) return pending();
 		if (cfg.url.endsWith('/items')) return Promise.resolve({ data: { data: items } });
 		return Promise.resolve({ data: { data: detail } });
 	});
@@ -149,6 +157,42 @@ describe('SaleDetailPage — cierre directo', () => {
 		expect(screen.queryByRole('group', { name: 'CAB-1 — Cable HDMI' })).toBeNull();
 		expect(toastError).not.toHaveBeenCalled();
 	});
+
+	it.each([
+		[
+			'termina sin listar la venta',
+			(settle: ISettle) => settle.resolve({ data: { data: [] } }),
+		],
+		['falla', (settle: ISettle) => settle.reject(new Error('Network Error'))],
+	])(
+		'conserva los ítems del 422 cuando la consulta de pendientes %s después',
+		async (_case, finishPending) => {
+			const settle = {} as ISettle;
+			const latePending = new Promise((resolve, reject) => {
+				settle.resolve = resolve;
+				settle.reject = reject;
+			});
+			routeApi(
+				rejectWith(422, {
+					message: 'Debes indicar las series para los items con seguimiento por serie.',
+					required: [{ sale_item_id: 301, product_id: 9, sku: 'NB-1', quantity: 1 }],
+				}),
+				() => latePending,
+			);
+			await closeDirectly();
+			expect(await screen.findByRole('group', { name: 'NB-1 — Notebook' })).toBeTruthy();
+
+			await act(async () => {
+				finishPending(settle);
+				await latePending.catch(() => undefined);
+			});
+
+			expect(screen.getByRole('group', { name: 'NB-1 — Notebook' })).toBeTruthy();
+			expect(screen.queryByText('No hay ítems que requieran serie.')).toBeNull();
+			const confirm = screen.getByRole('button', { name: /Confirmar cierre/ });
+			expect(confirm.hasAttribute('disabled')).toBe(false);
+		},
+	);
 
 	it('el 200 nuevo cierra, avisa una sola vez y recarga el detalle', async () => {
 		routeApi(() =>

@@ -127,6 +127,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	// IDs de ítems que el backend marca como pendientes de asignar serie.
 	// Fuente de la verdad: endpoint pending-serial-assignment (su serialized_items).
 	const [serialItemIds, setSerialItemIds] = useState<Set<number>>(new Set());
+	// IDs que el 422 del cierre exige con serie (`required`). Van aparte para que la
+	// consulta de pendientes, si responde después, no los borre: el cierre manda.
+	const [closeRequiredItemIds, setCloseRequiredItemIds] = useState<Set<number>>(new Set());
 	// Faltante del último cierre directo (409): se muestra junto a los ítems hasta reintentar.
 	const [closeShortage, setCloseShortage] = useState<ICloseShortage | null>(null);
 
@@ -144,6 +147,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		if (!isOpen || !subsidiaryId || !saleId) return;
 		let cancelled = false;
 		setSerialItemIds(new Set());
+		setCloseRequiredItemIds(new Set());
 		(async () => {
 			try {
 				const resp = await ApiService.fetchData<{
@@ -300,7 +304,8 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	// Un ítem requiere serie sólo si el backend lo lista como pendiente de asignar
 	// serie (serialized_items). Los productos normales no entran: se cierran/marcan
 	// como completados por su propio flujo, sin pedir serie.
-	const isItemTrackable = (it: { id: number }): boolean => serialItemIds.has(it.id);
+	const isItemTrackable = (it: { id: number }): boolean =>
+		serialItemIds.has(it.id) || closeRequiredItemIds.has(it.id);
 
 	const handleCloseSale = async () => {
 		const needsSerials = items.some(isItemTrackable);
@@ -328,7 +333,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			// avisó el slice y no abren el formulario.
 			if (isSerialsRequiredError(error)) {
 				// La bandeja de pendientes pudo no listar la venta: el backend manda.
-				setSerialItemIds((prev) => new Set([...prev, ...error.requiredSerialItemIds]));
+				setCloseRequiredItemIds(new Set(error.requiredSerialItemIds));
 				toast.info('Esta venta requiere números de serie. Abriendo formulario...');
 				setCloseOpen(true);
 				return;
