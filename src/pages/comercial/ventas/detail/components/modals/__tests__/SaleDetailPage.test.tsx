@@ -1,11 +1,13 @@
 import React, { type PropsWithChildren } from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SaleDetailPage from '../SaleDetailPage';
 
 const dispatchMock = vi.hoisted(() => vi.fn((action: unknown) => action));
 const fetchDataMock = vi.hoisted(() => vi.fn());
+const toastMock = vi.hoisted(() => ({ success: vi.fn(), info: vi.fn(), error: vi.fn() }));
 
+vi.mock('react-toastify', () => ({ toast: toastMock }));
 vi.mock('@/store', () => ({
 	injectReducer: vi.fn(),
 	useAppDispatch: () => dispatchMock,
@@ -83,6 +85,7 @@ describe('SaleDetailPage al cerrarse sin desmontar', () => {
 		dispatchMock.mockClear();
 		fetchDataMock.mockReset();
 		fetchDataMock.mockResolvedValue({ data: { data: [] } });
+		toastMock.success.mockClear();
 	});
 
 	it('mantiene la misma cantidad de hooks al pasar isOpen de true a false y de vuelta', () => {
@@ -101,5 +104,47 @@ describe('SaleDetailPage al cerrarse sin desmontar', () => {
 
 		rerender(<SaleDetailPage subsidiaryId={1} saleId={7} isOpen onClose={onClose} />);
 		expect(screen.getByRole('dialog')).toBeInTheDocument();
+	});
+});
+
+describe('SaleDetailPage al crear una cotización desde la venta', () => {
+	const mockCreateQuoteResponse = (data: { message?: string; quote_id?: number }) => {
+		fetchDataMock.mockReset();
+		fetchDataMock.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve(url.endsWith('/create-quote') ? { data } : { data: { data: [] } }),
+		);
+	};
+
+	beforeEach(() => {
+		toastMock.success.mockClear();
+	});
+
+	it('no repite el número cuando el mensaje del backend ya lo incluye', async () => {
+		mockCreateQuoteResponse({
+			message: 'Cotización creada, número de cotización: 628',
+			quote_id: 628,
+		});
+		render(<SaleDetailPage subsidiaryId={1} saleId={7} isOpen onClose={vi.fn()} />);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Crear cotización desde venta' }));
+
+		await waitFor(() =>
+			expect(toastMock.success).toHaveBeenCalledWith(
+				'Cotización creada, número de cotización: 628',
+			),
+		);
+	});
+
+	it('agrega el número cuando el mensaje del backend no lo trae', async () => {
+		mockCreateQuoteResponse({ quote_id: 628 });
+		render(<SaleDetailPage subsidiaryId={1} saleId={7} isOpen onClose={vi.fn()} />);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Crear cotización desde venta' }));
+
+		await waitFor(() =>
+			expect(toastMock.success).toHaveBeenCalledWith(
+				'Cotización creada correctamente, número de cotización: 628',
+			),
+		);
 	});
 });
