@@ -351,7 +351,11 @@ export interface CreateProductPayload {
 	stock?: number | null;
 }
 
-export interface UpdateProductPayload extends Partial<CreateProductPayload> {
+/**
+ * Sin `stock`: el PATCH de sucursal lo quita y el de filial no lo valida. El
+ * stock se mueve por recepción o ajuste en la sucursal donde está.
+ */
+export interface UpdateProductPayload extends Partial<Omit<CreateProductPayload, 'stock'>> {
 	id: number;
 	branch_id?: number;
 }

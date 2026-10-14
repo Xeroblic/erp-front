@@ -187,14 +187,8 @@ export const buildDetailUpdatePayload = (
 		payload.warranty_months = nextWarranty ?? null;
 	}
 
-	// Stock: siempre debe ser un número válido
-	const nextStock = parseNumberOrNull(form.stock);
-	const currentStock = parseNumberOrNull(product.stock);
-
-	// Solo agregar al payload si hay un cambio Y el nuevo valor es un número válido
-	if (currentStock !== nextStock && typeof nextStock === 'number') {
-		payload.stock = nextStock;
-	}
+	// `stock` no viaja: el PATCH de sucursal y el de filial lo descartan. El stock
+	// vive en una sucursal y se mueve por recepción o ajuste.
 
 	if (includeDescriptions) {
 		if (
