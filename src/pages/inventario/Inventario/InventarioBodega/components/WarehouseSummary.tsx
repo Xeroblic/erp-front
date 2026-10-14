@@ -25,40 +25,33 @@ const Vacio = ({ children }: { children: React.ReactNode }) => (
  * vienen de A3, así que coinciden con la fila de la vista Por bodega.
  */
 const WarehouseSummary: React.FC<{ aggregate: IInventoryWarehouseAggregate }> = ({ aggregate }) => {
-	const kpis: IInventarioKpi[] = [
+	// Sólo las cifras que la fuente publica: `null` no se muestra como `0`.
+	// «No vendibles», además, sólo si hay.
+	const candidates: { value: number | null; kpi: Omit<IInventarioKpi, 'value'> }[] = [
 		{
-			label: 'Productos',
 			value: aggregate.product_count,
-			icon: 'HeroCube',
-			accent: 'bg-blue-600',
+			kpi: { label: 'Productos', icon: 'HeroCube', accent: 'bg-blue-600' },
 		},
 		{
-			label: 'Unidades',
 			value: aggregate.physical_quantity,
-			icon: 'HeroArchiveBox',
-			accent: 'bg-violet-600',
+			kpi: { label: 'Unidades', icon: 'HeroArchiveBox', accent: 'bg-violet-600' },
 		},
 		{
-			label: 'Bajo el umbral',
+			value: aggregate.unfit_quantity === 0 ? null : aggregate.unfit_quantity,
+			kpi: { label: 'No vendibles', icon: 'HeroExclamationTriangle', accent: 'bg-red-600' },
+		},
+		{
 			value: aggregate.critical_count,
-			icon: 'HeroBellAlert',
-			accent: 'bg-amber-600',
+			kpi: { label: 'Bajo el umbral', icon: 'HeroBellAlert', accent: 'bg-amber-600' },
 		},
 		{
-			label: 'Sin documento',
 			value: aggregate.undocumented_quantity,
-			icon: 'HeroDocumentMinus',
-			accent: 'bg-zinc-700',
+			kpi: { label: 'Sin documento', icon: 'HeroDocumentMinus', accent: 'bg-zinc-700' },
 		},
 	];
-	// Igual que en el resto de la vista: «No vendible» sólo aparece si hay.
-	if (aggregate.unfit_quantity > 0)
-		kpis.splice(2, 0, {
-			label: 'No vendibles',
-			value: aggregate.unfit_quantity,
-			icon: 'HeroExclamationTriangle',
-			accent: 'bg-red-600',
-		});
+	const kpis = candidates.flatMap(({ value, kpi }): IInventarioKpi[] =>
+		value === null ? [] : [{ ...kpi, value }],
+	);
 
 	const { warehouse } = aggregate;
 

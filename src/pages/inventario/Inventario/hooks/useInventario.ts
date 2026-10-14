@@ -7,6 +7,7 @@ import {
 	inventoryBranchQueryKey,
 	inventoryOverviewQueryKey,
 } from '@/store/slices/procurement/inventoryOverviewSlice';
+import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import type { IInventoryOverviewParams } from '@/interface/inventoryOverview.interface';
 import {
 	inventoryLocationParams,
@@ -42,8 +43,12 @@ const useInventario = (
 			...inventoryLocationParams(ubicacion),
 			include: 'warehouses',
 			search: busqueda.trim() || undefined,
-			stock_status: estado ?? undefined,
-			sort: orden,
+			// Sin umbral ni orden publicados no se piden: un enlace viejo con
+			// `estado` u `orden` no cambia una consulta que no los entiende.
+			stock_status: INVENTORY_OVERVIEW_FEATURES.stockStatus
+				? (estado ?? undefined)
+				: undefined,
+			sort: INVENTORY_OVERVIEW_FEATURES.sort ? orden : undefined,
 			page,
 			per_page: perPage,
 		};

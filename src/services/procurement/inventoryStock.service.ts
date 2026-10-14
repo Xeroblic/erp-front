@@ -1,14 +1,12 @@
 import INVENTORY_ADJUSTMENTS_USE_MOCKS from '@/config/inventoryAdjustments.config';
+import INVENTORY_OVERVIEW_USE_MOCKS from '@/config/inventoryOverview.config';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import INVENTORY_TRANSFERS_USE_MOCKS from '@/config/inventoryTransfers.config';
 import * as inventoryStockMock from '@/mocks/services/inventoryStock.mock';
 import ApiService from '@/services/ApiService';
 import listBranchWarehouses from '@/services/procurement/branchWarehouses.service';
 import { buildProcurementWriteHeaders } from '@/utils/procurementWrite.util';
-import {
-	rejectEndpointNotPublished,
-	throwEndpointNotPublished,
-} from '@/utils/procurementEndpoint.util';
+import { rejectEndpointNotPublished } from '@/utils/procurementEndpoint.util';
 import type {
 	IApiResourceEnvelope,
 	IInventoryAdjustableProductsPage,
@@ -48,8 +46,9 @@ export type { IInventoryStockAvailability } from '@/interface/procurement.interf
  *   428.
  *
  * **Sin publicar** (rechazan con `ProcurementEndpointNotPublishedError` en vez
- * de inventar datos): documentación posterior (`document-allocations`) y la
- * lectura auxiliar de filtros de procedencia.
+ * de inventar datos): documentación posterior (`document-allocations`). Las
+ * opciones de filtro de procedencia tampoco existen: la rama real responde
+ * `null`.
  *
  * Sin caché de `ApiService`: el saldo cambia con cada ajuste, recepción o
  * venta, y el slice ya descarta respuestas tardías por `requestId`.
@@ -61,9 +60,6 @@ const P = '/subsidiaries/{subsidiary}/procurement';
 
 const rejectNotPublished = (endpoint: string): Promise<never> =>
 	rejectEndpointNotPublished(RESOURCE, endpoint);
-
-const throwNotPublished = (endpoint: string): never =>
-	throwEndpointNotPublished(RESOURCE, endpoint);
 
 interface IInventoryWriteHeaders {
 	idempotencyKey?: string;
@@ -78,8 +74,15 @@ type TInventoryStockService = Pick<
 	| 'createInventoryDocumentAllocation'
 	| 'listInitialStockAllocationsForPurchaseDocument'
 	| 'getInventoryWarehouses'
-	| 'getInventoryOriginFilterOptions'
 > & {
+	/**
+	 * Proveedores y documentos con los que filtrar las procedencias. `null`: el
+	 * backend no publica las opciones (los filtros existen en la ruta, pero no
+	 * hay cómo listar sus valores sin recorrer todas las páginas).
+	 */
+	getInventoryOriginFilterOptions: (
+		...args: Parameters<typeof inventoryStockMock.getInventoryOriginFilterOptions>
+	) => ReturnType<typeof inventoryStockMock.getInventoryOriginFilterOptions> | null;
 	createInventoryAdjustment: (
 		branchId: number,
 		payload: IInventoryAdjustmentPayload,
@@ -137,7 +140,12 @@ const toAdjustableProductRef = (body: unknown): IInventoryProductRef | null => {
 const ADJUSTABLE_SEARCH_PER_PAGE = inventoryStockMock.INVENTORY_ADJUSTABLE_SEARCH_LIMIT;
 const ADJUSTABLE_SEARCH_MAX_LENGTH = 100;
 
-const listInventoryStockApi = async (
+/**
+ * `GET B/inventory-stock` contra la API real, sin pasar por ninguna bandera.
+ * La vista de Inventario la reutiliza para armar lo que el backend no publica
+ * como ruta propia (conteos por ubicación, la fila de un producto).
+ */
+export const fetchInventoryStockPage = async (
 	branchId: number,
 	params: IInventoryStockListParams = {},
 	signal?: AbortSignal,
@@ -151,22 +159,25 @@ const listInventoryStockApi = async (
 	return response.data;
 };
 
+/** `GET B/inventory-stock/{product}/origins` contra la API real, sin pasar por ninguna bandera. */
+export const fetchInventoryOriginsPage = async (
+	branchId: number,
+	productId: number,
+	params: IInventoryOriginsParams = {},
+	signal?: AbortSignal,
+): Promise<IInventoryOriginsResponse> => {
+	const response = await ApiService.fetchData<IInventoryOriginsResponse>({
+		url: `${branchUrl(branchId)}/inventory-stock/${productId}/origins`,
+		method: 'get',
+		params,
+		signal,
+	});
+	return response.data;
+};
+
 const apiInventoryStock: TInventoryStockService = {
-	listInventoryStock: listInventoryStockApi,
-	listInventoryOrigins: async (
-		branchId: number,
-		productId: number,
-		params: IInventoryOriginsParams = {},
-		signal?: AbortSignal,
-	) => {
-		const response = await ApiService.fetchData<IInventoryOriginsResponse>({
-			url: `${branchUrl(branchId)}/inventory-stock/${productId}/origins`,
-			method: 'get',
-			params,
-			signal,
-		});
-		return response.data;
-	},
+	listInventoryStock: fetchInventoryStockPage,
+	listInventoryOrigins: fetchInventoryOriginsPage,
 	// `include_empty=1` es la lectura que el contrato reserva a las pantallas
 	// de conteo: trae los productos asignados a la sucursal aunque estén en
 	// cero en la ubicación, con su saldo ahí. `search` ya cubre nombre, `sku` y
@@ -181,7 +192,7 @@ const apiInventoryStock: TInventoryStockService = {
 		// `search` admite hasta 100 caracteres: más largo sería un 422 que el
 		// selector mostraría como «sin resultados» de un término imposible.
 		const term = search.trim().slice(0, ADJUSTABLE_SEARCH_MAX_LENGTH);
-		const response = await listInventoryStockApi(
+		const response = await fetchInventoryStockPage(
 			branchId,
 			{
 				...location,
@@ -259,10 +270,9 @@ const apiInventoryStock: TInventoryStockService = {
 	// El contrato no publica reservas: sin ellas el disponible no se conoce, y
 	// mostrar el apto como «disponible» sería afirmar que no hay faltante.
 	getInventoryStockAvailability: () => null,
-	// Síncrona: el backend no publica las opciones de filtro de procedencias.
-	// Sólo la llama la ficha de producto, que no se monta con la bandera apagada.
-	getInventoryOriginFilterOptions: () =>
-		throwNotPublished(`GET ${B}/inventory-stock/{product}/origins`),
+	// Síncrona: el backend no publica las opciones de filtro de procedencias, y
+	// sacarlas de una página las dejaría incompletas. La ficha oculta los filtros.
+	getInventoryOriginFilterOptions: () => null,
 };
 
 /** El doble no distingue bodegas inactivas: todas las que lista están activas. */
@@ -312,11 +322,20 @@ export const getAdjustmentWarehouses = adjustmentStock.getInventoryWarehouses;
 /** Disponible tras el ajuste, o `null` si no se conoce. */
 export const getAdjustmentStockAvailability = adjustmentStock.getInventoryStockAvailability;
 
+/**
+ * Las pantallas de Inventario (resumen y fichas) tienen bandera propia
+ * (`VITE_INVENTORY_OVERVIEW_USE_MOCKS`): leen stock y procedencias de la misma
+ * fuente que su resumen, para no mezclar la semilla con saldos reales.
+ */
+const overviewStock: TInventoryStockService = INVENTORY_OVERVIEW_USE_MOCKS
+	? mockInventoryStock
+	: apiInventoryStock;
+
 /** `GET B/inventory-stock` (§3): stock actual por producto, nombre ASC e id ASC. */
-export const { listInventoryStock } = inventoryStock;
+export const { listInventoryStock } = overviewStock;
 
 /** `GET B/inventory-stock/{product}/origins` (§3): procedencias FIFO de un producto. */
-export const { listInventoryOrigins } = inventoryStock;
+export const { listInventoryOrigins } = overviewStock;
 
 /** Productos que un ajuste puede nombrar en una ubicación, con su saldo ahí. */
 export const { searchInventoryAdjustableProducts } = adjustmentStock;
@@ -339,5 +358,8 @@ export const { createInventoryAdjustment } = adjustmentStock;
 /** Disponible de un producto en la sucursal tras un ajuste, o `null` si no se conoce. */
 export const { getInventoryStockAvailability } = inventoryStock;
 
-/** Proveedores y documentos con los que filtrar las procedencias de un producto. */
-export const { getInventoryOriginFilterOptions } = inventoryStock;
+/**
+ * Proveedores y documentos con los que filtrar las procedencias de un
+ * producto; `null` si la fuente no los publica.
+ */
+export const { getInventoryOriginFilterOptions } = overviewStock;

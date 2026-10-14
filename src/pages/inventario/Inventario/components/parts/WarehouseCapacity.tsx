@@ -1,13 +1,24 @@
 import React from 'react';
 import type { IInventoryWarehouseAggregate } from '@/interface/inventoryOverview.interface';
 
-/** Capacidad usada de una bodega; «Sin definir» si no tiene máximo configurado. */
+/**
+ * Capacidad usada de una bodega; «Sin definir» si no tiene máximo configurado.
+ * Sin unidades de la ubicación (la API real no las suma) sólo se informa el
+ * máximo: un porcentaje calculado sobre otra cifra no sería el uso real.
+ */
 const WarehouseCapacity: React.FC<{ aggregate: IInventoryWarehouseAggregate }> = ({
 	aggregate,
 }) => {
 	const max = aggregate.maximum_capacity;
+	const used = aggregate.physical_quantity;
 	if (!max) return <span className='text-sm text-zinc-500'>Sin definir</span>;
-	const percent = Math.min(100, Math.round((aggregate.physical_quantity / max) * 100));
+	if (used === null)
+		return (
+			<span className='text-sm text-zinc-600 dark:text-zinc-300'>
+				Máximo {max.toLocaleString('es-CL')}
+			</span>
+		);
+	const percent = Math.min(100, Math.round((used / max) * 100));
 	return (
 		<div className='min-w-[8rem] space-y-1'>
 			<div
@@ -23,7 +34,7 @@ const WarehouseCapacity: React.FC<{ aggregate: IInventoryWarehouseAggregate }> =
 				/>
 			</div>
 			<p className='text-xs text-zinc-500'>
-				{aggregate.physical_quantity} de {max} ({percent}%)
+				{used} de {max} ({percent}%)
 			</p>
 		</div>
 	);

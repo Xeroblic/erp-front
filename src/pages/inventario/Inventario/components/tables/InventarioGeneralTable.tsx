@@ -4,7 +4,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 // eslint-disable-next-line import/extensions
-import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
+import type { TableSortState } from '@/components/ui/SortableTableHeader';
 import type {
 	IInventoryOverviewResponse,
 	IInventoryOverviewRow,
@@ -12,9 +12,11 @@ import type {
 	TInventoryStockSort,
 	TInventoryStockSortField,
 } from '@/interface/inventoryOverview.interface';
+import InventoryColumnHeader from '@/pages/inventario/Inventario/components/parts/InventoryColumnHeader';
 import StockStatusPill from '@/pages/inventario/Inventario/components/parts/StockStatusPill';
 import InventarioPagination from '@/pages/inventario/Inventario/components/parts/InventarioPagination';
 import WarehouseDistribution from '@/pages/inventario/Inventario/components/parts/WarehouseDistribution';
+import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import type { TInventarioUbicacion } from '@/pages/inventario/Inventario/types';
 import { warehouseIdFromToken } from '@/utils/inventoryLocation.util';
 
@@ -47,7 +49,8 @@ interface IInventarioGeneralTableProps {
 
 /**
  * Lista de productos de la vista General: qué es, dónde está, cuánto hay,
- * cuánto se puede vender y en qué estado está. «Ver» abre la ficha.
+ * cuánto se puede vender y en qué estado está. «Ver» abre la ficha. Sin
+ * reservas ni umbral publicados, «Disponible» y «Estado» no se muestran.
  */
 const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 	response,
@@ -61,7 +64,8 @@ const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 	onPaginate,
 	onOpen,
 }) => {
-	const columnCount = 6;
+	const showAvailability = INVENTORY_OVERVIEW_FEATURES.availability;
+	const columnCount = showAvailability ? 6 : 4;
 	const rows = response?.data ?? [];
 	const sort = sortState(orden);
 	const handleSort = (key: TInventoryStockSortField) => onOrden(nextOrden(orden, key));
@@ -88,39 +92,43 @@ const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 				<Table aria-label='Inventario por producto' className='min-w-[860px]'>
 					<THead>
 						<Tr>
-							<SortableTableHeader
+							<InventoryColumnHeader
 								label='Producto'
 								sortKey='name'
 								sort={sort}
 								onSort={handleSort}
 							/>
-							<SortableTableHeader
+							<InventoryColumnHeader
 								label='Ubicación'
 								sortKey='location'
 								sort={sort}
 								onSort={handleSort}
 							/>
-							<SortableTableHeader
+							<InventoryColumnHeader
 								label={isFiltered ? 'En esta ubicación' : 'En bodega'}
 								sortKey='physical_quantity'
 								sort={sort}
 								onSort={handleSort}
 								align='right'
 							/>
-							<SortableTableHeader
-								label='Disponible'
-								sortKey='available_quantity'
-								sort={sort}
-								onSort={handleSort}
-								align='right'
-							/>
-							<SortableTableHeader
-								label='Estado'
-								sortKey='stock_status'
-								sort={sort}
-								onSort={handleSort}
-								align='center'
-							/>
+							{showAvailability && (
+								<>
+									<InventoryColumnHeader
+										label='Disponible'
+										sortKey='available_quantity'
+										sort={sort}
+										onSort={handleSort}
+										align='right'
+									/>
+									<InventoryColumnHeader
+										label='Estado'
+										sortKey='stock_status'
+										sort={sort}
+										onSort={handleSort}
+										align='center'
+									/>
+								</>
+							)}
 							<Th scope='col' className='text-center'>
 								Acciones
 							</Th>
@@ -176,10 +184,19 @@ const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 											/>
 										</Td>
 										<Td>
-											<WarehouseDistribution
-												warehouses={row.warehouses}
-												highlighted={highlightedWarehouse(ubicacion)}
-											/>
+											{row.warehouses ? (
+												<WarehouseDistribution
+													warehouses={row.warehouses}
+													highlighted={highlightedWarehouse(ubicacion)}
+												/>
+											) : (
+												// Sin reparto publicado: se nombra el alcance de la cifra.
+												<span className='text-sm text-zinc-600 dark:text-zinc-300'>
+													{isFiltered
+														? ubicacionName
+														: 'Toda la sucursal'}
+												</span>
+											)}
 										</Td>
 										<Td className='text-right'>
 											<p className='text-lg font-semibold tabular-nums'>
@@ -192,33 +209,40 @@ const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 												</p>
 											)}
 										</Td>
-										<Td className='text-right'>
-											{critical ? (
-												<>
-													<p
-														className={
-															critical.available_quantity <= 0
-																? 'font-semibold tabular-nums text-red-700 dark:text-red-300'
-																: 'font-semibold tabular-nums'
-														}>
-														{critical.available_quantity}
-													</p>
-													{critical.held_quantity > 0 && (
-														<p className='text-sm text-zinc-500'>
-															{critical.held_quantity} reservada
-															{critical.held_quantity === 1
-																? ''
-																: 's'}
-														</p>
+										{showAvailability && (
+											<>
+												<Td className='text-right'>
+													{critical ? (
+														<>
+															<p
+																className={
+																	critical.available_quantity <= 0
+																		? 'font-semibold tabular-nums text-red-700 dark:text-red-300'
+																		: 'font-semibold tabular-nums'
+																}>
+																{critical.available_quantity}
+															</p>
+															{critical.held_quantity > 0 && (
+																<p className='text-sm text-zinc-500'>
+																	{critical.held_quantity}{' '}
+																	reservada
+																	{critical.held_quantity === 1
+																		? ''
+																		: 's'}
+																</p>
+															)}
+														</>
+													) : (
+														<span className='text-sm text-zinc-500'>
+															—
+														</span>
 													)}
-												</>
-											) : (
-												<span className='text-sm text-zinc-500'>—</span>
-											)}
-										</Td>
-										<Td className='text-center'>
-											<StockStatusPill critical={critical} />
-										</Td>
+												</Td>
+												<Td className='text-center'>
+													<StockStatusPill critical={critical} />
+												</Td>
+											</>
+										)}
 										<Td>
 											<div className='flex justify-center'>
 												<Button

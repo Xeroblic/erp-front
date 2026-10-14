@@ -22,6 +22,12 @@ vi.mock('@/config/inventoryStock.config', () => ({
 		return context.enabled;
 	},
 }));
+// Las pantallas de Inventario tienen bandera propia; el mismo interruptor las enciende.
+vi.mock('@/config/inventoryOverview.config', () => ({
+	get default() {
+		return context.enabled;
+	},
+}));
 // La trazabilidad tiene bandera propia: estas pruebas la recorren contra el doble.
 vi.mock('@/config/inventoryOperations.config', () => ({ default: true }));
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
@@ -139,14 +145,13 @@ afterEach(() => {
 });
 
 describe('Inventario — vista unificada', () => {
-	it('no consulta nada ni muestra datos simulados con el flag apagado', async () => {
+	it('sin datos simulados no avisa ni bloquea la vista: lee la API real', async () => {
 		context.enabled = false;
-		const spy = vi.spyOn(service, 'listInventoryOverview');
 		renderPage();
 
-		expect(await screen.findByText('Consulta no habilitada')).toBeInTheDocument();
+		expect(await screen.findByRole('tab', { name: /Por producto/ })).toBeInTheDocument();
+		expect(screen.queryByText('Consulta no habilitada')).not.toBeInTheDocument();
 		expect(screen.queryByText('Datos simulados')).not.toBeInTheDocument();
-		expect(spy).not.toHaveBeenCalled();
 	});
 
 	it('sin permiso de lectura no monta la sesión', () => {

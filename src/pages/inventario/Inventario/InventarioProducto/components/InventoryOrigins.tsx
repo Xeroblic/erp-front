@@ -4,6 +4,7 @@ import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import { DetailLink } from '@/components/procurement';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import InventarioPagination from '@/pages/inventario/Inventario/components/parts/InventarioPagination';
 import type {
 	IInventoryStockListParams,
@@ -63,8 +64,14 @@ const InventoryOrigins = ({
 		response && response.context.scope === 'warehouse'
 			? (response.context.warehouse?.id ?? null)
 			: null;
-	const canDocumentHere = Boolean(response) && response?.context.scope !== 'branch';
-	const hasFilterOptions = options.suppliers.length > 0 || options.documents.length > 0;
+	// Documentar exige `document-allocations`, que la API real no publica.
+	const canDocumentHere =
+		INVENTORY_OVERVIEW_FEATURES.documentAllocation &&
+		Boolean(response) &&
+		response?.context.scope !== 'branch';
+	// `null`: la fuente no publica las opciones, así que no se ofrecen los filtros.
+	const hasFilterOptions =
+		options !== null && (options.suppliers.length > 0 || options.documents.length > 0);
 
 	return (
 		<section aria-label='Procedencias del producto' className='space-y-4'>
@@ -80,7 +87,7 @@ const InventoryOrigins = ({
 					</span>
 				)}
 			</div>
-			{hasFilterOptions && (
+			{hasFilterOptions && options && (
 				<form onSubmit={formik.handleSubmit} className='grid gap-3 sm:grid-cols-2'>
 					<div className='space-y-1'>
 						<label
@@ -166,7 +173,9 @@ const InventoryOrigins = ({
 							{response.data.length === 0 && (
 								<Tr>
 									<Td colSpan={5}>
-										Sin procedencias para los filtros aplicados.
+										{formik.values.supplier || formik.values.document
+											? 'Sin procedencias para los filtros aplicados.'
+											: 'Sin procedencias registradas en esta ubicación.'}
 									</Td>
 								</Tr>
 							)}

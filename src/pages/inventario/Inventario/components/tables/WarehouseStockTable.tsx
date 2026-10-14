@@ -4,9 +4,12 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import type { IInventoryWarehouseAggregate } from '@/interface/inventoryOverview.interface';
+import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import WarehouseCapacity from '@/pages/inventario/Inventario/components/parts/WarehouseCapacity';
 
-const COLUMN_COUNT = 6;
+/** Sin totales de unidades publicados, «Unidades» y «Atención» no se muestran. */
+const showUnits = INVENTORY_OVERVIEW_FEATURES.unitTotals;
+const columnCount = showUnits ? 6 : 4;
 
 interface IWarehouseStockTableProps {
 	warehouses: IInventoryWarehouseAggregate[];
@@ -17,7 +20,8 @@ interface IWarehouseStockTableProps {
 
 /**
  * Vista Por bodega: cuántos productos y unidades tiene cada ubicación y qué
- * pide atención. «Ver» abre la ficha de inventario de la bodega.
+ * pide atención. «Ver» abre la ficha de inventario de la bodega. Desde la API
+ * real sólo se conoce cuántos productos con stock tiene cada una.
  */
 const WarehouseStockTable: React.FC<IWarehouseStockTableProps> = ({
 	warehouses,
@@ -42,10 +46,14 @@ const WarehouseStockTable: React.FC<IWarehouseStockTableProps> = ({
 						<Th scope='col' className='text-right'>
 							Productos
 						</Th>
-						<Th scope='col' className='text-right'>
-							Unidades
-						</Th>
-						<Th scope='col'>Atención</Th>
+						{showUnits && (
+							<>
+								<Th scope='col' className='text-right'>
+									Unidades
+								</Th>
+								<Th scope='col'>Atención</Th>
+							</>
+						)}
 						<Th scope='col'>Capacidad</Th>
 						<Th scope='col' className='text-center'>
 							Acciones
@@ -56,7 +64,7 @@ const WarehouseStockTable: React.FC<IWarehouseStockTableProps> = ({
 					{loading &&
 						Array.from({ length: 3 }, (_, rowIndex) => (
 							<Tr key={`bodegas-skeleton-${rowIndex}`}>
-								{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
+								{Array.from({ length: columnCount }, (_cell, cellIndex) => (
 									<Td key={`bodegas-skeleton-${rowIndex}-${cellIndex}`}>
 										<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 									</Td>
@@ -65,7 +73,7 @@ const WarehouseStockTable: React.FC<IWarehouseStockTableProps> = ({
 						))}
 					{!loading && hasError && (
 						<Tr>
-							<Td colSpan={COLUMN_COUNT} className='py-12 text-center'>
+							<Td colSpan={columnCount} className='py-12 text-center'>
 								<p className='font-medium text-red-700 dark:text-red-300'>
 									No fue posible mostrar las bodegas
 								</p>
@@ -74,7 +82,7 @@ const WarehouseStockTable: React.FC<IWarehouseStockTableProps> = ({
 					)}
 					{!loading && !hasError && warehouses.length === 0 && (
 						<Tr>
-							<Td colSpan={COLUMN_COUNT} className='py-12 text-center'>
+							<Td colSpan={columnCount} className='py-12 text-center'>
 								<p className='font-medium text-zinc-700 dark:text-zinc-200'>
 									Esta sucursal no tiene bodegas ni stock sin ubicación
 								</p>
@@ -89,11 +97,11 @@ const WarehouseStockTable: React.FC<IWarehouseStockTableProps> = ({
 						warehouses.map((aggregate) => {
 							const name = aggregate.warehouse?.name ?? 'Sin ubicación';
 							const alerts = [
-								aggregate.critical_count > 0 &&
+								(aggregate.critical_count ?? 0) > 0 &&
 									`${aggregate.critical_count} bajo el umbral`,
-								aggregate.unfit_quantity > 0 &&
+								(aggregate.unfit_quantity ?? 0) > 0 &&
 									`${aggregate.unfit_quantity} no vendibles`,
-								aggregate.undocumented_quantity > 0 &&
+								(aggregate.undocumented_quantity ?? 0) > 0 &&
 									`${aggregate.undocumented_quantity} sin documento`,
 							].filter((text): text is string => Boolean(text));
 							return (
@@ -112,22 +120,26 @@ const WarehouseStockTable: React.FC<IWarehouseStockTableProps> = ({
 									<Td className='text-right tabular-nums'>
 										{aggregate.product_count}
 									</Td>
-									<Td className='text-right text-lg font-semibold tabular-nums'>
-										{aggregate.physical_quantity}
-									</Td>
-									<Td>
-										{alerts.length > 0 ? (
-											<ul className='space-y-0.5 text-sm text-amber-700 dark:text-amber-300'>
-												{alerts.map((text) => (
-													<li key={text}>{text}</li>
-												))}
-											</ul>
-										) : (
-											<span className='text-sm text-zinc-500'>
-												Todo en orden
-											</span>
-										)}
-									</Td>
+									{showUnits && (
+										<>
+											<Td className='text-right text-lg font-semibold tabular-nums'>
+												{aggregate.physical_quantity}
+											</Td>
+											<Td>
+												{alerts.length > 0 ? (
+													<ul className='space-y-0.5 text-sm text-amber-700 dark:text-amber-300'>
+														{alerts.map((text) => (
+															<li key={text}>{text}</li>
+														))}
+													</ul>
+												) : (
+													<span className='text-sm text-zinc-500'>
+														Todo en orden
+													</span>
+												)}
+											</Td>
+										</>
+									)}
 									<Td>
 										<WarehouseCapacity aggregate={aggregate} />
 									</Td>

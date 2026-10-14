@@ -5,7 +5,8 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 // eslint-disable-next-line import/extensions
-import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
+import type { TableSortState } from '@/components/ui/SortableTableHeader';
+import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import type {
 	IInventoryOverviewResponse,
 	IInventoryOverviewRow,
@@ -16,10 +17,13 @@ import { ProductThumbnail } from '@/components/procurement';
 import StockStatusPill, {
 	todoReservado,
 } from '@/pages/inventario/Inventario/components/parts/StockStatusPill';
+import InventoryColumnHeader from '@/pages/inventario/Inventario/components/parts/InventoryColumnHeader';
 import InventarioPagination from '@/pages/inventario/Inventario/components/parts/InventarioPagination';
 import { estadoVisible, type TInventarioEstadoVisible } from '@/pages/inventario/Inventario/types';
 
-const COLUMN_COUNT = 6;
+/** Sin umbral ni reservas publicados, la columna «Estado» no se muestra. */
+const showEstado = INVENTORY_OVERVIEW_FEATURES.availability;
+const COLUMN_COUNT = showEstado ? 6 : 5;
 
 const sortState = (orden: TInventoryStockSort): TableSortState<TInventoryStockSortField> =>
 	orden.startsWith('-')
@@ -113,21 +117,26 @@ const DetalleProducto = ({ row, onOpen }: { row: IInventoryOverviewRow; onOpen: 
 				</p>
 			)}
 			<div className='flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-700'>
-				<div className='flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-300'>
-					<span className='font-semibold text-zinc-700 dark:text-zinc-200'>Umbral</span>
-					{row.product.serial_tracking || !critical ? (
-						<span>Los productos con serie no usan umbral.</span>
-					) : (
-						<>
-							<StockStatusPill critical={critical} fit />
-							<span>
-								{critical.threshold === null
-									? 'Sin umbral: no avisa cuando se agota.'
-									: `Avisa con ${critical.threshold} o menos disponibles en la sucursal (hoy ${critical.available_quantity}).`}
-							</span>
-						</>
-					)}
-				</div>
+				{/* Sin umbral publicado no se afirma nada sobre él. */}
+				{INVENTORY_OVERVIEW_FEATURES.threshold && (
+					<div className='flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-300'>
+						<span className='font-semibold text-zinc-700 dark:text-zinc-200'>
+							Umbral
+						</span>
+						{row.product.serial_tracking || !critical ? (
+							<span>Los productos con serie no usan umbral.</span>
+						) : (
+							<>
+								<StockStatusPill critical={critical} fit />
+								<span>
+									{critical.threshold === null
+										? 'Sin umbral: no avisa cuando se agota.'
+										: `Avisa con ${critical.threshold} o menos disponibles en la sucursal (hoy ${critical.available_quantity}).`}
+								</span>
+							</>
+						)}
+					</div>
+				)}
 				<Button
 					size='sm'
 					variant='outline'
@@ -200,7 +209,7 @@ const WarehouseProductsTable: React.FC<IWarehouseProductsTableProps> = ({
 							<Th scope='col' className='w-12'>
 								<span className='sr-only'>Detalle</span>
 							</Th>
-							<SortableTableHeader
+							<InventoryColumnHeader
 								label='Producto'
 								sortKey='name'
 								sort={sort}
@@ -212,16 +221,18 @@ const WarehouseProductsTable: React.FC<IWarehouseProductsTableProps> = ({
 							<Th scope='col' className='w-40'>
 								Marca
 							</Th>
-							<SortableTableHeader
+							<InventoryColumnHeader
 								label='Stock'
 								sortKey='physical_quantity'
 								sort={sort}
 								onSort={handleSort}
 								align='center'
 							/>
-							<Th scope='col' className='w-44 text-center'>
-								Estado
-							</Th>
+							{showEstado && (
+								<Th scope='col' className='w-44 text-center'>
+									Estado
+								</Th>
+							)}
 						</Tr>
 					</THead>
 					<TBody>
@@ -348,9 +359,13 @@ const WarehouseProductsTable: React.FC<IWarehouseProductsTableProps> = ({
 													</p>
 												)}
 											</Td>
-											<Td className='text-center'>
-												<StockStatusPill critical={row.critical_stock} />
-											</Td>
+											{showEstado && (
+												<Td className='text-center'>
+													<StockStatusPill
+														critical={row.critical_stock}
+													/>
+												</Td>
+											)}
 										</Tr>
 										{isOpen && (
 											<Tr id={panelId}>

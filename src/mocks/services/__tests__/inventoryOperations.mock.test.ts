@@ -135,7 +135,7 @@ describe('§14 · listInventoryOperations (mock)', () => {
 			search: 'mouse',
 		} as IInventoryOverviewParams);
 		const current = new Map(
-			data[0].warehouses.map((location) => [
+			(data[0].warehouses ?? []).map((location) => [
 				location.warehouse?.id ?? null,
 				location.physical_quantity,
 			]),

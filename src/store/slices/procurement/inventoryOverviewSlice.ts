@@ -17,6 +17,7 @@ import type {
 import {
 	getInventoryStockDetail,
 	getInventoryStockSummary,
+	isInventoryDetailNotFound,
 	listInventoryOverview,
 	listInventoryWarehouseAggregates,
 	updateInventoryCriticalThreshold,
@@ -90,76 +91,60 @@ export const fetchInventoryOverview = createAsyncThunk<
 	IInventoryOverviewResponse,
 	IOverviewRequest,
 	{ rejectValue: string }
->(
-	'inventoryOverview/list',
-	async ({ branchId, params }, { signal, rejectWithValue }) => {
-		try {
-			return await listInventoryOverview(branchId, params, signal);
-		} catch (error: unknown) {
-			return rejectWithValue(
-				getProcurementErrorMessage(error, 'No pudimos cargar el inventario.'),
-			);
-		}
-	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
-);
+>('inventoryOverview/list', async ({ branchId, params }, { signal, rejectWithValue }) => {
+	try {
+		return await listInventoryOverview(branchId, params, signal);
+	} catch (error: unknown) {
+		return rejectWithValue(
+			getProcurementErrorMessage(error, 'No pudimos cargar el inventario.'),
+		);
+	}
+});
 
 export const fetchInventorySummary = createAsyncThunk<
 	IInventoryStockSummaryResponse,
 	IBranchRequest,
 	{ rejectValue: string }
->(
-	'inventoryOverview/summary',
-	async ({ branchId }, { signal, rejectWithValue }) => {
-		try {
-			return await getInventoryStockSummary(branchId, signal);
-		} catch (error: unknown) {
-			return rejectWithValue(
-				getProcurementErrorMessage(error, 'No pudimos cargar las alertas de inventario.'),
-			);
-		}
-	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
-);
+>('inventoryOverview/summary', async ({ branchId }, { signal, rejectWithValue }) => {
+	try {
+		return await getInventoryStockSummary(branchId, signal);
+	} catch (error: unknown) {
+		return rejectWithValue(
+			getProcurementErrorMessage(error, 'No pudimos cargar las alertas de inventario.'),
+		);
+	}
+});
 
 export const fetchInventoryWarehouses = createAsyncThunk<
 	IInventoryWarehouseAggregatesResponse,
 	IBranchRequest,
 	{ rejectValue: string }
->(
-	'inventoryOverview/warehouses',
-	async ({ branchId }, { signal, rejectWithValue }) => {
-		try {
-			return await listInventoryWarehouseAggregates(branchId, signal);
-		} catch (error: unknown) {
-			return rejectWithValue(
-				getProcurementErrorMessage(error, 'No pudimos cargar las bodegas.'),
-			);
-		}
-	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
-);
+>('inventoryOverview/warehouses', async ({ branchId }, { signal, rejectWithValue }) => {
+	try {
+		return await listInventoryWarehouseAggregates(branchId, signal);
+	} catch (error: unknown) {
+		return rejectWithValue(getProcurementErrorMessage(error, 'No pudimos cargar las bodegas.'));
+	}
+});
 
 export const fetchInventoryDetail = createAsyncThunk<
 	IInventoryStockDetailResponse,
 	IDetailRequest,
 	{ rejectValue: string }
->(
-	'inventoryOverview/detail',
-	async ({ branchId, productId }, { signal, rejectWithValue }) => {
-		try {
-			return await getInventoryStockDetail(branchId, productId, signal);
-		} catch (error: unknown) {
-			return rejectWithValue(
-				getProcurementErrorMessage(error, 'No pudimos cargar la ficha del producto.'),
-			);
-		}
-	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
-);
+>('inventoryOverview/detail', async ({ branchId, productId }, { signal, rejectWithValue }) => {
+	try {
+		return await getInventoryStockDetail(branchId, productId, signal);
+	} catch (error: unknown) {
+		return rejectWithValue(
+			isInventoryDetailNotFound(error)
+				? 'Este producto no está en el inventario por cantidad de esta sucursal: puede ser de otra filial o seguirse por número de serie.'
+				: getProcurementErrorMessage(error, 'No pudimos cargar la ficha del producto.'),
+		);
+	}
+});
 
-// La trazabilidad tiene backend propio (tarea 17): no depende de
-// `INVENTORY_STOCK_USE_MOCKS`, sino de la bandera de su fachada.
+// La trazabilidad tiene backend propio (tarea 17): depende sólo de la bandera
+// de su fachada.
 export const fetchInventoryOperations = createAsyncThunk<
 	IInventoryOperationsResponse,
 	IOperationsRequest,
@@ -235,6 +220,7 @@ export const updateInventoryThresholdThunk = createAsyncThunk<
 			);
 		}
 	},
+	// Reportes (simulado) también edita el umbral: sigue la bandera de stock.
 	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
 

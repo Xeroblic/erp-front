@@ -34,6 +34,12 @@ vi.mock('@/config/inventoryStock.config', () => ({
 		return context.enabled;
 	},
 }));
+// Las pantallas de Inventario tienen bandera propia; el mismo interruptor las enciende.
+vi.mock('@/config/inventoryOverview.config', () => ({
+	get default() {
+		return context.enabled;
+	},
+}));
 // La trazabilidad tiene bandera propia: estas pruebas la recorren contra el doble.
 vi.mock('@/config/inventoryOperations.config', () => ({ default: true }));
 // Recepciones comparte la fuente de Inventario: sus procedencias enlazan a su ficha.

@@ -9,6 +9,7 @@ import type {
 	IInventoryWarehouseAggregate,
 	TInventoryStockStatusFilter,
 } from '@/interface/inventoryOverview.interface';
+import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import {
 	ESTADO_LABELS,
 	type IInventarioFilters,
@@ -34,6 +35,12 @@ const isEstado = (value: string): value is TInventoryStockStatusFilter =>
 const isUbicacion = (value: string): value is TInventarioUbicacion =>
 	value === 'unlocated' || /^warehouse:[1-9]\d*$/.test(value);
 
+const LG_COLUMNS: Record<number, string> = {
+	2: 'lg:grid-cols-2',
+	3: 'lg:grid-cols-3',
+	4: 'lg:grid-cols-4',
+};
+
 const fieldLabelClass = 'block text-sm font-medium text-zinc-700 dark:text-zinc-300';
 const selectBackgroundClass = '!bg-zinc-50 dark:!bg-zinc-900';
 
@@ -53,6 +60,8 @@ interface IInventarioFiltersProps {
  * Documentos de compra y Proveedores. «Toda la sucursal» y «Todos» no son
  * opciones de la lista: son la ausencia de selección — `value=null`,
  * `placeholder` gris e `isClearable` para volver a ese estado con la X.
+ *
+ * «Estado» depende del umbral y las reservas: sin ellos publicados, no se ofrece.
  */
 const InventarioFilters: React.FC<IInventarioFiltersProps> = ({
 	filtros,
@@ -63,6 +72,9 @@ const InventarioFilters: React.FC<IInventarioFiltersProps> = ({
 	onEstado,
 	onLimpiar,
 }) => {
+	const showEstado = INVENTORY_OVERVIEW_FEATURES.stockStatus;
+	// Búsqueda ocupa dos columnas; cada select, una.
+	const columns = 2 + (showUbicacion ? 1 : 0) + (showEstado ? 1 : 0);
 	const ubicacionSelectOptions: TSelectOption[] = warehouses.map((aggregate) => ({
 		value: aggregate.warehouse ? `warehouse:${aggregate.warehouse.id}` : 'unlocated',
 		label: aggregate.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL,
@@ -84,7 +96,7 @@ const InventarioFilters: React.FC<IInventarioFiltersProps> = ({
 			</CardHeader>
 			<CardBody>
 				<div
-					className={`grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 dark:bg-zinc-900/30 sm:grid-cols-2 ${showUbicacion ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+					className={`grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 dark:bg-zinc-900/30 sm:grid-cols-2 ${LG_COLUMNS[columns] ?? 'lg:grid-cols-4'}`}>
 					<div className='space-y-1 lg:col-span-2'>
 						<label htmlFor='inventario-busqueda' className={fieldLabelClass}>
 							Búsqueda
@@ -121,28 +133,30 @@ const InventarioFilters: React.FC<IInventarioFiltersProps> = ({
 							/>
 						</div>
 					)}
-					<div className='space-y-1'>
-						<label htmlFor='inventario-estado' className={fieldLabelClass}>
-							Estado
-						</label>
-						<SelectReact
-							className={selectBackgroundClass}
-							inputId='inventario-estado'
-							name='estado'
-							options={estadoSelectOptions}
-							value={
-								estadoSelectOptions.find(
-									(option) => option.value === filtros.estado,
-								) ?? null
-							}
-							placeholder='Todos'
-							isClearable
-							onChange={(selected) => {
-								const value = singleSelectValue(selected)?.value ?? '';
-								onEstado(isEstado(value) ? value : null);
-							}}
-						/>
-					</div>
+					{showEstado && (
+						<div className='space-y-1'>
+							<label htmlFor='inventario-estado' className={fieldLabelClass}>
+								Estado
+							</label>
+							<SelectReact
+								className={selectBackgroundClass}
+								inputId='inventario-estado'
+								name='estado'
+								options={estadoSelectOptions}
+								value={
+									estadoSelectOptions.find(
+										(option) => option.value === filtros.estado,
+									) ?? null
+								}
+								placeholder='Todos'
+								isClearable
+								onChange={(selected) => {
+									const value = singleSelectValue(selected)?.value ?? '';
+									onEstado(isEstado(value) ? value : null);
+								}}
+							/>
+						</div>
+					)}
 				</div>
 			</CardBody>
 		</Card>

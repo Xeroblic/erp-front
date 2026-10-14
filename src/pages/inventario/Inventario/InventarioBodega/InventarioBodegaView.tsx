@@ -6,7 +6,7 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
+import INVENTORY_OVERVIEW_USE_MOCKS from '@/config/inventoryOverview.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppSelector } from '@/store';
@@ -140,12 +140,6 @@ const InventarioBodegaView = () => {
 				No tienes permiso para consultar el inventario de esta sucursal.
 			</Alert>
 		);
-	else if (!INVENTORY_STOCK_USE_MOCKS)
-		content = (
-			<Alert title='Consulta no habilitada'>
-				La consulta de inventario aún no está habilitada en este entorno.
-			</Alert>
-		);
 	else
 		content = (
 			<BodegaSession key={owner} owner={owner} branchId={branchId} ubicacion={ubicacion} />
@@ -171,7 +165,7 @@ const InventarioBodegaView = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
-				{INVENTORY_STOCK_USE_MOCKS && (
+				{INVENTORY_OVERVIEW_USE_MOCKS && (
 					<Alert color='amber' title='Datos simulados'>
 						Consulta de demostración. Las cantidades no representan el inventario real.
 					</Alert>

@@ -7,7 +7,7 @@ import {
 } from '@/store/slices/procurement/inventoryStockSlice';
 import { getInventoryOriginFilterOptions } from '@/services/procurement/inventoryStock.service';
 import INVENTORY_RECEIPTS_USE_MOCKS from '@/config/inventoryReceipts.config';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
+import INVENTORY_OVERVIEW_USE_MOCKS from '@/config/inventoryOverview.config';
 import {
 	purchaseDocumentDetailLink,
 	stockReceiptDetailLink,
@@ -32,8 +32,8 @@ interface IInventoryOriginLinks {
  * misma fuente que Inventario; si no, el id apuntaría a otra recepción.
  */
 export const inventoryOriginLinks = (origin: IInventoryStockOriginRow): IInventoryOriginLinks => {
-	const linksToMasterData = !INVENTORY_STOCK_USE_MOCKS;
-	const linksToReceipts = INVENTORY_STOCK_USE_MOCKS === INVENTORY_RECEIPTS_USE_MOCKS;
+	const linksToMasterData = !INVENTORY_OVERVIEW_USE_MOCKS;
+	const linksToReceipts = INVENTORY_OVERVIEW_USE_MOCKS === INVENTORY_RECEIPTS_USE_MOCKS;
 	return {
 		receipt:
 			linksToReceipts &&

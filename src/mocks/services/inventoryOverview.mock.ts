@@ -52,6 +52,19 @@ import {
  * producto y se edita con la edición de producto.
  */
 
+/**
+ * El doble sí calcula lo que la API real no publica (reparto por bodega,
+ * unidades y críticos por ubicación): sus tipos internos lo exigen, aunque la
+ * forma pública los admita `null`.
+ */
+type TMockOverviewRow = IInventoryOverviewRow & { warehouses: IInventoryWarehouseBreakdown[] };
+type TMockWarehouseAggregate = IInventoryWarehouseAggregate & {
+	physical_quantity: number;
+	unfit_quantity: number;
+	undocumented_quantity: number;
+	critical_count: number;
+};
+
 /* =================================================
    Umbral crítico (§13) — mock del campo del producto
    ================================================= */
@@ -265,8 +278,8 @@ const matchesStockStatus = (
  * Filas de A1 de toda la sucursal con su `critical_stock`, sin filtros ni
  * página. Base del mock de Reportes › Inventario, que compara sucursales.
  */
-export const readInventoryBranchRows = (branchId: number): IInventoryOverviewRow[] => {
-	const rows: IInventoryOverviewRow[] = [];
+export const readInventoryBranchRows = (branchId: number): TMockOverviewRow[] => {
+	const rows: TMockOverviewRow[] = [];
 	aggregateBranch(branchId).forEach((aggregate) => {
 		if (aggregate.totals.physical_quantity === 0) return;
 		rows.push({
@@ -345,7 +358,7 @@ const locationTotals = (
 };
 
 /** Primera ubicación del reparto, en el mismo orden en que se muestra. */
-const compareLocation = (a: IInventoryOverviewRow, b: IInventoryOverviewRow): number => {
+const compareLocation = (a: TMockOverviewRow, b: TMockOverviewRow): number => {
 	const first = a.warehouses[0];
 	const second = b.warehouses[0];
 	if (!first || !second) return Number(!first) - Number(!second);
@@ -369,7 +382,7 @@ const stockStatusRank = (critical: IInventoryCriticalStock | null): number => {
 
 const compareRows =
 	(sort: TInventoryStockSort) =>
-	(a: IInventoryOverviewRow, b: IInventoryOverviewRow): number => {
+	(a: TMockOverviewRow, b: TMockOverviewRow): number => {
 		const descending = sort.startsWith('-');
 		const field = descending ? sort.slice(1) : sort;
 		let comparison: number;
@@ -407,7 +420,7 @@ export const listInventoryOverview = async (
 	}
 
 	const search = params.search?.trim().toLocaleLowerCase() ?? '';
-	const rows: IInventoryOverviewRow[] = [];
+	const rows: TMockOverviewRow[] = [];
 	aggregateBranch(branchId).forEach((aggregate) => {
 		const totals = locationTotals(aggregate, context);
 		if (!totals || totals.physical_quantity === 0) return;
@@ -460,6 +473,7 @@ export const getInventoryStockSummary = async (
 	}
 	const summary = {
 		products_count: 0,
+		unlocated_products_count: null,
 		physical_quantity: 0,
 		unfit_quantity: 0,
 		undocumented_quantity: 0,
@@ -491,9 +505,7 @@ export const getInventoryStockSummary = async (
    ================================================= */
 
 /** Agregado vacío de una bodega con su ficha (o «Sin ubicación» si es `null`). */
-const emptyWarehouseAggregate = (
-	warehouse: IWarehouseCompact | null,
-): IInventoryWarehouseAggregate => {
+const emptyWarehouseAggregate = (warehouse: IWarehouseCompact | null): TMockWarehouseAggregate => {
 	const profile = warehouse ? inventoryWarehouseProfiles[warehouse.id] : undefined;
 	return {
 		warehouse: warehouse && {
@@ -527,7 +539,7 @@ export const listInventoryWarehouseAggregates = async (
 	} catch (error) {
 		return Promise.reject(error);
 	}
-	const aggregates = new Map<number | null, IInventoryWarehouseAggregate>();
+	const aggregates = new Map<number | null, TMockWarehouseAggregate>();
 	(inventoryWarehousesByBranch[branchId] ?? []).forEach((warehouse) => {
 		aggregates.set(warehouse.id, emptyWarehouseAggregate(warehouse));
 	});

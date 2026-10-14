@@ -28,6 +28,7 @@ const request = { branchId: 4, ownerContext: 'owner' };
 const summary = (products: number): IInventoryStockSummaryResponse => ({
 	data: {
 		products_count: products,
+		unlocated_products_count: null,
 		physical_quantity: 0,
 		unfit_quantity: 0,
 		undocumented_quantity: 0,
