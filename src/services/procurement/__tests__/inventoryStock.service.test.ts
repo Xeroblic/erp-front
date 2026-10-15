@@ -86,9 +86,18 @@ describe('inventoryStock.service (fachada)', () => {
 		expect(facade.listInventoryStock).not.toBe(mock.listInventoryStock);
 		expect(facade.listInventoryOrigins).not.toBe(mock.listInventoryOrigins);
 		expect(facade.getInventoryOriginFilterOptions(4, 31, {})).toBeNull();
-		// La documentación posterior sigue simulada con la bandera de stock.
-		expect(facade.createInventoryDocumentAllocation).toBe(
+		// Respaldar sigue a la ficha: el origen sale de sus procedencias reales.
+		expect(facade.createInventoryDocumentAllocation).not.toBe(
 			mock.createInventoryDocumentAllocation,
+		);
+	});
+
+	it('la lista de respaldos de un documento usa siempre la API real', async () => {
+		const facade = await loadFacade(true);
+		const mock = await import('@/mocks/services/inventoryStock.mock');
+
+		expect(facade.listInitialStockAllocationsForPurchaseDocument).not.toBe(
+			mock.listInitialStockAllocationsForPurchaseDocument,
 		);
 	});
 
@@ -326,37 +335,64 @@ describe('inventoryStock.service (fachada)', () => {
 			);
 		});
 
-		it('rechaza con un error tipado lo que el backend no publica, sin llamar a la red', async () => {
+		it('las opciones de filtro de procedencias no existen: la ficha oculta esos filtros', async () => {
 			const facade = await loadFacade(false);
 
-			const results = await Promise.allSettled([
-				facade.listInitialStockAllocationsForPurchaseDocument(1, 24),
-			]);
-
-			results.forEach((result) => {
-				expect(result.status).toBe('rejected');
-				if (result.status === 'rejected') {
-					expect(result.reason).toBeInstanceOf(
-						facade.ProcurementEndpointNotPublishedError,
-					);
-				}
-			});
-			expect(fetchData).not.toHaveBeenCalled();
-			// Las opciones de filtro no existen: la ficha oculta esos filtros.
 			expect(facade.getInventoryOriginFilterOptions(4, 31, {})).toBeNull();
+			expect(fetchData).not.toHaveBeenCalled();
 		});
 
-		it('el rechazo nombra la ruta pendiente del contrato', async () => {
+		it('respalda stock inicial con POST a la sucursal y al producto, con su clave', async () => {
 			const facade = await loadFacade(false);
+			const allocation = {
+				id: 77,
+				product_id: 31,
+				branch_id: 3,
+				warehouse_id: null,
+				original_origin_id: 51,
+				documented_origin_id: 77,
+				quantity: 10,
+				remaining_undocumented_quantity: 90,
+				physical_stock_delta: 0,
+			};
+			fetchData.mockResolvedValueOnce({ data: { data: allocation } });
+			const payload = {
+				origin_id: 51,
+				warehouse_id: null,
+				purchase_document_line_id: 101,
+				quantity: 10,
+				reason: 'Respaldo parcial del conteo inicial',
+			};
 
-			const error = await facade
-				.listInitialStockAllocationsForPurchaseDocument(1, 24)
-				.catch((reason: unknown) => reason);
-
-			expect(error).toMatchObject({
-				endpoint:
-					'GET /subsidiaries/{subsidiary}/procurement/purchase-documents/{document}/initial-stock-allocations',
+			const result = await facade.createInventoryDocumentAllocation(1, 3, 31, payload, {
+				idempotencyKey: 'k-alloc',
 			});
+
+			expect(fetchData).toHaveBeenCalledWith({
+				url: '/branches/3/inventory-stock/31/document-allocations',
+				method: 'post',
+				data: payload,
+				headers: { 'Idempotency-Key': 'k-alloc' },
+			});
+			expect(result).toEqual({ data: allocation });
+		});
+
+		it('lista los respaldos de un documento con la página pedida', async () => {
+			const facade = await loadFacade(false);
+			const body = page([{ id: 77 }], 1);
+			fetchData.mockResolvedValueOnce({ data: body });
+
+			const response = await facade.listInitialStockAllocationsForPurchaseDocument(1, 24, {
+				page: 2,
+				per_page: 10,
+			});
+
+			expect(fetchData).toHaveBeenCalledWith({
+				url: '/subsidiaries/1/procurement/purchase-documents/24/initial-stock-allocations',
+				method: 'get',
+				params: { page: 2, per_page: 10 },
+			});
+			expect(response).toBe(body);
 		});
 	});
 });

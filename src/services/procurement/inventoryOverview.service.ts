@@ -64,8 +64,6 @@ export interface IInventoryOverviewFeatures {
 	availability: boolean;
 	/** Ver y editar el umbral crítico. */
 	threshold: boolean;
-	/** Documentar stock inicial (`document-allocations`). */
-	documentAllocation: boolean;
 	/**
 	 * Unidades y alertas por bodega o de la sucursal: desde la API real exigirían
 	 * recorrer todas las páginas de cada ubicación.
@@ -80,9 +78,6 @@ export const INVENTORY_OVERVIEW_FEATURES: IInventoryOverviewFeatures = {
 	// El umbral simulado lo comparten la ficha y Reportes (bandera de stock):
 	// la ficha sólo lo ofrece si lee del mismo doble que lo guarda.
 	threshold: INVENTORY_OVERVIEW_USE_MOCKS && INVENTORY_STOCK_USE_MOCKS,
-	// Documentar escribe en el stock simulado (bandera de stock): sólo se ofrece
-	// si la ficha lee ese mismo doble, o el thunk rechazaría la operación.
-	documentAllocation: INVENTORY_OVERVIEW_USE_MOCKS && INVENTORY_STOCK_USE_MOCKS,
 	unitTotals: INVENTORY_OVERVIEW_USE_MOCKS,
 };
 

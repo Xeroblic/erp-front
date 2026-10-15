@@ -6,12 +6,14 @@ import * as inventoryStockMock from '@/mocks/services/inventoryStock.mock';
 import ApiService from '@/services/ApiService';
 import listBranchWarehouses from '@/services/procurement/branchWarehouses.service';
 import { buildProcurementWriteHeaders } from '@/utils/procurementWrite.util';
-import { rejectEndpointNotPublished } from '@/utils/procurementEndpoint.util';
 import type {
+	IApiCollectionEnvelope,
 	IApiResourceEnvelope,
 	IInventoryAdjustableProductsPage,
 	IInventoryAdjustment,
 	IInventoryAdjustmentPayload,
+	IInventoryDocumentAllocation,
+	IInventoryDocumentAllocationPayload,
 	IInventoryOriginsParams,
 	IInventoryOriginsResponse,
 	IInventoryProductRef,
@@ -45,21 +47,19 @@ export type { IInventoryStockAvailability } from '@/interface/procurement.interf
  *   permiso también ajustan y trasladan en las sucursales de su filial o
  *   empresa: no se filtran por rol. Exigen `Idempotency-Key`: sin ella, 428.
  *
- * **Sin publicar** (rechazan con `ProcurementEndpointNotPublishedError` en vez
- * de inventar datos): documentación posterior (`document-allocations`). Las
- * opciones de filtro de procedencia tampoco existen: la rama real responde
+ * - Documentación posterior (tarea 13): `POST B/inventory-stock/{product}/
+ *   document-allocations` exige `edit-product`, `view-purchase-document` e
+ *   `Idempotency-Key`; responde 201 con el respaldo y **no mueve stock**.
+ *   `GET P/purchase-documents/{document}/initial-stock-allocations` exige
+ *   `view-purchase-document`, pagina (15 por omisión, máximo 100) y sólo trae
+ *   las sucursales a las que el usuario accede.
+ *
+ * Las opciones de filtro de procedencia no existen: la rama real responde
  * `null`.
  *
  * Sin caché de `ApiService`: el saldo cambia con cada ajuste, recepción o
  * venta, y el slice ya descarta respuestas tardías por `requestId`.
  */
-
-const RESOURCE = 'el inventario por ubicación';
-const B = '/branches/{branch}';
-const P = '/subsidiaries/{subsidiary}/procurement';
-
-const rejectNotPublished = (endpoint: string): Promise<never> =>
-	rejectEndpointNotPublished(RESOURCE, endpoint);
 
 interface IInventoryWriteHeaders {
 	idempotencyKey?: string;
@@ -258,10 +258,40 @@ const apiInventoryStock: TInventoryStockService = {
 			name,
 			is_active,
 		})),
-	createInventoryDocumentAllocation: () =>
-		rejectNotPublished(`POST ${B}/inventory-stock/{product}/document-allocations`),
-	listInitialStockAllocationsForPurchaseDocument: () =>
-		rejectNotPublished(`GET ${P}/purchase-documents/{document}/initial-stock-allocations`),
+	// La filial la resuelve el backend desde la sucursal: `subsidiaryId` sólo
+	// lo usa el doble.
+	createInventoryDocumentAllocation: async (
+		_subsidiaryId: number,
+		branchId: number,
+		productId: number,
+		payload: IInventoryDocumentAllocationPayload,
+		headers: IInventoryWriteHeaders = {},
+	) => {
+		const response = await ApiService.fetchData<
+			IApiResourceEnvelope<IInventoryDocumentAllocation>,
+			IInventoryDocumentAllocationPayload
+		>({
+			url: `${branchUrl(branchId)}/inventory-stock/${productId}/document-allocations`,
+			method: 'post',
+			data: payload,
+			headers: writeHeaders(headers),
+		});
+		return { data: response.data.data };
+	},
+	listInitialStockAllocationsForPurchaseDocument: async (
+		subsidiaryId: number,
+		documentId: number,
+		params: { page?: number; per_page?: number } = {},
+	) => {
+		const response = await ApiService.fetchData<
+			IApiCollectionEnvelope<IInventoryDocumentAllocation>
+		>({
+			url: `/subsidiaries/${subsidiaryId}/procurement/purchase-documents/${documentId}/initial-stock-allocations`,
+			method: 'get',
+			params,
+		});
+		return response.data;
+	},
 	// Etapa 1 del contrato: el ajuste real sólo se ofrece sobre «Sin
 	// ubicación» (`warehouse_id: null`). Sin bodegas que listar, su selector de
 	// ubicación queda con esa única opción. El traslado lee las suyas aparte
@@ -343,11 +373,20 @@ export const { searchInventoryAdjustableProducts } = adjustmentStock;
 /** Si un producto puede nombrarse en un ajuste, sin mirar su saldo; `null` si no. */
 export const { getInventoryAdjustableProduct } = adjustmentStock;
 
-/** `POST B/inventory-stock/{product}/document-allocations` (§8): documentar stock inicial. */
-export const { createInventoryDocumentAllocation } = inventoryStock;
+/**
+ * `POST B/inventory-stock/{product}/document-allocations` (§8): documentar stock
+ * inicial. Sigue a la ficha de producto, que es la que lo ofrece: el origen que
+ * se respalda sale de sus procedencias, y escribir en otra fuente rechazaría
+ * un `origin_id` que esa fuente no conoce.
+ */
+export const { createInventoryDocumentAllocation } = overviewStock;
 
-/** `GET P/purchase-documents/{document}/initial-stock-allocations` (§6). */
-export const { listInitialStockAllocationsForPurchaseDocument } = inventoryStock;
+/**
+ * `GET P/purchase-documents/{document}/initial-stock-allocations` (§6). Siempre
+ * la API real: la ficha del documento de compra que la muestra no tiene doble,
+ * y el doble sólo conoce los documentos de su semilla.
+ */
+export const { listInitialStockAllocationsForPurchaseDocument } = apiInventoryStock;
 
 /** `POST B/warehouse-stock-movements` (§9): traslado entre ubicaciones, todo o nada. */
 export const { createWarehouseStockMovement } = transferStock;

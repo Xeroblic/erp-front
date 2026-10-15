@@ -2,9 +2,9 @@ import { useState } from 'react';
 import Select from '@/components/form/Select';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import { DetailLink } from '@/components/procurement';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import InventarioPagination from '@/pages/inventario/Inventario/components/parts/InventarioPagination';
 import type {
 	IInventoryStockListParams,
@@ -64,11 +64,8 @@ const InventoryOrigins = ({
 		response && response.context.scope === 'warehouse'
 			? (response.context.warehouse?.id ?? null)
 			: null;
-	// Documentar exige `document-allocations`, que la API real no publica.
-	const canDocumentHere =
-		INVENTORY_OVERVIEW_FEATURES.documentAllocation &&
-		Boolean(response) &&
-		response?.context.scope !== 'branch';
+	// La ubicación del respaldo sólo es inequívoca en una bodega o en Sin ubicación.
+	const canDocumentHere = Boolean(response) && response?.context.scope !== 'branch';
 	// `null`: la fuente no publica las opciones, así que no se ofrecen los filtros.
 	const hasFilterOptions =
 		options !== null && (options.suppliers.length > 0 || options.documents.length > 0);
@@ -236,21 +233,32 @@ const InventoryOrigins = ({
 											{/* La UI no ofrece crear una recepción para respaldar
 										    unidades que ya están en bodega: sólo este botón
 										    documental, nunca un enlace a «nueva recepción». */}
-											{!origin.purchase_document && canDocumentHere && (
-												<Button
-													type='button'
-													size='sm'
-													variant='outline'
-													onClick={() =>
-														setDocumentingOrigin({
-															origin_id: origin.origin_id,
-															physical_quantity:
-																origin.physical_quantity,
-														})
-													}>
-													Documentar
-												</Button>
-											)}
+											{/* §8: sólo stock inicial sin documento, y con ambos
+											    permisos de la ruta en esta sucursal. */}
+											{origin.origin_type === 'initial_stock' &&
+												!origin.purchase_document &&
+												canDocumentHere && (
+													<ProtectedButton
+														permissions={[
+															'edit-product',
+															'view-purchase-document',
+														]}
+														requireAll
+														branchId={branchId}
+														scope='access'
+														type='button'
+														size='sm'
+														variant='outline'
+														onClick={() =>
+															setDocumentingOrigin({
+																origin_id: origin.origin_id,
+																physical_quantity:
+																	origin.physical_quantity,
+															})
+														}>
+														Documentar
+													</ProtectedButton>
+												)}
 										</Td>
 									</Tr>
 								);
@@ -274,6 +282,7 @@ const InventoryOrigins = ({
 				productId={productId}
 				warehouseId={resolvedWarehouseId}
 				origin={documentingOrigin}
+				onOriginsStale={refresh}
 				onDocumented={(quantity) => {
 					setDocumentingOrigin(null);
 					refresh();

@@ -232,11 +232,22 @@ describe('Ficha de inventario', () => {
 			),
 		);
 		// El estante sólo tiene lo que queda de la recepción #211, sin documento:
-		// cambia la lista y se ofrece documentarlo.
+		// cambia la lista. No se ofrece «Documentar»: respaldar es sólo para stock
+		// inicial; a una recepción se le vincula la factura desde su ficha.
 		const shelf = await screen.findByRole('region', { name: 'Procedencias del producto' });
 		await within(shelf).findByText('Recepción #211');
 		expect(within(shelf).queryByText('Recepción #80')).not.toBeInTheDocument();
-		expect(within(shelf).getByRole('button', { name: 'Documentar' })).toBeInTheDocument();
+		expect(within(shelf).queryByRole('button', { name: 'Documentar' })).not.toBeInTheDocument();
+	});
+
+	it('sin `view-purchase-document` no ofrece documentar el stock inicial', async () => {
+		renderFichaConAtajos(['view-purchase-document']);
+		const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+		await within(region).findByText('Recepción #80');
+
+		expect(
+			within(region).queryByRole('button', { name: 'Documentar' }),
+		).not.toBeInTheDocument();
 	});
 
 	it.each([
