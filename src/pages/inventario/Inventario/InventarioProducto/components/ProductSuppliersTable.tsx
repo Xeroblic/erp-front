@@ -36,7 +36,7 @@ const SuggestionCell = ({ row }: { row: IProductSupplierPurchasesRow }) => {
 interface IProductSuppliersTableProps {
 	response: IProductSuppliersResponse;
 	loading: boolean;
-	onPaginate: (page: number) => void;
+	onPaginate: (page: number, perPage: number) => void;
 }
 
 /**
@@ -132,7 +132,7 @@ const ProductSuppliersTable = ({ response, loading, onPaginate }: IProductSuppli
 				<InventarioPagination
 					meta={response.meta}
 					loading={loading}
-					onChange={(page) => onPaginate(page)}
+					onChange={onPaginate}
 				/>
 			)}
 		</div>

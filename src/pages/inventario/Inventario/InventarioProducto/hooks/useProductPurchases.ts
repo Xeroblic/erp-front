@@ -5,6 +5,7 @@ import {
 	listProductSuppliers,
 } from '@/services/procurement/productPurchases.service';
 import { resolveProcurementError } from '@/utils/procurementErrors.util';
+import { normalizePageParams } from '@/utils/procurementPagination.util';
 import {
 	PROCUREMENT_PER_PAGE_DEFAULT,
 	PROCUREMENT_PER_PAGE_MAX,
@@ -107,8 +108,9 @@ const useKeyedRequest = <T>(
 };
 
 /**
- * Proveedores: se piden de a 100 (el máximo del contrato) para que la lista y
- * el filtro del historial los muestren todos de una vez en el caso normal.
+ * Proveedores: de entrada se piden de a 100 (el máximo del contrato) para que
+ * la lista y el filtro del historial los muestren todos de una vez en el caso
+ * normal. Si el usuario elige otro tamaño en el paginador, manda el suyo.
  */
 export const PRODUCT_SUPPLIERS_PER_PAGE = PROCUREMENT_PER_PAGE_MAX;
 
@@ -123,19 +125,16 @@ export interface IProductPurchasesOptions {
  * los conteos los decide el backend; aquí no se recalcula nada.
  */
 const useProductPurchases = ({ subsidiaryId, productId }: IProductPurchasesOptions) => {
-	const [suppliersPage, setSuppliersPage] = useState(1);
+	const [suppliersPagination, setSuppliersPagination] = useState(() =>
+		normalizePageParams({ page: 1, per_page: PRODUCT_SUPPLIERS_PER_PAGE }),
+	);
 	const loadSuppliers = useCallback(
 		(signal: AbortSignal) =>
-			listProductSuppliers(
-				subsidiaryId,
-				productId,
-				{ page: suppliersPage, per_page: PRODUCT_SUPPLIERS_PER_PAGE },
-				signal,
-			),
-		[subsidiaryId, productId, suppliersPage],
+			listProductSuppliers(subsidiaryId, productId, suppliersPagination, signal),
+		[subsidiaryId, productId, suppliersPagination],
 	);
 	const suppliers = useKeyedRequest<IProductSuppliersResponse>(
-		`${subsidiaryId}:${productId}:suppliers:${suppliersPage}`,
+		`${subsidiaryId}:${productId}:suppliers:${suppliersPagination.page}:${suppliersPagination.per_page}`,
 		loadSuppliers,
 	);
 
@@ -147,10 +146,9 @@ const useProductPurchases = ({ subsidiaryId, productId }: IProductPurchasesOptio
 		onSubmit: () => undefined,
 	});
 	const { setFieldValue, setFieldTouched, resetForm } = formik;
-	const [pagination, setPagination] = useState({
-		page: 1,
-		per_page: PROCUREMENT_PER_PAGE_DEFAULT,
-	});
+	const [pagination, setPagination] = useState(() =>
+		normalizePageParams({ page: 1, per_page: PROCUREMENT_PER_PAGE_DEFAULT }),
+	);
 	const {
 		supplier_id: supplierId,
 		received_from: receivedFrom,
@@ -190,11 +188,18 @@ const useProductPurchases = ({ subsidiaryId, productId }: IProductPurchasesOptio
 		setPagination((current) => ({ ...current, page: 1 }));
 		resetForm();
 	}, [resetForm]);
+	// El paginador ya vuelve a la página 1 al cambiar el tamaño; aquí sólo se
+	// acota `per_page` al máximo del contrato (un valor fuera de rango es 422).
 	const paginateHistory = useCallback(
-		(page: number, perPage: number) => setPagination({ page, per_page: perPage }),
+		(page: number, perPage: number) =>
+			setPagination(normalizePageParams({ page, per_page: perPage })),
 		[],
 	);
-	const paginateSuppliers = useCallback((page: number) => setSuppliersPage(page), []);
+	const paginateSuppliers = useCallback(
+		(page: number, perPage: number) =>
+			setSuppliersPagination(normalizePageParams({ page, per_page: perPage })),
+		[],
+	);
 
 	// El filtro ofrece los proveedores que vendieron el producto, en el orden
 	// del backend. Las compras sin proveedor no tienen filtro propio.

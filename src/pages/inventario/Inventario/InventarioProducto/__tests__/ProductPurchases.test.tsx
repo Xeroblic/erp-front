@@ -428,3 +428,44 @@ describe('historial', () => {
 		expect(screen.queryByText('Recepción #99')).toBeNull();
 	});
 });
+
+describe('paginación', () => {
+	const supplierParams = (): unknown => service.listProductSuppliers.mock.lastCall?.[2];
+
+	it('respeta el tamaño elegido en proveedores y vuelve a la página 1', async () => {
+		service.listProductSuppliers.mockResolvedValue({
+			...suppliersResponse([supplierRow(7, 'Acme', { is_suggested: true })], 7),
+			meta: { ...meta(150), last_page: 2, per_page: 100 },
+		});
+		renderSection();
+		const suppliersTable = { name: 'Proveedores que vendieron este producto' };
+		await screen.findByRole('table', suppliersTable);
+
+		fireEvent.click(screen.getAllByRole('button', { name: 'Siguiente' })[0]);
+		await waitFor(() => expect(supplierParams()).toEqual({ page: 2, per_page: 100 }));
+		await screen.findByRole('table', suppliersTable);
+
+		fireEvent.change(screen.getAllByLabelText('Por página')[0], { target: { value: '10' } });
+		await waitFor(() => expect(supplierParams()).toEqual({ page: 1, per_page: 10 }));
+	});
+
+	it('respeta el tamaño elegido en el historial y vuelve a la página 1', async () => {
+		service.listProductSuppliers.mockResolvedValue(
+			suppliersResponse([supplierRow(7, 'Acme', { is_suggested: true })], 7),
+		);
+		service.listProductPurchaseHistory.mockResolvedValue({
+			...historyResponse([historyRow(90)]),
+			meta: { ...meta(40), last_page: 3 },
+		});
+		renderSection();
+		const historyTable = { name: 'Historial de compras del producto' };
+		await screen.findByRole('table', historyTable);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+		await waitFor(() => expect(lastHistoryParams()).toMatchObject({ page: 2, per_page: 15 }));
+		await screen.findByRole('table', historyTable);
+
+		fireEvent.change(screen.getByLabelText('Por página'), { target: { value: '10' } });
+		await waitFor(() => expect(lastHistoryParams()).toMatchObject({ page: 1, per_page: 10 }));
+	});
+});
