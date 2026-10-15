@@ -3,7 +3,9 @@ import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useAuthorization from '@/hooks/useAuthorization';
 import useContextScopedSelection from '@/hooks/useContextScopedSelection';
+import { ajustesTrasladosLink } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import {
 	fetchWarehouses,
 	createWarehouse,
@@ -45,6 +47,7 @@ const toWarehousePayload = (values: ICreateWarehouseForm): ICreateWarehouseReque
 export const useBodegas = () => {
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
+	const { authorize } = useAuthorization();
 	const latestBranchIdRef = useRef(branchId);
 	latestBranchIdRef.current = branchId;
 
@@ -60,6 +63,8 @@ export const useBodegas = () => {
 	const [statusFilter, setStatusFilter] = useState<TBodegaEstadoFiltro | null>(null);
 	const [editModalOpen, setEditModalOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	// Bodega cuya baja rechazó el backend porque el inventario todavía cuenta unidades en ella.
+	const [stockBlockedWarehouseId, setStockBlockedWarehouseId] = useState<number | null>(null);
 	const branchContext = useMemo(
 		() => (branchId === null ? null : { type: 'branch' as const, id: branchId }),
 		[branchId],
@@ -137,7 +142,10 @@ export const useBodegas = () => {
 			} catch (e: unknown) {
 				if (latestBranchIdRef.current !== requestBranchId) return false;
 				const apiError = e as IWarehouseApiError;
-				if (apiError.code === 'WAREHOUSE_HAS_PRODUCTS') {
+				if (apiError.code === 'WAREHOUSE_HAS_STOCK') {
+					// El modal sigue abierto y explica cómo vaciarla; un toast lo repetiría.
+					setStockBlockedWarehouseId(warehouseId);
+				} else if (apiError.code === 'WAREHOUSE_HAS_PRODUCTS') {
 					toast.error('No se puede eliminar, tiene productos asociados');
 				} else {
 					toast.error(apiError.message || 'Error al eliminar la bodega');
@@ -228,6 +236,26 @@ export const useBodegas = () => {
 		[warehouses, stats.near_capacity],
 	);
 
+	const deleteBlockedByStock =
+		selectedWarehouse !== null && selectedWarehouse.id === stockBlockedWarehouseId;
+	// Sólo enlaza a la pestaña de ajuste: la de traslados no existe en la etapa 1. Pide el
+	// `authority` completo de la ruta (regla de `AuthorityCheck`) más `edit-product` con
+	// acceso a la sucursal, el mismo permiso que la página exige para ajustar.
+	const adjustLink =
+		deleteBlockedByStock && selectedWarehouse
+			? ajustesTrasladosLink({ tab: 'ajuste', warehouseId: selectedWarehouse.id })
+			: null;
+	const adjustStockLink =
+		adjustLink &&
+		authorize({
+			permission: ['edit-product', ...adjustLink.authority],
+			requireAll: true,
+			branchId,
+			scope: 'access',
+		})
+			? adjustLink.to
+			: null;
+
 	const hasFilters = globalFilter.trim() !== '' || typeFilter !== null || statusFilter !== null;
 	const clearFilters = useCallback(() => {
 		setGlobalFilter('');
@@ -264,6 +292,7 @@ export const useBodegas = () => {
 
 	const handleDelete = useCallback(
 		(warehouse: IWarehouse) => {
+			setStockBlockedWarehouseId(null);
 			selection.select(warehouse.id);
 			setDeleteModalOpen(true);
 		},
@@ -312,6 +341,8 @@ export const useBodegas = () => {
 			editModalOpen: editModalOpen && selection.isOpen,
 			deleteModalOpen: deleteModalOpen && selection.isOpen,
 			selectedWarehouse,
+			deleteBlockedByStock,
+			adjustStockLink,
 			branchId,
 		}),
 		[
@@ -329,6 +360,8 @@ export const useBodegas = () => {
 			editModalOpen,
 			deleteModalOpen,
 			selectedWarehouse,
+			deleteBlockedByStock,
+			adjustStockLink,
 			branchId,
 			selection.isOpen,
 		],
