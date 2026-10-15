@@ -8,6 +8,7 @@ import Badge from '@/components/ui/Badge';
 import Alert from '@/components/ui/Alert';
 import Icon from '@/components/icon/Icon';
 import Container from '@/components/layouts/Container/Container';
+import PageLinkButton from '@/components/procurement/PageLinkButton';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	ackNotification,
@@ -16,6 +17,7 @@ import {
 	markRead,
 } from '@/store/slices/notifications/notificationsSlice';
 import useThemeColorGlobal from '@/hooks/useThemeColorGlobal';
+import criticalStockProductLink from '@/notifications/criticalStockLink';
 
 const timeAgo = (iso?: string | null) => {
 	if (!iso) return '';
@@ -47,6 +49,7 @@ const NotificationDetail: React.FC = () => {
 
 	const nid = Number(id);
 	const notif = useMemo(() => items.find((n) => n.id === nid), [items, nid]);
+	const productLink = useMemo(() => (notif ? criticalStockProductLink(notif) : null), [notif]);
 
 	useEffect(() => {
 		if (!notif) {
@@ -318,6 +321,16 @@ const NotificationDetail: React.FC = () => {
 							</CardHeaderChild>
 							<CardHeaderChild>
 								<div ref={actionsRef} className='flex flex-wrap gap-2'>
+									{productLink && (
+										<PageLinkButton
+											link={productLink}
+											size='sm'
+											variant='outline'
+											color={themeColor}
+											icon='HeroCube'>
+											Ver ficha de inventario
+										</PageLinkButton>
+									)}
 									{notif?.status !== 'read' && (
 										<Button
 											size='sm'
