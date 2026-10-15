@@ -1145,3 +1145,74 @@ export interface IInventoryAdjustment {
 	related_stock_receipt_id: number | null;
 	items: IInventoryAdjustmentItem[];
 }
+
+/* =================================================
+   Compras por producto y proveedor sugerido — sección 12 del contrato
+   ================================================= */
+
+/**
+ * Una compra del producto (`ProductPurchaseResource`): una recepción `posted`
+ * con la suma de sus líneas de ese producto y su costo ponderado dentro de la
+ * recepción. `cost` puede ser desconocido: no se muestra como $0.
+ */
+export interface IProductPurchase {
+	stock_receipt_id: number;
+	received_on: TBusinessDate;
+	days_since_purchase: number;
+	quantity: number;
+	cost: IProcurementCost;
+	/** `null` si la recepción no tiene documento de compra. */
+	purchase_document: IPurchaseDocumentCompact | null;
+}
+
+/** Por qué un proveedor no puede ser el sugerido. */
+export type TProductSupplierExclusionReason = 'inactive_supplier' | 'no_comparable_cost';
+
+/** Fila de `GET P/products/{product}/suppliers`. */
+export interface IProductSupplierPurchasesRow {
+	supplier: ISupplierCompact;
+	/** La de `received_on` más reciente; a igual fecha, la de ID mayor. */
+	last_purchase: IProductPurchase;
+	receipt_count: number;
+	total_units_received: number;
+	/** `true` en una sola fila, o en ninguna. */
+	is_suggested: boolean;
+	exclusion_reason: TProductSupplierExclusionReason | null;
+}
+
+/**
+ * `context` de `suppliers`. La sugerencia se decide sobre todos los
+ * proveedores, así que `suggested_supplier_id` es el mismo en cualquier página.
+ */
+export interface IProductSuppliersContext {
+	subsidiary_id: number;
+	product_id: number;
+	comparison_basis: string;
+	suggested_supplier_id: number | null;
+}
+
+export type IProductSuppliersResponse = IApiCollectionEnvelope<
+	IProductSupplierPurchasesRow,
+	IProductSuppliersContext
+>;
+
+/** Fila de `GET P/products/{product}/purchase-history`. */
+export interface IProductPurchaseHistoryRow extends IProductPurchase {
+	/** `null` si la recepción no tenía proveedor. */
+	supplier: ISupplierCompact | null;
+	/** Bodega donde se recibió, también si hoy está desactivada. */
+	warehouse: IWarehouseCompact | null;
+	branch_id: number;
+}
+
+export interface IProductPurchaseHistoryFilters {
+	supplier_id?: number;
+	purchase_document_id?: number;
+	received_from?: TBusinessDate;
+	received_to?: TBusinessDate;
+}
+
+export type IProductPurchaseHistoryParams = IProductPurchaseHistoryFilters &
+	Partial<IProcurementPageParams>;
+
+export type IProductPurchaseHistoryResponse = IApiCollectionEnvelope<IProductPurchaseHistoryRow>;

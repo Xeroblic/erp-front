@@ -25,6 +25,7 @@ import InventarioKpis, {
 } from '@/pages/inventario/Inventario/components/parts/InventarioKpis';
 import InventoryMockNotice from '@/pages/inventario/Inventario/components/parts/InventoryMockNotice';
 import InventoryOrigins from '@/pages/inventario/Inventario/InventarioProducto/components/InventoryOrigins';
+import ProductPurchases from '@/pages/inventario/Inventario/InventarioProducto/components/ProductPurchases';
 import ProductTraceability from '@/pages/inventario/Inventario/InventarioProducto/components/ProductTraceability';
 import ThresholdModal from '@/pages/inventario/Inventario/InventarioProducto/components/ThresholdModal';
 import useInventarioProducto from '@/pages/inventario/Inventario/InventarioProducto/hooks/useInventarioProducto';
@@ -466,6 +467,15 @@ const ProductoSession = ({
 						/>
 					</CardBody>
 				</Card>
+			)}
+
+			{/* Compras (§12) son de filial: sin filial activa no hay ruta que leer. */}
+			{subsidiaryId !== null && (
+				<ProductPurchases
+					subsidiaryId={subsidiaryId}
+					productId={productId}
+					serialTracking={product.serial_tracking}
+				/>
 			)}
 
 			{/* Los productos con serie se siguen por su número de serie, no por operaciones. */}

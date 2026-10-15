@@ -52,6 +52,27 @@ vi.mock('@/config/inventoryReceipts.config', () => ({
 		return context.enabled;
 	},
 }));
+// Compras (§12) lee la API real; sus casos están en `ProductPurchases.test.tsx`.
+vi.mock('@/services/procurement/productPurchases.service', () => {
+	const empty = {
+		data: [],
+		links: { first: null, last: null, prev: null, next: null },
+		meta: {
+			current_page: 1,
+			from: null,
+			last_page: 1,
+			links: [],
+			path: '',
+			per_page: 15,
+			to: null,
+			total: 0,
+		},
+	};
+	return {
+		listProductSuppliers: () => Promise.resolve(empty),
+		listProductPurchaseHistory: () => Promise.resolve(empty),
+	};
+});
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
 vi.mock('@/store', async () => {
 	const redux = await import('react-redux');
@@ -212,6 +233,18 @@ describe('Ficha de inventario', () => {
 		// Precio en pesos, sin decimales.
 		expect(screen.getByText('$7.990')).toBeInTheDocument();
 		expect(within(ubicaciones()).getAllByRole('row')).toHaveLength(3);
+	});
+
+	it('muestra la sección Compras en su ancla `#compras`', async () => {
+		renderFicha(MOUSE_ID);
+
+		const compras = await screen.findByRole('region', { name: 'Compras' });
+		expect(compras).toHaveAttribute('id', 'compras');
+		expect(
+			await within(compras).findByText(
+				'Todavía no hay compras registradas de este producto.',
+			),
+		).toBeInTheDocument();
 	});
 
 	it('las procedencias se ven por ubicación y se puede cambiar de ubicación', async () => {
