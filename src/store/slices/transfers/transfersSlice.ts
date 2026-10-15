@@ -8,6 +8,8 @@ import type {
 } from '@/interface/transfers.interface';
 import type { RootState } from '@/store/rootReducer';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import { isRecord } from '@/utils/isRecord.util';
+import { resolveTransferError, type ITransferError } from '@/utils/transferErrors.util';
 
 type TransferFiltersState = {
 	direction: TransferDirection;
@@ -85,6 +87,14 @@ const ensureBranch = (state: RootState): number | null => {
 	return selectEffectiveSubsidiaryId(state);
 };
 
+/** `message` del cuerpo de un error de Axios, si llegó uno. */
+const readResponseMessage = (error: unknown): string | undefined => {
+	const response = isRecord(error) ? error.response : undefined;
+	const data = isRecord(response) ? response.data : undefined;
+	const message = isRecord(data) ? data.message : undefined;
+	return typeof message === 'string' && message ? message : undefined;
+};
+
 export const fetchTransfers = createAsyncThunk<
 	{ data: ITransfer[]; meta: TransferMeta; filters: TransferFiltersState },
 	| Partial<{ page: number; direction: TransferDirection; q: string; per_page: number }>
@@ -148,8 +158,8 @@ export const fetchTransfers = createAsyncThunk<
 				per_page: serverFilters.per_page ?? appliedFilters.per_page,
 			},
 		};
-	} catch (error: any) {
-		return rejectWithValue(error.response?.data?.message || 'Error al obtener transferencias');
+	} catch (error: unknown) {
+		return rejectWithValue(readResponseMessage(error) ?? 'Error al obtener transferencias');
 	}
 });
 
@@ -177,30 +187,23 @@ export const fetchTransferById = createAsyncThunk<
 		}
 
 		return payload as ITransfer;
-	} catch (error: any) {
-		return rejectWithValue(
-			error.response?.data?.message || 'Error al obtener la transferencia',
-		);
+	} catch (error: unknown) {
+		return rejectWithValue(readResponseMessage(error) ?? 'Error al obtener la transferencia');
 	}
 });
-
-type TransferErrorPayload = {
-	message: string;
-	errors?: Record<string, string[] | string>;
-};
 
 export const createTransfer = createAsyncThunk<
 	ITransfer | null,
 	ICreateTransferRequest,
-	{ rejectValue: TransferErrorPayload; state: RootState }
+	{ rejectValue: ITransferError; state: RootState }
 >('transfers/createTransfer', async (transferData, { getState, rejectWithValue }) => {
 	const state = getState();
 	const branchId = ensureBranch(state);
 
 	if (!branchId) {
-		return rejectWithValue({
-			message: 'Selecciona una sucursal para crear transferencias',
-		});
+		return rejectWithValue(
+			resolveTransferError('Selecciona una sucursal para crear transferencias'),
+		);
 	}
 
 	try {
@@ -211,12 +214,8 @@ export const createTransfer = createAsyncThunk<
 		});
 
 		return response.data?.data ?? null;
-	} catch (error: any) {
-		const payload = error.response?.data;
-		return rejectWithValue({
-			message: payload?.message || 'Error al crear transferencia',
-			errors: payload?.errors,
-		});
+	} catch (error: unknown) {
+		return rejectWithValue(resolveTransferError(error));
 	}
 });
 
