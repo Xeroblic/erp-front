@@ -41,9 +41,9 @@ export type { IInventoryStockAvailability } from '@/interface/procurement.interf
  *   `origins` responde 404 si el producto es serializado o de otra filial.
  * - `POST B/inventory-adjustments` y `POST B/warehouse-stock-movements`
  *   (backend `feat/procurement-warehouse-stock-movements`): `edit-product` y
- *   además **operar** en la sucursal (los `subsidiary-member`/`company-member`
- *   reciben 403 aunque tengan el permiso). Exigen `Idempotency-Key`: sin ella,
- *   428.
+ *   acceso a la sucursal. Los `subsidiary-member`/`company-member` con ese
+ *   permiso también ajustan y trasladan en las sucursales de su filial o
+ *   empresa: no se filtran por rol. Exigen `Idempotency-Key`: sin ella, 428.
  *
  * **Sin publicar** (rechazan con `ProcurementEndpointNotPublishedError` en vez
  * de inventar datos): documentación posterior (`document-allocations`). Las
