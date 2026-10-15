@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Modal, {
 	ModalBody,
 	ModalFooter,
@@ -16,6 +17,10 @@ interface DeleteWarehouseModalProps {
 	warehouse: IWarehouse | null;
 	onConfirm: () => Promise<boolean>;
 	loading?: boolean;
+	/** El backend rechazó la baja (`WAREHOUSE_HAS_STOCK`): el inventario cuenta unidades en ella. */
+	blockedByStock?: boolean;
+	/** Ajuste con la bodega preseleccionada; `null` si el usuario no puede ajustar stock. */
+	adjustStockLink?: string | null;
 }
 
 const DeleteWarehouseModal: React.FC<DeleteWarehouseModalProps> = ({
@@ -24,6 +29,8 @@ const DeleteWarehouseModal: React.FC<DeleteWarehouseModalProps> = ({
 	warehouse,
 	onConfirm,
 	loading = false,
+	blockedByStock = false,
+	adjustStockLink = null,
 }) => {
 	const [isDeleting, setIsDeleting] = React.useState(false);
 
@@ -40,6 +47,7 @@ const DeleteWarehouseModal: React.FC<DeleteWarehouseModalProps> = ({
 
 	const hasProducts = warehouse.products && warehouse.products.length > 0;
 	const productsCount = warehouse.products?.length || 0;
+	const canConfirm = !hasProducts && !blockedByStock;
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={() => setIsOpen(false)} size='lg'>
@@ -60,58 +68,77 @@ const DeleteWarehouseModal: React.FC<DeleteWarehouseModalProps> = ({
 			</ModalHeader>
 
 			<ModalBody>
-				{hasProducts ? (
-					<Alert color='red' icon='HeroXCircle' title='No se puede eliminar'>
+				{blockedByStock && (
+					<Alert color='red' icon='HeroXCircle' title='La bodega todavía tiene stock'>
 						<p className='mb-2'>
-							No se puede eliminar la bodega porque tiene{' '}
-							<strong>{productsCount}</strong> producto(s) asociados.
+							No se puede eliminar <strong>{warehouse.name}</strong> mientras el
+							inventario cuente unidades en ella, aptas o no.
 						</p>
 						<p>
-							Para eliminarla, primero debes quitar todos los productos de esta
-							bodega.
+							Para eliminarla, primero traslada su stock a otra ubicación o ajústalo.
 						</p>
+						{adjustStockLink && (
+							<p className='mt-2'>
+								<Link className='font-semibold underline' to={adjustStockLink}>
+									Ir a Ajustes y traslados
+								</Link>
+							</p>
+						)}
 					</Alert>
-				) : (
-					<div className='space-y-4'>
-						<Alert color='amber' icon='HeroExclamationTriangle' title='Advertencia'>
-							¿Estás seguro de que deseas eliminar esta bodega?
-						</Alert>
-
-						<div className='rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50'>
-							<dl className='space-y-2'>
-								<div>
-									<dt className='text-sm font-medium text-gray-500 dark:text-gray-400'>
-										Nombre
-									</dt>
-									<dd className='text-sm font-semibold text-gray-900 dark:text-white'>
-										{warehouse.name}
-									</dd>
-								</div>
-								<div>
-									<dt className='text-sm font-medium text-gray-500 dark:text-gray-400'>
-										Código
-									</dt>
-									<dd className='text-sm font-semibold text-gray-900 dark:text-white'>
-										{warehouse.code}
-									</dd>
-								</div>
-								<div>
-									<dt className='text-sm font-medium text-gray-500 dark:text-gray-400'>
-										Tipo
-									</dt>
-									<dd className='text-sm text-gray-900 dark:text-white'>
-										{warehouse.warehouse_type}
-									</dd>
-								</div>
-							</dl>
-						</div>
-
-						<p className='text-sm text-gray-600 dark:text-gray-400'>
-							Esta acción eliminará permanentemente la bodega y toda su información
-							asociada.
-						</p>
-					</div>
 				)}
+				{!blockedByStock &&
+					(hasProducts ? (
+						<Alert color='red' icon='HeroXCircle' title='No se puede eliminar'>
+							<p className='mb-2'>
+								No se puede eliminar la bodega porque tiene{' '}
+								<strong>{productsCount}</strong> producto(s) asociados.
+							</p>
+							<p>
+								Para eliminarla, primero debes quitar todos los productos de esta
+								bodega.
+							</p>
+						</Alert>
+					) : (
+						<div className='space-y-4'>
+							<Alert color='amber' icon='HeroExclamationTriangle' title='Advertencia'>
+								¿Estás seguro de que deseas eliminar esta bodega?
+							</Alert>
+
+							<div className='rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50'>
+								<dl className='space-y-2'>
+									<div>
+										<dt className='text-sm font-medium text-gray-500 dark:text-gray-400'>
+											Nombre
+										</dt>
+										<dd className='text-sm font-semibold text-gray-900 dark:text-white'>
+											{warehouse.name}
+										</dd>
+									</div>
+									<div>
+										<dt className='text-sm font-medium text-gray-500 dark:text-gray-400'>
+											Código
+										</dt>
+										<dd className='text-sm font-semibold text-gray-900 dark:text-white'>
+											{warehouse.code}
+										</dd>
+									</div>
+									<div>
+										<dt className='text-sm font-medium text-gray-500 dark:text-gray-400'>
+											Tipo
+										</dt>
+										<dd className='text-sm text-gray-900 dark:text-white'>
+											{warehouse.warehouse_type}
+										</dd>
+									</div>
+								</dl>
+							</div>
+
+							<p className='text-sm text-gray-600 dark:text-gray-400'>
+								Esta acción eliminará permanentemente la bodega y toda su
+								información asociada.
+							</p>
+						</div>
+					))}
 			</ModalBody>
 
 			<ModalFooter>
@@ -124,7 +151,7 @@ const DeleteWarehouseModal: React.FC<DeleteWarehouseModalProps> = ({
 						isDisable={isDeleting || loading}>
 						Cancelar
 					</Button>
-					{!hasProducts && (
+					{canConfirm && (
 						<Button
 							color='red'
 							variant='outline'

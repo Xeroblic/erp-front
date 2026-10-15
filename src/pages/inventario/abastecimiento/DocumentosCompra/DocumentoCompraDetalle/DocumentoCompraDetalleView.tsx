@@ -18,6 +18,7 @@ import PurchaseDocumentFormModal from '../components/modals/PurchaseDocumentForm
 import ConfirmPurchaseDocumentModal from '../components/modals/ConfirmPurchaseDocumentModal';
 import CancelPurchaseDocumentModal from '../components/modals/CancelPurchaseDocumentModal';
 import DocumentAttachmentsCard from './components/parts/DocumentAttachmentsCard';
+import InitialStockAllocationsCard from './components/parts/InitialStockAllocationsCard';
 import RelatedCountsCard from './components/parts/RelatedCountsCard';
 import PurchaseDocumentSupplierField from './components/parts/PurchaseDocumentSupplierField';
 import useDocumentoCompraDetalle from './hooks/useDocumentoCompraDetalle';
@@ -314,18 +315,29 @@ const DocumentoCompraDetalleView = () => {
 							</CardHeader>
 							<CardBody className='space-y-3'>
 								<RelatedCountsCard relatedCounts={document.related_counts} />
-								{/*
-								 * Los conteos son reales; el detalle de cada asignación
-								 * todavía no: el backend no la publica, y con Recepciones
-								 * simulada tampoco el de sus recepciones.
-								 */}
-								<p className='text-sm text-zinc-500 dark:text-zinc-400'>
-									{isReceiptDeferred
-										? 'El detalle de recepciones y asignaciones de stock inicial estará disponible cuando se habiliten las recepciones de mercadería.'
-										: 'El detalle de las asignaciones de stock inicial estará disponible cuando el sistema las publique.'}
-								</p>
+								{/* Con Recepciones simulada, sus filas no serían las de este documento. */}
+								{isReceiptDeferred && (
+									<p className='text-sm text-zinc-500 dark:text-zinc-400'>
+										El detalle de recepciones estará disponible cuando se
+										habiliten las recepciones de mercadería.
+									</p>
+								)}
 							</CardBody>
 						</Card>
+
+						{/*
+						 * Sólo un documento confirmado respalda stock (un borrador no
+						 * tiene asignaciones). `key`: cambiar de filial o documento
+						 * parte de la página 1.
+						 */}
+						{document.status !== 'draft' && (
+							<InitialStockAllocationsCard
+								key={`${subsidiaryId ?? 'null'}:${document.id}`}
+								subsidiaryId={subsidiaryId}
+								documentId={document.id}
+								lines={document.items}
+							/>
+						)}
 
 						<DocumentAttachmentsCard
 							ref={attachmentsCardRef}
