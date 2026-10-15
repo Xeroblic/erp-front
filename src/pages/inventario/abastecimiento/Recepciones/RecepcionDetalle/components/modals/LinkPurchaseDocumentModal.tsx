@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Card, { CardBody } from '@/components/ui/Card';
 import Label from '@/components/form/Label';
+import Select from '@/components/form/Select';
 import SelectReact from '@/components/form/SelectReact';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
@@ -49,7 +50,10 @@ const STALE_RECEIPT_CODES = new Set(['RECEIPT_NOT_POSTED', 'RECEIPT_DOCUMENT_ALR
 const UNMATCHED_LABELS: Record<TUnmatchedReason, string> = {
 	no_line: 'Sin línea compatible en el documento',
 	no_capacity: 'El documento no tiene pendiente suficiente',
+	choose: 'Elige la línea del documento',
 };
+
+const NO_OVERRIDES: ReadonlyMap<number, number> = new Map();
 
 /** Tarjeta de primer nivel dentro del cuerpo del modal (mismo estándar que el resto de abastecimiento). */
 const LINK_DOCUMENT_CARD_CLASSNAME =
@@ -96,10 +100,21 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 			label: `${document.document_number} · ${document.supplier?.display_name ?? 'Sin proveedor'}`,
 		}));
 
+	// Líneas del documento que el usuario eligió a mano, por línea de la recepción.
+	const [overrides, setOverrides] = useState<ReadonlyMap<number, number>>(NO_OVERRIDES);
+
 	const mapping = useMemo(
-		() => (receipt && selectedDocument ? buildLinkMapping(receipt, selectedDocument) : null),
-		[receipt, selectedDocument],
+		() =>
+			receipt && selectedDocument
+				? buildLinkMapping(receipt, selectedDocument, overrides)
+				: null,
+		[receipt, selectedDocument, overrides],
 	);
+
+	const chooseDocumentLine = (receiptLineId: number, documentLineId: number) => {
+		setOverrides((previous) => new Map(previous).set(receiptLineId, documentLineId));
+		setFieldErrors(NO_LINK_FIELD_ERRORS);
+	};
 
 	const handleClose = () => {
 		if (idempotentWrite.isSubmitting) return;
@@ -110,6 +125,7 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 		if (!idempotentWrite.canRetry) {
 			setDocumentId('');
 			setReason('');
+			setOverrides(NO_OVERRIDES);
 			setFieldErrors(NO_LINK_FIELD_ERRORS);
 			idempotentWrite.clearError();
 		}
@@ -215,6 +231,7 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 									setDocumentId(selected ? Number(selected.value) : '');
 									// Otro documento es otro comando: el error del anterior
 									// ya no aplica (la clave se renovó al fallar).
+									setOverrides(NO_OVERRIDES);
 									setFieldErrors(NO_LINK_FIELD_ERRORS);
 									if (!isReceiptBlocked) idempotentWrite.clearError();
 								}}
@@ -240,25 +257,33 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 							<div className='space-y-1 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700'>
 								<p className='font-semibold'>Mapeo de líneas</p>
 								{receipt.items.map((line) => {
-									const matched = mapping.items.find(
-										(item) => item.stock_receipt_line_id === line.id,
+									const assignedId = mapping.assignment.get(line.id);
+									const documentLine = selectedDocument.items.find(
+										(docLine) => docLine.id === assignedId,
 									);
-									const documentLine = matched
-										? selectedDocument.items.find(
-												(docLine) =>
-													docLine.id ===
-													matched.purchase_document_line_id,
-											)
-										: undefined;
+									// Con más de una línea del producto, el usuario puede
+									// cambiar la que propuso el mapeo.
+									const compatibleLines = selectedDocument.items
+										.map((docLine, index) => ({ docLine, position: index + 1 }))
+										.filter(
+											({ docLine }) => docLine.product.id === line.product.id,
+										);
 									const unmatchedReason = mapping.unmatched.get(line.id);
 									const lineError = fieldErrors.lines[line.id];
+									const selectId = `link-line-${line.id}`;
 									return (
 										<div key={line.id} className='space-y-0.5'>
 											<div className='flex items-center justify-between gap-2'>
-												<span>
-													{line.name_snapshot} ({line.quantity} u.)
-												</span>
-												{documentLine && (
+												{compatibleLines.length > 1 ? (
+													<Label htmlFor={selectId}>
+														{line.name_snapshot} ({line.quantity} u.)
+													</Label>
+												) : (
+													<span>
+														{line.name_snapshot} ({line.quantity} u.)
+													</span>
+												)}
+												{documentLine && compatibleLines.length <= 1 && (
 													<span className='text-emerald-600 dark:text-emerald-400'>
 														→ {documentLine.name_snapshot}
 													</span>
@@ -269,6 +294,34 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 													</span>
 												)}
 											</div>
+											{compatibleLines.length > 1 && (
+												<Select
+													id={selectId}
+													name={selectId}
+													disabled={idempotentWrite.canRetry}
+													value={assignedId ?? ''}
+													onChange={(event) =>
+														chooseDocumentLine(
+															line.id,
+															Number(event.target.value),
+														)
+													}>
+													<option value='' disabled>
+														Elige la línea del documento
+													</option>
+													{compatibleLines.map(
+														({ docLine, position }) => (
+															<option
+																key={docLine.id}
+																value={docLine.id}>
+																Línea {position} ·{' '}
+																{docLine.name_snapshot} · quedan{' '}
+																{docLine.remaining_quantity}
+															</option>
+														),
+													)}
+												</Select>
+											)}
 											{lineError && (
 												<p className='text-red-600 dark:text-red-400'>
 													{lineError}

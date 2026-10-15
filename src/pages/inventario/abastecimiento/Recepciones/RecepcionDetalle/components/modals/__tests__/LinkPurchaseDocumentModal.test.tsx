@@ -105,12 +105,12 @@ const rejection = (status: number, data: Record<string, unknown>) => ({
 	response: { status, data },
 });
 
-const renderModal = (onReceiptStale = vi.fn()) => {
+const renderModal = (onReceiptStale = vi.fn(), receipt: IStockReceipt = RECEIPT) => {
 	render(
 		<LinkPurchaseDocumentModal
 			isOpen
 			setIsOpen={vi.fn()}
-			receipt={RECEIPT}
+			receipt={receipt}
 			subsidiaryId={2}
 			onLinked={vi.fn()}
 			onReceiptStale={onReceiptStale}
@@ -236,8 +236,50 @@ describe('LinkPurchaseDocumentModal', () => {
 		} as IPurchaseDocument;
 		renderModal();
 
-		expect(screen.getByText('El documento no tiene pendiente suficiente')).toBeInTheDocument();
+		// Ninguna de las dos cabe junto a la otra: se marcan ambas.
+		expect(screen.getAllByText('El documento no tiene pendiente suficiente')).toHaveLength(2);
 		expect(screen.getByRole('button', { name: 'Vincular' })).toBeDisabled();
 		expect(dispatch).not.toHaveBeenCalled();
+	});
+
+	describe('con más de una línea del producto en el documento', () => {
+		const SPLIT_DOCUMENT = {
+			...DOCUMENT,
+			items: [
+				{ id: 101, product: { id: 31 }, name_snapshot: 'Mouse', remaining_quantity: 5 },
+				{ id: 102, product: { id: 31 }, name_snapshot: 'Mouse', remaining_quantity: 3 },
+			],
+		} as unknown as IPurchaseDocument;
+		const SPLIT_RECEIPT = {
+			...RECEIPT,
+			items: [
+				{ id: 301, product: { id: 31 }, name_snapshot: 'Mouse chico', quantity: 3 },
+				{ id: 302, product: { id: 31 }, name_snapshot: 'Mouse grande', quantity: 5 },
+			],
+		} as unknown as IStockReceipt;
+
+		it('propone la asignación válida (3→3 y 5→5) y deja vincular', () => {
+			picker.selected = SPLIT_DOCUMENT;
+			renderModal(vi.fn(), SPLIT_RECEIPT);
+
+			expect(screen.getByLabelText('Mouse chico (3 u.)')).toHaveValue('102');
+			expect(screen.getByLabelText('Mouse grande (5 u.)')).toHaveValue('101');
+			expect(screen.getByRole('button', { name: 'Vincular' })).toBeEnabled();
+		});
+
+		it('la elección a mano manda, y si no cabe lo marca y no deja enviar', () => {
+			picker.selected = SPLIT_DOCUMENT;
+			renderModal(vi.fn(), SPLIT_RECEIPT);
+
+			fireEvent.change(screen.getByLabelText('Mouse grande (5 u.)'), {
+				target: { value: '102' },
+			});
+
+			expect(screen.getByLabelText('Mouse grande (5 u.)')).toHaveValue('102');
+			expect(
+				screen.getByText('El documento no tiene pendiente suficiente'),
+			).toBeInTheDocument();
+			expect(screen.getByRole('button', { name: 'Vincular' })).toBeDisabled();
+		});
 	});
 });
