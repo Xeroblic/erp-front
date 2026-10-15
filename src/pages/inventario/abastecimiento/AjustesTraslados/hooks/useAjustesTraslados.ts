@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 import { useAppSelector } from '@/store';
 import {
 	AJUSTES_TRASLADOS_PRODUCT_PARAM,
@@ -17,8 +17,8 @@ import {
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 
 /** En la etapa 1 (una sola ubicación) la pestaña de traslados no existe. */
-const isAvailableTab = (tab: string): boolean =>
-	INVENTORY_MULTI_LOCATION_ENABLED || tab !== 'traslado';
+const isAvailableTab = (tab: string, multiLocation: boolean): boolean =>
+	multiLocation || tab !== 'traslado';
 
 /**
  * Contexto compartido por las dos pestañas: sucursal, autorización y pestaña
@@ -28,14 +28,16 @@ const isAvailableTab = (tab: string): boolean =>
 const useAjustesTraslados = () => {
 	const { branchId, subsidiaryId } = useCurrentBranch();
 	const { authorize, isLoading } = useAuthorization();
+	// Etapa de la filial activa. Mientras no se conoce, la pantalla es la de la etapa 1.
+	const { isMultiLocation } = useSubsidiaryRolloutStage(subsidiaryId);
 	const userId = useAppSelector((state) => state.auth.user?.id);
 	const [searchParams, setSearchParams] = useSearchParams();
 
 	// El contrato no define un permiso propio: traslados y ajustes son
-	// `edit-product` sobre las ubicaciones de la sucursal. El backend además
-	// exige *operar* en ella (excluye a `subsidiary-member`/`company-member`),
-	// algo que el perfil no expone por sucursal: ese 403 llega al enviar y el
-	// panel lo muestra con el mensaje del servidor, sin ofrecer reintento.
+	// `edit-product` sobre las ubicaciones de la sucursal. Los `subsidiary-member`
+	// y `company-member` con ese permiso también ajustan y trasladan en las
+	// sucursales de su filial o empresa: no se filtran por rol. Si el servidor
+	// responde 403 al enviar, el panel lo muestra con su mensaje, sin reintento.
 	const canWrite = authorize({
 		permission: 'edit-product',
 		branchId,
@@ -50,7 +52,7 @@ const useAjustesTraslados = () => {
 
 	const requestedTab = searchParams.get(AJUSTES_TRASLADOS_TAB_PARAM);
 	// Un enlace guardado a traslados cae al ajuste mientras la pestaña está oculta.
-	const tabHidden = requestedTab !== null && !isAvailableTab(requestedTab);
+	const tabHidden = requestedTab !== null && !isAvailableTab(requestedTab, isMultiLocation);
 	const activeTab: AjustesTrasladosTab =
 		isAjustesTrasladosTab(requestedTab) && !tabHidden
 			? requestedTab
@@ -69,7 +71,7 @@ const useAjustesTraslados = () => {
 
 	const changeTab = useCallback(
 		(tabId: string) => {
-			if (!isAjustesTrasladosTab(tabId) || !isAvailableTab(tabId)) return;
+			if (!isAjustesTrasladosTab(tabId) || !isAvailableTab(tabId, isMultiLocation)) return;
 			setSearchParams(
 				(prev) => {
 					const next = new URLSearchParams(prev);
@@ -83,7 +85,7 @@ const useAjustesTraslados = () => {
 				{ replace: true },
 			);
 		},
-		[setSearchParams],
+		[setSearchParams, isMultiLocation],
 	);
 
 	return useMemo(
@@ -92,11 +94,21 @@ const useAjustesTraslados = () => {
 			branchId,
 			subsidiaryId,
 			owner: `${userId}:${subsidiaryId}:${branchId}`,
+			isMultiLocation,
 			activeTab,
 			changeTab,
 			preselection,
 		}),
-		[access, branchId, subsidiaryId, userId, activeTab, changeTab, preselection],
+		[
+			access,
+			branchId,
+			subsidiaryId,
+			userId,
+			isMultiLocation,
+			activeTab,
+			changeTab,
+			preselection,
+		],
 	);
 };
 

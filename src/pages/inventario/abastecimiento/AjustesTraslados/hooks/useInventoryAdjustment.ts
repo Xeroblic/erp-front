@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
-import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -91,6 +90,8 @@ export default function useInventoryAdjustment(
 	context: string,
 	subsidiaryId: number | null = null,
 	preselection: IAjustesTrasladosPreselection = NO_PRESELECTION,
+	/** Etapa 2 de la filial. Se lee al montar: un cambio rehace el formulario (`key`). */
+	multiLocation = false,
 ) {
 	const session = useId();
 	const dispatch = useAppDispatch();
@@ -107,8 +108,8 @@ export default function useInventoryAdjustment(
 	// sin bodegas, la única ubicación es «Sin ubicación» y una bodega de la URL
 	// no resuelve, así que su producto tampoco se preselecciona.
 	const warehouses = useMemo(
-		() => (INVENTORY_MULTI_LOCATION_ENABLED ? getAdjustmentWarehouses(branchId) : []),
-		[branchId],
+		() => (multiLocation ? getAdjustmentWarehouses(branchId) : []),
+		[multiLocation, branchId],
 	);
 	// Preselección de la URL: se resuelve una vez, al montar. Es el valor
 	// inicial del formulario, no un filtro que lo siga. El catálogo no está
@@ -118,7 +119,7 @@ export default function useInventoryAdjustment(
 		const location = resolvePreselectedLocation(preselection.location, warehouses);
 		const productId: number | '' =
 			location !== null && preselection.productId !== null ? preselection.productId : '';
-		const fixedLocation = INVENTORY_MULTI_LOCATION_ENABLED ? '' : UNLOCATED_TOKEN;
+		const fixedLocation = multiLocation ? '' : UNLOCATED_TOKEN;
 		return { location: location ?? fixedLocation, productId };
 	});
 

@@ -16,7 +16,13 @@ import { inventoryStockEnvelope } from '@/mocks/db/procurement.db';
  */
 const fetchData = vi.hoisted(() => vi.fn());
 vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
-vi.mock('@/config/inventoryMultiLocation.config', () => ({ default: true }));
+vi.mock('@/hooks/useSubsidiaryRolloutStage', () => ({
+	useSubsidiaryRolloutStage: () => ({
+		multiLocationEnabled: true,
+		isMultiLocation: true,
+		isLoading: false,
+	}),
+}));
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
 vi.mock('@/config/inventoryAdjustments.config', () => ({ default: false }));
 vi.mock('@/config/inventoryTransfers.config', () => ({ default: false }));
