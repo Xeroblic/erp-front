@@ -9,10 +9,7 @@ import type { IWarehouseCompact } from '@/interface/procurement.interface';
 import InventarioPagination from '@/pages/inventario/Inventario/components/parts/InventarioPagination';
 import OperationDetail from '@/pages/inventario/Inventario/components/traceability/OperationDetail';
 import type { TInventoryTraceability } from '@/pages/inventario/Inventario/hooks/useInventoryTraceability';
-import {
-	OPERACION_TIPOS_DOCUMENTALES,
-	operacionTipoInfo,
-} from '@/pages/inventario/Inventario/types';
+import { operacionTipoInfo } from '@/pages/inventario/Inventario/types';
 
 const COLUMN_COUNT = 6;
 
@@ -28,12 +25,40 @@ const fechaHora = (timestamp: string): { fecha: string; hora: string } | null =>
 	};
 };
 
+/**
+ * Unidades del acto, contadas una vez. Una operación documental involucra
+ * unidades sin moverlas: el rótulo sale de `physical_effect`, que el backend
+ * calcula de lo escrito, no de una lista de tipos en el cliente.
+ */
 const Unidades = ({ operation }: { operation: IInventoryOperationRow }) => {
-	const units = operation.summary.units_affected;
-	if (units === 0 && OPERACION_TIPOS_DOCUMENTALES.includes(operation.operation_type))
-		return <span className='text-sm text-zinc-500'>Sin cambio físico</span>;
-	return <span className='font-semibold tabular-nums'>{units.toLocaleString('es-CL')}</span>;
+	const { units_affected: units, physical_effect: physicalEffect } = operation.summary;
+	return (
+		<>
+			<span className='font-semibold tabular-nums'>{units.toLocaleString('es-CL')}</span>
+			{!physicalEffect && (
+				<span className='block text-sm text-zinc-500 dark:text-zinc-400'>
+					Sin cambio físico
+				</span>
+			)}
+		</>
+	);
 };
+
+/**
+ * Movimientos que el motor todavía no agrupó: suelen aparecer segundos
+ * después. No es un error ni algo que el usuario deba resolver.
+ */
+const PendingMovementsNotice = ({ count }: { count: number }) => (
+	<div className='px-4 pb-2'>
+		<Alert color='blue' variant='outline' icon='HeroClock'>
+			<span role='status'>
+				{count === 1
+					? 'Hay 1 movimiento reciente que aparecerá en unos segundos.'
+					: `Hay ${count.toLocaleString('es-CL')} movimientos recientes que aparecerán en unos segundos.`}
+			</span>
+		</Alert>
+	</div>
+);
 
 const OperacionCelda = ({ operation }: { operation: IInventoryOperationRow }) => {
 	const tipo = operacionTipoInfo(operation.operation_type);
@@ -80,6 +105,7 @@ const OperationsTable: React.FC<IOperationsTableProps> = ({
 	onPaginate,
 }) => {
 	const { response, loading, error, refresh, expanded, toggle, detailOf, retryDetail } = data;
+	const pendingCount = response?.context.pending_movements_count ?? 0;
 	const warehousesById = useMemo(
 		() => new Map(warehouses.map((warehouse) => [warehouse.id, warehouse])),
 		[warehouses],
@@ -191,6 +217,8 @@ const OperationsTable: React.FC<IOperationsTableProps> = ({
 					</span>
 				)}
 			</CardHeader>
+			{/* Fuera del contenedor con scroll horizontal: en 375 px se lee entero. */}
+			{!error && pendingCount > 0 && <PendingMovementsNotice count={pendingCount} />}
 			{error ? (
 				<CardBody>
 					<Alert color='red' variant='outline' title='No pudimos cargar la trazabilidad'>

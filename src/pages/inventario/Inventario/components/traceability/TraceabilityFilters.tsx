@@ -8,10 +8,13 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import type { IInventoryWarehouseAggregate } from '@/interface/inventoryOverview.interface';
 import {
+	isOperacionSerie,
 	isOperacionTipo,
+	OPERACION_SERIES,
 	OPERACION_TIPOS,
 	type IInventarioFilters,
 	type TInventarioUbicacion,
+	type TOperacionSerie,
 	type TOperacionTipo,
 } from '@/pages/inventario/Inventario/types';
 import { singleSelectValue } from '@/utils/selectFilter.util';
@@ -20,6 +23,10 @@ const tipoSelectOptions: TSelectOption[] = Object.entries(OPERACION_TIPOS).map((
 	value,
 	label: info.label,
 }));
+
+const serieSelectOptions: TSelectOption[] = Object.entries(OPERACION_SERIES).map(
+	([value, label]) => ({ value, label }),
+);
 
 const isUbicacion = (value: string): value is TInventarioUbicacion =>
 	value === 'unlocated' || /^warehouse:[1-9]\d*$/.test(value);
@@ -32,6 +39,7 @@ interface ITraceabilityFiltersProps {
 	warehouses: IInventoryWarehouseAggregate[];
 	onBusqueda: (value: string) => void;
 	onTipo: (value: TOperacionTipo | null) => void;
+	onSerie: (value: TOperacionSerie | null) => void;
 	onUbicacion: (value: TInventarioUbicacion) => void;
 	onDesde: (value: string) => void;
 	onHasta: (value: string) => void;
@@ -40,14 +48,15 @@ interface ITraceabilityFiltersProps {
 
 /**
  * Filtros de la pestaña Trazabilidad, con la misma tarjeta que la vista
- * General. «Todas las operaciones» y «Toda la sucursal» son la ausencia de
- * selección (`isClearable`), no opciones de la lista.
+ * General. «Todas las operaciones», «Toda la sucursal» y «Con y sin serie»
+ * son la ausencia de selección (`isClearable`), no opciones de la lista.
  */
 const TraceabilityFilters: React.FC<ITraceabilityFiltersProps> = ({
 	filtros,
 	warehouses,
 	onBusqueda,
 	onTipo,
+	onSerie,
 	onUbicacion,
 	onDesde,
 	onHasta,
@@ -83,8 +92,18 @@ const TraceabilityFilters: React.FC<ITraceabilityFiltersProps> = ({
 							name='q'
 							value={filtros.busqueda}
 							placeholder='Producto, SKU, proveedor, RUT o folio'
+							aria-describedby='trazabilidad-busqueda-alcance'
 							onChange={(event) => onBusqueda(event.target.value)}
 						/>
+						{/* El backend sólo cruza proveedor y folio con las procedencias que se
+						    consumieron: no encuentra recepciones, ajustes positivos ni traslados. */}
+						<p
+							id='trazabilidad-busqueda-alcance'
+							className='text-sm text-zinc-500 dark:text-zinc-400'>
+							Por proveedor, RUT o folio sólo aparecen salidas y devoluciones. Para
+							encontrar recepciones, busca por producto o filtra por operación y
+							fechas.
+						</p>
 					</div>
 					<div className='space-y-1'>
 						<label htmlFor='trazabilidad-tipo' className={fieldLabelClass}>
@@ -129,9 +148,9 @@ const TraceabilityFilters: React.FC<ITraceabilityFiltersProps> = ({
 							}}
 						/>
 					</div>
-					{/* «Desde» y «Hasta» van juntos en su propia fila: en una sola
-					    columna del grid quedaban demasiado angostos. */}
-					<div className='col-span-full grid grid-cols-2 gap-3 sm:max-w-md'>
+					{/* «Desde», «Hasta» y «Serie» van en su propia fila: en una sola
+					    columna del grid las fechas quedaban demasiado angostas. */}
+					<div className='col-span-full grid grid-cols-2 gap-3 sm:max-w-2xl sm:grid-cols-3'>
 						<div className='space-y-1'>
 							<label htmlFor='trazabilidad-desde' className={fieldLabelClass}>
 								Desde
@@ -154,6 +173,28 @@ const TraceabilityFilters: React.FC<ITraceabilityFiltersProps> = ({
 								name='hasta'
 								value={filtros.hasta}
 								onChange={(event) => onHasta(event.target.value)}
+							/>
+						</div>
+						<div className='col-span-2 space-y-1 sm:col-span-1'>
+							<label htmlFor='trazabilidad-serie' className={fieldLabelClass}>
+								Serie
+							</label>
+							<SelectReact
+								className={selectBackgroundClass}
+								inputId='trazabilidad-serie'
+								name='serie'
+								options={serieSelectOptions}
+								value={
+									serieSelectOptions.find(
+										(option) => option.value === filtros.serie,
+									) ?? null
+								}
+								placeholder='Con y sin serie'
+								isClearable
+								onChange={(selected) => {
+									const value = singleSelectValue(selected)?.value ?? null;
+									onSerie(isOperacionSerie(value) ? value : null);
+								}}
 							/>
 						</div>
 					</div>

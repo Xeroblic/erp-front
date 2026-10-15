@@ -18,6 +18,7 @@ import type { IInventoryOverviewParams } from '@/interface/inventoryOverview.int
 import type {
 	IInventoryOperationDetail,
 	IInventoryOperationsParams,
+	TInventoryOperationType,
 } from '@/interface/inventoryOperations.interface';
 
 // Fixtures de `inventoryStock.db.ts`, sucursal 4 de la filial 2.
@@ -105,14 +106,19 @@ describe('§14 · listInventoryOperations (mock)', () => {
 		const { data } = await list({ operation_type: 'warehouse_stock_placement' });
 
 		expect(data).toHaveLength(1);
-		expect(data[0].summary).toEqual({ products_count: 1, units_affected: 5 });
+		expect(data[0].summary).toEqual({
+			products_count: 1,
+			units_affected: 5,
+			physical_effect: true,
+		});
+		expect(data[0].title).toBe('Traslado interno de stock');
 	});
 
 	it('el último «después» de cada ubicación coincide con el stock actual', async () => {
 		await moveAndAdjustMouse();
 
 		const operations = await mouseDetails();
-		const latestAfter = new Map<number | null, number>();
+		const latestAfter = new Map<number | null, number | null>();
 		operations.forEach((operation) =>
 			operation.items
 				.filter((item) => item.product_id === MOUSE_ID)
@@ -129,7 +135,7 @@ describe('§14 · listInventoryOperations (mock)', () => {
 			search: 'mouse',
 		} as IInventoryOverviewParams);
 		const current = new Map(
-			data[0].warehouses.map((location) => [
+			(data[0].warehouses ?? []).map((location) => [
 				location.warehouse?.id ?? null,
 				location.physical_quantity,
 			]),
@@ -167,22 +173,46 @@ describe('§14 · listInventoryOperations (mock)', () => {
 		expect(meta.total).toBe(0);
 	});
 
-	it('filtra por fechas de negocio y por texto del motivo', async () => {
+	it('filtra por fechas de negocio; la búsqueda mira el producto, no el motivo', async () => {
 		await moveAndAdjustMouse();
 
 		const before = await list({ occurred_to: '2026-09-02' });
-		const search = await list({ search: 'ubicar' });
+		const byProduct = await list({ search: 'mouse' });
+		const byReason = await list({ search: 'ubicar' });
 
 		expect(before.data.every((row) => row.occurred_at < '2026-09-03')).toBe(true);
 		expect(before.data.some((row) => row.operation_type === 'warehouse_stock_placement')).toBe(
 			false,
 		);
-		expect(search.data.map((row) => row.reason)).toEqual(['Ubicar mouse']);
+		expect(byProduct.data.map((row) => row.reason)).toEqual(
+			expect.arrayContaining(['Conteo', 'Ubicar mouse']),
+		);
+		expect(byReason.meta.total).toBe(0);
 	});
 
-	it('rechaza con 422 un tipo desconocido, una fecha mal escrita o la falta de sucursal', async () => {
-		expect(await readError(list({ operation_type: 'robo' }))).toBe(422);
+	it('con `serial_tracking` separa operaciones de productos sin y con serie', async () => {
+		const all = await list();
+		const withoutSerial = await list({ serial_tracking: 0 });
+		const withSerial = await list({ serial_tracking: 1 });
+
+		expect(withoutSerial.meta.total).toBe(all.meta.total);
+		expect(withSerial.meta.total).toBe(0);
+	});
+
+	it('trae `context.pending_movements_count` al nivel de `data`', async () => {
+		const { context } = await list();
+
+		expect(context).toEqual({ pending_movements_count: 0 });
+	});
+
+	it('rechaza con 422 los mismos filtros que el backend', async () => {
+		const unknownType = 'robo' as string as TInventoryOperationType;
+		expect(await readError(list({ operation_type: unknownType }))).toBe(422);
 		expect(await readError(list({ occurred_from: '01-09-2026' }))).toBe(422);
+		expect(
+			await readError(list({ occurred_from: '2026-09-10', occurred_to: '2026-09-01' })),
+		).toBe(422);
+		expect(await readError(list({ warehouse_id: MAIN_WAREHOUSE_ID, unlocated: 1 }))).toBe(422);
 		expect(await readError(listInventoryOperations(SUBSIDIARY_ID, {}))).toBe(422);
 	});
 });
@@ -199,6 +229,16 @@ describe('§14 · getInventoryOperation (mock)', () => {
 			data.items.filter((item) => item.matches_filter).map((item) => item.product_id),
 		).toEqual([MOUSE_ID]);
 		expect(data.items.every((item) => item.condition !== null)).toBe(true);
+		expect(data.title).toBe('Stock inicial');
+	});
+
+	it('nombra la bodega de cada efecto y deja `null` para «Sin ubicación»', async () => {
+		await moveAndAdjustMouse();
+
+		const [, placement] = await mouseDetails();
+		const warehouses = placement.items[0].effects.map((effect) => effect.warehouse);
+
+		expect(warehouses).toEqual([null, { id: MAIN_WAREHOUSE_ID, name: expect.any(String) }]);
 	});
 
 	it('responde 404 a una operación que no existe', async () => {

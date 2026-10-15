@@ -7,6 +7,7 @@ import {
 	inventoryBranchQueryKey,
 	inventoryOverviewQueryKey,
 } from '@/store/slices/procurement/inventoryOverviewSlice';
+import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import type { IInventoryOverviewParams } from '@/interface/inventoryOverview.interface';
 import {
 	inventoryLocationParams,
@@ -42,8 +43,12 @@ const useInventario = (
 			...inventoryLocationParams(ubicacion),
 			include: 'warehouses',
 			search: busqueda.trim() || undefined,
-			stock_status: estado ?? undefined,
-			sort: orden,
+			// Sin umbral ni orden publicados no se piden: un enlace viejo con
+			// `estado` u `orden` no cambia una consulta que no los entiende.
+			stock_status: INVENTORY_OVERVIEW_FEATURES.stockStatus
+				? (estado ?? undefined)
+				: undefined,
+			sort: INVENTORY_OVERVIEW_FEATURES.sort ? orden : undefined,
 			page,
 			per_page: perPage,
 		};
@@ -82,6 +87,9 @@ const useInventario = (
 		warehouses: isWarehousesCurrent ? (state.warehouses.response?.data ?? []) : [],
 		warehousesLoading: !isWarehousesCurrent || state.warehouses.loading,
 		warehousesError: isWarehousesCurrent ? state.warehouses.error : null,
+		/** `false`: sin acceso al catálogo de bodegas, sólo se conoce «Sin ubicación». */
+		warehousesComplete:
+			!isWarehousesCurrent || (state.warehouses.response?.warehouses_complete ?? true),
 		list: isListCurrent ? state.list.response : null,
 		listLoading: !isListCurrent || state.list.loading,
 		listError: isListCurrent ? state.list.error : null,

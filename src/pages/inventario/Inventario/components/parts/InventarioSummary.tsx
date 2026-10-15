@@ -4,26 +4,32 @@ import InventarioKpis, {
 	type IInventarioKpi,
 } from '@/pages/inventario/Inventario/components/parts/InventarioKpis';
 
+/** Tarjeta sólo si la fuente publica la cifra: `null` no se muestra como `0`. */
+const kpi = (value: number | null, rest: Omit<IInventarioKpi, 'value'>): IInventarioKpi[] =>
+	value === null ? [] : [{ ...rest, value }];
+
 const kpisInventario = (summary: IInventoryStockSummary): IInventarioKpi[] => [
-	{
+	...kpi(summary.physical_quantity, {
 		label: 'Stock total',
-		value: summary.physical_quantity,
 		icon: 'HeroArchiveBox',
 		accent: 'bg-blue-600',
-	},
-	{
-		label: 'Productos',
-		value: summary.products_count,
+	}),
+	...kpi(summary.products_count, {
+		label: 'Productos con stock',
 		icon: 'HeroCube',
 		accent: 'bg-violet-600',
-	},
-	{
+	}),
+	...kpi(summary.unlocated_products_count, {
+		label: 'Productos en Sin ubicación',
+		icon: 'HeroInboxStack',
+		accent: 'bg-zinc-700',
+	}),
+	...kpi(summary.critical_count, {
 		label: 'Stock crítico',
-		value: summary.critical_count,
 		icon: 'HeroBellAlert',
 		accent: 'bg-amber-600',
-	},
-	{ label: 'Sin stock', value: summary.out_count, icon: 'HeroNoSymbol', accent: 'bg-red-600' },
+	}),
+	...kpi(summary.out_count, { label: 'Sin stock', icon: 'HeroNoSymbol', accent: 'bg-red-600' }),
 ];
 
 /** KPI de la sucursal (A2): tamaño del inventario y cuánto pide atención. */

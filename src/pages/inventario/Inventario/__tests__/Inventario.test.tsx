@@ -22,6 +22,14 @@ vi.mock('@/config/inventoryStock.config', () => ({
 		return context.enabled;
 	},
 }));
+// Las pantallas de Inventario tienen bandera propia; el mismo interruptor las enciende.
+vi.mock('@/config/inventoryOverview.config', () => ({
+	get default() {
+		return context.enabled;
+	},
+}));
+// La trazabilidad tiene bandera propia: estas pruebas la recorren contra el doble.
+vi.mock('@/config/inventoryOperations.config', () => ({ default: true }));
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
 // Los menús de la pestaña Trazabilidad leen la dirección del texto (`useDir`).
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: { dir: () => 'ltr' } }) }));
@@ -137,14 +145,13 @@ afterEach(() => {
 });
 
 describe('Inventario — vista unificada', () => {
-	it('no consulta nada ni muestra datos simulados con el flag apagado', async () => {
+	it('sin datos simulados no avisa ni bloquea la vista: lee la API real', async () => {
 		context.enabled = false;
-		const spy = vi.spyOn(service, 'listInventoryOverview');
 		renderPage();
 
-		expect(await screen.findByText('Consulta no habilitada')).toBeInTheDocument();
+		expect(await screen.findByRole('tab', { name: /Por producto/ })).toBeInTheDocument();
+		expect(screen.queryByText('Consulta no habilitada')).not.toBeInTheDocument();
 		expect(screen.queryByText('Datos simulados')).not.toBeInTheDocument();
-		expect(spy).not.toHaveBeenCalled();
 	});
 
 	it('sin permiso de lectura no monta la sesión', () => {
@@ -253,7 +260,7 @@ describe('Inventario — vista unificada', () => {
 
 			await waitFor(() => expect(location()).toBe('/inventario/stock?vista=trazabilidad'));
 			const table = await screen.findByRole('table', { name: 'Operaciones' });
-			expect(await within(table).findByText('Saldo inicial')).toBeInTheDocument();
+			expect(await within(table).findByText('Stock inicial')).toBeInTheDocument();
 
 			const [first] = within(table).getAllByRole('button', { name: 'Ver detalle' });
 			fireEvent.click(first);
@@ -270,9 +277,9 @@ describe('Inventario — vista unificada', () => {
 
 			await waitFor(() => expect(location()).toBe('/inventario/stock?vista=trazabilidad'));
 			expect(screen.getByLabelText('Búsqueda')).toHaveValue('');
-			// La recepción #76 no contiene el mouse: sólo aparece si `q=mouse` se descartó.
+			// La recepción #76 (29-08) no contiene el mouse: sólo aparece si `q=mouse` se descartó.
 			const table = await screen.findByRole('table', { name: 'Operaciones' });
-			expect(await within(table).findByText('Recepción #76')).toBeInTheDocument();
+			expect(await within(table).findByText('29-08-2026')).toBeInTheDocument();
 		});
 	});
 });

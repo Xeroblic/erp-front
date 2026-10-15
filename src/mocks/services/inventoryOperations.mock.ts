@@ -17,6 +17,7 @@ import type {
 } from '@/interface/procurement.interface';
 import type { IInventorySeedOrigin } from '@/mocks/db/inventoryStock.db';
 import {
+	getInventoryWarehouses,
 	inventoryMockDelay,
 	inventoryMockError,
 	paginateInventoryMock,
@@ -29,9 +30,9 @@ import { readStockReceiptsForTraceability } from '@/mocks/services/stockReceipts
 
 /**
  * Doble de la trazabilidad agrupada — §14 del contrato de abastecimiento
- * (`GET S/inventory-operations` y su detalle). **El endpoint no existe
- * todavía.** La UI pasa por la fachada
- * `@/services/procurement/inventoryOperations.service`.
+ * (`GET S/inventory-operations` y su detalle), con la misma forma que los
+ * Resources del backend. Sólo se usa con `VITE_INVENTORY_OPERATIONS_USE_MOCKS`;
+ * la UI pasa por la fachada `@/services/procurement/inventoryOperations.service`.
  *
  * No guarda historia propia: la arma con lo que ya tiene el store de
  * `inventoryStock.mock` —las procedencias sembradas como punto de partida,
@@ -57,24 +58,35 @@ const seededAt = (businessDate: string, time = '10:00'): string =>
 const OPENING_BALANCE_AT = seededAt('2026-08-01', '08:00');
 
 /**
- * Tipo legado para el saldo inicial. El §14 conserva los tipos legados con su
- * nombre; el mock usa el de los movimientos actuales.
+ * Saldo con que parte el historial. El backend agrupa así el stock que ya
+ * existía al encender el motor (respaldo histórico, «Stock inicial»).
  */
-export const OPENING_BALANCE_OPERATION_TYPE = 'initial_balance';
+export const OPENING_BALANCE_OPERATION_TYPE = 'initial_stock' satisfies TInventoryOperationType;
 
-const OPERATION_TYPES: readonly string[] = [
-	'stock_receipt',
-	'stock_receipt_reversal',
-	'sale_fulfillment',
-	'sale_return',
-	'warehouse_stock_placement',
-	'inventory_adjustment',
-	'purchase_document_link',
-	'initial_stock_document_allocation',
-	OPENING_BALANCE_OPERATION_TYPE,
-] satisfies readonly (TInventoryOperationType | typeof OPENING_BALANCE_OPERATION_TYPE)[];
+/**
+ * `title` fijo por tipo, igual que `InventoryOperationType::label()`: el
+ * backend nunca lo arma con datos de la operación.
+ */
+const OPERATION_TITLES: Record<TInventoryOperationType, string> = {
+	stock_receipt: 'Recepción de mercadería',
+	stock_receipt_reversal: 'Reversión de recepción',
+	sale_fulfillment: 'Salida por venta',
+	sale_return: 'Devolución de venta',
+	warehouse_stock_placement: 'Traslado interno de stock',
+	inventory_adjustment: 'Ajuste de inventario',
+	purchase_document_link: 'Vinculación de documento de compra',
+	initial_stock_document_allocation: 'Respaldo documental de stock inicial',
+	initial_stock: 'Stock inicial',
+	branch_transfer: 'Traslado entre sucursales',
+	legacy_movement: 'Movimiento histórico',
+	serial_correction: 'Corrección de serie',
+	stock_reconciliation: 'Conciliación de stock',
+};
 
-/** Operaciones sin efecto físico: cuentan 0 unidades y sus ítems no tienen condición. */
+const isOperationType = (value: string): value is TInventoryOperationType =>
+	Object.prototype.hasOwnProperty.call(OPERATION_TITLES, value);
+
+/** Operaciones sin efecto físico: sus ítems no tienen condición ni efectos. */
 const DOCUMENTARY_TYPES: readonly string[] = [
 	'purchase_document_link',
 	'initial_stock_document_allocation',
@@ -103,7 +115,7 @@ interface IDraftItem {
 
 interface IDraftOperation {
 	id: string;
-	operation_type: string;
+	operation_type: TInventoryOperationType;
 	title: string;
 	occurred_at: string;
 	actor: IProcurementActorCompact | null;
@@ -114,9 +126,15 @@ interface IDraftOperation {
 }
 
 const draft = (
-	operation: Omit<IDraftOperation, 'items' | 'actor' | 'reverses_operation_id'> &
+	operation: Omit<IDraftOperation, 'items' | 'actor' | 'reverses_operation_id' | 'title'> &
 		Partial<Pick<IDraftOperation, 'actor' | 'reverses_operation_id'>>,
-): IDraftOperation => ({ actor: null, reverses_operation_id: null, ...operation, items: [] });
+): IDraftOperation => ({
+	actor: null,
+	reverses_operation_id: null,
+	...operation,
+	title: OPERATION_TITLES[operation.operation_type],
+	items: [],
+});
 
 const itemOf = (
 	operation: IDraftOperation,
@@ -183,7 +201,6 @@ const seedOperations = (branchId: number, origins: IInventorySeedOrigin[]): IDra
 				draft({
 					id: `seed-${branchId}-opening`,
 					operation_type: OPENING_BALANCE_OPERATION_TYPE,
-					title: 'Saldo inicial',
 					occurred_at: OPENING_BALANCE_AT,
 					reason: 'Stock existente al comenzar el historial',
 					source: null,
@@ -196,7 +213,6 @@ const seedOperations = (branchId: number, origins: IInventorySeedOrigin[]): IDra
 				draft({
 					id: `seed-${branchId}-receipt-${receiptId}`,
 					operation_type: 'stock_receipt',
-					title: `Recepción #${receiptId}`,
 					occurred_at: seededAt(receivedOn),
 					reason: null,
 					source: { type: 'stock_receipt', id: receiptId },
@@ -211,7 +227,6 @@ const seedOperations = (branchId: number, origins: IInventorySeedOrigin[]): IDra
 					operation_type: isAdjustment
 						? 'inventory_adjustment'
 						: OPENING_BALANCE_OPERATION_TYPE,
-					title: isAdjustment ? 'Ajuste de inventario' : 'Saldo inicial',
 					occurred_at: seededAt(receivedOn),
 					reason: isAdjustment ? 'Ingreso por conteo' : null,
 					source: null,
@@ -279,7 +294,6 @@ const receiptOperations = (
 					receipt?.inventory_operation_id ??
 					`receipt-${effect.subsidiary_id}-${receiptId}`,
 				operation_type: 'stock_receipt',
-				title: `Recepción #${receiptId}`,
 				occurred_at: occurredAt,
 				actor: receipt?.posted_by ?? null,
 				reason: receipt?.reason ?? null,
@@ -314,7 +328,6 @@ const receiptOperations = (
 			const reversal = draft({
 				id: receipt?.reversal_operation_id ?? `${receiptOperation.id}-reversal`,
 				operation_type: 'stock_receipt_reversal',
-				title: `Reversión de la recepción #${receiptId}`,
 				occurred_at: effect.reversed_at,
 				reason: receipt?.reversal_reason ?? null,
 				source: { type: 'stock_receipt', id: receiptId },
@@ -354,7 +367,6 @@ const movementOperations = (ledger: IInventoryBranchLedger): IDraftOperation[] =
 		const operation = draft({
 			id: movement.id,
 			operation_type: 'warehouse_stock_placement',
-			title: 'Traslado entre ubicaciones',
 			occurred_at: movement.created_at,
 			reason: movement.reason,
 			source: null,
@@ -376,7 +388,6 @@ const adjustmentOperations = (ledger: IInventoryBranchLedger): IDraftOperation[]
 		const operation = draft({
 			id: adjustment.id,
 			operation_type: 'inventory_adjustment',
-			title: 'Ajuste de inventario',
 			occurred_at: adjustment.created_at,
 			reason: adjustment.reason,
 			source:
@@ -404,7 +415,6 @@ const allocationOperations = (
 		const operation = draft({
 			id: `allocation-${branchId}-${allocation.id}`,
 			operation_type: 'initial_stock_document_allocation',
-			title: 'Documentación de stock inicial',
 			occurred_at: allocation.created_at,
 			reason: allocation.reason,
 			source: { type: 'document_allocation', id: allocation.id },
@@ -426,9 +436,18 @@ const allocationOperations = (
    Reproducción: saldos antes y después
    ================================================= */
 
+interface ILedgerItem extends Omit<IInventoryOperationItem, 'matches_filter'> {
+	/**
+	 * Ubicaciones que toca el ítem, con o sin efecto: el backend filtra por
+	 * bodega también las procedencias de una operación documental, que no trae
+	 * `effects`. No se publica.
+	 */
+	locations: (number | null)[];
+}
+
 interface ILedgerOperation {
 	row: IInventoryOperationRow;
-	items: Omit<IInventoryOperationItem, 'matches_filter'>[];
+	items: ILedgerItem[];
 }
 
 interface IBalance {
@@ -439,11 +458,19 @@ interface IBalance {
 const effectOf = (
 	branchId: number,
 	warehouseId: number | null,
+	warehouseNames: ReadonlyMap<number, string>,
 	before: IBalance,
 	after: IBalance,
 ): IInventoryOperationEffect => ({
 	branch_id: branchId,
 	warehouse_id: warehouseId,
+	warehouse:
+		warehouseId === null
+			? null
+			: {
+					id: warehouseId,
+					name: warehouseNames.get(warehouseId) ?? `Bodega #${warehouseId}`,
+				},
 	physical_quantity_delta: after.fit + after.unfit - (before.fit + before.unfit),
 	fit_quantity_delta: after.fit - before.fit,
 	unfit_quantity_delta: after.unfit - before.unfit,
@@ -468,6 +495,9 @@ const replay = (
 	const balances = new Map<string, IBalance>();
 	const balanceKey = (productId: number, warehouseId: number | null) =>
 		`${productId}:${warehouseId ?? 'unlocated'}`;
+	const warehouseNames = new Map(
+		getInventoryWarehouses(branchId).map((warehouse) => [warehouse.id, warehouse.name]),
+	);
 
 	const chronological = drafts
 		.map((operation, index) => ({ operation, index }))
@@ -478,35 +508,30 @@ const replay = (
 		);
 
 	const ledger = chronological.map(({ operation }): ILedgerOperation => {
-		const items = operation.items.flatMap((item) => {
+		const documentary = DOCUMENTARY_TYPES.includes(operation.operation_type);
+		const items = operation.items.flatMap((item): ILedgerItem[] => {
 			const product = resolveInventoryStockProduct(item.product_id);
 			if (!product || product.serial_tracking) return [];
-			const moved = item.moves.map((move) => {
+			const effects = item.moves.map((move) => {
 				const key = balanceKey(item.product_id, move.warehouse_id);
 				const before = balances.get(key) ?? { fit: 0, unfit: 0 };
 				const after = { fit: before.fit + move.fit, unfit: before.unfit + move.unfit };
 				balances.set(key, after);
-				return effectOf(branchId, move.warehouse_id, before, after);
-			});
-			const unchanged = item.touched.map((warehouseId) => {
-				const balance = balances.get(balanceKey(item.product_id, warehouseId)) ?? {
-					fit: 0,
-					unfit: 0,
-				};
-				return effectOf(branchId, warehouseId, balance, balance);
+				return effectOf(branchId, move.warehouse_id, warehouseNames, before, after);
 			});
 			return [
 				{
 					product,
 					product_id: item.product_id,
 					quantity: item.quantity,
-					condition: item.condition,
-					effects: [...moved, ...unchanged],
+					// Una operación documental no trae condición ni efectos (§14).
+					condition: documentary ? null : item.condition,
+					effects: documentary ? [] : effects,
 					origins: item.origins,
+					locations: [...item.moves.map((move) => move.warehouse_id), ...item.touched],
 				},
 			];
 		});
-		const documentary = DOCUMENTARY_TYPES.includes(operation.operation_type);
 		return {
 			row: {
 				id: operation.id,
@@ -520,9 +545,11 @@ const replay = (
 				reverses_operation_id: operation.reverses_operation_id,
 				summary: {
 					products_count: new Set(items.map((item) => item.product_id)).size,
-					units_affected: documentary
-						? 0
-						: items.reduce((total, item) => total + item.quantity, 0),
+					units_affected: items.reduce((total, item) => total + item.quantity, 0),
+					// Como el backend: de lo escrito (algún delta físico), no del tipo.
+					physical_effect: items.some((item) =>
+						item.effects.some((effect) => effect.physical_quantity_delta !== 0),
+					),
 				},
 			},
 			items,
@@ -574,7 +601,7 @@ const includesText = (value: string | null | undefined, search: string): boolean
 	Boolean(value) && normalized(value ?? '').includes(search);
 
 /** El ítem coincide con la búsqueda: producto, proveedor o folio del documento. */
-const itemMatchesSearch = (item: ILedgerOperation['items'][number], search: string): boolean =>
+const itemMatchesSearch = (item: ILedgerItem, search: string): boolean =>
 	includesText(item.product.name, search) ||
 	includesText(item.product.sku, search) ||
 	item.origins.some(
@@ -585,12 +612,16 @@ const itemMatchesSearch = (item: ILedgerOperation['items'][number], search: stri
 	);
 
 const itemMatches = (
-	operation: ILedgerOperation,
-	item: ILedgerOperation['items'][number],
+	item: ILedgerItem,
 	params: IInventoryOperationMatchParams,
 	search: string,
 ): boolean => {
 	if (params.product_id !== undefined && item.product_id !== params.product_id) return false;
+	if (
+		params.serial_tracking !== undefined &&
+		item.product.serial_tracking !== (params.serial_tracking === 1)
+	)
+		return false;
 	if (
 		params.supplier_id !== undefined &&
 		!item.origins.some((origin) => origin.supplier?.id === params.supplier_id)
@@ -601,26 +632,20 @@ const itemMatches = (
 		!item.origins.some((origin) => origin.purchase_document?.id === params.purchase_document_id)
 	)
 		return false;
-	if (
-		params.warehouse_id !== undefined &&
-		!item.effects.some((effect) => effect.warehouse_id === params.warehouse_id)
-	)
+	if (params.warehouse_id !== undefined && !item.locations.includes(params.warehouse_id))
 		return false;
-	if (params.unlocated === 1 && !item.effects.some((effect) => effect.warehouse_id === null))
-		return false;
-	if (!search) return true;
-	// El folio de la operación («Recepción #80») o su motivo coinciden con todos sus ítems.
-	return (
-		includesText(operation.row.title, search) ||
-		includesText(operation.row.reason, search) ||
-		itemMatchesSearch(item, search)
-	);
+	if (params.unlocated === 1 && !item.locations.includes(null)) return false;
+	// Como el backend: producto, proveedor o folio; ni el título ni el motivo.
+	return !search || itemMatchesSearch(item, search);
 };
 
 const validationError = (message: string): Error =>
 	inventoryMockError(422, 'INVALID_FILTER', message);
 
-/** Valida el contexto y los filtros como el backend: un valor inválido de un filtro conocido es 422. */
+/**
+ * Valida el contexto y los filtros como `ListInventoryOperationsRequest`: un
+ * valor inválido de un filtro conocido es 422.
+ */
 const validate = (subsidiaryId: number, params: IInventoryOperationMatchParams): number => {
 	if (!Number.isInteger(subsidiaryId) || subsidiaryId <= 0)
 		throw validationError('Selecciona una filial válida.');
@@ -628,12 +653,22 @@ const validate = (subsidiaryId: number, params: IInventoryOperationMatchParams):
 	// El mock sólo conoce el stock por sucursal: sin sucursal no hay historial que armar.
 	if (branchId === undefined || !Number.isInteger(branchId) || branchId <= 0)
 		throw validationError('Selecciona una sucursal válida.');
-	if (params.operation_type !== undefined && !OPERATION_TYPES.includes(params.operation_type))
-		throw validationError('El tipo de operación no es válido.');
+	if (params.operation_type !== undefined && !isOperationType(params.operation_type))
+		throw validationError('El tipo de operación no existe.');
+	if (params.warehouse_id !== undefined && params.unlocated !== undefined)
+		throw validationError('No se puede filtrar por bodega y por «Sin ubicación» a la vez.');
+	if (params.serial_tracking !== undefined && ![0, 1].includes(params.serial_tracking))
+		throw validationError('El filtro de seguimiento por serie debe ser 0 o 1.');
 	[params.occurred_from, params.occurred_to].forEach((date) => {
 		if (date !== undefined && !BUSINESS_DATE.test(date))
 			throw validationError('La fecha debe tener formato AAAA-MM-DD.');
 	});
+	if (
+		params.occurred_from !== undefined &&
+		params.occurred_to !== undefined &&
+		params.occurred_to < params.occurred_from
+	)
+		throw validationError('La fecha hasta no puede ser anterior a la fecha desde.');
 	return branchId;
 };
 
@@ -648,7 +683,7 @@ const matchesOperation = (
 	const date = localBusinessDate(row.occurred_at);
 	if (params.occurred_from !== undefined && date < params.occurred_from) return false;
 	if (params.occurred_to !== undefined && date > params.occurred_to) return false;
-	return operation.items.some((item) => itemMatches(operation, item, params, search));
+	return operation.items.some((item) => itemMatches(item, params, search));
 };
 
 interface IInventoryOperationsMockOptions {
@@ -680,11 +715,15 @@ export const listInventoryOperations = async (
 		.filter((operation) => matchesOperation(operation, params, search))
 		.map((operation) => operation.row);
 	return inventoryMockDelay(
-		paginateInventoryMock(
-			rows,
-			`/api/subsidiaries/${subsidiaryId}/inventory-operations`,
-			params,
-		),
+		{
+			...paginateInventoryMock(
+				rows,
+				`/api/subsidiaries/${subsidiaryId}/inventory-operations`,
+				params,
+			),
+			// El doble agrupa en el acto: nunca deja movimientos pendientes.
+			context: { pending_movements_count: 0 },
+		},
 		signal,
 	);
 };
@@ -725,10 +764,18 @@ export const getInventoryOperation = async (
 		{
 			data: {
 				...operation.row,
-				items: operation.items.map((item) => ({
-					...item,
-					matches_filter: itemMatches(operation, item, params, search),
-				})),
+				// Campo por campo: `locations` es interno del doble y no se publica.
+				items: operation.items.map(
+					(item): IInventoryOperationItem => ({
+						product: item.product,
+						product_id: item.product_id,
+						quantity: item.quantity,
+						condition: item.condition,
+						matches_filter: itemMatches(item, params, search),
+						effects: item.effects,
+						origins: item.origins,
+					}),
+				),
 			},
 		},
 		signal,

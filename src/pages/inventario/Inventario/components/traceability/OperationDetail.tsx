@@ -14,14 +14,36 @@ import type { IOperationDetailState } from '@/pages/inventario/Inventario/hooks/
 const signed = (value: number): string =>
 	value > 0 ? `+${value.toLocaleString('es-CL')}` : value.toLocaleString('es-CL');
 
-/** Ubicación de un efecto: el §14 trae sólo el ID; el nombre sale de las bodegas de la sucursal. */
+/**
+ * Saldo histórico. `null` es «no se guardó» (movimiento anterior a que el
+ * backend registrara el saldo previo): se muestra «—», nunca `0`, que sería
+ * un saldo real distinto.
+ */
+const Balance = ({ value }: { value: number | null }) =>
+	value === null ? (
+		<span title='Sin dato: movimiento anterior al registro de saldos'>
+			<span aria-hidden='true'>—</span>
+			<span className='sr-only'>sin dato</span>
+		</span>
+	) : (
+		<>{value.toLocaleString('es-CL')}</>
+	);
+
+/**
+ * Ubicación de un efecto: el backend la trae con el nombre de hoy; el mock de
+ * stock la nombra desde las bodegas de la sucursal.
+ */
 const warehouseOf = (
-	warehouseId: number | null,
+	effect: IInventoryOperationEffect,
 	warehouses: ReadonlyMap<number, IWarehouseCompact>,
-): IWarehouseCompact | null =>
-	warehouseId === null
-		? null
-		: (warehouses.get(warehouseId) ?? { id: warehouseId, name: `Bodega #${warehouseId}` });
+): IWarehouseCompact | null => {
+	const { warehouse_id: warehouseId } = effect;
+	if (warehouseId === null) return null;
+	return (
+		effect.warehouse ??
+		warehouses.get(warehouseId) ?? { id: warehouseId, name: `Bodega #${warehouseId}` }
+	);
+};
 
 /**
  * Saldo de la ubicación antes y después: la historia, no el stock de hoy
@@ -37,11 +59,11 @@ const Efecto = ({
 	const delta = effect.physical_quantity_delta;
 	return (
 		<li className='flex flex-wrap items-center gap-x-3 gap-y-1'>
-			<WarehouseLabel warehouse={warehouseOf(effect.warehouse_id, warehouses)} />
+			<WarehouseLabel warehouse={warehouseOf(effect, warehouses)} />
 			<span className='tabular-nums text-zinc-600 dark:text-zinc-300'>
-				{effect.physical_quantity_before.toLocaleString('es-CL')} →{' '}
+				<Balance value={effect.physical_quantity_before} /> →{' '}
 				<span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-					{effect.physical_quantity_after.toLocaleString('es-CL')}
+					<Balance value={effect.physical_quantity_after} />
 				</span>
 			</span>
 			{delta === 0 ? (
@@ -72,8 +94,32 @@ const documentLabel = (origin: IInventoryOperationItemOrigin): string | null =>
 		? `${origin.purchase_document.document_type === 'invoice' ? 'Factura' : 'Boleta'} #${origin.purchase_document.document_number}`
 		: null;
 
-const Procedencias = ({ origins }: { origins: IInventoryOperationItemOrigin[] }) => {
-	if (origins.length === 0) return <span className='text-zinc-400'>—</span>;
+/**
+ * `origins: []` es normal fuera de salidas y devoluciones: una entrada crea
+ * una procedencia nueva y un traslado mueve saldo sin tocarla. Se explica
+ * qué pasó en vez de mostrarlo como un dato que falta.
+ */
+const sinProcedencias = (effects: IInventoryOperationEffect[]): string => {
+	const entra = effects.some((effect) => effect.physical_quantity_delta > 0);
+	const sale = effects.some((effect) => effect.physical_quantity_delta < 0);
+	if (entra && sale) return 'Mueve saldo entre ubicaciones; la procedencia no cambia.';
+	if (entra) return 'Ingresa como procedencia nueva.';
+	return 'Sin procedencias asociadas.';
+};
+
+const Procedencias = ({
+	origins,
+	effects,
+}: {
+	origins: IInventoryOperationItemOrigin[];
+	effects: IInventoryOperationEffect[];
+}) => {
+	if (origins.length === 0)
+		return (
+			<span className='text-sm text-zinc-500 dark:text-zinc-400'>
+				{sinProcedencias(effects)}
+			</span>
+		);
 	return (
 		<ul className='space-y-1'>
 			{origins.map((origin) => (
@@ -173,10 +219,18 @@ const OperationDetail: React.FC<IOperationDetailProps> = ({
 										)}
 									</Td>
 									<Td>
+										{/* Una operación documental no tiene efectos: no movió unidades. */}
+										{item.effects.length === 0 && (
+											<span className='text-sm text-zinc-500 dark:text-zinc-400'>
+												Sin cambio físico
+											</span>
+										)}
 										<ul className='space-y-1'>
-											{item.effects.map((effect) => (
+											{item.effects.map((effect, index) => (
 												<Efecto
-													key={effect.warehouse_id ?? 'unlocated'}
+													// Un traslado entre sucursales repite «Sin ubicación»: el orden de escritura desempata.
+													// eslint-disable-next-line react/no-array-index-key
+													key={`${effect.branch_id}:${effect.warehouse_id ?? 'unlocated'}:${index}`}
 													effect={effect}
 													warehouses={warehouses}
 												/>
@@ -184,7 +238,10 @@ const OperationDetail: React.FC<IOperationDetailProps> = ({
 										</ul>
 									</Td>
 									<Td>
-										<Procedencias origins={item.origins} />
+										<Procedencias
+											origins={item.origins}
+											effects={item.effects}
+										/>
 									</Td>
 								</Tr>
 							);

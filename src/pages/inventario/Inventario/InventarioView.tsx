@@ -8,7 +8,6 @@ import PermissionGuard from '@/components/authorization/PermissionGuard';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Tabs, { Tab } from '@/components/ui/Tabs';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppSelector } from '@/store';
@@ -19,6 +18,7 @@ import type {
 import useInventario from '@/pages/inventario/Inventario/hooks/useInventario';
 import useInventarioFilters from '@/pages/inventario/Inventario/hooks/useInventarioFilters';
 import InventarioSummary from '@/pages/inventario/Inventario/components/parts/InventarioSummary';
+import InventoryMockNotice from '@/pages/inventario/Inventario/components/parts/InventoryMockNotice';
 import InventarioFilters from '@/pages/inventario/Inventario/components/filters/InventarioFilters';
 import InventarioGeneralTable from '@/pages/inventario/Inventario/components/tables/InventarioGeneralTable';
 import WarehouseStockTable from '@/pages/inventario/Inventario/components/tables/WarehouseStockTable';
@@ -48,6 +48,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 		setBusqueda,
 		setOrden,
 		setTipo,
+		setSerie,
 		setDesde,
 		setHasta,
 		paginate,
@@ -133,6 +134,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 							warehouses={data.warehouses}
 							loading={data.warehousesLoading}
 							hasError={Boolean(data.warehousesError)}
+							complete={data.warehousesComplete}
 							onOpen={openBodega}
 						/>
 					)}
@@ -150,6 +152,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 								warehouses={data.warehouses}
 								onBusqueda={setBusqueda}
 								onTipo={setTipo}
+								onSerie={setSerie}
 								onUbicacion={setUbicacion}
 								onDesde={setDesde}
 								onHasta={setHasta}
@@ -212,12 +215,6 @@ const InventarioView = () => {
 				No tienes permiso para consultar el inventario de esta sucursal.
 			</Alert>
 		);
-	else if (!INVENTORY_STOCK_USE_MOCKS)
-		content = (
-			<Alert title='Consulta no habilitada'>
-				La consulta de inventario aún no está habilitada en este entorno.
-			</Alert>
-		);
 	else
 		content = (
 			<InventarioSession
@@ -250,11 +247,7 @@ const InventarioView = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
-				{INVENTORY_STOCK_USE_MOCKS && (
-					<Alert color='amber' title='Datos simulados'>
-						Consulta de demostración. Las cantidades no representan el inventario real.
-					</Alert>
-				)}
+				<InventoryMockNotice withTraceability={trazabilidad !== null} />
 				{content}
 			</Container>
 		</PageWrapper>

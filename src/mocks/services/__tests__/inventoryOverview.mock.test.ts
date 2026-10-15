@@ -60,7 +60,7 @@ describe('A1 · listInventoryOverview', () => {
 		});
 		// Sin ubicación primero, luego por nombre.
 		expect(
-			mouse?.warehouses.map((location) => [
+			mouse?.warehouses?.map((location) => [
 				location.warehouse?.id ?? null,
 				location.physical_quantity,
 			]),
@@ -121,8 +121,9 @@ describe('A1 · listInventoryOverview', () => {
 	});
 
 	it('ordena por ubicación con «Sin ubicación» antes que las bodegas', async () => {
-		const firstLocation = (row: { warehouses: { warehouse: { name: string } | null }[] }) =>
-			row.warehouses[0]?.warehouse?.name ?? '';
+		const firstLocation = (row: {
+			warehouses: { warehouse: { name: string } | null }[] | null;
+		}) => row.warehouses?.[0]?.warehouse?.name ?? '';
 
 		const asc = await overview({ sort: 'location', per_page: 100 });
 		const names = asc.data.map(firstLocation);
@@ -175,7 +176,7 @@ describe('A1 · listInventoryOverview', () => {
 
 		expect(data[0].physical_quantity).toBe(19);
 		expect(
-			data[0].warehouses.map((location) => [
+			data[0].warehouses?.map((location) => [
 				location.warehouse?.id ?? null,
 				location.physical_quantity,
 			]),

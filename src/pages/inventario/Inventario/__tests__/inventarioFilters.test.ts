@@ -27,6 +27,7 @@ describe('Filtros de Inventario en la URL', () => {
 			busqueda: 'mouse',
 			orden: '-available_quantity',
 			tipo: null,
+			serie: null,
 			desde: '',
 			hasta: '',
 			page: 2,
@@ -74,13 +75,14 @@ describe('Filtros de Inventario en la URL', () => {
 });
 
 describe('Filtros de Trazabilidad en la URL', () => {
-	it('ida y vuelta conserva el tipo de operación y el rango de fechas', () => {
+	it('ida y vuelta conserva el tipo de operación, la serie y el rango de fechas', () => {
 		const filtros: IInventarioFilters = {
 			...DEFAULT_INVENTARIO_FILTROS,
 			vista: 'trazabilidad',
 			ubicacion: 'unlocated',
 			busqueda: 'PCExpress',
 			tipo: 'stock_receipt',
+			serie: 'con',
 			desde: '2026-09-01',
 			hasta: '2026-09-30',
 		};
@@ -88,6 +90,7 @@ describe('Filtros de Trazabilidad en la URL', () => {
 
 		expect(params.get('vista')).toBe('trazabilidad');
 		expect(params.get('tipo')).toBe('stock_receipt');
+		expect(params.get('serie')).toBe('con');
 		expect(params.get('desde')).toBe('2026-09-01');
 		expect(params.get('hasta')).toBe('2026-09-30');
 		expect(parseInventarioFilters(params)).toEqual(filtros);
@@ -95,16 +98,26 @@ describe('Filtros de Trazabilidad en la URL', () => {
 
 	it('descarta un tipo desconocido y fechas que no existen en el calendario', () => {
 		const filtros = parseInventarioFilters(
-			new URLSearchParams('vista=trazabilidad&tipo=robo&desde=2026-02-30&hasta=30-09-2026'),
+			new URLSearchParams(
+				'vista=trazabilidad&tipo=robo&serie=1&desde=2026-02-30&hasta=30-09-2026',
+			),
 		);
 
-		expect(filtros).toMatchObject({ vista: 'trazabilidad', tipo: null, desde: '', hasta: '' });
+		expect(filtros).toMatchObject({
+			vista: 'trazabilidad',
+			tipo: null,
+			serie: null,
+			desde: '',
+			hasta: '',
+		});
 	});
 
-	it('acepta el saldo inicial como tipo y rotula un tipo legado con su propio nombre', () => {
-		expect(parseInventarioFilters(new URLSearchParams('tipo=initial_balance')).tipo).toBe(
-			'initial_balance',
+	it('acepta los tipos del backend, descarta el saldo inicial viejo y rotula un tipo desconocido con su nombre', () => {
+		expect(parseInventarioFilters(new URLSearchParams('tipo=initial_stock')).tipo).toBe(
+			'initial_stock',
 		);
+		// Un enlace guardado con el tipo del mock anterior: el backend lo rechazaría con 422.
+		expect(parseInventarioFilters(new URLSearchParams('tipo=initial_balance')).tipo).toBe(null);
 		expect(operacionTipoInfo('stock_receipt').label).toBe('Recepción');
 		expect(operacionTipoInfo('equipment_move')).toMatchObject({
 			label: 'equipment_move',
@@ -117,6 +130,7 @@ describe('Filtros de Trazabilidad en la URL', () => {
 			{
 				ubicacion: 'warehouse:8',
 				tipo: 'inventory_adjustment',
+				serie: 'sin',
 				busqueda: '  conteo ',
 				desde: '2026-09-01',
 				hasta: '',
@@ -130,6 +144,7 @@ describe('Filtros de Trazabilidad en la URL', () => {
 			branch_id: 4,
 			warehouse_id: 8,
 			operation_type: 'inventory_adjustment',
+			serial_tracking: 0,
 			search: 'conteo',
 			occurred_from: '2026-09-01',
 			occurred_to: undefined,
@@ -138,12 +153,30 @@ describe('Filtros de Trazabilidad en la URL', () => {
 		});
 	});
 
+	it('«Con serie» y «Sin serie» se traducen a serial_tracking 1 y 0; sin selección se omite', () => {
+		const base = {
+			ubicacion: 'branch' as const,
+			tipo: null,
+			busqueda: '',
+			desde: '',
+			hasta: '',
+			page: 1,
+			perPage: 15,
+		};
+
+		expect(trazabilidadParams({ ...base, serie: 'con' }, 4).serial_tracking).toBe(1);
+		expect(trazabilidadParams({ ...base, serie: 'sin' }, 4).serial_tracking).toBe(0);
+		expect(trazabilidadParams({ ...base, serie: null }, 4).serial_tracking).toBeUndefined();
+	});
+
 	it('sólo marca ítems cuando un filtro elige productos, no operaciones', () => {
 		expect(filtraItems({ branch_id: 4, operation_type: 'stock_receipt' })).toBe(false);
 		expect(filtraItems({ branch_id: 4, occurred_from: '2026-09-01' })).toBe(false);
 		expect(filtraItems({ branch_id: 4, search: 'mouse' })).toBe(true);
 		expect(filtraItems({ branch_id: 4, unlocated: 1 })).toBe(true);
 		expect(filtraItems({ branch_id: 4, product_id: 31 })).toBe(true);
+		// Una venta mixta aparece con los dos valores: el detalle marca los ítems del tipo pedido.
+		expect(filtraItems({ branch_id: 4, serial_tracking: 1 })).toBe(true);
 	});
 });
 

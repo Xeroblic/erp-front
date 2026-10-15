@@ -12,6 +12,11 @@ import type {
  * Ampliación del contrato de abastecimiento para la vista unificada de
  * Inventario (`docs/inventario-unificado-contrato.md`). Reutiliza los tipos de
  * `procurement.interface` para lo que el contrato aprobado ya define.
+ *
+ * El backend sólo publica `GET B/inventory-stock` y `/{product}/origins`: lo
+ * que no sale de ahí (reparto por bodega en la lista, totales de unidades,
+ * umbral, reservas) llega `null` desde la API real en vez de inventarse. El
+ * doble de datos simulados sí lo calcula.
  */
 
 /** Estado del stock crítico (§13 del contrato aprobado). */
@@ -57,8 +62,11 @@ export interface IInventoryWarehouseBreakdown {
 
 /** Fila de A1 con `include=warehouses`. */
 export interface IInventoryOverviewRow extends IInventoryStockRow {
-	/** Siempre de la sucursal completa, aunque la consulta filtre una ubicación. */
-	warehouses: IInventoryWarehouseBreakdown[];
+	/**
+	 * Siempre de la sucursal completa, aunque la consulta filtre una ubicación.
+	 * `null`: el backend no publica el reparto por bodega en la lista.
+	 */
+	warehouses: IInventoryWarehouseBreakdown[] | null;
 	/** `null` en productos con serie, igual que el §13. */
 	critical_stock: IInventoryCriticalStock | null;
 }
@@ -76,16 +84,24 @@ export type IInventoryOverviewResponse = IApiCollectionEnvelope<
 	IInventoryLocationContext
 > & { context: IInventoryLocationContext };
 
-/** A2 · totales de la sucursal para la franja de alertas. */
+/**
+ * A2 · totales de la sucursal para la franja de alertas. Desde la API real sólo
+ * se conocen los conteos de productos (`meta.total` de una consulta): las
+ * unidades exigirían recorrer todas las páginas, y los estados necesitan umbral
+ * y reservas, que no están publicados.
+ */
 export interface IInventoryStockSummary {
+	/** Productos con stock en la sucursal. */
 	products_count: number;
-	physical_quantity: number;
-	unfit_quantity: number;
-	undocumented_quantity: number;
-	unlocated_quantity: number;
-	critical_count: number;
-	out_count: number;
-	unconfigured_count: number;
+	/** Productos con stock en «Sin ubicación». `null` en el doble, que informa unidades. */
+	unlocated_products_count: number | null;
+	physical_quantity: number | null;
+	unfit_quantity: number | null;
+	undocumented_quantity: number | null;
+	unlocated_quantity: number | null;
+	critical_count: number | null;
+	out_count: number | null;
+	unconfigured_count: number | null;
 }
 
 export type IInventoryStockSummaryResponse = IApiResourceEnvelope<
@@ -106,21 +122,30 @@ export interface IInventoryWarehouseInfo extends IWarehouseCompact {
 	requires_serial_tracking: boolean;
 }
 
-/** A3 · agregado por bodega. `warehouse: null` es «Sin ubicación». */
+/**
+ * A3 · agregado por bodega. `warehouse: null` es «Sin ubicación». Desde la API
+ * real las unidades y los críticos son `null`: sólo se conoce cuántos
+ * productos con stock tiene cada ubicación.
+ */
 export interface IInventoryWarehouseAggregate {
 	warehouse: IInventoryWarehouseInfo | null;
 	capacity: number | null;
 	maximum_capacity: number | null;
 	product_count: number;
-	physical_quantity: number;
-	unfit_quantity: number;
-	undocumented_quantity: number;
-	critical_count: number;
+	physical_quantity: number | null;
+	unfit_quantity: number | null;
+	undocumented_quantity: number | null;
+	critical_count: number | null;
 }
 
 export interface IInventoryWarehouseAggregatesResponse {
 	data: IInventoryWarehouseAggregate[];
 	context: IInventoryLocationContext;
+	/**
+	 * `false`: el usuario no puede leer el catálogo de bodegas (403), así que
+	 * `data` trae sólo «Sin ubicación». No significa que la sucursal no tenga bodegas.
+	 */
+	warehouses_complete: boolean;
 }
 
 export interface IInventorySeriesSummary {
@@ -142,7 +167,14 @@ export interface IInventoryStockDetail {
 	unfit_quantity: number;
 	documented_quantity: number;
 	undocumented_quantity: number;
+	/** Ubicaciones con saldo que se conocen. Ver `warehouses_complete`. */
 	warehouses: IInventoryWarehouseBreakdown[];
+	/**
+	 * `false`: sin acceso al catálogo de bodegas sólo se conoce «Sin ubicación»;
+	 * el resto del físico está en bodegas que no se pueden nombrar. Un reparto
+	 * vacío con `true` sí significa que no hay unidades.
+	 */
+	warehouses_complete: boolean;
 	critical_stock: IInventoryCriticalStock | null;
 	series_summary: IInventorySeriesSummary | null;
 }

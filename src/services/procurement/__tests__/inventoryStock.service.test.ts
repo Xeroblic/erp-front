@@ -8,9 +8,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const fetchData = vi.hoisted(() => vi.fn());
 vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
 
-const loadFacade = async (useMocks: boolean, transferMocks = useMocks) => {
+const loadFacade = async (
+	useMocks: boolean,
+	transferMocks = useMocks,
+	overviewMocks = useMocks,
+) => {
 	vi.resetModules();
 	vi.doMock('@/config/inventoryStock.config', () => ({ default: useMocks }));
+	vi.doMock('@/config/inventoryOverview.config', () => ({ default: overviewMocks }));
 	vi.doMock('@/config/inventoryAdjustments.config', () => ({ default: useMocks }));
 	vi.doMock('@/config/inventoryTransfers.config', () => ({ default: transferMocks }));
 	const facade = await import('@/services/procurement/inventoryStock.service');
@@ -29,6 +34,7 @@ const page = <T>(data: T[], total = data.length) => ({
 
 afterEach(() => {
 	vi.doUnmock('@/config/inventoryStock.config');
+	vi.doUnmock('@/config/inventoryOverview.config');
 	vi.doUnmock('@/config/inventoryAdjustments.config');
 	vi.doUnmock('@/config/inventoryTransfers.config');
 	fetchData.mockReset();
@@ -71,6 +77,19 @@ describe('inventoryStock.service (fachada)', () => {
 		expect(facade.listInventoryStock).toBe(mock.listInventoryStock);
 		expect(facade.listTransferStock).not.toBe(mock.listInventoryStock);
 		expect(facade.createWarehouseStockMovement).not.toBe(mock.createWarehouseStockMovement);
+	});
+
+	it('las pantallas de Inventario leen stock y procedencias con su bandera, no con la de stock', async () => {
+		const facade = await loadFacade(true, true, false);
+		const mock = await import('@/mocks/services/inventoryStock.mock');
+
+		expect(facade.listInventoryStock).not.toBe(mock.listInventoryStock);
+		expect(facade.listInventoryOrigins).not.toBe(mock.listInventoryOrigins);
+		expect(facade.getInventoryOriginFilterOptions(4, 31, {})).toBeNull();
+		// La documentación posterior sigue simulada con la bandera de stock.
+		expect(facade.createInventoryDocumentAllocation).toBe(
+			mock.createInventoryDocumentAllocation,
+		);
 	});
 
 	describe('sin datos simulados', () => {
@@ -323,9 +342,8 @@ describe('inventoryStock.service (fachada)', () => {
 				}
 			});
 			expect(fetchData).not.toHaveBeenCalled();
-			expect(() => facade.getInventoryOriginFilterOptions(4, 31, {})).toThrow(
-				facade.ProcurementEndpointNotPublishedError,
-			);
+			// Las opciones de filtro no existen: la ficha oculta esos filtros.
+			expect(facade.getInventoryOriginFilterOptions(4, 31, {})).toBeNull();
 		});
 
 		it('el rechazo nombra la ruta pendiente del contrato', async () => {

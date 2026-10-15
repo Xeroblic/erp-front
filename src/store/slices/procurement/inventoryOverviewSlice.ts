@@ -17,6 +17,7 @@ import type {
 import {
 	getInventoryStockDetail,
 	getInventoryStockSummary,
+	isInventoryDetailNotFound,
 	listInventoryOverview,
 	listInventoryWarehouseAggregates,
 	updateInventoryCriticalThreshold,
@@ -25,7 +26,12 @@ import {
 	getInventoryOperation,
 	listInventoryOperations,
 } from '@/services/procurement/inventoryOperations.service';
-import { getProcurementErrorMessage } from '@/utils/procurementErrors.util';
+import {
+	getProcurementErrorMessage,
+	resolveProcurementError,
+} from '@/utils/procurementErrors.util';
+
+const FORBIDDEN_STATUS = 403;
 
 /**
  * Vista unificada de Inventario (`docs/inventario-unificado-contrato.md`).
@@ -85,74 +91,60 @@ export const fetchInventoryOverview = createAsyncThunk<
 	IInventoryOverviewResponse,
 	IOverviewRequest,
 	{ rejectValue: string }
->(
-	'inventoryOverview/list',
-	async ({ branchId, params }, { signal, rejectWithValue }) => {
-		try {
-			return await listInventoryOverview(branchId, params, signal);
-		} catch (error: unknown) {
-			return rejectWithValue(
-				getProcurementErrorMessage(error, 'No pudimos cargar el inventario.'),
-			);
-		}
-	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
-);
+>('inventoryOverview/list', async ({ branchId, params }, { signal, rejectWithValue }) => {
+	try {
+		return await listInventoryOverview(branchId, params, signal);
+	} catch (error: unknown) {
+		return rejectWithValue(
+			getProcurementErrorMessage(error, 'No pudimos cargar el inventario.'),
+		);
+	}
+});
 
 export const fetchInventorySummary = createAsyncThunk<
 	IInventoryStockSummaryResponse,
 	IBranchRequest,
 	{ rejectValue: string }
->(
-	'inventoryOverview/summary',
-	async ({ branchId }, { signal, rejectWithValue }) => {
-		try {
-			return await getInventoryStockSummary(branchId, signal);
-		} catch (error: unknown) {
-			return rejectWithValue(
-				getProcurementErrorMessage(error, 'No pudimos cargar las alertas de inventario.'),
-			);
-		}
-	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
-);
+>('inventoryOverview/summary', async ({ branchId }, { signal, rejectWithValue }) => {
+	try {
+		return await getInventoryStockSummary(branchId, signal);
+	} catch (error: unknown) {
+		return rejectWithValue(
+			getProcurementErrorMessage(error, 'No pudimos cargar las alertas de inventario.'),
+		);
+	}
+});
 
 export const fetchInventoryWarehouses = createAsyncThunk<
 	IInventoryWarehouseAggregatesResponse,
 	IBranchRequest,
 	{ rejectValue: string }
->(
-	'inventoryOverview/warehouses',
-	async ({ branchId }, { signal, rejectWithValue }) => {
-		try {
-			return await listInventoryWarehouseAggregates(branchId, signal);
-		} catch (error: unknown) {
-			return rejectWithValue(
-				getProcurementErrorMessage(error, 'No pudimos cargar las bodegas.'),
-			);
-		}
-	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
-);
+>('inventoryOverview/warehouses', async ({ branchId }, { signal, rejectWithValue }) => {
+	try {
+		return await listInventoryWarehouseAggregates(branchId, signal);
+	} catch (error: unknown) {
+		return rejectWithValue(getProcurementErrorMessage(error, 'No pudimos cargar las bodegas.'));
+	}
+});
 
 export const fetchInventoryDetail = createAsyncThunk<
 	IInventoryStockDetailResponse,
 	IDetailRequest,
 	{ rejectValue: string }
->(
-	'inventoryOverview/detail',
-	async ({ branchId, productId }, { signal, rejectWithValue }) => {
-		try {
-			return await getInventoryStockDetail(branchId, productId, signal);
-		} catch (error: unknown) {
-			return rejectWithValue(
-				getProcurementErrorMessage(error, 'No pudimos cargar la ficha del producto.'),
-			);
-		}
-	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
-);
+>('inventoryOverview/detail', async ({ branchId, productId }, { signal, rejectWithValue }) => {
+	try {
+		return await getInventoryStockDetail(branchId, productId, signal);
+	} catch (error: unknown) {
+		return rejectWithValue(
+			isInventoryDetailNotFound(error)
+				? 'Este producto no está en el inventario por cantidad de esta sucursal: puede ser de otra filial o seguirse por número de serie.'
+				: getProcurementErrorMessage(error, 'No pudimos cargar la ficha del producto.'),
+		);
+	}
+});
 
+// La trazabilidad tiene backend propio (tarea 17): depende sólo de la bandera
+// de su fachada.
 export const fetchInventoryOperations = createAsyncThunk<
 	IInventoryOperationsResponse,
 	IOperationsRequest,
@@ -168,13 +160,24 @@ export const fetchInventoryOperations = createAsyncThunk<
 			);
 		}
 	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
+
+/** Mensaje del 403 del detalle: no distingue qué sucursal falta (regla D2). */
+export const INVENTORY_OPERATION_FORBIDDEN_MESSAGE = 'No tienes acceso a esta operación.';
+
+export interface IOperationDetailRejection {
+	message: string;
+	/**
+	 * 403: el usuario dejó de alcanzar alguna sucursal de la operación entre la
+	 * lista y el clic. La vista se cierra; no es un error que reintentar.
+	 */
+	forbidden: boolean;
+}
 
 export const fetchInventoryOperationDetail = createAsyncThunk<
 	IInventoryOperationDetailResponse,
 	IOperationDetailRequest,
-	{ rejectValue: string }
+	{ rejectValue: IOperationDetailRejection }
 >(
 	'inventoryOverview/operationDetail',
 	async ({ subsidiaryId, branchName, operationId, params }, { signal, rejectWithValue }) => {
@@ -184,12 +187,17 @@ export const fetchInventoryOperationDetail = createAsyncThunk<
 				branchName,
 			});
 		} catch (error: unknown) {
-			return rejectWithValue(
-				getProcurementErrorMessage(error, 'No pudimos cargar el detalle de la operación.'),
+			const resolved = resolveProcurementError(
+				error,
+				'No pudimos cargar el detalle de la operación.',
 			);
+			const forbidden = resolved.status === FORBIDDEN_STATUS;
+			return rejectWithValue({
+				message: forbidden ? INVENTORY_OPERATION_FORBIDDEN_MESSAGE : resolved.message,
+				forbidden,
+			});
 		}
 	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
 
 /**
@@ -212,6 +220,7 @@ export const updateInventoryThresholdThunk = createAsyncThunk<
 			);
 		}
 	},
+	// Reportes (simulado) también edita el umbral: sigue la bandera de stock.
 	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
 
@@ -411,12 +420,18 @@ const inventoryOverviewSlice = createSlice({
 				slot.loading = false;
 			})
 			.addCase(fetchInventoryOperationDetail.rejected, (state, action) => {
-				const slot = state.operationDetails[action.meta.arg.operationId];
+				const { operationId } = action.meta.arg;
+				const slot = state.operationDetails[operationId];
 				if (slot?.requestId !== action.meta.requestId) return;
+				// Sin acceso no queda nada que mostrar: la vista se cierra y avisa.
+				if (action.payload?.forbidden) {
+					delete state.operationDetails[operationId];
+					return;
+				}
 				slot.loading = false;
 				slot.error = action.meta.aborted
 					? null
-					: (action.payload ?? 'No pudimos cargar el detalle de la operación.');
+					: (action.payload?.message ?? 'No pudimos cargar el detalle de la operación.');
 			})
 			.addCase(updateInventoryThresholdThunk.pending, (state) => {
 				state.updatingThreshold = true;

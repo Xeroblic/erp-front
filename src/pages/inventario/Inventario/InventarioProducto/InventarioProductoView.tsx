@@ -14,15 +14,16 @@ import Card, { CardBody, CardFooter, CardHeader, CardTitle } from '@/components/
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppSelector } from '@/store';
+import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import type { IInventoryStockDetail } from '@/interface/inventoryOverview.interface';
 import StockStatusPill from '@/pages/inventario/Inventario/components/parts/StockStatusPill';
 import InventarioKpis, {
 	type IInventarioKpi,
 } from '@/pages/inventario/Inventario/components/parts/InventarioKpis';
+import InventoryMockNotice from '@/pages/inventario/Inventario/components/parts/InventoryMockNotice';
 import InventoryOrigins from '@/pages/inventario/Inventario/InventarioProducto/components/InventoryOrigins';
 import ProductTraceability from '@/pages/inventario/Inventario/InventarioProducto/components/ProductTraceability';
 import ThresholdModal from '@/pages/inventario/Inventario/InventarioProducto/components/ThresholdModal';
@@ -208,6 +209,14 @@ const ProductoSession = ({
 	const { product } = detail;
 	const threshold = product.critical_stock_threshold;
 	const hasUnfit = detail.warehouses.some((location) => location.unfit_quantity > 0);
+	// Sin acceso al catálogo de bodegas, lo que no está en las ubicaciones
+	// conocidas está en bodegas que no se pueden nombrar: no es «no hay unidades».
+	const hiddenUnits = detail.warehouses_complete
+		? 0
+		: detail.physical_quantity -
+			detail.warehouses.reduce((total, location) => total + location.physical_quantity, 0);
+	// El estado depende del umbral y las reservas: sin ellos publicados no hay pastilla.
+	const showStockStatus = INVENTORY_OVERVIEW_FEATURES.stockStatus;
 	// Ajustes y traslados mueven sólo stock por cantidad: los productos con
 	// serie no aparecen en sus asistentes. Con una sola ubicación (etapa 1) no
 	// hay traslados y sólo se ajusta «Sin ubicación»: una fila de bodega no
@@ -265,9 +274,15 @@ const ProductoSession = ({
 						<Campo label='Estado del producto'>
 							{product.is_active ? 'Activo' : <Vacio>Inactivo</Vacio>}
 						</Campo>
-						<Campo label='Umbral de stock bajo'>
-							<UmbralTexto serial={product.serial_tracking} threshold={threshold} />
-						</Campo>
+						{/* Sin umbral publicado no se afirma «sin umbral»: no se sabe. */}
+						{INVENTORY_OVERVIEW_FEATURES.threshold && (
+							<Campo label='Umbral de stock bajo'>
+								<UmbralTexto
+									serial={product.serial_tracking}
+									threshold={threshold}
+								/>
+							</Campo>
+						)}
 						{product.short_description && (
 							<div className='sm:col-span-2 lg:col-span-3'>
 								<Campo label='Descripción'>{product.short_description}</Campo>
@@ -275,21 +290,23 @@ const ProductoSession = ({
 						)}
 					</div>
 				</CardBody>
-				<CardFooter>
-					<StockStatusPill critical={critical} fit />
-					{!product.serial_tracking && (
-						<ProtectedButton
-							permission='edit-product'
-							subsidiaryId={subsidiaryId}
-							scope='access'
-							size='sm'
-							variant='outline'
-							icon='HeroBellAlert'
-							onClick={openUmbral}>
-							{threshold === null ? 'Definir umbral' : 'Cambiar umbral'}
-						</ProtectedButton>
-					)}
-				</CardFooter>
+				{showStockStatus && (
+					<CardFooter>
+						<StockStatusPill critical={critical} fit />
+						{INVENTORY_OVERVIEW_FEATURES.threshold && !product.serial_tracking && (
+							<ProtectedButton
+								permission='edit-product'
+								subsidiaryId={subsidiaryId}
+								scope='access'
+								size='sm'
+								variant='outline'
+								icon='HeroBellAlert'
+								onClick={openUmbral}>
+								{threshold === null ? 'Definir umbral' : 'Cambiar umbral'}
+							</ProtectedButton>
+						)}
+					</CardFooter>
+				)}
 			</Card>
 
 			<InventarioKpis kpis={kpisProducto(detail)} />
@@ -299,11 +316,21 @@ const ProductoSession = ({
 					<CardTitle className='text-lg'>Ubicación</CardTitle>
 				</CardHeader>
 				<CardBody className='overflow-x-auto p-0'>
-					{detail.warehouses.length === 0 ? (
+					{hiddenUnits > 0 && (
+						<div className='px-6 pb-4'>
+							<Alert color='amber' variant='outline' icon='HeroEyeSlash'>
+								{plural(hiddenUnits, 'unidad está', 'unidades están')} en bodegas
+								que no puedes ver: no tienes acceso al catálogo de bodegas de esta
+								sucursal.
+							</Alert>
+						</div>
+					)}
+					{detail.warehouses.length === 0 && detail.warehouses_complete && (
 						<p className='px-6 pb-6 text-zinc-600 dark:text-zinc-300'>
 							No hay unidades de este producto en la sucursal.
 						</p>
-					) : (
+					)}
+					{detail.warehouses.length > 0 && (
 						<Table
 							aria-label='Unidades por ubicación'
 							className={showMovements ? 'min-w-[760px]' : 'min-w-[520px]'}>
@@ -403,7 +430,7 @@ const ProductoSession = ({
 				</CardBody>
 			</Card>
 
-			{ubicacion && locationParams && (
+			{locationParams && (
 				<Card>
 					<CardHeader>
 						<CardTitle className='text-lg'>Procedencias</CardTitle>
@@ -421,8 +448,7 @@ const ProductoSession = ({
 										variant={option.value === ubicacion ? 'solid' : 'outline'}
 										aria-pressed={option.value === ubicacion}
 										onClick={() => setUbicacion(option.value)}>
-										{option.warehouse?.name ?? UNLOCATED_WAREHOUSE_LABEL} ·{' '}
-										{option.quantity}
+										{option.label} · {option.quantity}
 									</Button>
 								))}
 							</div>
@@ -430,7 +456,7 @@ const ProductoSession = ({
 						{/* La `key` incluye la ubicación: cambiarla remonta la lista en la
 						    página 1 y sin filtros, que podrían no existir en la nueva. */}
 						<InventoryOrigins
-							key={`${owner}:${productId}:${ubicacion}`}
+							key={`${owner}:${productId}:${ubicacion ?? 'branch'}`}
 							branchId={branchId}
 							subsidiaryId={subsidiaryId}
 							productId={productId}
@@ -532,12 +558,6 @@ const InventarioProductoView = () => {
 				No tienes permiso para consultar el inventario de esta sucursal.
 			</Alert>
 		);
-	else if (!INVENTORY_STOCK_USE_MOCKS)
-		content = (
-			<Alert title='Consulta no habilitada'>
-				La consulta de inventario aún no está habilitada en este entorno.
-			</Alert>
-		);
 	else
 		content = (
 			<ProductoSession
@@ -579,11 +599,7 @@ const InventarioProductoView = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
-				{INVENTORY_STOCK_USE_MOCKS && (
-					<Alert color='amber' title='Datos simulados'>
-						Consulta de demostración. Las cantidades no representan el inventario real.
-					</Alert>
-				)}
+				<InventoryMockNotice withTraceability={trazabilidad !== null} />
 				{content}
 			</Container>
 		</PageWrapper>

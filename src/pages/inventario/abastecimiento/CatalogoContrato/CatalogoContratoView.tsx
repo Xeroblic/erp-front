@@ -353,7 +353,7 @@ const CatalogoContratoView = () => {
 					<CatalogSection
 						id='catalogo-simulado'
 						title='Aviso de datos simulados'
-						summary='Inventario usa la bandera VITE_INVENTORY_STOCK_USE_MOCKS. El ajuste, los traslados y las recepciones tienen bandera propia (VITE_INVENTORY_ADJUSTMENTS_USE_MOCKS, VITE_INVENTORY_TRANSFERS_USE_MOCKS y VITE_INVENTORY_RECEIPTS_USE_MOCKS). Proveedores y documentos de compra ya usan el backend real y no dependen de ellas.'>
+						summary='Las pantallas de Inventario usan VITE_INVENTORY_OVERVIEW_USE_MOCKS y su trazabilidad VITE_INVENTORY_OPERATIONS_USE_MOCKS; la documentación posterior y los reportes siguen con VITE_INVENTORY_STOCK_USE_MOCKS. El ajuste, los traslados y las recepciones tienen bandera propia (VITE_INVENTORY_ADJUSTMENTS_USE_MOCKS, VITE_INVENTORY_TRANSFERS_USE_MOCKS y VITE_INVENTORY_RECEIPTS_USE_MOCKS). Proveedores y documentos de compra ya usan el backend real y no dependen de ellas.'>
 						<div className='grid gap-3 md:grid-cols-2'>
 							<CatalogSample
 								title='Bandera encendida'

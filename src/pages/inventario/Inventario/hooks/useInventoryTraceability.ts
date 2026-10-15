@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchInventoryOperationDetail,
@@ -30,7 +31,7 @@ export interface IOperationDetailState {
 }
 
 /**
- * Trazabilidad de los productos sin serie (§14): operaciones de la sucursal,
+ * Trazabilidad agrupada (§14): operaciones de la sucursal,
  * de la más nueva a la más antigua, y el detalle de cada una al desplegarla.
  *
  * Lo usan la pestaña Trazabilidad (filtros en la URL) y la ficha del producto
@@ -105,13 +106,25 @@ const useInventoryTraceability = ({
 		};
 	}, [detailRequestOf]);
 
+	/**
+	 * Un 403 (el alcance cambió entre la lista y el clic) pliega la operación y
+	 * avisa sin acceso, sin «Reintentar»: volver a pedirla daría lo mismo.
+	 */
 	const loadDetail = useCallback(
 		(operationId: string) => {
 			pendingDetails.current.get(operationId)?.abort();
-			pendingDetails.current.set(
-				operationId,
-				dispatch(fetchInventoryOperationDetail(detailRequestOf(operationId))),
-			);
+			const request = dispatch(fetchInventoryOperationDetail(detailRequestOf(operationId)));
+			pendingDetails.current.set(operationId, request);
+			// Un thunk de RTK nunca rechaza: el fallo llega como acción `rejected`.
+			void request.then((action) => {
+				if (!fetchInventoryOperationDetail.rejected.match(action)) return;
+				if (!action.payload?.forbidden) return;
+				setExpansion((current) => ({
+					...current,
+					ids: current.ids.filter((id) => id !== operationId),
+				}));
+				toast.warning(action.payload.message);
+			});
 		},
 		[dispatch, detailRequestOf],
 	);
