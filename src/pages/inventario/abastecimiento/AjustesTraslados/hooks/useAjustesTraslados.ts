@@ -34,10 +34,10 @@ const useAjustesTraslados = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
 
 	// El contrato no define un permiso propio: traslados y ajustes son
-	// `edit-product` sobre las ubicaciones de la sucursal. El backend además
-	// exige *operar* en ella (excluye a `subsidiary-member`/`company-member`),
-	// algo que el perfil no expone por sucursal: ese 403 llega al enviar y el
-	// panel lo muestra con el mensaje del servidor, sin ofrecer reintento.
+	// `edit-product` sobre las ubicaciones de la sucursal. Los `subsidiary-member`
+	// y `company-member` con ese permiso también ajustan y trasladan en las
+	// sucursales de su filial o empresa: no se filtran por rol. Si el servidor
+	// responde 403 al enviar, el panel lo muestra con su mensaje, sin reintento.
 	const canWrite = authorize({
 		permission: 'edit-product',
 		branchId,
