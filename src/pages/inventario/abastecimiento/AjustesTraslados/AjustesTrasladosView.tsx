@@ -7,7 +7,6 @@ import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Alert from '@/components/ui/Alert';
 import Tabs, { Tab } from '@/components/ui/Tabs';
 import INVENTORY_ADJUSTMENTS_USE_MOCKS from '@/config/inventoryAdjustments.config';
-import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import INVENTORY_TRANSFERS_USE_MOCKS from '@/config/inventoryTransfers.config';
 import Pages from '@/config/pages.config';
 import useAjustesTraslados from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useAjustesTraslados';
@@ -22,6 +21,8 @@ interface AjustesTrasladosTabsProps {
 	branchId: number;
 	subsidiaryId: number | null;
 	owner: string;
+	/** Etapa 2 de la filial confirmada: traslados y ajuste por bodega. */
+	isMultiLocation: boolean;
 	activeTab: AjustesTrasladosTab;
 	onTabChange: (tabId: string) => void;
 	preselection: IAjustesTrasladosPreselection;
@@ -31,6 +32,7 @@ const AjustesTrasladosTabs = ({
 	branchId,
 	subsidiaryId,
 	owner,
+	isMultiLocation,
 	activeTab,
 	onTabChange,
 	preselection,
@@ -64,7 +66,7 @@ const AjustesTrasladosTabs = ({
 			</Alert>
 
 			{/* Etapa 1: el backend rechaza traslados y ajustes con bodega (409). */}
-			{!INVENTORY_MULTI_LOCATION_ENABLED && (
+			{!isMultiLocation && (
 				<Alert
 					color='amber'
 					variant='outline'
@@ -93,12 +95,13 @@ const AjustesTrasladosTabs = ({
 							owner={owner}
 							branchId={branchId}
 							subsidiaryId={subsidiaryId}
+							multiLocation={isMultiLocation}
 							preselection={preselection}
 							onBusyChange={setBusy}
 						/>
 					)}
 				</Tab>
-				{INVENTORY_MULTI_LOCATION_ENABLED && (
+				{isMultiLocation && (
 					<Tab
 						id='traslado'
 						text='Traslados internos'
@@ -139,13 +142,21 @@ const mockNoticeFor = (
 };
 
 const AjustesTrasladosView = () => {
+	const {
+		access,
+		branchId,
+		subsidiaryId,
+		owner,
+		isMultiLocation,
+		activeTab,
+		changeTab,
+		preselection,
+	} = useAjustesTraslados();
 	const mockNotice = mockNoticeFor(
 		INVENTORY_ADJUSTMENTS_USE_MOCKS,
 		INVENTORY_TRANSFERS_USE_MOCKS,
-		INVENTORY_MULTI_LOCATION_ENABLED,
+		isMultiLocation,
 	);
-	const { access, branchId, subsidiaryId, owner, activeTab, changeTab, preselection } =
-		useAjustesTraslados();
 
 	let content;
 	if (access === 'loading') content = <p role='status'>Comprobando acceso…</p>;
@@ -163,12 +174,15 @@ const AjustesTrasladosView = () => {
 		);
 	// La sesión autorizada se monta con `key` ANTES de renderizar: un cambio de
 	// usuario, filial o sucursal desmonta ambos formularios en vez de dejar que
-	// pinten líneas y saldos de un contexto que ya no es el activo.
+	// pinten líneas y saldos de un contexto que ya no es el activo. La etapa
+	// también va en la clave: el ajuste fija su ubicación al montar, y si la
+	// etapa 2 se confirma después, el formulario se rehace con bodegas.
 	else
 		content = (
 			<AjustesTrasladosTabs
-				key={owner}
+				key={`${owner}:${isMultiLocation ? 'multi' : 'single'}`}
 				owner={owner}
+				isMultiLocation={isMultiLocation}
 				branchId={branchId}
 				subsidiaryId={subsidiaryId}
 				activeTab={activeTab}
@@ -185,7 +199,7 @@ const AjustesTrasladosView = () => {
 						icon='HeroArrowsRightLeft'
 						title='Ajustes y traslados'
 						description={
-							INVENTORY_MULTI_LOCATION_ENABLED
+							isMultiLocation
 								? 'Corrige diferencias de conteo o reubica productos dentro de la sucursal activa.'
 								: 'Corrige diferencias de conteo en la sucursal activa.'
 						}
