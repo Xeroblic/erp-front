@@ -11,6 +11,15 @@ import { useBodegas } from '../hooks/useBodegas';
 const branchContext = vi.hoisted(() => ({ branchId: 1 as number | null }));
 const fetchData = vi.hoisted(() => vi.fn());
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+// Sólo concede los permisos listados, y todos si la consulta pide `requireAll`.
+const granted = vi.hoisted(() => ({ permissions: new Set<string>() }));
+const authorizeMock = vi.hoisted(() =>
+	vi.fn(({ permission }: { permission?: string | string[] }) =>
+		(Array.isArray(permission) ? permission : [permission]).every(
+			(name) => typeof name === 'string' && granted.permissions.has(name),
+		),
+	),
+);
 
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({
@@ -20,6 +29,7 @@ vi.mock('@/hooks/useCurrentBranch', () => ({
 		visibleBranches: [],
 	}),
 }));
+vi.mock('@/hooks/useAuthorization', () => ({ default: () => ({ authorize: authorizeMock }) }));
 vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
 vi.mock('react-toastify', () => ({ toast: toastMock }));
 vi.mock('@/store', async () => {
@@ -325,8 +335,96 @@ describe('useBodegas mutaciones', () => {
 		expect(toastMock.error).toHaveBeenCalledWith(
 			'No se puede eliminar, tiene productos asociados',
 		);
+		expect(hook.result.current.state.deleteBlockedByStock).toBe(false);
 		expect(hook.result.current.state.error).toBeNull();
 		expect(hook.result.current.state.warehouses).toHaveLength(1);
+	});
+
+	describe('baja rechazada porque la bodega todavía tiene stock', () => {
+		const rejectWithStock = () =>
+			fetchData.mockImplementation(({ method }: IRequest) =>
+				method === 'delete'
+					? Promise.reject(
+							Object.assign(new Error('Request failed with status code 422'), {
+								response: {
+									status: 422,
+									data: {
+										message:
+											'No se puede eliminar la bodega porque todavía tiene stock.',
+										error: 'WAREHOUSE_HAS_STOCK',
+									},
+								},
+							}),
+						)
+					: Promise.resolve(listResponse([warehouse])),
+			);
+
+		const confirmDeleteOf = async (hook: ReturnType<typeof renderUseBodegas>['hook']) => {
+			await waitFor(() => expect(hook.result.current.state.warehouses).toHaveLength(1));
+			act(() => hook.result.current.actions.handleDelete(warehouse));
+			let result = true;
+			await act(async () => {
+				result = await hook.result.current.actions.confirmDelete();
+			});
+			return result;
+		};
+
+		beforeEach(() => {
+			granted.permissions = new Set(['edit-product', 'view-product']);
+			authorizeMock.mockClear();
+		});
+
+		it('deja el modal abierto con el aviso propio, sin toast ni recarga', async () => {
+			rejectWithStock();
+			const { hook } = renderUseBodegas();
+
+			expect(await confirmDeleteOf(hook)).toBe(false);
+
+			expect(hook.result.current.state.deleteModalOpen).toBe(true);
+			expect(hook.result.current.state.deleteBlockedByStock).toBe(true);
+			expect(toastMock.error).not.toHaveBeenCalled();
+			expect(hook.result.current.state.warehouses).toHaveLength(1);
+			expect(requestsWith('get')).toHaveLength(1);
+		});
+
+		it('enlaza a la pestaña de ajuste con la bodega cuando el usuario puede ajustar', async () => {
+			rejectWithStock();
+			const { hook } = renderUseBodegas();
+			await confirmDeleteOf(hook);
+
+			expect(hook.result.current.state.adjustStockLink).toBe(
+				'/inventario/abastecimiento/ajustes-traslados?tab=ajuste&warehouse_id=7',
+			);
+			expect(authorizeMock).toHaveBeenCalledWith(
+				expect.objectContaining({
+					permission: ['edit-product', 'view-product'],
+					requireAll: true,
+					branchId: 1,
+					scope: 'access',
+				}),
+			);
+		});
+
+		it('no enlaza sin edit-product', async () => {
+			granted.permissions = new Set(['view-product']);
+			rejectWithStock();
+			const { hook } = renderUseBodegas();
+			await confirmDeleteOf(hook);
+
+			expect(hook.result.current.state.deleteBlockedByStock).toBe(true);
+			expect(hook.result.current.state.adjustStockLink).toBeNull();
+		});
+
+		it('olvida el rechazo al volver a pedir la baja', async () => {
+			rejectWithStock();
+			const { hook } = renderUseBodegas();
+			await confirmDeleteOf(hook);
+
+			act(() => hook.result.current.actions.handleDelete(warehouse));
+
+			expect(hook.result.current.state.deleteBlockedByStock).toBe(false);
+			expect(hook.result.current.state.adjustStockLink).toBeNull();
+		});
 	});
 
 	it('la edición envía null para borrar encargado, capacidad, comuna y textos opcionales', async () => {

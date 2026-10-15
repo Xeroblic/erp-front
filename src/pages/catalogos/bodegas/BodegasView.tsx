@@ -110,6 +110,8 @@ const BodegasView: React.FC = () => {
 						warehouse={state.selectedWarehouse}
 						onConfirm={actions.confirmDelete}
 						loading={state.deleting}
+						blockedByStock={state.deleteBlockedByStock}
+						adjustStockLink={state.adjustStockLink}
 					/>
 				)}
 			</React.Suspense>
