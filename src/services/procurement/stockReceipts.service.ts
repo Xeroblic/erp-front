@@ -5,7 +5,6 @@ import listBranchWarehouses from '@/services/procurement/branchWarehouses.servic
 import { listProcurementSuppliers } from '@/services/procurement/procurementSuppliers.service';
 import { searchPurchasableProducts } from '@/services/procurement/purchasableProducts.service';
 import type { IPurchasableProductsPage } from '@/services/procurement/purchasableProducts.service';
-import { rejectEndpointNotPublished } from '@/utils/procurementEndpoint.util';
 import { resolveProcurementError } from '@/utils/procurementErrors.util';
 import { buildProcurementWriteHeaders, readEtagHeader } from '@/utils/procurementWrite.util';
 import type {
@@ -41,15 +40,15 @@ import type {
  *   exige además `view-purchase-document`.
  * - Toda escritura exige `Idempotency-Key`; sólo el PATCH exige además
  *   `If-Match` (428 sin él, 412 `RESOURCE_VERSION_CONFLICT` con uno viejo).
+ * - Vincular un documento a una recepción `posted` que no lo tenía (tarea 13,
+ *   `PUT .../purchase-document`) exige además `view-purchase-document`: sin
+ *   él, `allowed_actions` no ofrece `link_purchase_document`.
  * - El detalle y cada escritura responden la ficha completa con su `ETag`.
  * - `post` y `retry` responden 202 con la recepción `queued`: la ficha
  *   consulta el detalle hasta `posted` o `failed`. `reverse` es síncrono.
  * - Etapa 1 de la filial: el stock entra a «Sin ubicación» de la sucursal de
  *   la recepción; la bodega queda registrada sólo en la recepción
  *   (`STOCK_RECEIPTS_ENTER_UNLOCATED`).
- *
- * **Sin publicar**: vincular un documento a una recepción ya creada (tarea 13
- * del backend). Rechaza con `ProcurementEndpointNotPublishedError`.
  *
  * Sin caché de `ApiService`: la ficha cambia con cada escritura y el slice ya
  * descarta respuestas tardías por `requestId`.
@@ -71,10 +70,7 @@ export const STOCK_RECEIPTS_USE_TEST_SUPPLIERS = INVENTORY_RECEIPTS_USE_MOCKS;
  */
 export const STOCK_RECEIPTS_ENTER_UNLOCATED = !INVENTORY_RECEIPTS_USE_MOCKS;
 
-const RESOURCE = 'las recepciones';
-
 const FORBIDDEN_STATUS = 403;
-const P = '/subsidiaries/{subsidiary}/procurement';
 
 interface IStockReceiptWriteHeaders {
 	idempotencyKey?: string;
@@ -269,8 +265,20 @@ const apiStockReceipts: IStockReceiptsService = {
 		postReceiptAction(subsidiaryId, id, 'retry', undefined, headers),
 	reverseStockReceipt: (subsidiaryId, id, payload, headers) =>
 		postReceiptAction(subsidiaryId, id, 'reverse', payload, headers),
-	linkStockReceiptPurchaseDocument: () =>
-		rejectEndpointNotPublished(RESOURCE, `PUT ${P}/stock-receipts/{receipt}/purchase-document`),
+	// `PUT` sin `If-Match`: el backend valida el estado bajo bloqueo. Responde
+	// el detalle con su `ETag`, igual que un GET: no hace falta releer.
+	linkStockReceiptPurchaseDocument: async (subsidiaryId, id, payload, headers) => {
+		const response = await ApiService.fetchData<
+			IApiResourceEnvelope<IStockReceipt>,
+			IStockReceiptLinkPurchaseDocumentPayload
+		>({
+			url: `${receiptUrl(subsidiaryId, id)}/purchase-document`,
+			method: 'put',
+			data: payload,
+			headers: writeHeaders({ idempotencyKey: headers?.idempotencyKey }),
+		});
+		return toReceiptResponse(response);
+	},
 	// Sólo activas: el backend rechaza una bodega inactiva salvo la que la
 	// recepción ya tenía, y esa la agrega el formulario al corregir.
 	// Una sucursal que responde 403 no tumba a las demás: sin acceso a ella

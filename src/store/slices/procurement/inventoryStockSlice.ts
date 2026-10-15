@@ -1,5 +1,4 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import type {
 	IInventoryAdjustment,
 	IInventoryAdjustmentPayload,
@@ -54,9 +53,8 @@ export const inventoryOriginsQueryKey = (request: OriginsRequest): string =>
 	JSON.stringify([request.ownerContext, request.branchId, request.productId, request.params]);
 
 /*
- * Stock, procedencias, ajuste y traslado ya tienen ruta real: no se condicionan
- * a la bandera de datos simulados. La documentación posterior sí, porque su
- * rama real todavía rechaza por ruta no publicada.
+ * Stock, procedencias, ajuste, traslado y documentación posterior ya tienen
+ * ruta real: ninguno se condiciona a la bandera de datos simulados.
  */
 export const fetchInventoryStock = createAsyncThunk<
 	IInventoryStockResponse,
@@ -92,7 +90,8 @@ interface IWriteHeaders {
 
 /**
  * `POST .../document-allocations`: respalda documentalmente stock inicial sin
- * documento. No toca `list`/`origins`: el llamador refresca tras confirmar.
+ * documento. No mueve stock, pero parte el origen en dos: no toca
+ * `list`/`origins`, el llamador refresca las procedencias tras confirmar.
  */
 export const createInventoryDocumentAllocationThunk = createAsyncThunk<
 	IInventoryDocumentAllocation,
@@ -122,7 +121,6 @@ export const createInventoryDocumentAllocationThunk = createAsyncThunk<
 			return rejectWithValue(error);
 		}
 	},
-	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
 );
 
 /** `POST B/warehouse-stock-movements`: traslado interno inmediato; tampoco parchea `list`/`origins`. */
