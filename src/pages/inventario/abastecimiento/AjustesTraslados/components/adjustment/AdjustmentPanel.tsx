@@ -5,7 +5,6 @@ import Select from '@/components/form/Select';
 import Textarea from '@/components/form/Textarea';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
-import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import { MULTI_LOCATION_NOT_ENABLED_REASON } from '@/utils/procurementErrors.util';
 import useInventoryAdjustment from '@/pages/inventario/abastecimiento/AjustesTraslados/hooks/useInventoryAdjustment';
 import AdjustmentItemsEditor from '@/pages/inventario/abastecimiento/AjustesTraslados/components/adjustment/AdjustmentItemsEditor';
@@ -22,6 +21,11 @@ export interface AdjustmentPanelProps {
 	branchId: number;
 	subsidiaryId: number | null;
 	owner: string;
+	/**
+	 * Etapa 2 de la filial: se elige la ubicación. En la etapa 1 (o mientras no
+	 * se conoce) el ajuste queda fijo en «Sin ubicación». Se lee al montar.
+	 */
+	multiLocation?: boolean;
 	/** Ubicación y producto con que abre el asistente (de la URL). */
 	preselection?: IAjustesTrasladosPreselection;
 	/** Avisa si hay una escritura en curso o pendiente de reintento. */
@@ -56,6 +60,7 @@ const AdjustmentPanel = ({
 	branchId,
 	subsidiaryId,
 	owner,
+	multiLocation = false,
 	preselection,
 	onBusyChange,
 }: AdjustmentPanelProps) => {
@@ -81,7 +86,7 @@ const AdjustmentPanel = ({
 		clearResult,
 		wizard,
 		submit,
-	} = useInventoryAdjustment(branchId, owner, subsidiaryId, preselection);
+	} = useInventoryAdjustment(branchId, owner, subsidiaryId, preselection, multiLocation);
 
 	const frozen = idempotentWrite.isSubmitting || idempotentWrite.canRetry;
 	const writeError = idempotentWrite.error;
@@ -152,7 +157,7 @@ const AdjustmentPanel = ({
 						</>
 					}>
 					{/* Una sola ubicación (etapa 1): el ajuste va siempre a «Sin ubicación». */}
-					{wizard.stepKey === 'location' && !INVENTORY_MULTI_LOCATION_ENABLED && (
+					{wizard.stepKey === 'location' && !multiLocation && (
 						<div className='space-y-1 md:max-w-md'>
 							<p className='text-sm text-zinc-600 dark:text-zinc-300'>
 								Ubicación: <strong>{locationLabel}</strong>
@@ -163,7 +168,7 @@ const AdjustmentPanel = ({
 							</p>
 						</div>
 					)}
-					{wizard.stepKey === 'location' && INVENTORY_MULTI_LOCATION_ENABLED && (
+					{wizard.stepKey === 'location' && multiLocation && (
 						<div className='space-y-1 md:max-w-md'>
 							<Label htmlFor='ajuste-location'>Ubicación</Label>
 							<Validation

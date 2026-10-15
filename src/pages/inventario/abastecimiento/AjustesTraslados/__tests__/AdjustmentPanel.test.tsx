@@ -21,10 +21,13 @@ const context = vi.hoisted(() => ({
 }));
 // Etapa del despliegue: encendida salvo en los casos de una sola ubicación.
 const multiLocation = vi.hoisted(() => ({ enabled: true }));
-vi.mock('@/config/inventoryMultiLocation.config', () => ({
-	get default() {
-		return multiLocation.enabled;
-	},
+// Etapa de la filial ya resuelta; el hook se prueba en `useSubsidiaryRolloutStage.test.tsx`.
+vi.mock('@/hooks/useSubsidiaryRolloutStage', () => ({
+	useSubsidiaryRolloutStage: () => ({
+		multiLocationEnabled: multiLocation.enabled,
+		isMultiLocation: multiLocation.enabled,
+		isLoading: false,
+	}),
 }));
 vi.mock('@/config/inventoryStock.config', () => ({
 	get default() {

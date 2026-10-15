@@ -2,9 +2,10 @@ import type { ReactNode } from 'react';
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
+import subEmpresa, { fetchSubsidiaryRolloutStage } from '@/store/slices/subempresa/subEmpresaSlice';
 import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
 import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 import {
@@ -65,18 +66,15 @@ vi.mock('@/services/procurement/inventoryStock.service', async (importOriginal) 
 });
 
 // Inventario y traslados con mock, el ajuste con backend: cada flujo con su bandera.
-// Etapa del despliegue: encendida salvo en los casos de una sola ubicación.
-const multiLocation = vi.hoisted(() => ({ enabled: true }));
-vi.mock('@/config/inventoryMultiLocation.config', () => ({
-	get default() {
-		return multiLocation.enabled;
-	},
-}));
+// Etapa del despliegue de la filial 2: encendida salvo en los casos de una sola
+// ubicación; `null` es «todavía cargando». La lee el hook real desde el store.
+const multiLocation = vi.hoisted(() => ({ enabled: true as boolean | null }));
+const branchContext = vi.hoisted(() => ({ subsidiaryId: 2 }));
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
 vi.mock('@/config/inventoryAdjustments.config', () => ({ default: false }));
 vi.mock('@/config/inventoryTransfers.config', () => ({ default: true }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
-	useCurrentBranch: () => ({ branchId: 4, subsidiaryId: 2 }),
+	useCurrentBranch: () => ({ branchId: 4, subsidiaryId: branchContext.subsidiaryId }),
 }));
 vi.mock('@/store', async () => {
 	const redux = await import('react-redux');
@@ -176,7 +174,7 @@ const auth = createSlice({
 			id: 1,
 			permisos: ['view-product', 'edit-product'] as string[],
 			roles: [] as string[],
-			visible: { branches: [{ id: 4 }], subsidiaries: [{ id: 2 }] },
+			visible: { branches: [{ id: 4 }], subsidiaries: [{ id: 2 }, { id: 3 }] },
 		},
 	},
 	reducers: {},
@@ -187,16 +185,36 @@ const LocationProbe = () => {
 	return <output data-testid='location'>{location.search}</output>;
 };
 
+type TTestStore = ReturnType<typeof createStore>;
+const createStore = () =>
+	configureStore({ reducer: { inventoryStock, auth: auth.reducer, subEmpresa } });
+
+/**
+ * Siembra la etapa de una filial como si `GET /subsidiaries/{id}` hubiera
+ * respondido (`null`: la lectura sigue en curso). El hook la encuentra y no
+ * vuelve a pedirla.
+ */
+const seedStage = (store: TTestStore, subsidiaryId: number, enabled: boolean | null) =>
+	store.dispatch(
+		enabled === null
+			? fetchSubsidiaryRolloutStage.pending('seed', subsidiaryId)
+			: fetchSubsidiaryRolloutStage.fulfilled(enabled, 'seed', subsidiaryId),
+	);
+
 const renderPage = (entry: string) => {
-	const store = configureStore({ reducer: { inventoryStock, auth: auth.reducer } });
-	return render(
+	const store = createStore();
+	seedStage(store, 2, multiLocation.enabled);
+	// Un elemento nuevo en cada render: React no vuelve a pintar el mismo objeto.
+	const tree = () => (
 		<Provider store={store}>
 			<MemoryRouter initialEntries={[entry]}>
 				<AjustesTrasladosView />
 				<LocationProbe />
 			</MemoryRouter>
-		</Provider>,
+		</Provider>
 	);
+	const view = render(tree());
+	return { ...view, store, rerenderPage: () => view.rerender(tree()) };
 };
 
 afterEach(() => {
@@ -208,6 +226,7 @@ afterEach(() => {
 	resetAdjustmentFake();
 	vi.restoreAllMocks();
 	multiLocation.enabled = true;
+	branchContext.subsidiaryId = 2;
 });
 
 describe('Ajustes y traslados — una sola ubicación (etapa 1)', () => {
@@ -242,6 +261,58 @@ describe('Ajustes y traslados — una sola ubicación (etapa 1)', () => {
 		renderPage(`/?tab=ajuste&warehouse_id=unlocated&product_id=${FAKE_BETA.id}`);
 		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
 		expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(FAKE_BETA.id));
+	});
+});
+
+describe('Ajustes y traslados — etapa leída de la filial', () => {
+	it('mientras la etapa carga se comporta como la etapa 1', async () => {
+		multiLocation.enabled = null;
+		renderPage('/?tab=traslado');
+
+		expect(screen.queryByRole('tab', { name: 'Traslados internos' })).not.toBeInTheDocument();
+		expect(screen.getByText('La sucursal opera con una sola ubicación')).toBeInTheDocument();
+		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+		expect(screen.getByText('Sin ubicación')).toBeInTheDocument();
+		expect(screen.queryByLabelText('Ubicación')).not.toBeInTheDocument();
+	});
+
+	it('si la etapa 2 se confirma después, rehace el ajuste con bodegas y abre el traslado pedido', async () => {
+		multiLocation.enabled = null;
+		const { store } = renderPage('/?tab=ajuste');
+		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+
+		act(() => {
+			seedStage(store, 2, true);
+		});
+
+		// El asistente vuelve al primer paso, ahora con la ubicación por elegir.
+		expect(await screen.findByLabelText('Ubicación')).toBeInTheDocument();
+		expect(screen.getByRole('heading', { name: /Paso 1 de 3: Ubicación/ })).toBeInTheDocument();
+		expect(screen.getByRole('tab', { name: 'Traslados internos' })).toBeInTheDocument();
+		expect(
+			screen.queryByText('La sucursal opera con una sola ubicación'),
+		).not.toBeInTheDocument();
+	});
+
+	it('al cambiar de filial la pantalla sigue la etapa de la nueva', async () => {
+		multiLocation.enabled = false;
+		const { store, rerenderPage } = renderPage('/?tab=ajuste');
+		seedStage(store, 3, true);
+		expect(screen.queryByRole('tab', { name: 'Traslados internos' })).not.toBeInTheDocument();
+
+		branchContext.subsidiaryId = 3;
+		rerenderPage();
+		expect(await screen.findByRole('tab', { name: 'Traslados internos' })).toBeInTheDocument();
+		expect(screen.getByLabelText('Ubicación')).toBeInTheDocument();
+
+		branchContext.subsidiaryId = 2;
+		rerenderPage();
+		await waitFor(() =>
+			expect(
+				screen.queryByRole('tab', { name: 'Traslados internos' }),
+			).not.toBeInTheDocument(),
+		);
+		expect(screen.getByText('La sucursal opera con una sola ubicación')).toBeInTheDocument();
 	});
 });
 

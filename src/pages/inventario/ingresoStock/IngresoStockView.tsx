@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
-import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import Pages from '@/config/pages.config';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -13,6 +12,7 @@ import Card, { CardBody, CardHeader, CardTitle, CardHeaderChild } from '@/compon
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 import {
 	ProductsTable,
 	WorkspaceTable,
@@ -50,6 +50,8 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 	} = state;
 
 	const isDetailVisible = selectedProduct !== null && !isWorkspaceOpen;
+	// Los enlaces llevan a Ajustes y traslados, que sigue la filial efectiva.
+	const { isMultiLocation } = useSubsidiaryRolloutStage();
 
 	const workspaceProductIds = useMemo(
 		() => new Set(workItems.map((item) => item.productId)),
@@ -103,7 +105,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 							color='blue'
 							variant='outline'
 							icon='HeroInformationCircle'
-							title={`Esta pantalla se está separando en ${INVENTORY_MULTI_LOCATION_ENABLED ? 'tres' : 'dos'}`}>
+							title={`Esta pantalla se está separando en ${isMultiLocation ? 'tres' : 'dos'}`}>
 							Para <strong>ingresar mercadería comprada</strong> usa{' '}
 							<Link
 								className='font-semibold underline'
@@ -111,7 +113,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 								Recepciones
 							</Link>
 							{/* Con una sola ubicación (etapa 1) los traslados están ocultos. */}
-							{INVENTORY_MULTI_LOCATION_ENABLED && (
+							{isMultiLocation && (
 								<>
 									; para <strong>mover unidades entre bodegas</strong>,{' '}
 									<Link
