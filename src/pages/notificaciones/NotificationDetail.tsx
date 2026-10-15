@@ -17,7 +17,7 @@ import {
 	markRead,
 } from '@/store/slices/notifications/notificationsSlice';
 import useThemeColorGlobal from '@/hooks/useThemeColorGlobal';
-import criticalStockProductLink from '@/notifications/criticalStockLink';
+import useCriticalStockNoticeLink from '@/notifications/useCriticalStockNoticeLink';
 
 const timeAgo = (iso?: string | null) => {
 	if (!iso) return '';
@@ -49,7 +49,7 @@ const NotificationDetail: React.FC = () => {
 
 	const nid = Number(id);
 	const notif = useMemo(() => items.find((n) => n.id === nid), [items, nid]);
-	const productLink = useMemo(() => (notif ? criticalStockProductLink(notif) : null), [notif]);
+	const { link: productLink, foreignSubsidiaryNote } = useCriticalStockNoticeLink(notif);
 
 	useEffect(() => {
 		if (!notif) {
@@ -472,6 +472,15 @@ const NotificationDetail: React.FC = () => {
 											</div>
 										</div>
 									</div>
+
+									{foreignSubsidiaryNote && (
+										<Alert
+											variant='outline'
+											color='zinc'
+											icon='HeroInformationCircle'>
+											{foreignSubsidiaryNote}
+										</Alert>
+									)}
 
 									{/* Alerta para notificaciones importantes */}
 									{notif.bucket === 'Important' && (
