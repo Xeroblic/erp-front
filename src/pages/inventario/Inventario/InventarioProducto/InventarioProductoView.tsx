@@ -13,9 +13,9 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-import INVENTORY_MULTI_LOCATION_ENABLED from '@/config/inventoryMultiLocation.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 import { useAppSelector } from '@/store';
 import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import type { IInventoryStockDetail } from '@/interface/inventoryOverview.interface';
@@ -172,6 +172,8 @@ const ProductoSession = ({
 		subsidiaryId,
 		scope: 'access',
 	});
+	// Etapa de la filial: con una sola ubicación no hay traslados ni ajuste por bodega.
+	const { isMultiLocation } = useSubsidiaryRolloutStage(subsidiaryId);
 	const openMovement = useCallback(
 		(tab: AjustesTrasladosTab, warehouseId: number | null) =>
 			navigate(ajustesTrasladosLink({ tab, productId, warehouseId }).to),
@@ -223,7 +225,7 @@ const ProductoSession = ({
 	// hay traslados y sólo se ajusta «Sin ubicación»: una fila de bodega no
 	// ofrece acciones.
 	const canMoveFrom = (warehouseId: number | null): boolean =>
-		INVENTORY_MULTI_LOCATION_ENABLED || warehouseId === null;
+		isMultiLocation || warehouseId === null;
 	const showMovements =
 		canMoveStock &&
 		!product.serial_tracking &&
@@ -399,7 +401,7 @@ const ProductoSession = ({
 															}>
 															Ajustar
 														</ProtectedButton>
-														{INVENTORY_MULTI_LOCATION_ENABLED && (
+														{isMultiLocation && (
 															<ProtectedButton
 																permission='edit-product'
 																branchId={branchId}

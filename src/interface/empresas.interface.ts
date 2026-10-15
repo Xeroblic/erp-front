@@ -126,6 +126,12 @@ export interface ISubempresa extends ISubsidiaryMin {
 	subsidiary_commercial_terms?: string | null;
 	subsidiary_default_payment_method?: string | null;
 	subsidiary_manager_id?: number | null;
+	/**
+	 * Etapa del despliegue de inventario: `true` en la etapa 2 (multi-ubicación).
+	 * Sólo lo publica `SubsidiaryResource` (`GET /subsidiaries[/{id}]`); otros
+	 * listados de filiales no lo traen, de ahí que sea opcional.
+	 */
+	multi_location_enabled?: boolean;
 	manager?: IManagerRef | null;
 	commune_id?: number | null;
 	commune?: ICommuneRef;
