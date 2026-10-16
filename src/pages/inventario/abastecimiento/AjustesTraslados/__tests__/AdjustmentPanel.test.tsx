@@ -211,17 +211,17 @@ const SEARCH_TERMS: Record<string, string> = { [ALFA]: FAKE_ALFA.sku, [BETA]: FA
  * Completa una línea del ajuste con producto y delta firmado. El selector
  * busca en el servidor: se escribe el término y se espera la opción.
  */
-const fillLine = async (productId: string, delta: string) => {
+const fillLine = async (productId: string, delta: string, line = 1) => {
 	const term = SEARCH_TERMS[productId];
-	fireEvent.change(screen.getByLabelText('Buscar Producto de la línea 1'), {
+	fireEvent.change(screen.getByLabelText(`Buscar Producto de la línea ${line}`), {
 		target: { value: term },
 	});
-	const product = screen.getByLabelText('Producto de la línea 1');
+	const product = screen.getByLabelText(`Producto de la línea ${line}`);
 	await waitFor(() =>
 		expect(within(product).getByRole('option', { name: new RegExp(term) })).toBeInTheDocument(),
 	);
 	fireEvent.change(product, { target: { value: productId } });
-	fireEvent.change(screen.getByLabelText('Cantidad de ajuste de la línea 1'), {
+	fireEvent.change(screen.getByLabelText(`Cantidad de ajuste de la línea ${line}`), {
 		target: { value: delta },
 	});
 };
@@ -538,6 +538,11 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		expect(
 			await screen.findByText(/Hay 3 unidades sin procedencia registrada/),
 		).toBeInTheDocument();
+		// Sin `item_index` no hay línea que marcar: el aviso queda global, en el
+		// paso donde se confirmó.
+		expect(screen.getByText('No se registró ninguna línea del ajuste.')).toBeInTheDocument();
+		expect(screen.getByLabelText('Motivo')).toBeInTheDocument();
+		expect(screen.queryByText(/Disponible:/)).not.toBeInTheDocument();
 
 		const submit = screen.getByRole('button', { name: 'Registrar ajuste' });
 		await waitFor(() => expect(submit).toBeEnabled());
@@ -563,6 +568,57 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		await waitFor(() =>
 			expect(screen.queryByText('El producto no es de la filial.')).not.toBeInTheDocument(),
 		);
+	});
+
+	it('marca sólo la línea de `item_index` del 409 y vuelve a «Productos» con el aviso del lote', async () => {
+		vi.spyOn(service, 'createInventoryAdjustment').mockRejectedValueOnce({
+			isAxiosError: true,
+			response: {
+				status: 409,
+				data: {
+					message: 'No hay stock no apto suficiente en la ubicación.',
+					code: 'INSUFFICIENT_LOCATION_STOCK',
+					context: {
+						item_index: 1,
+						product_id: FAKE_ALFA.id,
+						requested: 2,
+						available: 1,
+						condition: 'unfit',
+						unattributed_quantity: 3,
+					},
+				},
+			},
+		});
+		renderPage();
+		await chooseMainWarehouse();
+		// Dos líneas del mismo producto: buscar la del faltante por producto
+		// marcaría las dos.
+		await fillLine(ALFA, '-2');
+		fireEvent.click(screen.getByRole('button', { name: 'Agregar producto' }));
+		await fillLine(ALFA, '-2', 2);
+		fireEvent.change(screen.getByLabelText('Condición de la línea 2'), {
+			target: { value: 'unfit' },
+		});
+		await goToReason('Conteo');
+
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar ajuste' }));
+		const alert = await screen.findByRole('alert');
+		expect(screen.queryByLabelText('Motivo')).not.toBeInTheDocument();
+		expect(alert).toHaveTextContent('No hay stock no apto suficiente en la ubicación.');
+		expect(alert).toHaveTextContent('No se registró ninguna línea del ajuste');
+		expect(alert).toHaveTextContent('Hay 3 unidades sin procedencia registrada');
+
+		expect(screen.getAllByText('Disponible: 1.')).toHaveLength(1);
+		const markedRow = screen
+			.getByLabelText('Cantidad de ajuste de la línea 2')
+			.closest('tr') as HTMLElement;
+		expect(within(markedRow).getByText('Disponible: 1.')).toBeInTheDocument();
+
+		// Corregir la línea retira la marca: describía el lote enviado.
+		fireEvent.change(screen.getByLabelText('Cantidad de ajuste de la línea 2'), {
+			target: { value: '-1' },
+		});
+		await waitFor(() => expect(screen.queryByText('Disponible: 1.')).not.toBeInTheDocument());
 	});
 
 	it('muestra el stock resultante de la ubicación según la cantidad de ajuste', async () => {

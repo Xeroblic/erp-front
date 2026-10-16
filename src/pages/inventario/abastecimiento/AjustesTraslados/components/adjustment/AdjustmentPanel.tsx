@@ -77,6 +77,7 @@ const AdjustmentPanel = ({
 		totalsFor,
 		errorFor,
 		serverLineErrorCount,
+		shortage,
 		setLocation,
 		setItem,
 		addItem,
@@ -90,10 +91,17 @@ const AdjustmentPanel = ({
 
 	const frozen = idempotentWrite.isSubmitting || idempotentWrite.canRetry;
 	const writeError = idempotentWrite.error;
-	const unattributed =
-		writeError?.code === 'INSUFFICIENT_LOCATION_STOCK'
-			? unattributedFromContext(writeError.context)
-			: 0;
+	const stockRejected = writeError?.code === 'INSUFFICIENT_LOCATION_STOCK';
+	const unattributed = stockRejected ? unattributedFromContext(writeError.context) : 0;
+	const unattributedNotice = unattributed > 0 && (
+		<p>
+			Hay {unattributed}{' '}
+			{unattributed === 1
+				? 'unidad sin procedencia registrada'
+				: 'unidades sin procedencia registrada'}
+			. Se regularizan automáticamente cada 15 minutos: vuelve a intentarlo más tarde.
+		</p>
+	);
 	// Respaldo si la bandera no coincide con la etapa real: el mismo ajuste
 	// responde lo mismo, así que no se ofrece reenviarlo hasta cambiar la ubicación.
 	const singleLocation = writeError?.code === 'MULTI_LOCATION_NOT_ENABLED';
@@ -228,6 +236,20 @@ const AdjustmentPanel = ({
 									</div>
 								</Alert>
 							)}
+							{/* El 409 con la línea identificada trae al usuario acá: el
+							    aviso del lote viaja con él. */}
+							{shortage && writeError && (
+								<Alert color='red' title='No se pudo registrar el ajuste'>
+									<div role='alert' className='space-y-1'>
+										<p>{writeError.message}</p>
+										<p>
+											No se registró ninguna línea del ajuste: corrige la
+											línea marcada y vuelve a confirmarlo.
+										</p>
+										{unattributedNotice}
+									</div>
+								</Alert>
+							)}
 							{hasLocation &&
 								!loadingStock &&
 								!stockError &&
@@ -316,6 +338,9 @@ const AdjustmentPanel = ({
 								<Alert color='red' title='No se pudo registrar el ajuste'>
 									<div role='alert' className='space-y-1'>
 										<p>{writeError.message}</p>
+										{stockRejected && (
+											<p>No se registró ninguna línea del ajuste.</p>
+										)}
 										{singleLocation && (
 											<p>
 												{MULTI_LOCATION_NOT_ENABLED_REASON} Registra el
@@ -343,16 +368,7 @@ const AdjustmentPanel = ({
 												</Button>
 											</div>
 										)}
-										{unattributed > 0 && (
-											<p>
-												Hay {unattributed}{' '}
-												{unattributed === 1
-													? 'unidad sin procedencia registrada'
-													: 'unidades sin procedencia registrada'}
-												. Se regularizan automáticamente cada 15 minutos:
-												vuelve a intentarlo más tarde.
-											</p>
-										)}
+										{unattributedNotice}
 									</div>
 								</Alert>
 							)}
