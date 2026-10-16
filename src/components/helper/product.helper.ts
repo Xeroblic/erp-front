@@ -443,6 +443,9 @@ export const buildUpdatePayload = (
 		payload.snippet_description = data.snippet_description;
 	if (data.short_description !== undefined) payload.short_description = data.short_description;
 	if (data.long_description !== undefined) payload.long_description = data.long_description;
+	// `null` se manda tal cual: desactiva el umbral.
+	if (data.critical_stock_threshold !== undefined)
+		payload.critical_stock_threshold = data.critical_stock_threshold;
 	if (categoryIds) payload.category_ids = categoryIds;
 
 	return payload;

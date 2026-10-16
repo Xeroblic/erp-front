@@ -613,6 +613,8 @@ export const getInventoryStockDetail = async (
 				warehouses: sortedBreakdown(aggregate),
 				warehouses_complete: true,
 				critical_stock: criticalStockFor(branchId, aggregate),
+				// El doble guarda el umbral sin mirar la sucursal dueña.
+				threshold_branch_id: branchId,
 				// El mock no modela series en esta consulta (§3 excluye serializados).
 				series_summary: null,
 			},

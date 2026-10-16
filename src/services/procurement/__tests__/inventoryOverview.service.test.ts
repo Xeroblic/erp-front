@@ -106,31 +106,33 @@ describe('inventoryOverview.service (fachada)', () => {
 		expect(Object.values(facade.INVENTORY_OVERVIEW_FEATURES).every(Boolean)).toBe(true);
 	});
 
-	it('sin datos simulados no ofrece lo que el backend no publica', async () => {
+	it('sin datos simulados ofrece el umbral de la ficha y oculta lo que el backend no publica', async () => {
 		const facade = await loadFacade({ overview: false, stock: true });
 
 		expect(facade.INVENTORY_OVERVIEW_FEATURES).toEqual({
 			sort: false,
 			stockStatus: false,
 			availability: false,
-			threshold: false,
+			// §13 publicado en el producto, en las dos etapas; la lista no lo trae por fila.
+			threshold: true,
+			rowThreshold: false,
 			unitTotals: false,
 		});
+		expect(facade.INVENTORY_THRESHOLD_USES_API).toBe(true);
 	});
 
-	it('el umbral sigue la bandera de stock, que comparte con Reportes', async () => {
-		const simulated = await loadFacade({ overview: false, stock: true });
-		const mock = await import('@/mocks/services/inventoryOverview.mock');
-		expect(simulated.updateInventoryCriticalThreshold).toBe(
-			mock.updateInventoryCriticalThreshold,
-		);
-		expect(simulated.INVENTORY_OVERVIEW_FEATURES.threshold).toBe(false);
+	it('la ficha simulada guarda el umbral en el doble sólo si lee del mismo doble', async () => {
+		const simulated = await loadFacade({ overview: true, stock: true });
+		expect(simulated.INVENTORY_THRESHOLD_USES_API).toBe(false);
+		expect(simulated.INVENTORY_OVERVIEW_FEATURES.threshold).toBe(true);
 
+		const mixed = await loadFacade({ overview: true, stock: false });
+		expect(mixed.INVENTORY_OVERVIEW_FEATURES.threshold).toBe(false);
+
+		// Reportes sigue simulado: su umbral es siempre el del doble.
 		const real = await loadFacade({ overview: false, stock: false });
-		await expect(real.updateInventoryCriticalThreshold(31, 5)).rejects.toBeInstanceOf(
-			real.ProcurementEndpointNotPublishedError,
-		);
-		expect(fetchData).not.toHaveBeenCalled();
+		const mock = await import('@/mocks/services/inventoryOverview.mock');
+		expect(real.updateInventoryCriticalThreshold).toBe(mock.updateInventoryCriticalThreshold);
 	});
 });
 
@@ -342,6 +344,106 @@ describe('inventoryOverview.service (API real)', () => {
 		// La bodega 8 no tiene el producto: no aparece en el reparto, que está completo.
 		expect(data.warehouses.map((location) => location.warehouse?.id ?? null)).toEqual([null]);
 		expect(data.warehouses_complete).toBe(true);
+	});
+
+	describe('umbral §13 de la ficha', () => {
+		const mouse = stockRow(31, 9, 'MOU-1');
+		/** `GET B/products/31` responde `resource`; el resto, como una ficha sin bodegas. */
+		const routeFicha = (resource: () => Promise<unknown>) =>
+			fetchData.mockImplementation((config) => {
+				if (config.url === '/branches/4/products/31') return resource();
+				if (config.url.endsWith('/origins'))
+					return Promise.resolve({
+						data: {
+							...stockPage([]).data,
+							context: {
+								scope: 'branch',
+								branch_id: 4,
+								warehouse: null,
+								product: mouse.product,
+								physical_quantity: 9,
+								unattributed_quantity: 0,
+							},
+						},
+					});
+				if (config.url === '/branches/4/warehouses')
+					return Promise.resolve(warehousesPage([]));
+				return Promise.resolve(stockPage([mouse]));
+			});
+		const block = {
+			scope: 'subsidiary',
+			subsidiary_id: 2,
+			physical_quantity: 4,
+			fit_quantity: 2,
+			unfit_quantity: 2,
+			held_quantity: 5,
+			available_quantity: -3,
+			threshold: 10,
+			status: 'critical',
+		};
+
+		it('toma el umbral y el bloque de la filial del producto, con el disponible negativo tal cual', async () => {
+			routeFicha(() =>
+				Promise.resolve({
+					data: {
+						data: {
+							id: 31,
+							origin_branch_id: 6,
+							serial_tracking: false,
+							critical_stock_threshold: 10,
+							is_critical_stock: true,
+							critical_stock: block,
+						},
+					},
+				}),
+			);
+			const { getInventoryStockDetail } = await loadFacade();
+
+			const { data } = await getInventoryStockDetail(4, 31);
+
+			expect(data.product.critical_stock_threshold).toBe(10);
+			expect(data.critical_stock).toEqual(block);
+			// La edición va a la sucursal dueña, no a la consultada.
+			expect(data.threshold_branch_id).toBe(6);
+		});
+
+		it('un producto con serie no lleva umbral aunque el resource traiga un bloque', async () => {
+			routeFicha(() =>
+				Promise.resolve({
+					data: {
+						data: {
+							id: 31,
+							origin_branch_id: 4,
+							serial_tracking: true,
+							critical_stock_threshold: 3,
+							critical_stock: block,
+						},
+					},
+				}),
+			);
+			const { getInventoryStockDetail } = await loadFacade();
+
+			const { data } = await getInventoryStockDetail(4, 31);
+
+			expect(data).toMatchObject({
+				product: { critical_stock_threshold: null },
+				critical_stock: null,
+				threshold_branch_id: null,
+			});
+		});
+
+		it('si la ruta del producto no lo muestra (404) la ficha sigue, sin umbral ni edición', async () => {
+			routeFicha(() => Promise.reject(axiosError(404)));
+			const { getInventoryStockDetail } = await loadFacade();
+
+			const { data } = await getInventoryStockDetail(4, 31);
+
+			expect(data).toMatchObject({
+				physical_quantity: 9,
+				critical_stock: null,
+				threshold_branch_id: null,
+			});
+		});
 	});
 
 	it('la ficha de un producto con serie o de otra filial es un 404 reconocible', async () => {
