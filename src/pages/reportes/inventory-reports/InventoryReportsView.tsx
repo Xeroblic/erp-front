@@ -44,6 +44,7 @@ const InventoryReportsSession = ({
 	activeBranch,
 }: IInventoryReportsSessionProps) => {
 	const dispatch = useAppDispatch();
+	const { authorize } = useAuthorization();
 	const { ready, sourceOf } = useInventoryReportSources(subsidiaryId);
 	const companyName = useAppSelector((state) => {
 		const { user } = state.auth;
@@ -87,8 +88,11 @@ const InventoryReportsSession = ({
 		[dispatch],
 	);
 
-	const views = INVENTORY_REPORT_VIEWS.filter((view) =>
-		view.reports.every((type) => sourceOf(type) !== null),
+	const views = INVENTORY_REPORT_VIEWS.filter(
+		(view) =>
+			view.reports.every((type) => sourceOf(type) !== null) &&
+			(!view.permission ||
+				authorize({ permission: view.permission, subsidiaryId, scope: 'visible' })),
 	);
 	// Datos se muestra de inmediato; otra pestaña espera a saber si existe.
 	let activeView: TInventoryReportView | null = INVENTORY_REPORT_DEFAULT_VIEW;

@@ -6,9 +6,10 @@ import type { TIcons } from '@/types/icons.type';
  * `GET S/reports/{type}`; las filas que se leen están tipadas en
  * `@/interface/inventoryReports.interface`.
  *
- * Datos usa `stock`, que ya existe. Umbrales, Acciones y Estadísticas usan
- * R1–R3 del contrato: aparecen cuando `GET S/reports` los informa o, mientras
- * tanto, con los datos simulados de Inventario.
+ * Datos usa `stock`, que ya existe. Umbrales y Estadísticas usan R1 y R3 del
+ * contrato: aparecen cuando `GET S/reports` los informa o, mientras tanto, con
+ * los datos simulados de Inventario. Acciones no lee un reporte: lee
+ * `GET P/replenishment-candidates` (§13), que exige `view-product`.
  */
 export type TInventoryReportView = 'datos' | 'umbrales' | 'acciones' | 'estadisticas';
 
@@ -18,6 +19,8 @@ export interface IInventoryReportViewDefinition {
 	description: string;
 	icon: TIcons;
 	reports: TInventoryReportType[];
+	/** Permiso que exige su ruta, además de `view-reports` de la pantalla. */
+	permission?: string;
 }
 
 export const INVENTORY_REPORT_VIEWS: IInventoryReportViewDefinition[] = [
@@ -40,7 +43,8 @@ export const INVENTORY_REPORT_VIEWS: IInventoryReportViewDefinition[] = [
 		label: 'Acciones',
 		description: 'Qué reponer y a qué proveedor, según las compras anteriores',
 		icon: 'HeroBolt',
-		reports: ['replenishment'],
+		reports: [],
+		permission: 'view-product',
 	},
 	{
 		id: 'estadisticas',

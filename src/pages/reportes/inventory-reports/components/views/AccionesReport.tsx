@@ -1,63 +1,127 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import PermissionGuard from '@/components/authorization/PermissionGuard';
 import { StatusPill } from '@/components/procurement';
 import Button from '@/components/ui/Button';
-import ProtectedButton from '@/components/ui/ProtectedButton';
 import { Td, Th, Tr } from '@/components/ui/Table';
-// eslint-disable-next-line import/extensions
-import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
-import type { IReplenishmentReportRow } from '@/interface/inventoryReports.interface';
-import { inventarioProductoPath } from '@/pages/inventario/Inventario/types';
+import useCan from '@/hooks/useCan';
+import { supplierDetailLink, type IPageLink } from '@/config/procurementLinks';
+import type {
+	IReplenishmentReportRow,
+	TReplenishmentStatus,
+} from '@/interface/inventoryReports.interface';
+import {
+	inventarioProductoComprasLink,
+	inventarioProductoLink,
+} from '@/pages/inventario/Inventario/types';
 import type { TInventoryReportFiltersApi } from '@/pages/reportes/inventory-reports/hooks/useInventoryReportFilters';
 import useAccionesReport from '@/pages/reportes/inventory-reports/hooks/useAccionesReport';
-import useLocalReportExport from '@/pages/reportes/inventory-reports/hooks/useLocalReportExport';
 import InventoryReportFilters from '@/pages/reportes/inventory-reports/components/filters/InventoryReportFilters';
-import InventoryReportExport from '@/pages/reportes/inventory-reports/components/parts/InventoryReportExport';
-import InventoryReportSummary from '@/pages/reportes/inventory-reports/components/parts/InventoryReportSummary';
 import ReportTableCard from '@/pages/reportes/inventory-reports/components/parts/ReportTableCard';
-import {
-	ReportLoadError,
-	SimulatedDataNotice,
-} from '@/pages/reportes/inventory-reports/components/parts/ReportNotices';
+import { ReportLoadError } from '@/pages/reportes/inventory-reports/components/parts/ReportNotices';
 import {
 	EmptyCell,
 	formatReportDate,
 	ProductCell,
 	UnitsCell,
 } from '@/pages/reportes/inventory-reports/components/parts/ReportCells';
+import { REPLENISHMENT_STATUSES } from '@/services/reports/inventoryReports.service';
 import {
 	REPLENISHMENT_COLORS,
 	REPLENISHMENT_LABELS,
-	SUPPLIER_DETAIL_PATH,
 	type IInventoryReportContext,
 } from '@/pages/reportes/inventory-reports/types';
 
 const COLUMN_COUNT = 6;
 
+const plural = (count: number, singular: string, pluralForm: string): string =>
+	`${count} ${count === 1 ? singular : pluralForm}`;
+
+/**
+ * El sugerido con su última compra o, sin sugerido, cuántos proveedores le
+ * vendieron y cuántos podrían sugerirse: el detalle por proveedor está en la
+ * sección «Compras» de la ficha.
+ */
 const SupplierCell: React.FC<{ recommendation: IReplenishmentReportRow['recommendation'] }> = ({
 	recommendation,
 }) => {
 	const { supplier, last_purchase: lastPurchase } = recommendation;
-	if (!supplier && !lastPurchase) return <EmptyCell />;
-	return (
-		<div className='min-w-0 max-w-[240px]'>
-			{supplier ? (
+	if (supplier)
+		return (
+			<div className='min-w-0 max-w-[240px]'>
 				<p
 					className='line-clamp-2 break-words text-sm font-semibold'
 					title={supplier.display_name}>
 					{supplier.display_name}
 				</p>
-			) : (
-				<p className='text-sm text-zinc-500'>Ningún proveedor elegible</p>
-			)}
-			{lastPurchase && (
-				<p className='mt-0.5 text-xs text-zinc-500 dark:text-zinc-400'>
-					Última compra el {formatReportDate(lastPurchase.received_on)} (hace{' '}
-					{lastPurchase.days_since_purchase}{' '}
-					{lastPurchase.days_since_purchase === 1 ? 'día' : 'días'})
-				</p>
-			)}
+				{lastPurchase && (
+					<p className='mt-0.5 text-xs text-zinc-500 dark:text-zinc-400'>
+						Última compra el {formatReportDate(lastPurchase.received_on)} (hace{' '}
+						{plural(lastPurchase.days_since_purchase, 'día', 'días')})
+					</p>
+				)}
+			</div>
+		);
+	return (
+		<div className='min-w-0 max-w-[240px] text-sm text-zinc-600 dark:text-zinc-300'>
+			<p>
+				{plural(
+					recommendation.historical_supplier_count,
+					'proveedor con compras',
+					'proveedores con compras',
+				)}
+			</p>
+			<p className='mt-0.5 text-xs text-zinc-500 dark:text-zinc-400'>
+				{plural(recommendation.eligible_supplier_count, 'elegible', 'elegibles')}
+			</p>
+		</div>
+	);
+};
+
+/** Disponible de la filial; negativo tras un faltante real (reservas sobre lo apto). */
+const AvailableCell: React.FC<{ value: number }> = ({ value }) => (
+	<div className='flex flex-col items-end'>
+		<UnitsCell value={value} emphasis />
+		{value < 0 && (
+			<span className='text-xs font-medium text-red-700 dark:text-red-300'>
+				Reservado sobre lo apto
+			</span>
+		)}
+	</div>
+);
+
+interface IStatusTabsProps {
+	active: TReplenishmentStatus | null;
+	counts: Record<TReplenishmentStatus, number> | null;
+	total: number | null;
+	onChange: (status: TReplenishmentStatus | null) => void;
+}
+
+/**
+ * Pestañas por estado de la recomendación. Los números son `status_counts`,
+ * que ignoran el estado elegido: cada pestaña conserva el suyo mientras se
+ * lista otra. Mientras no llega la primera respuesta, sin número.
+ */
+const StatusTabs: React.FC<IStatusTabsProps> = ({ active, counts, total, onChange }) => {
+	const options: { value: TReplenishmentStatus | null; label: string; count: number | null }[] = [
+		{ value: null, label: 'Todos', count: total },
+		...REPLENISHMENT_STATUSES.map((status) => ({
+			value: status,
+			label: REPLENISHMENT_LABELS[status],
+			count: counts ? counts[status] : null,
+		})),
+	];
+	return (
+		<div role='group' aria-label='Estado de la recomendación' className='flex flex-wrap gap-2'>
+			{options.map((option) => (
+				<Button
+					key={option.value ?? 'todos'}
+					size='sm'
+					variant={option.value === active ? 'solid' : 'outline'}
+					aria-pressed={option.value === active}
+					onClick={() => onChange(option.value)}>
+					{option.count === null ? option.label : `${option.label} · ${option.count}`}
+				</Button>
+			))}
 		</div>
 	);
 };
@@ -68,112 +132,98 @@ interface IAccionesReportProps {
 }
 
 /**
- * Acciones: productos bajo el umbral, con el proveedor al que conviene
- * comprarle según las compras anteriores. El contrato no sugiere cantidad:
- * el stock objetivo está fuera de alcance (§13).
+ * Acciones: productos en stock crítico de la empresa, lo más urgente primero,
+ * con el proveedor al que conviene comprarle según las compras anteriores
+ * (`GET P/replenishment-candidates`, §13). El orden es el del backend y no se
+ * cambia; tampoco hay sucursal: el stock es de la filial. El contrato no
+ * sugiere cantidad a comprar y no se exporta: el backend no lo ofrece.
  */
 const AccionesReport: React.FC<IAccionesReportProps> = ({ context, filtersApi }) => {
 	const navigate = useNavigate();
 	const { pathname, search } = useLocation();
-	const { filters, hasFilters, setBusqueda, setSucursal, setOrden, paginate, limpiar } =
-		filtersApi;
+	const { all } = useCan();
+	const { filters, setBusqueda, setReposicion, paginate, limpiar } = filtersApi;
 	const data = useAccionesReport(context, filters);
-	const exporter = useLocalReportExport(data.buildExportDocument);
-	const sort: TableSortState<string> = data.sort
-		? { key: data.sort.field, direction: data.sort.direction }
-		: null;
+	const hasSearch = filters.busqueda.trim() !== '';
+
+	const { lastPageIfOutOfRange } = data;
+	useEffect(() => {
+		if (lastPageIfOutOfRange !== null) paginate(lastPageIfOutOfRange, filters.perPage);
+	}, [lastPageIfOutOfRange, filters.perPage, paginate]);
+
+	/** Sólo con **todo** el `authority` de la ruta destino, la regla de `AuthorityCheck`. */
+	const canOpen = (link: IPageLink): boolean => all([...link.authority]);
+	const open = (link: IPageLink) =>
+		navigate(link.to, { state: { from: `${pathname}${search}` } });
+
+	let emptyTitle = 'No hay nada que reponer';
+	let emptyHint = 'Ningún producto con umbral tiene el disponible en o bajo él.';
+	if (hasSearch) {
+		emptyTitle = 'Ningún producto coincide con la búsqueda';
+		emptyHint = 'Prueba con otro nombre, SKU o código de barras.';
+	} else if (filters.reposicion) {
+		emptyTitle = `Ningún producto en «${REPLENISHMENT_LABELS[filters.reposicion]}»`;
+		emptyHint = 'Elige otro estado o «Todos».';
+	}
 
 	return (
 		<div className='space-y-4'>
-			{data.source === 'mock' && <SimulatedDataNotice />}
-			<InventoryReportSummary kpis={data.kpis} loading={data.loading} expected />
 			{data.error && <ReportLoadError error={data.error} onRetry={data.refresh} />}
 			<InventoryReportFilters
 				branches={context.branches}
-				sucursal={filters.sucursal}
-				onSucursal={setSucursal}
 				busqueda={filters.busqueda}
 				onBusqueda={setBusqueda}
 				onLimpiar={limpiar}
 			/>
+			<StatusTabs
+				active={filters.reposicion}
+				counts={data.statusCounts}
+				total={data.totalCount}
+				onChange={setReposicion}
+			/>
 			<ReportTableCard
 				title='Qué reponer'
-				description={`Productos bajo el umbral y el proveedor de su compra más reciente · ${context.scopeLabel}`}
+				description='Productos en stock crítico de la empresa, lo más urgente primero, y el proveedor al que conviene comprarle'
 				ariaLabel='Reporte de reposición'
-				minWidthClass='min-w-[960px]'
+				minWidthClass='min-w-[1040px]'
 				columnCount={COLUMN_COUNT}
 				head={
 					<Tr>
-						<SortableTableHeader
-							label='Producto'
-							sortKey='producto'
-							sort={sort}
-							onSort={setOrden}
-						/>
-						<SortableTableHeader
-							label='Disponible'
-							sortKey='disponible'
-							sort={sort}
-							onSort={setOrden}
-							align='right'
-						/>
-						<SortableTableHeader
-							label='Umbral'
-							sortKey='umbral'
-							sort={sort}
-							onSort={setOrden}
-							align='right'
-						/>
-						<SortableTableHeader
-							label='Proveedor sugerido'
-							sortKey='proveedor'
-							sort={sort}
-							onSort={setOrden}
-						/>
-						<SortableTableHeader
-							label='Sugerencia'
-							sortKey='sugerencia'
-							sort={sort}
-							onSort={setOrden}
-							align='center'
-						/>
+						<Th scope='col'>Producto</Th>
+						<Th scope='col' className='text-right'>
+							Disponible
+						</Th>
+						<Th scope='col' className='text-right'>
+							Umbral
+						</Th>
+						<Th scope='col'>Proveedor sugerido</Th>
+						<Th scope='col' className='text-center'>
+							Recomendación
+						</Th>
 						<Th scope='col' className='text-center'>
 							Acciones
 						</Th>
 					</Tr>
-				}
-				headerActions={
-					<InventoryReportExport
-						subsidiaryId={context.subsidiaryId}
-						exporting={exporter.exporting}
-						disabled={!data.hasReport}
-						onExport={exporter.exportReport}
-					/>
 				}
 				page={data.page}
 				perPage={filters.perPage}
 				onPaginate={paginate}
 				loading={data.loading}
 				hasError={Boolean(data.error)}
-				emptyTitle={
-					hasFilters
-						? 'Ningún producto coincide con estos filtros'
-						: 'No hay nada que reponer'
-				}
-				emptyHint={
-					hasFilters
-						? 'Prueba ajustando o limpiando los filtros.'
-						: 'Todos los productos con umbral tienen disponible por encima de él.'
-				}>
+				emptyTitle={emptyTitle}
+				emptyHint={emptyHint}>
 				{data.page.rows.map((row) => {
 					const { supplier } = row.recommendation;
+					const productLink = inventarioProductoLink(row.product.id);
+					const purchasesLink = inventarioProductoComprasLink(row.product.id);
+					const supplierLink = supplier ? supplierDetailLink(supplier.id) : null;
 					return (
 						<Tr key={row.product.id}>
 							<Td>
 								<ProductCell name={row.product.name} sku={row.product.sku} />
 							</Td>
 							<Td className='text-right'>
-								<UnitsCell value={row.stock.available_quantity} emphasis />
+								<AvailableCell value={row.stock.available_quantity} />
 							</Td>
 							<Td className='text-right'>
 								{row.stock.threshold === null ? (
@@ -194,36 +244,37 @@ const AccionesReport: React.FC<IAccionesReportProps> = ({ context, filtersApi })
 							</Td>
 							<Td>
 								<div className='flex flex-wrap justify-center gap-2'>
-									{supplier && (
-										<ProtectedButton
-											permission='view-procurement-supplier'
-											subsidiaryId={context.subsidiaryId}
-											scope='visible'
-											size='sm'
-											variant='outline'
-											icon='HeroTruck'
-											aria-label={`Ver proveedor ${supplier.display_name}`}
-											onClick={() =>
-												navigate(`${SUPPLIER_DETAIL_PATH}/${supplier.id}`)
-											}>
-											Proveedor
-										</ProtectedButton>
-									)}
-									<PermissionGuard permission='view-product'>
+									{canOpen(productLink) && (
 										<Button
 											size='sm'
 											variant='outline'
 											icon='HeroEye'
 											color='violet'
 											aria-label={`Ver ficha de ${row.product.name}`}
-											onClick={() =>
-												navigate(inventarioProductoPath(row.product.id), {
-													state: { from: `${pathname}${search}` },
-												})
-											}>
-											Ver
+											onClick={() => open(productLink)}>
+											Ficha
 										</Button>
-									</PermissionGuard>
+									)}
+									{canOpen(purchasesLink) && (
+										<Button
+											size='sm'
+											variant='outline'
+											icon='HeroShoppingCart'
+											aria-label={`Ver compras de ${row.product.name}`}
+											onClick={() => open(purchasesLink)}>
+											Compras
+										</Button>
+									)}
+									{supplier && supplierLink && canOpen(supplierLink) && (
+										<Button
+											size='sm'
+											variant='outline'
+											icon='HeroTruck'
+											aria-label={`Ver proveedor ${supplier.display_name}`}
+											onClick={() => open(supplierLink)}>
+											Proveedor
+										</Button>
+									)}
 								</div>
 							</Td>
 						</Tr>

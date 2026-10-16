@@ -3,7 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IInventoryReportContext } from '@/pages/reportes/inventory-reports/types';
 import type { TInventoryReportFiltersApi } from '@/pages/reportes/inventory-reports/hooks/useInventoryReportFilters';
 import InventoryReportsView from '../InventoryReportsView';
@@ -15,8 +15,14 @@ import InventoryReportsView from '../InventoryReportsView';
  * autorización, la consulta de tipos de reporte y el contenido de cada pestaña.
  */
 
+// Permisos que el usuario NO tiene; por defecto, todos los tiene.
+const denied = vi.hoisted(() => ({ perms: new Set<string>() }));
 vi.mock('@/hooks/useAuthorization', () => ({
-	default: () => ({ authorize: () => true, isLoading: false }),
+	default: () => ({
+		authorize: ({ permission }: { permission?: string }) =>
+			!permission || !denied.perms.has(permission),
+		isLoading: false,
+	}),
 }));
 vi.mock('@/pages/reportes/inventory-reports/hooks/useInventoryReportSources', () => ({
 	default: () => ({ ready: true, sourceOf: () => 'api' }),
@@ -83,6 +89,10 @@ const renderReports = (entry: string) => {
 	);
 };
 
+beforeEach(() => {
+	denied.perms = new Set();
+});
+
 describe('InventoryReportsView — ?sucursal= contra las sucursales del perfil', () => {
 	it('ofrece las sucursales de la filial activa que trae el perfil', () => {
 		renderReports('/reportes/inventario');
@@ -102,5 +112,21 @@ describe('InventoryReportsView — ?sucursal= contra las sucursales del perfil',
 
 		expect(screen.getByTestId('sucursal')).toHaveTextContent('5');
 		expect(screen.getByTestId('alcance')).toHaveTextContent('Norte');
+	});
+});
+
+describe('InventoryReportsView — pestaña Acciones', () => {
+	it('se ofrece con view-product, que exige la reposición', () => {
+		renderReports('/reportes/inventario');
+
+		expect(screen.getByRole('tab', { name: /Acciones/ })).toBeInTheDocument();
+	});
+
+	it('sin view-product no se ofrece: la reposición respondería 403', () => {
+		denied.perms = new Set(['view-product']);
+		renderReports('/reportes/inventario');
+
+		expect(screen.getByRole('tab', { name: /Umbrales/ })).toBeInTheDocument();
+		expect(screen.queryByRole('tab', { name: /Acciones/ })).toBeNull();
 	});
 });
