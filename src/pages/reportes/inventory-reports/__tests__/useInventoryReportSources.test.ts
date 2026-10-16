@@ -47,7 +47,7 @@ describe('useInventoryReportSources', () => {
 		await waitFor(() => expect(result.current.ready).toBe(true));
 		expect(getTypes).toHaveBeenCalledWith(2);
 		expect(result.current.sourceOf('stock_health')).toBe('api');
-		expect(result.current.sourceOf('replenishment')).toBe('mock');
+		expect(result.current.sourceOf('dead_stock')).toBe('mock');
 	});
 
 	it('sin la bandera de datos simulados, un tipo que no existe no tiene pestaña', async () => {

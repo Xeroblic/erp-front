@@ -1,7 +1,9 @@
 import type {
 	ICloseSaleRequestItem,
 	ISaleFulfillmentOptionItem,
+	ISaleItem,
 } from '@/interface/sales.interface';
+import type { ISaleCloseError } from '@/utils/saleCloseErrors.util';
 import {
 	fromWarehouseKey,
 	toItemKey,
@@ -12,6 +14,31 @@ import {
 } from '../types';
 
 export const UNLOCATED_NAME = 'Sin ubicación';
+
+/**
+ * En una venta mixta, las series omitidas llegan en errors[id], sin required.
+ * Entre los ítems con producto y cantidad positiva, la vista previa enumera todos
+ * los que no llevan serie. Sólo recuperamos filas rechazadas que no figuran allí.
+ * El llamador debe haber cargado la vista previa de esta venta correctamente.
+ */
+export const getUnlistedSerialItemIds = (
+	error: ISaleCloseError,
+	options: readonly ISaleFulfillmentOptionItem[],
+	saleItems: readonly ISaleItem[],
+): number[] => {
+	if (error.status !== 422) return [];
+	const nonSerialIds = new Set(options.map((option) => option.sale_item_id));
+	return saleItems
+		.filter(
+			(item) =>
+				item.product?.id === item.product_id &&
+				item.product_id > 0 &&
+				item.quantity > 0 &&
+				!nonSerialIds.has(item.id) &&
+				(error.fieldErrors?.[String(item.id)]?.length ?? 0) > 0,
+		)
+		.map((item) => item.id);
+};
 
 const EMPTY_ROW: ILocationAllocationRow = { warehouseKey: '', quantity: '' };
 

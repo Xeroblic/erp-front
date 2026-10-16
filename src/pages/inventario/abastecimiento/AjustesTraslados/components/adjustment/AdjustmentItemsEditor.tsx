@@ -157,10 +157,14 @@ const AdjustmentItemsEditor: FC<IAdjustmentItemsEditorProps> = ({
 									: null;
 							const productError = errorFor(index, 'productId');
 							// El saldo bajo cero se avisa al escribir; el resto de los
-							// mensajes de la línea vienen del esquema al enviar.
-							const deltaError = belowZero
-								? `El egreso supera el stock en sistema (${balance ?? 0}).`
-								: errorFor(index, 'quantityDelta');
+							// mensajes de la línea vienen del esquema o del servidor al
+							// enviar. Esos van primero: el «Disponible» de un 409 cuenta
+							// sólo unidades con procedencia y puede ser menor que el saldo.
+							const deltaError =
+								errorFor(index, 'quantityDelta') ??
+								(belowZero
+									? `El egreso supera el stock en sistema (${balance ?? 0}).`
+									: undefined);
 							return (
 								// El índice es la identidad real de una línea en blanco: dos
 								// filas recién agregadas no tienen producto que las distinga.

@@ -15,9 +15,8 @@ import {
 	isInventoryReportView,
 	type TInventoryReportView,
 } from '@/pages/reportes/inventory-reports/inventoryReportTabs';
+import { REPLENISHMENT_STATUSES } from '@/services/reports/inventoryReports.service';
 import { parseIdParam, parsePageParam } from '@/utils/listSearchParams.util';
-
-export const SUPPLIER_DETAIL_PATH = '/inventario/abastecimiento/proveedores';
 
 /** Lo que comparten las pestañas de una sesión (usuario + filial). */
 export interface IInventoryReportContext {
@@ -48,6 +47,8 @@ export interface IInventoryReportFilters {
 	sucursal: number | null;
 	/** Estado visible del stock (sólo Umbrales). */
 	estado: TInventoryStockStatusFilter | null;
+	/** Estado de la recomendación (sólo Acciones); `null` es «todos». */
+	reposicion: TReplenishmentStatus | null;
 	/** `null`: el orden en que llega el reporte. */
 	orden: IInventoryReportSort | null;
 	page: number;
@@ -63,6 +64,7 @@ export const DEFAULT_INVENTORY_REPORT_FILTERS: IInventoryReportFilters = {
 	busqueda: '',
 	sucursal: null,
 	estado: null,
+	reposicion: null,
 	orden: null,
 	page: 1,
 	perPage: INVENTORY_REPORT_PER_PAGE_DEFAULT,
@@ -77,6 +79,9 @@ const ESTADOS: readonly TInventoryStockStatusFilter[] = [
 
 export const isEstado = (value: string | null): value is TInventoryStockStatusFilter =>
 	ESTADOS.some((estado) => estado === value);
+
+export const isReposicionEstado = (value: string | null): value is TReplenishmentStatus =>
+	REPLENISHMENT_STATUSES.some((estado) => estado === value);
 
 const parseOrden = (value: string | null): IInventoryReportSort | null => {
 	if (!value || value === '-') return null;
@@ -101,12 +106,14 @@ export const parseInventoryReportFilters = (
 	const vista = params.get('vista');
 	const sucursal = parseIdParam(params.get('sucursal'));
 	const estado = params.get('estado');
+	const reposicion = params.get('reposicion');
 	const sucursalInScope = sucursal === null || branchIds === null || branchIds.includes(sucursal);
 	return {
 		vista: isInventoryReportView(vista) ? vista : INVENTORY_REPORT_DEFAULT_VIEW,
 		busqueda: params.get('q') ?? '',
 		sucursal: sucursalInScope ? sucursal : null,
 		estado: isEstado(estado) ? estado : null,
+		reposicion: isReposicionEstado(reposicion) ? reposicion : null,
 		orden: parseOrden(params.get('orden')),
 		page: parsePageParam(params.get('page'), 1),
 		perPage: parsePageParam(params.get('per_page'), INVENTORY_REPORT_PER_PAGE_DEFAULT),
@@ -122,6 +129,7 @@ export const serializeInventoryReportFilters = (
 	if (filters.busqueda.trim()) params.set('q', filters.busqueda);
 	if (filters.sucursal !== null) params.set('sucursal', String(filters.sucursal));
 	if (filters.estado !== null) params.set('estado', filters.estado);
+	if (filters.reposicion !== null) params.set('reposicion', filters.reposicion);
 	if (filters.orden)
 		params.set(
 			'orden',

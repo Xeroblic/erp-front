@@ -10,6 +10,7 @@ import Select from '@/components/form/Select';
 import Pagination from '@/components/ui/Pagination';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchTransfers,
@@ -51,6 +52,8 @@ const TransferenciasAdmin: React.FC<TransferenciasAdminProps> = ({
 	const pagination = useAppSelector(selectTransfersPagination);
 	const filters = useAppSelector(selectTransferFilters);
 	const { create: createLoading } = useAppSelector(selectTransferActionLoading);
+	// Un traslado sólo une sucursales de una misma filial: rige la etapa de la filial activa.
+	const { isMultiLocation } = useSubsidiaryRolloutStage();
 
 	const [createModalOpen, setCreateModalOpen] = useState(false);
 	const [detailTransfer, setDetailTransfer] = useState<ITransfer | null>(null);
@@ -273,6 +276,7 @@ const TransferenciasAdmin: React.FC<TransferenciasAdminProps> = ({
 							transfers={transfers}
 							isLoading={loading}
 							onView={(transfer) => setDetailTransfer(transfer)}
+							isMultiLocation={isMultiLocation}
 						/>
 					</CardBody>
 					{pagination.totalPages > 1 && (
@@ -298,6 +302,7 @@ const TransferenciasAdmin: React.FC<TransferenciasAdminProps> = ({
 				isOpen={Boolean(detailTransfer)}
 				onClose={() => setDetailTransfer(null)}
 				transfer={detailTransfer}
+				isMultiLocation={isMultiLocation}
 			/>
 		</PageWrapper>
 	);

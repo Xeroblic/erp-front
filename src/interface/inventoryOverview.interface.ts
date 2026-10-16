@@ -13,10 +13,11 @@ import type {
  * Inventario (`docs/inventario-unificado-contrato.md`). Reutiliza los tipos de
  * `procurement.interface` para lo que el contrato aprobado ya define.
  *
- * El backend sólo publica `GET B/inventory-stock` y `/{product}/origins`: lo
- * que no sale de ahí (reparto por bodega en la lista, totales de unidades,
- * umbral, reservas) llega `null` desde la API real en vez de inventarse. El
- * doble de datos simulados sí lo calcula.
+ * El backend publica `GET B/inventory-stock` y `/{product}/origins`, y el
+ * umbral §13 en el producto (`GET B/products/{product}`), que sólo lee la
+ * ficha. Lo que no sale de ahí (reparto por bodega en la lista, totales de
+ * unidades, umbral y reservas por fila) llega `null` desde la API real en vez
+ * de inventarse. El doble de datos simulados sí lo calcula.
  */
 
 /** Estado del stock crítico (§13 del contrato aprobado). */
@@ -37,9 +38,15 @@ export type TInventoryStockSortField =
 	| 'stock_status';
 export type TInventoryStockSort = TInventoryStockSortField | `-${TInventoryStockSortField}`;
 
-/** Bloque `critical_stock` del §13, calculado para la sucursal (`scope: 'branch'`). */
+/**
+ * Bloque `critical_stock` del §13. La API real lo calcula para la filial
+ * (`scope: 'subsidiary'`) aunque se lea desde una sucursal; el doble, para la
+ * sucursal (`scope: 'branch'`). El estado viene del backend: no se recalcula.
+ */
 export interface IInventoryCriticalStock {
 	scope: 'branch' | 'subsidiary';
+	/** Sólo con `scope: 'subsidiary'`. */
+	subsidiary_id?: number;
 	physical_quantity: number;
 	fit_quantity: number;
 	unfit_quantity: number;
@@ -175,7 +182,14 @@ export interface IInventoryStockDetail {
 	 * vacío con `true` sí significa que no hay unidades.
 	 */
 	warehouses_complete: boolean;
+	/** `null` en productos con serie o si no se pudo leer el producto. */
 	critical_stock: IInventoryCriticalStock | null;
+	/**
+	 * Sucursal cuya ruta edita el umbral: la dueña del producto
+	 * (`PATCH B/products/{product}` exige que `{branch}` sea la suya). `null`: es
+	 * un producto de filial, y ninguna ruta publicada le acepta umbral.
+	 */
+	threshold_branch_id: number | null;
 	series_summary: IInventorySeriesSummary | null;
 }
 

@@ -1,17 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type {
 	IDeadStockReportRow,
-	IReplenishmentReportRow,
 	IStockHealthReportRow,
 	IStockReportRow,
-	TReplenishmentStatus,
 } from '@/interface/inventoryReports.interface';
 import {
 	agingBuckets,
 	branchStockTotals,
 	countByStatus,
 	paginateReportRows,
-	replenishmentKpis,
 	searchReportRows,
 	sortReportRows,
 	statisticsKpis,
@@ -40,18 +37,6 @@ const dead = (days: number | null, units: number): IDeadStockReportRow => ({
 	physical_quantity: units,
 	last_operation_at: days === null ? null : '2026-01-01',
 	days_without_movement: days,
-});
-
-const replenishment = (status: TReplenishmentStatus): IReplenishmentReportRow => ({
-	product: { id: 1, sku: 'SKU-1', name: 'Producto 1' },
-	stock: { physical_quantity: 0, available_quantity: 0, threshold: 5, status: 'critical' },
-	recommendation: {
-		status,
-		historical_supplier_count: 0,
-		eligible_supplier_count: 0,
-		supplier: null,
-		last_purchase: null,
-	},
 });
 
 const kpiValues = (kpis: { label: string; value: number }[]) =>
@@ -124,22 +109,6 @@ describe('KPI y agregados', () => {
 		]);
 
 		expect(counts).toEqual({ out: 2, critical: 1, unconfigured: 0, healthy: 1 });
-	});
-
-	it('Acciones agrupa sin proveedor activo y sin costo comparable como «sin proveedor elegible»', () => {
-		const kpis = replenishmentKpis([
-			replenishment('suggested'),
-			replenishment('without_supplier_history'),
-			replenishment('no_active_suppliers'),
-			replenishment('no_comparable_cost'),
-		]);
-
-		expect(kpiValues(kpis)).toEqual({
-			'Por reponer': 4,
-			'Con proveedor sugerido': 1,
-			'Sin compras anteriores': 1,
-			'Sin proveedor elegible': 2,
-		});
 	});
 
 	it('Estadísticas no descuenta disponibles negativos y cuenta lo inmovilizado desde 90 días', () => {

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	getInventoryReport,
 	parseInventoryReport,
+	parseReplenishmentCandidates,
 	reportRowsOf,
 } from '@/services/reports/inventoryReports.service';
 import { ReportsService, reportFileNameFrom } from '@/services/reports/reports.service';
@@ -97,24 +98,26 @@ describe('Lectura del cuerpo de GET S/reports/{type}', () => {
 		]);
 	});
 
-	it('R2 completa lo opcional y descarta un proveedor o documento incompleto', () => {
-		const result = parseInventoryReport('replenishment', [
-			{
-				product,
-				stock: { available_quantity: '1', threshold: 10 },
-				recommendation: {
-					status: 'suggested',
-					supplier: { id: 5, display_name: 'PCExpress' },
-					last_purchase: {
-						received_on: '2026-09-04',
-						days_since_purchase: 19,
-						quantity: 14,
-						purchase_document: { id: 9, document_type: 'nota' },
+	it('la reposición completa lo opcional y descarta un proveedor o documento incompleto', () => {
+		const result = parseReplenishmentCandidates({
+			data: [
+				{
+					product,
+					stock: { available_quantity: '1', threshold: 10 },
+					recommendation: {
+						status: 'suggested',
+						supplier: { id: 5, display_name: 'PCExpress' },
+						last_purchase: {
+							received_on: '2026-09-04',
+							days_since_purchase: 19,
+							quantity: 14,
+							purchase_document: { id: 9, document_type: 'nota' },
+						},
 					},
 				},
-			},
-			{ product, stock: { available_quantity: 1 }, recommendation: { status: 'otro' } },
-		]);
+				{ product, stock: { available_quantity: 1 }, recommendation: { status: 'otro' } },
+			],
+		});
 
 		expect(result.rows).toEqual([
 			{
@@ -139,6 +142,53 @@ describe('Lectura del cuerpo de GET S/reports/{type}', () => {
 				},
 			},
 		]);
+	});
+
+	it('la reposición lee la página de `meta` y los conteos de `context.status_counts`', () => {
+		const result = parseReplenishmentCandidates({
+			data: [],
+			meta: { current_page: 2, last_page: 3, total: 41 },
+			context: {
+				status_counts: {
+					suggested: 30,
+					without_supplier_history: '6',
+					no_comparable_cost: 5,
+				},
+			},
+		});
+
+		expect(result).toEqual({
+			rows: [],
+			page: 2,
+			lastPage: 3,
+			total: 41,
+			statusCounts: {
+				suggested: 30,
+				without_supplier_history: 6,
+				no_active_suppliers: 0,
+				no_comparable_cost: 5,
+			},
+		});
+	});
+
+	it('la reposición conserva un disponible negativo', () => {
+		const result = parseReplenishmentCandidates({
+			data: [
+				{
+					product,
+					stock: { physical_quantity: 2, available_quantity: -4, threshold: 0 },
+					recommendation: { status: 'no_active_suppliers', historical_supplier_count: 2 },
+				},
+			],
+		});
+
+		expect(result.rows[0]?.stock.available_quantity).toBe(-4);
+		expect(result.rows[0]?.recommendation).toMatchObject({
+			status: 'no_active_suppliers',
+			historical_supplier_count: 2,
+			eligible_supplier_count: 0,
+			supplier: null,
+		});
 	});
 
 	it('R3 conserva la ausencia de movimiento como null', () => {

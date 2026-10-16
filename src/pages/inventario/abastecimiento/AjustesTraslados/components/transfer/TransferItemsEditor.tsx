@@ -81,10 +81,12 @@ const TransferItemsEditor: FC<ITransferItemsEditorProps> = ({
 								quantity > balance;
 							const productError = errorFor(index, 'productId');
 							// El saldo insuficiente se avisa al escribir; el resto de los
-							// mensajes de la línea vienen del esquema al enviar.
-							const quantityError = exceeds
-								? `Sólo hay ${balance ?? 0} en el origen.`
-								: errorFor(index, 'quantity');
+							// mensajes de la línea vienen del esquema o del servidor al
+							// enviar. Esos van primero: el «Disponible» de un 409 cuenta
+							// sólo unidades con procedencia y puede ser menor que el saldo.
+							const quantityError =
+								errorFor(index, 'quantity') ??
+								(exceeds ? `Sólo hay ${balance ?? 0} en el origen.` : undefined);
 							return (
 								// El índice es la identidad real de una línea en blanco:
 								// dos filas recién agregadas no tienen todavía producto que

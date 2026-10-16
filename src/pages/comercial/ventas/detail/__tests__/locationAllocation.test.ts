@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { ISaleFulfillmentOptionItem } from '@/interface/sales.interface';
+import type { ISaleFulfillmentOptionItem, ISaleItem } from '@/interface/sales.interface';
+import { resolveSaleCloseError } from '@/utils/saleCloseErrors.util';
 import { buildLocationAllocationSchema, type ILocationAllocationValues } from '../types';
 import {
 	buildLocationAllocationValues,
 	describeLocation,
+	getUnlistedSerialItemIds,
 	toCloseAllocationItems,
 } from '../utils/locationAllocation';
 
@@ -40,6 +42,30 @@ const validationMessages = async (
 		return (error as { errors: string[] }).errors;
 	}
 };
+
+describe('getUnlistedSerialItemIds', () => {
+	it('sólo agrega ítems rechazados con producto válido ausentes de las opciones sin serie', () => {
+		const error = resolveSaleCloseError({
+			response: {
+				status: 422,
+				data: {
+					message: 'Validación por ítem',
+					errors: Object.fromEntries(
+						[201, 202, 203, 204, 999].map((id) => [id, ['Revisa el ítem.']]),
+					),
+				},
+			},
+		});
+		const saleItems = [201, 202, 203, 204].map((id) => ({
+			id,
+			product_id: id,
+			product: id === 203 ? undefined : { id },
+			quantity: id === 204 ? 0 : 1,
+		})) as ISaleItem[];
+		expect(getUnlistedSerialItemIds(error, [option(201)], saleItems)).toEqual([202]);
+		expect(getUnlistedSerialItemIds({ ...error, status: 409 }, [], saleItems)).toEqual([]);
+	});
+});
 
 describe('buildLocationAllocationValues', () => {
 	it('sólo los ítems manuales llevan elección y parten de la sugerencia', () => {

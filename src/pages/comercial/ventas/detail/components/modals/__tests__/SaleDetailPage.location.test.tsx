@@ -1,14 +1,14 @@
 import type { PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import salesReducer from '@/store/slices/salesSlice';
 import type { ISaleFulfillmentOptionItem } from '@/interface/sales.interface';
 import SaleDetailPage from '../SaleDetailPage';
 
 const { fetchData, stage } = vi.hoisted(() => ({
-	fetchData: vi.fn(),
+	fetchData: vi.fn<(cfg: IRequestCfg) => Promise<unknown>>(),
 	stage: { isMultiLocation: true },
 }));
 
@@ -126,7 +126,7 @@ const routeApi = (
 };
 
 const callsTo = (matches: (cfg: IRequestCfg) => boolean) =>
-	fetchData.mock.calls.map(([cfg]) => cfg as IRequestCfg).filter(matches);
+	fetchData.mock.calls.map(([cfg]) => cfg).filter(matches);
 const closeCalls = () => callsTo((cfg) => cfg.method === 'post' && cfg.url.endsWith('/close'));
 const previewCalls = () => callsTo((cfg) => cfg.url === PREVIEW_URL);
 
@@ -151,7 +151,10 @@ const confirmButton = () => screen.getByRole('button', { name: /Confirmar cierre
 
 const confirmWhenReady = async () => {
 	await waitFor(() => expect(confirmButton().hasAttribute('disabled')).toBe(false));
-	fireEvent.click(confirmButton());
+	await act(async () => {
+		fireEvent.click(confirmButton());
+		await Promise.resolve();
+	});
 };
 
 const ok200 = (fulfilled: unknown[]) => () =>
@@ -370,5 +373,197 @@ describe('SaleDetailPage — cierre con ubicación (etapa 2)', () => {
 		expect(
 			within(result).getByText('3 de «Bodega Central» · 2 de «Sin ubicación»'),
 		).toBeTruthy();
+	});
+
+	it.each(['omitida', 'fallida'] as const)(
+		'recupera las series de una venta mixta con la consulta de pendientes %s',
+		async (pendingState) => {
+			routeApi(
+				[() => preview(option())],
+				[
+					() =>
+						rejectWith(422, {
+							message: 'Errores de validación en seriales.',
+							errors: { '202': ['Faltan seriales para este item.'] },
+						}),
+					ok200([]),
+				],
+			);
+			const originalApi = fetchData.getMockImplementation()!;
+			fetchData.mockImplementation((cfg: IRequestCfg) => {
+				if (cfg.url.endsWith('/items'))
+					return Promise.resolve({
+						data: {
+							data: [
+								...items,
+								{
+									id: 202,
+									product_id: 32,
+									product: { id: 32, sku: 'SER-1', name: 'Notebook' },
+									quantity: 1,
+								},
+							],
+						},
+					});
+				if (pendingState === 'fallida' && cfg.url.endsWith('/pending-serial-assignment')) {
+					return rejectWith(500, { message: 'No disponible' });
+				}
+				return originalApi(cfg);
+			});
+			await openClose();
+			await screen.findByRole('group', { name: CABLE });
+			await confirmWhenReady();
+			const serial = await screen.findByPlaceholderText('Escanear serie #1...');
+			expect(closeCalls()).toHaveLength(1);
+			fireEvent.change(serial, { target: { value: 'SN-202' } });
+			await confirmWhenReady();
+			await waitFor(() => expect(closeCalls()).toHaveLength(2));
+			expect(closeCalls()[1].data).toEqual({
+				items: [
+					expect.objectContaining({ sale_item_id: 202, serial_numbers: ['SN-202'] }),
+					{
+						sale_item_id: 201,
+						allocations: [
+							{ warehouse_id: 8, quantity: 3 },
+							{ warehouse_id: null, quantity: 2 },
+						],
+					},
+				],
+			});
+		},
+	);
+
+	it('conserva la serie escaneada cuando un 422 agrega otra fila', async () => {
+		routeApi(
+			[() => preview(option())],
+			[
+				() =>
+					rejectWith(422, {
+						message: 'Errores de validación en seriales.',
+						errors: { '203': ['Faltan seriales para este item.'] },
+					}),
+				ok200([]),
+			],
+		);
+		const originalApi = fetchData.getMockImplementation()!;
+		fetchData.mockImplementation((cfg: IRequestCfg) => {
+			if (cfg.url.endsWith('/items'))
+				return Promise.resolve({
+					data: {
+						data: [
+							...items,
+							...[202, 203].map((id) => ({
+								id,
+								product_id: id,
+								product: { id, sku: `SER-${id}`, name: 'Notebook' },
+								quantity: 1,
+							})),
+						],
+					},
+				});
+			if (cfg.url.endsWith('/pending-serial-assignment'))
+				return Promise.resolve({
+					data: { data: [{ id: 90, serialized_items: [{ sale_item_id: 202 }] }] },
+				});
+			return originalApi(cfg);
+		});
+		await openClose();
+		await screen.findByRole('group', { name: CABLE });
+		fireEvent.change(document.getElementById('serial-input-202-0')!, {
+			target: { value: 'SN-202' },
+		});
+		await confirmWhenReady();
+		await waitFor(() => expect(document.getElementById('serial-input-203-0')).toBeTruthy());
+		expect((document.getElementById('serial-input-202-0') as HTMLInputElement).value).toBe(
+			'SN-202',
+		);
+		fireEvent.change(document.getElementById('serial-input-203-0')!, {
+			target: { value: 'SN-203' },
+		});
+		await confirmWhenReady();
+		await waitFor(() => expect(closeCalls()).toHaveLength(2));
+		expect(closeCalls()[1].data).toEqual({
+			items: [
+				expect.objectContaining({ sale_item_id: 202, serial_numbers: ['SN-202'] }),
+				expect.objectContaining({ sale_item_id: 203, serial_numbers: ['SN-203'] }),
+				expect.objectContaining({ sale_item_id: 201, allocations: expect.any(Array) }),
+			],
+		});
+	});
+
+	it('recupera ubicaciones desde el cierre directo cuando no se conoce la etapa', async () => {
+		stage.isMultiLocation = false;
+		routeApi(
+			[() => preview(option())],
+			[
+				() =>
+					rejectWith(422, {
+						message: 'Elige las ubicaciones.',
+						code: 'LOCATION_SELECTION_REQUIRED',
+						errors: { '201': ['Indica las ubicaciones y cantidades de este ítem.'] },
+					}),
+				ok200([]),
+			],
+		);
+		await openClose();
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+			await Promise.resolve();
+		});
+		await screen.findByRole('group', { name: CABLE });
+		expect(previewCalls()).toHaveLength(1);
+		expect(closeCalls()).toHaveLength(1);
+		await confirmWhenReady();
+		await waitFor(() => expect(closeCalls()).toHaveLength(2));
+		expect(closeCalls()[1].data).toEqual({
+			items: [expect.objectContaining({ sale_item_id: 201, allocations: expect.any(Array) })],
+		});
+	});
+
+	it('habilita ubicaciones desde el modal de series si la etapa no se pudo leer', async () => {
+		stage.isMultiLocation = false;
+		routeApi(
+			[() => preview(option({ sale_item_id: 203 }))],
+			[
+				() =>
+					rejectWith(422, {
+						message: 'Elige las ubicaciones.',
+						code: 'LOCATION_SELECTION_REQUIRED',
+						errors: { '203': ['Indica las ubicaciones.'] },
+					}),
+				ok200([]),
+			],
+		);
+		const originalApi = fetchData.getMockImplementation()!;
+		fetchData.mockImplementation((cfg: IRequestCfg) => {
+			if (cfg.url.endsWith('/pending-serial-assignment'))
+				return Promise.resolve({
+					data: { data: [{ id: 90, serialized_items: [{ sale_item_id: 201 }] }] },
+				});
+			return originalApi(cfg);
+		});
+		await openClose();
+		const serials = await screen.findAllByPlaceholderText(/Escanear serie/);
+		serials.forEach((serial, index) =>
+			fireEvent.change(serial, { target: { value: `SN-${index}` } }),
+		);
+		await confirmWhenReady();
+		await screen.findByText('Ubicación de salida');
+		expect(previewCalls()).toHaveLength(1);
+		expect(closeCalls()).toHaveLength(1);
+		expect((document.getElementById('serial-input-201-0') as HTMLInputElement).value).toBe(
+			'SN-0',
+		);
+		await confirmWhenReady();
+		await waitFor(() => expect(closeCalls()).toHaveLength(2));
+		expect(closeCalls()[1].data).toEqual({
+			items: [
+				expect.objectContaining({
+					sale_item_id: 201,
+					serial_numbers: ['SN-0', 'SN-1', 'SN-2', 'SN-3', 'SN-4'],
+				}),
+				expect.objectContaining({ sale_item_id: 203, allocations: expect.any(Array) }),
+			],
+		});
 	});
 });

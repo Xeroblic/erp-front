@@ -827,12 +827,29 @@ export interface IStockReceiptItem {
  * received_on, items_count, total_quantity, created_at, posted_at,
  * allowed_actions.
  */
+/**
+ * Dónde ingresó el stock de una recepción contabilizada, con la forma del
+ * `context` de stock por ubicación. Lo decide la etapa de la filial **al
+ * contabilizar**: la etapa 1 ingresa a «Sin ubicación» aunque la recepción
+ * indique una bodega; la etapa 2, a esa bodega. Es historia, no dónde están
+ * hoy las unidades.
+ */
+export type TStockReceiptEnteredLocation =
+	| { scope: 'warehouse'; warehouse: IWarehouseCompact }
+	| { scope: 'unlocated'; warehouse: null };
+
 export interface IStockReceiptListRow {
 	id: number;
 	subsidiary_id: number;
 	branch_id: number;
 	status: TStockReceiptStatus;
+	/** Bodega que la recepción indica. Dónde ingresó el stock está en `entered_location`. */
 	warehouse: IWarehouseCompact;
+	/**
+	 * `null` mientras no ingresó nada (`draft`, `queued`, `failed`,
+	 * `cancelled`); una recepción `reversed` conserva dónde había ingresado.
+	 */
+	entered_location: TStockReceiptEnteredLocation | null;
 	supplier: ISupplierCompact | null;
 	purchase_document: IPurchaseDocumentCompact | null;
 	received_on: TBusinessDate;

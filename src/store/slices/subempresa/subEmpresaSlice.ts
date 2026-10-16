@@ -191,8 +191,11 @@ export const fetchSubsidiaryRolloutStage = createAsyncThunk<
 	},
 	{
 		condition: (subsidiaryId, { getState }) => {
-			const status = getState().subEmpresa?.rolloutStageById?.[subsidiaryId]?.status;
-			return status !== 'loading' && status !== 'loaded';
+			const entry = getState().subEmpresa?.rolloutStageById?.[subsidiaryId];
+			return (
+				entry?.status !== 'loading' &&
+				!(entry?.status === 'loaded' && entry.multiLocationEnabled !== null)
+			);
 		},
 	},
 );
