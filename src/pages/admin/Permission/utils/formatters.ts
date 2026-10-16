@@ -304,6 +304,9 @@ const PERMISSION_LABELS: Record<string, string> = {
 	'invite-user': 'Invitar Usuarios',
 	'view-users': 'Ver Usuarios',
 	'edit-users': 'Editar Usuarios',
+	// Grupo `critical-stock` del backend. Rótulo de `config/rbac_labels.php`, por
+	// si el listado llega sin `display_name`.
+	'receive-critical-stock-alerts': 'Recibir avisos de stock crítico',
 };
 
 export const normalizePermissionKey = (name?: string) => {

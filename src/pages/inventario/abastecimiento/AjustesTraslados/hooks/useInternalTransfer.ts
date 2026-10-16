@@ -29,6 +29,7 @@ import useStepWizard from '@/pages/inventario/abastecimiento/AjustesTraslados/ho
 import {
 	NO_PRESELECTION,
 	resolvePreselectedLocation,
+	shortageLineFrom,
 	TRASLADO_STEPS,
 	type IAjustesTrasladosPreselection,
 	type TTrasladoStep,
@@ -109,6 +110,9 @@ export default function useInternalTransfer(
 	// `onSubmit` congela nombre y SKU antes de escribir; la consulta del origen
 	// depende del formulario, así que sus filas le llegan por ref.
 	const originRowsRef = useRef<IInventoryStockRow[]>([]);
+	// El asistente se arma después del formulario (valida con él): `onSubmit`
+	// lo alcanza por ref para volver a «Productos».
+	const showItemsRef = useRef<() => void>(() => undefined);
 
 	const labelFor = useCallback(
 		(token: string): string => {
@@ -167,6 +171,8 @@ export default function useInternalTransfer(
 						// líneas ya no es el vigente.
 						if (error.code === 'INSUFFICIENT_LOCATION_STOCK')
 							setRetry((value) => value + 1);
+						// Con la línea identificada, se corrige donde está marcada.
+						if (shortageLineFrom(error, formValues.items)) showItemsRef.current();
 					},
 				},
 			);
@@ -308,14 +314,28 @@ export default function useInternalTransfer(
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [values.from, values.to, values.items]);
 
-	/*
-	 * Errores de línea del último 422 (`items.N.campo`). Se derivan del error de
-	 * escritura, así que desaparecen con él al editar la ruta o las líneas.
-	 */
-	const serverLineErrors = useMemo(
-		() => trasladoLineErrorsFrom(writeError?.fieldErrors ?? null),
-		[writeError],
+	/** Línea que no alcanzó en el último `409 INSUFFICIENT_LOCATION_STOCK`. */
+	const shortage = useMemo(
+		() => shortageLineFrom(writeError, values.items),
+		[writeError, values.items],
 	);
+
+	/*
+	 * Errores de línea del último 422 (`items.N.campo`) y la línea del faltante
+	 * del 409. Se derivan del error de escritura, así que desaparecen con él al
+	 * editar la ruta o las líneas.
+	 */
+	const serverLineErrors = useMemo(() => {
+		const lines = trasladoLineErrorsFrom(writeError?.fieldErrors ?? null);
+		if (!shortage) return lines;
+		return {
+			...lines,
+			[shortage.index]: {
+				...lines[shortage.index],
+				quantity: `Disponible: ${shortage.available}`,
+			},
+		};
+	}, [writeError, shortage]);
 	const serverLineErrorCount = Object.keys(serverLineErrors).length;
 
 	const balanceFor = useCallback(
@@ -487,6 +507,7 @@ export default function useInternalTransfer(
 
 	const wizard = useStepWizard(TRASLADO_STEPS, validateStep);
 	const { restartAt, finish } = wizard;
+	showItemsRef.current = () => restartAt(TRASLADO_STEPS.indexOf('items'));
 
 	const { submitForm } = formik;
 	const submit = useCallback(() => finish(submitForm), [finish, submitForm]);
@@ -507,6 +528,7 @@ export default function useInternalTransfer(
 		balanceFor,
 		errorFor,
 		serverLineErrorCount,
+		shortage,
 		setOrigin,
 		setItem,
 		addItem,

@@ -12,7 +12,7 @@ import type { IInventoryReportBranch } from '@/interface/inventoryReports.interf
 
 // Fixtures de `inventoryStock.db.ts`, sucursal 4.
 const BRANCHES: IInventoryReportBranch[] = [{ id: 4, name: 'Casa Matriz' }];
-const MOUSE_ID = 31; // 19 en bodega, 1 disponible, umbral 10, última compra 2026-09-04 a PCExpress
+const MOUSE_ID = 31; // 19 en bodega, 1 disponible, umbral 10
 const KEYBOARD_ID = 67; // 16 disponibles, umbral 3, última entrada 2026-09-08
 const NOTEBOOK_ID = 44; // con serie: sin umbral, fuera de R1
 
@@ -32,18 +32,13 @@ const healthRows = async () => {
 	if (result.type !== 'stock_health') throw new Error('Tipo inesperado');
 	return result.rows;
 };
-const replenishmentRows = async () => {
-	const result = await getInventoryReportMock('replenishment', { branchId: null }, BRANCHES);
-	if (result.type !== 'replenishment') throw new Error('Tipo inesperado');
-	return result.rows;
-};
 const deadRows = async (days: number) => {
 	const result = await getInventoryReportMock('dead_stock', { branchId: null, days }, BRANCHES);
 	if (result.type !== 'dead_stock') throw new Error('Tipo inesperado');
 	return result.rows;
 };
 
-describe('Mock de Reportes › Inventario (R1–R3)', () => {
+describe('Mock de Reportes › Inventario (R1 y R3)', () => {
 	it('cuenta los días enteros desde una fecha de negocio, nunca negativos', () => {
 		const today = new Date(2026, 8, 23, 23, 59);
 
@@ -74,21 +69,6 @@ describe('Mock de Reportes › Inventario (R1–R3)', () => {
 		expect(rows.find((row) => row.product.id === KEYBOARD_ID)).toMatchObject({
 			threshold: 20,
 			status: 'critical',
-		});
-	});
-
-	it('R2 sólo lista lo que está bajo el umbral, con el proveedor de la última compra', async () => {
-		const rows = await replenishmentRows();
-
-		expect(rows).toHaveLength(1);
-		expect(rows[0]).toMatchObject({
-			product: { id: MOUSE_ID },
-			stock: { available_quantity: 1, threshold: 10, status: 'critical' },
-			recommendation: {
-				status: 'suggested',
-				supplier: { display_name: 'PCExpress' },
-				last_purchase: { received_on: '2026-09-04', days_since_purchase: 19 },
-			},
 		});
 	});
 

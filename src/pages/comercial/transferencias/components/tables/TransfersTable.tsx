@@ -4,11 +4,14 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import type { ITransfer, TransferStatus } from '@/interface/transfers.interface';
+import transferWarehouseLabel from '../../utils/transferLocation';
 
 interface TransfersTableProps {
 	transfers: ITransfer[];
 	isLoading?: boolean;
 	onView: (transfer: ITransfer) => void;
+	/** Etapa 2 de la filial: una bodega sin `id` se lee «Sin ubicación». */
+	isMultiLocation?: boolean;
 }
 
 const statusConfig: Record<
@@ -37,7 +40,12 @@ const formatDate = (date: string) => {
 	}
 };
 
-const TransfersTable: React.FC<TransfersTableProps> = ({ transfers, isLoading, onView }) => {
+const TransfersTable: React.FC<TransfersTableProps> = ({
+	transfers,
+	isLoading,
+	onView,
+	isMultiLocation = false,
+}) => {
 	if (isLoading) {
 		return (
 			<div className='space-y-3 p-4'>
@@ -115,7 +123,11 @@ const TransfersTable: React.FC<TransfersTableProps> = ({ transfers, isLoading, o
 										<div className='flex items-center space-x-1 text-gray-500'>
 											<Icon icon='HeroArrowLongRight' className='h-4 w-4' />
 											<span>
-												{transfer.from_warehouse?.name || 'Bodega origen'}
+												{transferWarehouseLabel(
+													transfer.from_warehouse,
+													isMultiLocation,
+													'Bodega origen',
+												)}
 											</span>
 										</div>
 										<div className='mt-1 flex items-center space-x-1'>
@@ -130,7 +142,11 @@ const TransfersTable: React.FC<TransfersTableProps> = ({ transfers, isLoading, o
 										<div className='flex items-center space-x-1 text-gray-500'>
 											<Icon icon='HeroArrowLongRight' className='h-4 w-4' />
 											<span>
-												{transfer.to_warehouse?.name || 'Bodega destino'}
+												{transferWarehouseLabel(
+													transfer.to_warehouse,
+													isMultiLocation,
+													'Bodega destino',
+												)}
 											</span>
 										</div>
 									</div>

@@ -193,6 +193,7 @@ const postedReceipt = (origin: TReceiptOrigin): IStockReceipt => {
 		branch_id: ECOPC_BRANCH_ID,
 		status: 'posted',
 		warehouse: warehouseById(origin.warehouse_id),
+		entered_location: { scope: 'warehouse', warehouse: warehouseById(origin.warehouse_id) },
 		supplier: origin.supplier,
 		purchase_document: origin.purchase_document,
 		received_on: origin.received_on,
@@ -241,6 +242,10 @@ const reversedReceipts = (ecopcDemoHistory[ECOPC_BRANCH_ID] ?? []).flatMap(
 				branch_id: ECOPC_BRANCH_ID,
 				status: 'reversed',
 				warehouse: warehouseById(event.warehouse_id),
+				entered_location: {
+					scope: 'warehouse',
+					warehouse: warehouseById(event.warehouse_id),
+				},
 				supplier: null,
 				purchase_document: null,
 				received_on: event.applied_at.slice(0, 10),

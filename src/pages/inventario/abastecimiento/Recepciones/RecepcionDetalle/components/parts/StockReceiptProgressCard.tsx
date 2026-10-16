@@ -7,17 +7,20 @@ import Icon from '@/components/icon/Icon';
 import PageLinkButton from '@/components/procurement/PageLinkButton';
 import type { IPageLink } from '@/config/procurementLinks';
 import { formatDateTime } from '@/utils/format.utils';
-import type { IStockReceipt } from '@/interface/procurement.interface';
+import type {
+	IStockReceipt,
+	TStockReceiptEnteredLocation,
+} from '@/interface/procurement.interface';
 
 interface IStockReceiptProgressCardProps {
 	receipt: IStockReceipt;
 	/** Ubicación de Inventario donde entró el stock, o `null` si no corresponde ofrecerla. */
 	inventoryLink?: IPageLink | null;
 	/**
-	 * El stock ingresado queda en «Sin ubicación» de la sucursal, no en la
-	 * bodega de la recepción (etapa 1 del backend).
+	 * Dónde ingresó el stock (contabilizada) o dónde ingresará (antes). `null`
+	 * si no se sabe: la tarjeta no nombra ninguna ubicación.
 	 */
-	entersUnlocated?: boolean;
+	stockLocation?: TStockReceiptEnteredLocation | null;
 	/**
 	 * La ficha dejó de actualizarse sola (tope de la consulta automática) con
 	 * la recepción todavía en `queued`.
@@ -35,8 +38,25 @@ interface IStep {
 	state: TStepState;
 }
 
+/** «Bodega Central» o «Sin ubicación»; `null` si no se sabe dónde. */
+const locationLabel = (location: TStockReceiptEnteredLocation | null): string | null => {
+	if (location === null) return null;
+	return location.scope === 'warehouse' ? `«${location.warehouse.name}»` : '«Sin ubicación»';
+};
+
+/** Aviso de una recepción ingresada: nombra la ubicación sólo si se sabe. */
+const postedMessage = (location: TStockReceiptEnteredLocation | null): string => {
+	if (location === null) return 'Las unidades ya están disponibles en la sucursal';
+	if (location.scope === 'unlocated')
+		return 'Las unidades ya están disponibles en la sucursal, en «Sin ubicación»';
+	return `Las unidades ya están disponibles en ${locationLabel(location)}`;
+};
+
 /** Los tres pasos del contrato (`draft` → `queued` → `posted`) con nombres de bodega. */
-const buildSteps = (status: IStockReceipt['status'], entersUnlocated: boolean): IStep[] => {
+const buildSteps = (
+	status: IStockReceipt['status'],
+	stockLocation: TStockReceiptEnteredLocation | null,
+): IStep[] => {
 	const isQueued = status === 'queued';
 	const isFailed = status === 'failed';
 	const isPosted = status === 'posted';
@@ -60,7 +80,7 @@ const buildSteps = (status: IStockReceipt['status'], entersUnlocated: boolean): 
 		},
 		{
 			title: 'En stock',
-			hint: entersUnlocated ? 'Disponible en la sucursal' : 'Disponible en la bodega',
+			hint: `Disponible en ${locationLabel(stockLocation) ?? 'la sucursal'}`,
 			state: isPosted ? 'done' : 'pending',
 		},
 	];
@@ -115,7 +135,7 @@ const STEP_STATE_LABEL: Record<TStepState, string> = {
 const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
 	receipt,
 	inventoryLink = null,
-	entersUnlocated = false,
+	stockLocation = null,
 	isPollingStalled = false,
 	onRefresh,
 }) => {
@@ -146,7 +166,7 @@ const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
 		);
 	}
 
-	const steps = buildSteps(receipt.status, entersUnlocated);
+	const steps = buildSteps(receipt.status, stockLocation);
 
 	return (
 		<Card>
@@ -246,9 +266,7 @@ const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
 						title='Ingresada al stock'>
 						<div className='flex flex-wrap items-center justify-between gap-3'>
 							<span>
-								{entersUnlocated
-									? 'Las unidades ya están disponibles en la sucursal, en «Sin ubicación»'
-									: 'Las unidades ya están disponibles en la bodega'}
+								{postedMessage(stockLocation)}
 								{receipt.posted_at &&
 									` desde el ${formatDateTime(receipt.posted_at)}`}
 								.

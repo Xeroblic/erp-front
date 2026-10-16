@@ -38,6 +38,7 @@ import {
 	AJUSTE_STEPS,
 	NO_PRESELECTION,
 	resolvePreselectedLocation,
+	shortageLineFrom,
 	type IAjustesTrasladosPreselection,
 	type TAjusteStep,
 } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
@@ -132,6 +133,9 @@ export default function useInventoryAdjustment(
 	// `onSubmit` no puede depender del catálogo por cierre sin volver a crear el
 	// formulario en cada render: la ref le da el valor vigente al escribir.
 	const productsRef = useRef<IInventoryProductRef[]>([]);
+	// El asistente se arma después del formulario (valida con él): `onSubmit`
+	// lo alcanza por ref para volver a «Productos».
+	const showItemsRef = useRef<() => void>(() => undefined);
 
 	const labelFor = useCallback(
 		(token: string): string => {
@@ -195,6 +199,8 @@ export default function useInventoryAdjustment(
 						// líneas ya no es el vigente.
 						if (error.code === 'INSUFFICIENT_LOCATION_STOCK')
 							setRetry((value) => value + 1);
+						// Con la línea identificada, se corrige donde está marcada.
+						if (shortageLineFrom(error, formValues.items)) showItemsRef.current();
 					},
 				},
 			);
@@ -447,14 +453,28 @@ export default function useInventoryAdjustment(
 		[setValues, setTouched, values, touched],
 	);
 
-	/*
-	 * Errores de línea del último 422 (`items.N.campo`). Se derivan del error de
-	 * escritura, así que desaparecen con él al editar la ubicación o las líneas.
-	 */
-	const serverLineErrors = useMemo(
-		() => ajusteLineErrorsFrom(writeError?.fieldErrors ?? null),
-		[writeError],
+	/** Línea que no alcanzó en el último `409 INSUFFICIENT_LOCATION_STOCK`. */
+	const shortage = useMemo(
+		() => shortageLineFrom(writeError, values.items),
+		[writeError, values.items],
 	);
+
+	/*
+	 * Errores de línea del último 422 (`items.N.campo`) y la línea del faltante
+	 * del 409. Se derivan del error de escritura, así que desaparecen con él al
+	 * editar la ubicación o las líneas.
+	 */
+	const serverLineErrors = useMemo(() => {
+		const lines = ajusteLineErrorsFrom(writeError?.fieldErrors ?? null);
+		if (!shortage) return lines;
+		return {
+			...lines,
+			[shortage.index]: {
+				...lines[shortage.index],
+				quantityDelta: `Disponible: ${shortage.available}`,
+			},
+		};
+	}, [writeError, shortage]);
 	const serverLineErrorCount = Object.keys(serverLineErrors).length;
 
 	/**
@@ -507,6 +527,7 @@ export default function useInventoryAdjustment(
 	// Con la ubicación ya elegida desde la URL, el asistente abre en «Productos».
 	const wizard = useStepWizard(AJUSTE_STEPS, validateStep, initialSelection.location ? 1 : 0);
 	const { restartAt, finish } = wizard;
+	showItemsRef.current = () => restartAt(AJUSTE_STEPS.indexOf('items'));
 
 	const { submitForm } = formik;
 	const submit = useCallback(() => finish(submitForm), [finish, submitForm]);
@@ -540,6 +561,7 @@ export default function useInventoryAdjustment(
 		totalsFor,
 		errorFor,
 		serverLineErrorCount,
+		shortage,
 		setLocation,
 		setItem,
 		addItem,

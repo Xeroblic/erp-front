@@ -2,7 +2,6 @@ import { STOCK_STATUS_ORDER, visibleStockStatus } from '@/components/procurement
 import type { TInventoryStockStatusFilter } from '@/interface/inventoryOverview.interface';
 import type {
 	IDeadStockReportRow,
-	IReplenishmentReportRow,
 	IStockHealthReportRow,
 	IStockReportRow,
 } from '@/interface/inventoryReports.interface';
@@ -137,37 +136,6 @@ export const thresholdKpis = (rows: IStockHealthReportRow[]): IInventarioKpi[] =
 			value: counts.healthy,
 			icon: 'HeroCheckCircle',
 			accent: 'bg-emerald-600',
-		},
-	];
-};
-
-export const replenishmentKpis = (rows: IReplenishmentReportRow[]): IInventarioKpi[] => {
-	const byStatus = (status: IReplenishmentReportRow['recommendation']['status']) =>
-		rows.filter((row) => row.recommendation.status === status).length;
-	return [
-		{
-			label: 'Por reponer',
-			value: rows.length,
-			icon: 'HeroShoppingCart',
-			accent: 'bg-amber-600',
-		},
-		{
-			label: 'Con proveedor sugerido',
-			value: byStatus('suggested'),
-			icon: 'HeroTruck',
-			accent: 'bg-emerald-600',
-		},
-		{
-			label: 'Sin compras anteriores',
-			value: byStatus('without_supplier_history'),
-			icon: 'HeroClock',
-			accent: 'bg-zinc-600',
-		},
-		{
-			label: 'Sin proveedor elegible',
-			value: byStatus('no_active_suppliers') + byStatus('no_comparable_cost'),
-			icon: 'HeroExclamationTriangle',
-			accent: 'bg-red-600',
 		},
 	];
 };

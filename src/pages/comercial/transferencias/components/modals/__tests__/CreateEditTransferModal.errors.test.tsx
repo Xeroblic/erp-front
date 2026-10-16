@@ -18,14 +18,20 @@ const { fetchData, onRejected } = vi.hoisted(() => ({ fetchData: vi.fn(), onReje
 
 vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
 vi.mock('react-toastify', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+// Los errores no dependen de la etapa: se prueban en la 1 (la 2 está en `.stage.test`).
+vi.mock('@/hooks/useSubsidiaryRolloutStage', () => ({
+	useSubsidiaryRolloutStage: () => ({
+		multiLocationEnabled: false,
+		isMultiLocation: false,
+		isLoading: false,
+	}),
+}));
 vi.mock('@/store', async () => {
 	const redux = await import('react-redux');
 	return { useAppDispatch: redux.useDispatch, useAppSelector: redux.useSelector };
 });
 // La sucursal activa (origen) es la 1.
-vi.mock('@/store/selectors/subsidiarySelectors', () => ({
-	selectEffectiveSubsidiaryId: () => 1,
-}));
+vi.mock('@/store/selectors/branchSelectors', () => ({ default: () => 1 }));
 // Catálogos del formulario: un producto con stock y ninguna bodega.
 vi.mock('@/store/slices/products/productsSlice', async () => {
 	const { createAsyncThunk } = await import('@reduxjs/toolkit');

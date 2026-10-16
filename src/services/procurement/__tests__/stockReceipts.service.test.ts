@@ -55,7 +55,6 @@ describe('stockReceipts.service — con datos simulados', () => {
 		expect(facade.listStockReceiptSuppliers).toBe(mock.listStockReceiptSuppliers);
 		expect(facade.searchStockReceiptProducts).toBe(mock.searchStockReceiptProducts);
 		expect(facade.STOCK_RECEIPTS_USE_TEST_SUPPLIERS).toBe(true);
-		expect(facade.STOCK_RECEIPTS_ENTER_UNLOCATED).toBe(false);
 	});
 });
 
@@ -317,6 +316,5 @@ describe('stockReceipts.service — API real', () => {
 		expect(listProcurementSuppliers).toHaveBeenCalledWith(1, { per_page: 100 });
 		expect(result).toBe(envelope);
 		expect(facade.STOCK_RECEIPTS_USE_TEST_SUPPLIERS).toBe(false);
-		expect(facade.STOCK_RECEIPTS_ENTER_UNLOCATED).toBe(true);
 	});
 });

@@ -8,13 +8,16 @@ import type {
 /**
  * Filas de Reportes › Inventario (`GET S/reports/{type}`).
  *
- * `stock` es el único tipo publicado hoy. `stock_health`, `replenishment` y
- * `dead_stock` son R1–R3 de `docs/inventario-unificado-contrato.md`: el
- * frontend lee exactamente estos campos, y mientras el backend no los publique
- * los sirve el mock de `inventoryReportsMock.service` (bandera
+ * `stock` es el único tipo publicado hoy. `stock_health` y `dead_stock` son
+ * R1 y R3 de `docs/inventario-unificado-contrato.md`: el frontend lee
+ * exactamente estos campos, y mientras el backend no los publique los sirve el
+ * mock de `inventoryReportsMock.service` (bandera
  * `VITE_INVENTORY_STOCK_USE_MOCKS`).
+ *
+ * R2 (reposición) no es un tipo de reporte: la pestaña Acciones lee
+ * `GET P/replenishment-candidates` (§13), paginada en el servidor.
  */
-export type TInventoryReportType = 'stock' | 'stock_health' | 'replenishment' | 'dead_stock';
+export type TInventoryReportType = 'stock' | 'stock_health' | 'dead_stock';
 
 /** `api`: `GET S/reports/{type}`. `mock`: el mock del contrato, con aviso visible. */
 export type TInventoryReportSource = 'api' | 'mock';
@@ -65,14 +68,17 @@ export interface IReplenishmentLastPurchase {
 }
 
 /**
- * R2 `replenishment`: fila de `P/replenishment-candidates` (§13). Sólo
- * productos bajo el umbral. El contrato no sugiere cantidad a comprar: el
- * stock objetivo está fuera de alcance.
+ * Fila de `GET P/replenishment-candidates` (§13, tarea 20): un producto en
+ * stock crítico (disponible ≤ umbral) con el proveedor al que conviene
+ * comprarle. El contrato no sugiere cantidad a comprar: el stock objetivo
+ * está fuera de alcance.
  */
 export interface IReplenishmentReportRow {
 	product: IInventoryReportProduct;
+	/** El bloque `critical_stock` de la ficha del producto: de la filial. */
 	stock: {
 		physical_quantity: number;
+		/** Apto menos reservas activas: puede ser negativo tras un faltante real. */
 		available_quantity: number;
 		threshold: number | null;
 		status: TCriticalStockStatus;
@@ -81,9 +87,39 @@ export interface IReplenishmentReportRow {
 		status: TReplenishmentStatus;
 		historical_supplier_count: number;
 		eligible_supplier_count: number;
+		/** Sólo con `suggested`; con los otros tres estados es `null`. */
 		supplier: ISupplierCompact | null;
 		last_purchase: IReplenishmentLastPurchase | null;
 	};
+}
+
+export type TReplenishmentStatusCounts = Record<TReplenishmentStatus, number>;
+
+/** Filtros de `GET P/replenishment-candidates`. Los vacíos no viajan. */
+export interface IReplenishmentCandidatesParams {
+	/** Nombre, SKU, SKU comercial o código de barras; hasta 100 caracteres. */
+	search?: string;
+	brand_id?: number;
+	category_id?: number;
+	/** Proveedor **sugerido**: deja sólo los `suggested` a ese proveedor. */
+	supplier_id?: number;
+	recommendation_status?: TReplenishmentStatus;
+	page?: number;
+	/** Hasta 100. */
+	per_page?: number;
+}
+
+/** Una página de candidatos, en el orden fijo del backend (lo más urgente primero). */
+export interface IReplenishmentCandidatesPage {
+	rows: IReplenishmentReportRow[];
+	page: number;
+	lastPage: number;
+	total: number;
+	/**
+	 * `context.status_counts`: con todos los filtros salvo
+	 * `recommendation_status`, igual en cada página. Alimenta las pestañas.
+	 */
+	statusCounts: TReplenishmentStatusCounts;
 }
 
 /** R3 `dead_stock`: último movimiento por producto y sucursal. */
@@ -99,7 +135,6 @@ export interface IDeadStockReportRow {
 export type TInventoryReportResult =
 	| { type: 'stock'; rows: IStockReportRow[] }
 	| { type: 'stock_health'; rows: IStockHealthReportRow[] }
-	| { type: 'replenishment'; rows: IReplenishmentReportRow[] }
 	| { type: 'dead_stock'; rows: IDeadStockReportRow[] };
 
 /** Parámetros de un reporte completo. */
