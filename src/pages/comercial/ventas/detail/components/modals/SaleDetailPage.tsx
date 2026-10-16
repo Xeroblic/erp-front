@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import salesReducer, {
@@ -44,11 +44,25 @@ import SaleStockShortageAlert from '../parts/SaleStockShortageAlert';
 import SaleCloseResultAlert from '../parts/SaleCloseResultAlert';
 import CloseSaleModal from './CloseSaleModal';
 import CorrectSerialModal from './CorrectSerialModal';
+import StartSaleReturnModal from './StartSaleReturnModal';
+import ReceiveSaleReturnModal from './ReceiveSaleReturnModal';
+import {
+	isSameSaleOwner,
+	useSaleReturnWrites,
+	type ISaleReturnOwner,
+	type ISaleReturnWrites,
+} from '../../hooks/useSaleReturnWrites';
 interface Props {
 	subsidiaryId: number;
 	saleId: number;
 	isOpen: boolean;
 	onClose: () => void;
+	/**
+	 * Escrituras de la devolución montadas por la página (`useSaleReturnWrites`), para
+	 * que un intento incierto sobreviva al cierre del detalle y la página refresque su
+	 * listado. Sin ellas, el detalle usa las suyas y el intento vive mientras esté montado.
+	 */
+	returnWrites?: ISaleReturnWrites;
 }
 
 interface ICloseShortage {
@@ -121,7 +135,13 @@ const parseAmount = (value: number | string | null | undefined): number => {
 
 injectReducer('salesModule', salesReducer);
 
-const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose }) => {
+const SaleDetailPage: React.FC<Props> = ({
+	subsidiaryId,
+	saleId,
+	isOpen,
+	onClose,
+	returnWrites: pageReturnWrites,
+}) => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const detail = useAppSelector(selectSaleDetail);
@@ -143,6 +163,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const [isClosing, setIsClosing] = useState(false);
 	const [confirmReturnOpen, setConfirmReturnOpen] = useState(false);
 	const [isConfirmingReturn, setIsConfirmingReturn] = useState(false);
+	// Etapa 2: iniciar y recibir la devolución física.
+	const [startReturnOpen, setStartReturnOpen] = useState(false);
+	const [receiveReturnOpen, setReceiveReturnOpen] = useState(false);
 	const [correctSerialOpen, setCorrectSerialOpen] = useState(false);
 	const [creatingQuote, setCreatingQuote] = useState(false);
 	const [createdQuoteId, setCreatedQuoteId] = useState<number | null>(null);
@@ -210,8 +233,63 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			setCreatedQuoteId(null);
 			setCloseShortage(null);
 			setCloseOutcome(null);
+			setStartReturnOpen(false);
+			setReceiveReturnOpen(false);
 		}
 	}, [isOpen]);
+
+	const ownReturnWrites = useSaleReturnWrites();
+	const returnWrites = pageReturnWrites ?? ownReturnWrites;
+	const { start: startReturnSlot, receive: receiveReturnSlot } = returnWrites;
+
+	// Venta y filial que este detalle muestra ahora; `null` si está cerrado o desmontado.
+	// Una respuesta tardía de otra venta no debe recargarse sobre el estado compartido.
+	const currentOwnerRef = useRef<ISaleReturnOwner | null>(null);
+	currentOwnerRef.current = isOpen ? { subsidiaryId, saleId } : null;
+	useEffect(() => {
+		currentOwnerRef.current = isOpen ? { subsidiaryId, saleId } : null;
+		return () => {
+			currentOwnerRef.current = null;
+		};
+	}, [isOpen, subsidiaryId, saleId]);
+
+	const reloadSale = useCallback(() => {
+		void dispatch(loadSaleDetail({ subsidiaryId, saleId }));
+		void dispatch(loadSaleItems({ subsidiaryId, saleId }));
+	}, [dispatch, subsidiaryId, saleId]);
+
+	/** Cierra el modal y relee la venta, sólo si la respuesta es de la venta que se muestra. */
+	const settleReturnFor = useCallback(
+		(owner: ISaleReturnOwner, closeModal: (open: boolean) => void) => {
+			if (!isSameSaleOwner(currentOwnerRef.current, owner)) return;
+			closeModal(false);
+			reloadSale();
+		},
+		[reloadSale],
+	);
+
+	const handleReturnStarted = useCallback((_saleReturn: unknown, owner: ISaleReturnOwner) => {
+		if (isSameSaleOwner(currentOwnerRef.current, owner)) setStartReturnOpen(false);
+	}, []);
+
+	const handleReturnSettled = useCallback((owner: ISaleReturnOwner) => {
+		if (isSameSaleOwner(currentOwnerRef.current, owner)) setReceiveReturnOpen(false);
+	}, []);
+	const handleReturnAlreadyReceived = useCallback(
+		(owner: ISaleReturnOwner) => settleReturnFor(owner, setReceiveReturnOpen),
+		[settleReturnFor],
+	);
+	const { subscribe } = returnWrites;
+	useEffect(
+		() =>
+			subscribe((owner) => {
+				if (!isSameSaleOwner(currentOwnerRef.current, owner)) return;
+				setStartReturnOpen(false);
+				setReceiveReturnOpen(false);
+				reloadSale();
+			}),
+		[subscribe, reloadSale],
+	);
 
 	// const itemsCount = detail?.items_count ?? items.length ?? 0;
 
@@ -312,6 +390,33 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			setCreatingQuote(false);
 		}
 	}, [subsidiaryId, saleId, creatingQuote, navigate]);
+
+	// Un intento incierto se resuelve solo cuando la venta, releída, ya muestra su
+	// efecto: igual que en recepciones, el GET es la fuente que dice si llegó.
+	const detailPendingReturnId =
+		detail?.id === saleId ? (detail.pending_return?.id ?? null) : undefined;
+	useEffect(() => {
+		if (loading || detailPendingReturnId === undefined) return;
+		const owner = { subsidiaryId, saleId };
+		const started = startReturnSlot.attempt;
+		if (
+			started &&
+			startReturnSlot.canRetry &&
+			isSameSaleOwner(started, owner) &&
+			detailPendingReturnId !== null
+		) {
+			startReturnSlot.discard();
+		}
+		const receiving = receiveReturnSlot.attempt;
+		if (
+			receiving &&
+			receiveReturnSlot.canRetry &&
+			isSameSaleOwner(receiving, owner) &&
+			detailPendingReturnId !== receiving.returnId
+		) {
+			receiveReturnSlot.discard();
+		}
+	}, [loading, detailPendingReturnId, subsidiaryId, saleId, startReturnSlot, receiveReturnSlot]);
 
 	// Va después de todos los hooks: si isOpen cambia con el componente montado,
 	// un return previo alteraría la cantidad de hooks entre renders.
@@ -450,6 +555,11 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	// El botón de cierre depende solo de can_close (el backend ya contempla
 	// is_closed e inventory_finalized). inventory_finalized NO se usa aquí.
 	const canCloseSale = !!detail?.can_close;
+	// Devolución física de la etapa 2 esperando recepción. Con ella pendiente, la
+	// confirmación sin cuerpo de la etapa 1 responde 422: ese botón se oculta siempre.
+	const pendingReturn = detail?.pending_return ?? null;
+	const canReceiveReturn = isMultiLocation && pendingReturn !== null;
+	const canStartReturn = isMultiLocation && isSaleClosed && pendingReturn === null;
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
@@ -525,6 +635,12 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							{isSaleCancelled && (
 								<Badge variant='solid' color='red' className='px-2 py-1 text-sm'>
 									Venta cancelada
+								</Badge>
+							)}
+							{pendingReturn && (
+								<Badge variant='solid' color='amber' className='px-2 py-1 text-sm'>
+									Devolución pendiente
+									{pendingReturn.source === 'channel' ? ' (Woo)' : ''}
 								</Badge>
 							)}
 						</div>
@@ -704,6 +820,32 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					/>
 				)}
 
+				{startReturnOpen && (
+					<StartSaleReturnModal
+						key={`${subsidiaryId}:${saleId}`}
+						isOpen={startReturnOpen}
+						onClose={() => setStartReturnOpen(false)}
+						subsidiaryId={subsidiaryId}
+						saleId={saleId}
+						slot={startReturnSlot}
+						onStarted={handleReturnStarted}
+					/>
+				)}
+
+				{receiveReturnOpen && pendingReturn && (
+					<ReceiveSaleReturnModal
+						key={`${subsidiaryId}:${saleId}:${pendingReturn.id}`}
+						isOpen={receiveReturnOpen}
+						onClose={() => setReceiveReturnOpen(false)}
+						subsidiaryId={subsidiaryId}
+						saleId={saleId}
+						returnId={pendingReturn.id}
+						slot={receiveReturnSlot}
+						onSettled={handleReturnSettled}
+						onAlreadyReceived={handleReturnAlreadyReceived}
+					/>
+				)}
+
 				{correctSerialOpen && (
 					<CorrectSerialModal
 						open={correctSerialOpen}
@@ -823,7 +965,22 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								Descargar etiqueta
 							</Button>
 						</Tooltip>
-						{canCloseSale && (
+						{canReceiveReturn && (
+							<Tooltip text='Recibir la devolución pendiente'>
+								<ProtectedButton
+									permission='confirm-sale-return'
+									subsidiaryId={subsidiaryId}
+									scope='access'
+									fallbackMode='hidden'
+									variant='solid'
+									color='amber'
+									icon='HeroInboxArrowDown'
+									onClick={() => setReceiveReturnOpen(true)}>
+									Recibir devolución
+								</ProtectedButton>
+							</Tooltip>
+						)}
+						{canCloseSale && !canReceiveReturn && (
 							<Tooltip text='Cerrar venta'>
 								<Button
 									variant='solid'
@@ -834,7 +991,22 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								</Button>
 							</Tooltip>
 						)}
-						{isSaleRefunded && !detail?.inventory_finalized && (
+						{canStartReturn && (
+							<Tooltip text='Iniciar la devolución de esta venta'>
+								<ProtectedButton
+									permission='confirm-sale-return'
+									subsidiaryId={subsidiaryId}
+									scope='access'
+									fallbackMode='hidden'
+									variant='outline'
+									color='amber'
+									icon='HeroArrowUturnLeft'
+									onClick={() => setStartReturnOpen(true)}>
+									Iniciar devolución
+								</ProtectedButton>
+							</Tooltip>
+						)}
+						{isSaleRefunded && !detail?.inventory_finalized && !pendingReturn && (
 							<Tooltip text='Confirmar recepcion de envio'>
 								<ProtectedButton
 									permission='confirm-sale-return'

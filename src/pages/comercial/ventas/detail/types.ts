@@ -1,5 +1,9 @@
 import * as Yup from 'yup';
-import type { ISaleFulfillmentOptionItem } from '@/interface/sales.interface';
+import type {
+	ISaleFulfillmentOptionItem,
+	ISaleReturnItem,
+	TSaleReturnCondition,
+} from '@/interface/sales.interface';
 
 /**
  * Clave de la ubicación en el formulario: un `<select>` sólo maneja strings, y `null`
@@ -115,3 +119,177 @@ export const buildLocationAllocationSchema = (options: ISaleFulfillmentOptionIte
 			),
 		),
 	});
+
+// ---------------------------------------------------------------------------
+// Devoluciones físicas (etapa 2)
+// ---------------------------------------------------------------------------
+
+export const RETURN_REASON_MAX = 500;
+
+export interface IStartSaleReturnValues {
+	reason: string;
+}
+
+export const StartSaleReturnSchema = Yup.object({
+	reason: Yup.string()
+		.trim()
+		.required('Indica el motivo de la devolución.')
+		.max(RETURN_REASON_MAX, `Usa como máximo ${RETURN_REASON_MAX} caracteres.`),
+});
+
+/** Parte de un ítem sin serie: ubicación, cantidad y condición. */
+export interface IReturnAllocationRow {
+	warehouseKey: string;
+	quantity: number | '';
+	condition: TSaleReturnCondition;
+	reason: string;
+}
+
+/**
+ * Una serie devuelta. Su `warehouseKey` usa la misma clave que «Sin ubicación»
+ * (`UNLOCATED_KEY`) para `null`, que en una serie significa «conserva su bodega».
+ */
+export interface IReturnSerialRow {
+	serialNumber: string;
+	warehouseKey: string;
+	condition: TSaleReturnCondition;
+	reason: string;
+}
+
+/** Un ítem sin serie usa `rows`; uno con serie, `serials`. El otro queda vacío. */
+export interface IReturnReceiptItemValues {
+	rows: IReturnAllocationRow[];
+	serials: IReturnSerialRow[];
+}
+
+/** Recepción de la devolución, con las claves de ítem de `toItemKey`. */
+export interface IReturnReceiptValues {
+	items: Record<string, IReturnReceiptItemValues>;
+}
+
+const returnReasonSchema = Yup.string().when('condition', {
+	is: 'unfit',
+	then: (schema) =>
+		schema
+			.trim()
+			.required('Indica por qué no es apta.')
+			.max(RETURN_REASON_MAX, `Usa como máximo ${RETURN_REASON_MAX} caracteres.`),
+	otherwise: (schema) => schema.notRequired(),
+});
+
+const returnConditionSchema = Yup.string()
+	.oneOf(['fit', 'unfit'], 'Elige la condición.')
+	.required('Elige la condición.');
+
+const offeredWarehouseSchema = (offered: ReadonlySet<string>, requiredMessage: string) =>
+	Yup.string()
+		.required(requiredMessage)
+		.test(
+			'offered',
+			'Esa bodega no es de la sucursal a la que vuelve el ítem.',
+			(value) => !value || offered.has(value),
+		);
+
+/** Unidades por recibir de un ítem, para el mensaje de la suma. */
+const unitsLabel = (count: number): string => (count === 1 ? '1 unidad' : `${count} unidades`);
+
+/**
+ * Esquema de un ítem. Adelanta lo que el backend valida con `RETURN_QUANTITY_MISMATCH`
+ * y `UNFIT_REASON_REQUIRED`: sin serie, las partes suman exactamente lo esperado; con o
+ * sin serie, lo no apto lleva motivo y cada bodega es de la sucursal del ítem.
+ */
+const buildReturnItemSchema = (
+	item: ISaleReturnItem,
+	offered: ReadonlySet<string>,
+	warehouseBranches: ReadonlyMap<string, number>,
+) => {
+	if (item.serial_tracking) {
+		return Yup.object({
+			rows: Yup.array(),
+			serials: Yup.array().of(
+				Yup.object({
+					serialNumber: Yup.string().required(),
+					warehouseKey: offeredWarehouseSchema(offered, 'Elige dónde queda la serie.'),
+					condition: returnConditionSchema,
+					reason: returnReasonSchema,
+				}),
+			),
+		});
+	}
+
+	return Yup.object({
+		serials: Yup.array(),
+		rows: Yup.array()
+			.of(
+				Yup.object({
+					warehouseKey: offeredWarehouseSchema(offered, 'Elige una ubicación.'),
+					quantity: Yup.number()
+						.typeError('Indica la cantidad.')
+						.required('Indica la cantidad.')
+						.integer('Usa un número entero.')
+						.min(1, 'Debe ser al menos 1.'),
+					condition: returnConditionSchema,
+					reason: returnReasonSchema,
+				}),
+			)
+			.min(1, 'Agrega al menos una ubicación.'),
+	})
+		.test('receiving-branch', function receivingBranch(value) {
+			if (item.branch_id !== null) return true;
+			const branches = new Set(
+				(value?.rows ?? [])
+					.map((row) => warehouseBranches.get(row.warehouseKey ?? ''))
+					.filter((id): id is number => id !== undefined),
+			);
+			if (branches.size === 1) return true;
+			return this.createError({
+				path: `${this.path}.summary`,
+				message:
+					branches.size === 0
+						? 'El ítem no tiene sucursal: elige al menos una bodega de recepción.'
+						: 'Las bodegas de un mismo ítem deben pertenecer a la misma sucursal.',
+			});
+		})
+		.test('total', function matchesExpected(value) {
+			const received = sumAllocatedRows(value?.rows ?? []);
+			if (received === item.quantity_expected) return true;
+			return this.createError({
+				path: `${this.path}.summary`,
+				message: `Las partes suman ${received} y vuelven ${unitsLabel(item.quantity_expected)}.`,
+			});
+		});
+};
+
+/**
+ * `offeredByBranch` da, por sucursal, las claves de bodega que se pueden elegir
+ * (siempre con `UNLOCATED_KEY`). Sin sucursal se ofrecen las bodegas de la filial;
+ * una bodega concreta determina a qué sucursal vuelve el ítem sin serie.
+ */
+export const buildReturnReceiptSchema = (
+	items: readonly ISaleReturnItem[],
+	offeredByBranch: ReadonlyMap<number, ReadonlySet<string>>,
+) => {
+	const warehouseBranches = new Map<string, number>();
+	offeredByBranch.forEach((keys, branchId) =>
+		keys.forEach((key) => {
+			if (key !== UNLOCATED_KEY) warehouseBranches.set(key, branchId);
+		}),
+	);
+	const allOffered = new Set([UNLOCATED_KEY, ...warehouseBranches.keys()]);
+	return Yup.object({
+		items: Yup.object(
+			Object.fromEntries(
+				items.map((item) => [
+					toItemKey(item.sale_item_id),
+					buildReturnItemSchema(
+						item,
+						(item.branch_id !== null
+							? offeredByBranch.get(item.branch_id)
+							: allOffered) ?? new Set([UNLOCATED_KEY]),
+						warehouseBranches,
+					),
+				]),
+			),
+		),
+	});
+};
