@@ -1,11 +1,12 @@
 import type { PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import type { ICreateTransferRequest } from '@/interface/transfers.interface';
 import type { ISubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
+import subEmpresa, { type SubempresaState } from '@/store/slices/subempresa/subEmpresaSlice';
 import {
 	FROM_LOCATION_REQUIRED_MESSAGE,
 	TO_LOCATION_REQUIRED_MESSAGE,
@@ -20,8 +21,10 @@ const { rolloutStage } = vi.hoisted(() => ({
 	} as ISubsidiaryRolloutStage,
 }));
 
-vi.mock('@/hooks/useSubsidiaryRolloutStage', () => ({
-	useSubsidiaryRolloutStage: () => rolloutStage,
+const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn() }));
+vi.mock('@/services/ApiService', () => ({ default: { fetchData } }));
+vi.mock('@/hooks/useCurrentBranch', () => ({
+	useCurrentBranch: () => ({ branchId: 1, subsidiaryId: 9 }),
 }));
 vi.mock('react-toastify', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock('@/store', async () => {
@@ -102,11 +105,24 @@ vi.mock('@/components/form/SelectReact', () => ({
 	),
 }));
 
-const store = () =>
-	configureStore({
+const store = () => {
+	const initialSubsidiary: SubempresaState = {
+		...subEmpresa(undefined, { type: 'init' }),
+		rolloutStageById:
+			rolloutStage.multiLocationEnabled === null && !rolloutStage.isLoading
+				? {}
+				: {
+						9: {
+							status: rolloutStage.isLoading ? 'loading' : 'loaded',
+							multiLocationEnabled: rolloutStage.multiLocationEnabled,
+						},
+					},
+	};
+	return configureStore({
 		reducer: {
 			// `Button` lee el usuario para sus permisos.
-			auth: () => ({ loading: false, user: null }),
+			auth: () => ({ loading: false, user: { subsidiary: { id: 9 } } }),
+			subEmpresa,
 			sucursales: () => ({
 				lista: [
 					{ id: 1, branch_name: 'Casa matriz' },
@@ -115,7 +131,9 @@ const store = () =>
 				loading: false,
 			}),
 		},
+		preloadedState: { subEmpresa: initialSubsidiary },
 	});
+};
 
 const onSubmit = vi.fn<(payload: ICreateTransferRequest) => Promise<void>>();
 
@@ -134,7 +152,7 @@ const optionLabels = (selectName: string) =>
 
 /** Elige la sucursal destino y un producto; deja las bodegas a cargo de cada prueba. */
 const openWithDestination = async () => {
-	render(
+	const view = render(
 		<Provider store={store()}>
 			<CreateEditTransferModal isOpen onClose={vi.fn()} onSubmit={onSubmit} />
 		</Provider>,
@@ -145,6 +163,7 @@ const openWithDestination = async () => {
 	const product = screen.getByLabelText('items.0.product_id');
 	await waitFor(() => expect(product).not.toBeDisabled());
 	fireEvent.change(product, { target: { value: '31' } });
+	return view;
 };
 
 const submit = () => fireEvent.click(screen.getByRole('button', { name: 'Crear transferencia' }));
@@ -155,7 +174,97 @@ beforeEach(() => {
 
 afterEach(() => {
 	vi.clearAllMocks();
+	fetchData.mockReset();
 	setStage(false);
+});
+
+describe('CreateEditTransferModal — recuperación de la consulta de ubicaciones', () => {
+	it.each([false, true])(
+		'conserva el borrador al reintentar y confirmar etapa 2=%s',
+		async (stage) => {
+			Object.assign(rolloutStage, {
+				multiLocationEnabled: null,
+				isMultiLocation: false,
+				isLoading: false,
+			});
+			fetchData.mockRejectedValueOnce(new Error('500'));
+			const view = await openWithDestination();
+			const notes =
+				view.container.querySelector<HTMLTextAreaElement>('textarea[name="notes"]');
+			if (!notes) throw new Error('Falta el campo de notas');
+			fireEvent.change(notes, { target: { value: 'Conservar este borrador' } });
+			const retry = await screen.findByRole('button', { name: 'Reintentar consulta' });
+			expect(screen.getByLabelText('from_warehouse_id')).toBeDisabled();
+			expect(screen.getByLabelText('to_warehouse_id')).toBeDisabled();
+			expect(screen.getByRole('button', { name: 'Crear transferencia' })).toBeDisabled();
+			expect(screen.getByRole('button', { name: 'Cancelar' })).toBeEnabled();
+			const form = view.container.querySelector('form');
+			if (!form) throw new Error('Falta el formulario');
+			await act(async () => {
+				fireEvent.submit(form);
+				await Promise.resolve();
+			});
+			expect(onSubmit).not.toHaveBeenCalled();
+
+			let resolveStage: ((response: unknown) => void) | undefined;
+			fetchData.mockImplementationOnce(
+				() =>
+					new Promise((resolve) => {
+						resolveStage = resolve;
+					}),
+			);
+			fireEvent.click(retry);
+			await waitFor(() => expect(fetchData).toHaveBeenCalledTimes(2));
+			expect(
+				screen.queryByRole('button', { name: 'Reintentar consulta' }),
+			).not.toBeInTheDocument();
+			expect(screen.getByRole('button', { name: 'Crear transferencia' })).toBeDisabled();
+			await act(async () => {
+				resolveStage?.({ data: { data: { id: 9, multi_location_enabled: stage } } });
+				await Promise.resolve();
+			});
+			await waitFor(() => expect(screen.getByLabelText('from_warehouse_id')).toBeEnabled());
+			expect(notes).toHaveValue('Conservar este borrador');
+			expect(screen.getByLabelText('to_branch_id')).toHaveValue('2');
+			expect(screen.getByLabelText('items.0.product_id')).toHaveValue('31');
+			if (stage) {
+				submit();
+				expect(await screen.findByText(FROM_LOCATION_REQUIRED_MESSAGE)).toBeInTheDocument();
+				['from_warehouse_id', 'to_warehouse_id'].forEach((field) => {
+					fireEvent.change(screen.getByLabelText(field), {
+						target: { value: 'unlocated' },
+					});
+				});
+			}
+			submit();
+			await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+			expect(onSubmit.mock.calls[0][0]).toMatchObject({
+				to_branch_id: 2,
+				items: [{ product_id: 31, quantity: 1 }],
+				notes: 'Conservar este borrador',
+				from_warehouse_id: stage ? null : undefined,
+				to_warehouse_id: stage ? null : undefined,
+			});
+		},
+	);
+
+	it('permite volver a consultar una respuesta que omitió la etapa', async () => {
+		Object.assign(rolloutStage, {
+			multiLocationEnabled: null,
+			isMultiLocation: false,
+			isLoading: false,
+		});
+		fetchData.mockResolvedValueOnce({ data: { data: { id: 9 } } });
+		await openWithDestination();
+		const retry = await screen.findByRole('button', { name: 'Reintentar consulta' });
+		fetchData.mockResolvedValueOnce({
+			data: { data: { id: 9, multi_location_enabled: true } },
+		});
+		fireEvent.click(retry);
+		await waitFor(() => expect(screen.getByLabelText('from_warehouse_id')).toBeEnabled());
+		expect(fetchData).toHaveBeenCalledTimes(2);
+		expect(optionLabels('from_warehouse_id')).toContain('Sin ubicación');
+	});
 });
 
 describe('CreateEditTransferModal — etapa 2 (ubicaciones)', () => {

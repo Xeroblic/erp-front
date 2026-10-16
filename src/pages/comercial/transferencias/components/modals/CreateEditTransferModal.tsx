@@ -22,6 +22,8 @@ import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
 import selectCurrentBranchId from '@/store/selectors/branchSelectors';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import { fetchSubsidiaryRolloutStage } from '@/store/slices/subempresa/subEmpresaSlice';
 import {
 	TRANSFER_VALIDATION_MESSAGE,
 	splitTransferFieldErrors,
@@ -121,7 +123,16 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 	// Sucursal de origen: la misma que usa `createTransfer` para armar la URL.
 	const currentBranchId = useAppSelector(selectCurrentBranchId);
 	// Etapa de la filial de origen (la activa): en la etapa 2 las bodegas mueven stock.
-	const { isMultiLocation, isLoading: rolloutStageLoading } = useSubsidiaryRolloutStage();
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+	const {
+		multiLocationEnabled,
+		isMultiLocation,
+		isLoading: rolloutStageLoading,
+	} = useSubsidiaryRolloutStage();
+	const rolloutStageBlocked = rolloutStageLoading || multiLocationEnabled === null;
+	const retryRolloutStage = () => {
+		if (subsidiaryId !== null) void dispatch(fetchSubsidiaryRolloutStage(subsidiaryId));
+	};
 
 	const [originWarehouses, setOriginWarehouses] = useState<IWarehouse[]>([]);
 	const [destinationWarehouses, setDestinationWarehouses] = useState<IWarehouse[]>([]);
@@ -396,6 +407,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 
 	const handleSubmit = useCallback(
 		async (values: ICreateTransferForm, helpers: FormikHelpers<ICreateTransferForm>) => {
+			if (rolloutStageBlocked) return;
 			try {
 				helpers.setStatus(undefined);
 				await onSubmit(formatPayload(values, isMultiLocation));
@@ -427,7 +439,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 				helpers.setStatus(status);
 			}
 		},
-		[onSubmit, isMultiLocation],
+		[onSubmit, isMultiLocation, rolloutStageBlocked],
 	);
 
 	return (
@@ -459,6 +471,24 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 				}) => (
 					<Form>
 						<ModalBody className='space-y-4'>
+							{rolloutStageBlocked && (
+								<div role='alert' className='space-y-2 text-sm'>
+									<p>
+										{rolloutStageLoading
+											? 'Consultando las ubicaciones disponibles de la filial…'
+											: 'No se pudo confirmar la configuración de ubicaciones. Reintenta antes de crear la transferencia.'}
+									</p>
+									{!rolloutStageLoading && (
+										<Button
+											type='button'
+											variant='outline'
+											onClick={retryRolloutStage}
+											disabled={subsidiaryId === null}>
+											Reintentar consulta
+										</Button>
+									)}
+								</div>
+							)}
 							{(status as ITransferFormStatus | undefined)?.apiError && (
 								<p
 									role='alert'
@@ -522,7 +552,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 										isClearable
 										isLoading={originWarehousesLoading}
 										// Hasta conocer la etapa no se sabe qué bodegas admite cada lado.
-										isDisabled={rolloutStageLoading}
+										isDisabled={rolloutStageBlocked}
 									/>
 									{touched.from_warehouse_id &&
 										typeof errors.from_warehouse_id === 'string' && (
@@ -557,7 +587,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 										}
 										isClearable
 										isLoading={destinationWarehousesLoading}
-										isDisabled={!values.to_branch_id || rolloutStageLoading}
+										isDisabled={!values.to_branch_id || rolloutStageBlocked}
 									/>
 									{touched.to_warehouse_id &&
 										typeof errors.to_warehouse_id === 'string' && (
@@ -845,7 +875,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 									disabled={
 										isSubmitting ||
 										Boolean(isLoading) ||
-										rolloutStageLoading ||
+										rolloutStageBlocked ||
 										isBranchForbidden(values.to_branch_id)
 									}>
 									Crear transferencia
