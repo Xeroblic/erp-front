@@ -44,6 +44,8 @@ import SaleStockShortageAlert from '../parts/SaleStockShortageAlert';
 import SaleCloseResultAlert from '../parts/SaleCloseResultAlert';
 import CloseSaleModal from './CloseSaleModal';
 import CorrectSerialModal from './CorrectSerialModal';
+import StartSaleReturnModal from './StartSaleReturnModal';
+import ReceiveSaleReturnModal from './ReceiveSaleReturnModal';
 interface Props {
 	subsidiaryId: number;
 	saleId: number;
@@ -143,6 +145,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const [isClosing, setIsClosing] = useState(false);
 	const [confirmReturnOpen, setConfirmReturnOpen] = useState(false);
 	const [isConfirmingReturn, setIsConfirmingReturn] = useState(false);
+	// Etapa 2: iniciar y recibir la devolución física.
+	const [startReturnOpen, setStartReturnOpen] = useState(false);
+	const [receiveReturnOpen, setReceiveReturnOpen] = useState(false);
 	const [correctSerialOpen, setCorrectSerialOpen] = useState(false);
 	const [creatingQuote, setCreatingQuote] = useState(false);
 	const [createdQuoteId, setCreatedQuoteId] = useState<number | null>(null);
@@ -210,8 +215,20 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			setCreatedQuoteId(null);
 			setCloseShortage(null);
 			setCloseOutcome(null);
+			setStartReturnOpen(false);
+			setReceiveReturnOpen(false);
 		}
 	}, [isOpen]);
+
+	const reloadSale = useCallback(() => {
+		void dispatch(loadSaleDetail({ subsidiaryId, saleId }));
+		void dispatch(loadSaleItems({ subsidiaryId, saleId }));
+	}, [dispatch, subsidiaryId, saleId]);
+
+	const handleReturnStarted = useCallback(() => {
+		setStartReturnOpen(false);
+		reloadSale();
+	}, [reloadSale]);
 
 	// const itemsCount = detail?.items_count ?? items.length ?? 0;
 
@@ -450,6 +467,11 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	// El botón de cierre depende solo de can_close (el backend ya contempla
 	// is_closed e inventory_finalized). inventory_finalized NO se usa aquí.
 	const canCloseSale = !!detail?.can_close;
+	// Devolución física de la etapa 2 esperando recepción. Con ella pendiente, la
+	// confirmación sin cuerpo de la etapa 1 responde 422: ese botón se oculta siempre.
+	const pendingReturn = detail?.pending_return ?? null;
+	const canReceiveReturn = isMultiLocation && pendingReturn !== null;
+	const canStartReturn = isMultiLocation && isSaleClosed && pendingReturn === null;
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
@@ -525,6 +547,12 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							{isSaleCancelled && (
 								<Badge variant='solid' color='red' className='px-2 py-1 text-sm'>
 									Venta cancelada
+								</Badge>
+							)}
+							{pendingReturn && (
+								<Badge variant='solid' color='amber' className='px-2 py-1 text-sm'>
+									Devolución pendiente
+									{pendingReturn.source === 'channel' ? ' (Woo)' : ''}
 								</Badge>
 							)}
 						</div>
@@ -704,6 +732,27 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					/>
 				)}
 
+				{startReturnOpen && (
+					<StartSaleReturnModal
+						isOpen={startReturnOpen}
+						onClose={() => setStartReturnOpen(false)}
+						subsidiaryId={subsidiaryId}
+						saleId={saleId}
+						onStarted={handleReturnStarted}
+					/>
+				)}
+
+				{receiveReturnOpen && pendingReturn && (
+					<ReceiveSaleReturnModal
+						isOpen={receiveReturnOpen}
+						onClose={() => setReceiveReturnOpen(false)}
+						subsidiaryId={subsidiaryId}
+						saleId={saleId}
+						returnId={pendingReturn.id}
+						onSaleChanged={reloadSale}
+					/>
+				)}
+
 				{correctSerialOpen && (
 					<CorrectSerialModal
 						open={correctSerialOpen}
@@ -823,7 +872,22 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								Descargar etiqueta
 							</Button>
 						</Tooltip>
-						{canCloseSale && (
+						{canReceiveReturn && (
+							<Tooltip text='Recibir la devolución pendiente'>
+								<ProtectedButton
+									permission='confirm-sale-return'
+									subsidiaryId={subsidiaryId}
+									scope='access'
+									fallbackMode='hidden'
+									variant='solid'
+									color='amber'
+									icon='HeroInboxArrowDown'
+									onClick={() => setReceiveReturnOpen(true)}>
+									Recibir devolución
+								</ProtectedButton>
+							</Tooltip>
+						)}
+						{canCloseSale && !canReceiveReturn && (
 							<Tooltip text='Cerrar venta'>
 								<Button
 									variant='solid'
@@ -834,7 +898,22 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								</Button>
 							</Tooltip>
 						)}
-						{isSaleRefunded && !detail?.inventory_finalized && (
+						{canStartReturn && (
+							<Tooltip text='Iniciar la devolución de esta venta'>
+								<ProtectedButton
+									permission='confirm-sale-return'
+									subsidiaryId={subsidiaryId}
+									scope='access'
+									fallbackMode='hidden'
+									variant='outline'
+									color='amber'
+									icon='HeroArrowUturnLeft'
+									onClick={() => setStartReturnOpen(true)}>
+									Iniciar devolución
+								</ProtectedButton>
+							</Tooltip>
+						)}
+						{isSaleRefunded && !detail?.inventory_finalized && !pendingReturn && (
 							<Tooltip text='Confirmar recepcion de envio'>
 								<ProtectedButton
 									permission='confirm-sale-return'

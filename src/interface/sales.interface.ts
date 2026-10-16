@@ -60,6 +60,130 @@ export interface ISale {
 	complete_at?: string | null;
 	/** Fecha/hora del cierre real de la venta (la usa el badge "Venta cerrada el ..."). */
 	completed_at?: string | null;
+	/**
+	 * Devolución física de la etapa 2 que espera recepción; `null` si no hay. Es la única
+	 * forma de conocer el `return_id` de una devolución que inició el canal (Woo).
+	 */
+	pending_return?: ISalePendingReturn | null;
+}
+
+export type TSaleReturnStatus = 'pending_receipt' | 'received';
+
+/** `manual` la inició alguien desde el ERP; `channel`, un `cancelled`/`refunded` de Woo. */
+export type TSaleReturnSource = 'manual' | 'channel';
+
+/** Resumen de la devolución pendiente que traen la venta y sus listados. */
+export interface ISalePendingReturn {
+	id: number;
+	sale_cycle: number;
+	status: TSaleReturnStatus;
+	source: TSaleReturnSource;
+}
+
+/** `fit` vuelve a la venta; `unfit` queda en el físico sin venderse ni publicarse. */
+export type TSaleReturnCondition = 'fit' | 'unfit';
+
+/** Lo que entró de un ítem al recibir; `reason` sólo en lo no apto. */
+export interface ISaleReturnReceivedAllocation {
+	warehouse_id: number | null;
+	quantity: number;
+	condition: TSaleReturnCondition;
+	reason: string | null;
+	serial_number: string | null;
+}
+
+/** Lo que la devolución usa de la ficha del producto. */
+export interface ISaleReturnProduct {
+	id: number;
+	sku: string | null;
+	name: string;
+}
+
+export interface ISaleReturnItem {
+	sale_item_id: number;
+	/**
+	 * Sucursal a la que vuelve el ítem: las bodegas que se ofrecen para recibirlo son de
+	 * ella. `null` sólo si ni la venta ni el producto tienen sucursal.
+	 */
+	branch_id: number | null;
+	product: ISaleReturnProduct;
+	serial_tracking: boolean;
+	quantity_expected: number;
+	/** Series vendidas que vuelven; `[]` en un ítem sin serie. */
+	serial_numbers: string[];
+	/** `[]` mientras la devolución espera. */
+	received_allocations: ISaleReturnReceivedAllocation[];
+}
+
+/** `data` de `POST /sales/{sale}/returns` y de `GET /sales/{sale}/returns/{return}`. */
+export interface ISaleReturn {
+	id: number;
+	sale_id: number;
+	sale_cycle: number;
+	status: TSaleReturnStatus;
+	source: TSaleReturnSource;
+	reason: string | null;
+	items: ISaleReturnItem[];
+	created_at: string | null;
+	received_at: string | null;
+	received_by: { id: number; name: string } | null;
+	inventory_operation_id: string | null;
+}
+
+export interface IStartSaleReturnRequest {
+	/** Obligatorio, máximo 500. */
+	reason: string;
+}
+
+/** Parte de un ítem sin serie. `warehouse_id: null` es «Sin ubicación». */
+export interface IConfirmSaleReturnAllocation {
+	warehouse_id: number | null;
+	quantity: number;
+	condition: TSaleReturnCondition;
+	/** Obligatorio si `condition` es `unfit`; `null` en lo apto. */
+	reason: string | null;
+}
+
+/** Una serie devuelta. `warehouse_id: null` conserva la bodega que ya tenía. */
+export interface IConfirmSaleReturnSerial {
+	serial_number: string;
+	warehouse_id: number | null;
+	condition: TSaleReturnCondition;
+	reason: string | null;
+}
+
+/** Un ítem sin serie lleva `allocations`; uno con serie, `serials`. */
+export interface IConfirmSaleReturnItem {
+	sale_item_id: number;
+	allocations?: IConfirmSaleReturnAllocation[];
+	serials?: IConfirmSaleReturnSerial[];
+}
+
+/**
+ * Cuerpo de `POST /confirm-return` en la etapa 2: la devolución completa, cada ítem una
+ * vez y con exactamente su cantidad o sus series. Sin `return_id` es la etapa 1, sin cuerpo.
+ */
+export interface IConfirmSaleReturnRequest {
+	return_id: number;
+	items: IConfirmSaleReturnItem[];
+}
+
+export interface ISaleReturnReceiptItem {
+	sale_item_id: number;
+	received_quantity: number;
+	fit_quantity: number;
+	unfit_quantity: number;
+}
+
+/** 200 de `POST /confirm-return` con `return_id`: `data` junto a `message` y `sale_id`. */
+export interface IConfirmSaleReturnReceiptResponse {
+	message: string;
+	sale_id: number;
+	data: {
+		id: number;
+		status: TSaleReturnStatus;
+		items: ISaleReturnReceiptItem[];
+	};
 }
 
 export interface ISaleItem {

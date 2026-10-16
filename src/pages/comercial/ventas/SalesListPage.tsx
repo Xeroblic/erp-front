@@ -384,13 +384,24 @@ const SalesListPage: React.FC = () => {
 						intensity: '500',
 					};
 					return (
-						<Badge
-							color={badgeConfig.color}
-							colorIntensity={badgeConfig.intensity}
-							variant='solid'
-							className='rounded-md'>
-							{translateStatus(row.original.status)}
-						</Badge>
+						<div className='flex flex-col items-start gap-1'>
+							<Badge
+								color={badgeConfig.color}
+								colorIntensity={badgeConfig.intensity}
+								variant='solid'
+								className='rounded-md'>
+								{translateStatus(row.original.status)}
+							</Badge>
+							{/* Etapa 2: la devolución física espera recepción; la venta no se puede cerrar. */}
+							{row.original.pending_return && (
+								<Badge
+									color='amber'
+									variant='outline'
+									className='whitespace-nowrap rounded-md text-xs'>
+									Devolución pendiente
+								</Badge>
+							)}
+						</div>
 					);
 				},
 			},

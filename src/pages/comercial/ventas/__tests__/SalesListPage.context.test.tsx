@@ -24,7 +24,20 @@ vi.mock('@/store/slices/salesSlice', () => ({
 	clearDetail: () => ({ type: 'sales/clearDetail' }),
 	loadSalesList: () => ({ type: 'sales/load', unwrap: async () => undefined }),
 	selectSalesList: (() => {
-		const sales = [{ id: 7, sale_number: 'V-7', status: 'pending', total_amount: '1000' }];
+		const sales = [
+			{
+				id: 7,
+				sale_number: 'V-7',
+				status: 'pending',
+				total_amount: '1000',
+				pending_return: {
+					id: 12,
+					sale_cycle: 0,
+					status: 'pending_receipt',
+					source: 'channel',
+				},
+			},
+		];
 		return () => sales;
 	})(),
 	selectSalesListSubsidiaryId: () => 1,
@@ -70,13 +83,16 @@ vi.mock('@/components/ui/DataTable', () => ({
 	}: {
 		columns: Array<{
 			id?: string;
+			accessorKey?: string;
 			cell?: (props: { row: { original: unknown } }) => React.ReactNode;
 		}>;
 		data: unknown[];
 	}) => {
 		const actionColumn = columns.find((column) => column.id === 'actions');
+		const statusColumn = columns.find((column) => column.accessorKey === 'status');
 		return (
 			<div>
+				{data.length > 0 ? statusColumn?.cell?.({ row: { original: data[0] } }) : null}
 				{data.length > 0 ? actionColumn?.cell?.({ row: { original: data[0] } }) : null}
 			</div>
 		);
@@ -177,5 +193,20 @@ describe('SalesListPage con cambio de subsidiaria', () => {
 
 		expect(screen.queryByTestId('close-sale-modal')).not.toBeInTheDocument();
 		expect(screen.queryByTestId('delete-sale-modal')).not.toBeInTheDocument();
+	});
+});
+
+describe('SalesListPage con una devolución pendiente', () => {
+	it('rotula la venta con «Devolución pendiente» junto a su estado', async () => {
+		routeState.saleId = undefined as unknown as string;
+		salesServiceSpies.fetchPendingSerialAssignment.mockResolvedValue({ data: [] });
+		const store = configureStore({ reducer: { context: contextReducer } });
+		render(
+			<Provider store={store}>
+				<SalesListPage />
+			</Provider>,
+		);
+
+		expect(await screen.findByText('Devolución pendiente')).toBeInTheDocument();
 	});
 });
