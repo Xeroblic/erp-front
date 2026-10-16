@@ -13,6 +13,7 @@ import {
 	unassignStockFromProduct,
 } from '@/store/slices/products/productStockSlice';
 import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
+import { asStockRequestError, describeStockRequestError } from '@/utils/stockMovementErrors.util';
 
 interface StockSeriesModalProps {
 	isOpen: boolean;
@@ -28,13 +29,6 @@ interface ISeriesItem {
 	branch_name?: string;
 	branch_id?: number | null;
 }
-
-/**
- * Los thunks de stock rechazan con el mensaje del backend: un 403 por no
- * alcanzar la sucursal elegida o un 422 de validación se muestran tal cual.
- */
-const rejectionMessage = (error: unknown, fallback: string): string =>
-	typeof error === 'string' && error.trim() ? error : fallback;
 
 const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 	isOpen,
@@ -68,6 +62,10 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 		: fallbackBranchId;
 
 	const [selectedBranchId, setSelectedBranchId] = useState<number | ''>(initialBranchId);
+	// Destino al asignar, origen al devolver: la sucursal que el backend exige alcanzar.
+	const selectedBranchName = accessibleBranches.find(
+		(branch) => branch.id === selectedBranchId,
+	)?.name;
 
 	useEffect(() => {
 		if (!isOpen || !product) {
@@ -178,15 +176,22 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 					},
 				}),
 			).unwrap();
-			const destinationBranch =
-				accessibleBranches.find((branch) => branch.id === selectedBranchId)?.name ||
-				'la sucursal seleccionada';
 			toast.success(
-				`Stock asignado exitosamente desde la Bodega Central hacia ${destinationBranch}.`,
+				`Stock asignado exitosamente desde la Bodega Central hacia ${selectedBranchName || 'la sucursal seleccionada'}.`,
 			);
 			onClose();
 		} catch (error) {
-			toast.error(rejectionMessage(error, 'Ocurrió un error al intentar asignar el stock.'));
+			// Sin reintento: el 403 dice qué sucursal falta y el 422, el motivo de la línea.
+			toast.error(
+				describeStockRequestError(
+					asStockRequestError(error, 'Ocurrió un error al intentar asignar el stock.'),
+					{
+						operation: 'assign',
+						destinationBranchName: selectedBranchName,
+						takesFromProductBranch: !product.serial_tracking,
+					},
+				),
+			);
 		}
 	};
 
@@ -228,7 +233,12 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 			);
 			onClose();
 		} catch (error) {
-			toast.error(rejectionMessage(error, 'Ocurrió un error al intentar devolver el stock.'));
+			toast.error(
+				describeStockRequestError(
+					asStockRequestError(error, 'Ocurrió un error al intentar devolver el stock.'),
+					{ operation: 'unassign', sourceBranchName: selectedBranchName },
+				),
+			);
 		}
 	};
 
