@@ -13,6 +13,7 @@ type IRequestCfg = {
 	method?: string;
 	data?: unknown;
 	headers?: Record<string, string>;
+	params?: Record<string, unknown>;
 };
 
 const { fetchData, stage, toastMock } = vi.hoisted(() => ({
@@ -136,6 +137,8 @@ let detail: Partial<ISale>;
 /** Otras ventas que la prueba abre, por id. */
 let otherDetails: Record<number, Partial<ISale>>;
 let writes: Array<() => Promise<unknown>>;
+let returnItems: ISaleReturn['items'];
+let warehouseFailure: string | null;
 
 const isWrite = (cfg: IRequestCfg) =>
 	cfg.method === 'post' && (cfg.url.endsWith('/confirm-return') || cfg.url.endsWith('/returns'));
@@ -145,7 +148,26 @@ const routeApi = () => {
 		if (isWrite(cfg)) {
 			return (writes.shift() ?? (() => Promise.reject(new Error('escritura inesperada'))))();
 		}
-		if (cfg.url.endsWith('/returns/12')) return Promise.resolve({ data: { data: saleReturn } });
+		if (cfg.url.endsWith('/returns/12'))
+			return Promise.resolve({ data: { data: { ...saleReturn, items: returnItems } } });
+		if (cfg.url === warehouseFailure) return rejectWith(403, { message: 'Sin acceso' });
+		if (cfg.url === '/branches')
+			return Promise.resolve({
+				data: {
+					data: [
+						{ id: 4, subsidiary_id: 1 },
+						{ id: 5, subsidiary_id: 1 },
+						{ id: 6, subsidiary_id: 2 },
+					],
+				},
+			});
+		if (cfg.url === '/branches/5/warehouses')
+			return Promise.resolve({
+				data: {
+					data: [{ id: 10, name: 'Bodega Norte', is_active: true }],
+					meta: { last_page: 1 },
+				},
+			});
 		if (cfg.url === '/branches/4/warehouses') {
 			return Promise.resolve({
 				data: {
@@ -213,6 +235,8 @@ beforeEach(() => {
 	Object.values(toastMock).forEach((mock) => mock.mockClear());
 	stage.isMultiLocation = true;
 	writes = [];
+	returnItems = saleReturn.items;
+	warehouseFailure = null;
 	otherDetails = {};
 	detail = {
 		id: 90,
@@ -605,11 +629,19 @@ describe('intento incierto tras un timeout', () => {
 });
 
 /** La página que abre el detalle: monta las escrituras y monta o desmonta el detalle. */
-const PageHarness = ({ saleId, open }: { saleId: number; open: boolean }) => {
+const PageHarness = ({
+	saleId,
+	open,
+	subsidiaryId = 1,
+}: {
+	saleId: number;
+	open: boolean;
+	subsidiaryId?: number;
+}) => {
 	const returnWrites = useSaleReturnWrites();
 	return open ? (
 		<SaleDetailPage
-			subsidiaryId={1}
+			subsidiaryId={subsidiaryId}
 			saleId={saleId}
 			isOpen
 			onClose={vi.fn()}
@@ -625,10 +657,10 @@ const renderPage = (saleId = 90) => {
 			<PageHarness saleId={saleId} open />
 		</Provider>,
 	);
-	const show = (nextSaleId: number, open: boolean) =>
+	const show = (nextSaleId: number, open: boolean, subsidiaryId = 1) =>
 		view.rerender(
 			<Provider store={store}>
-				<PageHarness saleId={nextSaleId} open={open} />
+				<PageHarness saleId={nextSaleId} open={open} subsidiaryId={subsidiaryId} />
 			</Provider>,
 		);
 	return { show };
@@ -713,5 +745,147 @@ describe('intento incierto a nivel de página', () => {
 		expect(
 			await screen.findByRole('button', { name: 'Confirmar recepción' }),
 		).toBeInTheDocument();
+	});
+});
+
+describe('regresiones de la auditoría del PR 292', () => {
+	it.each(['iniciar', 'recibir'] as const)(
+		'actualiza el detalle reabierto al terminar de %s',
+		async (action) => {
+			if (action === 'iniciar')
+				detail = { ...detail, is_closed: true, can_close: false, pending_return: null };
+			const late = deferred();
+			writes = [() => late.promise];
+			const page = renderPage();
+			if (action === 'iniciar') {
+				fireEvent.click(await screen.findByRole('button', { name: 'Iniciar devolución' }));
+				change('Motivo de la devolución', 'Retorno');
+				fireEvent.click(startButtonIn());
+			} else {
+				fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
+				fillValidReceipt(await screen.findByRole('group', { name: 'MOU-01 — Mouse' }));
+				submitReceipt();
+			}
+			await waitFor(() => expect(callsTo(isWrite)).toHaveLength(1));
+			page.show(90, false);
+			page.show(90, true);
+			await waitFor(() => expect(detailReads()).toHaveLength(2));
+			detail = {
+				...detail,
+				is_closed: false,
+				pending_return: action === 'iniciar' ? PENDING : null,
+			};
+			late.resolve(
+				action === 'iniciar' ? { status: 201, data: { data: saleReturn } } : RECEIPT_OK,
+			);
+			await waitFor(() => expect(detailReads()).toHaveLength(3));
+			if (action === 'iniciar')
+				expect(
+					await screen.findByRole('button', { name: 'Recibir devolución' }),
+				).toBeInTheDocument();
+			else
+				await waitFor(() =>
+					expect(
+						screen.queryByRole('button', { name: 'Recibir devolución' }),
+					).not.toBeInTheDocument(),
+				);
+		},
+	);
+
+	it.each(['otra venta', 'otra filial'] as const)(
+		'una respuesta tardía no recarga el detalle de %s',
+		async (destination) => {
+			detail = { ...detail, is_closed: true, can_close: false, pending_return: null };
+			otherDetails[91] = { ...detail, id: 91, sale_number: 'V-91' };
+			const late = deferred();
+			writes = [() => late.promise];
+			const page = renderPage();
+			fireEvent.click(await screen.findByRole('button', { name: 'Iniciar devolución' }));
+			change('Motivo de la devolución', 'Retorno');
+			fireEvent.click(startButtonIn());
+			await waitFor(() => expect(startReturnCalls()).toHaveLength(1));
+			page.show(90, false);
+			page.show(
+				destination === 'otra venta' ? 91 : 90,
+				true,
+				destination === 'otra filial' ? 2 : 1,
+			);
+			await waitFor(() =>
+				expect(callsTo((cfg) => /\/sales\/\d+$/.test(cfg.url))).toHaveLength(2),
+			);
+			late.resolve({ status: 201, data: { data: saleReturn } });
+			await waitFor(() => expect(toastMock.success).toHaveBeenCalled());
+			expect(callsTo((cfg) => /\/sales\/\d+$/.test(cfg.url))).toHaveLength(2);
+		},
+	);
+
+	it('recibe un ítem sin sucursal con bodega y partes sin ubicación, sin ofrecer otra filial', async () => {
+		returnItems = [{ ...saleReturn.items[0], branch_id: null }];
+		writes = [() => Promise.resolve(RECEIPT_OK)];
+		const mouse = await openReceipt();
+		const location = screen.getByLabelText('Ubicación de la parte 1 de MOU-01 — Mouse');
+		expect(within(location).getByRole('option', { name: /Bodega Central/ })).toHaveValue('8');
+		expect(within(location).getByRole('option', { name: /Bodega Norte/ })).toHaveValue('10');
+		expect(callsTo((cfg) => cfg.url === '/branches')[0].params).toEqual({ subsidiary_id: 1 });
+		expect(callsTo((cfg) => cfg.url === '/branches/6/warehouses')).toHaveLength(0);
+		change('Ubicación de la parte 1 de MOU-01 — Mouse', 'none');
+		submitReceipt();
+		await screen.findByText(
+			'El ítem no tiene sucursal: elige al menos una bodega de recepción.',
+		);
+		expect(confirmReturnCalls()).toHaveLength(0);
+		fillValidReceipt(mouse);
+		submitReceipt();
+		await waitFor(() => expect(confirmReturnCalls()).toHaveLength(1));
+		expect(confirmReturnCalls()[0].data).toEqual({
+			return_id: 12,
+			items: [
+				{
+					sale_item_id: 201,
+					allocations: [
+						{ warehouse_id: 8, quantity: 3, condition: 'fit', reason: null },
+						{
+							warehouse_id: null,
+							quantity: 2,
+							condition: 'unfit',
+							reason: 'No enciende',
+						},
+					],
+				},
+			],
+		});
+	});
+
+	it('impide repartir el mismo ítem sin sucursal entre bodegas de sucursales distintas', async () => {
+		returnItems = [{ ...saleReturn.items[0], branch_id: null }];
+		fillValidReceipt(await openReceipt());
+		change('Ubicación de la parte 2 de MOU-01 — Mouse', '10');
+		submitReceipt();
+		await screen.findByText(
+			'Las bodegas de un mismo ítem deben pertenecer a la misma sucursal.',
+		);
+		expect(confirmReturnCalls()).toHaveLength(0);
+	});
+
+	it('conserva las bodegas autorizadas ante un 403 en otra sucursal', async () => {
+		returnItems = [{ ...saleReturn.items[0], branch_id: null }];
+		warehouseFailure = '/branches/4/warehouses';
+		await openReceipt();
+		const location = screen.getByLabelText('Ubicación de la parte 1 de MOU-01 — Mouse');
+		expect(within(location).getByRole('option', { name: /Bodega Norte/ })).toHaveValue('10');
+		expect(
+			within(location).queryByRole('option', { name: /Bodega Central/ }),
+		).not.toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Volver a cargar bodegas' })).toBeInTheDocument();
+		change('Cantidad de la parte 1 de MOU-01 — Mouse', '3');
+		change('Condición de la parte 1 de MOU-01 — Mouse', 'unfit');
+		change('Motivo de la parte 1 de MOU-01 — Mouse', 'Golpeado');
+		warehouseFailure = null;
+		fireEvent.click(screen.getByRole('button', { name: 'Volver a cargar bodegas' }));
+		await within(location).findByRole('option', { name: /Bodega Central/ });
+		expect(screen.getByLabelText('Cantidad de la parte 1 de MOU-01 — Mouse')).toHaveValue(3);
+		expect(screen.getByLabelText('Motivo de la parte 1 de MOU-01 — Mouse')).toHaveValue(
+			'Golpeado',
+		);
 	});
 });

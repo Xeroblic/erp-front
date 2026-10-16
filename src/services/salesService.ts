@@ -280,6 +280,24 @@ export const fetchSaleReturn = async (
 	return resp.data.data;
 };
 
+/** Sucursales visibles de la filial, incluyendo el acceso heredado de empresa/filial. */
+export const fetchSaleReturnBranchIds = async (
+	subsidiaryId: number,
+	signal?: AbortSignal,
+): Promise<number[]> => {
+	const response = await ApiService.fetchData<{
+		data: Array<{ id: number; subsidiary_id: number }>;
+	}>({
+		url: '/branches',
+		method: 'get',
+		params: { subsidiary_id: subsidiaryId },
+		signal,
+	});
+	return response.data.data
+		.filter((branch) => branch.subsidiary_id === subsidiaryId)
+		.map((branch) => branch.id);
+};
+
 /**
  * Recibe la devolución de la etapa 2: todo o nada, cada unidad con ubicación y
  * condición. Exige `Idempotency-Key`; un reintento con la misma devuelve el mismo 200.

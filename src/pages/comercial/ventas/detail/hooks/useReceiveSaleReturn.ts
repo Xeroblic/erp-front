@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormik, type FormikProps } from 'formik';
 import { toast } from 'react-toastify';
-import { fetchSaleReturn } from '@/services/salesService';
+import { fetchSaleReturn, fetchSaleReturnBranchIds } from '@/services/salesService';
 import listBranchWarehouses from '@/services/procurement/branchWarehouses.service';
 import type { IConfirmSaleReturnReceiptResponse, ISaleReturn } from '@/interface/sales.interface';
 import type { IStockReceiptWarehouse } from '@/interface/procurement.interface';
@@ -34,6 +34,9 @@ const LOAD_FALLBACK_MESSAGE = 'No se pudo cargar la devolución.';
 
 const WAREHOUSES_FALLBACK_MESSAGE =
 	'No se pudieron cargar las bodegas de la sucursal: por ahora sólo puedes recibir en «Sin ubicación» o dejar cada serie en su bodega.';
+
+const UNASSIGNED_WAREHOUSES_MESSAGE =
+	'No se pudieron cargar todas las bodegas de la filial. Los ítems sin sucursal necesitan al menos una bodega de recepción. Vuelve a cargar las bodegas o pide ayuda a alguien con acceso.';
 
 type TReturnLoadState =
 	| { status: 'loading' }
@@ -132,7 +135,10 @@ export const useReceiveSaleReturn = ({
 
 	useEffect(() => {
 		const controller = new AbortController();
-		setLoad({ status: 'loading' });
+		// Al recargar bodegas, conservar el formulario visible y su borrador.
+		setLoad((current) =>
+			loadAttempt > 0 && current.status === 'ready' ? current : { status: 'loading' },
+		);
 		setWarehousesError(null);
 		void (async () => {
 			try {
@@ -143,19 +149,38 @@ export const useReceiveSaleReturn = ({
 					controller.signal,
 				);
 				const branchIds = branchIdsOf(saleReturn);
+				const hasUnassignedItems = saleReturn.items.some((item) => item.branch_id === null);
+				let branchesFailed = false;
+				if (hasUnassignedItems) {
+					try {
+						branchIds.push(
+							...(await fetchSaleReturnBranchIds(subsidiaryId, controller.signal)),
+						);
+					} catch {
+						branchesFailed = true;
+					}
+				}
+				const uniqueBranchIds = Array.from(new Set(branchIds));
 				const results = await Promise.allSettled(
-					branchIds.map((branchId) => listBranchWarehouses(branchId, controller.signal)),
+					uniqueBranchIds.map((branchId) =>
+						listBranchWarehouses(branchId, controller.signal),
+					),
 				);
 				if (controller.signal.aborted) return;
 				const byBranch = new Map<number, IStockReceiptWarehouse[]>();
 				results.forEach((result, index) => {
-					if (result.status === 'fulfilled') byBranch.set(branchIds[index], result.value);
+					if (result.status === 'fulfilled')
+						byBranch.set(uniqueBranchIds[index], result.value);
 				});
 				setWarehousesByBranch(byBranch);
 				// El listado exige `view-warehouse`, aparte del permiso de devoluciones: sin
-				// él se puede recibir igual, en «Sin ubicación» o conservando la bodega.
-				if (results.some((result) => result.status === 'rejected')) {
-					setWarehousesError(WAREHOUSES_FALLBACK_MESSAGE);
+				// él se conserva el fallback de ubicación cuando la sucursal ya se conoce.
+				if (branchesFailed || results.some((result) => result.status === 'rejected')) {
+					setWarehousesError(
+						hasUnassignedItems
+							? UNASSIGNED_WAREHOUSES_MESSAGE
+							: WAREHOUSES_FALLBACK_MESSAGE,
+					);
 				}
 				setLoad({ status: 'ready', saleReturn });
 			} catch (error: unknown) {

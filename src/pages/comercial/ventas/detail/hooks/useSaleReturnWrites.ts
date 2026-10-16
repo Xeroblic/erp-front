@@ -63,6 +63,8 @@ export type TReceiveReturnSlot = IReturnWriteSlot<
 export interface ISaleReturnWrites {
 	start: TStartReturnSlot;
 	receive: TReceiveReturnSlot;
+	/** Escucha los cambios futuros, incluso si la escritura empezó en otro detalle. */
+	subscribe: (listener: (owner: ISaleReturnOwner) => void) => () => void;
 }
 
 interface IUseSaleReturnWritesArgs {
@@ -178,10 +180,20 @@ export const useSaleReturnWrites = ({
 }: IUseSaleReturnWritesArgs = {}): ISaleReturnWrites => {
 	const onSaleChangedRef = useRef(onSaleChanged);
 	onSaleChangedRef.current = onSaleChanged;
-	const notify = useCallback((owner: ISaleReturnOwner) => onSaleChangedRef.current?.(owner), []);
+	const listeners = useRef(new Set<(owner: ISaleReturnOwner) => void>());
+	const subscribe = useCallback((listener: (owner: ISaleReturnOwner) => void) => {
+		listeners.current.add(listener);
+		return () => {
+			listeners.current.delete(listener);
+		};
+	}, []);
+	const notify = useCallback((owner: ISaleReturnOwner) => {
+		onSaleChangedRef.current?.(owner);
+		Array.from(listeners.current).forEach((listener) => listener(owner));
+	}, []);
 
 	const start = useReturnWriteSlot('No se pudo iniciar la devolución.', writeStart, notify);
 	const receive = useReturnWriteSlot('No se pudo recibir la devolución.', writeReceive, notify);
 
-	return useMemo(() => ({ start, receive }), [start, receive]);
+	return useMemo(() => ({ start, receive, subscribe }), [start, receive, subscribe]);
 };

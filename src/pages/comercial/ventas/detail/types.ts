@@ -198,7 +198,11 @@ const unitsLabel = (count: number): string => (count === 1 ? '1 unidad' : `${cou
  * y `UNFIT_REASON_REQUIRED`: sin serie, las partes suman exactamente lo esperado; con o
  * sin serie, lo no apto lleva motivo y cada bodega es de la sucursal del ítem.
  */
-const buildReturnItemSchema = (item: ISaleReturnItem, offered: ReadonlySet<string>) => {
+const buildReturnItemSchema = (
+	item: ISaleReturnItem,
+	offered: ReadonlySet<string>,
+	warehouseBranches: ReadonlyMap<string, number>,
+) => {
 	if (item.serial_tracking) {
 		return Yup.object({
 			rows: Yup.array(),
@@ -229,25 +233,50 @@ const buildReturnItemSchema = (item: ISaleReturnItem, offered: ReadonlySet<strin
 				}),
 			)
 			.min(1, 'Agrega al menos una ubicación.'),
-	}).test('total', function matchesExpected(value) {
-		const received = sumAllocatedRows(value?.rows ?? []);
-		if (received === item.quantity_expected) return true;
-		return this.createError({
-			path: `${this.path}.summary`,
-			message: `Las partes suman ${received} y vuelven ${unitsLabel(item.quantity_expected)}.`,
+	})
+		.test('receiving-branch', function receivingBranch(value) {
+			if (item.branch_id !== null) return true;
+			const branches = new Set(
+				(value?.rows ?? [])
+					.map((row) => warehouseBranches.get(row.warehouseKey ?? ''))
+					.filter((id): id is number => id !== undefined),
+			);
+			if (branches.size === 1) return true;
+			return this.createError({
+				path: `${this.path}.summary`,
+				message:
+					branches.size === 0
+						? 'El ítem no tiene sucursal: elige al menos una bodega de recepción.'
+						: 'Las bodegas de un mismo ítem deben pertenecer a la misma sucursal.',
+			});
+		})
+		.test('total', function matchesExpected(value) {
+			const received = sumAllocatedRows(value?.rows ?? []);
+			if (received === item.quantity_expected) return true;
+			return this.createError({
+				path: `${this.path}.summary`,
+				message: `Las partes suman ${received} y vuelven ${unitsLabel(item.quantity_expected)}.`,
+			});
 		});
-	});
 };
 
 /**
  * `offeredByBranch` da, por sucursal, las claves de bodega que se pueden elegir
- * (siempre con `UNLOCATED_KEY`). Un ítem sin sucursal sólo admite «Sin ubicación».
+ * (siempre con `UNLOCATED_KEY`). Sin sucursal se ofrecen las bodegas de la filial;
+ * una bodega concreta determina a qué sucursal vuelve el ítem sin serie.
  */
 export const buildReturnReceiptSchema = (
 	items: readonly ISaleReturnItem[],
 	offeredByBranch: ReadonlyMap<number, ReadonlySet<string>>,
-) =>
-	Yup.object({
+) => {
+	const warehouseBranches = new Map<string, number>();
+	offeredByBranch.forEach((keys, branchId) =>
+		keys.forEach((key) => {
+			if (key !== UNLOCATED_KEY) warehouseBranches.set(key, branchId);
+		}),
+	);
+	const allOffered = new Set([UNLOCATED_KEY, ...warehouseBranches.keys()]);
+	return Yup.object({
 		items: Yup.object(
 			Object.fromEntries(
 				items.map((item) => [
@@ -256,9 +285,11 @@ export const buildReturnReceiptSchema = (
 						item,
 						(item.branch_id !== null
 							? offeredByBranch.get(item.branch_id)
-							: undefined) ?? new Set([UNLOCATED_KEY]),
+							: allOffered) ?? new Set([UNLOCATED_KEY]),
+						warehouseBranches,
 					),
 				]),
 			),
 		),
 	});
+};

@@ -200,6 +200,12 @@ const SaleReturnItemReceipt: React.FC<ISaleReturnItemReceiptProps> = ({
 					))}
 				</ul>
 			)}
+			{item.branch_id === null && !item.serial_tracking && (
+				<p className='mt-2 text-xs text-zinc-600 dark:text-zinc-400'>
+					El ítem no tiene sucursal. Elige al menos una bodega de recepción; las demás
+					partes pueden quedar sin ubicación en esa misma sucursal.
+				</p>
+			)}
 
 			{item.serial_tracking ? (
 				<div className='mt-3 space-y-2'>

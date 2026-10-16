@@ -27,6 +27,7 @@ export interface IReceiveSaleReturnModalProps {
 	 * venta y cerrar. Recibe la venta del intento, que puede no ser la que se muestra.
 	 */
 	onSettled: (owner: ISaleReturnOwner) => void;
+	onAlreadyReceived: (owner: ISaleReturnOwner) => void;
 }
 
 /**
@@ -41,14 +42,25 @@ const ReceiveSaleReturnModal: React.FC<IReceiveSaleReturnModalProps> = ({
 	returnId,
 	slot,
 	onSettled,
+	onAlreadyReceived,
 }) => {
-	const finish = () => onSettled({ subsidiaryId, saleId });
+	const finish = () => onAlreadyReceived({ subsidiaryId, saleId });
 	const receipt = useReceiveSaleReturn({ slot, subsidiaryId, saleId, returnId, onSettled });
 	const { load, formik, warehousesByBranch, isSubmitting, canRetry, foreignAttempt } = receipt;
 	const { visibleBranches } = useCurrentBranch();
 	const branchNames = useMemo(
 		() => new Map(visibleBranches.map((branch) => [branch.id, branch.name])),
 		[visibleBranches],
+	);
+	const subsidiaryWarehouses = useMemo(
+		() =>
+			Array.from(warehousesByBranch.entries()).flatMap(([branchId, warehouses]) =>
+				warehouses.map((warehouse) => ({
+					...warehouse,
+					name: `${branchNames.get(branchId) ?? `Sucursal #${branchId}`} — ${warehouse.name}`,
+				})),
+			),
+		[warehousesByBranch, branchNames],
 	);
 
 	const saleReturn = load.status === 'ready' ? load.saleReturn : null;
@@ -141,6 +153,14 @@ const ReceiveSaleReturnModal: React.FC<IReceiveSaleReturnModalProps> = ({
 									icon='HeroExclamationTriangle'
 									className='text-sm'>
 									{receipt.warehousesError}
+									<Button
+										type='button'
+										variant='outline'
+										color='blue'
+										onClick={receipt.reload}
+										isDisable={locked}>
+										Volver a cargar bodegas
+									</Button>
 								</Alert>
 							)}
 
@@ -153,7 +173,7 @@ const ReceiveSaleReturnModal: React.FC<IReceiveSaleReturnModalProps> = ({
 										formik={formik}
 										warehouses={(item.branch_id !== null
 											? (warehousesByBranch.get(item.branch_id) ?? [])
-											: []
+											: subsidiaryWarehouses
 										).filter((warehouse) => warehouse.is_active)}
 										branchName={
 											item.branch_id !== null

@@ -245,6 +245,7 @@ const SaleDetailPage: React.FC<Props> = ({
 	// Venta y filial que este detalle muestra ahora; `null` si está cerrado o desmontado.
 	// Una respuesta tardía de otra venta no debe recargarse sobre el estado compartido.
 	const currentOwnerRef = useRef<ISaleReturnOwner | null>(null);
+	currentOwnerRef.current = isOpen ? { subsidiaryId, saleId } : null;
 	useEffect(() => {
 		currentOwnerRef.current = isOpen ? { subsidiaryId, saleId } : null;
 		return () => {
@@ -267,15 +268,27 @@ const SaleDetailPage: React.FC<Props> = ({
 		[reloadSale],
 	);
 
-	const handleReturnStarted = useCallback(
-		(_saleReturn: unknown, owner: ISaleReturnOwner) =>
-			settleReturnFor(owner, setStartReturnOpen),
-		[settleReturnFor],
-	);
+	const handleReturnStarted = useCallback((_saleReturn: unknown, owner: ISaleReturnOwner) => {
+		if (isSameSaleOwner(currentOwnerRef.current, owner)) setStartReturnOpen(false);
+	}, []);
 
-	const handleReturnSettled = useCallback(
+	const handleReturnSettled = useCallback((owner: ISaleReturnOwner) => {
+		if (isSameSaleOwner(currentOwnerRef.current, owner)) setReceiveReturnOpen(false);
+	}, []);
+	const handleReturnAlreadyReceived = useCallback(
 		(owner: ISaleReturnOwner) => settleReturnFor(owner, setReceiveReturnOpen),
 		[settleReturnFor],
+	);
+	const { subscribe } = returnWrites;
+	useEffect(
+		() =>
+			subscribe((owner) => {
+				if (!isSameSaleOwner(currentOwnerRef.current, owner)) return;
+				setStartReturnOpen(false);
+				setReceiveReturnOpen(false);
+				reloadSale();
+			}),
+		[subscribe, reloadSale],
 	);
 
 	// const itemsCount = detail?.items_count ?? items.length ?? 0;
@@ -809,6 +822,7 @@ const SaleDetailPage: React.FC<Props> = ({
 
 				{startReturnOpen && (
 					<StartSaleReturnModal
+						key={`${subsidiaryId}:${saleId}`}
 						isOpen={startReturnOpen}
 						onClose={() => setStartReturnOpen(false)}
 						subsidiaryId={subsidiaryId}
@@ -820,6 +834,7 @@ const SaleDetailPage: React.FC<Props> = ({
 
 				{receiveReturnOpen && pendingReturn && (
 					<ReceiveSaleReturnModal
+						key={`${subsidiaryId}:${saleId}:${pendingReturn.id}`}
 						isOpen={receiveReturnOpen}
 						onClose={() => setReceiveReturnOpen(false)}
 						subsidiaryId={subsidiaryId}
@@ -827,6 +842,7 @@ const SaleDetailPage: React.FC<Props> = ({
 						returnId={pendingReturn.id}
 						slot={receiveReturnSlot}
 						onSettled={handleReturnSettled}
+						onAlreadyReceived={handleReturnAlreadyReceived}
 					/>
 				)}
 
