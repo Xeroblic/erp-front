@@ -20,8 +20,9 @@ const estadoSelectOptions: TSelectOption[] = ESTADO_OPTIONS.map(({ value, label 
 
 interface IInventoryReportFiltersProps {
 	branches: IInventoryReportBranch[];
-	sucursal: number | null;
-	onSucursal: (value: number | null) => void;
+	sucursal?: number | null;
+	/** Sin `onSucursal` no se muestra la sucursal (Acciones lee la empresa completa). */
+	onSucursal?: (value: number | null) => void;
 	onLimpiar: () => void;
 	/** Sin `onBusqueda` no se muestra la búsqueda (Estadísticas no lista productos). */
 	busqueda?: string;
@@ -38,7 +39,7 @@ interface IInventoryReportFiltersProps {
  */
 const InventoryReportFilters: React.FC<IInventoryReportFiltersProps> = ({
 	branches,
-	sucursal,
+	sucursal = null,
 	onSucursal,
 	onLimpiar,
 	busqueda = '',
@@ -50,10 +51,11 @@ const InventoryReportFilters: React.FC<IInventoryReportFiltersProps> = ({
 		value: String(branch.id),
 		label: branch.name,
 	}));
-	const fieldCount = 1 + (onBusqueda ? 2 : 0) + (onEstado ? 1 : 0);
+	const fieldCount = (onSucursal ? 1 : 0) + (onBusqueda ? 2 : 0) + (onEstado ? 1 : 0);
 	const gridClass =
 		{
 			1: 'sm:grid-cols-2 lg:grid-cols-3',
+			2: 'sm:grid-cols-2',
 			3: 'sm:grid-cols-3',
 			4: 'sm:grid-cols-2 lg:grid-cols-4',
 		}[fieldCount] ?? 'sm:grid-cols-3';
@@ -88,27 +90,32 @@ const InventoryReportFilters: React.FC<IInventoryReportFiltersProps> = ({
 							/>
 						</div>
 					)}
-					<div className='space-y-1'>
-						<label htmlFor='reporte-inventario-sucursal' className={fieldLabelClass}>
-							Sucursal
-						</label>
-						<SelectReact
-							className={selectBackgroundClass}
-							inputId='reporte-inventario-sucursal'
-							name='sucursal'
-							options={branchOptions}
-							value={
-								branchOptions.find((option) => option.value === String(sucursal)) ??
-								null
-							}
-							placeholder='Todas las sucursales'
-							isClearable
-							onChange={(selected) => {
-								const value = Number(singleSelectValue(selected)?.value);
-								onSucursal(Number.isInteger(value) && value > 0 ? value : null);
-							}}
-						/>
-					</div>
+					{onSucursal && (
+						<div className='space-y-1'>
+							<label
+								htmlFor='reporte-inventario-sucursal'
+								className={fieldLabelClass}>
+								Sucursal
+							</label>
+							<SelectReact
+								className={selectBackgroundClass}
+								inputId='reporte-inventario-sucursal'
+								name='sucursal'
+								options={branchOptions}
+								value={
+									branchOptions.find(
+										(option) => option.value === String(sucursal),
+									) ?? null
+								}
+								placeholder='Todas las sucursales'
+								isClearable
+								onChange={(selected) => {
+									const value = Number(singleSelectValue(selected)?.value);
+									onSucursal(Number.isInteger(value) && value > 0 ? value : null);
+								}}
+							/>
+						</div>
+					)}
 					{onEstado && (
 						<div className='space-y-1'>
 							<label htmlFor='reporte-inventario-estado' className={fieldLabelClass}>

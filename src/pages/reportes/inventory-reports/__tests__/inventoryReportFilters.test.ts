@@ -21,6 +21,7 @@ describe('Filtros de Reportes › Inventario en la URL', () => {
 			busqueda: 'mouse',
 			sucursal: 4,
 			estado: 'critical',
+			reposicion: 'no_comparable_cost',
 			orden: { field: 'disponible', direction: 'desc' },
 			page: 3,
 			perPage: 50,
@@ -29,7 +30,7 @@ describe('Filtros de Reportes › Inventario en la URL', () => {
 		const params = serializeInventoryReportFilters(filters);
 
 		expect(params.toString()).toBe(
-			'vista=umbrales&q=mouse&sucursal=4&estado=critical&orden=-disponible&page=3&per_page=50',
+			'vista=umbrales&q=mouse&sucursal=4&estado=critical&reposicion=no_comparable_cost&orden=-disponible&page=3&per_page=50',
 		);
 		expect(parseInventoryReportFilters(params)).toEqual(filters);
 	});
