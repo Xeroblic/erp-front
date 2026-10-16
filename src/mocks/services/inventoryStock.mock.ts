@@ -195,7 +195,7 @@ const INVENTORY_STOCK_STORAGE_NAMESPACE = 'inventory-stock';
  * obligatorio al cambiar la forma persistida o la semilla, y junto con
  * `stock-receipts`, porque las procedencias apuntan a esas recepciones.
  */
-const INVENTORY_STOCK_STORAGE_VERSION = 7;
+const INVENTORY_STOCK_STORAGE_VERSION = 8;
 
 interface IIdempotencyLogEntry {
 	payloadHash: string;

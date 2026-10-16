@@ -117,9 +117,18 @@ interface IStockReceiptVersionedStore {
 	versions: Map<number, number>;
 }
 
+const cloneEnteredLocation = (
+	location: IStockReceipt['entered_location'],
+): IStockReceipt['entered_location'] => {
+	if (location === null) return null;
+	if (location.scope === 'unlocated') return { scope: 'unlocated', warehouse: null };
+	return { scope: 'warehouse', warehouse: { ...location.warehouse } };
+};
+
 const cloneReceipt = (receipt: IStockReceipt): IStockReceipt => ({
 	...receipt,
 	warehouse: { ...receipt.warehouse },
+	entered_location: cloneEnteredLocation(receipt.entered_location),
 	supplier: receipt.supplier ? { ...receipt.supplier } : null,
 	purchase_document: receipt.purchase_document ? { ...receipt.purchase_document } : null,
 	posted_by: receipt.posted_by ? { ...receipt.posted_by } : null,
@@ -139,7 +148,7 @@ const STOCK_RECEIPTS_STORAGE_NAMESPACE = 'stock-receipts';
  * también `purchase-documents` e `inventory-stock`, que persisten cobertura y
  * procedencias derivadas de estas recepciones.
  */
-const STOCK_RECEIPTS_STORAGE_VERSION = 4;
+const STOCK_RECEIPTS_STORAGE_VERSION = 5;
 
 interface IPersistedStockReceiptsState {
 	receipts: IStockReceipt[];
@@ -579,6 +588,8 @@ function resolveStockReceiptWorker(subsidiaryId: number, receiptId: number): voi
 			...receipt,
 			status: 'posted',
 			posted_at: now,
+			// El doble ingresa siempre a la bodega de la recepción (ver arriba).
+			entered_location: { scope: 'warehouse', warehouse: { ...receipt.warehouse } },
 			allowed_actions: computeAllowedActionsForStatus(
 				'posted',
 				Boolean(receipt.purchase_document),
@@ -698,6 +709,7 @@ const toListRow = (receipt: IStockReceipt): IStockReceiptListRow => ({
 	branch_id: receipt.branch_id,
 	status: receipt.status,
 	warehouse: receipt.warehouse,
+	entered_location: receipt.entered_location,
 	supplier: receipt.supplier,
 	purchase_document: receipt.purchase_document,
 	received_on: receipt.received_on,
@@ -1233,6 +1245,7 @@ export const createStockReceipt = (
 				branch_id: branchId,
 				status: 'draft',
 				warehouse,
+				entered_location: null,
 				supplier: supplierCompact,
 				purchase_document:
 					payload.purchase_document_id === null

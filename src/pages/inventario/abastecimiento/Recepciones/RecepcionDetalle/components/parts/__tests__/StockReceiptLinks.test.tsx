@@ -3,12 +3,20 @@ import { MemoryRouter } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { buildAuthState, withStore } from '@/test-utils/renderWithStore';
-import { postedKeyboardStockReceipt as receipt } from '@/mocks/db/procurement.db';
+import {
+	postedKeyboardStockReceipt as receipt,
+	queuedStockReceipt,
+	reversedStockReceipt,
+} from '@/mocks/db/procurement.db';
 import { purchaseDocumentDetailLink, supplierDetailLink } from '@/config/procurementLinks';
 import { inventarioBodegaLink } from '@/pages/inventario/Inventario/types';
+import type { TStockReceiptEnteredLocation } from '@/interface/procurement.interface';
 import StockReceiptItemsTable from '../StockReceiptItemsTable';
 import StockReceiptProgressCard from '../StockReceiptProgressCard';
-import { receiptInventoryLink } from '../../../hooks/useRecepcionDetalle';
+import {
+	receiptInventoryLink,
+	resolveReceiptStockLocation,
+} from '../../../hooks/useRecepcionDetalle';
 import StockReceiptSummaryCard from '../StockReceiptSummaryCard';
 
 const renderAs = (ui: ReactElement, permisos: string[]) => {
@@ -22,8 +30,11 @@ const renderAs = (ui: ReactElement, permisos: string[]) => {
 
 // La recepción 80 trae proveedor 7 y documento 61 (`1500`). Los destinos se
 // pasan explícitos: qué recepción los recibe lo decide `useRecepcionDetalle`.
+// Su stock ingresó a su bodega, «Bodega Central» (id 8).
 const supplierLink = supplierDetailLink(7);
 const documentLink = purchaseDocumentDetailLink(61);
+const unlocated: TStockReceiptEnteredLocation = { scope: 'unlocated', warehouse: null };
+const enteredUnlocated = { ...receipt, entered_location: unlocated };
 
 describe('StockReceiptSummaryCard', () => {
 	it('con permisos enlaza proveedor y documento a sus fichas', () => {
@@ -117,35 +128,100 @@ describe('StockReceiptProgressCard', () => {
 
 describe('receiptInventoryLink', () => {
 	it('enlaza sólo si la recepción está en stock y es de la sucursal activa', () => {
-		expect(receiptInventoryLink(receipt, receipt.branch_id, 'warehouse')?.to).toBe(
+		expect(receiptInventoryLink(receipt, receipt.branch_id, true)?.to).toBe(
 			`/inventario/stock/bodegas/${receipt.warehouse.id}`,
 		);
-		expect(receiptInventoryLink(receipt, receipt.branch_id + 1, 'warehouse')).toBeNull();
-		expect(receiptInventoryLink(receipt, null, 'warehouse')).toBeNull();
+		expect(receiptInventoryLink(receipt, receipt.branch_id + 1, true)).toBeNull();
+		expect(receiptInventoryLink(receipt, null, true)).toBeNull();
 		expect(
-			receiptInventoryLink({ ...receipt, status: 'queued' }, receipt.branch_id, 'warehouse'),
+			receiptInventoryLink({ ...receipt, status: 'queued' }, receipt.branch_id, true),
 		).toBeNull();
-		expect(receiptInventoryLink(null, receipt.branch_id, 'warehouse')).toBeNull();
+		expect(receiptInventoryLink(null, receipt.branch_id, true)).toBeNull();
 	});
 
-	it('en la etapa 1 del backend enlaza «Sin ubicación», donde entró el stock', () => {
-		expect(receiptInventoryLink(receipt, receipt.branch_id, 'unlocated')?.to).toBe(
+	it('enlaza «Sin ubicación» cuando el stock ingresó ahí, aunque la recepción indique una bodega', () => {
+		expect(receiptInventoryLink(enteredUnlocated, receipt.branch_id, true)?.to).toBe(
 			'/inventario/stock/bodegas/sin-ubicacion',
 		);
 	});
 
+	it('sin `entered_location` no adivina dónde ingresó', () => {
+		expect(
+			receiptInventoryLink({ ...receipt, entered_location: null }, receipt.branch_id, true),
+		).toBeNull();
+	});
+
 	it('sin una fuente común con Inventario no ofrece el atajo', () => {
-		expect(receiptInventoryLink(receipt, receipt.branch_id, null)).toBeNull();
+		expect(receiptInventoryLink(receipt, receipt.branch_id, false)).toBeNull();
+	});
+});
+
+describe('resolveReceiptStockLocation', () => {
+	it('una recepción ingresada dice dónde ingresó, aunque la filial esté hoy en otra etapa', () => {
+		expect(resolveReceiptStockLocation(enteredUnlocated, true)).toEqual(unlocated);
+		expect(resolveReceiptStockLocation(receipt, false)).toEqual({
+			scope: 'warehouse',
+			warehouse: { id: 8, name: 'Bodega Central' },
+		});
+	});
+
+	it('una revertida conserva dónde había ingresado', () => {
+		expect(resolveReceiptStockLocation(reversedStockReceipt, false)).toEqual(
+			reversedStockReceipt.entered_location,
+		);
+	});
+
+	it('antes de ingresar, la etapa anticipa la bodega (etapa 2) o «Sin ubicación» (etapa 1)', () => {
+		expect(resolveReceiptStockLocation(queuedStockReceipt, true)).toEqual({
+			scope: 'warehouse',
+			warehouse: queuedStockReceipt.warehouse,
+		});
+		expect(resolveReceiptStockLocation(queuedStockReceipt, false)).toEqual(unlocated);
+	});
+
+	it('ingresada sin `entered_location` no afirma ninguna ubicación', () => {
+		expect(
+			resolveReceiptStockLocation({ ...receipt, entered_location: null }, true),
+		).toBeNull();
 	});
 });
 
 describe('StockReceiptProgressCard — dónde quedó el stock', () => {
-	it('en la etapa 1 no afirma que las unidades estén en la bodega', () => {
-		renderAs(<StockReceiptProgressCard receipt={receipt} entersUnlocated />, ['view-product']);
+	it('en «Sin ubicación» no afirma que las unidades estén en la bodega', () => {
+		renderAs(<StockReceiptProgressCard receipt={receipt} stockLocation={unlocated} />, [
+			'view-product',
+		]);
 
 		expect(
 			screen.getByText(/disponibles en la sucursal, en «Sin ubicación»/),
 		).toBeInTheDocument();
-		expect(screen.queryByText(/disponibles en la bodega/)).not.toBeInTheDocument();
+		expect(screen.getByText('Disponible en «Sin ubicación»')).toBeInTheDocument();
+		expect(screen.queryByText(/Bodega Central/)).not.toBeInTheDocument();
+	});
+
+	it('en una bodega la nombra', () => {
+		renderAs(
+			<StockReceiptProgressCard
+				receipt={receipt}
+				stockLocation={{ scope: 'warehouse', warehouse: { id: 8, name: 'Bodega Central' } }}
+			/>,
+			['view-product'],
+		);
+
+		expect(screen.getByText(/disponibles en «Bodega Central»/)).toBeInTheDocument();
+		expect(screen.getByText('Disponible en «Bodega Central»')).toBeInTheDocument();
+		expect(screen.queryByText(/Sin ubicación/)).not.toBeInTheDocument();
+	});
+
+	it('sin ubicación conocida no nombra ninguna', () => {
+		renderAs(<StockReceiptProgressCard receipt={receipt} stockLocation={null} />, [
+			'view-product',
+		]);
+
+		expect(
+			screen.getByText(/Las unidades ya están disponibles en la sucursal/),
+		).toBeInTheDocument();
+		expect(screen.queryByText(/Sin ubicación/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/Bodega Central/)).not.toBeInTheDocument();
 	});
 });

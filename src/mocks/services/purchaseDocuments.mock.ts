@@ -117,7 +117,7 @@ const PURCHASE_DOCUMENTS_STORAGE_NAMESPACE = 'purchase-documents';
  * Sube con la forma persistida o la semilla, y junto con `stock-receipts`: la
  * cobertura persistida se deriva de esas recepciones.
  */
-const PURCHASE_DOCUMENTS_STORAGE_VERSION = 3;
+const PURCHASE_DOCUMENTS_STORAGE_VERSION = 4;
 
 interface IPersistedPurchaseDocumentsState {
 	documents: IPurchaseDocument[];

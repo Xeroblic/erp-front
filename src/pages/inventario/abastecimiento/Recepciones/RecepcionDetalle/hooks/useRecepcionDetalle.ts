@@ -4,13 +4,11 @@ import { toast } from 'react-toastify';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import usePollingWhile from '@/hooks/usePollingWhile';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 import { useAppDispatch, useAppSelector } from '@/store';
 import INVENTORY_RECEIPTS_USE_MOCKS from '@/config/inventoryReceipts.config';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
-import {
-	STOCK_RECEIPTS_ENTER_UNLOCATED,
-	STOCK_RECEIPTS_USE_TEST_SUPPLIERS,
-} from '@/services/procurement/stockReceipts.service';
+import { STOCK_RECEIPTS_USE_TEST_SUPPLIERS } from '@/services/procurement/stockReceipts.service';
 import {
 	clearStockReceiptCurrent,
 	fetchStockReceiptDetail,
@@ -27,39 +25,57 @@ import {
 	supplierDetailLink,
 	type IPageLink,
 } from '@/config/procurementLinks';
-import type { IStockReceipt, TProcurementAllowedAction } from '@/interface/procurement.interface';
+import type {
+	IStockReceipt,
+	TProcurementAllowedAction,
+	TStockReceiptEnteredLocation,
+} from '@/interface/procurement.interface';
 import { inventarioBodegaLink } from '@/pages/inventario/Inventario/types';
 import useReceiptActor from '../../hooks/useReceiptActor';
 
 /**
- * Dónde quedó el stock de una recepción ingresada, visto desde Inventario.
- * `null` cuando Inventario y Recepciones no leen la misma fuente (uno
- * simulado y el otro real): la ubicación no mostraría lo recibido.
+ * Inventario y Recepciones leen la misma fuente (las dos simuladas o las dos
+ * reales). Si no, la ubicación de Inventario no mostraría lo recibido.
  */
-export type TReceiptStockPlacement = 'warehouse' | 'unlocated';
+const INVENTORY_SHARES_RECEIPTS_SOURCE = INVENTORY_RECEIPTS_USE_MOCKS === INVENTORY_STOCK_USE_MOCKS;
 
-const resolveReceiptStockPlacement = (): TReceiptStockPlacement | null => {
-	if (INVENTORY_RECEIPTS_USE_MOCKS !== INVENTORY_STOCK_USE_MOCKS) return null;
-	return STOCK_RECEIPTS_ENTER_UNLOCATED ? 'unlocated' : 'warehouse';
+/**
+ * Dónde está o estará el stock de la recepción. Contabilizada o revertida, lo
+ * dice el backend en `entered_location`: lo decidió la etapa de la filial al
+ * contabilizar, no la de hoy. Antes se anticipa con `entersWarehouse`: la
+ * etapa 2 ingresa a la bodega de la recepción; la 1, a «Sin ubicación».
+ * `null` si ingresó pero la respuesta no dice dónde: no se afirma ninguna
+ * ubicación.
+ */
+export const resolveReceiptStockLocation = (
+	receipt: IStockReceipt,
+	entersWarehouse: boolean,
+): TStockReceiptEnteredLocation | null => {
+	if (receipt.status === 'posted' || receipt.status === 'reversed')
+		return receipt.entered_location ?? null;
+	return entersWarehouse
+		? { scope: 'warehouse', warehouse: receipt.warehouse }
+		: { scope: 'unlocated', warehouse: null };
 };
-
-const RECEIPT_STOCK_PLACEMENT = resolveReceiptStockPlacement();
 
 /**
  * «Ver en inventario» de una recepción ingresada: la ubicación donde entró su
- * stock — su bodega, o «Sin ubicación» en la etapa 1 del backend. Inventario
+ * stock según `entered_location` — su bodega, o «Sin ubicación». Inventario
  * muestra la sucursal activa, así que sólo se ofrece cuando la recepción es de
  * esa sucursal; si no, lo recibido no aparecería allí.
  */
 export const receiptInventoryLink = (
 	receipt: IStockReceipt | null,
 	branchId: number | null,
-	placement: TReceiptStockPlacement | null = RECEIPT_STOCK_PLACEMENT,
+	sharesInventorySource = INVENTORY_SHARES_RECEIPTS_SOURCE,
 ): IPageLink | null => {
 	if (receipt?.status !== 'posted' || branchId === null || receipt.branch_id !== branchId)
 		return null;
-	if (placement === null) return null;
-	return inventarioBodegaLink(placement === 'unlocated' ? null : receipt.warehouse.id);
+	const enteredLocation = receipt.entered_location ?? null;
+	if (!sharesInventorySource || enteredLocation === null) return null;
+	return inventarioBodegaLink(
+		enteredLocation.scope === 'unlocated' ? null : enteredLocation.warehouse.id,
+	);
 };
 
 /**
@@ -231,6 +247,22 @@ const useRecepcionDetalle = () => {
 		[receipt, branchId],
 	);
 
+	/**
+	 * Antes de contabilizar, la etapa de la filial anticipa dónde ingresará el
+	 * stock. El doble ingresa siempre a la bodega de la recepción.
+	 */
+	const { isMultiLocation } = useSubsidiaryRolloutStage(receipt?.subsidiary_id ?? subsidiaryId);
+	const stockLocation = useMemo(
+		() =>
+			receipt
+				? resolveReceiptStockLocation(
+						receipt,
+						INVENTORY_RECEIPTS_USE_MOCKS || isMultiLocation,
+					)
+				: null,
+		[receipt, isMultiLocation],
+	);
+
 	return {
 		id,
 		branchId,
@@ -239,8 +271,7 @@ const useRecepcionDetalle = () => {
 		receipt,
 		links,
 		inventoryLink,
-		/** El stock ingresado queda en «Sin ubicación», no en la bodega (etapa 1). */
-		entersUnlocated: STOCK_RECEIPTS_ENTER_UNLOCATED,
+		stockLocation,
 		isPollingStalled,
 		resumePolling,
 		etag,
