@@ -10,8 +10,13 @@ import salesReducer, {
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
 import { formatCLP } from '@/utils/format.utils';
-import type { ISaleStockShortageItem } from '@/interface/sales.interface';
-import { isSerialsRequiredError, toSaleCloseError } from '@/utils/saleCloseErrors.util';
+import type { ISaleCloseResult, ISaleStockShortageItem } from '@/interface/sales.interface';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
+import {
+	isLocationReselectError,
+	isSerialsRequiredError,
+	toSaleCloseError,
+} from '@/utils/saleCloseErrors.util';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -36,6 +41,7 @@ import Spinner from '@/components/ui/Spinner';
 import { translateStatus } from '../../../utils';
 import SaleItemsTable from '../tables/SaleItemsTable';
 import SaleStockShortageAlert from '../parts/SaleStockShortageAlert';
+import SaleCloseResultAlert from '../parts/SaleCloseResultAlert';
 import CloseSaleModal from './CloseSaleModal';
 import CorrectSerialModal from './CorrectSerialModal';
 interface Props {
@@ -48,6 +54,12 @@ interface Props {
 interface ICloseShortage {
 	message: string;
 	items: ISaleStockShortageItem[];
+}
+
+/** Lo que aplicó el último cierre de la etapa 2, con los nombres de bodega que vio. */
+interface ICloseOutcome {
+	result: ISaleCloseResult;
+	locationNames: ReadonlyMap<number, string>;
 }
 
 interface CreateQuoteFromSaleResponse {
@@ -115,6 +127,16 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const detail = useAppSelector(selectSaleDetail);
 	const items = useAppSelector(selectSaleItems);
 	const loading = useAppSelector(selectSalesLoading);
+	// La venta es de la filial de la ruta: su etapa decide si se elige ubicación al cerrar.
+	const { isMultiLocation } = useSubsidiaryRolloutStage(subsidiaryId);
+	// Un rechazo del cierre puede confirmar la etapa antes que la lectura de filial.
+	const [locationRecovery, setLocationRecovery] = useState<{
+		subsidiaryId: number;
+		saleId: number;
+	} | null>(null);
+	const useLocationSelection =
+		isMultiLocation ||
+		(locationRecovery?.subsidiaryId === subsidiaryId && locationRecovery.saleId === saleId);
 
 	const [closeOpen, setCloseOpen] = useState(false);
 	const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
@@ -132,6 +154,8 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const [closeRequiredItemIds, setCloseRequiredItemIds] = useState<Set<number>>(new Set());
 	// Faltante del último cierre directo (409): se muestra junto a los ítems hasta reintentar.
 	const [closeShortage, setCloseShortage] = useState<ICloseShortage | null>(null);
+	// Etapa 2: de qué ubicaciones salió cada ítem en el cierre recién hecho.
+	const [closeOutcome, setCloseOutcome] = useState<ICloseOutcome | null>(null);
 
 	useEffect(() => {
 		if (!isOpen) return;
@@ -178,12 +202,14 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	useEffect(() => {
 		setCreatedQuoteId(null);
 		setCloseShortage(null);
+		setCloseOutcome(null);
 	}, [saleId]);
 
 	useEffect(() => {
 		if (!isOpen) {
 			setCreatedQuoteId(null);
 			setCloseShortage(null);
+			setCloseOutcome(null);
 		}
 	}, [isOpen]);
 
@@ -310,7 +336,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const handleCloseSale = async () => {
 		const needsSerials = items.some(isItemTrackable);
 
-		if (needsSerials) {
+		// En la etapa 2 siempre se pasa por el modal: ahí se pide la vista previa y se
+		// elige la ubicación de los ítems sin serie, haya series o no.
+		if (needsSerials || useLocationSelection) {
 			setCloseOpen(true);
 			return;
 		}
@@ -329,6 +357,11 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			dispatch(loadSaleItems({ subsidiaryId, saleId }));
 		} catch (err: unknown) {
 			const error = toSaleCloseError(err);
+			if (isLocationReselectError(error)) {
+				setLocationRecovery({ subsidiaryId, saleId });
+				setCloseOpen(true);
+				return;
+			}
 			// Sólo el 422 `required` pide series; el 409, el 403 y el resto ya los
 			// avisó el slice y no abren el formulario.
 			if (isSerialsRequiredError(error)) {
@@ -631,6 +664,13 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								items={items}
 							/>
 						)}
+						{closeOutcome && (
+							<SaleCloseResultAlert
+								result={closeOutcome.result}
+								items={items}
+								locationNames={closeOutcome.locationNames}
+							/>
+						)}
 						<SaleItemsTable items={items} />
 					</CardBody>
 				</Card>
@@ -643,8 +683,21 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						saleId={saleId}
 						items={items.filter(isItemTrackable)}
 						saleItems={items}
-						onSuccess={() => {
+						isMultiLocation={useLocationSelection}
+						onLocationSelectionRequired={() => {
+							setLocationRecovery({ subsidiaryId, saleId });
+						}}
+						onSerialsRequired={(ids) => {
+							setCloseRequiredItemIds((prev) => new Set([...prev, ...ids]));
+							toast.info(
+								'Esta venta requiere números de serie. Agregando sus campos...',
+							);
+						}}
+						onSuccess={(response, locationNames) => {
 							setCloseShortage(null);
+							if (useLocationSelection && response.data) {
+								setCloseOutcome({ result: response.data, locationNames });
+							}
 							dispatch(loadSaleDetail({ subsidiaryId, saleId }));
 							dispatch(loadSaleItems({ subsidiaryId, saleId }));
 						}}

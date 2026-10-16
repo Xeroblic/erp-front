@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { PROCUREMENT_ERROR_DEFINITIONS } from '@/utils/procurementErrors.util';
 import {
 	SALE_CLOSE_FORBIDDEN_MESSAGE,
+	getLocationReselectItemIds,
+	isLocationReselectError,
 	isSerialsRequiredError,
 	resolveSaleCloseError,
 	toSaleCloseError,
@@ -90,6 +92,92 @@ describe('resolveSaleCloseError', () => {
 	});
 });
 
+describe('errores de ubicación del cierre (etapa 2)', () => {
+	it('parsea context.allocations del 409 ALLOCATION_STOCK_INSUFFICIENT y nombra sus ítems', () => {
+		const error = resolveSaleCloseError(
+			axiosError(409, {
+				message: 'Una de las ubicaciones elegidas ya no tiene stock suficiente.',
+				code: 'ALLOCATION_STOCK_INSUFFICIENT',
+				context: {
+					allocations: [
+						{
+							sale_item_id: 201,
+							product_id: 31,
+							branch_id: 4,
+							warehouse_id: null,
+							requested: 2,
+							available: 1,
+						},
+						{
+							sale_item_id: 201,
+							product_id: 31,
+							branch_id: 4,
+							warehouse_id: 8,
+							requested: 3,
+							available: 0,
+						},
+						{ sale_item_id: 'x' },
+					],
+				},
+			}),
+		);
+
+		expect(error.allocationShortages).toEqual([
+			{
+				sale_item_id: 201,
+				product_id: 31,
+				branch_id: 4,
+				warehouse_id: null,
+				requested: 2,
+				available: 1,
+			},
+			{
+				sale_item_id: 201,
+				product_id: 31,
+				branch_id: 4,
+				warehouse_id: 8,
+				requested: 3,
+				available: 0,
+			},
+		]);
+		expect(error.shortages).toEqual([]);
+		expect(isLocationReselectError(error)).toBe(true);
+		expect(getLocationReselectItemIds(error)).toEqual([201]);
+	});
+
+	it('toma los ítems del 422 LOCATION_SELECTION_REQUIRED desde errors', () => {
+		const error = resolveSaleCloseError(
+			axiosError(422, {
+				message: 'Elige de qué ubicaciones salen 2 ítems.',
+				code: 'LOCATION_SELECTION_REQUIRED',
+				errors: {
+					'201': ['Indica las ubicaciones y cantidades de este ítem.'],
+					'204': ['Indica las ubicaciones y cantidades de este ítem.'],
+				},
+			}),
+		);
+
+		expect(isLocationReselectError(error)).toBe(true);
+		expect(getLocationReselectItemIds(error)).toEqual([201, 204]);
+		expect(error.allocationShortages).toEqual([]);
+	});
+
+	it('no trata como reelección el descuadre de cantidades ni el faltante de la sucursal', () => {
+		expect(
+			isLocationReselectError(
+				resolveSaleCloseError(
+					axiosError(422, {
+						message: 'Las cantidades por ubicación no suman la cantidad del ítem.',
+						code: 'ALLOCATION_QUANTITY_MISMATCH',
+						errors: { '201': ['Las ubicaciones suman 4 y el ítem pide 5.'] },
+					}),
+				),
+			),
+		).toBe(false);
+		expect(isLocationReselectError(resolveSaleCloseError(shortage409))).toBe(false);
+	});
+});
+
 describe('toSaleCloseError', () => {
 	it('devuelve tal cual el rechazo tipado del thunk', () => {
 		const resolved = resolveSaleCloseError(shortage409);
@@ -109,6 +197,13 @@ describe('catálogo de códigos', () => {
 		expect(PROCUREMENT_ERROR_DEFINITIONS.SALE_STOCK_INSUFFICIENT).toMatchObject({
 			status: 409,
 			action: 'blocked',
+		});
+	});
+
+	it('ALLOCATION_STOCK_INSUFFICIENT pide recargar la selección', () => {
+		expect(PROCUREMENT_ERROR_DEFINITIONS.ALLOCATION_STOCK_INSUFFICIENT).toMatchObject({
+			status: 409,
+			action: 'reload_selection',
 		});
 	});
 });

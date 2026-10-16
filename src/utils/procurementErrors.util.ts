@@ -140,6 +140,13 @@ export const PROCUREMENT_ERROR_DEFINITIONS: Record<string, IProcurementErrorDefi
 		'Las cantidades asignadas no cuadran con lo requerido.',
 		'fix_input',
 	),
+	// La sucursal sí alcanza: el stock de una ubicación cambió desde la vista previa.
+	ALLOCATION_STOCK_INSUFFICIENT: define(
+		'ALLOCATION_STOCK_INSUFFICIENT',
+		409,
+		'Una de las ubicaciones elegidas ya no tiene stock suficiente. Vuelve a cargar las opciones y elige otra vez.',
+		'reload_selection',
+	),
 	INSUFFICIENT_LOCATION_STOCK: define(
 		'INSUFFICIENT_LOCATION_STOCK',
 		409,

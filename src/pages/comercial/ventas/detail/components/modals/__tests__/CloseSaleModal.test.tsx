@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
 import { Provider, useSelector } from 'react-redux';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import salesReducer from '@/store/slices/salesSlice';
 import type { ISaleItem } from '@/interface/sales.interface';
@@ -81,6 +81,27 @@ afterEach(() => {
 });
 
 describe('CloseSaleModal — cierre con faltante', () => {
+	it('cancela el foco pendiente al desmontar el modal', async () => {
+		vi.useFakeTimers();
+		try {
+			const { unmount } = render(
+				<Provider store={store()}>
+					<Host onSuccess={vi.fn()} />
+				</Provider>,
+			);
+			const lookup = vi.spyOn(document, 'getElementById');
+			try {
+				unmount();
+				await act(() => vi.advanceTimersByTime(100));
+				expect(lookup).not.toHaveBeenCalled();
+			} finally {
+				lookup.mockRestore();
+			}
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it('marca las dos líneas del mismo producto con la demanda sumada y lista la línea sin fila', async () => {
 		fetchData.mockRejectedValueOnce({
 			isAxiosError: true,
@@ -200,6 +221,94 @@ describe('CloseSaleModal — cierre con faltante', () => {
 					items: [
 						expect.objectContaining({ sale_item_id: 201, serial_numbers: ['SN-1'] }),
 						expect.objectContaining({ sale_item_id: 202, serial_numbers: ['SN-2'] }),
+					],
+				},
+			}),
+		);
+	});
+
+	it('recupera ubicaciones sin callback del padre como la lista y los pendientes de serie', async () => {
+		let closes = 0;
+		fetchData.mockImplementation((cfg: { method?: string; url: string }) => {
+			if (cfg.url.endsWith('/fulfillment-options'))
+				return Promise.resolve({
+					data: {
+						data: {
+							sale_id: 90,
+							branch_id: 4,
+							is_closed: false,
+							items: [
+								{
+									sale_item_id: 203,
+									product: { id: 40, sku: 'SKU-203', name: 'Cargador' },
+									quantity_required: 1,
+									branch_id: 4,
+									own_hold_quantity: 0,
+									stock_sufficient: true,
+									allocation_mode: 'manual',
+									suggested_allocations: [{ warehouse_id: 8, quantity: 1 }],
+									locations: [
+										{ warehouse_id: 8, name: 'Central', fit_quantity: 2 },
+										{
+											warehouse_id: null,
+											name: 'Sin ubicación',
+											fit_quantity: 2,
+										},
+									],
+								},
+							],
+						},
+					},
+				});
+			closes += 1;
+			if (closes === 1)
+				return Promise.reject(
+					Object.assign(new Error('Elige las ubicaciones.'), {
+						isAxiosError: true,
+						response: {
+							status: 422,
+							data: {
+								message: 'Elige las ubicaciones.',
+								code: 'LOCATION_SELECTION_REQUIRED',
+								errors: { '203': ['Indica las ubicaciones.'] },
+							},
+						},
+					}),
+				);
+			return Promise.resolve({
+				data: {
+					message: 'Venta cerrada',
+					data: { id: 90, is_closed: true, fulfilled_items: [] },
+				},
+			});
+		});
+		const { onSuccess } = renderModal();
+		await screen.findByText('Ubicación de salida');
+		expect(closes).toBe(1);
+		expect((document.getElementById('serial-input-201-0') as HTMLInputElement).value).toBe(
+			'SN-1',
+		);
+		expect((document.getElementById('serial-input-202-0') as HTMLInputElement).value).toBe(
+			'SN-2',
+		);
+		await waitFor(() =>
+			expect(
+				screen.getByRole('button', { name: /Confirmar cierre/ }).hasAttribute('disabled'),
+			).toBe(false),
+		);
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: /Confirmar cierre/ }));
+			await Promise.resolve();
+		});
+		await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+		expect(fetchData).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				method: 'post',
+				data: {
+					items: [
+						expect.objectContaining({ sale_item_id: 201, serial_numbers: ['SN-1'] }),
+						expect.objectContaining({ sale_item_id: 202, serial_numbers: ['SN-2'] }),
+						{ sale_item_id: 203, allocations: [{ warehouse_id: 8, quantity: 1 }] },
 					],
 				},
 			}),
