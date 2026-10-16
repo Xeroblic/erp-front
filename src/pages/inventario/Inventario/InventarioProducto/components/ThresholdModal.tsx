@@ -51,8 +51,8 @@ const ThresholdModal: React.FC<IThresholdModalProps> = ({
 				<form onSubmit={formik.handleSubmit} noValidate className='space-y-4'>
 					<p className='text-zinc-700 dark:text-zinc-300'>
 						Cuando el disponible de <strong>{productName}</strong> llegue a este número
-						o menos, el producto aparece como «Bajo el umbral». Aplica a todas las
-						sucursales de la empresa.
+						o menos, el producto aparece como «Bajo el umbral». Se compara con el
+						disponible de toda la filial y vale para todas sus sucursales.
 					</p>
 					<div className='space-y-1'>
 						<Label htmlFor='umbral-threshold'>Umbral (unidades)</Label>

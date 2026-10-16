@@ -5,10 +5,12 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchInventoryDetail,
 	inventoryDetailQueryKey,
+	saveProductThresholdThunk,
 	selectInventoryUpdatingThreshold,
 	updateInventoryThresholdThunk,
 } from '@/store/slices/procurement/inventoryOverviewSlice';
 import { UNLOCATED_WAREHOUSE_LABEL } from '@/components/procurement';
+import { INVENTORY_THRESHOLD_USES_API } from '@/services/procurement/inventoryOverview.service';
 import { UmbralSchema, type IUmbralFormValues } from '@/pages/inventario/Inventario/types';
 import {
 	locationStockParams,
@@ -18,6 +20,26 @@ import {
 
 /** Alcance de las procedencias: una ubicación conocida o la sucursal completa. */
 export type TOrigenAlcance = TLocationToken | 'branch';
+
+const THRESHOLD_FALLBACK = 'No pudimos guardar el umbral.';
+const THRESHOLD_NOT_EDITABLE = 'El umbral de un producto de la filial aún no se puede editar.';
+
+/**
+ * Rechazo de cualquiera de las dos vías: el doble rechaza con el mensaje; la
+ * API real, con `{ message, field }` (`IThresholdRejection`).
+ */
+const thresholdRejection = (rejection: unknown): { message: string; field: string | null } => {
+	if (typeof rejection === 'string') return { message: rejection, field: null };
+	if (rejection instanceof Error) return { message: rejection.message, field: null };
+	if (rejection !== null && typeof rejection === 'object') {
+		const { message, field } = rejection as Record<string, unknown>;
+		return {
+			message: typeof message === 'string' && message ? message : THRESHOLD_FALLBACK,
+			field: typeof field === 'string' && field ? field : null,
+		};
+	}
+	return { message: THRESHOLD_FALLBACK, field: null };
+};
 
 /**
  * Ficha de un producto en la sucursal activa (A4): totales, estado, desglose
@@ -87,26 +109,42 @@ const useInventarioProducto = (branchId: number, owner: string, productId: numbe
 	}, [ubicacion]);
 
 	const threshold = detail?.product.critical_stock_threshold ?? null;
+	const thresholdBranchId = detail?.threshold_branch_id ?? null;
 	const formik = useFormik<IUmbralFormValues>({
 		initialValues: { threshold: threshold === null ? '' : String(threshold) },
 		enableReinitialize: true,
 		validationSchema: UmbralSchema,
-		onSubmit: async (values) => {
+		onSubmit: async (values, { setFieldError, setTouched }) => {
 			const value = values.threshold.trim();
+			const next = value === '' ? null : Number(value);
 			try {
-				await dispatch(
-					updateInventoryThresholdThunk({
-						productId,
-						threshold: value === '' ? null : Number(value),
-					}),
-				).unwrap();
-				toast.success(value === '' ? 'Umbral desactivado.' : 'Umbral guardado.');
+				if (INVENTORY_THRESHOLD_USES_API) {
+					// Sin sucursal dueña la vista no ofrece el umbral; esto es sólo resguardo.
+					if (thresholdBranchId === null) throw new Error(THRESHOLD_NOT_EDITABLE);
+					await dispatch(
+						saveProductThresholdThunk({
+							branchId: thresholdBranchId,
+							productId,
+							threshold: next,
+						}),
+					).unwrap();
+				} else {
+					await dispatch(
+						updateInventoryThresholdThunk({ productId, threshold: next }),
+					).unwrap();
+				}
+				toast.success(next === null ? 'Umbral desactivado.' : 'Umbral guardado.');
 				setUmbralOpen(false);
 				refresh();
 			} catch (rejection: unknown) {
-				toast.error(
-					typeof rejection === 'string' ? rejection : 'No pudimos guardar el umbral.',
-				);
+				const { message, field } = thresholdRejection(rejection);
+				// El 422 del campo (p. ej. producto con serie) queda bajo el input.
+				if (field) {
+					await setTouched({ threshold: true }, false);
+					setFieldError('threshold', field);
+					return;
+				}
+				toast.error(message);
 			}
 		},
 	});

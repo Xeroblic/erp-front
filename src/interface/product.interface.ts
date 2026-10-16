@@ -176,6 +176,11 @@ export interface IProduct {
 	short_description?: string | null;
 	long_description?: string | null;
 	stock?: number | null;
+	/**
+	 * Umbral crítico (§13): entero ≥ 0 o `null` sin umbral. Sólo lo validan el alta y
+	 * la edición por sucursal (`B/products`); los serializados siempre traen `null`.
+	 */
+	critical_stock_threshold?: number | null;
 	stock_by_status?: IProductChildStockStatus | null;
 	soft_holds?: IProductSoftHolds | null;
 	categories?: IProductCategorySummary[];
@@ -349,6 +354,8 @@ export interface CreateProductPayload {
 	short_description?: string | null;
 	long_description?: string | null;
 	stock?: number | null;
+	/** §13: `null` lo desactiva. Un producto con serie lo rechaza con 422 en el campo. */
+	critical_stock_threshold?: number | null;
 }
 
 /**

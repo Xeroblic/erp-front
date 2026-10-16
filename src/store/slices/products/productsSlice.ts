@@ -58,7 +58,8 @@ export interface ProductsState {
 	mediaError: string | null;
 }
 
-interface ApiValidationError {
+/** Rechazo de `createProduct`/`updateProduct`: mensaje y, en un 422, errores por campo. */
+export interface ApiValidationError {
 	message: string;
 	errors?: Record<string, string[]>;
 }
@@ -486,7 +487,7 @@ export const updateProduct = createAsyncThunk<
 		data: Partial<IProduct>;
 		categoryIds?: number[];
 	},
-	{ rejectValue: string }
+	{ rejectValue: ApiValidationError }
 >(
 	'products/updateProduct',
 	async ({ entityParam, entityId, productId, data, categoryIds }, { rejectWithValue }) => {
@@ -502,7 +503,7 @@ export const updateProduct = createAsyncThunk<
 			const raw = response.data?.data ?? response.data;
 			return normalizeProduct((raw as IProduct) ?? { ...data, id: productId });
 		} catch (error: unknown) {
-			return rejectWithValue(getErrorMessage(error, 'No se pudo actualizar el producto'));
+			return rejectWithValue(getErrorPayload(error, 'No se pudo actualizar el producto'));
 		}
 	},
 );
@@ -928,7 +929,7 @@ const productsSlice = createSlice({
 			})
 			.addCase(updateProduct.rejected, (state, action) => {
 				state.updating = false;
-				state.error = action.payload ?? 'No se pudo actualizar el producto';
+				state.error = action.payload?.message ?? 'No se pudo actualizar el producto';
 			})
 			.addCase(deleteProduct.pending, (state) => {
 				state.deleting = true;

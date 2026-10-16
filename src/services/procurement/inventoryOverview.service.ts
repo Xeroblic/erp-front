@@ -1,6 +1,7 @@
 import INVENTORY_OVERVIEW_USE_MOCKS from '@/config/inventoryOverview.config';
 import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
 import * as inventoryOverviewMock from '@/mocks/services/inventoryOverview.mock';
+import ApiService from '@/services/ApiService';
 import {
 	listBranchWarehouseProfiles,
 	type IBranchWarehouseProfile,
@@ -9,9 +10,9 @@ import {
 	fetchInventoryOriginsPage,
 	fetchInventoryStockPage,
 } from '@/services/procurement/inventoryStock.service';
-import { rejectEndpointNotPublished } from '@/utils/procurementEndpoint.util';
 import { resolveProcurementError } from '@/utils/procurementErrors.util';
 import type {
+	IInventoryCriticalStock,
 	IInventoryOverviewParams,
 	IInventoryOverviewResponse,
 	IInventoryStockDetail,
@@ -30,7 +31,7 @@ import type {
 /**
  * Vista unificada de Inventario — A1–A4 de
  * `Docs/inventario-unificado-contrato.md` y el umbral crítico del §13 del
- * contrato de abastecimiento.
+ * contrato de abastecimiento (tarea 19 del backend).
  *
  * Fachada con la firma pública de siempre: el slice importa sólo de aquí. Con
  * `VITE_INVENTORY_OVERVIEW_USE_MOCKS` encendida delega en el doble
@@ -42,10 +43,14 @@ import type {
  * Permiso: `view-product` y acceso a la sucursal. Las bodegas salen de
  * `GET B/warehouses`, con su propio permiso.
  *
+ * El umbral §13 vive en el producto: la ficha lo lee de `GET B/products/{product}`
+ * (`critical_stock_threshold` y el bloque `critical_stock` de la filial) y se
+ * edita con `updateProduct` de `productsSlice` (`PATCH B/products/{product}`),
+ * en las dos etapas del despliegue. `inventory-stock` no lo trae por fila.
+ *
  * Lo que no sale de ahí llega `null` en vez de inventarse (ver
  * `INVENTORY_OVERVIEW_FEATURES`): reparto por bodega en la lista, totales de
- * unidades, umbral, reservas y disponible. El umbral no tiene request que lo
- * valide y sigue rechazando con «endpoint no publicado».
+ * unidades, y umbral, reservas y disponible por fila.
  *
  * Sin caché de `ApiService`: el saldo cambia con cada ajuste, recepción o venta.
  */
@@ -62,8 +67,10 @@ export interface IInventoryOverviewFeatures {
 	stockStatus: boolean;
 	/** Disponible para vender y unidades reservadas. */
 	availability: boolean;
-	/** Ver y editar el umbral crítico. */
+	/** Ver y editar el umbral crítico en la ficha del producto. */
 	threshold: boolean;
+	/** Umbral y estado en las filas de la lista (`inventory-stock` no los trae). */
+	rowThreshold: boolean;
 	/**
 	 * Unidades y alertas por bodega o de la sucursal: desde la API real exigirían
 	 * recorrer todas las páginas de cada ubicación.
@@ -75,13 +82,20 @@ export const INVENTORY_OVERVIEW_FEATURES: IInventoryOverviewFeatures = {
 	sort: INVENTORY_OVERVIEW_USE_MOCKS,
 	stockStatus: INVENTORY_OVERVIEW_USE_MOCKS,
 	availability: INVENTORY_OVERVIEW_USE_MOCKS,
-	// El umbral simulado lo comparten la ficha y Reportes (bandera de stock):
-	// la ficha sólo lo ofrece si lee del mismo doble que lo guarda.
-	threshold: INVENTORY_OVERVIEW_USE_MOCKS && INVENTORY_STOCK_USE_MOCKS,
+	// La API real publica el umbral en el producto. El simulado lo comparten la
+	// ficha y Reportes (bandera de stock): la ficha sólo lo ofrece si lee del
+	// mismo doble que lo guarda.
+	threshold: !INVENTORY_OVERVIEW_USE_MOCKS || INVENTORY_STOCK_USE_MOCKS,
+	rowThreshold: INVENTORY_OVERVIEW_USE_MOCKS && INVENTORY_STOCK_USE_MOCKS,
 	unitTotals: INVENTORY_OVERVIEW_USE_MOCKS,
 };
 
-const RESOURCE = 'el resumen de inventario';
+/**
+ * La ficha guarda el umbral en la API real (`updateProduct`) en vez del doble.
+ * Reportes sigue simulado y usa siempre el doble.
+ */
+export const INVENTORY_THRESHOLD_USES_API = !INVENTORY_OVERVIEW_USE_MOCKS;
+
 const NOT_FOUND_STATUS = 404;
 const FORBIDDEN_STATUS = 403;
 /** Máximo de `per_page` que acepta `IndexInventoryStockRequest`. */
@@ -95,7 +109,6 @@ type TInventoryOverviewService = Pick<
 	| 'getInventoryStockSummary'
 	| 'listInventoryWarehouseAggregates'
 	| 'getInventoryStockDetail'
-	| 'updateInventoryCriticalThreshold'
 >;
 
 /** Ubicación como filtro de la ruta: `unlocated` sólo encendido, nunca junto a una bodega. */
@@ -161,6 +174,107 @@ const findProductRow = async (
 		page += 1;
 	} while (page <= lastPage);
 	return null;
+};
+
+type UnknownRecord = Record<string, unknown>;
+
+const asRecord = (value: unknown): UnknownRecord | null =>
+	value !== null && typeof value === 'object' && !Array.isArray(value)
+		? (value as UnknownRecord)
+		: null;
+
+const asInteger = (value: unknown): number | null =>
+	typeof value === 'number' && Number.isInteger(value) ? value : null;
+
+const CRITICAL_STATUSES: readonly IInventoryCriticalStock['status'][] = [
+	'critical',
+	'healthy',
+	'unconfigured',
+];
+
+/**
+ * Bloque `critical_stock` de `ProductResource` tal como llega: de la filial y
+ * con el estado ya calculado, que no se recalcula. Un bloque que no calce con
+ * la forma publicada es `null`: no se afirma un estado que no se puede leer.
+ */
+const toCriticalStock = (value: unknown): IInventoryCriticalStock | null => {
+	const block = asRecord(value);
+	if (!block) return null;
+	const status = CRITICAL_STATUSES.find((candidate) => candidate === block.status);
+	const physical = asInteger(block.physical_quantity);
+	const fit = asInteger(block.fit_quantity);
+	const unfit = asInteger(block.unfit_quantity);
+	const held = asInteger(block.held_quantity);
+	// Puede ser negativo tras un faltante real: se muestra como llega.
+	const available = asInteger(block.available_quantity);
+	const threshold = asInteger(block.threshold);
+	if (
+		!status ||
+		physical === null ||
+		fit === null ||
+		unfit === null ||
+		held === null ||
+		available === null ||
+		(threshold === null && block.threshold !== null)
+	)
+		return null;
+	const subsidiaryId = asInteger(block.subsidiary_id);
+	return {
+		scope: 'subsidiary',
+		...(subsidiaryId === null ? {} : { subsidiary_id: subsidiaryId }),
+		physical_quantity: physical,
+		fit_quantity: fit,
+		unfit_quantity: unfit,
+		held_quantity: held,
+		available_quantity: available,
+		threshold,
+		status,
+	};
+};
+
+interface IProductThreshold {
+	threshold: number | null;
+	critical_stock: IInventoryCriticalStock | null;
+	threshold_branch_id: number | null;
+}
+
+const UNKNOWN_THRESHOLD: IProductThreshold = {
+	threshold: null,
+	critical_stock: null,
+	threshold_branch_id: null,
+};
+
+/**
+ * Umbral §13 del producto, de `GET B/products/{product}` (`view-product`).
+ * `origin_branch_id` es la sucursal dueña, la única cuya ruta lo edita. Un
+ * producto con serie no lleva umbral. Si la ruta no muestra el producto
+ * (403/404) la ficha sigue, sin umbral ni edición.
+ */
+const fetchProductThreshold = async (
+	branchId: number,
+	productId: number,
+	signal?: AbortSignal,
+): Promise<IProductThreshold> => {
+	try {
+		const response = await ApiService.fetchData<unknown>({
+			url: `/branches/${branchId}/products/${productId}`,
+			method: 'get',
+			signal,
+		});
+		const envelope = asRecord(response.data);
+		const resource = asRecord(envelope?.data) ?? envelope;
+		if (!resource || resource.serial_tracking === true) return UNKNOWN_THRESHOLD;
+		const critical = toCriticalStock(resource.critical_stock);
+		return {
+			threshold: critical ? critical.threshold : null,
+			critical_stock: critical,
+			threshold_branch_id: asInteger(resource.origin_branch_id),
+		};
+	} catch (error: unknown) {
+		const { status } = resolveProcurementError(error);
+		if (status === FORBIDDEN_STATUS || status === NOT_FOUND_STATUS) return UNKNOWN_THRESHOLD;
+		throw error;
+	}
 };
 
 const toBreakdown = (
@@ -277,15 +391,17 @@ const apiInventoryOverview: TInventoryOverviewService = {
 	},
 	// La ficha del producto sale de `origins` (también responde 404 si tiene
 	// serie o es de otra filial); las cifras, de su fila en la sucursal y en cada
-	// ubicación. Sin umbral, reservas ni resumen de series: no están publicados.
+	// ubicación; el umbral y su bloque de la filial, del producto. Sin resumen
+	// de series: no está publicado.
 	getInventoryStockDetail: async (
 		branchId: number,
 		productId: number,
 		signal?: AbortSignal,
 	): Promise<IInventoryStockDetailResponse> => {
-		const [origins, warehouses] = await Promise.all([
+		const [origins, warehouses, productThreshold] = await Promise.all([
 			fetchInventoryOriginsPage(branchId, productId, { page: 1, per_page: 1 }, signal),
 			warehouseProfiles(branchId, signal),
+			fetchProductThreshold(branchId, productId, signal),
 		]);
 		const { product } = origins.context;
 		const locations: (IBranchWarehouseProfile | null)[] = [null, ...(warehouses ?? [])];
@@ -296,7 +412,7 @@ const apiInventoryOverview: TInventoryOverviewService = {
 			),
 		]);
 		const detail: IInventoryStockDetail = {
-			product: { ...product, critical_stock_threshold: null },
+			product: { ...product, critical_stock_threshold: productThreshold.threshold },
 			physical_quantity: branchRow?.physical_quantity ?? 0,
 			fit_quantity: branchRow?.fit_quantity ?? 0,
 			unfit_quantity: branchRow?.unfit_quantity ?? 0,
@@ -307,7 +423,8 @@ const apiInventoryOverview: TInventoryOverviewService = {
 				return row ? [toBreakdown(row, warehouse)] : [];
 			}),
 			warehouses_complete: warehouses !== null,
-			critical_stock: null,
+			critical_stock: productThreshold.critical_stock,
+			threshold_branch_id: productThreshold.threshold_branch_id,
 			series_summary: null,
 		};
 		return {
@@ -315,11 +432,6 @@ const apiInventoryOverview: TInventoryOverviewService = {
 			context: { scope: 'branch', branch_id: branchId, warehouse: null },
 		};
 	},
-	updateInventoryCriticalThreshold: () =>
-		rejectEndpointNotPublished(
-			RESOURCE,
-			'PATCH /subsidiaries/{subsidiary}/products/{product} (critical_stock_threshold)',
-		),
 };
 
 /** 404 de la ficha: producto con serie o de otra filial (lo decide `origins`). */
@@ -343,10 +455,9 @@ export const { listInventoryWarehouseAggregates } = inventoryOverview;
 export const { getInventoryStockDetail } = inventoryOverview;
 
 /**
- * §13: umbral crítico del producto, entero ≥ 0 o `null` para desactivarlo. Sin
- * request publicada: sólo el doble lo guarda, y lo usa también Reportes, que
- * sigue simulado con `VITE_INVENTORY_STOCK_USE_MOCKS`.
+ * §13 en el doble: umbral crítico del producto, entero ≥ 0 o `null` para
+ * desactivarlo. Lo usan Reportes (simulado con `VITE_INVENTORY_STOCK_USE_MOCKS`)
+ * y la ficha simulada. Contra la API real la ficha usa `updateProduct` (ver
+ * `INVENTORY_THRESHOLD_USES_API`).
  */
-export const { updateInventoryCriticalThreshold } = INVENTORY_STOCK_USE_MOCKS
-	? inventoryOverviewMock
-	: apiInventoryOverview;
+export const { updateInventoryCriticalThreshold } = inventoryOverviewMock;

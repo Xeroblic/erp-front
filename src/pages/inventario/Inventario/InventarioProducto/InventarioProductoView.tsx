@@ -42,10 +42,13 @@ const plural = (count: number, singular: string, pluralForm: string): string =>
 /**
  * Cifras del producto en la sucursal como KPI, igual que la ficha de bodega:
  * qué hay, cuánto se puede vender y qué lo impide. Reservadas y no vendibles
- * sólo aparecen cuando hay.
+ * sólo aparecen cuando hay. El bloque del §13 de la API real es de la filial,
+ * no de la sucursal: el rótulo lo dice. Un disponible negativo (faltante real)
+ * se muestra tal cual.
  */
 const kpisProducto = (detail: IInventoryStockDetail): IInventarioKpi[] => {
 	const critical = detail.critical_stock;
+	const deFilial = critical?.scope === 'subsidiary';
 	const kpis: IInventarioKpi[] = [
 		{
 			label: 'En la sucursal',
@@ -56,14 +59,14 @@ const kpisProducto = (detail: IInventoryStockDetail): IInventarioKpi[] => {
 	];
 	if (critical) {
 		kpis.push({
-			label: 'Disponibles para vender',
+			label: deFilial ? 'Disponibles en la filial' : 'Disponibles para vender',
 			value: critical.available_quantity,
 			icon: 'HeroShoppingCart',
 			accent: critical.available_quantity > 0 ? 'bg-emerald-600' : 'bg-red-600',
 		});
 		if (critical.held_quantity > 0)
 			kpis.push({
-				label: 'Reservadas',
+				label: deFilial ? 'Reservadas en la filial' : 'Reservadas',
 				value: critical.held_quantity,
 				icon: 'HeroLockClosed',
 				accent: 'bg-blue-600',
@@ -142,8 +145,18 @@ const PrecioTexto = ({ product }: { product: IInventoryStockDetail['product'] })
 	return <Vacio>Sin precio</Vacio>;
 };
 
-const UmbralTexto = ({ serial, threshold }: { serial: boolean; threshold: number | null }) => {
+const UmbralTexto = ({
+	serial,
+	known,
+	threshold,
+}: {
+	serial: boolean;
+	/** `false`: no se pudo leer el umbral; no se afirma «sin umbral». */
+	known: boolean;
+	threshold: number | null;
+}) => {
 	if (serial) return <Vacio>No aplica a productos con serie</Vacio>;
+	if (!known) return <Vacio>No disponible</Vacio>;
 	if (threshold === null) return <Vacio>Sin umbral: no avisa cuando se agota</Vacio>;
 	return <span>{`Avisa con ${plural(threshold, 'unidad', 'unidades')} o menos`}</span>;
 };
@@ -218,8 +231,16 @@ const ProductoSession = ({
 		? 0
 		: detail.physical_quantity -
 			detail.warehouses.reduce((total, location) => total + location.physical_quantity, 0);
-	// El estado depende del umbral y las reservas: sin ellos publicados no hay pastilla.
-	const showStockStatus = INVENTORY_OVERVIEW_FEATURES.stockStatus;
+	// El estado depende del umbral y las reservas: la API real los publica en el
+	// producto (§13), así que la ficha los muestra aunque la lista no.
+	const showStockStatus =
+		INVENTORY_OVERVIEW_FEATURES.stockStatus || INVENTORY_OVERVIEW_FEATURES.threshold;
+	// El umbral se edita en la ruta de la sucursal dueña; uno de filial no tiene ruta.
+	const canEditThreshold =
+		INVENTORY_OVERVIEW_FEATURES.threshold &&
+		!product.serial_tracking &&
+		critical !== null &&
+		detail.threshold_branch_id !== null;
 	// Ajustes y traslados mueven sólo stock por cantidad: los productos con
 	// serie no aparecen en sus asistentes. Con una sola ubicación (etapa 1) no
 	// hay traslados y sólo se ajusta «Sin ubicación»: una fila de bodega no
@@ -282,6 +303,7 @@ const ProductoSession = ({
 							<Campo label='Umbral de stock bajo'>
 								<UmbralTexto
 									serial={product.serial_tracking}
+									known={critical !== null}
 									threshold={threshold}
 								/>
 							</Campo>
@@ -296,9 +318,15 @@ const ProductoSession = ({
 				{showStockStatus && (
 					<CardFooter>
 						<StockStatusPill critical={critical} fit />
-						{INVENTORY_OVERVIEW_FEATURES.threshold && !product.serial_tracking && (
+						{critical?.scope === 'subsidiary' && (
+							<span className='text-sm text-zinc-500 dark:text-zinc-400'>
+								Stock de toda la filial
+							</span>
+						)}
+						{canEditThreshold && (
 							<ProtectedButton
 								permission='edit-product'
+								branchId={detail.threshold_branch_id}
 								subsidiaryId={subsidiaryId}
 								scope='access'
 								size='sm'
@@ -308,6 +336,14 @@ const ProductoSession = ({
 								{threshold === null ? 'Definir umbral' : 'Cambiar umbral'}
 							</ProtectedButton>
 						)}
+						{INVENTORY_OVERVIEW_FEATURES.threshold &&
+							!product.serial_tracking &&
+							critical !== null &&
+							detail.threshold_branch_id === null && (
+								<span className='text-sm text-zinc-500 dark:text-zinc-400'>
+									El umbral de un producto de la filial aún no se puede editar.
+								</span>
+							)}
 					</CardFooter>
 				)}
 			</Card>

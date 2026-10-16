@@ -117,8 +117,8 @@ const DetalleProducto = ({ row, onOpen }: { row: IInventoryOverviewRow; onOpen: 
 				</p>
 			)}
 			<div className='flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-700'>
-				{/* Sin umbral publicado no se afirma nada sobre él. */}
-				{INVENTORY_OVERVIEW_FEATURES.threshold && (
+				{/* `inventory-stock` no trae el umbral por fila: sin él no se afirma nada (la ficha sí lo muestra). */}
+				{INVENTORY_OVERVIEW_FEATURES.rowThreshold && (
 					<div className='flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-300'>
 						<span className='font-semibold text-zinc-700 dark:text-zinc-200'>
 							Umbral

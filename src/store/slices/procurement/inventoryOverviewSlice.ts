@@ -26,6 +26,7 @@ import {
 	getInventoryOperation,
 	listInventoryOperations,
 } from '@/services/procurement/inventoryOperations.service';
+import { updateProduct } from '@/store/slices/products/productsSlice';
 import {
 	getProcurementErrorMessage,
 	resolveProcurementError,
@@ -222,6 +223,59 @@ export const updateInventoryThresholdThunk = createAsyncThunk<
 	},
 	// Reportes (simulado) también edita el umbral: sigue la bandera de stock.
 	{ condition: () => INVENTORY_STOCK_USE_MOCKS },
+);
+
+/** Rechazo del umbral real: el mensaje y, si el backend marcó el campo, su error. */
+export interface IThresholdRejection {
+	message: string;
+	field: string | null;
+}
+
+const THRESHOLD_FALLBACK_MESSAGE = 'No pudimos guardar el umbral.';
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+	value !== null && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: null;
+
+/**
+ * Umbral §13 contra la API real, en las dos etapas del despliegue: reutiliza
+ * `updateProduct` (`PATCH B/products/{product}` con `critical_stock_threshold`,
+ * `null` para desactivarlo). `branchId` es la sucursal dueña del producto: la
+ * ruta responde 404 con otra. El 422 de `errors.critical_stock_threshold`
+ * (producto con serie, negativo o con decimales) vuelve como error del campo.
+ * Igual que el doble, no parchea `detail`: el llamador relee la ficha.
+ */
+export const saveProductThresholdThunk = createAsyncThunk<
+	void,
+	{ branchId: number; productId: number; threshold: number | null },
+	{ rejectValue: IThresholdRejection }
+>(
+	'inventoryOverview/saveProductThreshold',
+	async ({ branchId, productId, threshold }, { dispatch, rejectWithValue }) => {
+		try {
+			await dispatch(
+				updateProduct({
+					entityParam: 'branches',
+					entityId: branchId,
+					productId,
+					data: { critical_stock_threshold: threshold },
+				}),
+			).unwrap();
+			return undefined;
+		} catch (rejection: unknown) {
+			const record = asRecord(rejection);
+			const fieldMessages = asRecord(record?.errors)?.critical_stock_threshold;
+			const field = Array.isArray(fieldMessages) ? fieldMessages[0] : null;
+			return rejectWithValue({
+				message:
+					typeof record?.message === 'string' && record.message.trim()
+						? record.message
+						: THRESHOLD_FALLBACK_MESSAGE,
+				field: typeof field === 'string' && field.trim() ? field : null,
+			});
+		}
+	},
 );
 
 interface QueryState<T> {
@@ -440,6 +494,15 @@ const inventoryOverviewSlice = createSlice({
 				state.updatingThreshold = false;
 			})
 			.addCase(updateInventoryThresholdThunk.rejected, (state) => {
+				state.updatingThreshold = false;
+			})
+			.addCase(saveProductThresholdThunk.pending, (state) => {
+				state.updatingThreshold = true;
+			})
+			.addCase(saveProductThresholdThunk.fulfilled, (state) => {
+				state.updatingThreshold = false;
+			})
+			.addCase(saveProductThresholdThunk.rejected, (state) => {
 				state.updatingThreshold = false;
 			});
 	},
