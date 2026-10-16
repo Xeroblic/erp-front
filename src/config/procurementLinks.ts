@@ -35,6 +35,10 @@ export const purchaseDocumentDetailLink = (documentId: number): IPageLink =>
 export const stockReceiptDetailLink = (receiptId: number): IPageLink =>
 	detailLink(subPages.recepcionDetalle, 'recepcionId', receiptId);
 
+/** Ficha de inventario del producto en la sucursal activa (`view-product`). */
+export const productInventoryLink = (productId: number): IPageLink =>
+	detailLink(subPages.inventarioProducto, 'productId', productId);
+
 /**
  * Listado de documentos de compra filtrado por proveedor
  * (`view-purchase-document`). El listado lee `supplier_id` de la URL.
