@@ -239,4 +239,26 @@ describe('AccionesReport — reposición desde la API', () => {
 
 		await waitFor(() => expect(lastParams()).toEqual({ page: 2, per_page: 20 }));
 	});
+
+	it('Limpiar elimina el estado de la URL y pide todos desde la primera página', async () => {
+		renderAcciones('&reposicion=no_comparable_cost&page=3&per_page=50');
+
+		await screen.findByText('Producto 31');
+		expect(lastParams()).toEqual({
+			recommendation_status: 'no_comparable_cost',
+			page: 3,
+			per_page: 50,
+		});
+
+		fireEvent.click(screen.getByRole('button', { name: 'Limpiar' }));
+
+		await waitFor(() => expect(lastParams()).toEqual({ page: 1, per_page: 50 }));
+		expect(screen.getByTestId('location').textContent).toBe(
+			'/reportes/inventario?vista=acciones&per_page=50',
+		);
+		expect(tabs().getByRole('button', { name: 'Todos · 6' })).toHaveAttribute(
+			'aria-pressed',
+			'true',
+		);
+	});
 });

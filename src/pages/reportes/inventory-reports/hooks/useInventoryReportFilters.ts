@@ -95,7 +95,14 @@ const useInventoryReportFilters = (branchIds: readonly number[]) => {
 		[update],
 	);
 	const limpiar = useCallback(
-		() => update(() => ({ busqueda: '', sucursal: null, estado: null, orden: null })),
+		() =>
+			update(() => ({
+				busqueda: '',
+				sucursal: null,
+				estado: null,
+				reposicion: null,
+				orden: null,
+			})),
 		[update],
 	);
 
