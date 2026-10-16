@@ -325,6 +325,7 @@ const toListRow = (receipt: IStockReceipt): IStockReceiptListRow => ({
 	branch_id: receipt.branch_id,
 	status: receipt.status,
 	warehouse: receipt.warehouse,
+	entered_location: receipt.entered_location,
 	supplier: receipt.supplier,
 	purchase_document: receipt.purchase_document,
 	received_on: receipt.received_on,

@@ -31,7 +31,7 @@ const RecepcionDetalleView = () => {
 		receipt,
 		links,
 		inventoryLink,
-		entersUnlocated,
+		stockLocation,
 		isPollingStalled,
 		resumePolling,
 		etag,
@@ -117,7 +117,7 @@ const RecepcionDetalleView = () => {
 						<StockReceiptProgressCard
 							receipt={receipt}
 							inventoryLink={inventoryLink}
-							entersUnlocated={entersUnlocated}
+							stockLocation={stockLocation}
 							isPollingStalled={isPollingStalled}
 							onRefresh={resumePolling}
 						/>
