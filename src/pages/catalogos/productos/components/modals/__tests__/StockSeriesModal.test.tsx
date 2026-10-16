@@ -51,9 +51,43 @@ const auth = createSlice({
 	reducers: {},
 });
 
-const product = { id: 7, name: 'Notebook', children: [] } as unknown as IProduct;
+const serializedProduct = {
+	id: 7,
+	name: 'Notebook',
+	serial_tracking: true,
+	children: [],
+} as unknown as IProduct;
 
-const renderModal = () => {
+/** Mismo envoltorio que un rechazo de Axios: un Error con `response`. */
+const axiosRejection = (status: number, data: Record<string, unknown>) =>
+	Promise.reject(
+		Object.assign(new Error(`Request failed with status code ${status}`), {
+			response: { status, data },
+		}),
+	);
+
+const FORBIDDEN_BODY = { message: 'No tienes permiso para realizar esta acción.' };
+
+/** Series disponibles en la sucursal indicada (`null` = Bodega Central) y el rechazo del POST. */
+const mockSeriesAndRejection = (branchId: number | null, rejection: () => Promise<never>) =>
+	fetchData.mockImplementation((request: { method: string }) =>
+		request.method === 'get'
+			? Promise.resolve({
+					data: {
+						data: [
+							{
+								serial_number: 'SN-1',
+								current_status: 'available',
+								branch_id: branchId,
+								branch_name: branchId ? 'Sucursal Centro' : undefined,
+							},
+						],
+					},
+				})
+			: rejection(),
+	);
+
+const renderModal = (product: IProduct = serializedProduct) => {
 	const store = configureStore({ reducer: { productStock, auth: auth.reducer } });
 	return render(
 		<Provider store={store}>
@@ -69,26 +103,8 @@ afterEach(() => {
 });
 
 describe('StockSeriesModal — sucursal de destino', () => {
-	it('ofrece sólo las sucursales del usuario en la filial y muestra el 403 del backend', async () => {
-		fetchData.mockImplementation((request: { url: string; method: string }) => {
-			if (request.method === 'get')
-				return Promise.resolve({
-					data: {
-						data: [
-							{ serial_number: 'SN-1', current_status: 'available', branch_id: null },
-						],
-					},
-				});
-			// Mismo envoltorio que un rechazo de Axios: un Error con `response`.
-			return Promise.reject(
-				Object.assign(new Error('Request failed with status code 403'), {
-					response: {
-						status: 403,
-						data: { message: 'No tienes permiso para realizar esta acción.' },
-					},
-				}),
-			);
-		});
+	it('ofrece sólo las sucursales del usuario en la filial y explica el 403 por el destino', async () => {
+		mockSeriesAndRejection(null, () => axiosRejection(403, FORBIDDEN_BODY));
 		renderModal();
 
 		fireEvent.click(screen.getByRole('button', { name: 'Asignar a Sucursal' }));
@@ -108,7 +124,9 @@ describe('StockSeriesModal — sucursal de destino', () => {
 		fireEvent.click(screen.getByRole('button', { name: /Asignar Seleccionadas \(1\)/ }));
 
 		await waitFor(() =>
-			expect(toastError).toHaveBeenCalledWith('No tienes permiso para realizar esta acción.'),
+			expect(toastError).toHaveBeenCalledWith(
+				'No tienes permiso para asignar este stock: necesitas acceso a la sucursal de destino (Sucursal Centro).',
+			),
 		);
 		expect(fetchData).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -117,5 +135,91 @@ describe('StockSeriesModal — sucursal de destino', () => {
 			}),
 		);
 		expect(toastSuccess).not.toHaveBeenCalled();
+	});
+
+	it('al asignar un producto sin serie, el 403 pide también la sucursal del producto', async () => {
+		mockSeriesAndRejection(null, () => axiosRejection(403, FORBIDDEN_BODY));
+		renderModal({ ...serializedProduct, serial_tracking: false });
+
+		fireEvent.click(screen.getByRole('button', { name: 'Asignar a Sucursal' }));
+		fireEvent.click(await screen.findByRole('checkbox'));
+		fireEvent.click(screen.getByRole('button', { name: /Asignar Seleccionadas \(1\)/ }));
+
+		await waitFor(() =>
+			expect(toastError).toHaveBeenCalledWith(
+				'No tienes permiso para asignar este stock: necesitas acceso a la sucursal de destino (Sucursal Centro) y a la sucursal del producto, de la que sale el stock.',
+			),
+		);
+	});
+
+	it('muestra el motivo de la línea del 422 de asignar, no el mensaje genérico', async () => {
+		mockSeriesAndRejection(null, () =>
+			axiosRejection(422, {
+				success: false,
+				message: 'Valide la disponibilidad del inventario.',
+				errors: ["La línea nombra el producto #8, que no es 'Notebook'."],
+			}),
+		);
+		renderModal();
+
+		fireEvent.click(screen.getByRole('button', { name: 'Asignar a Sucursal' }));
+		fireEvent.click(await screen.findByRole('checkbox'));
+		fireEvent.click(screen.getByRole('button', { name: /Asignar Seleccionadas \(1\)/ }));
+
+		await waitFor(() =>
+			expect(toastError).toHaveBeenCalledWith(
+				"La línea nombra el producto #8, que no es 'Notebook'.",
+			),
+		);
+		expect(toastSuccess).not.toHaveBeenCalled();
+	});
+});
+
+describe('StockSeriesModal — devolver a la Bodega Central', () => {
+	it('explica el 403 por la sucursal de la que salen las series', async () => {
+		mockSeriesAndRejection(5, () => axiosRejection(403, FORBIDDEN_BODY));
+		renderModal();
+
+		fireEvent.click(await screen.findByRole('checkbox'));
+		fireEvent.click(screen.getByRole('button', { name: /Devolver Seleccionadas \(1\)/ }));
+
+		await waitFor(() =>
+			expect(toastError).toHaveBeenCalledWith(
+				'No tienes permiso para devolver estas series a la filial: necesitas acceso a la sucursal de la que salen (Sucursal Centro).',
+			),
+		);
+		expect(fetchData).toHaveBeenCalledWith(
+			expect.objectContaining({
+				url: '/subsidiaries/2/products/7/unassign-stock',
+				data: expect.objectContaining({ branch_id: 5 }),
+			}),
+		);
+		// Sin reintento automático: un único POST.
+		const posts = fetchData.mock.calls.filter(
+			(call: unknown[]) => (call[0] as { method?: string } | undefined)?.method === 'post',
+		);
+		expect(posts).toHaveLength(1);
+		expect(toastSuccess).not.toHaveBeenCalled();
+	});
+
+	it('un rechazo que no es 403 conserva el mensaje del backend', async () => {
+		mockSeriesAndRejection(5, () =>
+			axiosRejection(422, {
+				message: 'The given data was invalid.',
+				errors: {
+					confirm: ['Debe confirmar que las series serán devueltas a la subsidiaria.'],
+				},
+			}),
+		);
+		renderModal();
+
+		fireEvent.click(await screen.findByRole('checkbox'));
+		fireEvent.click(screen.getByRole('button', { name: /Devolver Seleccionadas \(1\)/ }));
+
+		await waitFor(() =>
+			expect(toastError).toHaveBeenCalledWith(
+				'Debe confirmar que las series serán devueltas a la subsidiaria.',
+			),
+		);
 	});
 });

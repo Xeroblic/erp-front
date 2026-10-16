@@ -1,5 +1,10 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
+import {
+	getStockApiMessage,
+	toStockRequestError,
+	type IStockRequestError,
+} from '@/utils/stockMovementErrors.util';
 import type {
 	IAssignProductPayload,
 	IAssignStockPayload,
@@ -62,30 +67,6 @@ const initialState: ProductStockState = {
 	isVerifying: false,
 
 	error: null,
-};
-
-// Error Helper genérico
-const getApiError = (error: unknown, fallback: string): string => {
-	if (error && typeof error === 'object') {
-		const obj = error as any;
-		const validationErrors = obj.response?.data?.errors;
-		if (validationErrors && typeof validationErrors === 'object') {
-			const messages = Object.values(validationErrors)
-				.flatMap((value) => (Array.isArray(value) ? value : []))
-				.filter(
-					(value): value is string =>
-						typeof value === 'string' && value.trim().length > 0,
-				);
-			const uniqueMessages = Array.from(new Set(messages));
-			if (uniqueMessages.length > 0) {
-				if (uniqueMessages.length === 1) return uniqueMessages[0];
-				return `${uniqueMessages[0]} (y ${uniqueMessages.length - 1} más)`;
-			}
-		}
-		if (obj.response?.data?.message) return obj.response.data.message;
-		if (obj.message) return obj.message;
-	}
-	return fallback;
 };
 
 const toAllocation = (raw: unknown): IBranchAllocation | null => {
@@ -215,7 +196,7 @@ export const assignProduct = createAsyncThunk<
 			});
 			return res.data?.data;
 		} catch (error) {
-			return rejectWithValue(getApiError(error, 'No se pudo asignar el producto'));
+			return rejectWithValue(getStockApiMessage(error, 'No se pudo asignar el producto'));
 		}
 	},
 );
@@ -238,7 +219,7 @@ export const unassignProduct = createAsyncThunk<
 			});
 			return res.data?.data;
 		} catch (error) {
-			return rejectWithValue(getApiError(error, 'No se pudo desasignar el producto'));
+			return rejectWithValue(getStockApiMessage(error, 'No se pudo desasignar el producto'));
 		}
 	},
 );
@@ -246,7 +227,7 @@ export const unassignProduct = createAsyncThunk<
 export const assignStockToBranch = createAsyncThunk<
 	unknown,
 	{ subsidiaryId: number; productId: number; payload: IAssignStockPayload },
-	{ rejectValue: string }
+	{ rejectValue: IStockRequestError }
 >(
 	'productStock/assignStockToBranch',
 	async ({ subsidiaryId, productId, payload }, { rejectWithValue }) => {
@@ -261,7 +242,9 @@ export const assignStockToBranch = createAsyncThunk<
 			});
 			return res.data?.data;
 		} catch (error) {
-			return rejectWithValue(getApiError(error, 'No se pudo asignar el stock a la sucursal'));
+			return rejectWithValue(
+				toStockRequestError(error, 'No se pudo asignar el stock a la sucursal'),
+			);
 		}
 	},
 );
@@ -269,7 +252,7 @@ export const assignStockToBranch = createAsyncThunk<
 export const unassignStockFromProduct = createAsyncThunk<
 	unknown,
 	{ subsidiaryId: number; productId: number; payload: IUnassignStockPayload },
-	{ rejectValue: string }
+	{ rejectValue: IStockRequestError }
 >(
 	'productStock/unassignStockFromProduct',
 	async ({ subsidiaryId, productId, payload }, { rejectWithValue }) => {
@@ -285,7 +268,7 @@ export const unassignStockFromProduct = createAsyncThunk<
 			return res.data?.data;
 		} catch (error) {
 			return rejectWithValue(
-				getApiError(error, 'No se pudo devolver el stock a la subsidiaria'),
+				toStockRequestError(error, 'No se pudo devolver el stock a la subsidiaria'),
 			);
 		}
 	},
@@ -294,7 +277,7 @@ export const unassignStockFromProduct = createAsyncThunk<
 export const transferProductStock = createAsyncThunk<
 	unknown,
 	{ subsidiaryId: number; productId: number; payload: ITransferStockPayload },
-	{ rejectValue: string }
+	{ rejectValue: IStockRequestError }
 >(
 	'productStock/transferProductStock',
 	async ({ subsidiaryId, productId, payload }, { rejectWithValue }) => {
@@ -309,7 +292,7 @@ export const transferProductStock = createAsyncThunk<
 			});
 			return res.data?.data;
 		} catch (error) {
-			return rejectWithValue(getApiError(error, 'No se pudo transferir el stock'));
+			return rejectWithValue(toStockRequestError(error, 'No se pudo transferir el stock'));
 		}
 	},
 );
@@ -332,7 +315,9 @@ export const adjustProductStock = createAsyncThunk<
 			});
 			return res.data?.data;
 		} catch (error) {
-			return rejectWithValue(getApiError(error, 'No se pudo ajustar el stock individual'));
+			return rejectWithValue(
+				getStockApiMessage(error, 'No se pudo ajustar el stock individual'),
+			);
 		}
 	},
 );
@@ -354,7 +339,7 @@ export const batchAdjustStock = createAsyncThunk<
 		});
 		return res.data?.data;
 	} catch (error) {
-		return rejectWithValue(getApiError(error, 'No se pudo aplicar el ajuste masivo'));
+		return rejectWithValue(getStockApiMessage(error, 'No se pudo aplicar el ajuste masivo'));
 	}
 });
 
@@ -370,7 +355,7 @@ export const fetchAvailableStock = createAsyncThunk<
 		});
 		return extractAllocations(res.data ?? res);
 	} catch (error) {
-		return rejectWithValue(getApiError(error, 'Error al cargar el stock disponible'));
+		return rejectWithValue(getStockApiMessage(error, 'Error al cargar el stock disponible'));
 	}
 });
 
@@ -386,7 +371,7 @@ export const fetchStockCatalog = createAsyncThunk<
 		});
 		return extractStockCatalogItems(res.data ?? res);
 	} catch (error) {
-		return rejectWithValue(getApiError(error, 'Error al cargar el catálogo de stock'));
+		return rejectWithValue(getStockApiMessage(error, 'Error al cargar el catálogo de stock'));
 	}
 });
 
@@ -407,7 +392,7 @@ export const fetchProductSeries = createAsyncThunk<
 			});
 			return res.data?.data ?? [];
 		} catch (error) {
-			return rejectWithValue(getApiError(error, 'Error al cargar las series'));
+			return rejectWithValue(getStockApiMessage(error, 'Error al cargar las series'));
 		}
 	},
 );
@@ -430,7 +415,9 @@ export const createProductSeries = createAsyncThunk<
 			});
 			return res.data?.data ?? [];
 		} catch (error) {
-			return rejectWithValue(getApiError(error, 'No se pudieron registrar las series'));
+			return rejectWithValue(
+				getStockApiMessage(error, 'No se pudieron registrar las series'),
+			);
 		}
 	},
 );
@@ -458,7 +445,9 @@ export const updateSerieStatus = createAsyncThunk<
 			});
 			return res.data?.data;
 		} catch (error) {
-			return rejectWithValue(getApiError(error, 'Error al actualizar el estado de la serie'));
+			return rejectWithValue(
+				getStockApiMessage(error, 'Error al actualizar el estado de la serie'),
+			);
 		}
 	},
 );
@@ -479,7 +468,7 @@ export const fetchStockMovements = createAsyncThunk<
 			return res.data?.data ?? [];
 		} catch (error) {
 			return rejectWithValue(
-				getApiError(error, 'Error al cargar el historial de movimientos'),
+				getStockApiMessage(error, 'Error al cargar el historial de movimientos'),
 			);
 		}
 	},
@@ -500,7 +489,7 @@ export const verifyStockConsistency = createAsyncThunk<
 			return Boolean(res.data?.data);
 		} catch (error) {
 			return rejectWithValue(
-				getApiError(error, 'No se pudo verificar la consistencia del stock'),
+				getStockApiMessage(error, 'No se pudo verificar la consistencia del stock'),
 			);
 		}
 	},
@@ -543,7 +532,7 @@ const productStockSlice = createSlice({
 			})
 			.addCase(assignStockToBranch.rejected, (state, action) => {
 				state.isAssigning = false;
-				state.error = action.payload ?? null;
+				state.error = action.payload?.message ?? null;
 			})
 
 			// Unassign
@@ -569,7 +558,7 @@ const productStockSlice = createSlice({
 			})
 			.addCase(unassignStockFromProduct.rejected, (state, action) => {
 				state.isUnassigning = false;
-				state.error = action.payload ?? null;
+				state.error = action.payload?.message ?? null;
 			})
 
 			// Transfer
@@ -582,7 +571,7 @@ const productStockSlice = createSlice({
 			})
 			.addCase(transferProductStock.rejected, (state, action) => {
 				state.isTransferring = false;
-				state.error = action.payload ?? null;
+				state.error = action.payload?.message ?? null;
 			})
 
 			// Adjust
