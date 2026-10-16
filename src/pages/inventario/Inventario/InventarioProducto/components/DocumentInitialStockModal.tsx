@@ -14,10 +14,12 @@ import Label from '@/components/form/Label';
 import SelectReact from '@/components/form/SelectReact';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
+import Validation from '@/components/form/Validation';
 import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch } from '@/store';
 import { createInventoryDocumentAllocationThunk } from '@/store/slices/procurement/inventoryStockSlice';
-import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
+import INVENTORY_OVERVIEW_USE_MOCKS from '@/config/inventoryOverview.config';
+import { applyProcurementFieldErrors } from '@/utils/procurementErrors.util';
 import usePurchaseDocumentPicker from '@/pages/inventario/abastecimiento/Recepciones/hooks/usePurchaseDocumentPicker';
 import type { IInventoryStockOriginRow } from '@/interface/procurement.interface';
 import {
@@ -37,7 +39,24 @@ import {
  * desde el `context` de la consulta vigente (`InventoryOrigins`), que sólo es
  * inequívoco cuando el filtro de ubicación ya apunta a una bodega concreta o
  * a Sin ubicación, nunca a «sucursal completa» (ambigua entre bodegas).
+ *
+ * Un 422 marca su campo (`quantity`, `purchase_document_line_id`); el de
+ * `origin_id` no tiene campo propio y queda en el mensaje general.
  */
+
+/** Campo del formulario para cada `errors.*` del 422; el resto queda en el mensaje. */
+const ALLOCATION_FORM_FIELDS: Record<string, keyof IDocumentInitialStockValues> = {
+	purchase_document_line_id: 'lineId',
+	quantity: 'quantity',
+	reason: 'reason',
+};
+
+/**
+ * Errores tras los que la tabla de procedencias quedó vieja: el saldo sin
+ * documentar cambió (otra venta u otro respaldo), o el respaldo ya se registró
+ * con esta clave antes de que venciera su respuesta guardada.
+ */
+const STALE_ORIGIN_CODES = new Set(['INSUFFICIENT_UNDOCUMENTED_STOCK', 'IDEMPOTENCY_KEY_REUSED']);
 
 interface IDocumentInitialStockModalProps {
 	isOpen: boolean;
@@ -48,6 +67,8 @@ interface IDocumentInitialStockModalProps {
 	warehouseId: number | null;
 	origin: Pick<IInventoryStockOriginRow, 'origin_id' | 'physical_quantity'> | null;
 	onDocumented: (quantity: number) => void;
+	/** Vuelve a pedir las procedencias sin cerrar el modal. */
+	onOriginsStale?: () => void;
 }
 
 const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
@@ -59,6 +80,7 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 	warehouseId,
 	origin,
 	onDocumented,
+	onOriginsStale,
 }) => {
 	const dispatch = useAppDispatch();
 	const isMountedRef = useRef(true);
@@ -82,7 +104,7 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 			subsidiaryId,
 			isOpen,
 			pickerDocumentId,
-			INVENTORY_STOCK_USE_MOCKS,
+			INVENTORY_OVERVIEW_USE_MOCKS,
 		);
 
 	const documentOptions = documents.map((document) => ({
@@ -114,29 +136,45 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 	const formik = useFormik<IDocumentInitialStockValues>({
 		initialValues: DOCUMENT_INITIAL_STOCK_INITIAL_VALUES,
 		validationSchema: schema,
-		onSubmit: async (values) => {
+		onSubmit: async (values, helpers) => {
 			if (!origin) return;
-			const result = await idempotentWrite.submit((headers) =>
-				dispatch(
-					createInventoryDocumentAllocationThunk({
-						subsidiaryId,
-						branchId,
-						productId,
-						payload: {
-							origin_id: origin.origin_id,
-							warehouse_id: warehouseId,
-							purchase_document_line_id: Number(values.lineId),
-							quantity: Number(values.quantity),
-							reason: values.reason.trim(),
-						},
-						headers: { idempotencyKey: headers['Idempotency-Key'] },
-					}),
-				).unwrap(),
+			const result = await idempotentWrite.submit(
+				(headers) =>
+					dispatch(
+						createInventoryDocumentAllocationThunk({
+							subsidiaryId,
+							branchId,
+							productId,
+							payload: {
+								origin_id: origin.origin_id,
+								warehouse_id: warehouseId,
+								purchase_document_line_id: Number(values.lineId),
+								quantity: Number(values.quantity),
+								reason: values.reason.trim(),
+							},
+							headers: { idempotencyKey: headers['Idempotency-Key'] },
+						}),
+					).unwrap(),
+				{
+					onError: (error) => {
+						applyProcurementFieldErrors(
+							error.fieldErrors,
+							(apiField) => ALLOCATION_FORM_FIELDS[apiField],
+							(field, message) => {
+								void helpers.setFieldTouched(field, true, false);
+								helpers.setFieldError(field, message);
+							},
+						);
+						if (STALE_ORIGIN_CODES.has(error.code)) onOriginsStale?.();
+					},
+				},
 			);
 
 			if (result && isMountedRef.current) {
+				// El físico no cambia: lo que queda sin documento es lo que el
+				// backend informa, no la resta local.
 				toast.success(
-					`Respaldadas ${result.quantity} unidades de la procedencia #${origin.origin_id}.`,
+					`Respaldadas ${result.quantity} unidades de la procedencia #${origin.origin_id}. Quedan ${result.remaining_undocumented_quantity} sin documento.`,
 				);
 				setIsOpen(false);
 				formik.resetForm();
@@ -249,27 +287,34 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 								void formik.setFieldValue('lineId', selected ? selected.value : '');
 							}}
 						/>
+						{formik.touched.lineId && formik.errors.lineId && (
+							<p className='text-sm text-red-600 dark:text-red-400'>
+								{formik.errors.lineId}
+							</p>
+						)}
 					</div>
 				)}
 
 				<div className='space-y-1'>
 					<Label htmlFor='allocation-quantity'>Cantidad a documentar</Label>
-					<Input
-						id='allocation-quantity'
-						name='quantity'
-						type='number'
-						min={1}
-						max={origin?.physical_quantity}
-						disabled={idempotentWrite.canRetry}
-						value={formik.values.quantity}
-						onChange={formik.handleChange}
-						onBlur={formik.handleBlur}
+					<Validation
 						isValid={!formik.errors.quantity}
 						isTouched={
 							formik.values.quantity !== '' || Boolean(formik.touched.quantity)
 						}
-						invalidFeedback={formik.errors.quantity}
-					/>
+						invalidFeedback={formik.errors.quantity}>
+						<Input
+							id='allocation-quantity'
+							name='quantity'
+							type='number'
+							min={1}
+							max={origin?.physical_quantity}
+							disabled={idempotentWrite.canRetry}
+							value={formik.values.quantity}
+							onChange={formik.handleChange}
+							onBlur={formik.handleBlur}
+						/>
+					</Validation>
 					<p className='text-xs text-zinc-500'>
 						Saldo sin documento: {origin?.physical_quantity ?? 0} unidades.
 					</p>
@@ -277,18 +322,20 @@ const DocumentInitialStockModal: React.FC<IDocumentInitialStockModalProps> = ({
 
 				<div className='space-y-1'>
 					<Label htmlFor='allocation-reason'>Motivo</Label>
-					<Textarea
-						id='allocation-reason'
-						name='reason'
-						rows={3}
-						disabled={idempotentWrite.canRetry}
-						value={formik.values.reason}
-						onChange={formik.handleChange}
-						onBlur={formik.handleBlur}
+					<Validation
 						isValid={!formik.errors.reason}
 						isTouched={formik.values.reason !== '' || Boolean(formik.touched.reason)}
-						invalidFeedback={formik.errors.reason}
-					/>
+						invalidFeedback={formik.errors.reason}>
+						<Textarea
+							id='allocation-reason'
+							name='reason'
+							rows={3}
+							disabled={idempotentWrite.canRetry}
+							value={formik.values.reason}
+							onChange={formik.handleChange}
+							onBlur={formik.handleBlur}
+						/>
+					</Validation>
 				</div>
 
 				{idempotentWrite.error && (

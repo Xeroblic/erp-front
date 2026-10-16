@@ -189,23 +189,33 @@ describe('stockReceipts.service — API real', () => {
 		});
 	});
 
-	it('vincular un documento sigue sin publicar: rechaza sin llamar a la API', async () => {
+	it('vincular un documento hace PUT con la clave y sin If-Match, y devuelve la ficha con su ETag', async () => {
 		const facade = await loadFacade(false);
+		const linked = {
+			...RECEIPT,
+			status: 'posted',
+			allowed_actions: ['reverse'],
+		} as IStockReceipt;
+		respondWithReceipt(linked, 'W/"sr-80-v4"');
+		const payload = {
+			purchase_document_id: 24,
+			reason: 'Factura recibida después de la entrega',
+			items: [{ stock_receipt_line_id: 301, purchase_document_line_id: 101 }],
+		};
 
-		const error = await facade
-			.linkStockReceiptPurchaseDocument(1, 80, {
-				purchase_document_id: 61,
-				reason: 'Factura posterior',
-				items: [],
-			})
-			.catch((reason: unknown) => reason);
-
-		expect(error).toBeInstanceOf(facade.ProcurementEndpointNotPublishedError);
-		expect(error).toMatchObject({
-			endpoint:
-				'PUT /subsidiaries/{subsidiary}/procurement/stock-receipts/{receipt}/purchase-document',
+		const result = await facade.linkStockReceiptPurchaseDocument(1, 80, payload, {
+			idempotencyKey: 'k-link',
+			etag: 'W/"sr-80-v3"',
 		});
-		expect(fetchData).not.toHaveBeenCalled();
+
+		expect(fetchData).toHaveBeenCalledTimes(1);
+		expect(lastRequest()).toEqual({
+			url: `${BASE}/80/purchase-document`,
+			method: 'put',
+			data: payload,
+			headers: { 'Idempotency-Key': 'k-link' },
+		});
+		expect(result).toEqual({ data: linked, headers: { etag: 'W/"sr-80-v4"' } });
 	});
 
 	it('las bodegas salen de cada sucursal, sólo activas y con su sucursal', async () => {

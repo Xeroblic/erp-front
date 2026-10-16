@@ -114,17 +114,8 @@ describe('inventoryOverview.service (fachada)', () => {
 			stockStatus: false,
 			availability: false,
 			threshold: false,
-			documentAllocation: false,
 			unitTotals: false,
 		});
-	});
-
-	it('«Documentar» sólo se ofrece si la ficha lee el mismo stock simulado que lo guarda', async () => {
-		const overviewOnly = await loadFacade({ overview: true, stock: false });
-		expect(overviewOnly.INVENTORY_OVERVIEW_FEATURES.documentAllocation).toBe(false);
-
-		const both = await loadFacade({ overview: true, stock: true });
-		expect(both.INVENTORY_OVERVIEW_FEATURES.documentAllocation).toBe(true);
 	});
 
 	it('el umbral sigue la bandera de stock, que comparte con Reportes', async () => {

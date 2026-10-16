@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Formik, Form, FieldArray } from 'formik';
+import { Formik, Form, FieldArray, type FormikHelpers } from 'formik';
 import * as Yup from 'yup';
 import Modal, {
 	ModalHeader,
@@ -21,12 +21,21 @@ import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import {
+	TRANSFER_VALIDATION_MESSAGE,
+	splitTransferFieldErrors,
+	toTransferError,
+} from '@/utils/transferErrors.util';
 
 interface CreateEditTransferModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onSubmit: (payload: ICreateTransferRequest) => Promise<void>;
 	isLoading?: boolean;
+}
+
+interface ITransferFormStatus {
+	apiError?: string;
 }
 
 const createEmptyItem = (): ITransferItemForm => ({
@@ -80,14 +89,30 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 	const [availableProducts, setAvailableProducts] = useState<IProduct[]>([]);
 	const [productsLoading, setProductsLoading] = useState(false);
 	const [productsLoaded, setProductsLoaded] = useState(false);
+	/**
+	 * Sucursales que respondieron 403 en este modal. El perfil no alcanza a predecir
+	 * el acceso del backend (roles de filial o empresa no vienen en `access`), así que
+	 * se aprende del rechazo: no se vuelve a ofrecer ni a enviar a esa sucursal.
+	 */
+	const [forbiddenBranchIds, setForbiddenBranchIds] = useState<number[]>([]);
 
 	const branchOptions = useMemo<TSelectOption[]>(
 		() =>
-			branches.map((branch) => ({
-				value: String(branch.id),
-				label: branch.branch_name || `Sucursal ${branch.id}`,
-			})),
-		[branches],
+			branches.map((branch) => {
+				const isForbidden = forbiddenBranchIds.includes(branch.id);
+				const name = branch.branch_name || `Sucursal ${branch.id}`;
+				return {
+					value: String(branch.id),
+					label: isForbidden ? `${name} (sin acceso)` : name,
+					isDisabled: isForbidden,
+				};
+			}),
+		[branches, forbiddenBranchIds],
+	);
+
+	const isBranchForbidden = useCallback(
+		(branchId: number | '') => branchId !== '' && forbiddenBranchIds.includes(branchId),
+		[forbiddenBranchIds],
 	);
 
 	const originWarehouseOptions = useMemo<TSelectOption[]>(
@@ -241,6 +266,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 			setDestinationWarehouses([]);
 			setAvailableProducts([]);
 			setProductsLoaded(false);
+			setForbiddenBranchIds([]);
 		}
 	}, [isOpen]);
 
@@ -315,6 +341,42 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 		[currentBranchId, handleLoadDestinationWarehouses, loadOriginProducts],
 	);
 
+	const handleSubmit = useCallback(
+		async (values: ICreateTransferForm, helpers: FormikHelpers<ICreateTransferForm>) => {
+			try {
+				helpers.setStatus(undefined);
+				await onSubmit(formatPayload(values));
+				helpers.resetForm({
+					values: { ...INITIAL_VALUES, items: [createEmptyItem()] },
+				});
+			} catch (error: unknown) {
+				const transferError = toTransferError(error);
+
+				// Sin reintento: la sucursal queda marcada y el envío a ella, bloqueado.
+				const destinationId = values.to_branch_id;
+				if (transferError.kind === 'forbidden' && destinationId !== '') {
+					setForbiddenBranchIds((current) =>
+						current.includes(destinationId) ? current : [...current, destinationId],
+					);
+				}
+
+				const { byField, unmapped } = splitTransferFieldErrors(transferError.fieldErrors);
+				Object.entries(byField).forEach(([field, message]) => {
+					helpers.setFieldError(field, message);
+				});
+
+				const status: ITransferFormStatus = {
+					apiError:
+						transferError.kind !== 'validation'
+							? transferError.message
+							: unmapped.join(' ') || TRANSFER_VALIDATION_MESSAGE,
+				};
+				helpers.setStatus(status);
+			}
+		},
+		[onSubmit],
+	);
+
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl'>
 			<ModalHeader>
@@ -330,43 +392,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 			<Formik
 				initialValues={INITIAL_VALUES}
 				validationSchema={validationSchema}
-				onSubmit={async (values, helpers) => {
-					try {
-						helpers.setStatus(undefined);
-						await onSubmit(formatPayload(values));
-						helpers.resetForm({
-							values: { ...INITIAL_VALUES, items: [createEmptyItem()] },
-						});
-					} catch (error: any) {
-						const apiError = (error ?? {}) as {
-							message?: string;
-							errors?: Record<string, string[] | string>;
-						};
-						if (apiError.errors) {
-							Object.entries(apiError.errors).forEach(([field, messages]) => {
-								const message = Array.isArray(messages)
-									? messages.join(' ')
-									: messages;
-								if (field === 'items') {
-									helpers.setFieldError('items', message);
-								} else if (
-									field === 'to_branch_id' ||
-									field === 'from_warehouse_id' ||
-									field === 'to_warehouse_id' ||
-									field === 'notes'
-								) {
-									helpers.setFieldError(
-										field as keyof ICreateTransferForm,
-										message,
-									);
-								}
-							});
-						}
-						helpers.setStatus({
-							apiError: apiError.message || 'No se pudo crear la transferencia',
-						});
-					}
-				}}>
+				onSubmit={handleSubmit}>
 				{({
 					values,
 					errors,
@@ -380,9 +406,11 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 				}) => (
 					<Form>
 						<ModalBody className='space-y-4'>
-							{status?.apiError && (
-								<p className='rounded-md bg-red-50 px-3 py-2 text-sm text-red-700'>
-									{status.apiError}
+							{(status as ITransferFormStatus | undefined)?.apiError && (
+								<p
+									role='alert'
+									className='rounded-md bg-red-50 px-3 py-2 text-sm text-red-700'>
+									{(status as ITransferFormStatus).apiError}
 								</p>
 							)}
 
@@ -741,7 +769,11 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 									type='submit'
 									variant='solid'
 									icon='HeroPaperAirplane'
-									disabled={isSubmitting || Boolean(isLoading)}>
+									disabled={
+										isSubmitting ||
+										Boolean(isLoading) ||
+										isBranchForbidden(values.to_branch_id)
+									}>
 									Crear transferencia
 								</Button>
 							</ModalFooterChild>

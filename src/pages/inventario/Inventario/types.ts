@@ -46,6 +46,18 @@ export const inventarioProductoLink = (productId: number): IPageLink => ({
 	authority: Pages.inventory.subPages.inventario.authority,
 });
 
+/** Ancla de la sección «Compras» de la ficha del producto. */
+export const INVENTARIO_PRODUCTO_COMPRAS_ANCHOR = 'compras';
+
+/**
+ * Ficha del producto abierta en su sección «Compras» (proveedores, sugerido e
+ * historial). Mismo `authority` que la ficha.
+ */
+export const inventarioProductoComprasLink = (productId: number): IPageLink => ({
+	to: `${inventarioProductoPath(productId)}#${INVENTARIO_PRODUCTO_COMPRAS_ANCHOR}`,
+	authority: Pages.inventory.subPages.inventario.authority,
+});
+
 export const inventarioBodegaLink = (warehouseId: number | null): IPageLink => ({
 	to: inventarioBodegaPath(warehouseId),
 	authority: Pages.inventory.subPages.inventario.authority,

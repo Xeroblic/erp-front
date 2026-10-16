@@ -172,6 +172,7 @@ const RecepcionDetalleView = () => {
 				receipt={receipt}
 				subsidiaryId={subsidiaryId}
 				onLinked={() => undefined}
+				onReceiptStale={retry}
 			/>
 		</PageWrapper>
 	);

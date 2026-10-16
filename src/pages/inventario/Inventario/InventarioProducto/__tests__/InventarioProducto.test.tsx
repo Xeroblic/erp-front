@@ -55,6 +55,27 @@ vi.mock('@/config/inventoryReceipts.config', () => ({
 		return context.enabled;
 	},
 }));
+// Compras (§12) lee la API real; sus casos están en `ProductPurchases.test.tsx`.
+vi.mock('@/services/procurement/productPurchases.service', () => {
+	const empty = {
+		data: [],
+		links: { first: null, last: null, prev: null, next: null },
+		meta: {
+			current_page: 1,
+			from: null,
+			last_page: 1,
+			links: [],
+			path: '',
+			per_page: 15,
+			to: null,
+			total: 0,
+		},
+	};
+	return {
+		listProductSuppliers: () => Promise.resolve(empty),
+		listProductPurchaseHistory: () => Promise.resolve(empty),
+	};
+});
 vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
 vi.mock('@/store', async () => {
 	const redux = await import('react-redux');
@@ -217,6 +238,18 @@ describe('Ficha de inventario', () => {
 		expect(within(ubicaciones()).getAllByRole('row')).toHaveLength(3);
 	});
 
+	it('muestra la sección Compras en su ancla `#compras`', async () => {
+		renderFicha(MOUSE_ID);
+
+		const compras = await screen.findByRole('region', { name: 'Compras' });
+		expect(compras).toHaveAttribute('id', 'compras');
+		expect(
+			await within(compras).findByText(
+				'Todavía no hay compras registradas de este producto.',
+			),
+		).toBeInTheDocument();
+	});
+
 	it('las procedencias se ven por ubicación y se puede cambiar de ubicación', async () => {
 		renderFicha(MOUSE_ID);
 		const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
@@ -232,11 +265,22 @@ describe('Ficha de inventario', () => {
 			),
 		);
 		// El estante sólo tiene lo que queda de la recepción #211, sin documento:
-		// cambia la lista y se ofrece documentarlo.
+		// cambia la lista. No se ofrece «Documentar»: respaldar es sólo para stock
+		// inicial; a una recepción se le vincula la factura desde su ficha.
 		const shelf = await screen.findByRole('region', { name: 'Procedencias del producto' });
 		await within(shelf).findByText('Recepción #211');
 		expect(within(shelf).queryByText('Recepción #80')).not.toBeInTheDocument();
-		expect(within(shelf).getByRole('button', { name: 'Documentar' })).toBeInTheDocument();
+		expect(within(shelf).queryByRole('button', { name: 'Documentar' })).not.toBeInTheDocument();
+	});
+
+	it('sin `view-purchase-document` no ofrece documentar el stock inicial', async () => {
+		renderFichaConAtajos(['view-purchase-document']);
+		const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+		await within(region).findByText('Recepción #80');
+
+		expect(
+			within(region).queryByRole('button', { name: 'Documentar' }),
+		).not.toBeInTheDocument();
 	});
 
 	it.each([

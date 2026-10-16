@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Card, { CardBody } from '@/components/ui/Card';
 import Label from '@/components/form/Label';
+import Select from '@/components/form/Select';
 import SelectReact from '@/components/form/SelectReact';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
@@ -17,10 +18,14 @@ import useIdempotentWrite from '@/hooks/useIdempotentWrite';
 import { useAppDispatch } from '@/store';
 import { linkStockReceiptPurchaseDocumentThunk } from '@/store/slices/procurement/stockReceiptsSlice';
 import usePurchaseDocumentPicker from '@/pages/inventario/abastecimiento/Recepciones/hooks/usePurchaseDocumentPicker';
-import type {
-	IStockReceipt,
-	IStockReceiptLinkPurchaseDocumentItemInput,
-} from '@/interface/procurement.interface';
+import type { IStockReceipt } from '@/interface/procurement.interface';
+import {
+	buildLinkMapping,
+	NO_LINK_FIELD_ERRORS,
+	toLinkFieldErrors,
+	type ILinkFieldErrors,
+	type TUnmatchedReason,
+} from './linkPurchaseDocumentMapping';
 
 /**
  * `PUT .../purchase-document` (sección 8 del contrato): vinculación posterior de
@@ -34,7 +39,21 @@ import type {
  * `Modal`/`ModalHeader`/`ModalBody`/`ModalFooter`, `useIdempotentWrite`,
  * toast de éxito y manejo de error inline — con el selector de documento y el
  * mapeo de líneas propios de esta acción.
+ *
+ * El 200 trae la recepción con el costo del documento y `allowed_actions` sin
+ * esta acción: el slice la aplica tal cual, sin volver a pedirla.
  */
+
+/** Estados de la recepción que la ficha ya no refleja: hay que releerla. */
+const STALE_RECEIPT_CODES = new Set(['RECEIPT_NOT_POSTED', 'RECEIPT_DOCUMENT_ALREADY_LINKED']);
+
+const UNMATCHED_LABELS: Record<TUnmatchedReason, string> = {
+	no_line: 'Sin línea compatible en el documento',
+	no_capacity: 'El documento no tiene pendiente suficiente',
+	choose: 'Elige la línea del documento',
+};
+
+const NO_OVERRIDES: ReadonlyMap<number, number> = new Map();
 
 /** Tarjeta de primer nivel dentro del cuerpo del modal (mismo estándar que el resto de abastecimiento). */
 const LINK_DOCUMENT_CARD_CLASSNAME =
@@ -46,6 +65,8 @@ interface ILinkPurchaseDocumentModalProps {
 	receipt: IStockReceipt | null;
 	subsidiaryId: number | null;
 	onLinked: () => void;
+	/** Relee la recepción cuando su estado ya no admite el vínculo. */
+	onReceiptStale?: () => void;
 }
 
 const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
@@ -54,10 +75,12 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 	receipt,
 	subsidiaryId,
 	onLinked,
+	onReceiptStale,
 }) => {
 	const dispatch = useAppDispatch();
 	const [documentId, setDocumentId] = useState<number | ''>('');
 	const [reason, setReason] = useState('');
+	const [fieldErrors, setFieldErrors] = useState<ILinkFieldErrors>(NO_LINK_FIELD_ERRORS);
 	const idempotentWrite = useIdempotentWrite({
 		fallbackMessage: 'No se pudo vincular el documento.',
 		renewKeyOnDefinitiveError: true,
@@ -77,35 +100,21 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 			label: `${document.document_number} · ${document.supplier?.display_name ?? 'Sin proveedor'}`,
 		}));
 
-	/**
-	 * Mapeo automático 1:1 por producto: cada línea de la recepción busca, en
-	 * el documento elegido, una línea del mismo producto que ninguna otra
-	 * línea de la recepción ya haya tomado. Una recepción sin correspondencia
-	 * completa no se puede confirmar — se lista qué línea quedó sin par en vez
-	 * de dejar que el 422 del servicio sea la primera noticia.
-	 */
-	const mapping = useMemo(() => {
-		if (!receipt || !selectedDocument) return null;
-		const usedDocumentLineIds = new Set<number>();
-		const items: IStockReceiptLinkPurchaseDocumentItemInput[] = [];
-		const unmatchedReceiptLineIds = new Set<number>();
-		receipt.items.forEach((receiptLine) => {
-			const documentLine = selectedDocument.items.find(
-				(line) =>
-					line.product.id === receiptLine.product.id && !usedDocumentLineIds.has(line.id),
-			);
-			if (!documentLine) {
-				unmatchedReceiptLineIds.add(receiptLine.id);
-				return;
-			}
-			usedDocumentLineIds.add(documentLine.id);
-			items.push({
-				stock_receipt_line_id: receiptLine.id,
-				purchase_document_line_id: documentLine.id,
-			});
-		});
-		return { items, unmatchedReceiptLineIds };
-	}, [receipt, selectedDocument]);
+	// Líneas del documento que el usuario eligió a mano, por línea de la recepción.
+	const [overrides, setOverrides] = useState<ReadonlyMap<number, number>>(NO_OVERRIDES);
+
+	const mapping = useMemo(
+		() =>
+			receipt && selectedDocument
+				? buildLinkMapping(receipt, selectedDocument, overrides)
+				: null,
+		[receipt, selectedDocument, overrides],
+	);
+
+	const chooseDocumentLine = (receiptLineId: number, documentLineId: number) => {
+		setOverrides((previous) => new Map(previous).set(receiptLineId, documentLineId));
+		setFieldErrors(NO_LINK_FIELD_ERRORS);
+	};
 
 	const handleClose = () => {
 		if (idempotentWrite.isSubmitting) return;
@@ -116,38 +125,55 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 		if (!idempotentWrite.canRetry) {
 			setDocumentId('');
 			setReason('');
+			setOverrides(NO_OVERRIDES);
+			setFieldErrors(NO_LINK_FIELD_ERRORS);
 			idempotentWrite.clearError();
 		}
 	};
 
+	// Ya vinculada o no ingresada: otro intento respondería lo mismo.
+	const isReceiptBlocked = STALE_RECEIPT_CODES.has(idempotentWrite.error?.code ?? '');
+
 	const canSubmit = Boolean(
 		receipt &&
+			!isReceiptBlocked &&
 			documentId !== '' &&
 			mapping &&
 			mapping.items.length > 0 &&
-			mapping.unmatchedReceiptLineIds.size === 0 &&
+			mapping.unmatched.size === 0 &&
 			reason.trim(),
 	);
 
 	const handleConfirm = async () => {
 		if (!receipt || !mapping || documentId === '' || !canSubmit) return;
-		const result = await idempotentWrite.submit((headers) =>
-			dispatch(
-				linkStockReceiptPurchaseDocumentThunk({
-					subsidiaryId,
-					id: receipt.id,
-					payload: {
-						purchase_document_id: Number(documentId),
-						reason: reason.trim(),
-						items: mapping.items,
-					},
-					headers: { idempotencyKey: headers['Idempotency-Key'] },
-				}),
-			).unwrap(),
+		const sentItems = mapping.items;
+		setFieldErrors(NO_LINK_FIELD_ERRORS);
+		const result = await idempotentWrite.submit(
+			(headers) =>
+				dispatch(
+					linkStockReceiptPurchaseDocumentThunk({
+						subsidiaryId,
+						id: receipt.id,
+						payload: {
+							purchase_document_id: Number(documentId),
+							reason: reason.trim(),
+							items: sentItems,
+						},
+						headers: { idempotencyKey: headers['Idempotency-Key'] },
+					}),
+				).unwrap(),
+			{
+				onError: (error) => {
+					setFieldErrors(toLinkFieldErrors(error, sentItems));
+					if (STALE_RECEIPT_CODES.has(error.code)) onReceiptStale?.();
+				},
+			},
 		);
 
 		if (result) {
-			toast.success(`Documento vinculado a la recepción #${receipt.id}.`);
+			toast.success(
+				`Documento vinculado a la recepción #${receipt.id}. Su costo ahora es el del documento.`,
+			);
 			handleClose();
 			onLinked();
 		}
@@ -203,8 +229,18 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 									const selected = option as TSelectOption | null;
 									if (Array.isArray(selected)) return;
 									setDocumentId(selected ? Number(selected.value) : '');
+									// Otro documento es otro comando: el error del anterior
+									// ya no aplica (la clave se renovó al fallar).
+									setOverrides(NO_OVERRIDES);
+									setFieldErrors(NO_LINK_FIELD_ERRORS);
+									if (!isReceiptBlocked) idempotentWrite.clearError();
 								}}
 							/>
+							{fieldErrors.document && (
+								<p className='text-sm text-red-600 dark:text-red-400'>
+									{fieldErrors.document}
+								</p>
+							)}
 							{receipt?.supplier && (
 								<p className='text-xs text-zinc-500'>
 									Sólo documentos de {receipt.supplier.display_name}: el proveedor
@@ -221,31 +257,75 @@ const LinkPurchaseDocumentModal: React.FC<ILinkPurchaseDocumentModalProps> = ({
 							<div className='space-y-1 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700'>
 								<p className='font-semibold'>Mapeo de líneas</p>
 								{receipt.items.map((line) => {
-									const matched = mapping.items.find(
-										(item) => item.stock_receipt_line_id === line.id,
+									const assignedId = mapping.assignment.get(line.id);
+									const documentLine = selectedDocument.items.find(
+										(docLine) => docLine.id === assignedId,
 									);
-									const documentLine = matched
-										? selectedDocument.items.find(
-												(docLine) =>
-													docLine.id ===
-													matched.purchase_document_line_id,
-											)
-										: undefined;
+									// Con más de una línea del producto, el usuario puede
+									// cambiar la que propuso el mapeo.
+									const compatibleLines = selectedDocument.items
+										.map((docLine, index) => ({ docLine, position: index + 1 }))
+										.filter(
+											({ docLine }) => docLine.product.id === line.product.id,
+										);
+									const unmatchedReason = mapping.unmatched.get(line.id);
+									const lineError = fieldErrors.lines[line.id];
+									const selectId = `link-line-${line.id}`;
 									return (
-										<div
-											key={line.id}
-											className='flex items-center justify-between gap-2'>
-											<span>
-												{line.name_snapshot} ({line.quantity} u.)
-											</span>
-											{documentLine ? (
-												<span className='text-emerald-600 dark:text-emerald-400'>
-													→ {documentLine.name_snapshot}
-												</span>
-											) : (
-												<span className='text-red-600 dark:text-red-400'>
-													Sin línea compatible en el documento
-												</span>
+										<div key={line.id} className='space-y-0.5'>
+											<div className='flex items-center justify-between gap-2'>
+												{compatibleLines.length > 1 ? (
+													<Label htmlFor={selectId}>
+														{line.name_snapshot} ({line.quantity} u.)
+													</Label>
+												) : (
+													<span>
+														{line.name_snapshot} ({line.quantity} u.)
+													</span>
+												)}
+												{documentLine && compatibleLines.length <= 1 && (
+													<span className='text-emerald-600 dark:text-emerald-400'>
+														→ {documentLine.name_snapshot}
+													</span>
+												)}
+												{unmatchedReason && (
+													<span className='text-red-600 dark:text-red-400'>
+														{UNMATCHED_LABELS[unmatchedReason]}
+													</span>
+												)}
+											</div>
+											{compatibleLines.length > 1 && (
+												<Select
+													id={selectId}
+													name={selectId}
+													disabled={idempotentWrite.canRetry}
+													value={assignedId ?? ''}
+													onChange={(event) =>
+														chooseDocumentLine(
+															line.id,
+															Number(event.target.value),
+														)
+													}>
+													<option value='' disabled>
+														Elige la línea del documento
+													</option>
+													{compatibleLines.map(
+														({ docLine, position }) => (
+															<option
+																key={docLine.id}
+																value={docLine.id}>
+																Línea {position} ·{' '}
+																{docLine.name_snapshot} · quedan{' '}
+																{docLine.remaining_quantity}
+															</option>
+														),
+													)}
+												</Select>
+											)}
+											{lineError && (
+												<p className='text-red-600 dark:text-red-400'>
+													{lineError}
+												</p>
 											)}
 										</div>
 									);
