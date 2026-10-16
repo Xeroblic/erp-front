@@ -7,10 +7,16 @@ import Icon from '@/components/icon/Icon';
 import { useAppDispatch } from '@/store';
 import { closeSaleThunk } from '@/store/slices/salesSlice';
 import { ICloseSaleRequest, ISaleItem } from '@/interface';
-import type { ISaleStockShortageItem } from '@/interface/sales.interface';
-import { toSaleCloseError } from '@/utils/saleCloseErrors.util';
+import type { ICloseSaleResponse, ISaleStockShortageItem } from '@/interface/sales.interface';
+import {
+	isLocationReselectError,
+	isSerialsRequiredError,
+	toSaleCloseError,
+} from '@/utils/saleCloseErrors.util';
 import CloseSaleItemRow from './CloseSaleItemRow';
 import SaleStockShortageAlert from '../parts/SaleStockShortageAlert';
+import SaleLocationAllocationPanel from '../parts/SaleLocationAllocationPanel';
+import { useSaleLocationAllocation } from '../../hooks/useSaleLocationAllocation';
 
 type CloseSalePayloadItem = ICloseSaleRequest['items'][number];
 
@@ -32,7 +38,15 @@ interface Props {
 	items: ISaleItem[];
 	/** Todos los ítems de la venta, para nombrar un faltante sin serie que no tiene fila aquí. */
 	saleItems?: ISaleItem[];
-	onSuccess?: () => void;
+	/**
+	 * Filial en la etapa 2: antes de confirmar se pide la vista previa y se elige de qué
+	 * ubicación sale cada ítem sin serie. En la etapa 1 el modal sólo pide series.
+	 */
+	isMultiLocation?: boolean;
+	/** Recibe lo que el cierre aplicó y los nombres de bodega vistos en la vista previa. */
+	onSuccess?: (response: ICloseSaleResponse, locationNames: ReadonlyMap<number, string>) => void;
+	/** El 422 `required` exige series a ítems que el modal no listaba. */
+	onSerialsRequired?: (saleItemIds: number[]) => void;
 }
 
 const CloseSaleModal: React.FC<Props> = ({
@@ -42,10 +56,17 @@ const CloseSaleModal: React.FC<Props> = ({
 	saleId,
 	items,
 	saleItems,
+	isMultiLocation = false,
 	onSuccess,
+	onSerialsRequired,
 }) => {
 	const dispatch = useAppDispatch();
 	const confirmButtonRef = useRef<HTMLButtonElement>(null);
+	const allocation = useSaleLocationAllocation({
+		subsidiaryId,
+		saleId,
+		enabled: open && isMultiLocation,
+	});
 
 	// State: itemId -> array of serial strings
 	const [serialInputs, setSerialInputs] = useState<Record<number, string[]>>({});
@@ -200,13 +221,30 @@ const CloseSaleModal: React.FC<Props> = ({
 	const handleConfirm = async () => {
 		setShortages([]);
 		setRowErrors({});
-		if (!validate()) return;
-
+		allocation.clearReselectNotes();
+		const serialsValid = validate();
+		// Validar las ubicaciones es asíncrono: el botón se deshabilita antes de esperar
+		// para que un doble clic no mande dos cierres.
 		setIsSubmitting(true);
+		// Se valida también la elección de ubicaciones aunque falten series: así se
+		// marcan todos los campos pendientes de una vez.
+		const allocationItems = await allocation.buildAllocationItems();
+		if (!serialsValid || allocationItems === null) {
+			if (serialsValid) setGlobalError('Revisa las ubicaciones de salida marcadas.');
+			setIsSubmitting(false);
+			return;
+		}
+
 		setGlobalError(null);
 		try {
-			await dispatch(closeSaleThunk({ subsidiaryId, saleId, items: parsedPayload })).unwrap();
-			onSuccess?.();
+			const response = await dispatch(
+				closeSaleThunk({
+					subsidiaryId,
+					saleId,
+					items: [...parsedPayload, ...allocationItems],
+				}),
+			).unwrap();
+			onSuccess?.(response, allocation.locationNames);
 			handleClose();
 		} catch (err: unknown) {
 			// El 409 de stock no se reintenta solo: el mismo cierre responde lo mismo
@@ -215,10 +253,26 @@ const CloseSaleModal: React.FC<Props> = ({
 			setGlobalError(error.message);
 			setShortages(error.shortages);
 			setRowErrors(toRowErrors(error.fieldErrors));
+			// En la etapa 2 el modal reemplaza al cierre directo, que era quien abría las
+			// series que el backend exige; en la etapa 1 el modal sigue como estaba.
+			if (isMultiLocation && isSerialsRequiredError(error)) {
+				onSerialsRequired?.(error.requiredSerialItemIds);
+			}
+			// La ubicación elegida dejó de servir: se recarga la vista previa y se pide
+			// elegir de nuevo. Las marcas del ítem reemplazan a sus errores por clave.
+			if (isLocationReselectError(error) && (await allocation.handleCloseError(error))) {
+				setRowErrors({});
+			}
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
+
+	const showSerialSection = !isMultiLocation || items.length > 0;
+	const title = showSerialSection ? 'Cerrar venta (Escanear Series)' : 'Cerrar venta';
+	const subtitle = showSerialSection
+		? 'Escanee o ingrese las series. Presione Enter para saltar al siguiente campo.'
+		: 'Revisa de qué ubicación sale cada ítem antes de confirmar.';
 
 	return (
 		<Modal
@@ -240,11 +294,8 @@ const CloseSaleModal: React.FC<Props> = ({
 						/>
 					</div>
 					<div>
-						<Badge className='text-lg font-bold'>Cerrar venta (Escanear Series)</Badge>
-						<p className='text-xs text-zinc-500 dark:text-zinc-400'>
-							Escanee o ingrese las series. Presione Enter para saltar al siguiente
-							campo.
-						</p>
+						<Badge className='text-lg font-bold'>{title}</Badge>
+						<p className='text-xs text-zinc-500 dark:text-zinc-400'>{subtitle}</p>
 					</div>
 				</div>
 			</ModalHeader>
@@ -282,10 +333,20 @@ const CloseSaleModal: React.FC<Props> = ({
 						/>
 					))}
 
-					{items.length === 0 && (
+					{items.length === 0 && !isMultiLocation && (
 						<div className='rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-300'>
 							No hay ítems que requieran serie.
 						</div>
+					)}
+
+					{isMultiLocation && (
+						<SaleLocationAllocationPanel
+							allocation={allocation}
+							saleItems={saleItems ?? items}
+							disabled={isSubmitting}
+							rowErrors={rowErrors}
+							shortagesByItem={shortagesByItem}
+						/>
 					)}
 				</div>
 			</ModalBody>
@@ -306,7 +367,11 @@ const CloseSaleModal: React.FC<Props> = ({
 						variant='solid'
 						onClick={handleConfirm}
 						isLoading={isSubmitting}
-						isDisable={isSubmitting || items.length === 0}
+						isDisable={
+							isSubmitting ||
+							(items.length === 0 && !isMultiLocation) ||
+							!allocation.canConfirm
+						}
 						icon={isSubmitting ? 'DuoLoading' : 'HeroCheckCircle'}>
 						Confirmar cierre
 					</Button>

@@ -113,19 +113,89 @@ export interface ICreateSaleRequest {
 	}>;
 }
 
-export interface ICloseSaleRequest {
-	// Estructura para el endpoint POST /close
-	items: Array<{
-		sale_item_id: number;
-		serial_numbers: string[];
-		product_detail?: string;
-	}>;
-}
-
 /** Cantidad descontada de una ubicación; en la etapa 1 siempre «Sin ubicación» (`null`). */
 export interface ISaleCloseAllocation {
 	warehouse_id: number | null;
 	quantity: number;
+}
+
+/**
+ * Línea del `POST /close`: un ítem con serie lleva `serial_numbers`; uno sin serie de la
+ * etapa 2 lleva `allocations` cuando su ubicación se eligió (modo `manual`). Un ítem que
+ * no lleva ninguno de los dos no va en el request.
+ */
+export interface ICloseSaleRequestItem {
+	sale_item_id: number;
+	serial_numbers?: string[];
+	product_detail?: string;
+	/** Sin repetir ubicación; deben sumar la cantidad del ítem. `null` es «Sin ubicación». */
+	allocations?: ISaleCloseAllocation[];
+}
+
+export interface ICloseSaleRequest {
+	// Estructura para el endpoint POST /close
+	items: ICloseSaleRequestItem[];
+}
+
+/**
+ * Cómo se elige la ubicación de un ítem sin serie en `fulfillment-options`:
+ * `automatic` (una sola ubicación con apto, se omite `allocations`), `manual` (varias,
+ * `allocations` obligatorio) o `blocked` (la sucursal no alcanza; no se puede cerrar).
+ */
+export type TSaleAllocationMode = 'automatic' | 'manual' | 'blocked';
+
+/** Ubicación con apto para un ítem. `warehouse_id: null` es «Sin ubicación». */
+export interface ISaleFulfillmentLocation {
+	warehouse_id: number | null;
+	name: string;
+	/** Apto del producto en la ubicación, compartido por las líneas del mismo producto. */
+	fit_quantity: number;
+}
+
+/** Lo que la vista previa usa de la ficha del producto. */
+export interface ISaleFulfillmentProduct {
+	id: number;
+	sku: string | null;
+	name: string;
+}
+
+/** Opciones de un ítem **sin serie**; los ítems con serie no aparecen en la vista previa. */
+export interface ISaleFulfillmentOptionItem {
+	sale_item_id: number;
+	/** Sucursal de la que sale el ítem (la de la venta o la del producto); `null` si ninguna. */
+	branch_id: number | null;
+	product: ISaleFulfillmentProduct;
+	quantity_required: number;
+	/** Retención activa de la propia venta: ya está descontada del apto, no restarla de nuevo. */
+	own_hold_quantity: number;
+	stock_sufficient: boolean;
+	allocation_mode: TSaleAllocationMode;
+	/** Selección confirmable tal cual; vacía en `blocked`. */
+	suggested_allocations: ISaleCloseAllocation[];
+	/** Sólo ubicaciones con apto, de mayor a menor. */
+	locations: ISaleFulfillmentLocation[];
+}
+
+/** `data` de `GET /sales/{sale}/fulfillment-options` (etapa 2 del cierre con ubicación). */
+export interface ISaleFulfillmentOptions {
+	sale_id: number;
+	branch_id: number | null;
+	is_closed: boolean;
+	/** `[]` si la venta ya no se puede cerrar. */
+	items: ISaleFulfillmentOptionItem[];
+}
+
+/**
+ * Ubicación elegida que ya no alcanza, en el 409 `ALLOCATION_STOCK_INSUFFICIENT`.
+ * `requested` es lo que toda la venta saca de esa ubicación para el producto.
+ */
+export interface ISaleAllocationShortageItem {
+	sale_item_id: number;
+	product_id: number;
+	branch_id: number | null;
+	warehouse_id: number | null;
+	requested: number;
+	available: number;
 }
 
 /**

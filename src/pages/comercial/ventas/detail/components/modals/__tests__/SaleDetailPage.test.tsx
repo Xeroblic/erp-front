@@ -38,6 +38,14 @@ vi.mock('@/services/salesService', () => ({
 vi.mock('react-router-dom', () => ({
 	useNavigate: () => vi.fn(),
 }));
+// El store de esta prueba no tiene `auth`: la etapa de la filial se fija en la 1.
+vi.mock('@/hooks/useSubsidiaryRolloutStage', () => ({
+	useSubsidiaryRolloutStage: () => ({
+		multiLocationEnabled: false,
+		isMultiLocation: false,
+		isLoading: false,
+	}),
+}));
 vi.mock('@/components/ui/Modal', () => ({
 	default: ({ children, isOpen }: PropsWithChildren & { isOpen: boolean }) =>
 		isOpen ? <div role='dialog'>{children}</div> : null,

@@ -6,6 +6,7 @@ import {
 	ICreateSaleRequest,
 	ICloseSaleRequest,
 	ICloseSaleResponse,
+	ISaleFulfillmentOptions,
 } from '@/interface/sales.interface';
 
 // Filtros alineados a la documentación
@@ -172,9 +173,25 @@ export const fetchSaleItems = async (
 };
 
 /**
- * Cierra una venta: vende las series indicadas y descuenta FIFO de «Sin ubicación»
- * los ítems sin serie. Devuelve la raíz completa: `data` es lo que el cierre aplicó
- * y `message` queda a su lado, no dentro.
+ * Vista previa del cierre (etapa 2): desde qué ubicaciones puede salir cada ítem sin
+ * serie, en qué modo y una sugerencia. No reserva nada, así que nunca se cachea: cada
+ * lectura tiene que traer el stock vigente.
+ */
+export const getSaleFulfillmentOptions = async (
+	subsidiaryId: number,
+	saleId: number,
+): Promise<ISaleFulfillmentOptions> => {
+	const resp = await ApiService.fetchData<{ data: ISaleFulfillmentOptions }>({
+		url: `${base(subsidiaryId)}/${saleId}/fulfillment-options`,
+		method: 'get',
+	});
+	return resp.data.data;
+};
+
+/**
+ * Cierra una venta: vende las series indicadas y descuenta FIFO los ítems sin serie,
+ * de «Sin ubicación» o, en la etapa 2, de las ubicaciones de `allocations`. Devuelve
+ * la raíz completa: `data` es lo que el cierre aplicó y `message` queda a su lado.
  */
 export const closeSale = async (
 	subsidiaryId: number,
@@ -355,6 +372,7 @@ export const salesService = {
 	fetchSaleDetail,
 	fetchSaleItems,
 	closeSale,
+	getSaleFulfillmentOptions,
 	confirmSaleReturn,
 	correctSaleSerials,
 	createSale,
