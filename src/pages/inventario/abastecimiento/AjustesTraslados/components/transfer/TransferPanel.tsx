@@ -78,6 +78,7 @@ const TransferPanel = ({
 		balanceFor,
 		errorFor,
 		serverLineErrorCount,
+		shortage,
 		setOrigin,
 		setItem,
 		addItem,
@@ -94,10 +95,18 @@ const TransferPanel = ({
 	// reintento tiene que llevar exactamente el mismo comando y la misma clave.
 	const frozen = idempotentWrite.isSubmitting || idempotentWrite.canRetry;
 	const writeError = idempotentWrite.error;
-	const unattributed =
-		writeError?.code === 'INSUFFICIENT_LOCATION_STOCK'
-			? unattributedFromContext(writeError.context)
-			: 0;
+	const stockRejected = writeError?.code === 'INSUFFICIENT_LOCATION_STOCK';
+	const unattributed = stockRejected ? unattributedFromContext(writeError.context) : 0;
+	const unattributedNotice = unattributed > 0 && (
+		<p>
+			Hay {unattributed}{' '}
+			{unattributed === 1
+				? 'unidad sin procedencia registrada'
+				: 'unidades sin procedencia registrada'}{' '}
+			en el origen, que el traslado todavía no puede mover. Se regularizan automáticamente
+			cada 15 minutos: vuelve a intentarlo más tarde.
+		</p>
+	);
 	// Respaldo si la bandera no coincide con la etapa real: en la etapa 1 todo
 	// traslado responde lo mismo, así que no se ofrece reenviarlo.
 	const singleLocation = writeError?.code === 'MULTI_LOCATION_NOT_ENABLED';
@@ -250,6 +259,20 @@ const TransferPanel = ({
 									{originError}
 								</Alert>
 							)}
+							{/* El 409 con la línea identificada trae al usuario acá: el
+							    aviso del traslado viaja con él. */}
+							{shortage && writeError && (
+								<Alert color='red' title='No se pudo registrar el traslado'>
+									<div role='alert' className='space-y-1'>
+										<p>{writeError.message}</p>
+										<p>
+											No se movió ninguna línea del traslado: corrige la línea
+											marcada y vuelve a confirmarlo.
+										</p>
+										{unattributedNotice}
+									</div>
+								</Alert>
+							)}
 							{hasOrigin &&
 								!loadingOrigin &&
 								!originError &&
@@ -340,6 +363,9 @@ const TransferPanel = ({
 								<Alert color='red' title='No se pudo registrar el traslado'>
 									<div role='alert' className='space-y-1'>
 										<p>{writeError.message}</p>
+										{stockRejected && (
+											<p>No se movió ninguna línea del traslado.</p>
+										)}
 										{singleLocation && (
 											<p>
 												{MULTI_LOCATION_NOT_ENABLED_REASON} Los traslados se
@@ -388,17 +414,7 @@ const TransferPanel = ({
 												</Button>
 											</div>
 										)}
-										{unattributed > 0 && (
-											<p>
-												Hay {unattributed}{' '}
-												{unattributed === 1
-													? 'unidad sin procedencia registrada'
-													: 'unidades sin procedencia registrada'}{' '}
-												en el origen, que el traslado todavía no puede
-												mover. Se regularizan automáticamente cada 15
-												minutos: vuelve a intentarlo más tarde.
-											</p>
-										)}
+										{unattributedNotice}
 									</div>
 								</Alert>
 							)}

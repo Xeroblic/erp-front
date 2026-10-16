@@ -170,7 +170,13 @@ const getAdjustmentStockAvailability = (
 };
 
 /** Mismo envoltorio que un rechazo de Axios: lo lee `resolveProcurementError`. */
-const insufficientStock = (condition: TStockCondition, requested: number, available: number) =>
+const insufficientStock = (
+	itemIndex: number,
+	productId: number,
+	condition: TStockCondition,
+	requested: number,
+	available: number,
+) =>
 	Object.assign(new Error('La ubicación no tiene stock suficiente.'), {
 		isAxiosError: true,
 		response: {
@@ -178,7 +184,13 @@ const insufficientStock = (condition: TStockCondition, requested: number, availa
 			data: {
 				message: 'La ubicación no tiene stock suficiente.',
 				code: 'INSUFFICIENT_LOCATION_STOCK',
-				context: { requested, available, condition },
+				context: {
+					item_index: itemIndex,
+					product_id: productId,
+					requested,
+					available,
+					condition,
+				},
 			},
 		},
 	});
@@ -189,14 +201,17 @@ const createInventoryAdjustment = (
 ): Promise<{ data: IInventoryAdjustment }> => {
 	const location: TLocationKey = payload.warehouse_id ?? 'unlocated';
 	// Todo o nada, como el backend: primero se valida el lote entero.
-	const shortage = payload.items.find(
+	const shortageIndex = payload.items.findIndex(
 		(item) =>
 			item.quantity_delta < 0 &&
 			Math.abs(item.quantity_delta) > balanceAt(location, item.product_id)[item.condition],
 	);
+	const shortage = payload.items[shortageIndex];
 	if (shortage)
 		return Promise.reject(
 			insufficientStock(
+				shortageIndex,
+				shortage.product_id,
 				shortage.condition,
 				Math.abs(shortage.quantity_delta),
 				balanceAt(location, shortage.product_id)[shortage.condition],
