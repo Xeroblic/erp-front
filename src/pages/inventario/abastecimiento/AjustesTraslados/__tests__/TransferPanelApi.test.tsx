@@ -267,9 +267,78 @@ describe('Traslados internos contra la API real', () => {
 		expect(alert).toHaveTextContent(
 			'Hay 3 unidades sin procedencia registrada en el origen, que el traslado todavía no puede mover.',
 		);
+		// Sin `item_index` el aviso queda global, en el paso donde se confirmó.
+		expect(alert).toHaveTextContent('No se movió ninguna línea del traslado.');
+		expect(screen.getByLabelText('Motivo')).toBeInTheDocument();
+		expect(screen.queryByText(/Disponible:/)).not.toBeInTheDocument();
 		expect(
 			screen.queryByRole('table', { name: 'Saldos después del traslado' }),
 		).not.toBeInTheDocument();
+	});
+
+	it('marca sólo la línea de `item_index` del 409 y vuelve a «Productos» con el aviso', async () => {
+		installBackend(() =>
+			Promise.reject(
+				apiError(409, {
+					message: 'No hay stock no apto suficiente en la ubicación.',
+					code: 'INSUFFICIENT_LOCATION_STOCK',
+					context: {
+						item_index: 1,
+						product_id: 31,
+						requested: 2,
+						available: 1,
+						branch_id: 4,
+						warehouse_id: null,
+						condition: 'unfit',
+						origin_id: null,
+						unattributed_quantity: 1,
+					},
+				}),
+			),
+		);
+		renderPage();
+		fireEvent.change(await screen.findByLabelText('Origen'), {
+			target: { value: 'unlocated' },
+		});
+		fireEvent.change(screen.getByLabelText('Destino'), { target: { value: 'warehouse:8' } });
+		await clickNext();
+		const product = await screen.findByLabelText('Producto de la línea 1');
+		await waitFor(() =>
+			expect(within(product).getByRole('option', { name: /Mouse USB/ })).toBeInTheDocument(),
+		);
+		// Dos líneas del mismo producto: buscar la del faltante por producto
+		// marcaría las dos.
+		fireEvent.change(product, { target: { value: '31' } });
+		fireEvent.change(screen.getByLabelText('Cantidad de la línea 1'), {
+			target: { value: '5' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Agregar producto' }));
+		fireEvent.change(screen.getByLabelText('Producto de la línea 2'), {
+			target: { value: '31' },
+		});
+		fireEvent.change(screen.getByLabelText('Condición de la línea 2'), {
+			target: { value: 'unfit' },
+		});
+		fireEvent.change(screen.getByLabelText('Cantidad de la línea 2'), {
+			target: { value: '2' },
+		});
+		await clickNext();
+		fireEvent.change(await screen.findByLabelText('Motivo'), {
+			target: { value: 'Ubicar productos del conteo inicial' },
+		});
+		submit();
+
+		const alert = await screen.findByRole('alert');
+		expect(screen.queryByLabelText('Motivo')).not.toBeInTheDocument();
+		expect(alert).toHaveTextContent('No hay stock no apto suficiente en la ubicación.');
+		expect(alert).toHaveTextContent('No se movió ninguna línea del traslado');
+		expect(alert).toHaveTextContent('Hay 1 unidad sin procedencia registrada en el origen');
+
+		expect(screen.getAllByText('Disponible: 1.')).toHaveLength(1);
+		const markedRow = screen
+			.getByLabelText('Cantidad de la línea 2')
+			.closest('tr') as HTMLElement;
+		expect(within(markedRow).getByText('Disponible: 1.')).toBeInTheDocument();
 	});
 
 	it('explica el 409 de una sola ubicación y no ofrece reenviar el traslado', async () => {

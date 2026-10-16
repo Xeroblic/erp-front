@@ -153,3 +153,34 @@ export const unattributedFromContext = (context: Record<string, unknown> | null)
 	const value = context?.unattributed_quantity;
 	return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 };
+
+/** Línea que no alcanzó en un `409 INSUFFICIENT_LOCATION_STOCK`, y lo que sí había. */
+export interface IShortageLine {
+	index: number;
+	available: number;
+}
+
+const asInteger = (value: unknown): number | null =>
+	typeof value === 'number' && Number.isInteger(value) ? value : null;
+
+/**
+ * Línea del lote que dejó el `409 INSUFFICIENT_LOCATION_STOCK` sin aplicar:
+ * `context.item_index` es su posición en `items`, la misma `N` de los 422. No
+ * se busca por producto y condición: dos líneas del mismo producto (una FIFO y
+ * otra de un origen) comparten ambos.
+ *
+ * `null` —y el aviso queda sólo global— si el índice falta, cae fuera del lote
+ * o su `product_id` no es el de esa línea: marcar otra sería peor que no marcar.
+ */
+export const shortageLineFrom = (
+	error: { code: string; context: Record<string, unknown> | null } | null,
+	items: readonly { productId: number | '' }[],
+): IShortageLine | null => {
+	if (error?.code !== 'INSUFFICIENT_LOCATION_STOCK') return null;
+	const index = asInteger(error.context?.item_index);
+	const available = asInteger(error.context?.available);
+	if (index === null || available === null || index < 0 || index >= items.length) return null;
+	const productId = error.context?.product_id;
+	if (productId !== undefined && productId !== items[index].productId) return null;
+	return { index, available };
+};

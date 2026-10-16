@@ -5,6 +5,7 @@ import type {
 	IInventoryReportBranch,
 	IInventoryReportParams,
 	IInventoryReportProduct,
+	IReplenishmentCandidatesPage,
 	IReplenishmentLastPurchase,
 	IReplenishmentReportRow,
 	IStockHealthReportRow,
@@ -13,6 +14,7 @@ import type {
 	TInventoryReportSource,
 	TInventoryReportType,
 	TReplenishmentStatus,
+	TReplenishmentStatusCounts,
 } from '@/interface/inventoryReports.interface';
 import type { IReportFilters } from '@/interface/reports.interface';
 import { ReportsService } from '@/services/reports/reports.service';
@@ -44,7 +46,8 @@ const oneOf = <T extends string>(value: unknown, options: readonly T[]): T | nul
 const compact = <T>(items: (T | null)[]): T[] => items.filter((item): item is T => item !== null);
 
 const CRITICAL_STATUSES: readonly TCriticalStockStatus[] = ['critical', 'healthy', 'unconfigured'];
-const REPLENISHMENT_STATUSES: readonly TReplenishmentStatus[] = [
+/** Los cuatro estados de la recomendación, en el orden de las pestañas. */
+export const REPLENISHMENT_STATUSES: readonly TReplenishmentStatus[] = [
 	'suggested',
 	'without_supplier_history',
 	'no_active_suppliers',
@@ -181,6 +184,34 @@ const deadStockRowOf = (value: unknown): IDeadStockReportRow | null => {
 	};
 };
 
+const statusCountsOf = (value: unknown): TReplenishmentStatusCounts => {
+	const counts = isRecord(value) ? value : {};
+	return {
+		suggested: numberOf(counts.suggested) ?? 0,
+		without_supplier_history: numberOf(counts.without_supplier_history) ?? 0,
+		no_active_suppliers: numberOf(counts.no_active_suppliers) ?? 0,
+		no_comparable_cost: numberOf(counts.no_comparable_cost) ?? 0,
+	};
+};
+
+/**
+ * Cuerpo de `GET P/replenishment-candidates` (colección paginada de Laravel
+ * con `context`) → página tipada. Una fila que no se puede leer se descarta;
+ * sin `meta`, la página es la única.
+ */
+export const parseReplenishmentCandidates = (body: unknown): IReplenishmentCandidatesPage => {
+	const rows = compact(reportRowsOf(body).map(replenishmentRowOf));
+	const meta = isRecord(body) && isRecord(body.meta) ? body.meta : {};
+	const context = isRecord(body) && isRecord(body.context) ? body.context : {};
+	return {
+		rows,
+		page: numberOf(meta.current_page) ?? 1,
+		lastPage: numberOf(meta.last_page) ?? 1,
+		total: numberOf(meta.total) ?? rows.length,
+		statusCounts: statusCountsOf(context.status_counts),
+	};
+};
+
 /** Filas del backend → filas tipadas. Una fila que no se puede leer se descarta. */
 export const parseInventoryReport = (
 	type: TInventoryReportType,
@@ -188,7 +219,6 @@ export const parseInventoryReport = (
 ): TInventoryReportResult => {
 	if (type === 'stock') return { type, rows: compact(rows.map(stockRowOf)) };
 	if (type === 'stock_health') return { type, rows: compact(rows.map(stockHealthRowOf)) };
-	if (type === 'replenishment') return { type, rows: compact(rows.map(replenishmentRowOf)) };
 	return { type, rows: compact(rows.map(deadStockRowOf)) };
 };
 

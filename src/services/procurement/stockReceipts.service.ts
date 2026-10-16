@@ -46,9 +46,10 @@ import type {
  * - El detalle y cada escritura responden la ficha completa con su `ETag`.
  * - `post` y `retry` responden 202 con la recepción `queued`: la ficha
  *   consulta el detalle hasta `posted` o `failed`. `reverse` es síncrono.
- * - Etapa 1 de la filial: el stock entra a «Sin ubicación» de la sucursal de
- *   la recepción; la bodega queda registrada sólo en la recepción
- *   (`STOCK_RECEIPTS_ENTER_UNLOCATED`).
+ * - Dónde ingresó el stock lo dice `entered_location` de la ficha y de cada
+ *   fila: lo decide la etapa de la filial al contabilizar («Sin ubicación» de
+ *   la sucursal en la etapa 1, la bodega de la recepción en la 2), no la de
+ *   hoy, así que no se deduce de `multi_location_enabled`.
  *
  * Sin caché de `ApiService`: la ficha cambia con cada escritura y el slice ya
  * descarta respuestas tardías por `requestId`.
@@ -61,14 +62,6 @@ import type {
  * compra) lo consulta para no cruzar un id real con la semilla.
  */
 export const STOCK_RECEIPTS_USE_TEST_SUPPLIERS = INVENTORY_RECEIPTS_USE_MOCKS;
-
-/**
- * Dónde queda el stock de una recepción ingresada. El backend real está en la
- * etapa 1 en todas las filiales (`inventory.multi_location_subsidiaries`
- * vacío) y no publica la etapa: el stock entra a «Sin ubicación» de la
- * sucursal, no a la bodega elegida. El doble sí lo ingresa a la bodega.
- */
-export const STOCK_RECEIPTS_ENTER_UNLOCATED = !INVENTORY_RECEIPTS_USE_MOCKS;
 
 const FORBIDDEN_STATUS = 403;
 

@@ -1,10 +1,9 @@
 import type {
-	IReplenishmentReportRow,
 	IStockHealthReportRow,
 	IStockReportRow,
 } from '@/interface/inventoryReports.interface';
 import type { IInventarioKpi } from '@/pages/inventario/Inventario/components/parts/InventarioKpis';
-import { ESTADO_OPTIONS, REPLENISHMENT_LABELS } from '@/pages/reportes/inventory-reports/types';
+import { ESTADO_OPTIONS } from '@/pages/reportes/inventory-reports/types';
 import {
 	visibleStatusOf,
 	type IInventoryReportStats,
@@ -149,43 +148,6 @@ export const buildUmbralesDocument = (
 				row.available_quantity,
 				row.threshold,
 				estadoLabel(row),
-			]),
-		},
-	],
-});
-
-export const buildAccionesDocument = (
-	rows: IReplenishmentReportRow[],
-	kpis: IInventarioKpi[] | null,
-	meta: IExportMeta,
-): IExportDocument => ({
-	title: 'Reporte de reposición',
-	fileBaseName: 'reporte-reposicion',
-	details: detailsOf(meta),
-	simulated: meta.simulated,
-	kpis: kpisOf(kpis),
-	tables: [
-		{
-			title: 'Qué reponer',
-			columns: [
-				{ header: 'SKU', width: 16 },
-				{ header: 'Producto', width: 34 },
-				{ header: 'Disponible', kind: 'number', width: 12 },
-				{ header: 'Umbral', kind: 'number', width: 10 },
-				{ header: 'Proveedor sugerido', width: 26 },
-				{ header: 'Última compra', width: 14 },
-				{ header: 'Sugerencia', width: 22 },
-			],
-			rows: rows.map((row) => [
-				row.product.sku,
-				row.product.name,
-				row.stock.available_quantity,
-				row.stock.threshold,
-				row.recommendation.supplier?.display_name ?? null,
-				row.recommendation.last_purchase
-					? businessDate(row.recommendation.last_purchase.received_on)
-					: null,
-				REPLENISHMENT_LABELS[row.recommendation.status],
 			]),
 		},
 	],
