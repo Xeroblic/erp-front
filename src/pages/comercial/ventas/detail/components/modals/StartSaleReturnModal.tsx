@@ -12,14 +12,18 @@ import Textarea from '@/components/form/Textarea';
 import Validation from '@/components/form/Validation';
 import type { ISaleReturn } from '@/interface/sales.interface';
 import { useStartSaleReturn } from '../../hooks/useStartSaleReturn';
+import type { ISaleReturnOwner, TStartReturnSlot } from '../../hooks/useSaleReturnWrites';
 import { RETURN_REASON_MAX } from '../../types';
+import ReturnAttemptNotice from '../parts/ReturnAttemptNotice';
 
 export interface IStartSaleReturnModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	subsidiaryId: number;
 	saleId: number;
-	onStarted: (saleReturn: ISaleReturn) => void;
+	/** Escritura de página: el intento incierto sobrevive al cierre del modal. */
+	slot: TStartReturnSlot;
+	onStarted: (saleReturn: ISaleReturn, owner: ISaleReturnOwner) => void;
 }
 
 const REASON_ID = 'sale-return-reason';
@@ -33,16 +37,15 @@ const StartSaleReturnModal: React.FC<IStartSaleReturnModalProps> = ({
 	onClose,
 	subsidiaryId,
 	saleId,
+	slot,
 	onStarted,
 }) => {
-	const { formik, isSubmitting, errorMessage, canRetry, retry } = useStartSaleReturn({
-		subsidiaryId,
-		saleId,
-		onStarted,
-	});
+	const { formik, isSubmitting, errorMessage, canRetry, foreignAttempt, retry, discard } =
+		useStartSaleReturn({ slot, owner: { subsidiaryId, saleId }, onStarted });
 	const reasonError = formik.touched.reason ? formik.errors.reason : undefined;
-	const locked = isSubmitting || canRetry;
+	const locked = isSubmitting || canRetry || foreignAttempt !== null;
 
+	// Cerrar con un intento incierto lo conserva: vive en la página, no en el modal.
 	const handleClose = () => {
 		if (!isSubmitting) onClose();
 	};
@@ -54,6 +57,7 @@ const StartSaleReturnModal: React.FC<IStartSaleReturnModalProps> = ({
 				noValidate
 				onSubmit={(event) => {
 					event.preventDefault();
+					if (foreignAttempt) return;
 					if (canRetry) void retry();
 					else formik.handleSubmit();
 				}}>
@@ -84,6 +88,15 @@ const StartSaleReturnModal: React.FC<IStartSaleReturnModalProps> = ({
 							/>
 						</Validation>
 					</div>
+					{(canRetry || foreignAttempt) && (
+						<ReturnAttemptNotice
+							kind={canRetry ? 'own' : 'foreign'}
+							action='el inicio de la devolución'
+							attemptSaleId={foreignAttempt?.saleId ?? saleId}
+							disabled={isSubmitting}
+							onDiscard={discard}
+						/>
+					)}
 					{errorMessage && (
 						<Alert
 							color='red'
@@ -105,14 +118,16 @@ const StartSaleReturnModal: React.FC<IStartSaleReturnModalProps> = ({
 							isDisable={isSubmitting}>
 							Cancelar
 						</Button>
-						<Button
-							type='submit'
-							variant='solid'
-							color='amber'
-							icon={canRetry ? 'HeroArrowPath' : 'HeroArrowUturnLeft'}
-							isLoading={isSubmitting}>
-							{canRetry ? 'Reintentar' : 'Iniciar devolución'}
-						</Button>
+						{!foreignAttempt && (
+							<Button
+								type='submit'
+								variant='solid'
+								color='amber'
+								icon={canRetry ? 'HeroArrowPath' : 'HeroArrowUturnLeft'}
+								isLoading={isSubmitting}>
+								{canRetry ? 'Reintentar' : 'Iniciar devolución'}
+							</Button>
+						)}
 					</ModalFooterChild>
 				</ModalFooter>
 			</form>

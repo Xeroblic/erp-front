@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import salesReducer, {
@@ -46,11 +46,23 @@ import CloseSaleModal from './CloseSaleModal';
 import CorrectSerialModal from './CorrectSerialModal';
 import StartSaleReturnModal from './StartSaleReturnModal';
 import ReceiveSaleReturnModal from './ReceiveSaleReturnModal';
+import {
+	isSameSaleOwner,
+	useSaleReturnWrites,
+	type ISaleReturnOwner,
+	type ISaleReturnWrites,
+} from '../../hooks/useSaleReturnWrites';
 interface Props {
 	subsidiaryId: number;
 	saleId: number;
 	isOpen: boolean;
 	onClose: () => void;
+	/**
+	 * Escrituras de la devolución montadas por la página (`useSaleReturnWrites`), para
+	 * que un intento incierto sobreviva al cierre del detalle y la página refresque su
+	 * listado. Sin ellas, el detalle usa las suyas y el intento vive mientras esté montado.
+	 */
+	returnWrites?: ISaleReturnWrites;
 }
 
 interface ICloseShortage {
@@ -123,7 +135,13 @@ const parseAmount = (value: number | string | null | undefined): number => {
 
 injectReducer('salesModule', salesReducer);
 
-const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose }) => {
+const SaleDetailPage: React.FC<Props> = ({
+	subsidiaryId,
+	saleId,
+	isOpen,
+	onClose,
+	returnWrites: pageReturnWrites,
+}) => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const detail = useAppSelector(selectSaleDetail);
@@ -220,15 +238,45 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		}
 	}, [isOpen]);
 
+	const ownReturnWrites = useSaleReturnWrites();
+	const returnWrites = pageReturnWrites ?? ownReturnWrites;
+	const { start: startReturnSlot, receive: receiveReturnSlot } = returnWrites;
+
+	// Venta y filial que este detalle muestra ahora; `null` si está cerrado o desmontado.
+	// Una respuesta tardía de otra venta no debe recargarse sobre el estado compartido.
+	const currentOwnerRef = useRef<ISaleReturnOwner | null>(null);
+	useEffect(() => {
+		currentOwnerRef.current = isOpen ? { subsidiaryId, saleId } : null;
+		return () => {
+			currentOwnerRef.current = null;
+		};
+	}, [isOpen, subsidiaryId, saleId]);
+
 	const reloadSale = useCallback(() => {
 		void dispatch(loadSaleDetail({ subsidiaryId, saleId }));
 		void dispatch(loadSaleItems({ subsidiaryId, saleId }));
 	}, [dispatch, subsidiaryId, saleId]);
 
-	const handleReturnStarted = useCallback(() => {
-		setStartReturnOpen(false);
-		reloadSale();
-	}, [reloadSale]);
+	/** Cierra el modal y relee la venta, sólo si la respuesta es de la venta que se muestra. */
+	const settleReturnFor = useCallback(
+		(owner: ISaleReturnOwner, closeModal: (open: boolean) => void) => {
+			if (!isSameSaleOwner(currentOwnerRef.current, owner)) return;
+			closeModal(false);
+			reloadSale();
+		},
+		[reloadSale],
+	);
+
+	const handleReturnStarted = useCallback(
+		(_saleReturn: unknown, owner: ISaleReturnOwner) =>
+			settleReturnFor(owner, setStartReturnOpen),
+		[settleReturnFor],
+	);
+
+	const handleReturnSettled = useCallback(
+		(owner: ISaleReturnOwner) => settleReturnFor(owner, setReceiveReturnOpen),
+		[settleReturnFor],
+	);
 
 	// const itemsCount = detail?.items_count ?? items.length ?? 0;
 
@@ -329,6 +377,33 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			setCreatingQuote(false);
 		}
 	}, [subsidiaryId, saleId, creatingQuote, navigate]);
+
+	// Un intento incierto se resuelve solo cuando la venta, releída, ya muestra su
+	// efecto: igual que en recepciones, el GET es la fuente que dice si llegó.
+	const detailPendingReturnId =
+		detail?.id === saleId ? (detail.pending_return?.id ?? null) : undefined;
+	useEffect(() => {
+		if (loading || detailPendingReturnId === undefined) return;
+		const owner = { subsidiaryId, saleId };
+		const started = startReturnSlot.attempt;
+		if (
+			started &&
+			startReturnSlot.canRetry &&
+			isSameSaleOwner(started, owner) &&
+			detailPendingReturnId !== null
+		) {
+			startReturnSlot.discard();
+		}
+		const receiving = receiveReturnSlot.attempt;
+		if (
+			receiving &&
+			receiveReturnSlot.canRetry &&
+			isSameSaleOwner(receiving, owner) &&
+			detailPendingReturnId !== receiving.returnId
+		) {
+			receiveReturnSlot.discard();
+		}
+	}, [loading, detailPendingReturnId, subsidiaryId, saleId, startReturnSlot, receiveReturnSlot]);
 
 	// Va después de todos los hooks: si isOpen cambia con el componente montado,
 	// un return previo alteraría la cantidad de hooks entre renders.
@@ -738,6 +813,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						onClose={() => setStartReturnOpen(false)}
 						subsidiaryId={subsidiaryId}
 						saleId={saleId}
+						slot={startReturnSlot}
 						onStarted={handleReturnStarted}
 					/>
 				)}
@@ -749,7 +825,8 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						subsidiaryId={subsidiaryId}
 						saleId={saleId}
 						returnId={pendingReturn.id}
-						onSaleChanged={reloadSale}
+						slot={receiveReturnSlot}
+						onSettled={handleReturnSettled}
 					/>
 				)}
 

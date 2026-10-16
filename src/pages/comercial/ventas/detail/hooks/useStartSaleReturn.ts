@@ -1,21 +1,29 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFormik, type FormikProps } from 'formik';
 import { toast } from 'react-toastify';
-import useIdempotentWrite from '@/hooks/useIdempotentWrite';
-import { startSaleReturn } from '@/services/salesService';
-import type { ISaleReturn, IStartSaleReturnRequest } from '@/interface/sales.interface';
+import type { ISaleReturn } from '@/interface/sales.interface';
 import type { IProcurementResolvedError } from '@/utils/procurementErrors.util';
 import { StartSaleReturnSchema, type IStartSaleReturnValues } from '../types';
+import {
+	isSameSaleOwner,
+	type IStartReturnAttempt,
+	type ISaleReturnOwner,
+	type TStartReturnSlot,
+} from './useSaleReturnWrites';
 
 /** El 403 trae el cuerpo genérico: se explica qué falta y que reintentar no sirve. */
 export const START_RETURN_FORBIDDEN_MESSAGE =
 	'No tienes acceso para iniciar esta devolución: hace falta el permiso de devoluciones y alcanzar la filial y la sucursal de la venta. Pide a alguien con ese acceso que la inicie.';
 
 interface IUseStartSaleReturnArgs {
-	subsidiaryId: number;
-	saleId: number;
-	/** La devolución quedó iniciada (201) o ya existía (200). */
-	onStarted: (saleReturn: ISaleReturn) => void;
+	/** Escritura de página (`useSaleReturnWrites().start`): conserva el intento incierto. */
+	slot: TStartReturnSlot;
+	owner: ISaleReturnOwner;
+	/**
+	 * La devolución quedó iniciada (201) o ya existía (200). Recibe la venta del intento:
+	 * la respuesta puede llegar con el detalle ya cerrado o mostrando otra venta.
+	 */
+	onStarted: (saleReturn: ISaleReturn, owner: ISaleReturnOwner) => void;
 }
 
 export interface IStartSaleReturn {
@@ -23,9 +31,12 @@ export interface IStartSaleReturn {
 	isSubmitting: boolean;
 	/** Mensaje del último rechazo, ya explicado para el 403. */
 	errorMessage: string | null;
-	/** Sin respuesta del servidor: se reintenta con la misma clave y el motivo bloqueado. */
+	/** Intento de esta venta sin respuesta: se reintenta igual o se descarta. */
 	canRetry: boolean;
+	/** Intento incierto de otra venta: bloquea iniciar aquí hasta resolverlo allá o descartarlo. */
+	foreignAttempt: IStartReturnAttempt | null;
 	retry: () => Promise<void>;
+	discard: () => void;
 }
 
 const toErrorMessage = (error: IProcurementResolvedError): string =>
@@ -33,58 +44,66 @@ const toErrorMessage = (error: IProcurementResolvedError): string =>
 
 /**
  * Inicia la devolución de una venta cerrada (etapa 2). Una sola `Idempotency-Key` por
- * intento: el reintento tras un timeout la reusa con el mismo motivo, y tras un rechazo
- * definitivo se renueva para el motivo corregido.
+ * intento: el reintento tras un timeout la reusa con el mismo motivo, aunque el modal se
+ * haya cerrado entre medio, y tras un rechazo definitivo se renueva.
  */
 export const useStartSaleReturn = ({
-	subsidiaryId,
-	saleId,
+	slot,
+	owner,
 	onStarted,
 }: IUseStartSaleReturnArgs): IStartSaleReturn => {
-	const write = useIdempotentWrite({
-		fallbackMessage: 'No se pudo iniciar la devolución.',
-		renewKeyOnDefinitiveError: true,
-	});
-	const { submit } = write;
-	// Lo que viajó en el intento: el reintento lo repite tal cual, aunque el render cambie.
-	const lastPayloadRef = useRef<IStartSaleReturnRequest | null>(null);
+	const ownAttempt = slot.attempt && isSameSaleOwner(slot.attempt, owner) ? slot.attempt : null;
+	const foreignAttempt = slot.attempt && !ownAttempt ? slot.attempt : null;
+	const onStartedRef = useRef(onStarted);
+	onStartedRef.current = onStarted;
 
-	const send = useCallback(
-		async (payload: IStartSaleReturnRequest): Promise<void> => {
-			lastPayloadRef.current = payload;
-			const saleReturn = await submit((headers) =>
-				startSaleReturn(subsidiaryId, saleId, payload, headers),
-			);
+	// Al abrir, un rechazo definitivo de otra apertura no se arrastra; el intento
+	// incierto sí, porque es lo único que permite recuperarlo.
+	const slotRef = useRef(slot);
+	slotRef.current = slot;
+	useEffect(() => {
+		if (!slotRef.current.canRetry) slotRef.current.clearError();
+	}, []);
+
+	const settle = useCallback(
+		(attemptOwner: ISaleReturnOwner, saleReturn: ISaleReturn | undefined) => {
 			if (!saleReturn) return;
-			lastPayloadRef.current = null;
 			toast.success('Devolución iniciada. La venta queda abierta hasta recibirla.');
-			onStarted(saleReturn);
+			onStartedRef.current(saleReturn, attemptOwner);
 		},
-		[submit, subsidiaryId, saleId, onStarted],
+		[],
 	);
 
 	const formik = useFormik<IStartSaleReturnValues>({
-		initialValues: { reason: '' },
+		initialValues: { reason: ownAttempt?.payload.reason ?? '' },
 		validationSchema: StartSaleReturnSchema,
 		onSubmit: async (values) => {
-			await send({ reason: values.reason.trim() });
+			const attempt = { ...owner, payload: { reason: values.reason.trim() } };
+			settle(attempt, await slot.send(attempt));
 		},
 	});
 
 	const retry = useCallback(async () => {
-		if (lastPayloadRef.current) await send(lastPayloadRef.current);
-	}, [send]);
+		const { attempt } = slotRef.current;
+		if (!attempt) return;
+		settle(attempt, await slotRef.current.retry());
+	}, [settle]);
 
-	const errorMessage = write.error ? toErrorMessage(write.error) : null;
+	const discard = useCallback(() => slotRef.current.discard(), []);
+
+	const errorMessage = slot.error && !foreignAttempt ? toErrorMessage(slot.error) : null;
+	const canRetry = slot.canRetry && ownAttempt !== null;
 
 	return useMemo(
 		() => ({
 			formik,
-			isSubmitting: write.isSubmitting,
+			isSubmitting: slot.isSubmitting,
 			errorMessage,
-			canRetry: write.canRetry,
+			canRetry,
+			foreignAttempt,
 			retry,
+			discard,
 		}),
-		[formik, write.isSubmitting, errorMessage, write.canRetry, retry],
+		[formik, slot.isSubmitting, errorMessage, canRetry, foreignAttempt, retry, discard],
 	);
 };

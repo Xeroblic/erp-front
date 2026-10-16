@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
@@ -14,6 +14,7 @@ import { formatDate } from '@/utils/format.utils';
 import type { PendingSerialSale } from '@/services/salesService';
 import CloseSaleModal from '@/pages/comercial/ventas/detail/components/modals/CloseSaleModal';
 import SaleDetailPage from '@/pages/comercial/ventas/detail/components/modals/SaleDetailPage';
+import { useSaleReturnWrites } from '@/pages/comercial/ventas/detail/hooks/useSaleReturnWrites';
 import { pendingSerialToSaleItems } from '../utils';
 import { usePendientesSerie } from './hooks/usePendientesSerie';
 import Tooltip from '@/components/ui/Tooltip';
@@ -36,6 +37,17 @@ const PendientesSerieView: React.FC = () => {
 	const closeAssign = useCallback(() => setAssignSale(null), []);
 	const openDetail = useCallback((saleId: number) => setDetailSaleId(saleId), []);
 	const closeDetail = useCallback(() => setDetailSaleId(null), []);
+
+	// Una devolución desde el detalle reabre o cierra la venta: la bandeja se relee,
+	// aunque el detalle ya esté cerrado, sólo si la venta es de la filial vigente.
+	const listContextRef = useRef({ subsidiaryId: state.subsidiaryId, refetch: actions.refetch });
+	listContextRef.current = { subsidiaryId: state.subsidiaryId, refetch: actions.refetch };
+	const returnWrites = useSaleReturnWrites({
+		onSaleChanged: (owner) => {
+			const { subsidiaryId, refetch } = listContextRef.current;
+			if (owner.subsidiaryId === subsidiaryId) void refetch();
+		},
+	});
 
 	const columns = useMemo<ColumnDef<PendingSerialSale>[]>(
 		() => [
@@ -200,6 +212,7 @@ const PendientesSerieView: React.FC = () => {
 					saleId={detailSaleId}
 					isOpen={Boolean(detailSaleId)}
 					onClose={closeDetail}
+					returnWrites={returnWrites}
 				/>
 			)}
 		</PageWrapper>

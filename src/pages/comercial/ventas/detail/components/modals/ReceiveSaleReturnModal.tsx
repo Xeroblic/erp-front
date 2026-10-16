@@ -10,7 +10,9 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useReceiveSaleReturn } from '../../hooks/useReceiveSaleReturn';
+import type { ISaleReturnOwner, TReceiveReturnSlot } from '../../hooks/useSaleReturnWrites';
 import SaleReturnItemReceipt from '../parts/SaleReturnItemReceipt';
+import ReturnAttemptNotice from '../parts/ReturnAttemptNotice';
 
 export interface IReceiveSaleReturnModalProps {
 	isOpen: boolean;
@@ -18,8 +20,13 @@ export interface IReceiveSaleReturnModalProps {
 	subsidiaryId: number;
 	saleId: number;
 	returnId: number;
-	/** La recepción quedó confirmada, o ya la había confirmado otro: hay que releer la venta. */
-	onSaleChanged: () => void;
+	/** Escritura de página: el intento incierto sobrevive al cierre del modal. */
+	slot: TReceiveReturnSlot;
+	/**
+	 * La recepción quedó confirmada, o ya la había confirmado otro: hay que releer esa
+	 * venta y cerrar. Recibe la venta del intento, que puede no ser la que se muestra.
+	 */
+	onSettled: (owner: ISaleReturnOwner) => void;
 }
 
 /**
@@ -32,20 +39,12 @@ const ReceiveSaleReturnModal: React.FC<IReceiveSaleReturnModalProps> = ({
 	subsidiaryId,
 	saleId,
 	returnId,
-	onSaleChanged,
+	slot,
+	onSettled,
 }) => {
-	const finish = () => {
-		onSaleChanged();
-		onClose();
-	};
-	const receipt = useReceiveSaleReturn({
-		subsidiaryId,
-		saleId,
-		returnId,
-		onReceived: finish,
-		onAlreadyReceived: finish,
-	});
-	const { load, formik, warehousesByBranch, isSubmitting, canRetry } = receipt;
+	const finish = () => onSettled({ subsidiaryId, saleId });
+	const receipt = useReceiveSaleReturn({ slot, subsidiaryId, saleId, returnId, onSettled });
+	const { load, formik, warehousesByBranch, isSubmitting, canRetry, foreignAttempt } = receipt;
 	const { visibleBranches } = useCurrentBranch();
 	const branchNames = useMemo(
 		() => new Map(visibleBranches.map((branch) => [branch.id, branch.name])),
@@ -56,8 +55,9 @@ const ReceiveSaleReturnModal: React.FC<IReceiveSaleReturnModalProps> = ({
 	const alreadyReceived = saleReturn?.status === 'received';
 	const hasSerials = saleReturn?.items.some((item) => item.serial_tracking) ?? false;
 	const hasNonSerial = saleReturn?.items.some((item) => !item.serial_tracking) ?? false;
-	const locked = isSubmitting || canRetry;
+	const locked = isSubmitting || canRetry || foreignAttempt !== null;
 
+	// Cerrar con un intento incierto lo conserva: vive en la página, no en el modal.
 	const handleClose = () => {
 		if (!isSubmitting) onClose();
 	};
@@ -75,6 +75,7 @@ const ReceiveSaleReturnModal: React.FC<IReceiveSaleReturnModalProps> = ({
 				noValidate
 				onSubmit={(event) => {
 					event.preventDefault();
+					if (foreignAttempt) return;
 					if (canRetry) void receipt.retry();
 					else formik.handleSubmit();
 				}}>
@@ -167,6 +168,16 @@ const ReceiveSaleReturnModal: React.FC<IReceiveSaleReturnModalProps> = ({
 						</>
 					)}
 
+					{(canRetry || foreignAttempt) && (
+						<ReturnAttemptNotice
+							kind={canRetry ? 'own' : 'foreign'}
+							action='la recepción de la devolución'
+							attemptSaleId={foreignAttempt?.saleId ?? saleId}
+							disabled={isSubmitting}
+							onDiscard={receipt.discard}
+						/>
+					)}
+
 					{receipt.errorMessage && (
 						<Alert
 							color='red'
@@ -203,7 +214,7 @@ const ReceiveSaleReturnModal: React.FC<IReceiveSaleReturnModalProps> = ({
 								Actualizar venta
 							</Button>
 						)}
-						{saleReturn && !alreadyReceived && (
+						{saleReturn && !alreadyReceived && !foreignAttempt && (
 							<Button
 								type='submit'
 								variant='solid'

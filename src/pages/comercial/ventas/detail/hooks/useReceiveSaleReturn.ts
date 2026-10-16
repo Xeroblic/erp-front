@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormik, type FormikProps } from 'formik';
 import { toast } from 'react-toastify';
-import useIdempotentWrite from '@/hooks/useIdempotentWrite';
-import { fetchSaleReturn, receiveSaleReturn } from '@/services/salesService';
+import { fetchSaleReturn } from '@/services/salesService';
 import listBranchWarehouses from '@/services/procurement/branchWarehouses.service';
-import type { IConfirmSaleReturnRequest, ISaleReturn } from '@/interface/sales.interface';
+import type { IConfirmSaleReturnReceiptResponse, ISaleReturn } from '@/interface/sales.interface';
 import type { IStockReceiptWarehouse } from '@/interface/procurement.interface';
 import {
 	getProcurementErrorMessage,
@@ -18,8 +17,14 @@ import {
 	toConfirmReturnRequest,
 	toOfferedWarehouseKeys,
 } from '../utils/saleReturnReceipt';
-
-export const RETURN_ALREADY_RECEIVED_CODE = 'RETURN_ALREADY_RECEIVED';
+import {
+	RETURN_ALREADY_RECEIVED_CODE,
+	isSameSaleOwner,
+	type IReceiveReturnAttempt,
+	type IReturnSendOptions,
+	type ISaleReturnOwner,
+	type TReceiveReturnSlot,
+} from './useSaleReturnWrites';
 
 /** El 403 trae el cuerpo genérico: se dice qué sucursal puede faltar y que reintentar no sirve. */
 export const RECEIVE_RETURN_FORBIDDEN_MESSAGE =
@@ -36,13 +41,16 @@ type TReturnLoadState =
 	| { status: 'error'; message: string };
 
 interface IUseReceiveSaleReturnArgs {
+	/** Escritura de página (`useSaleReturnWrites().receive`): conserva el intento incierto. */
+	slot: TReceiveReturnSlot;
 	subsidiaryId: number;
 	saleId: number;
 	returnId: number;
-	/** La recepción quedó confirmada. */
-	onReceived: () => void;
-	/** Otra recepción del mismo ciclo ganó: hay que releer la venta. */
-	onAlreadyReceived: () => void;
+	/**
+	 * La recepción quedó confirmada, o ya la había confirmado otro. Recibe la venta del
+	 * intento: la respuesta puede llegar con el detalle cerrado o mostrando otra venta.
+	 */
+	onSettled: (owner: ISaleReturnOwner) => void;
 }
 
 export interface IReceiveSaleReturn {
@@ -57,11 +65,18 @@ export interface IReceiveSaleReturn {
 	/** Rechazo general del último intento, ya explicado para el 403. */
 	errorMessage: string | null;
 	isSubmitting: boolean;
-	/** Sin respuesta del servidor: se reintenta con la misma clave y el formulario bloqueado. */
+	/** Intento de esta devolución sin respuesta: se reintenta igual o se descarta. */
 	canRetry: boolean;
+	/** Intento incierto de otra venta: bloquea recibir aquí hasta resolverlo allá o descartarlo. */
+	foreignAttempt: IReceiveReturnAttempt | null;
 	retry: () => Promise<void>;
+	discard: () => void;
 	reload: () => void;
 }
+
+type TReceiveWrite = (
+	options: IReturnSendOptions,
+) => Promise<IConfirmSaleReturnReceiptResponse | undefined>;
 
 const toErrorMessage = (error: IProcurementResolvedError): string =>
 	error.status === 403 ? RECEIVE_RETURN_FORBIDDEN_MESSAGE : error.message;
@@ -83,11 +98,11 @@ const branchIdsOf = (saleReturn: ISaleReturn): number[] =>
  * cuerpo con la misma clave.
  */
 export const useReceiveSaleReturn = ({
+	slot,
 	subsidiaryId,
 	saleId,
 	returnId,
-	onReceived,
-	onAlreadyReceived,
+	onSettled,
 }: IUseReceiveSaleReturnArgs): IReceiveSaleReturn => {
 	const [load, setLoad] = useState<TReturnLoadState>({ status: 'loading' });
 	const [warehousesByBranch, setWarehousesByBranch] = useState<
@@ -96,14 +111,24 @@ export const useReceiveSaleReturn = ({
 	const [warehousesError, setWarehousesError] = useState<string | null>(null);
 	const [itemErrors, setItemErrors] = useState<Record<number, string[]>>({});
 	const [generalErrors, setGeneralErrors] = useState<string[]>([]);
-	const [attempt, setAttempt] = useState(0);
-	const lastPayloadRef = useRef<IConfirmSaleReturnRequest | null>(null);
+	const [loadAttempt, setLoadAttempt] = useState(0);
+	const ownAttempt =
+		slot.attempt &&
+		isSameSaleOwner(slot.attempt, { subsidiaryId, saleId }) &&
+		slot.attempt.returnId === returnId
+			? slot.attempt
+			: null;
+	const foreignAttempt = slot.attempt && !ownAttempt ? slot.attempt : null;
+	const slotRef = useRef(slot);
+	slotRef.current = slot;
+	const onSettledRef = useRef(onSettled);
+	onSettledRef.current = onSettled;
 
-	const write = useIdempotentWrite({
-		fallbackMessage: 'No se pudo recibir la devolución.',
-		renewKeyOnDefinitiveError: true,
-	});
-	const { submit } = write;
+	// Al abrir, un rechazo definitivo de otra apertura no se arrastra; el intento
+	// incierto sí, porque es lo único que permite recuperarlo.
+	useEffect(() => {
+		if (!slotRef.current.canRetry) slotRef.current.clearError();
+	}, []);
 
 	useEffect(() => {
 		const controller = new AbortController();
@@ -142,7 +167,7 @@ export const useReceiveSaleReturn = ({
 			}
 		})();
 		return () => controller.abort();
-	}, [subsidiaryId, saleId, returnId, attempt]);
+	}, [subsidiaryId, saleId, returnId, loadAttempt]);
 
 	const saleReturn = load.status === 'ready' ? load.saleReturn : null;
 
@@ -156,42 +181,52 @@ export const useReceiveSaleReturn = ({
 		return buildReturnReceiptSchema(saleReturn?.items ?? [], offered);
 	}, [saleReturn, warehousesByBranch]);
 
+	// Con un intento incierto de esta devolución al abrir, el formulario vuelve tal como
+	// se envió. Se fija al montar: un rechazo posterior cierra el intento y no debe
+	// reinicializar lo que el usuario está corrigiendo.
+	const [attemptValues] = useState(() => ownAttempt?.values ?? null);
 	const initialValues = useMemo(
-		() => buildReturnReceiptValues(saleReturn?.items ?? []),
+		() => attemptValues ?? buildReturnReceiptValues(saleReturn?.items ?? []),
+		[attemptValues, saleReturn],
+	);
+
+	const handleError = useCallback(
+		(error: IProcurementResolvedError, values: IReturnReceiptValues) => {
+			if (!saleReturn) return;
+			if (error.code === RETURN_ALREADY_RECEIVED_CODE) {
+				toast.info(error.message);
+				return;
+			}
+			const grouped = groupReturnFieldErrors(error.fieldErrors, saleReturn, values);
+			setItemErrors(grouped.byItem);
+			setGeneralErrors(grouped.general);
+		},
 		[saleReturn],
 	);
 
-	const send = useCallback(
-		async (payload: IConfirmSaleReturnRequest, values: IReturnReceiptValues) => {
-			if (!saleReturn) return;
-			lastPayloadRef.current = payload;
+	/**
+	 * Corre el envío o el reintento y avisa con la venta del intento, no la de este
+	 * render: la respuesta puede llegar con el detalle ya cerrado o en otra venta.
+	 */
+	const run = useCallback(
+		async (write: TReceiveWrite, attempt: IReceiveReturnAttempt) => {
 			setItemErrors({});
 			setGeneralErrors([]);
-			const response = await submit(
-				(headers) => receiveSaleReturn(subsidiaryId, saleId, payload, headers),
-				{
-					onError: (error) => {
-						if (error.code === RETURN_ALREADY_RECEIVED_CODE) {
-							toast.info(error.message);
-							onAlreadyReceived();
-							return;
-						}
-						const grouped = groupReturnFieldErrors(
-							error.fieldErrors,
-							saleReturn,
-							values,
-						);
-						setItemErrors(grouped.byItem);
-						setGeneralErrors(grouped.general);
-					},
+			const failure: { error: IProcurementResolvedError | null } = { error: null };
+			const response = await write({
+				onError: (error) => {
+					failure.error = error;
+					handleError(error, attempt.values);
 				},
-			);
-			if (!response) return;
-			lastPayloadRef.current = null;
-			toast.success(describeReturnReceipt(response));
-			onReceived();
+			});
+			if (response) {
+				toast.success(describeReturnReceipt(response));
+				onSettledRef.current(attempt);
+			} else if (failure.error?.code === RETURN_ALREADY_RECEIVED_CODE) {
+				onSettledRef.current(attempt);
+			}
 		},
-		[saleReturn, submit, subsidiaryId, saleId, onReceived, onAlreadyReceived],
+		[handleError],
 	);
 
 	const formik = useFormik<IReturnReceiptValues>({
@@ -200,22 +235,35 @@ export const useReceiveSaleReturn = ({
 		validationSchema,
 		onSubmit: async (values) => {
 			if (!saleReturn) return;
-			await send(toConfirmReturnRequest(saleReturn, values), values);
+			const attempt: IReceiveReturnAttempt = {
+				subsidiaryId,
+				saleId,
+				returnId,
+				payload: toConfirmReturnRequest(saleReturn, values),
+				values,
+			};
+			await run((options) => slotRef.current.send(attempt, options), attempt);
 		},
 	});
-	const valuesRef = useRef(formik.values);
-	valuesRef.current = formik.values;
 
 	const retry = useCallback(async () => {
-		if (lastPayloadRef.current) await send(lastPayloadRef.current, valuesRef.current);
-	}, [send]);
+		const { attempt } = slotRef.current;
+		if (!attempt) return;
+		await run((options) => slotRef.current.retry(options), attempt);
+	}, [run]);
 
-	const reload = useCallback(() => setAttempt((value) => value + 1), []);
+	const discard = useCallback(() => {
+		setItemErrors({});
+		setGeneralErrors([]);
+		slotRef.current.discard();
+	}, []);
+
+	const reload = useCallback(() => setLoadAttempt((value) => value + 1), []);
 
 	// El 422 por ítem ya se marca en su ítem: aquí va sólo lo que no nombra un ítem.
 	let errorMessage: string | null = null;
-	if (write.error && write.error.code !== RETURN_ALREADY_RECEIVED_CODE) {
-		errorMessage = [toErrorMessage(write.error), ...generalErrors].join(' ');
+	if (slot.error && !foreignAttempt && slot.error.code !== RETURN_ALREADY_RECEIVED_CODE) {
+		errorMessage = [toErrorMessage(slot.error), ...generalErrors].join(' ');
 	}
 
 	return {
@@ -225,9 +273,11 @@ export const useReceiveSaleReturn = ({
 		warehousesError,
 		itemErrors,
 		errorMessage,
-		isSubmitting: write.isSubmitting,
-		canRetry: write.canRetry,
+		isSubmitting: slot.isSubmitting,
+		canRetry: slot.canRetry && ownAttempt !== null,
+		foreignAttempt,
 		retry,
+		discard,
 		reload,
 	};
 };

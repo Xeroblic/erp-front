@@ -5,6 +5,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import salesReducer from '@/store/slices/salesSlice';
 import type { ISale, ISaleReturn } from '@/interface/sales.interface';
+import { useSaleReturnWrites } from '../../../hooks/useSaleReturnWrites';
 import SaleDetailPage from '../SaleDetailPage';
 
 type IRequestCfg = {
@@ -132,6 +133,8 @@ const rejectWithTimeout = () =>
 	);
 
 let detail: Partial<ISale>;
+/** Otras ventas que la prueba abre, por id. */
+let otherDetails: Record<number, Partial<ISale>>;
 let writes: Array<() => Promise<unknown>>;
 
 const isWrite = (cfg: IRequestCfg) =>
@@ -142,8 +145,7 @@ const routeApi = () => {
 		if (isWrite(cfg)) {
 			return (writes.shift() ?? (() => Promise.reject(new Error('escritura inesperada'))))();
 		}
-		if (cfg.url === `${BASE}/returns/12`)
-			return Promise.resolve({ data: { data: saleReturn } });
+		if (cfg.url.endsWith('/returns/12')) return Promise.resolve({ data: { data: saleReturn } });
 		if (cfg.url === '/branches/4/warehouses') {
 			return Promise.resolve({
 				data: {
@@ -158,7 +160,8 @@ const routeApi = () => {
 		if (cfg.url.endsWith('/pending-serial-assignment'))
 			return Promise.resolve({ data: { data: [] } });
 		if (cfg.url.endsWith('/items')) return Promise.resolve({ data: { data: [] } });
-		return Promise.resolve({ data: { data: detail } });
+		const saleId = Number(/\/sales\/(\d+)$/.exec(cfg.url)?.[1]);
+		return Promise.resolve({ data: { data: otherDetails[saleId] ?? detail } });
 	});
 };
 
@@ -168,15 +171,18 @@ const confirmReturnCalls = () =>
 	callsTo((cfg) => cfg.method === 'post' && cfg.url === `${BASE}/confirm-return`);
 const detailReads = () => callsTo((cfg) => cfg.url === BASE && cfg.method === 'get');
 
-const renderDetail = () => {
-	const store = configureStore({
+const createStore = () =>
+	configureStore({
 		reducer: { salesModule: salesReducer, auth: () => ({ loading: false, user: null }) },
 	});
-	render(
+
+const renderDetail = (saleId = 90, store = createStore()) => {
+	const view = render(
 		<Provider store={store}>
-			<SaleDetailPage subsidiaryId={1} saleId={90} isOpen onClose={vi.fn()} />
+			<SaleDetailPage subsidiaryId={1} saleId={saleId} isOpen onClose={vi.fn()} />
 		</Provider>,
 	);
+	return { store, unmount: view.unmount };
 };
 
 const openReceipt = async () => {
@@ -189,14 +195,14 @@ const change = (label: string, value: string) =>
 	fireEvent.change(screen.getByLabelText(label), { target: { value } });
 
 /** Mouse: 3 aptas en Bodega Central y 2 no aptas sin ubicación; la serie queda apta. */
-const fillValidReceipt = async (mouse: HTMLElement) => {
+const fillValidReceipt = (mouse: HTMLElement) => {
 	change('Ubicación de la parte 1 de MOU-01 — Mouse', '8');
 	change('Cantidad de la parte 1 de MOU-01 — Mouse', '3');
 	fireEvent.click(within(mouse).getByRole('button', { name: 'Agregar parte' }));
 	change('Ubicación de la parte 2 de MOU-01 — Mouse', 'none');
 	change('Cantidad de la parte 2 de MOU-01 — Mouse', '2');
 	change('Condición de la parte 2 de MOU-01 — Mouse', 'unfit');
-	change('Motivo de la parte 2 de MOU-01 — Mouse', await Promise.resolve('No enciende'));
+	change('Motivo de la parte 2 de MOU-01 — Mouse', 'No enciende');
 };
 
 const submitReceipt = () =>
@@ -207,6 +213,7 @@ beforeEach(() => {
 	Object.values(toastMock).forEach((mock) => mock.mockClear());
 	stage.isMultiLocation = true;
 	writes = [];
+	otherDetails = {};
 	detail = {
 		id: 90,
 		sale_number: 'V-90',
@@ -328,7 +335,7 @@ describe('recibir la devolución (etapa 2)', () => {
 		const mouse = await openReceipt();
 		// La bodega inactiva no se ofrece.
 		expect(screen.queryByRole('option', { name: 'Bodega Cerrada' })).not.toBeInTheDocument();
-		await fillValidReceipt(mouse);
+		fillValidReceipt(mouse);
 		const readsBefore = detailReads().length;
 		submitReceipt();
 
@@ -385,7 +392,7 @@ describe('recibir la devolución (etapa 2)', () => {
 
 	it('no envía una serie no apta sin motivo', async () => {
 		const mouse = await openReceipt();
-		await fillValidReceipt(mouse);
+		fillValidReceipt(mouse);
 		change('Condición de la serie SN-100', 'unfit');
 		submitReceipt();
 
@@ -396,7 +403,7 @@ describe('recibir la devolución (etapa 2)', () => {
 	it('tras un timeout reintenta con la misma Idempotency-Key y el mismo cuerpo', async () => {
 		writes = [rejectWithTimeout, () => Promise.resolve(RECEIPT_OK)];
 		const mouse = await openReceipt();
-		await fillValidReceipt(mouse);
+		fillValidReceipt(mouse);
 		submitReceipt();
 
 		fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
@@ -417,7 +424,7 @@ describe('recibir la devolución (etapa 2)', () => {
 				}),
 		];
 		const mouse = await openReceipt();
-		await fillValidReceipt(mouse);
+		fillValidReceipt(mouse);
 		submitReceipt();
 
 		const notebook = screen.getByRole('group', { name: 'NB-1 — Notebook' });
@@ -436,7 +443,7 @@ describe('recibir la devolución (etapa 2)', () => {
 				}),
 		];
 		const mouse = await openReceipt();
-		await fillValidReceipt(mouse);
+		fillValidReceipt(mouse);
 		const readsBefore = detailReads().length;
 		submitReceipt();
 
@@ -452,7 +459,7 @@ describe('recibir la devolución (etapa 2)', () => {
 	it('explica el 403 sin ofrecer reintento', async () => {
 		writes = [() => rejectWith(403, { message: 'This action is unauthorized.' })];
 		const mouse = await openReceipt();
-		await fillValidReceipt(mouse);
+		fillValidReceipt(mouse);
 		submitReceipt();
 
 		expect(
@@ -461,5 +468,250 @@ describe('recibir la devolución (etapa 2)', () => {
 			),
 		).toBeInTheDocument();
 		expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+	});
+});
+
+/** Respuesta que la prueba resuelve cuando quiere. */
+const deferred = () => {
+	let resolve: (value: unknown) => void = () => undefined;
+	const promise = new Promise<unknown>((done) => {
+		resolve = done;
+	});
+	return { promise, resolve };
+};
+
+const startButtonIn = () => {
+	const form = screen.getByLabelText('Motivo de la devolución').closest('form');
+	if (!form) throw new Error('El motivo debe estar dentro del formulario.');
+	return within(form).getByRole('button', { name: /Iniciar devolución|Reintentar/ });
+};
+
+const startReturnCalls = () =>
+	callsTo((cfg) => cfg.method === 'post' && cfg.url.endsWith('/returns'));
+
+describe('respuesta tardía de una devolución', () => {
+	it('no recarga la venta del intento sobre la venta que se abrió después', async () => {
+		const late = deferred();
+		otherDetails[91] = {
+			id: 91,
+			sale_number: 'V-91',
+			status: 'completed',
+			is_closed: true,
+			can_close: false,
+			pending_return: null,
+		};
+		detail = { ...detail, pending_return: null };
+		writes = [() => late.promise];
+		const first = renderDetail(91);
+		fireEvent.click(await screen.findByRole('button', { name: 'Iniciar devolución' }));
+		fireEvent.change(screen.getByLabelText('Motivo de la devolución'), {
+			target: { value: 'El cliente devuelve la compra' },
+		});
+		fireEvent.click(startButtonIn());
+		await waitFor(() => expect(startReturnCalls()).toHaveLength(1));
+
+		// Se cierra el detalle de la 91 y se abre el de la 90 antes de la respuesta.
+		first.unmount();
+		renderDetail(90, first.store);
+		expect(await screen.findByText('V-90')).toBeInTheDocument();
+		const readsOf91 = () =>
+			callsTo((cfg) => cfg.method === 'get' && cfg.url === '/subsidiaries/1/sales/91');
+		const readsBefore = readsOf91().length;
+
+		late.resolve({ status: 201, data: { data: { ...saleReturn, sale_id: 91 } } });
+		await waitFor(() => expect(toastMock.success).toHaveBeenCalled());
+
+		expect(readsOf91()).toHaveLength(readsBefore);
+		expect(screen.getByText('V-90')).toBeInTheDocument();
+		expect(screen.queryByText('V-91')).not.toBeInTheDocument();
+	});
+});
+
+describe('intento incierto tras un timeout', () => {
+	it('cerrar la recepción no lo pierde: al reabrir reintenta con la misma clave y el mismo cuerpo', async () => {
+		writes = [rejectWithTimeout, () => Promise.resolve(RECEIPT_OK)];
+		const mouse = await openReceipt();
+		fillValidReceipt(mouse);
+		submitReceipt();
+		await screen.findByRole('button', { name: 'Reintentar' });
+
+		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+		await waitFor(() =>
+			expect(screen.queryByRole('group', { name: 'MOU-01 — Mouse' })).not.toBeInTheDocument(),
+		);
+		fireEvent.click(screen.getByRole('button', { name: 'Recibir devolución' }));
+
+		// El formulario vuelve bloqueado y tal como se envió.
+		await screen.findByRole('group', { name: 'MOU-01 — Mouse' });
+		expect(
+			screen.getByLabelText<HTMLSelectElement>('Ubicación de la parte 1 de MOU-01 — Mouse')
+				.value,
+		).toBe('8');
+		expect(
+			screen.getByLabelText<HTMLSelectElement>('Condición de la parte 2 de MOU-01 — Mouse')
+				.value,
+		).toBe('unfit');
+		fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
+		await waitFor(() => expect(confirmReturnCalls()).toHaveLength(2));
+		const [first, second] = confirmReturnCalls();
+		expect(second.headers?.['Idempotency-Key']).toBe(first.headers?.['Idempotency-Key']);
+		expect(second.data).toEqual(first.data);
+	});
+
+	it('descartar el intento de forma explícita libera el formulario con una clave nueva', async () => {
+		writes = [rejectWithTimeout, () => Promise.resolve(RECEIPT_OK)];
+		const mouse = await openReceipt();
+		fillValidReceipt(mouse);
+		submitReceipt();
+
+		fireEvent.click(await screen.findByRole('button', { name: 'Descartar intento' }));
+		// El formulario se libera con lo que el usuario ya había llenado.
+		fireEvent.click(await screen.findByRole('button', { name: 'Confirmar recepción' }));
+
+		await waitFor(() => expect(confirmReturnCalls()).toHaveLength(2));
+		const [first, second] = confirmReturnCalls();
+		expect(second.headers?.['Idempotency-Key']).not.toBe(first.headers?.['Idempotency-Key']);
+	});
+
+	it('cerrar el inicio no lo pierde: al reabrir reintenta con la misma clave y el mismo motivo', async () => {
+		detail = { ...detail, is_closed: true, can_close: false, pending_return: null };
+		writes = [
+			rejectWithTimeout,
+			() => Promise.resolve({ status: 201, data: { data: saleReturn } }),
+		];
+		renderDetail();
+		fireEvent.click(await screen.findByRole('button', { name: 'Iniciar devolución' }));
+		fireEvent.change(screen.getByLabelText('Motivo de la devolución'), {
+			target: { value: 'El cliente devuelve la compra' },
+		});
+		fireEvent.click(startButtonIn());
+		await screen.findByRole('button', { name: 'Reintentar' });
+
+		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+		await waitFor(() =>
+			expect(screen.queryByLabelText('Motivo de la devolución')).not.toBeInTheDocument(),
+		);
+		fireEvent.click(screen.getByRole('button', { name: 'Iniciar devolución' }));
+
+		expect(screen.getByLabelText<HTMLTextAreaElement>('Motivo de la devolución').value).toBe(
+			'El cliente devuelve la compra',
+		);
+		fireEvent.click(startButtonIn());
+		await waitFor(() => expect(startReturnCalls()).toHaveLength(2));
+		const [first, second] = startReturnCalls();
+		expect(second.headers?.['Idempotency-Key']).toBe(first.headers?.['Idempotency-Key']);
+		expect(second.data).toEqual({ reason: 'El cliente devuelve la compra' });
+	});
+});
+
+/** La página que abre el detalle: monta las escrituras y monta o desmonta el detalle. */
+const PageHarness = ({ saleId, open }: { saleId: number; open: boolean }) => {
+	const returnWrites = useSaleReturnWrites();
+	return open ? (
+		<SaleDetailPage
+			subsidiaryId={1}
+			saleId={saleId}
+			isOpen
+			onClose={vi.fn()}
+			returnWrites={returnWrites}
+		/>
+	) : null;
+};
+
+const renderPage = (saleId = 90) => {
+	const store = createStore();
+	const view = render(
+		<Provider store={store}>
+			<PageHarness saleId={saleId} open />
+		</Provider>,
+	);
+	const show = (nextSaleId: number, open: boolean) =>
+		view.rerender(
+			<Provider store={store}>
+				<PageHarness saleId={nextSaleId} open={open} />
+			</Provider>,
+		);
+	return { show };
+};
+
+describe('intento incierto a nivel de página', () => {
+	it('cerrar el detalle no pierde la recepción: al reabrir la venta reintenta con la misma clave', async () => {
+		writes = [rejectWithTimeout, () => Promise.resolve(RECEIPT_OK)];
+		const page = renderPage();
+		fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
+		fillValidReceipt(await screen.findByRole('group', { name: 'MOU-01 — Mouse' }));
+		submitReceipt();
+		await screen.findByRole('button', { name: 'Reintentar' });
+
+		page.show(90, false);
+		page.show(90, true);
+		fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
+		fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
+
+		await waitFor(() => expect(confirmReturnCalls()).toHaveLength(2));
+		const [first, second] = confirmReturnCalls();
+		expect(second.headers?.['Idempotency-Key']).toBe(first.headers?.['Idempotency-Key']);
+		expect(second.data).toEqual(first.data);
+	});
+
+	it('la recepción incierta que sí llegó se resuelve al releer la venta', async () => {
+		otherDetails[91] = { ...detail, id: 91, sale_number: 'V-91' };
+		writes = [rejectWithTimeout, () => Promise.resolve(RECEIPT_OK)];
+		const page = renderPage();
+		fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
+		fillValidReceipt(await screen.findByRole('group', { name: 'MOU-01 — Mouse' }));
+		submitReceipt();
+		await screen.findByRole('button', { name: 'Reintentar' });
+
+		// El backend sí la recibió: al releer, la venta ya no espera devolución.
+		detail = { ...detail, pending_return: null };
+		page.show(90, false);
+		page.show(90, true);
+		await waitFor(() =>
+			expect(
+				screen.queryByRole('button', { name: 'Recibir devolución' }),
+			).not.toBeInTheDocument(),
+		);
+
+		// Otra venta ya no queda bloqueada por ese intento.
+		page.show(90, false);
+		page.show(91, true);
+		expect(await screen.findByText('V-91')).toBeInTheDocument();
+		fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
+		expect(
+			await screen.findByRole('button', { name: 'Confirmar recepción' }),
+		).toBeInTheDocument();
+		expect(screen.queryByText(/sin confirmar/)).not.toBeInTheDocument();
+	});
+
+	it('otra venta no reintenta ni envía el intento ajeno: sólo lo descarta', async () => {
+		otherDetails[91] = { ...detail, id: 91, sale_number: 'V-91' };
+		writes = [rejectWithTimeout];
+		const page = renderPage();
+		fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
+		fillValidReceipt(await screen.findByRole('group', { name: 'MOU-01 — Mouse' }));
+		submitReceipt();
+		await screen.findByRole('button', { name: 'Reintentar' });
+
+		page.show(90, false);
+		page.show(91, true);
+		expect(await screen.findByText('V-91')).toBeInTheDocument();
+		fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
+
+		expect(
+			await screen.findByText(
+				/La venta #90 tiene la recepción de la devolución sin confirmar/,
+			),
+		).toBeInTheDocument();
+		expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole('button', { name: 'Confirmar recepción' }),
+		).not.toBeInTheDocument();
+		expect(confirmReturnCalls()).toHaveLength(1);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Descartar intento' }));
+		expect(
+			await screen.findByRole('button', { name: 'Confirmar recepción' }),
+		).toBeInTheDocument();
 	});
 });
