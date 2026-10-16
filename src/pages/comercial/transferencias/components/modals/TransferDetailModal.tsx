@@ -7,11 +7,14 @@ import Icon from '@/components/icon/Icon';
 import type { ITransfer, ITransferItem, TransferStatus } from '@/interface/transfers.interface';
 import { useAppDispatch } from '@/store';
 import { fetchTransferById } from '@/store/slices/transfers/transfersSlice';
+import transferWarehouseLabel from '../../utils/transferLocation';
 
 interface TransferDetailModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	transfer: ITransfer | null;
+	/** Etapa 2 de la filial: una bodega sin `id` se lee «Sin ubicación». */
+	isMultiLocation?: boolean;
 }
 
 const statusMap: Record<TransferStatus, string> = {
@@ -23,7 +26,12 @@ const statusMap: Record<TransferStatus, string> = {
 	draft: 'Borrador',
 };
 
-const TransferDetailModal: React.FC<TransferDetailModalProps> = ({ isOpen, onClose, transfer }) => {
+const TransferDetailModal: React.FC<TransferDetailModalProps> = ({
+	isOpen,
+	onClose,
+	transfer,
+	isMultiLocation = false,
+}) => {
 	const dispatch = useAppDispatch();
 	const [detail, setDetail] = useState<ITransfer | null>(transfer);
 	const [loadingDetail, setLoadingDetail] = useState(false);
@@ -133,7 +141,13 @@ const TransferDetailModal: React.FC<TransferDetailModalProps> = ({ isOpen, onClo
 							</p>
 							<p className='flex items-center space-x-2'>
 								<Icon icon='HeroArchiveBox' className='h-4 w-4 text-gray-500' />
-								<span>{detail.from_warehouse?.name || 'Bodega no definida'}</span>
+								<span>
+									{transferWarehouseLabel(
+										detail.from_warehouse,
+										isMultiLocation,
+										'Bodega no definida',
+									)}
+								</span>
 							</p>
 						</CardBody>
 					</Card>
@@ -148,7 +162,13 @@ const TransferDetailModal: React.FC<TransferDetailModalProps> = ({ isOpen, onClo
 							</p>
 							<p className='flex items-center space-x-2'>
 								<Icon icon='HeroArchiveBox' className='h-4 w-4 text-gray-500' />
-								<span>{detail.to_warehouse?.name || 'Bodega no definida'}</span>
+								<span>
+									{transferWarehouseLabel(
+										detail.to_warehouse,
+										isMultiLocation,
+										'Bodega no definida',
+									)}
+								</span>
 							</p>
 						</CardBody>
 					</Card>

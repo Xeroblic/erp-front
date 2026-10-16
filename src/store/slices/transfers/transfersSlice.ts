@@ -7,7 +7,7 @@ import type {
 	TransferDirection,
 } from '@/interface/transfers.interface';
 import type { RootState } from '@/store/rootReducer';
-import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import selectCurrentBranchId from '@/store/selectors/branchSelectors';
 import { isRecord } from '@/utils/isRecord.util';
 import { resolveTransferError, type ITransferError } from '@/utils/transferErrors.util';
 
@@ -83,9 +83,8 @@ const buildFilters = (
 	per_page: updates?.per_page ?? current.per_page,
 });
 
-const ensureBranch = (state: RootState): number | null => {
-	return selectEffectiveSubsidiaryId(state);
-};
+/** `{branch}` de `/branches/{branch}/transfers` es la sucursal activa, no su filial. */
+const ensureBranch = (state: RootState): number | null => selectCurrentBranchId(state);
 
 /** `message` del cuerpo de un error de Axios, si llegó uno. */
 const readResponseMessage = (error: unknown): string | undefined => {

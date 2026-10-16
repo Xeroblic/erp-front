@@ -13,19 +13,29 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import type { ICreateTransferRequest, TransferPriority } from '@/interface/transfers.interface';
-import type { ICreateTransferForm, ITransferItemForm } from '../../types/transfers.types';
 import type { IProduct } from '@/interface/product.interface';
 import type { IWarehouse } from '@/interface/warehouse.interface';
+import { UNLOCATED_WAREHOUSE_LABEL } from '@/components/procurement/WarehouseLabel';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
+import selectCurrentBranchId from '@/store/selectors/branchSelectors';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import { fetchSubsidiaryRolloutStage } from '@/store/slices/subempresa/subEmpresaSlice';
 import {
 	TRANSFER_VALIDATION_MESSAGE,
 	splitTransferFieldErrors,
 	toTransferError,
 } from '@/utils/transferErrors.util';
+import { UNLOCATED_TOKEN } from '@/utils/inventoryLocation.util';
+import {
+	FROM_LOCATION_REQUIRED_MESSAGE,
+	TO_LOCATION_REQUIRED_MESSAGE,
+	type ICreateTransferForm,
+	type ITransferItemForm,
+} from '../../types/transfers.types';
 
 interface CreateEditTransferModalProps {
 	isOpen: boolean;
@@ -56,10 +66,41 @@ const INITIAL_VALUES: ICreateTransferForm = {
 	items: [createEmptyItem()],
 };
 
-const formatPayload = (values: ICreateTransferForm): ICreateTransferRequest => ({
+type TWarehouseFieldValue = ICreateTransferForm['from_warehouse_id'];
+
+const UNLOCATED_OPTION: TSelectOption = {
+	value: UNLOCATED_TOKEN,
+	label: UNLOCATED_WAREHOUSE_LABEL,
+};
+
+/**
+ * Etapa 1: la bodega sólo rotula el documento y, si no se elige, se omite.
+ * Etapa 2: la clave va siempre; `null` es «Sin ubicación» (omitirla es un 422).
+ */
+const toWarehousePayload = (
+	value: TWarehouseFieldValue,
+	isMultiLocation: boolean,
+): number | null | undefined => {
+	if (typeof value === 'number') return value;
+	return isMultiLocation ? null : undefined;
+};
+
+/** «Sin ubicación» viaja por el select como token: un `value` nulo no se distingue de «sin elegir». */
+const toWarehouseOptionValue = (value: TWarehouseFieldValue): string | number | undefined =>
+	value === null ? UNLOCATED_TOKEN : value;
+
+const fromWarehouseOption = (option: TSelectOption | null): number | '' | null => {
+	if (!option) return '';
+	return option.value === UNLOCATED_TOKEN ? null : Number(option.value);
+};
+
+const formatPayload = (
+	values: ICreateTransferForm,
+	isMultiLocation: boolean,
+): ICreateTransferRequest => ({
 	to_branch_id: Number(values.to_branch_id),
-	from_warehouse_id: values.from_warehouse_id ? Number(values.from_warehouse_id) : undefined,
-	to_warehouse_id: values.to_warehouse_id ? Number(values.to_warehouse_id) : undefined,
+	from_warehouse_id: toWarehousePayload(values.from_warehouse_id, isMultiLocation),
+	to_warehouse_id: toWarehousePayload(values.to_warehouse_id, isMultiLocation),
 	auto_create_destination_product: values.auto_create_destination_product,
 	expected_date: values.expected_date || undefined,
 	priority: values.priority,
@@ -79,7 +120,19 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 	const dispatch = useAppDispatch();
 	const branches = useAppSelector((state) => state.sucursales.lista);
 	const branchesLoading = useAppSelector((state) => state.sucursales.loading);
-	const currentBranchId = useAppSelector(selectEffectiveSubsidiaryId);
+	// Sucursal de origen: la misma que usa `createTransfer` para armar la URL.
+	const currentBranchId = useAppSelector(selectCurrentBranchId);
+	// Etapa de la filial de origen (la activa): en la etapa 2 las bodegas mueven stock.
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+	const {
+		multiLocationEnabled,
+		isMultiLocation,
+		isLoading: rolloutStageLoading,
+	} = useSubsidiaryRolloutStage();
+	const rolloutStageBlocked = rolloutStageLoading || multiLocationEnabled === null;
+	const retryRolloutStage = () => {
+		if (subsidiaryId !== null) void dispatch(fetchSubsidiaryRolloutStage(subsidiaryId));
+	};
 
 	const [originWarehouses, setOriginWarehouses] = useState<IWarehouse[]>([]);
 	const [destinationWarehouses, setDestinationWarehouses] = useState<IWarehouse[]>([]);
@@ -115,23 +168,28 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 		[forbiddenBranchIds],
 	);
 
-	const originWarehouseOptions = useMemo<TSelectOption[]>(
-		() =>
-			originWarehouses.map((warehouse) => ({
+	// Etapa 2: una bodega inactiva puede ser origen, para vaciarla, pero no destino
+	// (el backend responde 422 en `to_warehouse_id`).
+	const originWarehouseOptions = useMemo<TSelectOption[]>(() => {
+		const options = originWarehouses.map((warehouse) => {
+			const name = warehouse.name || `Bodega ${warehouse.id}`;
+			return {
 				value: String(warehouse.id),
-				label: warehouse.name || `Bodega ${warehouse.id}`,
-			})),
-		[originWarehouses],
-	);
+				label: isMultiLocation && !warehouse.is_active ? `${name} (inactiva)` : name,
+			};
+		});
+		return isMultiLocation ? [UNLOCATED_OPTION, ...options] : options;
+	}, [originWarehouses, isMultiLocation]);
 
-	const destinationWarehouseOptions = useMemo<TSelectOption[]>(
-		() =>
-			destinationWarehouses.map((warehouse) => ({
+	const destinationWarehouseOptions = useMemo<TSelectOption[]>(() => {
+		const options = destinationWarehouses
+			.filter((warehouse) => !isMultiLocation || warehouse.is_active)
+			.map((warehouse) => ({
 				value: String(warehouse.id),
 				label: warehouse.name || `Bodega ${warehouse.id}`,
-			})),
-		[destinationWarehouses],
-	);
+			}));
+		return isMultiLocation ? [UNLOCATED_OPTION, ...options] : options;
+	}, [destinationWarehouses, isMultiLocation]);
 
 	const productStockMap = useMemo(() => {
 		const map = new Map<number, { stock: number; serialTracking: boolean }>();
@@ -174,21 +232,27 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 						currentBranchId ? [currentBranchId] : [],
 						'La sucursal destino debe ser distinta a la de origen',
 					),
-				from_warehouse_id: Yup.number()
-					.nullable()
-					.transform((value) => (Number.isNaN(value) ? null : value)),
-				to_warehouse_id: Yup.number()
-					.nullable()
-					.transform((value) => (Number.isNaN(value) ? null : value))
-					.test(
-						'different-warehouse',
-						'La bodega destino debe ser diferente a la bodega origen',
-						function (value) {
-							const fromWarehouseId = this.parent.from_warehouse_id;
-							if (!value || !fromWarehouseId) return true;
-							return value !== fromWarehouseId;
-						},
-					),
+				// En la etapa 2 «Sin ubicación» (`null`) es una respuesta; sin elegir
+				// (Formik lo pasa como `undefined`) no lo es.
+				from_warehouse_id: isMultiLocation
+					? Yup.number().nullable().defined(FROM_LOCATION_REQUIRED_MESSAGE)
+					: Yup.number()
+							.nullable()
+							.transform((value) => (Number.isNaN(value) ? null : value)),
+				to_warehouse_id: (isMultiLocation
+					? Yup.number().nullable().defined(TO_LOCATION_REQUIRED_MESSAGE)
+					: Yup.number()
+							.nullable()
+							.transform((value) => (Number.isNaN(value) ? null : value))
+				).test(
+					'different-warehouse',
+					'La bodega destino debe ser diferente a la bodega origen',
+					function (value) {
+						const fromWarehouseId = this.parent.from_warehouse_id;
+						if (!value || !fromWarehouseId) return true;
+						return value !== fromWarehouseId;
+					},
+				),
 				items: Yup.array()
 					.of(
 						Yup.object().shape({
@@ -220,7 +284,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 						return ids.length === new Set(ids).size;
 					}),
 			}),
-		[currentBranchId, productStockMap],
+		[currentBranchId, productStockMap, isMultiLocation],
 	);
 
 	const findOption = useCallback(
@@ -343,9 +407,10 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 
 	const handleSubmit = useCallback(
 		async (values: ICreateTransferForm, helpers: FormikHelpers<ICreateTransferForm>) => {
+			if (rolloutStageBlocked) return;
 			try {
 				helpers.setStatus(undefined);
-				await onSubmit(formatPayload(values));
+				await onSubmit(formatPayload(values, isMultiLocation));
 				helpers.resetForm({
 					values: { ...INITIAL_VALUES, items: [createEmptyItem()] },
 				});
@@ -374,7 +439,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 				helpers.setStatus(status);
 			}
 		},
-		[onSubmit],
+		[onSubmit, isMultiLocation, rolloutStageBlocked],
 	);
 
 	return (
@@ -406,6 +471,24 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 				}) => (
 					<Form>
 						<ModalBody className='space-y-4'>
+							{rolloutStageBlocked && (
+								<div role='alert' className='space-y-2 text-sm'>
+									<p>
+										{rolloutStageLoading
+											? 'Consultando las ubicaciones disponibles de la filial…'
+											: 'No se pudo confirmar la configuración de ubicaciones. Reintenta antes de crear la transferencia.'}
+									</p>
+									{!rolloutStageLoading && (
+										<Button
+											type='button'
+											variant='outline'
+											onClick={retryRolloutStage}
+											disabled={subsidiaryId === null}>
+											Reintentar consulta
+										</Button>
+									)}
+								</div>
+							)}
 							{(status as ITransferFormStatus | undefined)?.apiError && (
 								<p
 									role='alert'
@@ -444,25 +527,32 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 								</div>
 								<div className='flex flex-col space-y-1'>
 									<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
-										Bodega origen (opcional)
+										{isMultiLocation
+											? 'Ubicación de origen'
+											: 'Bodega origen (opcional)'}
 									</label>
 									<SelectReact
 										name='from_warehouse_id'
 										options={originWarehouseOptions}
 										value={findOption(
 											originWarehouseOptions,
-											values.from_warehouse_id,
+											toWarehouseOptionValue(values.from_warehouse_id),
 										)}
 										onChange={(option) => {
-											const selected = option as TSelectOption | null;
 											setFieldValue(
 												'from_warehouse_id',
-												selected ? Number(selected.value) : '',
+												fromWarehouseOption(option as TSelectOption | null),
 											);
 										}}
-										placeholder='Selecciona bodega'
+										placeholder={
+											isMultiLocation
+												? 'Selecciona ubicación'
+												: 'Selecciona bodega'
+										}
 										isClearable
 										isLoading={originWarehousesLoading}
+										// Hasta conocer la etapa no se sabe qué bodegas admite cada lado.
+										isDisabled={rolloutStageBlocked}
 									/>
 									{touched.from_warehouse_id &&
 										typeof errors.from_warehouse_id === 'string' && (
@@ -473,26 +563,31 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 								</div>
 								<div className='flex flex-col space-y-1'>
 									<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
-										Bodega destino (opcional)
+										{isMultiLocation
+											? 'Ubicación de destino'
+											: 'Bodega destino (opcional)'}
 									</label>
 									<SelectReact
 										name='to_warehouse_id'
 										options={destinationWarehouseOptions}
 										value={findOption(
 											destinationWarehouseOptions,
-											values.to_warehouse_id,
+											toWarehouseOptionValue(values.to_warehouse_id),
 										)}
 										onChange={(option) => {
-											const selected = option as TSelectOption | null;
 											setFieldValue(
 												'to_warehouse_id',
-												selected ? Number(selected.value) : '',
+												fromWarehouseOption(option as TSelectOption | null),
 											);
 										}}
-										placeholder='Selecciona bodega'
+										placeholder={
+											isMultiLocation
+												? 'Selecciona ubicación'
+												: 'Selecciona bodega'
+										}
 										isClearable
 										isLoading={destinationWarehousesLoading}
-										isDisabled={!values.to_branch_id}
+										isDisabled={!values.to_branch_id || rolloutStageBlocked}
 									/>
 									{touched.to_warehouse_id &&
 										typeof errors.to_warehouse_id === 'string' && (
@@ -514,6 +609,14 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 									/>
 								</div>
 							</div>
+
+							{isMultiLocation && (
+								<p className='text-xs text-gray-500'>
+									Las unidades salen de la ubicación de origen y entran en la de
+									destino. «Sin ubicación» agrupa el stock que aún no está en una
+									bodega. Una bodega inactiva sólo puede ser origen.
+								</p>
+							)}
 
 							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 								<div className='flex flex-col space-y-1'>
@@ -772,6 +875,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 									disabled={
 										isSubmitting ||
 										Boolean(isLoading) ||
+										rolloutStageBlocked ||
 										isBranchForbidden(values.to_branch_id)
 									}>
 									Crear transferencia
