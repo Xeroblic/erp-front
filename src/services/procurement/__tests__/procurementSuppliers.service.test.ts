@@ -117,7 +117,7 @@ describe('escrituras: todas viajan con Idempotency-Key', () => {
 		expect(result).toEqual({ data: { id: 7 } });
 	});
 
-	it('propaga el error HTTP sin envolverlo, para que el slice lea code y existing_supplier', async () => {
+	it('propaga el error HTTP sin envolverlo, para que el slice lea code y context.existing_supplier', async () => {
 		const conflict = {
 			isAxiosError: true,
 			response: {
@@ -125,10 +125,12 @@ describe('escrituras: todas viajan con Idempotency-Key', () => {
 				data: {
 					message: 'Ya existe un proveedor con este RUT en esta filial.',
 					code: 'SUPPLIER_RUT_ALREADY_EXISTS',
-					existing_supplier: {
-						id: 12,
-						display_name: 'Importadora Sur',
-						is_active: false,
+					context: {
+						existing_supplier: {
+							id: 12,
+							display_name: 'Importadora Sur',
+							is_active: false,
+						},
 					},
 				},
 			},
