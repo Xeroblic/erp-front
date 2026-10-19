@@ -89,6 +89,9 @@ describe('Ajuste de etapa 2 — catálogo API real', () => {
 		expect(screen.queryByLabelText('Ubicación')).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Ajustar solo Sin ubicación' }));
 		expect(await screen.findByText('Sin ubicación')).toBeInTheDocument();
+		// Reintentar reemplazaría el ajuste abierto y perdería su borrador.
+		expect(screen.getByRole('button', { name: 'Reintentar bodegas' })).toBeDisabled();
+		fireEvent.click(screen.getByRole('button', { name: 'Cerrar ajuste sin ubicación' }));
 		fireEvent.click(screen.getByRole('button', { name: 'Reintentar bodegas' }));
 		expect(await screen.findByLabelText('Ubicación')).toBeInTheDocument();
 	});

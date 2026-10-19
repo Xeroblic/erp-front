@@ -56,8 +56,22 @@ export interface IPurchaseDocumentWriteAttempt {
 	payload: IPurchaseDocumentCreatePayload;
 	/** El PATCH omite proveedor si no cambió, incluso al reintentar. */
 	omitSupplier: boolean;
-	status: 'in_flight' | 'uncertain' | 'completed';
+	/**
+	 * Flete tal como lo dejó el usuario: el cuerpo lo envía `null` si estaba
+	 * marcado sin monto válido, y reconstruirlo desde ahí lo desmarcaría.
+	 */
+	includeShipping: boolean;
+	shippingCostInput: string;
+	status: 'in_flight' | 'uncertain' | 'completed' | 'rejected';
 	result: IPurchaseDocument | null;
+	/** Rechazo definitivo que llegó sin el formulario a la vista, para mostrarlo al volver. */
+	rejection: IPurchaseDocumentWriteRejection | null;
+}
+
+export interface IPurchaseDocumentWriteRejection {
+	message: string;
+	fieldErrors: Record<string, string[]> | null;
+	isVersionConflict: boolean;
 }
 
 export interface PurchaseDocumentsState {

@@ -422,20 +422,42 @@ const AdjustmentPanel = ({
 				warehouses={catalog.warehouses}
 			/>
 		);
+	// Reintentar con el ajuste «Sin ubicación» abierto lo reemplazaría al resolver
+	// y perdería su borrador o su comprobante: primero hay que cerrarlo.
+	const isFallbackOpen = unlocatedFallback === catalog.key;
 	return (
 		<div className='space-y-4'>
 			<Alert color='amber' variant='outline' title='No pudimos cargar las bodegas'>
 				<p>{catalog.message}</p>
 				<div className='mt-3 flex flex-wrap gap-2'>
-					<Button variant='outline' isDisable={fallbackBusy} onClick={catalog.retry}>
+					<Button variant='outline' isDisable={isFallbackOpen} onClick={catalog.retry}>
 						Reintentar bodegas
 					</Button>
-					<Button variant='outline' onClick={() => setUnlocatedFallback(catalog.key)}>
-						Ajustar solo Sin ubicación
-					</Button>
+					{/* Claves propias: el guard de clic del botón recién usado no bloquea al otro. */}
+					{isFallbackOpen ? (
+						<Button
+							key='close-unlocated'
+							variant='outline'
+							isDisable={fallbackBusy}
+							onClick={() => setUnlocatedFallback(null)}>
+							Cerrar ajuste sin ubicación
+						</Button>
+					) : (
+						<Button
+							key='open-unlocated'
+							variant='outline'
+							onClick={() => setUnlocatedFallback(catalog.key)}>
+							Ajustar solo Sin ubicación
+						</Button>
+					)}
 				</div>
+				{isFallbackOpen && (
+					<p className='mt-2 text-sm'>
+						Para volver a cargar las bodegas, cierra primero el ajuste sin ubicación.
+					</p>
+				)}
 			</Alert>
-			{unlocatedFallback === catalog.key && (
+			{isFallbackOpen && (
 				<AdjustmentForm
 					key={`${catalog.key}:unlocated`}
 					branchId={branchId}

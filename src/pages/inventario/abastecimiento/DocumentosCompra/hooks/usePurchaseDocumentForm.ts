@@ -9,7 +9,10 @@ import {
 	completeDocumentWriteAttempt,
 	clearDocumentWriteAttempt,
 } from '@/store/slices/procurement/purchaseDocumentsSlice';
-import type { IPurchaseDocumentWriteAttempt } from '@/store/slices/procurement/purchaseDocumentsSlice';
+import type {
+	IPurchaseDocumentWriteAttempt,
+	IPurchaseDocumentWriteRejection,
+} from '@/store/slices/procurement/purchaseDocumentsSlice';
 import { createIdempotencyKey, shouldRetryWithSameKey } from '@/utils/procurementWrite.util';
 import { normalizeCostInput, toCostEntryPayload } from '@/components/procurement';
 import { formatDecimalCents, parseDecimalString } from '@/utils/procurementDecimal.util';
@@ -98,16 +101,18 @@ const toPayload = (values: IPurchaseDocumentFormValues): IPurchaseDocumentCreate
 	items: values.items.map(toLineInput),
 });
 
-const attemptFormValues = (
-	payload: IPurchaseDocumentCreatePayload,
-): IPurchaseDocumentFormValues => ({
+const attemptFormValues = ({
+	payload,
+	includeShipping,
+	shippingCostInput,
+}: IPurchaseDocumentWriteAttempt): IPurchaseDocumentFormValues => ({
 	document_type: payload.document_type,
 	supplier_id: payload.supplier_id ?? '',
 	document_number: payload.document_number,
 	issue_date: payload.issue_date,
 	total_amount: payload.total_amount ?? '',
-	include_shipping: payload.shipping_cost != null,
-	shipping_cost: payload.shipping_cost ?? '',
+	include_shipping: includeShipping,
+	shipping_cost: shippingCostInput,
 	shipping_cost_basis: payload.shipping_cost_basis ?? 'net',
 	notes: payload.notes ?? '',
 	items: payload.items.map((line) => ({
@@ -217,7 +222,7 @@ const usePurchaseDocumentForm = ({
 		document,
 		defaultDocumentType,
 		values: pendingAttempt
-			? attemptFormValues(pendingAttempt.payload)
+			? attemptFormValues(pendingAttempt)
 			: toFormValues(document, defaultDocumentType),
 	});
 	if (
@@ -230,7 +235,7 @@ const usePurchaseDocumentForm = ({
 			document,
 			defaultDocumentType,
 			values: pendingAttempt
-				? attemptFormValues(pendingAttempt.payload)
+				? attemptFormValues(pendingAttempt)
 				: toFormValues(document, defaultDocumentType),
 		};
 
@@ -260,8 +265,11 @@ const usePurchaseDocumentForm = ({
 						document !== null &&
 						(values.supplier_id === '' ? null : Number(values.supplier_id)) ===
 							(document.supplier?.id ?? null),
+					includeShipping: values.include_shipping,
+					shippingCostInput: values.shipping_cost,
 					status: 'uncertain',
 					result: null,
+					rejection: null,
 				},
 			);
 		},
@@ -297,9 +305,15 @@ const usePurchaseDocumentForm = ({
 			});
 		onSuccess?.(result);
 	};
+	/** Muestra un rechazo definitivo sobre el formulario: su mensaje, sus campos y el 412. */
+	const showRejection = (rejection: IPurchaseDocumentWriteRejection) => {
+		if (rejection.isVersionConflict) setHasVersionConflict(true);
+		applyProcurementFieldErrors(rejection.fieldErrors, toFormFieldPath, formik.setFieldError);
+		toast.error(rejection.message);
+	};
 	async function sendAttempt(attempt: IPurchaseDocumentWriteAttempt) {
 		const { generation } = ownerRef.current;
-		if (attempt.status === 'in_flight') return;
+		if (attempt.status === 'in_flight' || attempt.status === 'rejected') return;
 		if (attempt.status === 'completed' && attempt.result) {
 			deliver(attempt, attempt.result, generation);
 			return;
@@ -333,21 +347,22 @@ const usePurchaseDocumentForm = ({
 			dispatch(completeDocumentWriteAttempt({ ...attempt, result: response.data }));
 			deliver(attempt, response.data, generation);
 		} catch (error: unknown) {
-			if (shouldRetryWithSameKey(error))
-				dispatch(setDocumentWriteAttempt({ ...attempt, status: 'uncertain' }));
-			else clearAttempt(attempt);
-			if (!isHere(attempt, generation)) return;
 			const resolved = resolveProcurementError(
 				error,
 				'No pudimos guardar el documento de compra.',
 			);
-			if (resolved.code === 'RESOURCE_VERSION_CONFLICT') setHasVersionConflict(true);
-			applyProcurementFieldErrors(
-				resolved.fieldErrors,
-				toFormFieldPath,
-				formik.setFieldError,
-			);
-			toast.error(resolved.message);
+			const rejection: IPurchaseDocumentWriteRejection = {
+				message: resolved.message,
+				fieldErrors: resolved.fieldErrors,
+				isVersionConflict: resolved.code === 'RESOURCE_VERSION_CONFLICT',
+			};
+			const here = isHere(attempt, generation);
+			if (shouldRetryWithSameKey(error))
+				dispatch(setDocumentWriteAttempt({ ...attempt, status: 'uncertain' }));
+			else if (here) clearAttempt(attempt);
+			// Sin el formulario a la vista, el rechazo y su borrador esperan al usuario.
+			else dispatch(setDocumentWriteAttempt({ ...attempt, status: 'rejected', rejection }));
+			if (here) showRejection(rejection);
 		}
 	}
 
@@ -362,6 +377,13 @@ const usePurchaseDocumentForm = ({
 	 */
 	const discardDraft = () => {
 		reset();
+	};
+	/** Libera un intento rechazado para corregirlo: conserva sus valores y marca sus errores. */
+	const reviewRejection = () => {
+		const attempt = attemptRef.current;
+		if (attempt?.status !== 'rejected') return;
+		clearAttempt(attempt);
+		if (attempt.rejection) showRejection(attempt.rejection);
 	};
 	const discardAttempt = () => {
 		const attempt = attemptRef.current;
@@ -378,6 +400,7 @@ const usePurchaseDocumentForm = ({
 		retryPending: () => {
 			if (attemptRef.current) void sendAttempt(attemptRef.current);
 		},
+		reviewRejection,
 		discardAttempt,
 		hasVersionConflict,
 		isMissingEtag,

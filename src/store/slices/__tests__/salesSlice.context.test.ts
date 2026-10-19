@@ -9,6 +9,7 @@ import salesReducer, {
 	loadSaleItems,
 	selectSaleDetail,
 	selectSaleItems,
+	selectSaleLoadError,
 	selectSalesLoading,
 } from '../salesSlice';
 
@@ -77,5 +78,29 @@ describe('propiedad del detalle y los ítems de venta', () => {
 		state = salesReducer(state, loadSaleDetail.fulfilled(saleA, 'new', a));
 		expect(state.detail).toBeNull();
 		expect(state.detailOwner).toBeNull();
+	});
+	it('releer la misma venta conserva la ficha y los ítems visibles hasta que responde', () => {
+		const itemsA = [{ id: 7 }] as unknown as Parameters<typeof loadSaleItems.fulfilled>[0];
+		let state = salesReducer(undefined, loadSaleDetail.pending('first', a));
+		state = salesReducer(state, loadSaleItems.pending('firstItems', a));
+		state = salesReducer(state, loadSaleDetail.fulfilled(saleA, 'first', a));
+		state = salesReducer(state, loadSaleItems.fulfilled(itemsA, 'firstItems', a));
+		state = salesReducer(state, loadSaleDetail.pending('reload', a));
+		state = salesReducer(state, loadSaleItems.pending('reloadItems', a));
+		const root = { salesModule: state } as unknown as RootState;
+		expect(selectSaleDetail(root, a)).toBe(saleA);
+		expect(selectSaleItems(root, a)).toBe(itemsA);
+		expect(selectSalesLoading(root, a)).toBe(true);
+	});
+	it('expone el fallo de carga sólo a la venta que lo tuvo', () => {
+		let state = salesReducer(undefined, loadSaleDetail.pending('detail', a));
+		state = salesReducer(state, loadSaleItems.pending('items', a));
+		state = salesReducer(
+			state,
+			loadSaleItems.rejected(new Error('403'), 'items', a, 'Sin permiso'),
+		);
+		const root = { salesModule: state } as unknown as RootState;
+		expect(selectSaleLoadError(root, a)).toBe('Sin permiso');
+		expect(selectSaleLoadError(root, { subsidiaryId: 1, saleId: 91 })).toBeNull();
 	});
 });

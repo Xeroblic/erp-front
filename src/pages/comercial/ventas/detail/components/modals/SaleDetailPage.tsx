@@ -8,6 +8,7 @@ import salesReducer, {
 	closeSaleThunk,
 	selectSaleDetail,
 	selectSaleItems,
+	selectSaleLoadError,
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
 import { formatCLP } from '@/utils/format.utils';
@@ -39,6 +40,7 @@ import { AxiosError } from 'axios';
 import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
 import Spinner from '@/components/ui/Spinner';
+import Alert from '@/components/ui/Alert';
 import { translateStatus } from '../../../utils';
 import SaleItemsTable from '../tables/SaleItemsTable';
 import SaleStockShortageAlert from '../parts/SaleStockShortageAlert';
@@ -148,6 +150,9 @@ const SaleDetailPage: React.FC<Props> = ({
 	const detail = useAppSelector((state) => selectSaleDetail(state, { subsidiaryId, saleId }));
 	const items = useAppSelector((state) => selectSaleItems(state, { subsidiaryId, saleId }));
 	const loading = useAppSelector((state) => selectSalesLoading(state, { subsidiaryId, saleId }));
+	const loadError = useAppSelector((state) =>
+		selectSaleLoadError(state, { subsidiaryId, saleId }),
+	);
 	// La venta es de la filial de la ruta: su etapa decide si se elige ubicación al cerrar.
 	const { isMultiLocation } = useSubsidiaryRolloutStage(subsidiaryId);
 	// Un rechazo del cierre puede confirmar la etapa antes que la lectura de filial.
@@ -194,6 +199,7 @@ const SaleDetailPage: React.FC<Props> = ({
 		setCorrectSerialOpen(false);
 		setIsClosing(false);
 		setIsConfirmingReturn(false);
+		setCreatingQuote(false);
 		setCreatedQuoteId(null);
 		setCloseShortage(null);
 		setCloseOutcome(null);
@@ -383,12 +389,15 @@ const SaleDetailPage: React.FC<Props> = ({
 	const handleCreateQuote = useCallback(async () => {
 		if (!subsidiaryId || !saleId || creatingQuote) return;
 
+		const owner = { subsidiaryId, saleId };
 		try {
 			setCreatingQuote(true);
 			const response = await ApiService.fetchData<CreateQuoteFromSaleResponse>({
 				url: `/subsidiaries/${subsidiaryId}/sales/${saleId}/create-quote`,
 				method: 'post',
 			});
+			// La cotización de otra venta no se anuncia ni se enlaza en la que se muestra ahora.
+			if (!isSameSaleOwner(currentOwnerRef.current, owner)) return;
 			const message = response.data?.message || 'Cotización creada correctamente';
 			const resolvedQuoteId = extractQuoteIdFromResponse(response.data);
 			if (resolvedQuoteId) {
@@ -396,6 +405,7 @@ const SaleDetailPage: React.FC<Props> = ({
 			}
 			toast.success(buildQuoteCreatedMessage(message, resolvedQuoteId));
 		} catch (error) {
+			if (!isSameSaleOwner(currentOwnerRef.current, owner)) return;
 			const axiosError = error as AxiosError<CreateQuoteFromSaleResponse>;
 			const status = axiosError.response?.status;
 			const responseData = axiosError.response?.data;
@@ -411,7 +421,7 @@ const SaleDetailPage: React.FC<Props> = ({
 			const message = responseData?.message || 'No se pudo crear la cotización';
 			toast.error(message);
 		} finally {
-			setCreatingQuote(false);
+			if (isSameSaleOwner(currentOwnerRef.current, owner)) setCreatingQuote(false);
 		}
 	}, [subsidiaryId, saleId, creatingQuote, navigate]);
 
@@ -955,6 +965,18 @@ const SaleDetailPage: React.FC<Props> = ({
 				</Modal>
 
 				{loading && <Spinner nombre='Cargando información actualizada...' />}
+				{!loading && loadError && (
+					<Alert
+						color='red'
+						variant='outline'
+						icon='HeroExclamationTriangle'
+						title='No pudimos cargar la venta'>
+						<p>{loadError}</p>
+						<Button className='mt-3' variant='outline' onClick={reloadSale}>
+							Reintentar
+						</Button>
+					</Alert>
+				)}
 				<ModalFooter className='flex flex-wrap justify-end gap-2 rounded-md p-3'>
 					<ModalFooterChild className='ml-auto flex flex-wrap items-center justify-end gap-2'>
 						<Tooltip text='Descargar etiqueta de envío'>

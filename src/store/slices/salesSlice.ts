@@ -132,6 +132,9 @@ export const closeSaleThunk = createAsyncThunk<
 	}
 });
 
+const ownsSale = (actual: SaleResourceOwner | null | undefined, expected: SaleResourceOwner) =>
+	actual?.subsidiaryId === expected.subsidiaryId && actual.saleId === expected.saleId;
+
 const salesSlice = createSlice({
 	name: 'salesModule',
 	initialState,
@@ -177,10 +180,11 @@ const salesSlice = createSlice({
 			})
 			// Detail and items have independent request owners: resolving one cannot
 			// complete the other or populate another sale after navigation.
+			// Releer la misma venta conserva lo visible: sólo otra venta parte en blanco.
 			.addCase(loadSaleDetail.pending, (state, action) => {
+				if (!ownsSale(state.detailOwner, action.meta.arg)) state.detail = null;
 				state.detailOwner = action.meta.arg;
 				state.detailRequestId = action.meta.requestId;
-				state.detail = null;
 				state.detailLoading = true;
 				state.detailError = null;
 			})
@@ -196,9 +200,9 @@ const salesSlice = createSlice({
 				state.detailError = action.payload || 'Error al cargar detalle de venta';
 			})
 			.addCase(loadSaleItems.pending, (state, action) => {
+				if (!ownsSale(state.itemsOwner, action.meta.arg)) state.items = [];
 				state.itemsOwner = action.meta.arg;
 				state.itemsRequestId = action.meta.requestId;
-				state.items = [];
 				state.itemsLoading = true;
 				state.itemsError = null;
 			})
@@ -247,8 +251,6 @@ export const selectSalesListSubsidiaryId = (state: RootState) =>
 	selectModule(state)?.listSubsidiaryId ?? null;
 export const selectSalesMeta = (state: RootState) => selectModule(state)?.meta ?? null;
 export const selectSalesLinks = (state: RootState) => selectModule(state)?.links ?? null;
-const ownsSale = (actual: SaleResourceOwner | null | undefined, expected: SaleResourceOwner) =>
-	actual?.subsidiaryId === expected.subsidiaryId && actual.saleId === expected.saleId;
 const EMPTY_ITEMS: SaleItem[] = [];
 export const selectSaleDetail = (state: RootState, owner?: SaleResourceOwner) => {
 	const module = selectModule(state);
@@ -270,5 +272,12 @@ export const selectSalesLoading = (state: RootState, owner?: SaleResourceOwner) 
 	);
 };
 export const selectSalesError = (state: RootState) => selectModule(state)?.error ?? null;
+/** Fallo al leer la ficha o sus ítems de esta venta; `null` si no es suya o no falló. */
+export const selectSaleLoadError = (state: RootState, owner: SaleResourceOwner) => {
+	const module = selectModule(state);
+	const detailError = ownsSale(module?.detailOwner, owner) ? module?.detailError : null;
+	const itemsError = ownsSale(module?.itemsOwner, owner) ? module?.itemsError : null;
+	return detailError ?? itemsError ?? null;
+};
 
 export default salesSlice.reducer;

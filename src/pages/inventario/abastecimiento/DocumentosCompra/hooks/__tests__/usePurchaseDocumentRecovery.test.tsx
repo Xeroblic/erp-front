@@ -250,4 +250,77 @@ describe('Documento de compra — recuperación del resultado incierto', () => {
 		expect(hook.result.current.formik.values.notes).toBe('No perder');
 		expect(hook.result.current.formik.errors.document_number).toBe('Folio inválido');
 	});
+
+	it('un 422 que llega sin el formulario a la vista conserva borrador y errores al volver', async () => {
+		let reject: (reason: unknown) => void = () => {};
+		create.mockImplementationOnce(
+			() =>
+				new Promise((_resolve, fail) => {
+					reject = fail;
+				}),
+		);
+		const session = makeSession();
+		const first = renderHook(
+			() => usePurchaseDocumentForm({ subsidiaryId: 1, defaultDocumentType: 'receipt' }),
+			session,
+		);
+		await act(async () => {
+			await first.result.current.formik.setValues({
+				...first.result.current.formik.values,
+				document_number: 'B-77',
+				issue_date: '2026-10-19',
+				include_shipping: true,
+				shipping_cost: '1.500',
+				items: [
+					{
+						product_id: 1,
+						quantity: '1',
+						unit_cost: '100',
+						unit_cost_basis: 'net',
+						notes: '',
+					},
+				],
+			});
+		});
+		let sending: Promise<unknown> | undefined;
+		act(() => {
+			sending = first.result.current.formik.submitForm();
+		});
+		await waitFor(() => expect(first.result.current.pendingAttempt?.status).toBe('in_flight'));
+		first.unmount();
+		await act(async () => {
+			reject({
+				response: {
+					status: 422,
+					data: {
+						message: 'Folio inválido',
+						errors: { document_number: ['Folio inválido'] },
+					},
+				},
+			});
+			await sending;
+		});
+
+		const second = renderHook(
+			() => usePurchaseDocumentForm({ subsidiaryId: 1, defaultDocumentType: 'receipt' }),
+			session,
+		);
+		expect(second.result.current.pendingAttempt?.status).toBe('rejected');
+		expect(second.result.current.formik.values.document_number).toBe('B-77');
+		expect(second.result.current.formik.values.include_shipping).toBe(true);
+		expect(second.result.current.formik.values.shipping_cost).toBe('1.500');
+		act(() => {
+			second.result.current.retryPending();
+		});
+		expect(create).toHaveBeenCalledTimes(1);
+		await act(async () => {
+			second.result.current.reviewRejection();
+			await Promise.resolve();
+		});
+		expect(second.result.current.pendingAttempt).toBeNull();
+		expect(second.result.current.formik.values.document_number).toBe('B-77');
+		await waitFor(() =>
+			expect(second.result.current.formik.errors.document_number).toBe('Folio inválido'),
+		);
+	});
 });

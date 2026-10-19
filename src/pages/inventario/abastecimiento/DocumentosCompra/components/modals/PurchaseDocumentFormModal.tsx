@@ -12,6 +12,7 @@ import type {
 } from '@/interface/procurement.interface';
 import { parsePesoInput } from '@/utils/procurementDecimal.util';
 import type { ICreatedPurchasableProduct } from '@/services/procurement/purchasableProducts.service';
+import type { IPurchaseDocumentWriteAttempt } from '@/store/slices/procurement/purchaseDocumentsSlice';
 import usePurchaseDocumentForm from '../../hooks/usePurchaseDocumentForm';
 import useActiveSupplierOptions from '../../hooks/useActiveSupplierOptions';
 import useSupplierInlineEdit from '../../hooks/useSupplierInlineEdit';
@@ -23,6 +24,20 @@ import PurchaseDocumentSupplierPicker from '../parts/PurchaseDocumentSupplierPic
 import PurchaseDocumentLinesCard from '../parts/PurchaseDocumentLinesCard';
 import PurchaseDocumentFormFooter from '../parts/PurchaseDocumentFormFooter';
 import { focusFirstInvalidPurchaseDocumentField } from '../../utils/purchaseDocumentFieldFocus';
+
+type TRecoverableAttemptStatus = Exclude<IPurchaseDocumentWriteAttempt['status'], 'in_flight'>;
+
+const ATTEMPT_ALERT_TITLE: Record<TRecoverableAttemptStatus, string> = {
+	uncertain: 'El intento de guardado está pendiente',
+	completed: 'El documento se guardó',
+	rejected: 'El guardado fue rechazado',
+};
+
+const ATTEMPT_PRIMARY_LABEL: Record<TRecoverableAttemptStatus, string> = {
+	uncertain: 'Reintentar guardado',
+	completed: 'Usar documento guardado',
+	rejected: 'Corregir datos',
+};
 
 interface IPurchaseDocumentFormModalProps {
 	isOpen: boolean;
@@ -60,6 +75,7 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 		isSubmitting,
 		pendingAttempt,
 		retryPending,
+		reviewRejection,
 		discardAttempt,
 		hasVersionConflict,
 		isMissingEtag,
@@ -76,6 +92,11 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 			onSuccess?.(result);
 		},
 	});
+	// Un envío en curso no es una recuperación: la alerta sólo aparece cuando hay algo que decidir.
+	const recoverableStatus: TRecoverableAttemptStatus | null =
+		pendingAttempt !== null && pendingAttempt.status !== 'in_flight'
+			? pendingAttempt.status
+			: null;
 	const productOptions = usePurchasableProductOptions({
 		subsidiaryId,
 		isEnabled: isOpen,
@@ -224,39 +245,44 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 								hasVersionConflict={hasVersionConflict}
 								onReload={handleReload}
 							/>
-							{pendingAttempt && (
+							{pendingAttempt && recoverableStatus && (
 								<Alert
 									color='amber'
 									variant='outline'
-									title={
-										pendingAttempt.status === 'completed'
-											? 'El documento se guardó'
-											: 'El intento de guardado está pendiente'
-									}>
-									<p>
-										Conservamos los datos del intento. Puedes cerrar y
-										retomarlo; reintentar enviará exactamente los mismos datos.
-									</p>
+									title={ATTEMPT_ALERT_TITLE[recoverableStatus]}>
+									{recoverableStatus === 'rejected' ? (
+										<p>
+											{pendingAttempt.rejection?.message ??
+												'El backend rechazó el documento.'}{' '}
+											Conservamos los datos para que los corrijas.
+										</p>
+									) : (
+										<p>
+											Conservamos los datos del intento. Puedes cerrar y
+											retomarlo; reintentar enviará exactamente los mismos
+											datos.
+										</p>
+									)}
 									<div className='mt-3 flex flex-wrap gap-2'>
 										<Button
 											variant='outline'
-											onClick={retryPending}
-											isDisable={isSubmitting}>
-											{pendingAttempt.status === 'completed'
-												? 'Usar documento guardado'
-												: 'Reintentar guardado'}
+											onClick={
+												recoverableStatus === 'rejected'
+													? reviewRejection
+													: retryPending
+											}>
+											{ATTEMPT_PRIMARY_LABEL[recoverableStatus]}
 										</Button>
-										<Button
-											variant='outline'
-											onClick={discardAttempt}
-											isDisable={isSubmitting}>
+										<Button variant='outline' onClick={discardAttempt}>
 											Descartar intento
 										</Button>
 									</div>
-									<p className='mt-2 text-sm'>
-										Antes de descartar y crear otro, revisa el listado: el
-										intento anterior pudo haberse guardado.
-									</p>
+									{recoverableStatus === 'uncertain' && (
+										<p className='mt-2 text-sm'>
+											Antes de descartar y crear otro, revisa el listado: el
+											intento anterior pudo haberse guardado.
+										</p>
+									)}
 								</Alert>
 							)}
 							<fieldset

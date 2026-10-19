@@ -25,6 +25,7 @@ vi.mock('@/store/slices/salesSlice', () => {
 		selectSaleDetail: () => detail,
 		selectSaleItems: () => items,
 		selectSalesLoading: () => false,
+		selectSaleLoadError: () => null,
 	};
 });
 vi.mock('@/store/slices/sales/salesSlice', () => ({
@@ -155,5 +156,32 @@ describe('SaleDetailPage al crear una cotización desde la venta', () => {
 				'Cotización creada correctamente, número de cotización: 628',
 			),
 		);
+	});
+
+	it('no anuncia en otra venta la cotización que respondió tarde', async () => {
+		let resolveQuote: (value: { data: { quote_id: number } }) => void = () => undefined;
+		fetchDataMock.mockReset();
+		fetchDataMock.mockImplementation(({ url }: { url: string }) =>
+			url.endsWith('/create-quote')
+				? new Promise((resolve) => {
+						resolveQuote = resolve;
+					})
+				: Promise.resolve({ data: { data: [] } }),
+		);
+		const { rerender } = render(
+			<SaleDetailPage subsidiaryId={1} saleId={7} isOpen onClose={vi.fn()} />,
+		);
+		fireEvent.click(screen.getByRole('button', { name: 'Crear cotización desde venta' }));
+		rerender(<SaleDetailPage subsidiaryId={1} saleId={8} isOpen onClose={vi.fn()} />);
+
+		resolveQuote({ data: { quote_id: 628 } });
+		await waitFor(() =>
+			expect(fetchDataMock).toHaveBeenCalledWith(
+				expect.objectContaining({ url: '/subsidiaries/1/sales/7/create-quote' }),
+			),
+		);
+		await Promise.resolve();
+		expect(toastMock.success).not.toHaveBeenCalled();
+		expect(screen.queryByText(/628/)).not.toBeInTheDocument();
 	});
 });

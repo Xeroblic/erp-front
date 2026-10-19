@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import INVENTORY_ADJUSTMENTS_USE_MOCKS from '@/config/inventoryAdjustments.config';
 import {
 	getAdjustmentWarehouses,
@@ -20,6 +20,15 @@ export default function useAdjustmentWarehouses(
 	const key = `${owner}:${branchId}:${multiLocation}:${INVENTORY_ADJUSTMENTS_USE_MOCKS}`;
 	const [result, setResult] = useState<TCatalog | null>(null);
 	const [attempt, setAttempt] = useState(0);
+	// El doble devuelve copias nuevas en cada llamada: se fija por sucursal para
+	// no invalidar en cada render lo que el formulario deriva del catálogo.
+	const mockWarehouses = useMemo(
+		() =>
+			multiLocation && INVENTORY_ADJUSTMENTS_USE_MOCKS
+				? getAdjustmentWarehouses(branchId)
+				: [],
+		[branchId, multiLocation],
+	);
 	useEffect(() => {
 		if (!multiLocation || INVENTORY_ADJUSTMENTS_USE_MOCKS) return undefined;
 		const controller = new AbortController();
@@ -59,7 +68,7 @@ export default function useAdjustmentWarehouses(
 		return {
 			key,
 			status: 'ready' as const,
-			warehouses: getAdjustmentWarehouses(branchId),
+			warehouses: mockWarehouses,
 			retry,
 		};
 	const current = result?.key === key ? result : null;

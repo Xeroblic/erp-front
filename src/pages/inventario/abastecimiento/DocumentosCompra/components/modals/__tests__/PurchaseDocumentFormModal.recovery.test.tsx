@@ -148,8 +148,11 @@ it('con intento incierto bloquea el selector real y recupera el reintento al cer
 			idempotencyKey: 'recovery-original-key',
 			payload,
 			omitSupplier: false,
+			includeShipping: false,
+			shippingCostInput: '',
 			status: 'uncertain',
 			result: null,
+			rejection: null,
 		}),
 	);
 	const create = vi.mocked(createPurchaseDocument);
