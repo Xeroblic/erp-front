@@ -14,9 +14,14 @@ export interface ITransferBranchSummary {
 	name: string;
 }
 
+/**
+ * Bodega de un traslado. En la etapa 2 (`multi_location_enabled`) el backend
+ * responde `{id: null, name: null}` para «Sin ubicación»: es una ubicación real,
+ * no un dato faltante.
+ */
 export interface ITransferWarehouseSummary {
-	id: number;
-	name: string;
+	id: number | null;
+	name: string | null;
 }
 
 export interface ITransferResponsible {
@@ -86,8 +91,13 @@ export interface ICreateTransferItemRequest {
 export interface ICreateTransferRequest {
 	to_branch_id: number;
 	items: ICreateTransferItemRequest[];
-	from_warehouse_id?: number;
-	to_warehouse_id?: number;
+	/**
+	 * Etapa 1: opcional, sólo rotula el documento. Etapa 2: obligatoria, con
+	 * `null` para «Sin ubicación»; omitirla es un 422.
+	 */
+	from_warehouse_id?: number | null;
+	/** Igual que `from_warehouse_id`; en la etapa 2 no admite una bodega inactiva. */
+	to_warehouse_id?: number | null;
 	auto_create_destination_product?: boolean;
 	expected_date?: string;
 	priority?: TransferPriority;

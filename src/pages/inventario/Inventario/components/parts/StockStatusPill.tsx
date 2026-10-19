@@ -1,0 +1,42 @@
+import React from 'react';
+import { STOCK_STATUS_COLORS, StatusPill } from '@/components/procurement';
+import type { IInventoryCriticalStock } from '@/interface/inventoryOverview.interface';
+import { ESTADO_LABELS, estadoVisible } from '@/pages/inventario/Inventario/types';
+
+interface IStockStatusPillProps {
+	critical: IInventoryCriticalStock | null;
+	/** Ajusta el ancho al texto (cabecera de la ficha) en vez del ancho fijo de columna. */
+	fit?: boolean;
+}
+
+/** Hay unidades vendibles, pero las reservas se las llevan todas. */
+export const todoReservado = (critical: IInventoryCriticalStock | null): boolean =>
+	critical !== null &&
+	critical.available_quantity <= 0 &&
+	critical.held_quantity > 0 &&
+	critical.fit_quantity > 0;
+
+/**
+ * Estado del stock de un producto en la sucursal. «Sin disponible» gana a los
+ * estados del §13: si no queda nada para vender, el umbral ya no es lo
+ * importante; cuando es porque todo está reservado se dice «Todo reservado»,
+ * así no parece que falte stock. Los productos con serie no tienen umbral y
+ * no muestran estado.
+ */
+const StockStatusPill: React.FC<IStockStatusPillProps> = ({ critical, fit = false }) => {
+	const estado = estadoVisible(critical);
+	if (!estado) return <span className='text-sm text-zinc-500'>—</span>;
+	if (todoReservado(critical))
+		return (
+			<StatusPill color='violet' width={9} fit={fit}>
+				Todo reservado
+			</StatusPill>
+		);
+	return (
+		<StatusPill color={STOCK_STATUS_COLORS[estado]} width={9} fit={fit}>
+			{ESTADO_LABELS[estado]}
+		</StatusPill>
+	);
+};
+
+export default StockStatusPill;

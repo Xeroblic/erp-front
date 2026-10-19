@@ -1,4 +1,4 @@
-import React, { FC, TextareaHTMLAttributes } from 'react';
+import React, { TextareaHTMLAttributes } from 'react';
 import classNames from 'classnames';
 import { IValidationBaseProps } from './Validation';
 import { TBorderWidth } from '../../types/borderWidth.type';
@@ -61,7 +61,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, ITextareaProps>((props, r
 				'disabled:!border-zinc-500',
 				// Focus
 				'focus:border-[color:var(--textarea-border-hover)] dark:focus:border-[color:var(--textarea-border-hover)]',
-				'focus:bg-white dark:focus:bg-transparent',
+				'focus:bg-white dark:focus:bg-zinc-800',
 				'focus:ring-1 focus:ring-[color:var(--textarea-border-hover)]',
 			),
 			validation: classNames({

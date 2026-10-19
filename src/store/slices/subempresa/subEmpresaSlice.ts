@@ -3,6 +3,17 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
 import { normalizeCommunePayload } from '@/utils/apiHelpers';
 import { ISubempresa } from '@/interface/empresas.interface';
+import type { RootState } from '@/store/rootReducer';
+
+/**
+ * Etapa del despliegue de inventario de una filial, tal como la publica
+ * `GET /subsidiaries/{id}`. `multiLocationEnabled` es `null` mientras no se
+ * conoce: la petición falló o el backend no envió el campo.
+ */
+export interface ISubsidiaryRolloutStageEntry {
+	status: 'loading' | 'loaded' | 'failed';
+	multiLocationEnabled: boolean | null;
+}
 
 export interface SubempresaState {
 	loading: boolean;
@@ -15,6 +26,8 @@ export interface SubempresaState {
 	updateError?: string;
 	deleteLoading: boolean;
 	deleteError?: string;
+	/** Etapa por filial, leída una vez por sesión. No toca `detalle` ni `loading`. */
+	rolloutStageById: Record<number, ISubsidiaryRolloutStageEntry>;
 }
 
 const initialState: SubempresaState = {
@@ -28,6 +41,7 @@ const initialState: SubempresaState = {
 	updateError: undefined,
 	deleteLoading: false,
 	deleteError: undefined,
+	rolloutStageById: {},
 };
 
 const normalizeBranchForSubsidiary = (branch: any = {}): any => {
@@ -122,25 +136,76 @@ export const fetchMisSubsidiarias = createAsyncThunk<ISubempresa[], void, { reje
 	},
 );
 
+// Una sola forma de pedir el detalle: la usan el detalle de administración y la
+// etapa del despliegue. `dedupe` comparte la petición si ambos la piden a la vez.
+const requestSubsidiaryDetail = async (subsidiariaId: number): Promise<ISubempresa> => {
+	const response = await ApiService.fetchData<any>({
+		url: `/subsidiaries/${subsidiariaId}`,
+		method: 'get',
+		params: { with: 'commune,manager,branches,branches.manager,branches.commune' },
+		dedupe: true,
+	});
+	const raw = response.data?.data ?? response.data?.subsidiary ?? response.data;
+	return normalizeSubsidiaryData(raw);
+};
+
+/** El backend publica un booleano; cualquier otra cosa es «no se sabe». */
+const multiLocationFrom = (subsidiary: ISubempresa): boolean | null =>
+	typeof subsidiary.multi_location_enabled === 'boolean'
+		? subsidiary.multi_location_enabled
+		: null;
+
 export const fetchSubsidiariaDetail = createAsyncThunk<
 	ISubempresa,
 	number,
 	{ rejectValue: string }
 >('subempresa/fetchSubsidiariaDetail', async (subsidiariaId, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<any>({
-			url: `/subsidiaries/${subsidiariaId}`,
-			method: 'get',
-			params: { with: 'commune,manager,branches,branches.manager,branches.commune' },
-		});
-		const raw = response.data?.data ?? response.data?.subsidiary ?? response.data;
-		return normalizeSubsidiaryData(raw);
+		return await requestSubsidiaryDetail(subsidiariaId);
 	} catch (err: any) {
 		return rejectWithValue(
 			err.response?.data?.message || 'Error al cargar detalle de subsidiaria',
 		);
 	}
 });
+
+/**
+ * Lee la etapa del despliegue de una filial (`multi_location_enabled`). Se pide
+ * una vez por filial y sesión: otra lectura en curso o ya resuelta la omite. Un
+ * fallo se reintenta en la próxima pantalla que la necesite.
+ */
+export const fetchSubsidiaryRolloutStage = createAsyncThunk<
+	boolean | null,
+	number,
+	{ state: RootState; rejectValue: string }
+>(
+	'subempresa/fetchSubsidiaryRolloutStage',
+	async (subsidiaryId, { rejectWithValue }) => {
+		try {
+			return multiLocationFrom(await requestSubsidiaryDetail(subsidiaryId));
+		} catch (err: unknown) {
+			const message =
+				err instanceof Error ? err.message : 'Error al cargar la etapa de la filial';
+			return rejectWithValue(message);
+		}
+	},
+	{
+		condition: (subsidiaryId, { getState }) => {
+			const entry = getState().subEmpresa?.rolloutStageById?.[subsidiaryId];
+			return (
+				entry?.status !== 'loading' &&
+				!(entry?.status === 'loaded' && entry.multiLocationEnabled !== null)
+			);
+		},
+	},
+);
+
+/** Guarda la etapa que trae cualquier respuesta de filial, sin pisarla con «no se sabe». */
+const rememberRolloutStage = (state: SubempresaState, subsidiary: ISubempresa) => {
+	const multiLocationEnabled = multiLocationFrom(subsidiary);
+	if (multiLocationEnabled === null || typeof subsidiary.id !== 'number') return;
+	state.rolloutStageById[subsidiary.id] = { status: 'loaded', multiLocationEnabled };
+};
 
 export const createSubsidiaria = createAsyncThunk<
 	ISubempresa,
@@ -227,6 +292,7 @@ const subempresaSlice = createSlice({
 					state.loading = false;
 					state.lista = action.payload;
 					state.error = undefined;
+					action.payload.forEach((subsidiary) => rememberRolloutStage(state, subsidiary));
 				},
 			)
 			.addCase(fetchMisSubsidiarias.rejected, (state, { payload }) => {
@@ -245,11 +311,29 @@ const subempresaSlice = createSlice({
 					state.loading = false;
 					state.detalle = action.payload;
 					state.error = undefined;
+					rememberRolloutStage(state, action.payload);
 				},
 			)
 			.addCase(fetchSubsidiariaDetail.rejected, (state, { payload }) => {
 				state.loading = false;
 				state.error = payload;
+			});
+
+		builder
+			.addCase(fetchSubsidiaryRolloutStage.pending, (state, { meta }) => {
+				state.rolloutStageById[meta.arg] = {
+					status: 'loading',
+					multiLocationEnabled: null,
+				};
+			})
+			.addCase(fetchSubsidiaryRolloutStage.fulfilled, (state, { meta, payload }) => {
+				state.rolloutStageById[meta.arg] = {
+					status: 'loaded',
+					multiLocationEnabled: payload,
+				};
+			})
+			.addCase(fetchSubsidiaryRolloutStage.rejected, (state, { meta }) => {
+				state.rolloutStageById[meta.arg] = { status: 'failed', multiLocationEnabled: null };
 			});
 
 		builder
@@ -279,6 +363,7 @@ const subempresaSlice = createSlice({
 				if (state.detalle?.id === action.payload.id) {
 					state.detalle = action.payload;
 				}
+				rememberRolloutStage(state, action.payload);
 				state.updateError = undefined;
 			})
 			.addCase(updateSubsidiaria.rejected, (state, { payload }) => {

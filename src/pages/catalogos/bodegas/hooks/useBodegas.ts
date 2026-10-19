@@ -3,7 +3,9 @@ import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useAuthorization from '@/hooks/useAuthorization';
 import useContextScopedSelection from '@/hooks/useContextScopedSelection';
+import { ajustesTrasladosLink } from '@/pages/inventario/abastecimiento/AjustesTraslados/types';
 import {
 	fetchWarehouses,
 	createWarehouse,
@@ -22,22 +24,47 @@ import {
 	WarehouseSchema,
 	CREATE_WAREHOUSE_INITIAL_VALUES,
 	type ICreateWarehouseForm,
+	type IBodegasResumen,
+	type TBodegaEstadoFiltro,
 } from '../types';
+
+const LIST_PARAMS: IFetchWarehousesParams = { page: 1, per_page: 100 };
+
+const positiveOrNull = (value: unknown): number | null =>
+	typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
+
+/**
+ * Los vacíos del formulario viajan como `null` (o texto vacío, que el slice traduce): en la
+ * edición es lo que borra el valor guardado. Una capacidad `0` equivale a «sin límite».
+ */
+const toWarehousePayload = (values: ICreateWarehouseForm): ICreateWarehouseRequest => ({
+	...values,
+	maximum_capacity: positiveOrNull(values.maximum_capacity),
+	manager_id: positiveOrNull(values.manager_id),
+	commune_id: positiveOrNull(values.commune_id),
+});
 
 export const useBodegas = () => {
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
+	const { authorize } = useAuthorization();
 	const latestBranchIdRef = useRef(branchId);
 	latestBranchIdRef.current = branchId;
 
 	const warehouseState = useAppSelector((s) => s.warehouse);
-	const warehouses = warehouseState.listBranchId === branchId ? warehouseState.warehouses : [];
+	const warehouses = useMemo(
+		() => (warehouseState.listBranchId === branchId ? warehouseState.warehouses : []),
+		[warehouseState.listBranchId, warehouseState.warehouses, branchId],
+	);
 	const { stats, loading, error, deleting } = warehouseState;
 
-	// UI state
 	const [globalFilter, setGlobalFilter] = useState('');
+	const [typeFilter, setTypeFilter] = useState<string | null>(null);
+	const [statusFilter, setStatusFilter] = useState<TBodegaEstadoFiltro | null>(null);
 	const [editModalOpen, setEditModalOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	// Bodega cuya baja rechazó el backend porque el inventario todavía cuenta unidades en ella.
+	const [stockBlockedWarehouseId, setStockBlockedWarehouseId] = useState<number | null>(null);
 	const branchContext = useMemo(
 		() => (branchId === null ? null : { type: 'branch' as const, id: branchId }),
 		[branchId],
@@ -54,15 +81,11 @@ export const useBodegas = () => {
 		[selection.selectedId, warehouses],
 	);
 
-	// CRUD handlers
 	const loadWarehouses = useCallback(
 		async (params?: IFetchWarehousesParams) => {
 			if (!branchId) return;
-			try {
-				await dispatch(fetchWarehouses({ branchId, params })).unwrap();
-			} catch (e: unknown) {
-				toast.error((e as IWarehouseApiError).message || 'Error al cargar bodegas');
-			}
+			// El error queda en `state.error` y la vista lo muestra con «Reintentar».
+			await dispatch(fetchWarehouses({ branchId, params, allPages: true }));
 		},
 		[dispatch, branchId],
 	);
@@ -88,11 +111,16 @@ export const useBodegas = () => {
 	const handleUpdateWarehouse = useCallback(
 		async (warehouseId: number, data: IUpdateWarehouseRequest) => {
 			if (!branchId) return false;
+			const requestBranchId = branchId;
 			try {
-				await dispatch(updateWarehouse({ branchId, warehouseId, data })).unwrap();
+				await dispatch(
+					updateWarehouse({ branchId: requestBranchId, warehouseId, data }),
+				).unwrap();
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				toast.success('Bodega actualizada');
 				return true;
 			} catch (e: unknown) {
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				toast.error((e as IWarehouseApiError).message || 'Error al actualizar la bodega');
 				return false;
 			}
@@ -103,13 +131,21 @@ export const useBodegas = () => {
 	const handleDeleteWarehouse = useCallback(
 		async (warehouseId: number) => {
 			if (!branchId) return false;
+			const requestBranchId = branchId;
 			try {
-				await dispatch(deleteWarehouse({ branchId, warehouseId })).unwrap();
+				await dispatch(
+					deleteWarehouse({ branchId: requestBranchId, warehouseId }),
+				).unwrap();
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				toast.success('Bodega eliminada');
 				return true;
 			} catch (e: unknown) {
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				const apiError = e as IWarehouseApiError;
-				if (apiError.code === 'WAREHOUSE_HAS_PRODUCTS') {
+				if (apiError.code === 'WAREHOUSE_HAS_STOCK') {
+					// El modal sigue abierto y explica cómo vaciarla; un toast lo repetiría.
+					setStockBlockedWarehouseId(warehouseId);
+				} else if (apiError.code === 'WAREHOUSE_HAS_PRODUCTS') {
 					toast.error('No se puede eliminar, tiene productos asociados');
 				} else {
 					toast.error(apiError.message || 'Error al eliminar la bodega');
@@ -120,85 +156,122 @@ export const useBodegas = () => {
 		[dispatch, branchId],
 	);
 
-	// Create Formik
 	const createForm = useFormik<ICreateWarehouseForm>({
 		initialValues: CREATE_WAREHOUSE_INITIAL_VALUES,
 		validationSchema: WarehouseSchema,
 		onSubmit: async (values, { setSubmitting, resetForm }) => {
-			const cleaned: ICreateWarehouseRequest = { ...values };
-			if (!cleaned.manager_id) delete cleaned.manager_id;
-			if (!cleaned.commune_id) delete cleaned.commune_id;
-			if (!cleaned.maximum_capacity) delete cleaned.maximum_capacity;
-			if (!cleaned.address || cleaned.address.trim() === '') delete cleaned.address;
-			if (!cleaned.schedule || cleaned.schedule.trim() === '') delete cleaned.schedule;
-			if (!cleaned.description || cleaned.description.trim() === '')
-				delete cleaned.description;
-
-			const success = await handleCreateWarehouse(cleaned);
+			const success = await handleCreateWarehouse(toWarehousePayload(values));
 			setSubmitting(false);
 			if (success) {
 				resetForm();
 				createSelection.clear();
-				loadWarehouses({ page: 1, per_page: 15 });
+				void loadWarehouses(LIST_PARAMS);
 			}
 		},
 	});
 
-	// Edit Formik
 	const editForm = useFormik<ICreateWarehouseForm>({
 		initialValues: CREATE_WAREHOUSE_INITIAL_VALUES,
 		validationSchema: WarehouseSchema,
 		enableReinitialize: true,
 		onSubmit: async (values, { setSubmitting }) => {
 			if (!selectedWarehouse) return;
-			const cleaned: IUpdateWarehouseRequest = { ...values };
-			if (!cleaned.manager_id) delete cleaned.manager_id;
-			if (!cleaned.commune_id) delete cleaned.commune_id;
-			if (!cleaned.maximum_capacity) delete cleaned.maximum_capacity;
-			if (!cleaned.address || cleaned.address.trim() === '') delete cleaned.address;
-			if (!cleaned.schedule || cleaned.schedule.trim() === '') delete cleaned.schedule;
-			if (!cleaned.description || cleaned.description.trim() === '')
-				delete cleaned.description;
-
-			const success = await handleUpdateWarehouse(selectedWarehouse.id, cleaned);
+			const success = await handleUpdateWarehouse(
+				selectedWarehouse.id,
+				toWarehousePayload(values),
+			);
 			setSubmitting(false);
 			if (success) {
 				setEditModalOpen(false);
 				selection.clear();
-				loadWarehouses({ page: 1, per_page: 15 });
+				void loadWarehouses(LIST_PARAMS);
 			}
 		},
 	});
 
-	// Load data
 	useEffect(() => {
 		if (branchId) {
-			loadWarehouses({ page: 1, per_page: 15 });
+			void loadWarehouses(LIST_PARAMS);
 		}
 	}, [branchId, loadWarehouses]);
 
-	// Cleanup
 	useEffect(() => {
 		return () => {
 			dispatch(clearWarehouseError());
 		};
 	}, [dispatch]);
 
-	// Filtered warehouses
 	const filteredWarehouses = useMemo(() => {
-		if (!globalFilter) return warehouses;
-		const searchLower = globalFilter.toLowerCase();
-		return warehouses.filter(
-			(w) =>
-				w.name.toLowerCase().includes(searchLower) ||
-				w.code.toLowerCase().includes(searchLower),
-		);
-	}, [warehouses, globalFilter]);
+		const searchLower = globalFilter.trim().toLowerCase();
+		return warehouses.filter((w) => {
+			if (
+				searchLower &&
+				!w.name.toLowerCase().includes(searchLower) &&
+				!w.code.toLowerCase().includes(searchLower)
+			)
+				return false;
+			if (typeFilter !== null && w.warehouse_type !== typeFilter) return false;
+			if (statusFilter === 'active' && !w.is_active) return false;
+			if (statusFilter === 'inactive' && w.is_active) return false;
+			return true;
+		});
+	}, [warehouses, globalFilter, typeFilter, statusFilter]);
 
-	// Actions
+	const typeOptions = useMemo(
+		() =>
+			Array.from(new Set(warehouses.map((w) => w.warehouse_type).filter(Boolean))).sort(
+				(a, b) => a.localeCompare(b, 'es'),
+			),
+		[warehouses],
+	);
+
+	// El listado no trae `products`: las unidades salen de `current_capacity`.
+	const summary = useMemo<IBodegasResumen>(
+		() => ({
+			total: warehouses.length,
+			actives: warehouses.filter((w) => w.is_active).length,
+			units: warehouses.reduce((sum, w) => sum + (w.current_capacity ?? 0), 0),
+			nearCapacity: stats.near_capacity,
+		}),
+		[warehouses, stats.near_capacity],
+	);
+
+	const deleteBlockedByStock =
+		selectedWarehouse !== null && selectedWarehouse.id === stockBlockedWarehouseId;
+	// Sólo enlaza a la pestaña de ajuste: la de traslados no existe en la etapa 1. Pide el
+	// `authority` completo de la ruta (regla de `AuthorityCheck`) más `edit-product` con
+	// acceso a la sucursal, el mismo permiso que la página exige para ajustar.
+	const adjustLink =
+		deleteBlockedByStock && selectedWarehouse
+			? ajustesTrasladosLink({ tab: 'ajuste', warehouseId: selectedWarehouse.id })
+			: null;
+	const adjustStockLink =
+		adjustLink &&
+		authorize({
+			permission: ['edit-product', ...adjustLink.authority],
+			requireAll: true,
+			branchId,
+			scope: 'access',
+		})
+			? adjustLink.to
+			: null;
+
+	const hasFilters = globalFilter.trim() !== '' || typeFilter !== null || statusFilter !== null;
+	const clearFilters = useCallback(() => {
+		setGlobalFilter('');
+		setTypeFilter(null);
+		setStatusFilter(null);
+	}, []);
+	const refresh = useCallback(() => {
+		void loadWarehouses(LIST_PARAMS);
+	}, [loadWarehouses]);
+
+	const { setValues: setEditValues } = editForm;
+	const { resetForm: resetCreateForm } = createForm;
+
 	const handleEdit = useCallback(
 		(warehouse: IWarehouse) => {
-			editForm.setValues({
+			setEditValues({
 				name: warehouse.name || '',
 				code: warehouse.code || '',
 				warehouse_type: warehouse.warehouse_type || 'Secundaria',
@@ -214,11 +287,12 @@ export const useBodegas = () => {
 			selection.select(warehouse.id);
 			setEditModalOpen(true);
 		},
-		[editForm, selection],
+		[setEditValues, selection],
 	);
 
 	const handleDelete = useCallback(
 		(warehouse: IWarehouse) => {
+			setStockBlockedWarehouseId(null);
 			selection.select(warehouse.id);
 			setDeleteModalOpen(true);
 		},
@@ -230,68 +304,78 @@ export const useBodegas = () => {
 		const success = await handleDeleteWarehouse(selectedWarehouse.id);
 		if (success) {
 			selection.clear();
-			loadWarehouses({ page: 1, per_page: 15 });
+			void loadWarehouses(LIST_PARAMS);
 		}
 		return success;
 	}, [selectedWarehouse, handleDeleteWarehouse, loadWarehouses, selection]);
 
 	const openCreateModal = useCallback(() => {
-		createForm.resetForm();
+		resetCreateForm();
 		createSelection.select('create');
-	}, [createForm, createSelection]);
+	}, [resetCreateForm, createSelection]);
 	const setCreateModalOpen = useCallback(
 		(nextIsOpen: boolean) => {
 			if (nextIsOpen) {
-				createForm.resetForm();
+				resetCreateForm();
 				createSelection.select('create');
 				return;
 			}
 			createSelection.clear();
 		},
-		[createForm, createSelection],
+		[resetCreateForm, createSelection],
 	);
 
 	const state = useMemo(
 		() => ({
 			warehouses: filteredWarehouses,
-			stats,
+			summary,
+			typeOptions,
 			loading,
 			deleting,
 			error,
 			globalFilter,
+			typeFilter,
+			statusFilter,
+			hasFilters,
 			createModalOpen: createSelection.isOpen,
 			editModalOpen: editModalOpen && selection.isOpen,
 			deleteModalOpen: deleteModalOpen && selection.isOpen,
 			selectedWarehouse,
+			deleteBlockedByStock,
+			adjustStockLink,
 			branchId,
 		}),
 		[
 			filteredWarehouses,
-			stats,
+			summary,
+			typeOptions,
 			loading,
 			deleting,
 			error,
 			globalFilter,
+			typeFilter,
+			statusFilter,
+			hasFilters,
 			createSelection.isOpen,
 			editModalOpen,
 			deleteModalOpen,
 			selectedWarehouse,
+			deleteBlockedByStock,
+			adjustStockLink,
 			branchId,
 			selection.isOpen,
 		],
 	);
 
-	const forms = useMemo(
-		() => ({
-			create: createForm,
-			edit: editForm,
-		}),
-		[createForm, editForm],
-	);
+	const forms = { create: createForm, edit: editForm };
 
 	const actions = useMemo(
 		() => ({
 			setGlobalFilter,
+			setTypeFilter,
+			setStatusFilter,
+			clearFilters,
+			refresh,
 			openCreateModal,
 			setCreateModalOpen,
 			setEditModalOpen,
@@ -303,6 +387,8 @@ export const useBodegas = () => {
 		}),
 		[
 			setGlobalFilter,
+			clearFilters,
+			refresh,
 			openCreateModal,
 			setCreateModalOpen,
 			setEditModalOpen,

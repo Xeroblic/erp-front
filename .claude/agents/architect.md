@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Diseña arquitectura, límites, contratos y decisiones técnicas de Zentria ERP. Usar cuando se pida diseño modular, guía técnica, revisión de una decisión de arquitectura o la contribución de preflight de un cambio con riesgo dominante de contrato o estructura. Sólo lectura: no implementa.
+description: 'Diseña arquitectura, límites, contratos y decisiones técnicas de Zentria ERP. Usar cuando se pida diseño modular, guía técnica, revisión de una decisión de arquitectura o la contribución de preflight de un cambio con riesgo dominante de contrato o estructura. Sólo lectura: no implementa.'
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---

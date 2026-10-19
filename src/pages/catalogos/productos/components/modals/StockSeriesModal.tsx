@@ -12,6 +12,8 @@ import {
 	fetchProductSeries,
 	unassignStockFromProduct,
 } from '@/store/slices/products/productStockSlice';
+import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
+import { asStockRequestError, describeStockRequestError } from '@/utils/stockMovementErrors.util';
 
 interface StockSeriesModalProps {
 	isOpen: boolean;
@@ -39,24 +41,31 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 	const [series, setSeries] = useState<ISeriesItem[]>([]);
 	const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
 
-	const user = useAppSelector((state) => state.auth.user);
+	const defaultBranchId = useAppSelector((state) => state.auth.user?.branch?.id);
+	const userBranches = useAppSelector(selectUserBranches);
 	const { isLoadingSeries, isAssigning, isUnassigning } = useAppSelector(
 		(state) => state.productStock,
 	);
 
-	const visibleBranches = (user?.visible as any)?.branches || [];
-	const accessibleBranches = visibleBranches.filter(
-		(b: any) => b.subsidiary?.id === subsidiaryId,
+	// Sucursales del usuario en esta filial: el backend exige alcance sobre la
+	// sucursal elegida (estar asignado a una no alcanza a las demás), y ese
+	// alcance es el que el perfil publica como sucursales visibles.
+	const accessibleBranches = userBranches.filter(
+		(branch) => branch.subsidiaryId === subsidiaryId,
 	);
 
-	const defaultBranchId = user?.branch?.id || '';
-	const initialBranchId = accessibleBranches.some((b: any) => b.id === defaultBranchId)
-		? defaultBranchId
-		: accessibleBranches.length > 0
-			? accessibleBranches[0].id
-			: '';
+	const fallbackBranchId: number | '' = accessibleBranches[0]?.id ?? '';
+	const initialBranchId: number | '' = accessibleBranches.some(
+		(branch) => branch.id === defaultBranchId,
+	)
+		? (defaultBranchId ?? fallbackBranchId)
+		: fallbackBranchId;
 
 	const [selectedBranchId, setSelectedBranchId] = useState<number | ''>(initialBranchId);
+	// Destino al asignar, origen al devolver: la sucursal que el backend exige alcanzar.
+	const selectedBranchName = accessibleBranches.find(
+		(branch) => branch.id === selectedBranchId,
+	)?.name;
 
 	useEffect(() => {
 		if (!isOpen || !product) {
@@ -167,16 +176,22 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 					},
 				}),
 			).unwrap();
-			const destinationBranch =
-				accessibleBranches.find((b: any) => b.id === selectedBranchId)?.name ||
-				'la sucursal seleccionada';
 			toast.success(
-				`Stock asignado exitosamente desde la Bodega Central hacia ${destinationBranch}.`,
+				`Stock asignado exitosamente desde la Bodega Central hacia ${selectedBranchName || 'la sucursal seleccionada'}.`,
 			);
 			onClose();
 		} catch (error) {
-			console.error('Error assigning stock:', error);
-			toast.error('Ocurrió un error al intentar asignar el stock.');
+			// Sin reintento: el 403 dice qué sucursal falta y el 422, el motivo de la línea.
+			toast.error(
+				describeStockRequestError(
+					asStockRequestError(error, 'Ocurrió un error al intentar asignar el stock.'),
+					{
+						operation: 'assign',
+						destinationBranchName: selectedBranchName,
+						takesFromProductBranch: !product.serial_tracking,
+					},
+				),
+			);
 		}
 	};
 
@@ -218,8 +233,12 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 			);
 			onClose();
 		} catch (error) {
-			console.error('Error returning stock:', error);
-			toast.error('Ocurrió un error al intentar devolver el stock.');
+			toast.error(
+				describeStockRequestError(
+					asStockRequestError(error, 'Ocurrió un error al intentar devolver el stock.'),
+					{ operation: 'unassign', sourceBranchName: selectedBranchName },
+				),
+			);
 		}
 	};
 
@@ -284,9 +303,9 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 							value={selectedBranchId}
 							onChange={(e) => setSelectedBranchId(Number(e.target.value))}>
 							<option value=''>-- Seleccione una sucursal --</option>
-							{accessibleBranches.map((b: any) => (
-								<option key={b.id} value={b.id}>
-									{b.name}
+							{accessibleBranches.map((branch) => (
+								<option key={branch.id} value={branch.id}>
+									{branch.name}
 								</option>
 							))}
 						</select>

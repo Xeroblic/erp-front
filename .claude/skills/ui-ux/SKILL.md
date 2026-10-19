@@ -16,6 +16,44 @@ Leer primero `CLAUDE.md`, inspeccionar componentes vecinos y verificar rutas y p
 - Mantener interacción accesible por teclado, nombres accesibles y semántica correcta.
 - Evitar manipulación directa del DOM cuando estado y renderizado declarativo resuelvan el caso.
 
+## Plantilla de página
+
+Árbol obligatorio de toda página interna (movido desde `CLAUDE.md` §4):
+
+```tsx
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Container from '@/components/layouts/Container/Container';
+import Icon from '@/components/icon/Icon';
+import ProtectedButton from '@/components/ui/ProtectedButton';
+
+const ModuloView = () => (
+	<PageWrapper isProtectedRoute title='Clientes'>
+		<Subheader>
+			<SubheaderLeft>
+				<Icon icon='HeroUsers' />
+				<span>Catálogos / Clientes</span>
+			</SubheaderLeft>
+			<SubheaderRight>
+				{/* Botón con permiso + scope de sucursal */}
+				<ProtectedButton
+					permission='create-customer'
+					branchId={currentBranchId}
+					scope='access'
+					variant='solid'
+					color='blue'
+					icon='HeroPlus'
+					onClick={onCreate}>
+					Nuevo
+				</ProtectedButton>
+			</SubheaderRight>
+		</Subheader>
+
+		<Container>{/* Card, tablas, modales... */}</Container>
+	</PageWrapper>
+);
+```
+
 ## Estados
 
 Distinguir carga, error, vacío y filtros sin coincidencias. No mostrar datos anteriores como vigentes bajo un error o contexto nuevo. Evitar cierres ambiguos de overlays durante operaciones no cancelables y reutilizar el comportamiento del componente compartido cuando exista.

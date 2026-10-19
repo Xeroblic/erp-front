@@ -1,10 +1,20 @@
 /**
- * Hook para manejar envío de ajuste de stock
- * Responsabilidad única: comunicación con API (Single Responsibility)
+ * Escribe contra el endpoint real `POST /subsidiaries/{sub}/stock-adjustments`,
+ * que hoy sirve dos cosas distintas: ingresar mercadería comprada y corregir una
+ * diferencia de conteo. El contrato nuevo las separa en tres pantallas —recepción,
+ * traslado interno y ajuste por conteo— bajo `pages/inventario/abastecimiento`.
+ *
+ * Mientras el backend no publique esos endpoints, ambas cosas conviven: esta
+ * pantalla sigue siendo la única operativa (`VITE_INVENTORY_STOCK_USE_MOCKS` está
+ * apagado fuera de desarrollo). Cuando el contrato se publique, lo que se retira es
+ * este hook junto con `pages/inventario/ingresoStock`, no una parte suya: su
+ * payload (`quantity_change` firmado, sin bodega, sin condición y sin procedencia)
+ * no tiene equivalente en el contrato nuevo y no se puede migrar campo a campo.
  */
 import { useCallback, useState } from 'react';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
+import { readSessionItem, removeSessionItem, writeSessionItem } from '@/utils/sessionStorage.util';
 import type {
 	IWorkItem,
 	IMovementType,
@@ -25,20 +35,12 @@ type ApiErrorLike = {
 	};
 };
 
-const persistLastBatchId = (batchId: string) => {
-	if (typeof window === 'undefined') return;
-	window.sessionStorage.setItem(LAST_BATCH_STORAGE_KEY, batchId);
-};
-
-const readLastBatchId = (): string | null => {
-	if (typeof window === 'undefined') return null;
-	return window.sessionStorage.getItem(LAST_BATCH_STORAGE_KEY);
-};
-
-const clearPersistedLastBatchId = () => {
-	if (typeof window === 'undefined') return;
-	window.sessionStorage.removeItem(LAST_BATCH_STORAGE_KEY);
-};
+// Si el storage no está disponible (modo privado, cuota, política del navegador)
+// sólo se pierde el recordatorio del último lote: no debe romper el montaje ni el
+// cierre de un envío que el backend ya aceptó.
+const persistLastBatchId = (batchId: string) => writeSessionItem(LAST_BATCH_STORAGE_KEY, batchId);
+const readLastBatchId = (): string | null => readSessionItem(LAST_BATCH_STORAGE_KEY);
+const clearPersistedLastBatchId = () => removeSessionItem(LAST_BATCH_STORAGE_KEY);
 
 const showValidationErrors = (errors?: Record<string, string[] | string>) => {
 	if (!errors) return;
@@ -60,17 +62,11 @@ export const useStockAdjustment = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [lastBatchId, setLastBatchId] = useState<string | null>(() => readLastBatchId());
 
-	/**
-	 * Convierte cantidad string a número, validando > 0
-	 */
 	const toPositiveNumber = useCallback((value: string | number): number => {
 		const parsed = Number(value);
 		return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 	}, []);
 
-	/**
-	 * Calcula quantity_change (con signo según tipo de movimiento)
-	 */
 	const getSignedQuantity = useCallback(
 		(quantity: string, movementType: IMovementType): number => {
 			const absolute = toPositiveNumber(quantity);
@@ -80,9 +76,6 @@ export const useStockAdjustment = () => {
 		[toPositiveNumber],
 	);
 
-	/**
-	 * Construye payload y envía ajuste al API
-	 */
 	const submitBatchAdjustment = useCallback(
 		async (
 			workItems: IWorkItem[],
@@ -129,12 +122,10 @@ export const useStockAdjustment = () => {
 
 			let hasNegativeStockError = false;
 
-			// Construir array de items con quantity_change
 			const items = workItems
 				.map((item) => {
 					const quantity_change = getSignedQuantity(item.quantity, movementType);
 
-					// Validación de stock negativo (Solo para egresos)
 					if (movementType === 'egreso' && quantity_change < 0) {
 						const absoluteChange = Math.abs(quantity_change);
 						const currentStock = Number(item.stock ?? 0);
@@ -157,13 +148,11 @@ export const useStockAdjustment = () => {
 				return false;
 			}
 
-			// Validar que NO haya cambios de 0
 			if (!items.length || items.length !== workItems.length) {
 				toast.error('Todos los productos deben tener cantidad distinta de 0.');
 				return false;
 			}
 
-			// Armar payload
 			const payload: IStockAdjustmentPayload = {
 				branch_id: parsedBranchId,
 				reason: normalizedReason,
@@ -172,6 +161,9 @@ export const useStockAdjustment = () => {
 			};
 
 			setIsSubmitting(true);
+			let batchId: string | undefined;
+			// El try cubre sólo el envío: lo que ocurra después del 202 no puede
+			// reportarse como fallo, porque el usuario reenviaría un lote ya aceptado.
 			try {
 				const response = await ApiService.fetchData<IBatchAdjustmentResponse>({
 					url: `/subsidiaries/${selectedSubsidiaryId}/stock-adjustments`,
@@ -183,26 +175,19 @@ export const useStockAdjustment = () => {
 					throw new Error('El backend no aceptó el ajuste en segundo plano.');
 				}
 
-				const batchId = response.data?.batch_id;
-				if (batchId) {
-					setLastBatchId(batchId);
-					persistLastBatchId(batchId);
-				}
-				toast.success(
-					batchId
-						? `✓ Procesando en segundo plano. Batch: ${batchId}`
-						: '✓ Procesando en segundo plano.',
-				);
-
-				onSuccess?.();
-				return true;
+				batchId = response.data?.batch_id;
 			} catch (err) {
 				const apiError = err as ApiErrorLike;
 				const status = apiError?.response?.status;
 				const apiMessage = apiError?.response?.data?.message;
 
+				// El backend exige alcance sobre la sucursal del ajuste, no sólo sobre
+				// la filial: estar asignado a una sucursal no alcanza a las demás. Su
+				// mensaje de 403 es genérico, así que se nombra la causa acá.
 				if (status === 403) {
-					toast.error('No tienes permisos para ajustar stock en esta subsidiaria (403).');
+					toast.error(
+						'No tienes permiso para ajustar el stock de esta sucursal. Elige una sucursal a la que tengas acceso.',
+					);
 					return false;
 				}
 
@@ -223,6 +208,19 @@ export const useStockAdjustment = () => {
 			} finally {
 				setIsSubmitting(false);
 			}
+
+			if (batchId) {
+				setLastBatchId(batchId);
+				persistLastBatchId(batchId);
+			}
+			toast.success(
+				batchId
+					? `✓ Procesando en segundo plano. Batch: ${batchId}`
+					: '✓ Procesando en segundo plano.',
+			);
+
+			onSuccess?.();
+			return true;
 		},
 		[getSignedQuantity, toPositiveNumber],
 	);

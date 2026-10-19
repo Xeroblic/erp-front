@@ -12,8 +12,11 @@ const CategoriesCell: React.FC<{ product: IProduct }> = ({ product }) => {
 						key={category.id}
 						variant='outline'
 						color='blue'
-						className='truncate px-2 text-xs'>
-						{category.name}
+						className='max-w-[120px] px-2 text-xs'>
+						{/* Badge es inline-flex: el recorte con elipsis necesita un hijo con min-w-0. */}
+						<span className='min-w-0 truncate' title={category.name}>
+							{category.name}
+						</span>
 					</Badge>
 				))}
 				{categories.length > 3 && (

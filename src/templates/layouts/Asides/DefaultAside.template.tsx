@@ -1,4 +1,3 @@
-// src/templates/layouts/Aside/DefaultAsideTemplate.tsx
 import React, { PropsWithChildren, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Aside, { AsideBody } from '@/components/layouts/Aside/Aside';
@@ -51,7 +50,6 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 			? true
 			: authorize({ roles: safeRoles, requireAll: requireAllRoles });
 
-	// Super admin siempre pasa
 	if (
 		isSuperAdmin ||
 		authorizationRoles.includes('super-admin') ||
@@ -66,7 +64,6 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 		return <>{children}</>;
 	}
 
-	// Debe cumplir permiso + rol
 	if (!permissionMatched) return null;
 	if (safeRoles.length && !roleMatched) return null;
 
@@ -129,7 +126,6 @@ const DefaultAsideTemplate = () => {
 			<AsideHeadPart />
 			<AsideBody>
 				<Nav>
-					{/* HOME */}
 					<AuthorityCheckNav userAuthority={userAuthority} roles={userRoles}>
 						<NavItem
 							text={Pages.dashboard.text}
@@ -158,7 +154,6 @@ const DefaultAsideTemplate = () => {
 							to=''
 							isOpen={collapseStates.registro}
 							onToggle={() => toggleCollapse('registro')}>
-							{/* Empresa */}
 							<AuthorityCheckNav
 								authority={Pages.manage.subPages.company.authority}
 								roles={Pages.manage.subPages.company.roles}
@@ -172,7 +167,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Subempresa */}
 							<AuthorityCheckNav
 								authority={Pages.manage.subPages.subsidiary.authority}
 								userAuthority={userAuthority}>
@@ -185,7 +179,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Sucursal */}
 							<AuthorityCheckNav
 								authority={Pages.manage.subPages.branch.authority}
 								userAuthority={userAuthority}>
@@ -198,7 +191,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Gestión de usuarios (roles + permisos) */}
 							<AuthorityCheckNav
 								authority={Pages.manage.subPages.rolesPermisos.authority}
 								userAuthority={userAuthority}
@@ -234,21 +226,6 @@ const DefaultAsideTemplate = () => {
 							to=''
 							isOpen={collapseStates.servicio}
 							onToggle={() => toggleCollapse('servicio')}>
-							{/* Revisiones Técnicas */}
-							{/* <AuthorityCheckNav
-								authority={Pages.technical.subPages.reviews.authority}
-								roles={Pages.technical.subPages.reviews.roles}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.technical.subPages.reviews.text}
-									to={Pages.technical.subPages.reviews.to}
-									icon={Pages.technical.subPages.reviews.icon}
-									id={Pages.technical.subPages.reviews.id}
-									onClick={() => navigate(Pages.technical.subPages.reviews.to)}
-								/>
-							</AuthorityCheckNav> */}
-
-							{/* refactor */}
 							<AuthorityCheckNav
 								authority={Pages.technical.subPages.refactor.authority}
 								roles={Pages.technical.subPages.refactor.roles}
@@ -262,7 +239,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Proveedores */}
 							<AuthorityCheckNav
 								authority={Pages.catalogs.subPages.suppliers.authority}
 								roles={Pages.catalogs.subPages.suppliers.roles}
@@ -277,7 +253,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Clientes-Proveedor */}
 							<AuthorityCheckNav
 								authority={Pages.catalogs.subPages.customers.authority}
 								roles={Pages.catalogs.subPages.customers.roles}
@@ -292,7 +267,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Casilleros (Lock Care) */}
 							<AuthorityCheckNav
 								authority={Pages.technical.subPages.lockersManagement.authority}
 								roles={Pages.technical.subPages.lockersManagement.roles}
@@ -317,6 +291,9 @@ const DefaultAsideTemplate = () => {
 						authority={[
 							...Pages.inventory.authority,
 							...Pages.inventory.subPages.retirosEquipos.authority,
+							...Pages.inventory.subPages.proveedores.authority,
+							...Pages.inventory.subPages.documentosCompra.authority,
+							...Pages.inventory.subPages.recepciones.authority,
 						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
@@ -326,6 +303,9 @@ const DefaultAsideTemplate = () => {
 						authority={[
 							...Pages.inventory.authority,
 							...Pages.inventory.subPages.retirosEquipos.authority,
+							...Pages.inventory.subPages.proveedores.authority,
+							...Pages.inventory.subPages.documentosCompra.authority,
+							...Pages.inventory.subPages.recepciones.authority,
 						]}
 						requireAll={Pages.inventory.requireAll}
 						userAuthority={userAuthority}>
@@ -336,7 +316,19 @@ const DefaultAsideTemplate = () => {
 							to=''
 							isOpen={collapseStates.inventario}
 							onToggle={() => toggleCollapse('inventario')}>
-							{/* Bodegas */}
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.inventario.authority}
+								requireAll={Pages.inventory.subPages.inventario.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.inventario.text}
+									to={Pages.inventory.subPages.inventario.to}
+									icon={Pages.inventory.subPages.inventario.icon}
+									id={Pages.inventory.subPages.inventario.id}
+									onClick={() => navigate(Pages.inventory.subPages.inventario.to)}
+								/>
+							</AuthorityCheckNav>
+
 							<AuthorityCheckNav
 								authority={Pages.inventory.subPages.warehouses.authority}
 								roles={Pages.inventory.subPages.warehouses.roles}
@@ -351,7 +343,81 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Trazabilidad Subsidiary */}
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.proveedores.authority}
+								requireAll={Pages.inventory.subPages.proveedores.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.proveedores.text}
+									to={Pages.inventory.subPages.proveedores.to}
+									icon={Pages.inventory.subPages.proveedores.icon}
+									id={Pages.inventory.subPages.proveedores.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.proveedores.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.documentosCompra.authority}
+								requireAll={Pages.inventory.subPages.documentosCompra.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.documentosCompra.text}
+									to={Pages.inventory.subPages.documentosCompra.to}
+									icon={Pages.inventory.subPages.documentosCompra.icon}
+									id={Pages.inventory.subPages.documentosCompra.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.documentosCompra.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.recepciones.authority}
+								requireAll={Pages.inventory.subPages.recepciones.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.recepciones.text}
+									to={Pages.inventory.subPages.recepciones.to}
+									icon={Pages.inventory.subPages.recepciones.icon}
+									id={Pages.inventory.subPages.recepciones.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.recepciones.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.ajustesTraslados.authority}
+								requireAll={Pages.inventory.subPages.ajustesTraslados.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.ajustesTraslados.text}
+									to={Pages.inventory.subPages.ajustesTraslados.to}
+									icon={Pages.inventory.subPages.ajustesTraslados.icon}
+									id={Pages.inventory.subPages.ajustesTraslados.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.ajustesTraslados.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.ingresoStock.authority}
+								requireAll={Pages.inventory.subPages.ingresoStock.requireAll}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.ingresoStock.text}
+									to={Pages.inventory.subPages.ingresoStock.to}
+									icon={Pages.inventory.subPages.ingresoStock.icon}
+									id={Pages.inventory.subPages.ingresoStock.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.ingresoStock.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
 							<AuthorityCheckNav
 								authority={
 									Pages.inventory.subPages.trazabilidadSubsidiary.authority
@@ -371,36 +437,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Transferencias Comerciales */}
-							<AuthorityCheckNav
-								authority={Pages.inventory.subPages.transfers.authority}
-								roles={Pages.inventory.subPages.transfers.roles}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.inventory.subPages.transfers.text}
-									to={Pages.inventory.subPages.transfers.to}
-									icon={Pages.inventory.subPages.transfers.icon}
-									id={Pages.inventory.subPages.transfers.id}
-									onClick={() => navigate(Pages.inventory.subPages.transfers.to)}
-								/>
-							</AuthorityCheckNav>
-
-							{/* Ingreso de Stock */}
-							<AuthorityCheckNav
-								authority={Pages.inventory.subPages.ingresoStock.authority}
-								requireAll={Pages.inventory.subPages.ingresoStock.requireAll}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.inventory.subPages.ingresoStock.text}
-									to={Pages.inventory.subPages.ingresoStock.to}
-									icon={Pages.inventory.subPages.ingresoStock.icon}
-									id={Pages.inventory.subPages.ingresoStock.id}
-									onClick={() =>
-										navigate(Pages.inventory.subPages.ingresoStock.to)
-									}
-								/>
-							</AuthorityCheckNav>
-
 							<AuthorityCheckNav
 								authority={Pages.inventory.subPages.retirosEquipos.authority}
 								userAuthority={userAuthority}
@@ -412,6 +448,25 @@ const DefaultAsideTemplate = () => {
 									id={Pages.inventory.subPages.retirosEquipos.id}
 									onClick={() =>
 										navigate(Pages.inventory.subPages.retirosEquipos.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={
+									Pages.inventory.subPages.catalogoAbastecimiento.authority
+								}
+								requireAll={
+									Pages.inventory.subPages.catalogoAbastecimiento.requireAll
+								}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.catalogoAbastecimiento.text}
+									to={Pages.inventory.subPages.catalogoAbastecimiento.to}
+									icon={Pages.inventory.subPages.catalogoAbastecimiento.icon}
+									id={Pages.inventory.subPages.catalogoAbastecimiento.id}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.catalogoAbastecimiento.to)
 									}
 								/>
 							</AuthorityCheckNav>
@@ -434,7 +489,6 @@ const DefaultAsideTemplate = () => {
 							to=''
 							isOpen={collapseStates.comercial}
 							onToggle={() => toggleCollapse('comercial')}>
-							{/* Ventas */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.sales.authority}
 								roles={Pages.commercial.subPages.sales.roles}
@@ -448,7 +502,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Pendientes de serie */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.pendientesSerie.authority}
 								roles={Pages.commercial.subPages.pendientesSerie.roles}
@@ -464,7 +517,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Enlaces Públicos */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.enlacesPublicos.authority}
 								roles={Pages.commercial.subPages.enlacesPublicos.roles}
@@ -480,7 +532,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Cotizaciones */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.quotes.authority}
 								roles={Pages.commercial.subPages.quotes.roles}
@@ -494,7 +545,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Garantías */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.warranties.authority}
 								roles={Pages.commercial.subPages.warranties.roles}
@@ -511,7 +561,7 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Pagos diferidos — solo por permiso (ZF-15), sin allowlist de roles */}
+							{/* Sólo por permiso, sin allowlist de roles: lo usan roles como Cobranza. */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.pagosDiferidos.authority}
 								userAuthority={userAuthority}>
@@ -526,7 +576,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Cartera de crédito */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.carteraCredito.authority}
 								roles={Pages.commercial.subPages.carteraCredito.roles}
@@ -542,7 +591,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Clientes Ventas */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.clientesVentas.authority}
 								userAuthority={userAuthority}>
@@ -579,7 +627,6 @@ const DefaultAsideTemplate = () => {
 							to=''
 							isOpen={collapseStates.catalogos}
 							onToggle={() => toggleCollapse('catalogos')}>
-							{/* Productos */}
 							<AuthorityCheckNav
 								authority={Pages.catalogs.subPages.products.authority}
 								userAuthority={userAuthority}
@@ -593,7 +640,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Categorías */}
 							<AuthorityCheckNav
 								authority={Pages.catalogs.subPages.categories.authority}
 								roles={Pages.catalogs.subPages.categories.roles}
@@ -608,7 +654,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Marcas */}
 							<AuthorityCheckNav
 								authority={Pages.catalogs.subPages.brands.authority}
 								roles={Pages.catalogs.subPages.brands.roles}
@@ -645,7 +690,6 @@ const DefaultAsideTemplate = () => {
 							to=''
 							isOpen={collapseStates.reportes}
 							onToggle={() => toggleCollapse('reportes')}>
-							{/* Dashboard de Ventas */}
 							<AuthorityCheckNav
 								authority={Pages.reports.subPages.salesDashboard.authority}
 								roles={Pages.reports.subPages.salesDashboard.roles}
@@ -661,7 +705,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Reportes de Inventario */}
 							<AuthorityCheckNav
 								authority={Pages.reports.subPages.inventoryReports.authority}
 								roles={Pages.reports.subPages.inventoryReports.roles}
@@ -700,7 +743,6 @@ const DefaultAsideTemplate = () => {
 							to=''
 							isOpen={collapseStates.rrhh}
 							onToggle={() => toggleCollapse('rrhh')}>
-							{/* Invitaciones */}
 							<AuthorityCheckNav
 								authority={Pages.humanResources.subPages.invitationsAdmin.authority}
 								roles={Pages.humanResources.subPages.invitationsAdmin.roles}
@@ -719,7 +761,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Reloj Control */}
 							<AuthorityCheckNav
 								authority={Pages.humanResources.subPages.relojControl.authority}
 								roles={Pages.humanResources.subPages.relojControl.roles}
@@ -736,7 +777,6 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Configuración RH */}
 							<AuthorityCheckNav
 								authority={Pages.humanResources.subPages.configuracionRH.authority}
 								roles={Pages.humanResources.subPages.configuracionRH.roles}

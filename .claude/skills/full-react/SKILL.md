@@ -1,6 +1,6 @@
 ---
 name: full-react
-description: Implementar o revisar lógica React de Zentria ERP: hooks, Formik, Redux, efectos, estado y operaciones asíncronas. Usar para lógica de negocio, formularios, estado o side effects en React.
+description: 'Implementar o revisar lógica React de Zentria ERP: hooks, Formik, Redux, efectos, estado y operaciones asíncronas. Usar para lógica de negocio, formularios, estado o side effects en React.'
 ---
 
 # Lógica React de Zentria

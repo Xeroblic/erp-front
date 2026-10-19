@@ -595,8 +595,13 @@ const CandidatesList: React.FC<CandidatesListProps> = ({
 								<tr
 									key={c.id ?? c.sku ?? idx}
 									className='border-t border-neutral-200 transition-colors hover:bg-blue-50/40 dark:border-neutral-700 dark:hover:bg-blue-950/20'>
-									<td className='max-w-[200px] truncate px-3 py-2.5 font-medium text-neutral-800 dark:text-neutral-100'>
-										{c.name}
+									<td className='px-3 py-2.5 font-medium text-neutral-800 dark:text-neutral-100'>
+										{/* El tope va dentro de la celda: max-width sobre <td> no aplica en layout automático. */}
+										<div
+											className='line-clamp-2 max-w-[200px] break-words'
+											title={c.name}>
+											{c.name}
+										</div>
 									</td>
 									<td className='px-3 py-2.5 font-mono text-xs text-neutral-600 dark:text-neutral-400'>
 										{c.sku || '—'}

@@ -5,7 +5,6 @@ import { useBranchManagers } from '@/pages/gestionAdmin/sucursales/hooks/useBran
 
 const WAREHOUSE_ROLE = SYSTEM_ROLES.WAREHOUSE_MANAGER.toLowerCase();
 
-// Interfaces explícitas para evitar el uso de 'any'
 export interface IManagerRoleObj {
 	name?: string;
 	role?: string;

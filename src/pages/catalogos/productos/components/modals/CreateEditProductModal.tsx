@@ -43,6 +43,7 @@ import type { ProductFormValues } from '../../types/products.types';
 import Select from '@/components/form/Select';
 import { PRODUCT_DEVICE_TYPES } from '../../constants/product-attributes.constants';
 import UserBranchSelector from './components/UserBranchSelector';
+import SubsidiaryStockNotice from './components/SubsidiaryStockNotice';
 import BrandSelectorWithCreate from '../../../../../components/utils/selects/BrandSelectorWithCreate';
 import CategorySelectorWithCreate from '../../../../../components/utils/selects/CategorySelectorWithCreate';
 import { useAppSelector, useAppDispatch } from '@/store';
@@ -63,6 +64,8 @@ interface CreateEditProductModalProps {
 	brandsLoading?: boolean;
 	categoriesLoading?: boolean;
 	defaultBranchId?: number | null;
+	/** Alta en la vista por filial: el stock no se registra acá sino en la sucursal. */
+	isSubsidiaryProduct?: boolean;
 }
 
 type ProductToggleKey = Extract<(typeof PRODUCT_TOGGLES)[number]['key'], keyof ProductFormValues>;
@@ -93,6 +96,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 	brandsLoading = false,
 	categoriesLoading = false,
 	defaultBranchId = null,
+	isSubsidiaryProduct = false,
 }) => {
 	const currentUser = useAppSelector((state) => state.auth.user);
 	const dispatch = useAppDispatch();
@@ -835,7 +839,12 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 										id='formulario'
 										text='Formulario Normal'
 										icon='HeroDocumentText'>
-										<div className='mt-4 space-y-5'>{formFieldsMarkup}</div>
+										<div className='mt-4 space-y-5'>
+											{!isEditMode && isSubsidiaryProduct && (
+												<SubsidiaryStockNotice />
+											)}
+											{formFieldsMarkup}
+										</div>
 									</Tab>
 									<Tab
 										id='nuevo_formulario'

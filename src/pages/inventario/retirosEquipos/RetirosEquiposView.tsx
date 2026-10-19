@@ -1,11 +1,11 @@
 import React from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Container from '@/components/layouts/Container/Container';
 import Alert from '@/components/ui/Alert';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Icon from '@/components/icon/Icon';
 import { WITHDRAWALS_USE_MOCKS } from '@/store/slices/equipmentWithdrawals';
 import RetirosFilters from './components/filters/RetirosFilters';
 import RetirosTable from './components/tables/RetirosTable';
@@ -31,8 +31,11 @@ const RetirosEquiposView: React.FC = () => {
 		<PageWrapper isProtectedRoute title='Retiros de equipos' name='retiros-equipos'>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon icon='HeroArchiveBox' />
-					<span>Inventario / Retiros de equipos</span>
+					<SubheaderTitle
+						icon='HeroArchiveBox'
+						title='Retiros de equipos'
+						description='Seguimiento de los retiros de equipos de la sucursal activa'
+					/>
 				</SubheaderLeft>
 			</Subheader>
 

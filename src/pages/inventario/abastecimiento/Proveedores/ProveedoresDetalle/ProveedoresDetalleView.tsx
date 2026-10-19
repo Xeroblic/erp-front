@@ -1,0 +1,279 @@
+import React from 'react';
+import Alert from '@/components/ui/Alert';
+import Button from '@/components/ui/Button';
+import Card, { CardBody } from '@/components/ui/Card';
+import Container from '@/components/layouts/Container/Container';
+import Icon from '@/components/icon/Icon';
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
+import { AllowedActionsToolbar } from '@/components/procurement';
+import { formatDate } from '@/utils/format.utils';
+import { supplierPurchaseDocumentsLink } from '@/config/procurementLinks';
+import SupplierFormModal from '../components/modals/SupplierFormModal';
+import DeactivateSupplierModal from '../components/modals/DeactivateSupplierModal';
+import SupplierStatusBadge from '../components/parts/SupplierStatusBadge';
+import useProveedoresDetalle from './hooks/useProveedoresDetalle';
+import useSupplierSuppliedProducts from './hooks/useSupplierSuppliedProducts';
+import SupplierAvatar from './components/parts/SupplierAvatar';
+import SupplierPurchaseSummaryCard from './components/parts/SupplierPurchaseSummaryCard';
+import SupplierSuppliedProductsTable from './components/tables/SupplierSuppliedProductsTable';
+
+/**
+ * Ficha de proveedor: los mismos campos del formulario más id, display_name,
+ * is_active, timestamps, `allowed_actions` y `purchase_summary` (sección 5
+ * del contrato). La botonera sale de `allowed_actions` vía
+ * `AllowedActionsToolbar`, no de reglas propias de esta pantalla.
+ */
+const ProveedoresDetalleView = () => {
+	const {
+		id,
+		branchId,
+		subsidiaryId,
+		supplier,
+		loading,
+		error,
+		isFormModalOpen,
+		setIsFormModalOpen,
+		isDeactivateModalOpen,
+		setIsDeactivateModalOpen,
+		isRestoring,
+		handleAction,
+		handleDeactivated,
+		goToSupplier,
+		goToList,
+		retry,
+		billingCommuneName,
+		shippingCommuneName,
+	} = useProveedoresDetalle();
+	const suppliedProducts = useSupplierSuppliedProducts({ subsidiaryId, supplierId: id });
+
+	return (
+		<PageWrapper isProtectedRoute title={supplier?.display_name ?? 'Proveedor'}>
+			<Subheader>
+				<SubheaderLeft>
+					<SubheaderTitle
+						icon='HeroBuildingStorefront'
+						title='Proveedores'
+						description='Ficha del proveedor, resumen de compras y productos suministrados'
+					/>
+				</SubheaderLeft>
+				<SubheaderRight>
+					<Button variant='outline' icon='HeroArrowLeft' onClick={goToList}>
+						Volver al listado
+					</Button>
+					{supplier && (
+						<AllowedActionsToolbar
+							allowedActions={supplier.allowed_actions}
+							resource='supplier'
+							onAction={handleAction}
+							branchId={branchId}
+							subsidiaryId={subsidiaryId}
+							pendingAction={isRestoring ? 'restore' : null}
+						/>
+					)}
+				</SubheaderRight>
+			</Subheader>
+
+			<Container className='space-y-4'>
+				{id === null && (
+					<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
+						El proveedor solicitado no es válido.
+					</Alert>
+				)}
+
+				{loading && (
+					<Card>
+						<CardBody className='space-y-3'>
+							{Array.from({ length: 4 }, (_, index) => (
+								<div
+									key={`supplier-detail-skeleton-${index}`}
+									className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700'
+								/>
+							))}
+						</CardBody>
+					</Card>
+				)}
+
+				{!loading && error && (
+					<Alert
+						color='red'
+						variant='outline'
+						icon='HeroExclamationTriangle'
+						title='No pudimos cargar el proveedor'>
+						<div className='flex flex-wrap items-center justify-between gap-3'>
+							<span>{error}</span>
+							<Button size='sm' variant='outline' onClick={retry}>
+								Reintentar
+							</Button>
+						</div>
+					</Alert>
+				)}
+
+				{!loading && !error && supplier && (
+					<>
+						<Card>
+							<CardBody className='flex flex-col gap-6 sm:flex-row sm:items-center'>
+								<SupplierAvatar displayName={supplier.display_name} />
+								<div className='min-w-0 flex-1'>
+									<div className='flex flex-wrap items-center gap-3'>
+										<h1 className='truncate text-xl font-semibold text-zinc-900 dark:text-white'>
+											{supplier.display_name}
+										</h1>
+										<SupplierStatusBadge isActive={supplier.is_active} />
+									</div>
+									<p className='mt-1 font-mono text-sm text-zinc-500'>
+										{supplier.rut}
+									</p>
+									<div className='mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-600 dark:text-zinc-300'>
+										<span className='inline-flex items-center gap-1.5'>
+											<Icon
+												icon='HeroBriefcase'
+												size='text-base'
+												className='text-zinc-400'
+											/>
+											{supplier.business_activity ?? 'Sin giro registrado'}
+										</span>
+										<span className='inline-flex items-center gap-1.5'>
+											<Icon
+												icon='HeroPhone'
+												size='text-base'
+												className='text-zinc-400'
+											/>
+											{supplier.phone ?? 'Sin teléfono'}
+										</span>
+										<span className='inline-flex items-center gap-1.5'>
+											<Icon
+												icon='HeroEnvelope'
+												size='text-base'
+												className='text-zinc-400'
+											/>
+											{supplier.email ?? 'Sin email'}
+										</span>
+									</div>
+								</div>
+							</CardBody>
+						</Card>
+
+						<Card>
+							<CardBody className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>Razón social</p>
+									<p>{supplier.company_name ?? '—'}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>
+										Nombre de contacto
+									</p>
+									<p>{supplier.contact_name ?? '—'}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>
+										Dirección de facturación
+									</p>
+									<p>{supplier.billing_address ?? '—'}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>
+										Comuna de facturación
+									</p>
+									<p>{billingCommuneName ?? '—'}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>
+										Dirección de despacho
+									</p>
+									<p>{supplier.shipping_address ?? '—'}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>
+										Comuna de despacho
+									</p>
+									<p>{shippingCommuneName ?? '—'}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>Creado</p>
+									<p>{formatDate(supplier.created_at)}</p>
+								</div>
+								<div>
+									<p className='text-xs uppercase text-zinc-500'>
+										Última actualización
+									</p>
+									<p>{formatDate(supplier.updated_at)}</p>
+								</div>
+							</CardBody>
+						</Card>
+
+						<SupplierPurchaseSummaryCard
+							summary={supplier.purchase_summary}
+							documentsLink={supplierPurchaseDocumentsLink(supplier.id)}
+						/>
+
+						{/*
+						 * La lista sale de Recepciones, que sigue con proveedores de
+						 * prueba: no se cruza con este proveedor real. Leer recepciones
+						 * además exige `view-product` (sección 15), distinto del
+						 * `view-procurement-supplier` de esta ruta: sin él se dice por
+						 * qué no hay tabla, en vez de mostrarla vacía.
+						 */}
+						{!suppliedProducts.available && (
+							<Alert
+								color='zinc'
+								variant='outline'
+								icon='HeroInformationCircle'
+								title='Productos suministrados'>
+								Esta lista se arma con las recepciones de mercadería. Recepciones
+								todavía trabaja con datos y proveedores de prueba, así que aquí no
+								se muestra nada hasta que se conecte con el sistema real.
+							</Alert>
+						)}
+						{suppliedProducts.available &&
+							!suppliedProducts.checkingAccess &&
+							suppliedProducts.canRead && (
+								<SupplierSuppliedProductsTable
+									rows={suppliedProducts.rows}
+									loading={suppliedProducts.loading}
+									error={suppliedProducts.error}
+									subsidiaryId={subsidiaryId}
+									onRetry={suppliedProducts.retry}
+								/>
+							)}
+						{suppliedProducts.available &&
+							!suppliedProducts.checkingAccess &&
+							!suppliedProducts.canRead && (
+								<Alert
+									color='amber'
+									variant='outline'
+									title='Productos suministrados'>
+									No tienes permiso para consultar recepciones, así que no podemos
+									mostrar los productos que entrega este proveedor.
+								</Alert>
+							)}
+					</>
+				)}
+			</Container>
+
+			{supplier && (
+				<>
+					<SupplierFormModal
+						isOpen={isFormModalOpen}
+						setIsOpen={setIsFormModalOpen}
+						branchId={branchId}
+						subsidiaryId={subsidiaryId}
+						supplier={supplier}
+						onViewSupplier={goToSupplier}
+					/>
+					<DeactivateSupplierModal
+						isOpen={isDeactivateModalOpen}
+						setIsOpen={setIsDeactivateModalOpen}
+						supplier={{ id: supplier.id, display_name: supplier.display_name }}
+						subsidiaryId={subsidiaryId}
+						onDeactivated={handleDeactivated}
+					/>
+				</>
+			)}
+		</PageWrapper>
+	);
+};
+
+export default ProveedoresDetalleView;

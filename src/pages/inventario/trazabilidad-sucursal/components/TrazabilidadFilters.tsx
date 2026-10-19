@@ -29,6 +29,16 @@ const MOVEMENT_TYPES = [
 
 const DEBOUNCE_MS = 600;
 
+const toCleanFilters = (filters: IInventoryFilters): IInventoryFilters => {
+	const cleanFilters: IInventoryFilters = {};
+	if (filters.occurred_from) cleanFilters.occurred_from = filters.occurred_from;
+	if (filters.occurred_to) cleanFilters.occurred_to = filters.occurred_to;
+	if (filters.q) cleanFilters.q = filters.q;
+	if (filters.movement_type) cleanFilters.movement_type = filters.movement_type;
+	if (filters.warehouse_id) cleanFilters.warehouse_id = filters.warehouse_id;
+	return cleanFilters;
+};
+
 interface TrazabilidadFiltersProps {
 	filters: IInventoryFilters;
 	onApplyFilters: (filters: IInventoryFilters) => void;
@@ -43,18 +53,19 @@ export function TrazabilidadFilters({
 	loading = false,
 }: TrazabilidadFiltersProps) {
 	const [localFilters, setLocalFilters] = useState<IInventoryFilters>(filters);
-	const [isExpanded, setIsExpanded] = useState(true); // Abierto por defecto
+	const [isExpanded, setIsExpanded] = useState(true);
 	const [isSearching, setIsSearching] = useState(false);
 	const debounceRef = useRef<NodeJS.Timeout | null>(null);
 	const onApplyFiltersRef = useRef(onApplyFilters);
-	const hasInitialized = useRef(false);
+	// Sólo se consulta cuando los filtros difieren de los últimos aplicados: así el montaje
+	// (incluido el doble montaje de StrictMode) y «Limpiar filtros», que ya dispara su
+	// propia consulta, no generan una petición extra que cancelaría la vigente.
+	const lastAppliedRef = useRef(JSON.stringify(toCleanFilters(filters)));
 
-	// Mantener ref actualizada
 	useEffect(() => {
 		onApplyFiltersRef.current = onApplyFilters;
 	}, [onApplyFilters]);
 
-	// Limpiar debounce al desmontar
 	useEffect(() => {
 		return () => {
 			if (debounceRef.current) {
@@ -64,33 +75,26 @@ export function TrazabilidadFilters({
 	}, []);
 
 	useEffect(() => {
-		// No ejecutar en el primer render
-		if (!hasInitialized.current) {
-			hasInitialized.current = true;
+		if (debounceRef.current) {
+			clearTimeout(debounceRef.current);
+			debounceRef.current = null;
+		}
+
+		const cleanFilters = toCleanFilters(localFilters);
+		const key = JSON.stringify(cleanFilters);
+		if (key === lastAppliedRef.current) {
+			setIsSearching(false);
 			return;
 		}
 
-		// Limpiar timeout anterior
-		if (debounceRef.current) {
-			clearTimeout(debounceRef.current);
-		}
-
-		// Mostrar indicador de búsqueda
 		setIsSearching(true);
 
-		// Debounce para aplicar filtros
 		debounceRef.current = setTimeout(() => {
-			const cleanFilters: IInventoryFilters = {};
-			if (localFilters.occurred_from) cleanFilters.occurred_from = localFilters.occurred_from;
-			if (localFilters.occurred_to) cleanFilters.occurred_to = localFilters.occurred_to;
-			if (localFilters.q) cleanFilters.q = localFilters.q;
-			if (localFilters.movement_type) cleanFilters.movement_type = localFilters.movement_type;
-			if (localFilters.warehouse_id) cleanFilters.warehouse_id = localFilters.warehouse_id;
-
+			lastAppliedRef.current = key;
 			onApplyFiltersRef.current(cleanFilters);
 			setIsSearching(false);
 		}, DEBOUNCE_MS);
-	}, [localFilters]); // Solo depende de localFilters
+	}, [localFilters]);
 
 	const handleChange = useCallback((field: keyof IInventoryFilters, value: string | number) => {
 		setLocalFilters((prev) => ({
@@ -100,6 +104,11 @@ export function TrazabilidadFilters({
 	}, []);
 
 	const handleClear = useCallback(() => {
+		if (debounceRef.current) {
+			clearTimeout(debounceRef.current);
+			debounceRef.current = null;
+		}
+		lastAppliedRef.current = JSON.stringify({});
 		setLocalFilters({});
 		onClearFilters();
 		setIsSearching(false);
@@ -109,7 +118,6 @@ export function TrazabilidadFilters({
 
 	return (
 		<div className='mb-6 rounded-xl border border-zinc-200 bg-gray-300 p-4 shadow-lg dark:border-zinc-700 dark:bg-zinc-900'>
-			{/* Header */}
 			<button
 				type='button'
 				onClick={() => setIsExpanded(!isExpanded)}
@@ -122,7 +130,6 @@ export function TrazabilidadFilters({
 							Activos
 						</Badge>
 					)}
-					{/* Indicador de búsqueda */}
 					{(isSearching || loading) && (
 						<div className='flex items-center gap-1.5'>
 							<div className='h-2 w-2 animate-pulse rounded-full bg-blue-500' />
@@ -138,18 +145,19 @@ export function TrazabilidadFilters({
 				/>
 			</button>
 
-			{/* Filters Panel */}
 			<div
 				className={`grid gap-4 overflow-hidden transition-all duration-300 ${
 					isExpanded ? 'mt-4 max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
 				}`}>
-				{/* Row 1: Fechas y Búsqueda */}
 				<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
 					<div>
-						<label className='mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='trazabilidad-occurred-from'
+							className='mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 							Desde
 						</label>
 						<Input
+							id='trazabilidad-occurred-from'
 							name='occurred_from'
 							type='date'
 							value={localFilters.occurred_from || ''}
@@ -158,10 +166,13 @@ export function TrazabilidadFilters({
 						/>
 					</div>
 					<div>
-						<label className='mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='trazabilidad-occurred-to'
+							className='mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 							Hasta
 						</label>
 						<Input
+							id='trazabilidad-occurred-to'
 							name='occurred_to'
 							type='date'
 							value={localFilters.occurred_to || ''}
@@ -170,11 +181,14 @@ export function TrazabilidadFilters({
 						/>
 					</div>
 					<div>
-						<label className='mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='trazabilidad-q'
+							className='mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 							Buscar producto
 						</label>
 						<div className='relative'>
 							<Input
+								id='trazabilidad-q'
 								name='q'
 								type='text'
 								placeholder='Nombre o SKU...'
@@ -191,13 +205,15 @@ export function TrazabilidadFilters({
 					</div>
 				</div>
 
-				{/* Row 2: Tipo de movimiento */}
 				<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 					<div>
-						<label className='mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='trazabilidad-movement-type'
+							className='mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 							Tipo de movimiento
 						</label>
 						<select
+							id='trazabilidad-movement-type'
 							value={localFilters.movement_type || ''}
 							onChange={(e) => handleChange('movement_type', e.target.value)}
 							className='w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white'>
