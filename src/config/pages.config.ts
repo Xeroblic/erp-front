@@ -267,18 +267,6 @@ export const privatePages = {
 				authority: ['view-product', 'edit-product'],
 				requireAll: true,
 			},
-			catalogoAbastecimiento: {
-				id: 'catalogoAbastecimiento',
-				to: '/inventario/abastecimiento/catalogo',
-				text: 'Catálogo del contrato',
-				icon: 'HeroCube',
-				// Pantalla de referencia del módulo de abastecimiento: sólo lee
-				// fixtures locales, no escribe ni consulta nada.
-				// `view-product` es el permiso de lectura que el contrato asigna a
-				// stock y recepciones, así que es el mismo que abre esta vista.
-				authority: ['view-product'],
-				requireAll: true,
-			},
 			proveedores: {
 				id: 'proveedores',
 				to: '/inventario/abastecimiento/proveedores',
