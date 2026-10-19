@@ -64,6 +64,11 @@ export const filterTechnicalReviewPayload = (
 	nullableFields: readonly string[],
 ): Record<string, unknown> => {
 	const normalizedData = applyHardwareAbsenceToPayload(data);
+	// El autosave lee valores crudos, sin pasar por Yup. Un «No» también borra
+	// explícitamente el estado anterior en las cuatro rutas de escritura.
+	if (data.includes_antenna === false || data.includes_antenna === null) {
+		normalizedData.antenna_condition = null;
+	}
 
 	return Object.fromEntries(
 		Object.entries(normalizedData).filter(([key, value]) => {

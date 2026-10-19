@@ -3,6 +3,7 @@
  * Reutiliza las traducciones existentes del módulo de revisión técnica.
  */
 import type { EquipmentType } from '@/interface/technicalReviews.interface';
+import { ANTENNA_CONDITION_OPTIONS } from '@/pages/refactor-technical-review/components/constants/desktop/desktop.options';
 import {
 	getNotebookLabel,
 	NOTEBOOK_LABELS,
@@ -135,6 +136,9 @@ const VALUE_TRANSLATIONS: Record<string, string> = {
  * los valores que no dependen del campo (booleanos, grados, estados de la revisión).
  */
 const FIELD_VALUE_TRANSLATIONS: Record<string, Record<string, string>> = {
+	antenna_condition: Object.fromEntries(
+		ANTENNA_CONDITION_OPTIONS.map(({ value, label }) => [value, label]),
+	),
 	general_condition: GENERAL_CONDITION_LABELS,
 	storage_technology: STORAGE_TECHNOLOGY_LABELS,
 	charger_status: CHARGER_STATUS_LABELS,

@@ -4,6 +4,10 @@
  */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
+import {
+	toTechnicalReviewError,
+	type TechnicalReviewValidationError,
+} from '@/utils/technicalReviewErrors';
 import type { RootState } from '@/store/rootReducer';
 import {
 	filterTechnicalReviewPayload,
@@ -158,6 +162,7 @@ export const updateItemDetails = createAsyncThunk<
 			// (e.g. cover_condition, charger_status).
 			// Algunos campos sí pueden ser null o vacíos explícitamente (ej: borrar observaciones)
 			const NULLABLE_FIELDS = [
+				'antenna_condition',
 				'observations',
 				'extra_attributes',
 				...HARDWARE_NULLABLE_FIELDS,
@@ -196,7 +201,7 @@ export const updateItemDetails = createAsyncThunk<
 export const completeReview = createAsyncThunk<
 	IItem,
 	{ branchId?: number | null; subsidiaryId?: number | null; itemId: number },
-	{ state: RootState; rejectValue: string }
+	{ state: RootState; rejectValue: string | TechnicalReviewValidationError }
 >(
 	'technicalReviews/completeReview',
 	async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
@@ -214,11 +219,10 @@ export const completeReview = createAsyncThunk<
 			});
 
 			return normalizeObject(response.data) as IItem;
-		} catch (error: any) {
+		} catch (error: unknown) {
+			const validation = toTechnicalReviewError(error);
 			return rejectWithValue(
-				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudo finalizar la revisión',
+				validation.errors.antenna_condition?.length ? validation : validation.message,
 			);
 		}
 	},

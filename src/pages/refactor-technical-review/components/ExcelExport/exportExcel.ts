@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import JsBarcode from 'jsbarcode';
 import { toast } from 'react-toastify';
+import { ANTENNA_CONDITION_OPTIONS } from '@/pages/refactor-technical-review/components/constants/desktop/desktop.options';
 import {
 	CONDITION_VALUES_ES,
 	EQUIPMENT_TYPE_LABELS,
@@ -74,6 +75,10 @@ export const normalizeDetailValue = (value: unknown): string => {
 
 export const resolveColumnValue = (item: IItem, key: string): string => {
 	switch (key) {
+		case 'antenna_condition': {
+			const value = item.details?.antenna_condition;
+			return ANTENNA_CONDITION_OPTIONS.find((option) => option.value === value)?.label ?? '';
+		}
 		case '__serial':
 			return item.serial_number ?? '';
 		case '__grade': {

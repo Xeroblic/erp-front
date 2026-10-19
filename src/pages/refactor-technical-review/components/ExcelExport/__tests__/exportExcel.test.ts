@@ -19,6 +19,21 @@ const buildItem = (overrides: Partial<IItem> = {}): IItem => ({
 });
 
 describe('resolveColumnValue: cliente y proveedor', () => {
+	it.each([
+		['good_condition', 'Buen estado'],
+		['broken', 'Rota'],
+		['loose', 'Suelta'],
+	])('exporta la antena %s en español', (condition, label) => {
+		const item = buildItem({
+			equipment_type: 'desktop',
+			details: { includes_antenna: true, antenna_condition: condition },
+		});
+		expect(resolveColumnValue(item, 'includes_antenna')).toBe('SI');
+		expect(resolveColumnValue(item, 'antenna_condition')).toBe(label);
+		expect(EXCEL_COLUMNS.desktop.map((column) => column.key)).toEqual(
+			expect.arrayContaining(['includes_antenna', 'antenna_condition']),
+		);
+	});
 	it('toma el cliente de customer_supplier y el proveedor de supplier', () => {
 		const item = buildItem({
 			customer_supplier: { id: 10, name: 'Cliente SpA' },

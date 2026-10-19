@@ -142,7 +142,10 @@ export const useAutoSave = ({
 				data = transformDataRef.current(data);
 			}
 
-			const payload = filterTechnicalReviewPayload(data, HARDWARE_NULLABLE_FIELDS);
+			const payload = filterTechnicalReviewPayload(data, [
+				...HARDWARE_NULLABLE_FIELDS,
+				'antenna_condition',
+			]);
 
 			if (!payload.extra_attributes) {
 				payload.extra_attributes = {};
