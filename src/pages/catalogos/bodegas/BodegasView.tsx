@@ -1,14 +1,16 @@
 import React from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Container from '@/components/layouts/Container/Container';
-import Badge from '@/components/ui/Badge';
+import Alert from '@/components/ui/Alert';
+import Button from '@/components/ui/Button';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import WarehousesTable from './tables/WarehousesTable';
-import WarehouseStats from './components/WarehouseStats';
+import ResumenBodegas from './components/ResumenBodegas';
+import BodegasFiltros from './components/BodegasFiltros';
 import { useBodegas } from './hooks/useBodegas';
 
-const WarehousesCharts = React.lazy(() => import('./components/WarehousesCharts'));
 const CreateWarehouseModal = React.lazy(() => import('./modals/CreateWarehouseModal'));
 const EditWarehouseModal = React.lazy(() => import('./modals/EditWarehouseModal'));
 const DeleteWarehouseModal = React.lazy(() => import('./modals/DeleteWarehouseModal'));
@@ -17,63 +19,66 @@ const BodegasView: React.FC = () => {
 	const { state, forms, actions } = useBodegas();
 
 	return (
-		<PageWrapper isProtectedRoute title='Bodegas' name='bodegas'>
-			<Subheader className='p-2'>
+		<PageWrapper isProtectedRoute title='Bodegas'>
+			<Subheader>
 				<SubheaderLeft>
-					<div className='start-0'>
-						<Badge className='text-3xl font-semibold'>Bodegas</Badge>
-						<p>Administración de las bodegas asociadas a la sucursal principal.</p>
-					</div>
+					<SubheaderTitle
+						icon='DuoBarcode'
+						title='Bodegas'
+						description='Bodegas de la sucursal activa: stock, capacidad y encargados'
+					/>
 				</SubheaderLeft>
-				<SubheaderRight className='flex space-x-2'>
+				<SubheaderRight>
 					<ProtectedButton
-						variant='outline'
-						className='bg-emerald-400/30'
 						permission='create-warehouse'
 						branchId={state.branchId}
 						scope='access'
+						variant='solid'
+						color='blue'
 						icon='HeroPlus'
-						color='emerald'
 						onClick={actions.openCreateModal}>
-						Nueva Bodega
+						Nueva bodega
 					</ProtectedButton>
 				</SubheaderRight>
 			</Subheader>
 
-			<Container className='pt-4'>
-				{/* Estadísticas rápidas */}
-				{!state.loading && state.warehouses.length > 0 && (
-					<WarehouseStats
-						total={state.stats.total}
-						actives={state.stats.actives}
-						withProducts={state.stats.with_products}
-						nearCapacity={state.stats.near_capacity}
-					/>
+			<Container className='space-y-4'>
+				<ResumenBodegas summary={state.summary} loading={state.loading} />
+				{state.error && (
+					<Alert
+						color='red'
+						variant='outline'
+						icon='HeroExclamationTriangle'
+						title='No pudimos cargar las bodegas'>
+						<div className='flex flex-wrap items-center justify-between gap-3'>
+							<span>{state.error}</span>
+							<Button size='sm' variant='outline' onClick={actions.refresh}>
+								Reintentar
+							</Button>
+						</div>
+					</Alert>
 				)}
-
-				{/* Charts de análisis */}
-				{!state.loading && state.warehouses.length > 0 && (
-					<React.Suspense
-						fallback={
-							<div className='h-64 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800' />
-						}>
-						<WarehousesCharts warehouses={state.warehouses} />
-					</React.Suspense>
-				)}
-
-				{/* Tabla de bodegas */}
+				<BodegasFiltros
+					search={state.globalFilter}
+					type={state.typeFilter}
+					typeOptions={state.typeOptions}
+					status={state.statusFilter}
+					onSearch={actions.setGlobalFilter}
+					onType={actions.setTypeFilter}
+					onStatus={actions.setStatusFilter}
+					onClear={actions.clearFilters}
+				/>
 				<WarehousesTable
 					warehouses={state.warehouses}
 					loading={state.loading}
+					hasError={Boolean(state.error)}
+					hasFilters={state.hasFilters}
 					onEdit={actions.handleEdit}
 					onDelete={actions.handleDelete}
 					branchId={state.branchId}
-					searchValue={state.globalFilter}
-					onSearchChange={actions.setGlobalFilter}
 				/>
 			</Container>
 
-			{/* Modales con Lazy Loading */}
 			<React.Suspense
 				fallback={
 					<div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
@@ -105,6 +110,8 @@ const BodegasView: React.FC = () => {
 						warehouse={state.selectedWarehouse}
 						onConfirm={actions.confirmDelete}
 						loading={state.deleting}
+						blockedByStock={state.deleteBlockedByStock}
+						adjustStockLink={state.adjustStockLink}
 					/>
 				)}
 			</React.Suspense>

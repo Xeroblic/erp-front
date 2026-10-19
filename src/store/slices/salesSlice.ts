@@ -3,17 +3,31 @@ import { toast } from 'react-toastify';
 import type { RootState } from '@/store/rootReducer';
 import salesService, {
 	type SalesListFilters,
-	type CloseSaleResponse,
 	type PaginatedResponse,
 	type PaginationMeta,
 	type PaginationLinks,
 } from '@/services/salesService';
-import type { ISale, ISaleItem, ICloseSaleRequest } from '@/interface/sales.interface';
+import type {
+	ISale,
+	ISaleItem,
+	ICloseSaleRequest,
+	ICloseSaleResponse,
+} from '@/interface/sales.interface';
+import {
+	isSerialsRequiredError,
+	resolveSaleCloseError,
+	type ISaleCloseError,
+} from '@/utils/saleCloseErrors.util';
 
 type CloseSalePayloadItem = ICloseSaleRequest['items'][number];
 type SaleDetail = ISale;
 type SaleListItem = ISale;
 type SaleItem = ISaleItem;
+
+export interface SaleResourceOwner {
+	subsidiaryId: number;
+	saleId: number;
+}
 
 export interface SalesState {
 	list: SaleListItem[];
@@ -21,6 +35,14 @@ export interface SalesState {
 	links: PaginationLinks | null;
 	detail: SaleDetail | null;
 	items: SaleItem[];
+	detailOwner: SaleResourceOwner | null;
+	itemsOwner: SaleResourceOwner | null;
+	detailRequestId: string | null;
+	itemsRequestId: string | null;
+	detailLoading: boolean;
+	itemsLoading: boolean;
+	detailError: string | null;
+	itemsError: string | null;
 	listSubsidiaryId: number | null;
 	loading: boolean;
 	error?: string | null;
@@ -32,6 +54,14 @@ const initialState: SalesState = {
 	links: null,
 	detail: null,
 	items: [],
+	detailOwner: null,
+	itemsOwner: null,
+	detailRequestId: null,
+	itemsRequestId: null,
+	detailLoading: false,
+	itemsLoading: false,
+	detailError: null,
+	itemsError: null,
 	listSubsidiaryId: null,
 	loading: false,
 	error: null,
@@ -89,16 +119,16 @@ export const loadSaleItems = createAsyncThunk<
 	}
 });
 
+/** Rechaza con el error tipado: el 409 de stock y el 422 de series se leen por `code`/`context`. */
 export const closeSaleThunk = createAsyncThunk<
-	CloseSaleResponse,
+	ICloseSaleResponse,
 	{ subsidiaryId: number; saleId: number; items: CloseSalePayloadItem[] },
-	{ rejectValue: string }
+	{ rejectValue: ISaleCloseError }
 >('salesModule/closeSale', async ({ subsidiaryId, saleId, items }, { rejectWithValue }) => {
 	try {
-		const data = await salesService.closeSale(subsidiaryId, saleId, { items });
-		return data;
+		return await salesService.closeSale(subsidiaryId, saleId, { items });
 	} catch (err: unknown) {
-		return rejectWithValue(getErrorMessage(err, 'Error al cerrar la venta'));
+		return rejectWithValue(resolveSaleCloseError(err));
 	}
 });
 
@@ -112,6 +142,14 @@ const salesSlice = createSlice({
 		clearDetail(state) {
 			state.detail = null;
 			state.items = [];
+			state.detailOwner = null;
+			state.itemsOwner = null;
+			state.detailRequestId = null;
+			state.itemsRequestId = null;
+			state.detailLoading = false;
+			state.itemsLoading = false;
+			state.detailError = null;
+			state.itemsError = null;
 		},
 	},
 	extraReducers: (builder) => {
@@ -137,31 +175,43 @@ const salesSlice = createSlice({
 				state.loading = false;
 				state.error = action.payload || 'Error al cargar ventas';
 			})
-			// Detail
-			.addCase(loadSaleDetail.pending, (state) => {
-				state.loading = true;
-				state.error = null;
+			// Detail and items have independent request owners: resolving one cannot
+			// complete the other or populate another sale after navigation.
+			.addCase(loadSaleDetail.pending, (state, action) => {
+				state.detailOwner = action.meta.arg;
+				state.detailRequestId = action.meta.requestId;
+				state.detail = null;
+				state.detailLoading = true;
+				state.detailError = null;
 			})
-			.addCase(loadSaleDetail.fulfilled, (state, action: PayloadAction<SaleDetail>) => {
-				state.loading = false;
+			.addCase(loadSaleDetail.fulfilled, (state, action) => {
+				if (state.detailRequestId !== action.meta.requestId) return;
+				state.detailLoading = false;
 				state.detail = action.payload;
 			})
 			.addCase(loadSaleDetail.rejected, (state, action) => {
-				state.loading = false;
-				state.error = action.payload || 'Error al cargar detalle de venta';
+				if (state.detailRequestId !== action.meta.requestId) return;
+				state.detailLoading = false;
+				state.detail = null;
+				state.detailError = action.payload || 'Error al cargar detalle de venta';
 			})
-			// Items
-			.addCase(loadSaleItems.pending, (state) => {
-				state.loading = true;
-				state.error = null;
+			.addCase(loadSaleItems.pending, (state, action) => {
+				state.itemsOwner = action.meta.arg;
+				state.itemsRequestId = action.meta.requestId;
+				state.items = [];
+				state.itemsLoading = true;
+				state.itemsError = null;
 			})
-			.addCase(loadSaleItems.fulfilled, (state, action: PayloadAction<SaleItem[]>) => {
-				state.loading = false;
+			.addCase(loadSaleItems.fulfilled, (state, action) => {
+				if (state.itemsRequestId !== action.meta.requestId) return;
+				state.itemsLoading = false;
 				state.items = action.payload;
 			})
 			.addCase(loadSaleItems.rejected, (state, action) => {
-				state.loading = false;
-				state.error = action.payload || 'Error al cargar ítems de la venta';
+				if (state.itemsRequestId !== action.meta.requestId) return;
+				state.itemsLoading = false;
+				state.items = [];
+				state.itemsError = action.payload || 'Error al cargar ítems de la venta';
 			})
 			// Close sale
 			.addCase(closeSaleThunk.pending, (state) => {
@@ -170,16 +220,18 @@ const salesSlice = createSlice({
 			})
 			.addCase(
 				closeSaleThunk.fulfilled,
-				(state, action: PayloadAction<CloseSaleResponse>) => {
+				(state, action: PayloadAction<ICloseSaleResponse>) => {
 					state.loading = false;
 					toast.success(action.payload?.message || 'Venta cerrada correctamente');
 				},
 			)
 			.addCase(closeSaleThunk.rejected, (state, action) => {
 				state.loading = false;
-				const msg = action.payload || 'Error al cerrar la venta';
+				const msg = action.payload?.message ?? 'Error al cerrar la venta';
 				state.error = msg;
-				toast.error(String(msg));
+				// Faltar series no es un fallo: quien llamó abre el formulario de series.
+				if (action.payload && isSerialsRequiredError(action.payload)) return;
+				toast.error(msg);
 			});
 	},
 });
@@ -195,9 +247,28 @@ export const selectSalesListSubsidiaryId = (state: RootState) =>
 	selectModule(state)?.listSubsidiaryId ?? null;
 export const selectSalesMeta = (state: RootState) => selectModule(state)?.meta ?? null;
 export const selectSalesLinks = (state: RootState) => selectModule(state)?.links ?? null;
-export const selectSaleDetail = (state: RootState) => selectModule(state)?.detail ?? null;
-export const selectSaleItems = (state: RootState) => selectModule(state)?.items ?? [];
-export const selectSalesLoading = (state: RootState) => Boolean(selectModule(state)?.loading);
+const ownsSale = (actual: SaleResourceOwner | null | undefined, expected: SaleResourceOwner) =>
+	actual?.subsidiaryId === expected.subsidiaryId && actual.saleId === expected.saleId;
+const EMPTY_ITEMS: SaleItem[] = [];
+export const selectSaleDetail = (state: RootState, owner?: SaleResourceOwner) => {
+	const module = selectModule(state);
+	return !owner || ownsSale(module?.detailOwner, owner) ? (module?.detail ?? null) : null;
+};
+export const selectSaleItems = (state: RootState, owner?: SaleResourceOwner) => {
+	const module = selectModule(state);
+	return !owner || ownsSale(module?.itemsOwner, owner)
+		? (module?.items ?? EMPTY_ITEMS)
+		: EMPTY_ITEMS;
+};
+export const selectSalesLoading = (state: RootState, owner?: SaleResourceOwner) => {
+	const module = selectModule(state);
+	if (!owner) return Boolean(module?.loading);
+	return (
+		!ownsSale(module?.detailOwner, owner) ||
+		!ownsSale(module?.itemsOwner, owner) ||
+		Boolean(module?.detailLoading || module?.itemsLoading)
+	);
+};
 export const selectSalesError = (state: RootState) => selectModule(state)?.error ?? null;
 
 export default salesSlice.reducer;

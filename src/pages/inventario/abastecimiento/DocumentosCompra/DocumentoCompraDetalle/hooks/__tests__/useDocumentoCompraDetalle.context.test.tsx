@@ -1,0 +1,209 @@
+import React, { type PropsWithChildren } from 'react';
+import { configureStore } from '@reduxjs/toolkit';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { resetPurchaseDocumentsStoreForTests } from '@/mocks/services/purchaseDocuments.mock';
+import purchaseDocumentsReducer from '@/store/slices/procurement/purchaseDocumentsSlice';
+import useDocumentoCompraDetalle from '../useDocumentoCompraDetalle';
+
+/**
+ * Propiedad de contexto de la ficha. La limpieza del contexto
+ * anterior y la carga nueva ocurren en efectos, después del render: la ficha
+ * y sus modales no pueden quedar a la vista de otra filial ni de otro
+ * documento, ni siquiera en el primer render.
+ */
+
+vi.mock(
+	'@/services/procurement/purchaseDocuments.service',
+	() => import('@/mocks/services/purchaseDocuments.mock'),
+);
+
+const receiptsFlag = vi.hoisted(() => ({ useMocks: true }));
+vi.mock('@/config/inventoryReceipts.config', () => ({
+	get default() {
+		return receiptsFlag.useMocks;
+	},
+}));
+
+const branchContext = vi.hoisted(() => ({ branchId: 4, subsidiaryId: 4 }));
+vi.mock('@/hooks/useCurrentBranch', () => ({
+	useCurrentBranch: () => ({ ...branchContext }),
+}));
+
+const routeParams = vi.hoisted(() => ({ documentoId: '42' }));
+const router = vi.hoisted(() => ({ navigate: vi.fn(), state: null as unknown }));
+vi.mock('react-router-dom', () => ({
+	useParams: () => ({ ...routeParams }),
+	useNavigate: () => router.navigate,
+	useLocation: () => ({ state: router.state }),
+}));
+
+vi.mock('@/store', async () => {
+	const reactRedux = await vi.importActual<typeof import('react-redux')>('react-redux');
+	return { useAppDispatch: reactRedux.useDispatch, useAppSelector: reactRedux.useSelector };
+});
+
+const DRAFT_INVOICE_ID = 42; // draftInvoiceDocument de `procurement.db.ts`
+const OTHER_DOCUMENT_ID = 24; // pcExpressInvoiceDocument
+const OTHER_SUBSIDIARY_ID = 9;
+
+const createWrapper = () => {
+	const store = configureStore({ reducer: { purchaseDocuments: purchaseDocumentsReducer } });
+	const Wrapper = ({ children }: PropsWithChildren) => (
+		<Provider store={store}>{children}</Provider>
+	);
+	return Wrapper;
+};
+
+type TDetail = ReturnType<typeof useDocumentoCompraDetalle>;
+
+/**
+ * Guarda cada render con el contexto en que ocurrió. `rerender` corre dentro
+ * de `act`, así que los efectos ya limpiaron el store cuando se lee
+ * `result.current`: el primer render del contexto nuevo sólo se ve acá.
+ */
+const renderLoaded = async () => {
+	const renders: { subsidiaryId: number; documentoId: string; value: TDetail }[] = [];
+	const rendered = renderHook(
+		() => {
+			const value = useDocumentoCompraDetalle();
+			renders.push({
+				subsidiaryId: branchContext.subsidiaryId,
+				documentoId: routeParams.documentoId,
+				value,
+			});
+			return value;
+		},
+		{ wrapper: createWrapper() },
+	);
+	await waitFor(() => expect(rendered.result.current.document?.id).toBe(DRAFT_INVOICE_ID));
+	const rendersFrom = (start: number) => renders.slice(start).map((render) => render.value);
+	return { ...rendered, renders, rendersFrom };
+};
+
+afterEach(() => {
+	router.navigate.mockClear();
+	router.state = null;
+	resetPurchaseDocumentsStoreForTests();
+	branchContext.branchId = 4;
+	branchContext.subsidiaryId = 4;
+	routeParams.documentoId = String(DRAFT_INVOICE_ID);
+});
+
+describe('useDocumentoCompraDetalle — cambio de contexto', () => {
+	it('al cambiar de filial no muestra la ficha anterior ni su ETag', async () => {
+		const { result, rerender, renders, rendersFrom } = await renderLoaded();
+		const start = renders.length;
+
+		branchContext.subsidiaryId = OTHER_SUBSIDIARY_ID;
+		rerender();
+
+		const afterSwitch = rendersFrom(start);
+		expect(afterSwitch.length).toBeGreaterThan(0);
+		afterSwitch.forEach((render) => {
+			expect(render.document).toBeNull();
+			expect(render.etag).toBeNull();
+			expect(render.loading).toBe(true);
+		});
+
+		await waitFor(() => expect(result.current.document?.id).toBe(DRAFT_INVOICE_ID));
+	});
+
+	it('al pasar a otro documento no muestra el anterior', async () => {
+		const { result, rerender, renders, rendersFrom } = await renderLoaded();
+		const start = renders.length;
+
+		routeParams.documentoId = String(OTHER_DOCUMENT_ID);
+		rerender();
+
+		rendersFrom(start).forEach((render) => {
+			expect(render.document?.id).not.toBe(DRAFT_INVOICE_ID);
+		});
+		await waitFor(() => expect(result.current.document?.id).toBe(OTHER_DOCUMENT_ID));
+	});
+
+	it('un modal abierto en la filial anterior queda cerrado desde el primer render', async () => {
+		const { result, rerender, renders, rendersFrom } = await renderLoaded();
+		act(() => result.current.setIsCancelModalOpen(true));
+		expect(result.current.isCancelModalOpen).toBe(true);
+		const start = renders.length;
+
+		branchContext.subsidiaryId = OTHER_SUBSIDIARY_ID;
+		rerender();
+
+		rendersFrom(start).forEach((render) => expect(render.isCancelModalOpen).toBe(false));
+
+		// Volver a la filial no reabre el modal: la acción se abandonó.
+		branchContext.subsidiaryId = 4;
+		rerender();
+		await waitFor(() => expect(result.current.document?.id).toBe(DRAFT_INVOICE_ID));
+		expect(result.current.isCancelModalOpen).toBe(false);
+	});
+});
+
+describe('useDocumentoCompraDetalle — recepción diferida', () => {
+	afterEach(() => {
+		receiptsFlag.useMocks = true;
+	});
+
+	it('con Recepciones real ofrece create_receipt y abre el alta con el documento', async () => {
+		receiptsFlag.useMocks = false;
+		routeParams.documentoId = String(OTHER_DOCUMENT_ID);
+		const { result } = renderHook(() => useDocumentoCompraDetalle(), {
+			wrapper: createWrapper(),
+		});
+		await waitFor(() => expect(result.current.document?.id).toBe(OTHER_DOCUMENT_ID));
+
+		expect(result.current.allowedActions).toContain('create_receipt');
+		expect(result.current.isReceiptDeferred).toBe(false);
+
+		act(() => result.current.handleAction('create_receipt'));
+
+		expect(router.navigate).toHaveBeenCalledWith(
+			`/inventario/abastecimiento/recepciones?purchase_document_id=${OTHER_DOCUMENT_ID}`,
+		);
+	});
+
+	it('con Recepciones simulada retira create_receipt y lo marca como diferido para avisar', async () => {
+		routeParams.documentoId = String(OTHER_DOCUMENT_ID);
+		const { result } = renderHook(() => useDocumentoCompraDetalle(), {
+			wrapper: createWrapper(),
+		});
+		await waitFor(() => expect(result.current.document?.id).toBe(OTHER_DOCUMENT_ID));
+
+		expect(result.current.document?.allowed_actions).toContain('create_receipt');
+		expect(result.current.allowedActions).not.toContain('create_receipt');
+		expect(result.current.isReceiptDeferred).toBe(true);
+	});
+
+	it('sin create_receipt del backend no hay nada que avisar', async () => {
+		const { result } = await renderLoaded();
+
+		expect(result.current.document?.allowed_actions).not.toContain('create_receipt');
+		expect(result.current.isReceiptDeferred).toBe(false);
+	});
+});
+
+describe('useDocumentoCompraDetalle — volver al listado', () => {
+	it('vuelve con los filtros del listado del que se abrió la ficha', async () => {
+		router.state = { listSearch: '?status=draft&supplier_id=3&page=2' };
+		const { result } = await renderLoaded();
+
+		act(() => result.current.goToList());
+
+		expect(router.navigate).toHaveBeenCalledWith(
+			'/inventario/abastecimiento/documentos-compra?status=draft&supplier_id=3&page=2',
+		);
+	});
+
+	it('si se llegó por otro camino vuelve al listado sin filtros', async () => {
+		const { result } = await renderLoaded();
+
+		act(() => result.current.goToList());
+
+		expect(router.navigate).toHaveBeenCalledWith(
+			'/inventario/abastecimiento/documentos-compra',
+		);
+	});
+});

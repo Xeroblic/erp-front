@@ -44,7 +44,6 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 		}));
 	}, [data]);
 
-	// 1. STATUS DATA
 	const statusData = useMemo(() => {
 		const counts: Record<string, number> = {};
 		processedData.forEach((r) => {
@@ -59,7 +58,6 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 		};
 	}, [processedData]);
 
-	// 2. TOP CLIENTES
 	const topCustomers = useMemo(() => {
 		const customerMap = new Map<string, number>();
 		processedData.forEach((r) => {
@@ -78,7 +76,6 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 		};
 	}, [processedData]);
 
-	// 3. MENSUAL
 	const monthlyData = useMemo(() => {
 		const monthNames = [
 			'Ene',
@@ -141,7 +138,6 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 
 	return (
 		<div ref={containerRef} className='grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3'>
-			{/* 1. ESTADO DE ÓRDENES */}
 			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214]'>
 				<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-5 dark:border-zinc-800'>
 					<div className='flex items-center justify-between'>
@@ -180,7 +176,6 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 				</CardBody>
 			</Card>
 
-			{/* 2. TOP CLIENTES */}
 			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214]'>
 				<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-5 dark:border-zinc-800'>
 					<div className='flex items-center justify-between'>
@@ -243,7 +238,6 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 				</CardBody>
 			</Card>
 
-			{/* 3. HISTORIAL MENSUAL */}
 			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214] md:col-span-2 xl:col-span-1'>
 				<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-5 dark:border-zinc-800'>
 					<div className='flex items-center justify-between'>

@@ -1,105 +1,145 @@
 import { createSlice } from '@reduxjs/toolkit';
+import type {
+	TInventoryReportResult,
+	TInventoryReportType,
+} from '@/interface/inventoryReports.interface';
+import type { RootState } from '@/store/rootReducer';
 import {
-	exportReport,
+	fetchInventoryReport,
 	fetchReportResults,
-	fetchPaginatedReportResults,
-	fetchReportTypes,
+	inventoryReportQueryKey,
+	type TSalesResultsConsumer,
 } from './reportsThunks';
-import { IReportType, IReportResult } from '@/interface/reports.interface';
 
-export interface ReportsState {
-	types: IReportType[];
-	paginatedResults: IReportResult<unknown> | null;
-	aggregatedResults: unknown[] | null;
+/**
+ * Una consulta de Reportes › Inventario: guarda la clave de quien la pidió
+ * (`ownerContext`) y sólo la última petición (`requestId`) puede resolverla,
+ * así un cambio de filial, sucursal o pestaña nunca pinta filas del contexto
+ * anterior.
+ */
+interface IInventoryReportSlot {
+	ownerContext: string | null;
+	requestId: string | null;
+	result: TInventoryReportResult | null;
 	loading: boolean;
-	exporting: boolean;
 	error: string | null;
 }
 
-const initialState: ReportsState = {
-	types: [],
-	paginatedResults: null,
-	aggregatedResults: null,
+/**
+ * Resultados de ventas de un consumidor (Inicio o Reportes › Ventas). Cada uno
+ * tiene los suyos: antes compartían filas, carga y error, y una pantalla podía
+ * mostrar los datos que había pedido la otra. Sólo la última petición
+ * (`requestId`) escribe, y las filas valen para la filial que las pidió.
+ */
+interface ISalesResultsSlot {
+	subsidiaryId: number | null;
+	requestId: string | null;
+	data: Record<string, unknown>[] | null;
+	loading: boolean;
+	error: string | null;
+}
+
+const emptySalesSlot = (): ISalesResultsSlot => ({
+	subsidiaryId: null,
+	requestId: null,
+	data: null,
 	loading: false,
-	exporting: false,
 	error: null,
+});
+
+export interface ReportsState {
+	sales: Record<TSalesResultsConsumer, ISalesResultsSlot>;
+	/** Una consulta por tipo: Estadísticas lee dos reportes a la vez. */
+	inventory: Partial<Record<TInventoryReportType, IInventoryReportSlot>>;
+}
+
+const initialState: ReportsState = {
+	sales: { dashboard: emptySalesSlot(), sales: emptySalesSlot() },
+	inventory: {},
 };
 
-export const reportsSlice = createSlice({
+const reportsSlice = createSlice({
 	name: 'reports',
 	initialState,
 	reducers: {
-		clearResults: (state) => {
-			state.paginatedResults = null;
-			state.aggregatedResults = null;
-			state.error = null;
+		clearInventoryReports: (state) => {
+			state.inventory = {};
 		},
 	},
 	extraReducers: (builder) => {
-		// ------- LISTA -------
-		builder.addCase(fetchReportTypes.pending, (state) => {
-			state.loading = true;
-			state.error = null;
-		});
-
-		builder.addCase(fetchReportTypes.fulfilled, (state, action) => {
-			state.types = action.payload as unknown as IReportType[];
-			state.loading = false;
-			state.error = null;
-		});
-
-		builder.addCase(fetchReportTypes.rejected, (state, action) => {
-			state.loading = false;
-			state.error = action.payload as string;
-		});
-
-		// ------- RESULTADOS AGREGADOS -------
-		builder.addCase(fetchReportResults.pending, (state) => {
-			state.loading = true;
-			state.error = null;
+		builder.addCase(fetchReportResults.pending, (state, action) => {
+			const { consumer, subsidiaryId } = action.meta.arg;
+			const slot = state.sales[consumer];
+			// Las filas de otra filial no se conservan mientras carga la nueva.
+			if (slot.subsidiaryId !== subsidiaryId) slot.data = null;
+			slot.subsidiaryId = subsidiaryId;
+			slot.requestId = action.meta.requestId;
+			slot.loading = true;
+			slot.error = null;
 		});
 
 		builder.addCase(fetchReportResults.fulfilled, (state, action) => {
-			state.aggregatedResults = action.payload.data as unknown[];
-			state.loading = false;
-			state.error = null;
+			const slot = state.sales[action.meta.arg.consumer];
+			if (slot.requestId !== action.meta.requestId) return;
+			slot.data = action.payload;
+			slot.loading = false;
+			slot.error = null;
 		});
 
+		// Al cambiar de filtros se aborta la consulta anterior, pero su rechazo
+		// llega después del `pending` de la nueva: no debe apagar su `loading`.
 		builder.addCase(fetchReportResults.rejected, (state, action) => {
-			state.loading = false;
-			state.error = action.payload as string;
+			const slot = state.sales[action.meta.arg.consumer];
+			if (slot.requestId !== action.meta.requestId) return;
+			slot.loading = false;
+			slot.error = action.meta.aborted
+				? null
+				: (action.payload ?? 'No pudimos cargar el reporte.');
 		});
 
-		// ------- RESULTADOS PAGINADOS -------
-		builder.addCase(fetchPaginatedReportResults.pending, (state) => {
-			state.loading = true;
-			state.error = null;
+		builder.addCase(fetchInventoryReport.pending, (state, action) => {
+			state.inventory[action.meta.arg.type] = {
+				ownerContext: inventoryReportQueryKey(action.meta.arg),
+				requestId: action.meta.requestId,
+				result: null,
+				loading: true,
+				error: null,
+			};
 		});
 
-		builder.addCase(fetchPaginatedReportResults.fulfilled, (state, action) => {
-			state.paginatedResults = action.payload as IReportResult<unknown>;
-			state.loading = false;
-			state.error = null;
+		builder.addCase(fetchInventoryReport.fulfilled, (state, action) => {
+			const slot = state.inventory[action.meta.arg.type];
+			if (!slot || slot.requestId !== action.meta.requestId) return;
+			slot.result = action.payload;
+			slot.loading = false;
 		});
 
-		builder.addCase(fetchPaginatedReportResults.rejected, (state, action) => {
-			state.loading = false;
-			state.error = action.payload as string;
-		});
-
-		// ------- EXPORTACION -------
-		builder.addCase(exportReport.pending, (state) => {
-			state.exporting = true;
-		});
-		builder.addCase(exportReport.fulfilled, (state) => {
-			state.exporting = false;
-		});
-		builder.addCase(exportReport.rejected, (state, action) => {
-			state.exporting = false;
-			state.error = action.payload as string;
+		builder.addCase(fetchInventoryReport.rejected, (state, action) => {
+			const slot = state.inventory[action.meta.arg.type];
+			if (!slot || slot.requestId !== action.meta.requestId) return;
+			slot.loading = false;
+			// Un abort no es un error que mostrar.
+			slot.error = action.meta.aborted
+				? null
+				: (action.payload ?? 'No pudimos cargar el reporte.');
 		});
 	},
 });
 
-export const { clearResults } = reportsSlice.actions;
+const EMPTY_SALES_SLOT = emptySalesSlot();
+
+/**
+ * Resultados de ventas de un consumidor para la filial vigente. Si el espacio
+ * guarda los de otra filial, se devuelve vacío: nunca se muestran ajenos.
+ */
+export const selectSalesResults = (
+	state: RootState,
+	consumer: TSalesResultsConsumer,
+	subsidiaryId: number | null,
+): ISalesResultsSlot => {
+	const slot = state.reports.sales[consumer];
+	return subsidiaryId !== null && slot.subsidiaryId === subsidiaryId ? slot : EMPTY_SALES_SLOT;
+};
+
+export const { clearInventoryReports } = reportsSlice.actions;
 export default reportsSlice.reducer;

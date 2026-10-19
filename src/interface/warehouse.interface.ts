@@ -89,12 +89,11 @@ export interface IWarehouseDetailResponse {
 
 // ==================== Fetch Params ====================
 
+/** El listado de bodegas de una sucursal sólo filtra por `q`; tipo y estado se filtran en el cliente. */
 export interface IFetchWarehousesParams {
 	page?: number;
 	per_page?: number;
 	q?: string;
-	warehouse_type?: string;
-	is_active?: boolean;
 }
 
 // ==================== Statistics ====================

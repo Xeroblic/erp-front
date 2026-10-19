@@ -1,0 +1,598 @@
+import type { ReactNode } from 'react';
+import { configureStore, createSlice } from '@reduxjs/toolkit';
+import { Provider } from 'react-redux';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import inventoryOverview from '@/store/slices/procurement/inventoryOverviewSlice';
+import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
+import InventarioProductoView from '@/pages/inventario/Inventario/InventarioProducto/InventarioProductoView';
+import InventoryOrigins from '@/pages/inventario/Inventario/InventarioProducto/components/InventoryOrigins';
+import {
+	listInventoryOrigins as listMockOrigins,
+	resetInventoryStockStoreForTests,
+} from '@/mocks/services/inventoryStock.mock';
+import * as inventoryStockService from '@/services/procurement/inventoryStock.service';
+import * as inventoryOverviewService from '@/services/procurement/inventoryOverview.service';
+import { resetStockReceiptsStoreForTests } from '@/mocks/services/stockReceipts.mock';
+import {
+	getInventoryStockDetail as getMockDetail,
+	resetInventoryCriticalThresholdsForTests,
+} from '@/mocks/services/inventoryOverview.mock';
+
+const context = vi.hoisted(() => ({
+	branchId: 4 as number | null,
+	subsidiaryId: 2,
+	visibleBranches: [] as { id: number; name: string }[],
+	enabled: true,
+}));
+// Etapa del despliegue: encendida salvo en los casos de una sola ubicación.
+const multiLocation = vi.hoisted(() => ({ enabled: true }));
+// Etapa de la filial ya resuelta; el hook se prueba en `useSubsidiaryRolloutStage.test.tsx`.
+vi.mock('@/hooks/useSubsidiaryRolloutStage', () => ({
+	useSubsidiaryRolloutStage: () => ({
+		multiLocationEnabled: multiLocation.enabled,
+		isMultiLocation: multiLocation.enabled,
+		isLoading: false,
+	}),
+}));
+vi.mock('@/config/inventoryStock.config', () => ({
+	get default() {
+		return context.enabled;
+	},
+}));
+// Las pantallas de Inventario tienen bandera propia; el mismo interruptor las enciende.
+vi.mock('@/config/inventoryOverview.config', () => ({
+	get default() {
+		return context.enabled;
+	},
+}));
+// La trazabilidad tiene bandera propia: estas pruebas la recorren contra el doble.
+vi.mock('@/config/inventoryOperations.config', () => ({ default: true }));
+// Recepciones comparte la fuente de Inventario: sus procedencias enlazan a su ficha.
+vi.mock('@/config/inventoryReceipts.config', () => ({
+	get default() {
+		return context.enabled;
+	},
+}));
+// Compras (§12) lee la API real; sus casos están en `ProductPurchases.test.tsx`.
+vi.mock('@/services/procurement/productPurchases.service', () => {
+	const empty = {
+		data: [],
+		links: { first: null, last: null, prev: null, next: null },
+		meta: {
+			current_page: 1,
+			from: null,
+			last_page: 1,
+			links: [],
+			path: '',
+			per_page: 15,
+			to: null,
+			total: 0,
+		},
+	};
+	return {
+		listProductSuppliers: () => Promise.resolve(empty),
+		listProductPurchaseHistory: () => Promise.resolve(empty),
+	};
+});
+vi.mock('@/hooks/useCurrentBranch', () => ({ useCurrentBranch: () => context }));
+vi.mock('@/store', async () => {
+	const redux = await import('react-redux');
+	return { useAppDispatch: redux.useDispatch, useAppSelector: redux.useSelector };
+});
+vi.mock('@/components/layouts/PageWrapper/PageWrapper', () => ({
+	default: ({ children }: { children: ReactNode }) => <main>{children}</main>,
+}));
+/** `DocumentInitialStockModal` usa `SelectReact`: se reemplaza por `<select>` nativo. */
+vi.mock('@/components/form/SelectReact', () => ({
+	default: ({
+		inputId,
+		options,
+		value,
+		onChange,
+		placeholder,
+	}: {
+		inputId?: string;
+		options?: { value: string; label: string }[];
+		value?: { value: string; label: string } | null;
+		onChange?: (option: { value: string; label: string } | null) => void;
+		placeholder?: string;
+	}) => (
+		<select
+			id={inputId}
+			value={value?.value ?? ''}
+			onChange={(event) => {
+				const selected =
+					options?.find((option) => option.value === event.target.value) ?? null;
+				onChange?.(selected);
+			}}>
+			<option value=''>{placeholder}</option>
+			{options?.map((option) => (
+				<option key={option.value} value={option.value}>
+					{option.label}
+				</option>
+			))}
+		</select>
+	),
+}));
+
+const MOUSE_ID = 31;
+/** Ubicación de la procedencia 51 (recepción #80) del mouse en la sucursal 4. */
+const UNLOCATED = { unlocated: 1 } as const;
+const CABLE_ID = 58;
+
+const auth = createSlice({
+	name: 'auth',
+	initialState: {
+		loading: false,
+		user: {
+			id: 1,
+			permisos: ['view-product', 'edit-product', 'view-purchase-document'],
+			roles: [] as string[],
+			visible: { branches: [{ id: 4 }, { id: 6 }], subsidiaries: [{ id: 2 }] },
+		},
+	},
+	reducers: {
+		grant(state, action: { payload: string }) {
+			state.user.permisos.push(action.payload);
+		},
+		revoke(state, action: { payload: string }) {
+			state.user.permisos = state.user.permisos.filter((p) => p !== action.payload);
+		},
+	},
+});
+
+const renderFicha = (productId: number | string, permisos: string[] = []) => {
+	const store = configureStore({
+		reducer: { inventoryOverview, inventoryStock, auth: auth.reducer },
+	});
+	permisos.forEach((permiso) => store.dispatch(auth.actions.grant(permiso)));
+	return render(
+		<Provider store={store}>
+			<MemoryRouter initialEntries={[`/inventario/stock/${productId}`]}>
+				<Routes>
+					<Route
+						path='/inventario/stock/:productId'
+						element={<InventarioProductoView />}
+					/>
+				</Routes>
+			</MemoryRouter>
+		</Provider>,
+	);
+};
+
+const AjustesTrasladosProbe = () => {
+	const location = useLocation();
+	return <output data-testid='ajustes-url'>{`${location.pathname}${location.search}`}</output>;
+};
+
+/** Ficha con la ruta de Ajustes y traslados montada, para seguir sus atajos. */
+const renderFichaConAtajos = (revocar: string[] = []) => {
+	const store = configureStore({
+		reducer: { inventoryOverview, inventoryStock, auth: auth.reducer },
+	});
+	revocar.forEach((permiso) => store.dispatch(auth.actions.revoke(permiso)));
+	return render(
+		<Provider store={store}>
+			<MemoryRouter initialEntries={[`/inventario/stock/${MOUSE_ID}`]}>
+				<Routes>
+					<Route
+						path='/inventario/stock/:productId'
+						element={<InventarioProductoView />}
+					/>
+					<Route
+						path='/inventario/abastecimiento/ajustes-traslados'
+						element={<AjustesTrasladosProbe />}
+					/>
+				</Routes>
+			</MemoryRouter>
+		</Provider>,
+	);
+};
+
+/** Valor de un KPI: la etiqueta y la cifra son dos párrafos hermanos. */
+const kpi = async (label: string) =>
+	(await screen.findByText(label, { selector: 'p' })).nextElementSibling;
+
+const ubicaciones = () => screen.getByRole('table', { name: 'Unidades por ubicación' });
+
+beforeEach(() => {
+	context.branchId = 4;
+	context.subsidiaryId = 2;
+	context.enabled = true;
+	multiLocation.enabled = true;
+	// Los modales se montan en `#portal-root` (`Portal.tsx`).
+	const portalRoot = document.createElement('div');
+	portalRoot.id = 'portal-root';
+	document.body.appendChild(portalRoot);
+});
+afterEach(() => {
+	document.getElementById('portal-root')?.remove();
+	// La trazabilidad lee las recepciones: su worker simulado no debe sobrevivir a la prueba.
+	resetStockReceiptsStoreForTests();
+	resetInventoryStockStoreForTests();
+	resetInventoryCriticalThresholdsForTests();
+	vi.restoreAllMocks();
+});
+
+describe('Ficha de inventario', () => {
+	it('rechaza un enlace a un producto inválido sin consultar', () => {
+		renderFicha('abc');
+		expect(screen.getByText('Producto inválido')).toBeInTheDocument();
+	});
+
+	it('resume en KPI lo que hay, lo vendible y lo que falta', async () => {
+		renderFicha(MOUSE_ID);
+
+		expect(await kpi('En la sucursal')).toHaveTextContent('19');
+		expect(await kpi('Disponibles para vender')).toHaveTextContent('1');
+		expect(await kpi('Reservadas')).toHaveTextContent('16');
+		expect(await kpi('No vendibles')).toHaveTextContent('2');
+		// 5 del conteo inicial + 4 del estante, que llegaron sin documento (#211).
+		expect(await kpi('Sin documento de compra')).toHaveTextContent('9');
+		expect(screen.getByText('Bajo el umbral')).toBeInTheDocument();
+		expect(screen.getByText('Avisa con 10 unidades o menos')).toBeInTheDocument();
+		// Precio en pesos, sin decimales.
+		expect(screen.getByText('$7.990')).toBeInTheDocument();
+		expect(within(ubicaciones()).getAllByRole('row')).toHaveLength(3);
+	});
+
+	it('muestra la sección Compras en su ancla `#compras`', async () => {
+		renderFicha(MOUSE_ID);
+
+		const compras = await screen.findByRole('region', { name: 'Compras' });
+		expect(compras).toHaveAttribute('id', 'compras');
+		expect(
+			await within(compras).findByText(
+				'Todavía no hay compras registradas de este producto.',
+			),
+		).toBeInTheDocument();
+	});
+
+	it('las procedencias se ven por ubicación y se puede cambiar de ubicación', async () => {
+		renderFicha(MOUSE_ID);
+		const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+		await within(region).findByText('Recepción #80');
+		expect(within(region).getByRole('button', { name: 'Documentar' })).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: 'Estante A3 · 4' }));
+
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: 'Estante A3 · 4' })).toHaveAttribute(
+				'aria-pressed',
+				'true',
+			),
+		);
+		// El estante sólo tiene lo que queda de la recepción #211, sin documento:
+		// cambia la lista. No se ofrece «Documentar»: respaldar es sólo para stock
+		// inicial; a una recepción se le vincula la factura desde su ficha.
+		const shelf = await screen.findByRole('region', { name: 'Procedencias del producto' });
+		await within(shelf).findByText('Recepción #211');
+		expect(within(shelf).queryByText('Recepción #80')).not.toBeInTheDocument();
+		expect(within(shelf).queryByRole('button', { name: 'Documentar' })).not.toBeInTheDocument();
+	});
+
+	it('sin `view-purchase-document` no ofrece documentar el stock inicial', async () => {
+		renderFichaConAtajos(['view-purchase-document']);
+		const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+		await within(region).findByText('Recepción #80');
+
+		expect(
+			within(region).queryByRole('button', { name: 'Documentar' }),
+		).not.toBeInTheDocument();
+	});
+
+	it.each([
+		[3, '3 unidades sin procedencia registrada.', null],
+		[-2, null, 'Procedencia en revisión'],
+	])(
+		'informa las unidades sin procedencia que calcula el servidor (%i)',
+		async (unattributed, note, warning) => {
+			vi.spyOn(inventoryStockService, 'listInventoryOrigins').mockImplementation(
+				async (...args) => {
+					const response = await listMockOrigins(...args);
+					return {
+						...response,
+						context: { ...response.context, unattributed_quantity: unattributed },
+					};
+				},
+			);
+			renderFicha(MOUSE_ID);
+			const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+			await within(region).findByText('Recepción #80');
+
+			if (note) expect(within(region).getByText(note)).toBeInTheDocument();
+			else expect(within(region).queryByText(/sin procedencia registrada/)).toBeNull();
+			if (warning) expect(within(region).getByText(warning)).toBeInTheDocument();
+			else expect(within(region).queryByText('Procedencia en revisión')).toBeNull();
+		},
+	);
+
+	it('sin acceso al catálogo de bodegas no presenta el reparto incompleto como vacío', async () => {
+		// 9 unidades en una bodega que no se puede nombrar y ninguna en «Sin ubicación».
+		vi.spyOn(inventoryOverviewService, 'getInventoryStockDetail').mockImplementation(
+			async (...args) => {
+				const response = await getMockDetail(...args);
+				return {
+					...response,
+					data: {
+						...response.data,
+						physical_quantity: 9,
+						warehouses: [],
+						warehouses_complete: false,
+					},
+				};
+			},
+		);
+		const origins = vi.spyOn(inventoryStockService, 'listInventoryOrigins');
+		renderFicha(MOUSE_ID);
+
+		expect(
+			await screen.findByText(/9 unidades están en bodegas que no puedes ver/),
+		).toBeInTheDocument();
+		expect(screen.queryByText('No hay unidades de este producto en la sucursal.')).toBeNull();
+		// Las procedencias se piden para la sucursal completa en vez de ocultarse.
+		expect(
+			await screen.findByRole('region', { name: 'Procedencias del producto' }),
+		).toBeInTheDocument();
+		expect(origins).toHaveBeenCalledWith(
+			4,
+			MOUSE_ID,
+			{ page: 1, per_page: 15 },
+			expect.anything(),
+		);
+	});
+
+	it('sin catálogo de bodegas, con unidades sin ubicación y en bodega, deja consultar la sucursal completa', async () => {
+		// 2 unidades en «Sin ubicación» y 7 en una bodega que no se puede nombrar.
+		vi.spyOn(inventoryOverviewService, 'getInventoryStockDetail').mockImplementation(
+			async (...args) => {
+				const response = await getMockDetail(...args);
+				const unlocated = response.data.warehouses.find(
+					(location) => location.warehouse === null,
+				);
+				if (!unlocated) throw new Error('La semilla no tiene «Sin ubicación»');
+				return {
+					...response,
+					data: {
+						...response.data,
+						physical_quantity: 9,
+						warehouses: [{ ...unlocated, physical_quantity: 2 }],
+						warehouses_complete: false,
+					},
+				};
+			},
+		);
+		const origins = vi.spyOn(inventoryStockService, 'listInventoryOrigins');
+		renderFicha(MOUSE_ID);
+
+		expect(
+			await screen.findByText(/7 unidades están en bodegas que no puedes ver/),
+		).toBeInTheDocument();
+		const alcance = await screen.findByRole('group', { name: 'Ubicación de las procedencias' });
+		const sucursal = within(alcance).getByRole('button', { name: 'Toda la sucursal · 9' });
+		const sinUbicacion = within(alcance).getByRole('button', { name: 'Sin ubicación · 2' });
+		// La sucursal completa va primero: es la única que alcanza las 7 de bodega.
+		expect(sucursal).toHaveAttribute('aria-pressed', 'true');
+		await waitFor(() =>
+			expect(origins).toHaveBeenLastCalledWith(
+				4,
+				MOUSE_ID,
+				{ page: 1, per_page: 15 },
+				expect.anything(),
+			),
+		);
+
+		fireEvent.click(sinUbicacion);
+		await waitFor(() =>
+			expect(origins).toHaveBeenLastCalledWith(
+				4,
+				MOUSE_ID,
+				{ unlocated: 1, page: 1, per_page: 15 },
+				expect.anything(),
+			),
+		);
+
+		fireEvent.click(within(alcance).getByRole('button', { name: 'Toda la sucursal · 9' }));
+		await waitFor(() =>
+			expect(origins).toHaveBeenLastCalledWith(
+				4,
+				MOUSE_ID,
+				{ page: 1, per_page: 15 },
+				expect.anything(),
+			),
+		);
+	});
+
+	it('cambiar de ubicación descarta el filtro de proveedor de la anterior', async () => {
+		renderFicha(MOUSE_ID);
+		const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+		await within(region).findByText('Recepción #80');
+		const proveedor = within(region).getByLabelText('Proveedor');
+		const [, primero] = within(proveedor).getAllByRole('option');
+		fireEvent.change(proveedor, { target: { value: primero.getAttribute('value') } });
+		await waitFor(() => expect(proveedor).toHaveValue(primero.getAttribute('value')));
+
+		fireEvent.click(screen.getByRole('button', { name: 'Estante A3 · 4' }));
+
+		const shelf = await screen.findByRole('region', { name: 'Procedencias del producto' });
+		await within(shelf).findByText('Recepción #211');
+		expect(within(shelf).getByLabelText('Proveedor')).toHaveValue('');
+	});
+
+	describe('Enlaces de las procedencias', () => {
+		it('con `view-product` la recepción enlaza a su ficha', async () => {
+			renderFicha(MOUSE_ID, ['view-procurement-supplier']);
+			const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+
+			expect(
+				await within(region).findByRole('link', {
+					name: 'Ficha de la recepción: Recepción #80',
+				}),
+			).toHaveAttribute('href', '/inventario/abastecimiento/recepciones/80');
+			// Proveedor y documento salen de la semilla de prueba mientras
+			// Recepciones sea simulada: no se enlazan a las fichas reales aunque
+			// quien mira tenga los permisos.
+			expect(within(region).queryByRole('link', { name: /PCExpress/ })).toBeNull();
+			expect(within(region).queryByRole('link', { name: /Factura/ })).toBeNull();
+		});
+
+		// La ficha entera exige `view-product`; el componente se monta solo para
+		// ejercer su rama sin permiso, por si se reutiliza en otra pantalla.
+		it('sin `view-product` la recepción queda como texto', async () => {
+			const store = configureStore({
+				reducer: { inventoryOverview, inventoryStock, auth: auth.reducer },
+			});
+			store.dispatch(auth.actions.revoke('view-product'));
+			render(
+				<Provider store={store}>
+					<MemoryRouter>
+						<InventoryOrigins
+							branchId={4}
+							subsidiaryId={2}
+							productId={MOUSE_ID}
+							owner='sin-permiso'
+							location={UNLOCATED}
+							onDocumented={() => undefined}
+						/>
+					</MemoryRouter>
+				</Provider>,
+			);
+			const region = screen.getByRole('region', { name: 'Procedencias del producto' });
+
+			await within(region).findByText('Recepción #80');
+			expect(within(region).queryByRole('link')).not.toBeInTheDocument();
+		});
+	});
+
+	it('cambiar el umbral actualiza el estado; vaciarlo lo desactiva', async () => {
+		renderFicha(MOUSE_ID);
+		fireEvent.click(await screen.findByRole('button', { name: 'Cambiar umbral' }));
+		const dialog = await screen.findByRole('dialog');
+
+		fireEvent.change(within(dialog).getByLabelText('Umbral (unidades)'), {
+			target: { value: '2,5' },
+		});
+		fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar umbral' }));
+		expect(
+			await within(dialog).findByText('Ingresa un número entero, sin decimales ni signos.'),
+		).toBeInTheDocument();
+
+		fireEvent.change(within(dialog).getByLabelText('Umbral (unidades)'), {
+			target: { value: '' },
+		});
+		// `Button` bloquea unos milisegundos tras cada clic (guarda anti doble clic).
+		const guardar = within(dialog).getByRole('button', { name: 'Guardar umbral' });
+		await waitFor(() => expect(guardar).toBeEnabled());
+		fireEvent.click(guardar);
+
+		await screen.findByText('Sin umbral: no avisa cuando se agota');
+		expect(screen.getByText('Sin umbral')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Definir umbral' })).toBeInTheDocument();
+	});
+
+	it('documentar respalda unidades y la ficha vuelve a pedir sus totales', async () => {
+		renderFicha(CABLE_ID);
+		expect(await kpi('Sin documento de compra')).toHaveTextContent('100');
+		// Sin reservas ni no vendibles, esos KPI no aparecen.
+		expect(screen.queryByText('Reservadas', { selector: 'p' })).not.toBeInTheDocument();
+		expect(screen.queryByText('No vendibles', { selector: 'p' })).not.toBeInTheDocument();
+
+		const region = await screen.findByRole('region', { name: 'Procedencias del producto' });
+		fireEvent.click(await within(region).findByRole('button', { name: 'Documentar' }));
+		const dialog = await screen.findByRole('dialog', { name: 'Documentar stock inicial' });
+		// El picker carga los documentos confirmados de forma asíncrona.
+		await within(dialog).findByRole('option', { name: '7788 · Sin proveedor' });
+		fireEvent.change(within(dialog).getByLabelText('Documento confirmado'), {
+			target: { value: '90' },
+		});
+		await within(dialog).findByLabelText('Línea del documento');
+		fireEvent.change(within(dialog).getByLabelText('Línea del documento'), {
+			target: { value: '950' },
+		});
+		fireEvent.change(within(dialog).getByLabelText('Cantidad a documentar'), {
+			target: { value: '10' },
+		});
+		fireEvent.change(within(dialog).getByLabelText('Motivo'), {
+			target: { value: 'Factura llegó con retraso, respaldo parcial del conteo inicial.' },
+		});
+		fireEvent.click(within(dialog).getByRole('button', { name: 'Documentar' }));
+
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+		await waitFor(async () =>
+			expect(await kpi('Sin documento de compra')).toHaveTextContent('90'),
+		);
+		expect(await screen.findByText('Boleta #7788')).toBeInTheDocument();
+	});
+
+	describe('Trazabilidad', () => {
+		it('con `view-inventory-movements` muestra las operaciones del producto', async () => {
+			renderFicha(MOUSE_ID, ['view-inventory-movements']);
+
+			const table = await screen.findByRole('table', { name: 'Trazabilidad' });
+
+			// El título es fijo por tipo, como lo entrega el backend.
+			expect(await within(table).findByText('Stock inicial')).toBeInTheDocument();
+			expect(within(table).getAllByText('Recepción de mercadería').length).toBeGreaterThan(0);
+		});
+
+		it('sin el permiso la ficha no muestra la trazabilidad', async () => {
+			renderFicha(MOUSE_ID);
+
+			await screen.findByRole('table', { name: 'Unidades por ubicación' });
+			expect(screen.queryByRole('table', { name: 'Trazabilidad' })).not.toBeInTheDocument();
+		});
+	});
+	describe('atajos a Ajustes y traslados', () => {
+		it('abre el ajuste y el traslado con el producto y la ubicación de la fila', async () => {
+			renderFichaConAtajos();
+			await screen.findByRole('table', { name: 'Unidades por ubicación' });
+
+			fireEvent.click(
+				await screen.findByRole('button', { name: 'Ajustar Mouse USB en Sin ubicación' }),
+			);
+			expect(screen.getByTestId('ajustes-url')).toHaveTextContent(
+				`/inventario/abastecimiento/ajustes-traslados?tab=ajuste&warehouse_id=unlocated&product_id=${MOUSE_ID}`,
+			);
+		});
+
+		it('el traslado usa la ubicación de la fila como origen', async () => {
+			renderFichaConAtajos();
+			fireEvent.click(
+				await screen.findByRole('button', { name: 'Trasladar Mouse USB desde Estante A3' }),
+			);
+			expect(screen.getByTestId('ajustes-url')).toHaveTextContent(
+				`?tab=traslado&warehouse_id=12&product_id=${MOUSE_ID}`,
+			);
+		});
+
+		it('sin edit-product no dibuja la columna ni los botones', async () => {
+			renderFichaConAtajos(['edit-product']);
+			const table = await screen.findByRole('table', { name: 'Unidades por ubicación' });
+			expect(
+				within(table).queryByRole('columnheader', { name: 'Acciones' }),
+			).not.toBeInTheDocument();
+			expect(screen.queryByRole('button', { name: /^Ajustar / })).not.toBeInTheDocument();
+			expect(screen.queryByRole('button', { name: /^Trasladar / })).not.toBeInTheDocument();
+		});
+
+		it('con una sola ubicación sólo ofrece ajustar «Sin ubicación», sin traslados', async () => {
+			multiLocation.enabled = false;
+			renderFichaConAtajos();
+			const table = await screen.findByRole('table', { name: 'Unidades por ubicación' });
+
+			expect(
+				await within(table).findByRole('button', {
+					name: 'Ajustar Mouse USB en Sin ubicación',
+				}),
+			).toBeInTheDocument();
+			expect(
+				within(table).queryByRole('button', { name: 'Ajustar Mouse USB en Estante A3' }),
+			).not.toBeInTheDocument();
+			expect(
+				within(table).queryByRole('button', { name: /^Trasladar / }),
+			).not.toBeInTheDocument();
+		});
+	});
+});

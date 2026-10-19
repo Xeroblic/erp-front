@@ -1,9 +1,11 @@
 import React from 'react';
 import { useFormikContext } from 'formik';
-import { toast } from 'react-toastify';
 import type { MultiValue } from 'react-select';
+import { Link } from 'react-router-dom';
 import Input from '@/components/form/Input';
 import SelectReact from '@/components/form/SelectReact';
+import Pages from '@/config/pages.config';
+import useCan from '@/hooks/useCan';
 import type { ProductDetailForm } from '../../types/products.types';
 import type { ICategory } from '@/interface/category.interface';
 import type { TSelectOption } from '@/components/form/SelectReact';
@@ -21,6 +23,8 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 }) => {
 	const { values, errors, touched, setFieldValue, setFieldTouched } =
 		useFormikContext<ProductDetailForm>();
+	// Recepciones y Ajustes exigen `view-product`: sin él, el aviso va sin enlaces.
+	const canOpenStockScreens = useCan().has('view-product');
 
 	// Validar que el número no exceda el límite de la BD (NUMERIC(14,2))
 	const handlePriceChange = (fieldName: string, value: string) => {
@@ -68,21 +72,6 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 		}
 
 		setFieldValue(fieldName, numValue);
-	};
-
-	// Handler específico para stock con validación de serial_tracking
-	const handleStockChange = (value: string) => {
-		// Si el producto usa tracking por serie, bloquear edición
-		if (values.serial_tracking) {
-			toast.warning(
-				' No se puede modificar el stock manualmente. Este producto usa tracking por serie y el stock se calcula automáticamente.',
-				{ autoClose: 5000 },
-			);
-			return;
-		}
-
-		// Si no tiene tracking, permitir edición normal
-		handleIntegerChange('stock', value, 999999999);
 	};
 
 	return (
@@ -175,41 +164,53 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 				)}
 			</div>
 
+			{/*
+			 * Sólo lectura: el PATCH del producto descarta `stock` en sucursal y en
+			 * filial. El stock vive en una sucursal y se mueve por recepción o ajuste.
+			 */}
 			<div className='space-y-1'>
-				<label className='text-sm font-medium'>
+				<label className='text-sm font-medium' htmlFor='product-detail-stock'>
 					Stock disponible
-					{values.serial_tracking && (
-						<span className='ml-2 text-xs text-amber-500'>
-							(Solo lectura - calculado por series)
-						</span>
-					)}
 				</label>
 				<Input
+					id='product-detail-stock'
 					name='stock'
 					type='number'
-					placeholder='0'
-					min='0'
-					max='999999999'
-					step='1'
 					value={values.stock === '' ? '' : String(values.stock)}
-					onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-						handleStockChange(event.target.value)
-					}
-					disabled={values.serial_tracking}
-					isValid={!errors.stock}
-					isTouched={touched.stock}
-					invalidFeedback={errors.stock}
-					className={values.serial_tracking ? 'cursor-not-allowed opacity-60' : ''}
+					placeholder='0'
+					readOnly
+					aria-describedby='product-detail-stock-hint'
+					className='cursor-not-allowed opacity-60'
 				/>
-				{values.serial_tracking && (
-					<p className='text-xs text-amber-600 dark:text-amber-400'>
-						El stock se calcula automáticamente desde las series aprobadas en revisión
-						técnica
-					</p>
-				)}
-				{touched.stock && errors.stock && (
-					<p className='text-xs text-red-500'>{errors.stock}</p>
-				)}
+				<p
+					id='product-detail-stock-hint'
+					className='text-xs text-neutral-500 dark:text-neutral-400'>
+					{values.serial_tracking ? (
+						'El stock se calcula automáticamente desde las series aprobadas en revisión técnica.'
+					) : (
+						<>
+							Para cambiarlo, registra una{' '}
+							{canOpenStockScreens ? (
+								<>
+									<Link
+										className='font-semibold underline'
+										to={Pages.inventory.subPages.recepciones.to}>
+										recepción
+									</Link>{' '}
+									o un{' '}
+									<Link
+										className='font-semibold underline'
+										to={`${Pages.inventory.subPages.ajustesTraslados.to}?tab=ajuste`}>
+										ajuste de inventario
+									</Link>
+								</>
+							) : (
+								'recepción o un ajuste de inventario'
+							)}{' '}
+							en la sucursal donde está.
+						</>
+					)}
+				</p>
 			</div>
 
 			<div className='space-y-1'>

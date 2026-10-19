@@ -1,0 +1,257 @@
+import { useCallback, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Container from '@/components/layouts/Container/Container';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
+import PermissionGuard from '@/components/authorization/PermissionGuard';
+import Alert from '@/components/ui/Alert';
+import Button from '@/components/ui/Button';
+import Tabs, { Tab } from '@/components/ui/Tabs';
+import useAuthorization from '@/hooks/useAuthorization';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { useAppSelector } from '@/store';
+import type {
+	IInventoryOverviewRow,
+	IInventoryWarehouseAggregate,
+} from '@/interface/inventoryOverview.interface';
+import useInventario from '@/pages/inventario/Inventario/hooks/useInventario';
+import useInventarioFilters from '@/pages/inventario/Inventario/hooks/useInventarioFilters';
+import InventarioSummary from '@/pages/inventario/Inventario/components/parts/InventarioSummary';
+import InventoryMockNotice from '@/pages/inventario/Inventario/components/parts/InventoryMockNotice';
+import InventarioFilters from '@/pages/inventario/Inventario/components/filters/InventarioFilters';
+import InventarioGeneralTable from '@/pages/inventario/Inventario/components/tables/InventarioGeneralTable';
+import WarehouseStockTable from '@/pages/inventario/Inventario/components/tables/WarehouseStockTable';
+import InventoryTraceability from '@/pages/inventario/Inventario/components/traceability/InventoryTraceability';
+import {
+	inventarioBodegaPath,
+	inventarioProductoPath,
+	isInventarioVista,
+} from '@/pages/inventario/Inventario/types';
+
+interface IInventarioSessionProps {
+	branchId: number;
+	owner: string;
+	/** Filial y nombre de la sucursal para Trazabilidad; `null` si no hay filial activa. */
+	trazabilidad: { subsidiaryId: number; branchName: string | null } | null;
+}
+
+const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSessionProps) => {
+	const navigate = useNavigate();
+	const { pathname, search } = useLocation();
+	const {
+		filtros: filtrosUrl,
+		hasFilters,
+		setVista,
+		setUbicacion,
+		setEstado,
+		setBusqueda,
+		setOrden,
+		setTipo,
+		setSerie,
+		setDesde,
+		setHasta,
+		paginate,
+		limpiar,
+	} = useInventarioFilters();
+	// Un enlace a Trazabilidad abierto por alguien sin ese permiso cae en la vista General.
+	const filtros = useMemo(
+		() =>
+			filtrosUrl.vista === 'trazabilidad' && !trazabilidad
+				? { ...filtrosUrl, vista: 'general' as const }
+				: filtrosUrl,
+		[filtrosUrl, trazabilidad],
+	);
+	const data = useInventario(branchId, owner, filtros);
+
+	const openProducto = useCallback(
+		(row: IInventoryOverviewRow) =>
+			navigate(inventarioProductoPath(row.product.id), {
+				state: { from: `${pathname}${search}` },
+			}),
+		[navigate, pathname, search],
+	);
+	const openBodega = useCallback(
+		(aggregate: IInventoryWarehouseAggregate) =>
+			navigate(inventarioBodegaPath(aggregate.warehouse?.id ?? null)),
+		[navigate],
+	);
+	const loadError = data.summaryError ?? data.warehousesError ?? data.listError;
+
+	return (
+		<>
+			<InventarioSummary summary={data.summary} loading={data.summaryLoading} />
+			{loadError && (
+				<Alert
+					color='red'
+					variant='outline'
+					icon='HeroExclamationTriangle'
+					title='No pudimos cargar el inventario'>
+					<div className='flex flex-wrap items-center justify-between gap-3'>
+						<span>{loadError}</span>
+						<Button size='sm' variant='outline' onClick={data.refresh}>
+							Reintentar
+						</Button>
+					</div>
+				</Alert>
+			)}
+			<Tabs
+				activeTab={filtros.vista}
+				onTabChange={(tabId) => {
+					if (isInventarioVista(tabId)) setVista(tabId);
+				}}
+				variant='pills'
+				contentClassName='!mt-4'>
+				<Tab id='general' text='Por producto' icon='HeroListBullet'>
+					{filtros.vista === 'general' && (
+						<div className='space-y-4'>
+							<InventarioFilters
+								filtros={filtros}
+								warehouses={data.warehouses}
+								onBusqueda={setBusqueda}
+								onUbicacion={setUbicacion}
+								onEstado={setEstado}
+								onLimpiar={limpiar}
+							/>
+							<InventarioGeneralTable
+								response={data.list}
+								loading={data.listLoading}
+								hasError={Boolean(data.listError)}
+								hasFilters={hasFilters}
+								ubicacion={filtros.ubicacion}
+								orden={filtros.orden}
+								warehouses={data.warehouses}
+								onOrden={setOrden}
+								onPaginate={paginate}
+								onOpen={openProducto}
+							/>
+						</div>
+					)}
+				</Tab>
+				<Tab id='bodegas' text='Por bodega' icon='HeroBuildingStorefront'>
+					{filtros.vista === 'bodegas' && (
+						<WarehouseStockTable
+							warehouses={data.warehouses}
+							loading={data.warehousesLoading}
+							hasError={Boolean(data.warehousesError)}
+							complete={data.warehousesComplete}
+							onOpen={openBodega}
+						/>
+					)}
+				</Tab>
+				{trazabilidad && (
+					<Tab id='trazabilidad' text='Trazabilidad' icon='HeroArrowsRightLeft'>
+						{filtros.vista === 'trazabilidad' && (
+							<InventoryTraceability
+								subsidiaryId={trazabilidad.subsidiaryId}
+								branchId={branchId}
+								branchName={trazabilidad.branchName}
+								owner={owner}
+								filtros={filtros}
+								hasFilters={hasFilters}
+								warehouses={data.warehouses}
+								onBusqueda={setBusqueda}
+								onTipo={setTipo}
+								onSerie={setSerie}
+								onUbicacion={setUbicacion}
+								onDesde={setDesde}
+								onHasta={setHasta}
+								onLimpiar={limpiar}
+								onPaginate={paginate}
+							/>
+						)}
+					</Tab>
+				)}
+			</Tabs>
+		</>
+	);
+};
+
+/**
+ * Inventario de la sucursal activa: una sola vista para «cuánto hay, dónde
+ * está y qué pide atención». Los reportes con historia y comparaciones viven
+ * en Reportes › Inventario.
+ */
+const InventarioView = () => {
+	const navigate = useNavigate();
+	const { branchId, subsidiaryId, visibleBranches } = useCurrentBranch();
+	const { authorize, isLoading } = useAuthorization();
+	const userId = useAppSelector((state) => state.auth.user?.id);
+	const canRead = authorize({
+		permission: 'view-product',
+		branchId,
+		subsidiaryId,
+		scope: 'visible',
+	});
+	// Trazabilidad (§14) es de filial y exige su propio permiso.
+	const canTrace =
+		subsidiaryId !== null &&
+		authorize({
+			permission: 'view-inventory-movements',
+			branchId,
+			subsidiaryId,
+			scope: 'visible',
+		});
+	const branchName = visibleBranches.find((branch) => branch.id === branchId)?.name ?? null;
+	const trazabilidad = useMemo(
+		() => (canTrace && subsidiaryId !== null ? { subsidiaryId, branchName } : null),
+		[canTrace, subsidiaryId, branchName],
+	);
+	const owner = `${userId}:${subsidiaryId}:${branchId}`;
+
+	// La sesión autorizada se monta con `key` ANTES de pintar: un cambio de
+	// sucursal o de permiso no alcanza a mostrar datos del contexto anterior.
+	let content;
+	if (isLoading) content = <p role='status'>Comprobando acceso…</p>;
+	else if (!branchId)
+		content = (
+			<Alert title='Selecciona una sucursal'>
+				Necesitas una sucursal activa para consultar su inventario.
+			</Alert>
+		);
+	else if (!canRead)
+		content = (
+			<Alert color='amber' title='Sin permiso'>
+				No tienes permiso para consultar el inventario de esta sucursal.
+			</Alert>
+		);
+	else
+		content = (
+			<InventarioSession
+				key={owner}
+				owner={owner}
+				branchId={branchId}
+				trazabilidad={trazabilidad}
+			/>
+		);
+
+	return (
+		<PageWrapper isProtectedRoute title='Inventario'>
+			<Subheader>
+				<SubheaderLeft>
+					<SubheaderTitle
+						icon='HeroCube'
+						title='Inventario'
+						description='Cuánto hay de cada producto, dónde está y qué necesita atención'
+					/>
+				</SubheaderLeft>
+				<SubheaderRight>
+					<PermissionGuard permission='view-reports'>
+						<Button
+							variant='outline'
+							icon='HeroChartBar'
+							onClick={() => navigate('/reportes/inventario')}>
+							Ver reportes
+						</Button>
+					</PermissionGuard>
+				</SubheaderRight>
+			</Subheader>
+			<Container className='space-y-4'>
+				<InventoryMockNotice withTraceability={trazabilidad !== null} />
+				{content}
+			</Container>
+		</PageWrapper>
+	);
+};
+
+export default InventarioView;

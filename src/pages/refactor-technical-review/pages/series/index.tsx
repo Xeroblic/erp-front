@@ -22,6 +22,7 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import Badge from '@/components/ui/Badge';
 import BulkTransferModal from './BulkTransferModal';
 import Label from '@/components/form/Label';
+import useBulkSerialTransfer from './hooks/useBulkSerialTransfer';
 
 const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
@@ -78,13 +79,6 @@ const RefactorSeries: React.FC = () => {
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const currentUser = useAppSelector((state) => state.auth.user);
 
-	type ProfileBranch = {
-		id?: number;
-		name?: string;
-		subsidiary?: { id?: number; name?: string };
-		subsidiary_id?: number;
-	};
-
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
 	const [search, setSearch] = useState('');
@@ -119,11 +113,14 @@ const RefactorSeries: React.FC = () => {
 		}));
 	}, [productsWithSerial]);
 
+	// El backend no filtra por estado: sólo se ofrecen las bodegas activas.
 	const warehouseOptionsMemo = useMemo<TSelectOption[]>(() => {
-		return warehouses.map((warehouse) => ({
-			value: String(warehouse.id),
-			label: `${warehouse.name} ${warehouse.code ? `(${warehouse.code})` : ''}`.trim(),
-		}));
+		return warehouses
+			.filter((warehouse) => warehouse.is_active)
+			.map((warehouse) => ({
+				value: String(warehouse.id),
+				label: `${warehouse.name} ${warehouse.code ? `(${warehouse.code})` : ''}`.trim(),
+			}));
 	}, [warehouses]);
 
 	const customerSupplierOptionsMemo = useMemo<TSelectOption[]>(() => {
@@ -174,80 +171,6 @@ const RefactorSeries: React.FC = () => {
 	const endpointEntityId =
 		endpointEntityType === 'subsidiaries' ? effectiveSubsidiaryId : branchId;
 
-	const effectiveSubsidiaryIdForTransfer = useMemo<number | null>(() => {
-		if (!branchId) return effectiveSubsidiaryId;
-
-		const visibleBranches = ((currentUser as any)?.visible?.branches ?? []) as ProfileBranch[];
-		const accessBranches = ((currentUser as any)?.access?.branches ?? []) as ProfileBranch[];
-		const merged = [...visibleBranches, ...accessBranches];
-
-		const selected = merged.find((b) => Number(b?.id ?? 0) === Number(branchId));
-		const selectedSubsidiaryId = Number(
-			selected?.subsidiary?.id ?? selected?.subsidiary_id ?? 0,
-		);
-
-		if (Number.isFinite(selectedSubsidiaryId) && selectedSubsidiaryId > 0) {
-			return selectedSubsidiaryId;
-		}
-
-		return effectiveSubsidiaryId;
-	}, [branchId, currentUser, effectiveSubsidiaryId]);
-
-	const transferDestinationBranches = useMemo<TSelectOption[]>(() => {
-		const accessBranches = ((currentUser as any)?.access?.branches ?? []) as ProfileBranch[];
-		const accessSubsidiaries = ((currentUser as any)?.access?.subsidiaries ?? []) as Array<{
-			id?: number;
-		}>;
-		const visibleBranches = ((currentUser as any)?.visible?.branches ?? []) as ProfileBranch[];
-
-		const accessBranchIds = new Set<number>(
-			accessBranches
-				.map((branch) => Number(branch?.id ?? 0))
-				.filter((id) => Number.isFinite(id) && id > 0),
-		);
-
-		const accessSubsidiaryIds = new Set<number>(
-			accessSubsidiaries
-				.map((subsidiary) => Number(subsidiary?.id ?? 0))
-				.filter((id) => Number.isFinite(id) && id > 0),
-		);
-
-		const visibleById = new Map<number, ProfileBranch>();
-		for (const branch of visibleBranches) {
-			const id = Number(branch?.id ?? 0);
-			if (Number.isFinite(id) && id > 0) {
-				visibleById.set(id, branch);
-			}
-		}
-
-		const filtered = Array.from(visibleById.values())
-			.filter((branch) => {
-				const id = Number(branch?.id ?? 0);
-				const branchSubsidiaryId = Number(
-					branch.subsidiary?.id ?? branch.subsidiary_id ?? 0,
-				);
-
-				if (accessBranchIds.has(id)) return true;
-				if (accessSubsidiaryIds.has(branchSubsidiaryId)) return true;
-				return false;
-			})
-			.filter((branch) => Number(branch.id) !== Number(branchId ?? 0))
-			.filter((branch) => {
-				if (!effectiveSubsidiaryIdForTransfer) return true;
-				const branchSubsidiaryId = Number(
-					branch.subsidiary?.id ?? branch.subsidiary_id ?? 0,
-				);
-				return branchSubsidiaryId === Number(effectiveSubsidiaryIdForTransfer);
-			});
-
-		return filtered
-			.map((branch) => ({
-				value: String(branch.id),
-				label: branch.name ?? `Sucursal ${branch.id}`,
-			}))
-			.sort((a, b) => a.label.localeCompare(b.label, 'es'));
-	}, [currentUser, branchId, effectiveSubsidiaryIdForTransfer]);
-
 	const handleViewItem = (itemId: number) => {
 		navigate(`/technical-reviews/items/${itemId}`);
 	};
@@ -273,7 +196,8 @@ const RefactorSeries: React.FC = () => {
 			dispatch(
 				fetchWarehouses({
 					branchId,
-					params: { page: 1, per_page: 200, is_active: true },
+					params: { per_page: 100 },
+					allPages: true,
 				}),
 			);
 		}
@@ -399,50 +323,25 @@ const RefactorSeries: React.FC = () => {
 
 	const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
-	const bulkTransferStock = useCallback(
-		async (serialNumbers: string[], targetBranchId: number) => {
-			try {
-				if (!branchId || !effectiveSubsidiaryIdForTransfer) {
-					toast.error('Información de sucursal/subsidiaria no disponible');
-					return;
-				}
+	const refetchItems = useCallback(() => {
+		void dispatch(
+			fetchItems({
+				branchId:
+					endpointEntityType === 'branches' ? (endpointEntityId as number) : undefined,
+				subsidiaryId:
+					endpointEntityType === 'subsidiaries'
+						? (endpointEntityId as number)
+						: undefined,
+				params: queryParams,
+			}),
+		);
+	}, [dispatch, endpointEntityId, endpointEntityType, queryParams]);
 
-				if (serialNumbers.length === 0) {
-					toast.error('No hay números de serie para transferir');
-					return;
-				}
-
-				const response = await ApiService.fetchData({
-					url: `/subsidiaries/${effectiveSubsidiaryIdForTransfer}/bulk-transfer-stock`,
-					method: 'post',
-					data: {
-						from_branch_id: branchId,
-						to_branch_id: targetBranchId,
-						serial_numbers: serialNumbers,
-					},
-				});
-
-				toast.success('Stock transferido exitosamente');
-				dispatch(
-					fetchItems({
-						branchId:
-							endpointEntityType === 'branches'
-								? (endpointEntityId as number)
-								: undefined,
-						subsidiaryId:
-							endpointEntityType === 'subsidiaries'
-								? (endpointEntityId as number)
-								: undefined,
-						params: queryParams,
-					}),
-				);
-			} catch (error) {
-				toast.error('Error al transferir stock');
-				console.error(error);
-			}
-		},
-		[branchId, effectiveSubsidiaryId, effectiveSubsidiaryIdForTransfer, dispatch, queryParams],
-	);
+	const { bulkTransferStock, destinationBranchOptions } = useBulkSerialTransfer({
+		fromBranchId: branchId,
+		fallbackSubsidiaryId: effectiveSubsidiaryId,
+		onTransferred: refetchItems,
+	});
 
 	const handleBackToDetail = () => {
 		navigate(`/technical-reviews/refactor`);
@@ -904,7 +803,7 @@ const RefactorSeries: React.FC = () => {
 					isOpen={isTransferModalOpen}
 					onClose={() => setIsTransferModalOpen(false)}
 					onTransfer={bulkTransferStock}
-					destinationBranchOptions={transferDestinationBranches}
+					destinationBranchOptions={destinationBranchOptions}
 				/>
 			</Container>
 		</PageWrapper>

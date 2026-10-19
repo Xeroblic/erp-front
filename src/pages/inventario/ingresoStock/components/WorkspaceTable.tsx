@@ -14,7 +14,6 @@ const clpFormatter = new Intl.NumberFormat('es-CL', {
 	maximumFractionDigits: 0,
 });
 
-// 1. Creamos un micro-componente para la celda que maneja su propio foco y estado
 const QuantityInputCell = ({
 	initialQuantity,
 	productId,
@@ -26,7 +25,6 @@ const QuantityInputCell = ({
 }) => {
 	const [draft, setDraft] = useState(initialQuantity);
 
-	// Sincroniza si el valor inicial cambia desde afuera
 	useEffect(() => {
 		setDraft(initialQuantity);
 	}, [initialQuantity]);
@@ -39,8 +37,8 @@ const QuantityInputCell = ({
 	const handleCommit = () => {
 		const parsed = Number(draft);
 		const safe = Number.isFinite(parsed) && parsed > 0 ? String(parsed) : '1';
-		setDraft(safe); // Actualizamos la UI local con el valor seguro
-		onCommit(productId, safe); // Avisamos al padre
+		setDraft(safe);
+		onCommit(productId, safe);
 	};
 
 	return (
@@ -57,15 +55,13 @@ const QuantityInputCell = ({
 						e.preventDefault();
 					}
 					if (e.key === 'Enter') {
-						e.currentTarget.blur(); // Esto disparará el onBlur automáticamente
+						e.currentTarget.blur();
 					}
 				}}
 			/>
 		</div>
 	);
 };
-
-// ------------------------------------------------------------------
 
 interface WorkspaceTableProps {
 	items: IWorkItem[];
@@ -80,7 +76,6 @@ export const WorkspaceTable = ({
 	onQuantityChange,
 	onRemoveItem,
 }: WorkspaceTableProps) => {
-	// 2. Las columnas ahora son estables y no dependen de borradores locales
 	const columns = useMemo<ColumnDef<IWorkItem, unknown>[]>(
 		() => [
 			{
@@ -91,9 +86,13 @@ export const WorkspaceTable = ({
 						<div className='flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-400'>
 							<Icon icon='HeroCube' className='h-4 w-4' />
 						</div>
-						<div className='min-w-0'>
-							<p className='truncate font-semibold'>{row.original.name}</p>
-							<p className='font-mono text-[11px] text-zinc-500'>
+						<div className='min-w-0 max-w-[280px]'>
+							<p
+								className='line-clamp-2 break-words font-semibold'
+								title={row.original.name}>
+								{row.original.name}
+							</p>
+							<p className='break-all font-mono text-[11px] text-zinc-500'>
 								SKU: {row.original.sku}
 							</p>
 						</div>
@@ -179,7 +178,7 @@ export const WorkspaceTable = ({
 				),
 			},
 		],
-		[getSignedQuantity, onQuantityChange, onRemoveItem], // Dependencias limpias
+		[getSignedQuantity, onQuantityChange, onRemoveItem],
 	);
 
 	return (

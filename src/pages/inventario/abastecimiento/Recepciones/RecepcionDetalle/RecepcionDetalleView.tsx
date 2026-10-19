@@ -1,0 +1,181 @@
+import React from 'react';
+import Alert from '@/components/ui/Alert';
+import Button from '@/components/ui/Button';
+import Container from '@/components/layouts/Container/Container';
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
+import { AllowedActionsToolbar, ProcurementMockNotice } from '@/components/procurement';
+import INVENTORY_RECEIPTS_USE_MOCKS from '@/config/inventoryReceipts.config';
+import useRecepcionDetalle from './hooks/useRecepcionDetalle';
+import StockReceiptSummaryCard from './components/parts/StockReceiptSummaryCard';
+import StockReceiptProgressCard from './components/parts/StockReceiptProgressCard';
+import StockReceiptItemsTable from './components/parts/StockReceiptItemsTable';
+import CancelStockReceiptModal from './components/modals/CancelStockReceiptModal';
+import ReverseStockReceiptModal from './components/modals/ReverseStockReceiptModal';
+import LinkPurchaseDocumentModal from './components/modals/LinkPurchaseDocumentModal';
+import StockReceiptFormModal from '../components/modals/StockReceiptFormModal';
+
+/**
+ * Ficha de recepción física (sección 7 del contrato). El polling
+ * mientras está `queued` (espera creciente, tope y pausa con la pestaña
+ * oculta) vive en `useRecepcionDetalle`; acá sólo se pinta lo
+ * que el store tiene en cada momento — la pantalla nunca afirma que hay
+ * stock disponible mientras el estado siga siendo `queued`.
+ */
+const RecepcionDetalleView = () => {
+	const {
+		branchId,
+		subsidiaryId,
+		visibleBranches,
+		receipt,
+		links,
+		inventoryLink,
+		stockLocation,
+		isPollingStalled,
+		resumePolling,
+		etag,
+		loading,
+		error,
+		isFormModalOpen,
+		setIsFormModalOpen,
+		isCancelModalOpen,
+		setIsCancelModalOpen,
+		isReverseModalOpen,
+		setIsReverseModalOpen,
+		isLinkDocumentModalOpen,
+		setIsLinkDocumentModalOpen,
+		handleAction,
+		goToList,
+		retry,
+		isPosting,
+		isRetrying,
+	} = useRecepcionDetalle();
+
+	let pendingAction: 'post' | 'retry' | null = null;
+	if (isPosting) pendingAction = 'post';
+	else if (isRetrying) pendingAction = 'retry';
+
+	return (
+		<PageWrapper isProtectedRoute title={receipt ? `Recepción #${receipt.id}` : 'Recepción'}>
+			<Subheader>
+				<SubheaderLeft>
+					<SubheaderTitle
+						icon='HeroInboxArrowDown'
+						title='Recepciones'
+						description='Estado, siguiente paso y productos de la recepción'
+					/>
+				</SubheaderLeft>
+				<SubheaderRight>
+					<Button variant='outline' icon='HeroArrowLeft' onClick={goToList}>
+						Volver al listado
+					</Button>
+				</SubheaderRight>
+			</Subheader>
+			<Container className='space-y-4'>
+				<ProcurementMockNotice isActive={INVENTORY_RECEIPTS_USE_MOCKS} />
+				{loading && (
+					<div className='space-y-4'>
+						<div className='h-24 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700' />
+						<div className='h-48 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700' />
+					</div>
+				)}
+
+				{!loading && error && (
+					<Alert
+						color='red'
+						variant='outline'
+						icon='HeroExclamationTriangle'
+						title='No pudimos cargar la recepción'>
+						<div className='flex flex-wrap items-center justify-between gap-3'>
+							<span>{error}</span>
+							<Button size='sm' variant='outline' onClick={retry}>
+								Reintentar
+							</Button>
+						</div>
+					</Alert>
+				)}
+
+				{!loading && !error && receipt && (
+					<>
+						<div className='flex flex-wrap items-center justify-between gap-3'>
+							<AllowedActionsToolbar
+								allowedActions={receipt.allowed_actions}
+								resource='stock_receipt'
+								onAction={handleAction}
+								// Autoriza contra la sucursal **real** de la
+								// recepción, no la sucursal activa de quien mira la
+								// pantalla — una bodega puede pertenecer a otra sucursal
+								// que la del usuario en ese momento.
+								branchId={receipt.branch_id}
+								subsidiaryId={subsidiaryId}
+								scope='access'
+								pendingAction={pendingAction}
+							/>
+						</div>
+
+						<StockReceiptProgressCard
+							receipt={receipt}
+							inventoryLink={inventoryLink}
+							stockLocation={stockLocation}
+							isPollingStalled={isPollingStalled}
+							onRefresh={resumePolling}
+						/>
+						<StockReceiptSummaryCard
+							receipt={receipt}
+							supplierLink={links.supplier}
+							documentLink={links.document}
+						/>
+						<StockReceiptItemsTable
+							items={receipt.items}
+							documentNumber={receipt.purchase_document?.document_number ?? null}
+							documentLink={links.document}
+						/>
+					</>
+				)}
+			</Container>
+
+			<StockReceiptFormModal
+				isOpen={isFormModalOpen}
+				setIsOpen={setIsFormModalOpen}
+				subsidiaryId={subsidiaryId}
+				branchId={branchId}
+				authorizedBranchIds={visibleBranches.map((branch) => branch.id)}
+				receipt={receipt}
+				etag={etag}
+				onSuccess={() => {
+					setIsFormModalOpen(false);
+					// Recarga la ficha: si el ingreso quedó incierto o fue rechazado, el
+					// `GET` es lo que muestra el estado real (y activa el polling en
+					// `queued`).
+					retry();
+				}}
+				onStaleVersion={retry}
+			/>
+			<CancelStockReceiptModal
+				isOpen={isCancelModalOpen}
+				setIsOpen={setIsCancelModalOpen}
+				receipt={receipt}
+				subsidiaryId={subsidiaryId}
+				onCancelled={() => undefined}
+			/>
+			<ReverseStockReceiptModal
+				isOpen={isReverseModalOpen}
+				setIsOpen={setIsReverseModalOpen}
+				receipt={receipt}
+				subsidiaryId={subsidiaryId}
+				onReversed={() => undefined}
+			/>
+			<LinkPurchaseDocumentModal
+				isOpen={isLinkDocumentModalOpen}
+				setIsOpen={setIsLinkDocumentModalOpen}
+				receipt={receipt}
+				subsidiaryId={subsidiaryId}
+				onLinked={() => undefined}
+				onReceiptStale={retry}
+			/>
+		</PageWrapper>
+	);
+};
+
+export default RecepcionDetalleView;

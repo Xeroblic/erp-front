@@ -21,7 +21,10 @@ export interface IReportFilters {
 	price_max?: number;
 	q?: string;
 	branch_id?: number;
-	per_page?: number;
+	/** R3 `dead_stock`: días mínimos sin movimiento. */
+	days?: number;
+	/** `all` devuelve el conjunto completo en una sola página (ZB-45). */
+	per_page?: number | 'all';
 	page?: number;
 	all?: number;
 	raw?: number;
@@ -48,4 +51,10 @@ export type ReportFormat = 'pdf' | 'xlsx';
 
 export interface IReportExportParams extends IReportFilters {
 	format?: ReportFormat;
+}
+
+/** Archivo exportado: el nombre sale de `Content-Disposition` cuando el backend lo envía. */
+export interface IReportDownload {
+	blob: Blob;
+	fileName: string | null;
 }

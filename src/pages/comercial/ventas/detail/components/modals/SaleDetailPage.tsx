@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import salesReducer, {
+	clearDetail,
 	loadSaleDetail,
 	loadSaleItems,
 	closeSaleThunk,
@@ -10,10 +11,13 @@ import salesReducer, {
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
 import { formatCLP } from '@/utils/format.utils';
-import { translateStatus } from '../../../utils';
-import SaleItemsTable from '../tables/SaleItemsTable';
-import CloseSaleModal from './CloseSaleModal';
-import CorrectSerialModal from './CorrectSerialModal';
+import type { ISaleCloseResult, ISaleStockShortageItem } from '@/interface/sales.interface';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
+import {
+	isLocationReselectError,
+	isSerialsRequiredError,
+	toSaleCloseError,
+} from '@/utils/saleCloseErrors.util';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -35,11 +39,42 @@ import { AxiosError } from 'axios';
 import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
 import Spinner from '@/components/ui/Spinner';
+import { translateStatus } from '../../../utils';
+import SaleItemsTable from '../tables/SaleItemsTable';
+import SaleStockShortageAlert from '../parts/SaleStockShortageAlert';
+import SaleCloseResultAlert from '../parts/SaleCloseResultAlert';
+import CloseSaleModal from './CloseSaleModal';
+import CorrectSerialModal from './CorrectSerialModal';
+import StartSaleReturnModal from './StartSaleReturnModal';
+import ReceiveSaleReturnModal from './ReceiveSaleReturnModal';
+import {
+	isSameSaleOwner,
+	useSaleReturnWrites,
+	type ISaleReturnOwner,
+	type ISaleReturnWrites,
+} from '../../hooks/useSaleReturnWrites';
 interface Props {
 	subsidiaryId: number;
 	saleId: number;
 	isOpen: boolean;
 	onClose: () => void;
+	/**
+	 * Escrituras de la devolución montadas por la página (`useSaleReturnWrites`), para
+	 * que un intento incierto sobreviva al cierre del detalle y la página refresque su
+	 * listado. Sin ellas, el detalle usa las suyas y el intento vive mientras esté montado.
+	 */
+	returnWrites?: ISaleReturnWrites;
+}
+
+interface ICloseShortage {
+	message: string;
+	items: ISaleStockShortageItem[];
+}
+
+/** Lo que aplicó el último cierre de la etapa 2, con los nombres de bodega que vio. */
+interface ICloseOutcome {
+	result: ISaleCloseResult;
+	locationNames: ReadonlyMap<number, string>;
 }
 
 interface CreateQuoteFromSaleResponse {
@@ -64,6 +99,14 @@ const extractQuoteIdFromResponse = (
 		return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 	}
 	return null;
+};
+
+// El backend ya incluye el número en su mensaje («…número de cotización: 628»);
+// sólo se agrega cuando no lo trae, para no repetirlo.
+const buildQuoteCreatedMessage = (message: string, quoteId: number | null): string => {
+	if (!quoteId) return message;
+	const alreadyMentioned = new RegExp(`\\b${quoteId}\\b`).test(message);
+	return alreadyMentioned ? message : `${message}, número de cotización: ${quoteId}`;
 };
 
 const formatAddress = (address: any): string => {
@@ -93,30 +136,78 @@ const parseAmount = (value: number | string | null | undefined): number => {
 
 injectReducer('salesModule', salesReducer);
 
-const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose }) => {
+const SaleDetailPage: React.FC<Props> = ({
+	subsidiaryId,
+	saleId,
+	isOpen,
+	onClose,
+	returnWrites: pageReturnWrites,
+}) => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
-	const detail = useAppSelector(selectSaleDetail);
-	const items = useAppSelector(selectSaleItems);
-	const loading = useAppSelector(selectSalesLoading);
+	const detail = useAppSelector((state) => selectSaleDetail(state, { subsidiaryId, saleId }));
+	const items = useAppSelector((state) => selectSaleItems(state, { subsidiaryId, saleId }));
+	const loading = useAppSelector((state) => selectSalesLoading(state, { subsidiaryId, saleId }));
+	// La venta es de la filial de la ruta: su etapa decide si se elige ubicación al cerrar.
+	const { isMultiLocation } = useSubsidiaryRolloutStage(subsidiaryId);
+	// Un rechazo del cierre puede confirmar la etapa antes que la lectura de filial.
+	const [locationRecovery, setLocationRecovery] = useState<{
+		subsidiaryId: number;
+		saleId: number;
+	} | null>(null);
+	const useLocationSelection =
+		isMultiLocation ||
+		(locationRecovery?.subsidiaryId === subsidiaryId && locationRecovery.saleId === saleId);
 
 	const [closeOpen, setCloseOpen] = useState(false);
 	const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
 	const [isClosing, setIsClosing] = useState(false);
 	const [confirmReturnOpen, setConfirmReturnOpen] = useState(false);
 	const [isConfirmingReturn, setIsConfirmingReturn] = useState(false);
+	// Etapa 2: iniciar y recibir la devolución física.
+	const [startReturnOpen, setStartReturnOpen] = useState(false);
+	const [receiveReturnOpen, setReceiveReturnOpen] = useState(false);
 	const [correctSerialOpen, setCorrectSerialOpen] = useState(false);
 	const [creatingQuote, setCreatingQuote] = useState(false);
 	const [createdQuoteId, setCreatedQuoteId] = useState<number | null>(null);
 	// IDs de ítems que el backend marca como pendientes de asignar serie.
 	// Fuente de la verdad: endpoint pending-serial-assignment (su serialized_items).
 	const [serialItemIds, setSerialItemIds] = useState<Set<number>>(new Set());
+	// IDs que el 422 del cierre exige con serie (`required`). Van aparte para que la
+	// consulta de pendientes, si responde después, no los borre: el cierre manda.
+	const [closeRequiredItemIds, setCloseRequiredItemIds] = useState<Set<number>>(new Set());
+	// Faltante del último cierre directo (409): se muestra junto a los ítems hasta reintentar.
+	const [closeShortage, setCloseShortage] = useState<ICloseShortage | null>(null);
+	// Etapa 2: de qué ubicaciones salió cada ítem en el cierre recién hecho.
+	const [closeOutcome, setCloseOutcome] = useState<ICloseOutcome | null>(null);
+
+	// Ningún overlay o resultado local puede heredar la identidad recién abierta.
+	const resourceKey = `${isOpen}:${subsidiaryId}:${saleId}`;
+	const lastResourceKey = useRef(resourceKey);
+	if (lastResourceKey.current !== resourceKey) {
+		lastResourceKey.current = resourceKey;
+		setCloseOpen(false);
+		setConfirmCloseOpen(false);
+		setConfirmReturnOpen(false);
+		setStartReturnOpen(false);
+		setReceiveReturnOpen(false);
+		setCorrectSerialOpen(false);
+		setIsClosing(false);
+		setIsConfirmingReturn(false);
+		setCreatedQuoteId(null);
+		setCloseShortage(null);
+		setCloseOutcome(null);
+		setSerialItemIds(new Set());
+		setCloseRequiredItemIds(new Set());
+	}
 
 	useEffect(() => {
-		if (!isOpen) return;
-		if (!subsidiaryId || !saleId) return;
-		dispatch(loadSaleDetail({ subsidiaryId, saleId }));
-		dispatch(loadSaleItems({ subsidiaryId, saleId }));
+		if (!isOpen || !subsidiaryId || !saleId) return undefined;
+		void dispatch(loadSaleDetail({ subsidiaryId, saleId }));
+		void dispatch(loadSaleItems({ subsidiaryId, saleId }));
+		return () => {
+			dispatch(clearDetail());
+		};
 	}, [dispatch, subsidiaryId, saleId, isOpen]);
 
 	// Averigua qué ítems de esta venta requieren número de serie. El payload de
@@ -126,6 +217,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		if (!isOpen || !subsidiaryId || !saleId) return;
 		let cancelled = false;
 		setSerialItemIds(new Set());
+		setCloseRequiredItemIds(new Set());
 		(async () => {
 			try {
 				const resp = await ApiService.fetchData<{
@@ -155,13 +247,73 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 
 	useEffect(() => {
 		setCreatedQuoteId(null);
+		setCloseShortage(null);
+		setCloseOutcome(null);
 	}, [saleId]);
 
 	useEffect(() => {
 		if (!isOpen) {
 			setCreatedQuoteId(null);
+			setCloseShortage(null);
+			setCloseOutcome(null);
+			setStartReturnOpen(false);
+			setReceiveReturnOpen(false);
 		}
 	}, [isOpen]);
+
+	const ownReturnWrites = useSaleReturnWrites();
+	const returnWrites = pageReturnWrites ?? ownReturnWrites;
+	const { start: startReturnSlot, receive: receiveReturnSlot } = returnWrites;
+
+	// Venta y filial que este detalle muestra ahora; `null` si está cerrado o desmontado.
+	// Una respuesta tardía de otra venta no debe recargarse sobre el estado compartido.
+	const currentOwnerRef = useRef<ISaleReturnOwner | null>(null);
+	currentOwnerRef.current = isOpen ? { subsidiaryId, saleId } : null;
+	useEffect(() => {
+		currentOwnerRef.current = isOpen ? { subsidiaryId, saleId } : null;
+		return () => {
+			currentOwnerRef.current = null;
+		};
+	}, [isOpen, subsidiaryId, saleId]);
+
+	const reloadSale = useCallback(() => {
+		if (!isSameSaleOwner(currentOwnerRef.current, { subsidiaryId, saleId })) return;
+		void dispatch(loadSaleDetail({ subsidiaryId, saleId }));
+		void dispatch(loadSaleItems({ subsidiaryId, saleId }));
+	}, [dispatch, subsidiaryId, saleId]);
+
+	/** Cierra el modal y relee la venta, sólo si la respuesta es de la venta que se muestra. */
+	const settleReturnFor = useCallback(
+		(owner: ISaleReturnOwner, closeModal: (open: boolean) => void) => {
+			if (!isSameSaleOwner(currentOwnerRef.current, owner)) return;
+			closeModal(false);
+			reloadSale();
+		},
+		[reloadSale],
+	);
+
+	const handleReturnStarted = useCallback((_saleReturn: unknown, owner: ISaleReturnOwner) => {
+		if (isSameSaleOwner(currentOwnerRef.current, owner)) setStartReturnOpen(false);
+	}, []);
+
+	const handleReturnSettled = useCallback((owner: ISaleReturnOwner) => {
+		if (isSameSaleOwner(currentOwnerRef.current, owner)) setReceiveReturnOpen(false);
+	}, []);
+	const handleReturnAlreadyReceived = useCallback(
+		(owner: ISaleReturnOwner) => settleReturnFor(owner, setReceiveReturnOpen),
+		[settleReturnFor],
+	);
+	const { subscribe } = returnWrites;
+	useEffect(
+		() =>
+			subscribe((owner) => {
+				if (!isSameSaleOwner(currentOwnerRef.current, owner)) return;
+				setStartReturnOpen(false);
+				setReceiveReturnOpen(false);
+				reloadSale();
+			}),
+		[subscribe, reloadSale],
+	);
 
 	// const itemsCount = detail?.items_count ?? items.length ?? 0;
 
@@ -228,8 +380,6 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		[detail?.shipping_snapshot],
 	);
 
-	if (!isOpen) return null;
-
 	const handleCreateQuote = useCallback(async () => {
 		if (!subsidiaryId || !saleId || creatingQuote) return;
 
@@ -244,10 +394,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			if (resolvedQuoteId) {
 				setCreatedQuoteId(resolvedQuoteId);
 			}
-			const successMessage = resolvedQuoteId
-				? `${message}, número de cotización: ${resolvedQuoteId}`
-				: message;
-			toast.success(successMessage);
+			toast.success(buildQuoteCreatedMessage(message, resolvedQuoteId));
 		} catch (error) {
 			const axiosError = error as AxiosError<CreateQuoteFromSaleResponse>;
 			const status = axiosError.response?.status;
@@ -268,6 +415,37 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		}
 	}, [subsidiaryId, saleId, creatingQuote, navigate]);
 
+	// Un intento incierto se resuelve solo cuando la venta, releída, ya muestra su
+	// efecto: igual que en recepciones, el GET es la fuente que dice si llegó.
+	const detailPendingReturnId =
+		detail?.id === saleId ? (detail.pending_return?.id ?? null) : undefined;
+	useEffect(() => {
+		if (loading || detailPendingReturnId === undefined) return;
+		const owner = { subsidiaryId, saleId };
+		const started = startReturnSlot.attempt;
+		if (
+			started &&
+			startReturnSlot.canRetry &&
+			isSameSaleOwner(started, owner) &&
+			detailPendingReturnId !== null
+		) {
+			startReturnSlot.discard();
+		}
+		const receiving = receiveReturnSlot.attempt;
+		if (
+			receiving &&
+			receiveReturnSlot.canRetry &&
+			isSameSaleOwner(receiving, owner) &&
+			detailPendingReturnId !== receiving.returnId
+		) {
+			receiveReturnSlot.discard();
+		}
+	}, [loading, detailPendingReturnId, subsidiaryId, saleId, startReturnSlot, receiveReturnSlot]);
+
+	// Va después de todos los hooks: si isOpen cambia con el componente montado,
+	// un return previo alteraría la cantidad de hooks entre renders.
+	if (!isOpen) return null;
+
 	const existingQuoteId =
 		detail?.quote_id ?? (detail?.documents_metadata as any)?.origin_quote_id;
 	const effectiveQuoteId = createdQuoteId ?? existingQuoteId;
@@ -281,12 +459,15 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	// Un ítem requiere serie sólo si el backend lo lista como pendiente de asignar
 	// serie (serialized_items). Los productos normales no entran: se cierran/marcan
 	// como completados por su propio flujo, sin pedir serie.
-	const isItemTrackable = (it: { id: number }): boolean => serialItemIds.has(it.id);
+	const isItemTrackable = (it: { id: number }): boolean =>
+		serialItemIds.has(it.id) || closeRequiredItemIds.has(it.id);
 
 	const handleCloseSale = async () => {
 		const needsSerials = items.some(isItemTrackable);
 
-		if (needsSerials) {
+		// En la etapa 2 siempre se pasa por el modal: ahí se pide la vista previa y se
+		// elige la ubicación de los ítems sin serie, haya series o no.
+		if (needsSerials || useLocationSelection) {
 			setCloseOpen(true);
 			return;
 		}
@@ -296,20 +477,34 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const handleConfirmClose = async () => {
 		setConfirmCloseOpen(false);
 		setIsClosing(true);
+		setCloseShortage(null);
 		try {
-			const res = await dispatch(
-				closeSaleThunk({ subsidiaryId, saleId, items: [] }),
-			).unwrap();
-
-			dispatch(loadSaleDetail({ subsidiaryId, saleId }));
-			dispatch(loadSaleItems({ subsidiaryId, saleId }));
-			toast.success('Venta cerrada correctamente');
-		} catch (err) {
-			console.error('Direct close failed', err);
-			toast.info('Se requiere ingresar números de serie. Abriendo formulario...');
-			setCloseOpen(true);
+			// El slice ya avisa el éxito con el `message` del backend.
+			await dispatch(closeSaleThunk({ subsidiaryId, saleId, items: [] })).unwrap();
+			reloadSale();
+		} catch (err: unknown) {
+			if (!isSameSaleOwner(currentOwnerRef.current, { subsidiaryId, saleId })) return;
+			const error = toSaleCloseError(err);
+			if (isLocationReselectError(error)) {
+				setLocationRecovery({ subsidiaryId, saleId });
+				setCloseOpen(true);
+				return;
+			}
+			// Sólo el 422 `required` pide series; el 409, el 403 y el resto ya los
+			// avisó el slice y no abren el formulario.
+			if (isSerialsRequiredError(error)) {
+				// La bandeja de pendientes pudo no listar la venta: el backend manda.
+				setCloseRequiredItemIds(new Set(error.requiredSerialItemIds));
+				toast.info('Esta venta requiere números de serie. Abriendo formulario...');
+				setCloseOpen(true);
+				return;
+			}
+			if (error.shortages.length > 0) {
+				setCloseShortage({ message: error.message, items: error.shortages });
+			}
 		} finally {
-			setIsClosing(false);
+			if (isSameSaleOwner(currentOwnerRef.current, { subsidiaryId, saleId }))
+				setIsClosing(false);
 		}
 	};
 
@@ -321,6 +516,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 				subsidiaryId,
 				saleId,
 			);
+			if (!isSameSaleOwner(currentOwnerRef.current, { subsidiaryId, saleId })) return;
 			const seriesCount = res.confirmed_serials?.length ?? 0;
 			const restockCount = res.restocked_items?.length ?? 0;
 			const detailParts: string[] = [];
@@ -329,9 +525,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			const summary = detailParts.length ? ` (${detailParts.join(', ')})` : '';
 			toast.success(`${res.message || 'Recepción confirmada correctamente'}${summary}`);
 			setConfirmReturnOpen(false);
-			dispatch(loadSaleDetail({ subsidiaryId, saleId }));
-			dispatch(loadSaleItems({ subsidiaryId, saleId }));
+			reloadSale();
 		} catch (error) {
+			if (!isSameSaleOwner(currentOwnerRef.current, { subsidiaryId, saleId })) return;
 			const axiosError = error as AxiosError<{ message?: string }>;
 			const status = axiosError.response?.status;
 			const message = axiosError.response?.data?.message;
@@ -347,7 +543,8 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 				toast.error(message || 'No se pudo confirmar la recepción de la devolución.');
 			}
 		} finally {
-			setIsConfirmingReturn(false);
+			if (isSameSaleOwner(currentOwnerRef.current, { subsidiaryId, saleId }))
+				setIsConfirmingReturn(false);
 		}
 	};
 
@@ -384,6 +581,11 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	// El botón de cierre depende solo de can_close (el backend ya contempla
 	// is_closed e inventory_finalized). inventory_finalized NO se usa aquí.
 	const canCloseSale = !!detail?.can_close;
+	// Devolución física de la etapa 2 esperando recepción. Con ella pendiente, la
+	// confirmación sin cuerpo de la etapa 1 responde 422: ese botón se oculta siempre.
+	const pendingReturn = detail?.pending_return ?? null;
+	const canReceiveReturn = isMultiLocation && pendingReturn !== null;
+	const canStartReturn = isMultiLocation && isSaleClosed && pendingReturn === null;
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
@@ -459,6 +661,12 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							{isSaleCancelled && (
 								<Badge variant='solid' color='red' className='px-2 py-1 text-sm'>
 									Venta cancelada
+								</Badge>
+							)}
+							{pendingReturn && (
+								<Badge variant='solid' color='amber' className='px-2 py-1 text-sm'>
+									Devolución pendiente
+									{pendingReturn.source === 'channel' ? ' (Woo)' : ''}
 								</Badge>
 							)}
 						</div>
@@ -590,7 +798,21 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								</Tooltip>
 							)}
 					</CardHeader>
-					<CardBody>
+					<CardBody className='space-y-3'>
+						{closeShortage && (
+							<SaleStockShortageAlert
+								message={closeShortage.message}
+								shortages={closeShortage.items}
+								items={items}
+							/>
+						)}
+						{closeOutcome && (
+							<SaleCloseResultAlert
+								result={closeOutcome.result}
+								items={items}
+								locationNames={closeOutcome.locationNames}
+							/>
+						)}
 						<SaleItemsTable items={items} />
 					</CardBody>
 				</Card>
@@ -602,10 +824,56 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						subsidiaryId={subsidiaryId}
 						saleId={saleId}
 						items={items.filter(isItemTrackable)}
-						onSuccess={() => {
-							dispatch(loadSaleDetail({ subsidiaryId, saleId }));
-							dispatch(loadSaleItems({ subsidiaryId, saleId }));
+						saleItems={items}
+						isMultiLocation={useLocationSelection}
+						onLocationSelectionRequired={() => {
+							if (!isSameSaleOwner(currentOwnerRef.current, { subsidiaryId, saleId }))
+								return;
+							setLocationRecovery({ subsidiaryId, saleId });
 						}}
+						onSerialsRequired={(ids) => {
+							if (!isSameSaleOwner(currentOwnerRef.current, { subsidiaryId, saleId }))
+								return;
+							setCloseRequiredItemIds((prev) => new Set([...prev, ...ids]));
+							toast.info(
+								'Esta venta requiere números de serie. Agregando sus campos...',
+							);
+						}}
+						onSuccess={(response, locationNames) => {
+							if (!isSameSaleOwner(currentOwnerRef.current, { subsidiaryId, saleId }))
+								return;
+							setCloseShortage(null);
+							if (useLocationSelection && response.data) {
+								setCloseOutcome({ result: response.data, locationNames });
+							}
+							reloadSale();
+						}}
+					/>
+				)}
+
+				{startReturnOpen && (
+					<StartSaleReturnModal
+						key={`${subsidiaryId}:${saleId}`}
+						isOpen={startReturnOpen}
+						onClose={() => setStartReturnOpen(false)}
+						subsidiaryId={subsidiaryId}
+						saleId={saleId}
+						slot={startReturnSlot}
+						onStarted={handleReturnStarted}
+					/>
+				)}
+
+				{receiveReturnOpen && pendingReturn && (
+					<ReceiveSaleReturnModal
+						key={`${subsidiaryId}:${saleId}:${pendingReturn.id}`}
+						isOpen={receiveReturnOpen}
+						onClose={() => setReceiveReturnOpen(false)}
+						subsidiaryId={subsidiaryId}
+						saleId={saleId}
+						returnId={pendingReturn.id}
+						slot={receiveReturnSlot}
+						onSettled={handleReturnSettled}
+						onAlreadyReceived={handleReturnAlreadyReceived}
 					/>
 				)}
 
@@ -617,8 +885,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						saleId={saleId}
 						items={items}
 						onSuccess={() => {
-							dispatch(loadSaleDetail({ subsidiaryId, saleId }));
-							dispatch(loadSaleItems({ subsidiaryId, saleId }));
+							reloadSale();
 						}}
 					/>
 				)}
@@ -728,7 +995,22 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								Descargar etiqueta
 							</Button>
 						</Tooltip>
-						{canCloseSale && (
+						{canReceiveReturn && (
+							<Tooltip text='Recibir la devolución pendiente'>
+								<ProtectedButton
+									permission='confirm-sale-return'
+									subsidiaryId={subsidiaryId}
+									scope='access'
+									fallbackMode='hidden'
+									variant='solid'
+									color='amber'
+									icon='HeroInboxArrowDown'
+									onClick={() => setReceiveReturnOpen(true)}>
+									Recibir devolución
+								</ProtectedButton>
+							</Tooltip>
+						)}
+						{canCloseSale && !canReceiveReturn && (
 							<Tooltip text='Cerrar venta'>
 								<Button
 									variant='solid'
@@ -739,7 +1021,22 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								</Button>
 							</Tooltip>
 						)}
-						{isSaleRefunded && !detail?.inventory_finalized && (
+						{canStartReturn && (
+							<Tooltip text='Iniciar la devolución de esta venta'>
+								<ProtectedButton
+									permission='confirm-sale-return'
+									subsidiaryId={subsidiaryId}
+									scope='access'
+									fallbackMode='hidden'
+									variant='outline'
+									color='amber'
+									icon='HeroArrowUturnLeft'
+									onClick={() => setStartReturnOpen(true)}>
+									Iniciar devolución
+								</ProtectedButton>
+							</Tooltip>
+						)}
+						{isSaleRefunded && !detail?.inventory_finalized && !pendingReturn && (
 							<Tooltip text='Confirmar recepcion de envio'>
 								<ProtectedButton
 									permission='confirm-sale-return'

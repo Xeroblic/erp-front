@@ -1,6 +1,5 @@
 import { RootState } from '@/store/rootReducer';
 import type { IUserMe } from '@/interface/user.interface';
-import type { IBranch } from '@/interface/empresas.interface';
 import {
 	resolveSubsidiaryFromBranch,
 	toContextId,
@@ -10,14 +9,6 @@ import {
 type UserWithAuthorizationBranches = IUserMe & {
 	subsidiary_id?: number | null;
 	branch_id?: number | null;
-};
-
-type PersonalizationBranch = IBranch & {
-	subsidiary_id?: number | null;
-};
-
-type PersonalizationBrand = {
-	branches?: PersonalizationBranch[];
 };
 
 const toNumber = toContextId;
@@ -62,23 +53,4 @@ export const selectEffectiveSubsidiaryId = (state: RootState): number | null => 
 	return null;
 };
 
-/**
- * Filtra y devuelve la lista de sucursales que pertenecen a la subsidiaria actual
- */
-export const selectBranchesBySubsidiary = (
-	state: RootState,
-	subsidiaryId: number | null,
-): IBranch[] => {
-	if (!subsidiaryId) return [];
-
-	const persState = state.personalizacion as
-		| {
-				userBrandsBranches?: PersonalizationBrand[];
-		  }
-		| null
-		| undefined;
-	const branches = persState?.userBrandsBranches?.flatMap((brand) => brand.branches ?? []) ?? [];
-
-	// Si no hay ramas en personalización, devolver lista vacía o intentar sacar de auth (depende de la app)
-	return branches.filter((branch) => branch.subsidiary_id === subsidiaryId) as IBranch[];
-};
+export default selectEffectiveSubsidiaryId;

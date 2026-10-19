@@ -29,11 +29,21 @@ export interface ITransferItemForm extends ICreateTransferItemRequest {
 
 export interface ICreateTransferForm {
 	to_branch_id: number | '';
-	from_warehouse_id?: number | '';
-	to_warehouse_id?: number | '';
+	/** `''`: sin elegir. `null`: «Sin ubicación», que sólo se ofrece en la etapa 2. */
+	from_warehouse_id?: number | '' | null;
+	to_warehouse_id?: number | '' | null;
 	auto_create_destination_product: boolean;
 	expected_date?: string;
 	priority?: TransferPriority;
 	notes?: string;
 	items: ITransferItemForm[];
 }
+
+/**
+ * Etapa 2: las dos ubicaciones son obligatorias. «Sin ubicación» cuenta como
+ * respuesta; dejar el selector vacío, no (el backend lo rechaza con 422).
+ */
+export const FROM_LOCATION_REQUIRED_MESSAGE =
+	'Indica la ubicación de origen; elige «Sin ubicación» si corresponde.';
+export const TO_LOCATION_REQUIRED_MESSAGE =
+	'Indica la ubicación de destino; elige «Sin ubicación» si corresponde.';

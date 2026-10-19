@@ -75,7 +75,6 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 
 			<ModalBody className='space-y-4'>
 				<div className='grid gap-4 lg:grid-cols-2'>
-					{/* Datos Principales */}
 					<Card className='lg:col-span-2'>
 						<CardHeader>
 							<CardTitle>Datos principales</CardTitle>
@@ -185,7 +184,6 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 						</CardBody>
 					</Card>
 
-					{/* Capacidad y Estado */}
 					<Card>
 						<CardHeader>
 							<CardTitle>Capacidad y estado</CardTitle>
@@ -231,7 +229,6 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 						</CardBody>
 					</Card>
 
-					{/* Ubicación */}
 					<Card className='lg:col-span-2'>
 						<CardHeader>
 							<CardTitle>Ubicación</CardTitle>

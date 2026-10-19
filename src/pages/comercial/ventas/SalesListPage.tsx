@@ -41,6 +41,7 @@ import Tooltip from '@/components/ui/Tooltip';
 import { downloadShippingLabel } from '@/store/slices/sales/salesSlice';
 import { fetchPendingSerialAssignment, type PendingSerialSale } from '@/services/salesService';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSaleReturnWrites } from './detail/hooks/useSaleReturnWrites';
 
 injectReducer('salesModule', salesReducer);
 
@@ -384,13 +385,24 @@ const SalesListPage: React.FC = () => {
 						intensity: '500',
 					};
 					return (
-						<Badge
-							color={badgeConfig.color}
-							colorIntensity={badgeConfig.intensity}
-							variant='solid'
-							className='rounded-md'>
-							{translateStatus(row.original.status)}
-						</Badge>
+						<div className='flex flex-col items-start gap-1'>
+							<Badge
+								color={badgeConfig.color}
+								colorIntensity={badgeConfig.intensity}
+								variant='solid'
+								className='rounded-md'>
+								{translateStatus(row.original.status)}
+							</Badge>
+							{/* Etapa 2: la devolución física espera recepción; la venta no se puede cerrar. */}
+							{row.original.pending_return && (
+								<Badge
+									color='amber'
+									variant='outline'
+									className='whitespace-nowrap rounded-md text-xs'>
+									Devolución pendiente
+								</Badge>
+							)}
+						</div>
 					);
 				},
 			},
@@ -566,6 +578,20 @@ const SalesListPage: React.FC = () => {
 		},
 		[dispatch, subsidiaryId],
 	);
+
+	// Una devolución cambia la venta (`pending_return`): el listado se refresca con sus
+	// filtros aunque el detalle ya esté cerrado, sólo si la venta es de la filial vigente.
+	const refreshListRef = useRef<() => void>(() => undefined);
+	refreshListRef.current = () => {
+		void applyFilters(buildFilters());
+	};
+	const subsidiaryIdRef = useRef(subsidiaryId);
+	subsidiaryIdRef.current = subsidiaryId;
+	const returnWrites = useSaleReturnWrites({
+		onSaleChanged: (owner) => {
+			if (owner.subsidiaryId === subsidiaryIdRef.current) refreshListRef.current();
+		},
+	});
 
 	const handleSubmit = useCallback(
 		async (event: React.FormEvent<HTMLFormElement>) => {
@@ -858,6 +884,7 @@ const SalesListPage: React.FC = () => {
 					saleId={detailSelection.selectedId}
 					isOpen={detailModalVisible}
 					onClose={() => handleDetailModalState(false)}
+					returnWrites={returnWrites}
 				/>
 			)}
 
