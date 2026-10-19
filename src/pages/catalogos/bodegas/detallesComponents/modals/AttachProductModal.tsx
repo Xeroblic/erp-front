@@ -8,7 +8,6 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
-import Checkbox from '@/components/form/Checkbox';
 import Input from '@/components/form/Input';
 import { IWarehouseProduct } from '@/interface/warehouse.interface';
 import { IProduct } from '@/interface/product.interface';
@@ -16,31 +15,27 @@ import { IProduct } from '@/interface/product.interface';
 interface AttachProductModalProps {
 	isOpen: boolean;
 	product: IProduct | null;
-	allProducts?: IProduct[];
 	associatedProducts?: IWarehouseProduct[];
 	onClose: () => void;
-	onConfirm: (productId: number, sync: boolean, quantity: number) => Promise<void>;
+	onConfirm: (productId: number, quantity: number) => Promise<void>;
 	isLoading?: boolean;
 }
 
 const AttachProductModal: React.FC<AttachProductModalProps> = ({
 	isOpen,
 	product,
-	allProducts = [],
 	associatedProducts = [],
 	onClose,
 	onConfirm,
 	isLoading = false,
 }) => {
-	const [sync, setSync] = useState(true);
 	const [quantity, setQuantity] = useState(1);
 
 	useEffect(() => {
 		if (isOpen) {
-			setSync(true);
 			setQuantity(1);
 		}
-	}, [isOpen]);
+	}, [isOpen, product?.id]);
 
 	if (!product) return null;
 
@@ -51,24 +46,12 @@ const AttachProductModal: React.FC<AttachProductModalProps> = ({
 			return;
 		}
 
-		if (!sync && quantity <= 0) {
-			toast.error('La cantidad debe ser mayor a 0 para el modo manual');
+		if (!Number.isInteger(quantity) || quantity <= 0) {
+			toast.error('La cantidad debe ser un número entero mayor a 0');
 			return;
 		}
 
-		if (sync) {
-			const productWithStock = allProducts.find((p) => p.id === product.id);
-			const availableStock = productWithStock?.stock ?? 0;
-
-			if (availableStock === 0) {
-				toast.error(
-					'No se puede sincronizar: el producto no tiene stock disponible en la sucursal',
-				);
-				return;
-			}
-		}
-
-		await onConfirm(product.id, sync, quantity);
+		await onConfirm(product.id, quantity);
 	};
 
 	return (
@@ -92,39 +75,22 @@ const AttachProductModal: React.FC<AttachProductModalProps> = ({
 							<p className='text-lg font-semibold'>{product.name}</p>
 							<p className='font-mono text-sm text-zinc-500'>SKU {product.sku}</p>
 						</div>
-						<div className='flex items-start gap-3'>
-							<Checkbox
-								id='attach-sync'
-								variant='switch'
-								checked={sync}
-								onChange={(e) => setSync(e.target.checked)}
-							/>
-							<label htmlFor='attach-sync' className='text-sm'>
-								<span className='font-medium'>Sincronizar con el stock</span>
-								<span className='block text-zinc-500'>
-									{sync
-										? 'La bodega toma el stock de la sucursal.'
-										: 'Indicas a mano cuántas unidades guarda la bodega.'}
-								</span>
+						<div className='space-y-1'>
+							<label
+								htmlFor='attach-quantity'
+								className='block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+								Cantidad
 							</label>
+							<Input
+								id='attach-quantity'
+								name='cantidad'
+								type='number'
+								min='1'
+								step='1'
+								value={quantity}
+								onChange={(e) => setQuantity(Number(e.target.value))}
+							/>
 						</div>
-						{!sync && (
-							<div className='space-y-1'>
-								<label
-									htmlFor='attach-quantity'
-									className='block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-									Cantidad
-								</label>
-								<Input
-									id='attach-quantity'
-									name='cantidad'
-									type='number'
-									min='1'
-									value={quantity}
-									onChange={(e) => setQuantity(parseInt(e.target.value || '0'))}
-								/>
-							</div>
-						)}
 					</CardBody>
 				</Card>
 			</ModalBody>

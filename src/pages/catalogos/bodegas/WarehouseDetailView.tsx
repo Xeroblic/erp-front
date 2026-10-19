@@ -150,7 +150,6 @@ const WarehouseDetailView: React.FC = () => {
 					<AttachProductModal
 						isOpen={!!state.attachProduct}
 						product={state.attachProduct}
-						allProducts={state.allProducts}
 						associatedProducts={warehouse.products ?? []}
 						onClose={actions.closeAttachModal}
 						onConfirm={actions.onConfirmAttach}

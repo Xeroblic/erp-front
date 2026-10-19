@@ -32,6 +32,7 @@ export interface IWarehouseProduct {
 	name: string;
 	brand_name?: string | null;
 	quantity: number;
+	/** @deprecated Valor heredado; no representa una sincronización activa de stock. */
 	sync_stock: boolean;
 	price?: string | null;
 	cost?: string | null;
@@ -62,6 +63,7 @@ export interface IUpdateWarehouseRequest extends Partial<ICreateWarehouseRequest
 export interface IAttachProductRequest {
 	product_id: number | number[];
 	quantity?: number | number[] | null;
+	/** @deprecated Copia el stock global una sola vez; usar quantity y omitir este campo. */
 	sync_stock?: boolean | boolean[];
 }
 
@@ -135,8 +137,5 @@ export interface IWarehouseFormData extends Partial<IWarehouse> {
 
 export interface IAttachProductFormData {
 	product_id: number;
-	modo: 'manual' | 'sincronizar';
-	quantity?: number;
-	sync_stock: boolean;
-	stock_actual?: number;
+	quantity: number;
 }
