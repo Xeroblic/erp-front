@@ -199,12 +199,12 @@ const rutConflictError = (conflict: IProcurementSupplier) =>
 	fail(409, {
 		message: PROCUREMENT_ERROR_DEFINITIONS.SUPPLIER_RUT_ALREADY_EXISTS.fallbackMessage,
 		code: 'SUPPLIER_RUT_ALREADY_EXISTS',
-		// Excepción de compatibilidad del contrato: este 409 no usa el envoltorio
-		// común, `existing_supplier` va al mismo nivel que `message` y `code`.
-		existing_supplier: {
-			id: conflict.id,
-			display_name: conflict.display_name,
-			is_active: conflict.is_active,
+		context: {
+			existing_supplier: {
+				id: conflict.id,
+				display_name: conflict.display_name,
+				is_active: conflict.is_active,
+			},
 		},
 	});
 

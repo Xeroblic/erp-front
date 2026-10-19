@@ -169,26 +169,26 @@ describe('createProcurementSupplier', () => {
 		expect(data.code).toBe('SUPPLIER_NAME_REQUIRED');
 	});
 
-	it('409 con existing_supplier fuera del envoltorio común ante un RUT ya usado por un activo', async () => {
+	it('409 con context.existing_supplier ante un RUT ya usado por un activo', async () => {
 		const { status, data } = await readErrorData(
 			createProcurementSupplier(SUBSIDIARY_A, { ...validPayload, rut: '76123456-0' }),
 		);
 		expect(status).toBe(409);
 		expect(data.code).toBe('SUPPLIER_RUT_ALREADY_EXISTS');
-		expect(data.existing_supplier).toEqual({
+		expect(data.context).toHaveProperty('existing_supplier', {
 			id: 7,
 			display_name: 'PCExpress',
 			is_active: true,
 		});
-		// La excepción de compatibilidad: no va dentro de `data`.
-		expect(data).not.toHaveProperty('data');
+		// La copia deprecada en la raíz ya no viaja.
+		expect(data).not.toHaveProperty('existing_supplier');
 	});
 
-	it('409 con existing_supplier.is_active false ante un RUT de un proveedor eliminado', async () => {
+	it('409 con context.existing_supplier.is_active false ante un RUT de un proveedor eliminado', async () => {
 		const { data } = await readErrorData(
 			createProcurementSupplier(SUBSIDIARY_A, { ...validPayload, rut: '77888999-4' }),
 		);
-		expect(data.existing_supplier).toEqual({
+		expect(data.context).toHaveProperty('existing_supplier', {
 			id: 12,
 			display_name: 'Importadora Sur',
 			is_active: false,

@@ -556,7 +556,7 @@ export type IProcurementSupplierListParams = IProcurementSupplierListFilters &
 	Partial<IProcurementPageParams>;
 
 /**
- * Proveedor en conflicto tal como llega en el `existing_supplier` del 409 de
+ * Proveedor en conflicto tal como llega en el `context.existing_supplier` del 409 de
  * RUT duplicado (sección 5 y 16 del contrato). `is_active: false` es la señal
  * de que el conflicto es sobre un proveedor eliminado y corresponde ofrecer
  * restaurar como decisión explícita, nunca automática.
