@@ -1,20 +1,20 @@
 # Zentria ERP Frontend
 
-## Release Actual: v2.4.0 (2026-09-08)
+## Release Actual: v2.5.0 (2026-10-19)
 
-Esta versión estructura la captura de Revisiones Técnicas según el contrato del backend, unifica el flujo comercial de Cotizaciones con Pagos Diferidos y estrena el módulo de Retiros de Equipos.
+Esta versión estrena Abastecimiento y rehace Inventario sobre el contrato de ubicaciones del backend, con la etapa multi-ubicación lista para encenderse filial por filial.
 
 ### Cambios relevantes del release
 
-- Puertos defectuosos y sueltos, cubierta de teclado y estado del candado en docking como campos propios, con el schema remoto por sobre las constantes locales.
-- Cierre de notebook, AIO y desktop destrabado, y payload de detalles alineado al contrato publicado.
-- Selector de clientes compartido entre Cotizaciones y Pagos Diferidos, con IVA por ítem y fechas de emisión y pago visibles en cobranza.
-- `typecheck` y la suite completa se ejecutan en CI en cada pull request.
+- Proveedores de compras, documentos de compra con adjuntos y recepciones de stock contra la API real.
+- Inventario unificado por producto y bodega, con ajustes y traslados como asistente, documentación posterior y trazabilidad de productos sin serie.
+- Cierre de venta con faltante explicado por ítem y, en la etapa 2, ubicación de salida y devoluciones físicas.
+- Reportes de inventario rediseñados con reposición real y avisos de stock crítico enlazados a la ficha.
 
 ### Referencias de versión
 
 - Notas generales: `RELEASE_NOTES.md`
-- Detalle completo de la versión actual: `Docs/releases/v2.4.0.md`
+- Detalle completo de la versión actual: `Docs/releases/v2.5.0.md`
 
 ---
 
