@@ -4,6 +4,24 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 
 ---
 
+## [v2.5.0] - 2026-10-19
+
+**Enfoque de la versión:** Estreno de Abastecimiento e Inventario sobre el contrato de ubicaciones del backend (v1.7), con la etapa multi-ubicación lista para encenderse filial por filial, y cierre de venta que explica el faltante de stock.
+
+### Puntos Destacados:
+
+- **Abastecimiento:** proveedores de compras, documentos de compra con adjuntos privados y alta de proveedores y productos en línea, y recepciones de stock con ingreso en un paso, todo contra la API real.
+- **Inventario:** vista unificada por producto, bodega y ficha, con procedencias, compras y umbral crítico; ajustes y traslados como asistente; documentación posterior y trazabilidad de productos sin serie.
+- **Etapa por filial:** `multi_location_enabled` decide por filial si se ven traslados, ubicaciones de salida y devoluciones físicas; mientras esté apagada rige la etapa 1.
+- **Ventas:** el cierre muestra el faltante por ítem y el 403 por sucursal, conserva las series escaneadas y, en la etapa 2, elige la ubicación de salida y recibe devoluciones.
+- **Reportes:** Reportes de inventario con pestañas de datos, umbrales, acciones (reposición real) y estadísticas; los avisos de stock crítico enlazan a la ficha.
+- **Correcciones:** Excel de revisiones técnicas con nota del lote y proveedor correcto, fechas tolerantes en Pagos Diferidos y formularios legibles en tema claro.
+- **Calidad:** 287 archivos de prueba y 2.231 pruebas en verde.
+
+[Ver archivo detallado en Docs/releases/v2.5.0.md](./Docs/releases/v2.5.0.md)
+
+---
+
 ## [v2.4.0] - 2026-09-08
 
 **Enfoque de la versión:** Revisión técnica estructurada según el contrato del backend, unificación del flujo comercial entre Cotizaciones y Pagos Diferidos, primera entrega de Retiros de Equipos y gates de calidad ejecutados en cada pull request.
