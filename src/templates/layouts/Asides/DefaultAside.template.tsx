@@ -451,25 +451,6 @@ const DefaultAsideTemplate = () => {
 									}
 								/>
 							</AuthorityCheckNav>
-
-							<AuthorityCheckNav
-								authority={
-									Pages.inventory.subPages.catalogoAbastecimiento.authority
-								}
-								requireAll={
-									Pages.inventory.subPages.catalogoAbastecimiento.requireAll
-								}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.inventory.subPages.catalogoAbastecimiento.text}
-									to={Pages.inventory.subPages.catalogoAbastecimiento.to}
-									icon={Pages.inventory.subPages.catalogoAbastecimiento.icon}
-									id={Pages.inventory.subPages.catalogoAbastecimiento.id}
-									onClick={() =>
-										navigate(Pages.inventory.subPages.catalogoAbastecimiento.to)
-									}
-								/>
-							</AuthorityCheckNav>
 						</NavCollapse>
 					</AuthorityCheckNav>
 
