@@ -76,6 +76,4 @@ export interface IBodegasResumen {
 export interface IFichaBodegaResumen {
 	products: number;
 	units: number;
-	synced: number;
-	manual: number;
 }

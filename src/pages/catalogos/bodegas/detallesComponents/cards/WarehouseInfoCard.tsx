@@ -38,18 +38,6 @@ const WarehouseInfoCard: React.FC<WarehouseInfoCardProps> = ({ warehouse, summar
 			icon: 'HeroArchiveBox',
 			accent: 'bg-violet-600',
 		},
-		{
-			label: 'Sincronizados',
-			value: summary.synced,
-			icon: 'HeroArrowPath',
-			accent: 'bg-emerald-600',
-		},
-		{
-			label: 'Cantidad manual',
-			value: summary.manual,
-			icon: 'HeroPencilSquare',
-			accent: 'bg-zinc-700',
-		},
 	];
 
 	return (
