@@ -7,7 +7,7 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { RootState } from '@/store/rootReducer';
-import { updateItemDetails } from '../thunks/reviewThunks';
+import { completeReview, updateItemDetails } from '../thunks/reviewThunks';
 
 const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn() }));
 
@@ -35,6 +35,55 @@ const runThunk = async () => {
 };
 
 describe('updateItemDetails', () => {
+	it('conserva el mensaje habitual de cierre para errores de otros campos', async () => {
+		fetchData.mockRejectedValue({
+			response: {
+				status: 422,
+				data: {
+					message: 'Debes completar si el equipo enciende',
+					errors: { powers_on: ['Debes completar si el equipo enciende'] },
+				},
+			},
+		});
+		const result = await completeReview({ branchId: 5, itemId: 12 })(
+			vi.fn(),
+			() => ({}) as RootState,
+			undefined,
+		);
+		expect(result.payload).toBe('Debes completar si el equipo enciende');
+	});
+	it('envía el borrado explícito del estado de la antena al servicio', async () => {
+		fetchData.mockResolvedValue({ data: { data: { id: 12 } } });
+		await updateItemDetails({
+			branchId: 5,
+			itemId: 12,
+			equipmentType: 'desktop',
+			data: { includes_antenna: false, antenna_condition: 'loose' },
+		})(vi.fn(), () => ({}) as RootState, undefined);
+		expect(fetchData).toHaveBeenCalledWith(
+			expect.objectContaining({
+				method: 'patch',
+				data: { includes_antenna: false, antenna_condition: null },
+			}),
+		);
+	});
+
+	it('conserva el 422 por campo de complete-review para señalar la antena', async () => {
+		const errors = {
+			antenna_condition: [
+				'Debes completar el estado de la antena antes de finalizar la revisión.',
+			],
+		};
+		fetchData.mockRejectedValue({
+			response: { status: 422, data: { message: 'Validación fallida', errors } },
+		});
+		const result = await completeReview({ branchId: 5, itemId: 12 })(
+			vi.fn(),
+			() => ({}) as RootState,
+			undefined,
+		);
+		expect(result.payload).toEqual({ message: 'Validación fallida', errors });
+	});
 	beforeEach(() => {
 		fetchData.mockReset();
 	});

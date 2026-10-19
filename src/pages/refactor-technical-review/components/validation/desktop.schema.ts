@@ -9,12 +9,21 @@ import {
 	ALLOWED_STORAGE_TECHNOLOGIES,
 	ALLOWED_CHARGER_STATUSES,
 	ALLOWED_COVER_CONDITIONS,
+	ALLOWED_ANTENNA_CONDITIONS,
 } from './constants/desktop.rules';
 import type { PortTypeCounts } from './constants/ports.rules';
 
 // ─── Schema Principal ─────────────────────────────────────────────────────────
 
 export const desktopSchema = Yup.object({
+	includes_antenna: Yup.boolean().nullable(),
+	antenna_condition: Yup.string()
+		.oneOf([...ALLOWED_ANTENNA_CONDITIONS], 'Estado de la antena no válido')
+		.nullable()
+		.when('includes_antenna', {
+			is: true,
+			then: (schema) => schema.required('Indica el estado de la antena'),
+		}),
 	// ─── Identificación ──────────────────────────────────────────────────────
 	brand: Yup.string()
 		.trim()

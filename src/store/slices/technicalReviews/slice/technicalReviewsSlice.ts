@@ -388,7 +388,10 @@ const technicalReviewsSlice = createSlice({
 			})
 			.addCase(reviewThunks.completeReview.rejected, (state, action) => {
 				state.completingReview = false;
-				state.error = action.payload ?? 'Error al finalizar la revisión';
+				state.error =
+					typeof action.payload === 'string'
+						? action.payload
+						: (action.payload?.message ?? 'Error al finalizar la revisión');
 			});
 
 		// Aprobar serie

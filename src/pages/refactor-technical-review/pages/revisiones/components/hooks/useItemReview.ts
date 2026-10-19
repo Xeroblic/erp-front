@@ -17,6 +17,7 @@ import {
 } from '@/store/slices/technicalReviews';
 import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { getTechnicalReviewFieldError } from '@/utils/technicalReviewErrors';
 import { useQuickProduct } from '@/components/utils/QuickProductFlow';
 import type { TSelectOption } from '@/components/form/SelectReact';
 
@@ -363,6 +364,7 @@ export const useItemReview = (): UseItemReviewReturn => {
 			}));
 			setCurrentStep('grading');
 		} catch (error) {
+			if (getTechnicalReviewFieldError(error, 'antenna_condition')) throw error;
 			toast.error(`Error al completar revisión: ${error}`);
 		}
 	};
@@ -424,7 +426,9 @@ export const useItemReview = (): UseItemReviewReturn => {
 			setAutomaticGrade(grading?.suggested_grade ?? grading?.grade ?? null);
 			toast.success('Grado recalculado');
 		} catch (error) {
-			toast.error(`Error al recalcular grado: ${error}`);
+			const message =
+				getTechnicalReviewFieldError(error, 'antenna_condition') ?? String(error);
+			toast.error(`Error al recalcular grado: ${message}`);
 			throw error;
 		}
 	};

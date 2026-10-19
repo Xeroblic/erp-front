@@ -178,6 +178,9 @@ export interface FetchItemsParams {
  * Payload para guardar/actualizar detalles de una serie
  */
 export interface UpdateItemDetailsPayload {
+	/** Accesorios de recepción de desktop; no afectan el grado. */
+	includes_antenna?: boolean | null;
+	antenna_condition?: 'good_condition' | 'broken' | 'loose' | null;
 	// Campos comunes a todos los tipos
 	brand?: string;
 	model?: string;

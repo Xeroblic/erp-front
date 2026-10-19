@@ -14,6 +14,39 @@ vi.mock('@/store/slices/technicalReviews', () => ({ updateItemDetails }));
 vi.mock('react-toastify', () => ({ toast: { error: toastError, warning: toastWarning } }));
 
 describe('useAutoSave', () => {
+	it('el autosave guarda la antena y envía null al quitarla', async () => {
+		let currentData: Record<string, unknown> = {};
+		const { result } = renderHook(() =>
+			useAutoSave({
+				branchId: 5,
+				itemId: 12,
+				equipmentType: 'desktop',
+				getFormData: () => currentData,
+				idleTimeoutMs: 60_000,
+			}),
+		);
+		currentData = { includes_antenna: true, antenna_condition: 'loose' };
+		await act(async () => {
+			await result.current.saveNow(true);
+		});
+		expect(updateItemDetails).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				data: expect.objectContaining({
+					includes_antenna: true,
+					antenna_condition: 'loose',
+				}),
+			}),
+		);
+		currentData = { includes_antenna: false, antenna_condition: null };
+		await act(async () => {
+			await result.current.saveNow(true);
+		});
+		expect(updateItemDetails).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				data: expect.objectContaining({ includes_antenna: false, antenna_condition: null }),
+			}),
+		);
+	});
 	beforeEach(() => {
 		dispatch.mockReset().mockReturnValue({ unwrap: () => Promise.resolve({}) });
 		updateItemDetails.mockReset().mockImplementation((payload: unknown) => payload);

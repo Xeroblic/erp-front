@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useId } from 'react';
+import {
+	ANTENNA_CONDITION_OPTIONS,
+	CHARGER_STATUS_OPTIONS,
+} from '@/pages/refactor-technical-review/components/constants/desktop/desktop.options';
 import type { FormSectionProps } from '../../shared/types';
 import type { DesktopFormData } from '../../../validation/desktop.schema';
 import { getDesktopLabel } from '../../../translations/desktop.labels';
 import { DESKTOP_HINTS } from '../../../constants/desktop/desktop.hints';
 import { SelectionCard } from '../../../ui/SelectionCard';
 import { YesNoSelector } from '../../../ui/YesNoSelector';
-import { CHARGER_STATUS_OPTIONS } from '../../../constants/desktop/desktop.options';
 
 const DesktopAccessoriesSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	errors,
@@ -15,6 +18,10 @@ const DesktopAccessoriesSection: React.FC<FormSectionProps<DesktopFormData>> = (
 }) => {
 	const includesCharger = watch('includes_charger');
 	const chargerStatus = watch('charger_status');
+	const includesAntenna = watch('includes_antenna');
+	const antennaCondition = watch('antenna_condition');
+	const antennaLabelId = useId();
+	const antennaErrorId = useId();
 
 	return (
 		<div className='space-y-6'>
@@ -64,6 +71,59 @@ const DesktopAccessoriesSection: React.FC<FormSectionProps<DesktopFormData>> = (
 						<p className='mt-2 text-xs text-red-500'>{errors.charger_status.message}</p>
 					)}
 					<p className='mt-2 text-xs text-zinc-500'>{DESKTOP_HINTS.charger_status}</p>
+				</div>
+			)}
+			<div className='rounded-xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/30 dark:bg-yellow-900/10'>
+				<YesNoSelector
+					label={getDesktopLabel('includes_antenna')}
+					value={includesAntenna}
+					disabled={readOnly}
+					onChange={(value) => {
+						if (readOnly || value === includesAntenna) return;
+						setValue('includes_antenna', value, { shouldDirty: true });
+						setValue('antenna_condition', null, {
+							shouldDirty: true,
+							shouldValidate: true,
+						});
+					}}
+				/>
+				<p className='mt-2 text-xs text-zinc-500'>
+					Registra cómo llegó el equipo. No influye en el grado.
+				</p>
+			</div>
+			{includesAntenna === true && (
+				<div
+					role='group'
+					aria-labelledby={antennaLabelId}
+					aria-describedby={errors.antenna_condition ? antennaErrorId : undefined}
+					className='rounded-xl border border-orange-200 bg-orange-50 p-4 dark:border-orange-900/30 dark:bg-orange-900/10'>
+					<p id={antennaLabelId} className='mb-3 text-sm font-bold'>
+						{getDesktopLabel('antenna_condition')}{' '}
+						<span className='text-red-500'>*</span>
+					</p>
+					<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
+						{ANTENNA_CONDITION_OPTIONS.map((option) => (
+							<SelectionCard
+								key={option.value}
+								label={option.label}
+								value={option.value}
+								isSelected={antennaCondition === option.value}
+								disabled={readOnly}
+								onClick={() =>
+									!readOnly &&
+									setValue('antenna_condition', option.value, {
+										shouldDirty: true,
+										shouldValidate: true,
+									})
+								}
+							/>
+						))}
+					</div>
+					{errors.antenna_condition && (
+						<p id={antennaErrorId} role='alert' className='mt-2 text-xs text-red-500'>
+							{errors.antenna_condition.message}
+						</p>
+					)}
 				</div>
 			)}
 		</div>

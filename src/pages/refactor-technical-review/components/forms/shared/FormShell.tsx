@@ -26,6 +26,8 @@ interface FormShellProps<T extends FieldValues> {
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount (e.g. 'gallery' shortcut) */
 	initialSectionKey?: string;
+	/** Solicitud de mostrar una sección con errores sin desmontar el formulario. */
+	sectionRequest?: { key: string; token: number };
 }
 
 function FormShell<T extends FieldValues>({
@@ -39,11 +41,18 @@ function FormShell<T extends FieldValues>({
 	onPersistDraft,
 	isSaving = false,
 	initialSectionKey,
+	sectionRequest,
 }: FormShellProps<T>) {
 	const [step, setStep] = useState(0);
 	const [direction, setDirection] = useState(1);
 
 	const MAX_STEPS = sections.length;
+
+	useEffect(() => {
+		if (!sectionRequest) return;
+		const index = sections.findIndex((section) => section.key === sectionRequest.key);
+		if (index >= 0) setStep(index);
+	}, [sectionRequest, sections]);
 
 	// Scroll to top on step change
 	useEffect(() => {

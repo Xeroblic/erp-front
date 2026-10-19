@@ -8,6 +8,7 @@ import {
 	ALLOWED_STORAGE_TECHNOLOGIES,
 	ALLOWED_CHARGER_STATUSES,
 	ALLOWED_COVER_CONDITIONS,
+	ALLOWED_ANTENNA_CONDITIONS,
 } from '../../validation/constants/desktop.rules';
 
 // ─── Typed Option Helper ──────────────────────────────────────────────────────
@@ -20,6 +21,13 @@ export type GeneralConditionValue = (typeof ALLOWED_GENERAL_CONDITIONS)[number];
 export type StorageTechnologyValue = (typeof ALLOWED_STORAGE_TECHNOLOGIES)[number];
 export type ChargerStatusValue = (typeof ALLOWED_CHARGER_STATUSES)[number];
 export type CoverConditionValue = (typeof ALLOWED_COVER_CONDITIONS)[number];
+
+export const ANTENNA_CONDITION_OPTIONS: TypedOption<(typeof ALLOWED_ANTENNA_CONDITIONS)[number]>[] =
+	[
+		{ value: 'good_condition', label: 'Buen estado' },
+		{ value: 'broken', label: 'Rota' },
+		{ value: 'loose', label: 'Suelta' },
+	];
 
 // ─── Condición General ────────────────────────────────────────────────────────
 
