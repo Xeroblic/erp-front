@@ -74,7 +74,7 @@ const getSortValue = (
 		case 'due_date':
 			return row.due_date;
 		case 'paid_at':
-			return row.paid_at;
+			return row.paid_at ?? null;
 		case 'status':
 			return DEFERRED_PAYMENT_STATUS_LABELS[row.status];
 		case 'days_until_due':
@@ -316,7 +316,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 									</Td>
 									<Td>{formatDeferredPaymentDate(row.due_date)}</Td>
 									<Td>
-										{row.paid_at === null
+										{row.paid_at == null
 											? '\u2014'
 											: formatDeferredPaymentDate(row.paid_at)}
 									</Td>

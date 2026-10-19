@@ -60,7 +60,6 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 
 			<ModalBody className='space-y-4'>
 				<div className='grid gap-4 lg:grid-cols-2'>
-					{/* Información Principal */}
 					<Card className='lg:col-span-2'>
 						<CardHeader>
 							<CardTitle>Información Principal</CardTitle>
@@ -172,7 +171,6 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 						</CardBody>
 					</Card>
 
-					{/* Capacidad y Estado */}
 					<Card>
 						<CardHeader>
 							<CardTitle>Capacidad y Estado</CardTitle>
@@ -216,7 +214,6 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 						</CardBody>
 					</Card>
 
-					{/* Ubicación */}
 					<Card className='lg:col-span-2'>
 						<CardHeader>
 							<CardTitle>Ubicación</CardTitle>

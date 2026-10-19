@@ -113,7 +113,8 @@ const CrearLote: React.FC = () => {
 			dispatch(
 				fetchWarehouses({
 					branchId,
-					params: { page: 1, per_page: 100, is_active: true },
+					params: { per_page: 100 },
+					allPages: true,
 				}),
 			);
 		}
@@ -203,13 +204,18 @@ const CrearLote: React.FC = () => {
 	);
 
 	// ── Select options ─────────────────────────────────────────
+	// El backend no filtra por estado: sólo se ofrecen las bodegas activas.
+	const activeWarehouses = useMemo(
+		() => (warehouses ?? []).filter((warehouse) => warehouse.is_active),
+		[warehouses],
+	);
 	const warehouseOptions: TSelectOption[] = useMemo(() => {
-		if (!warehouses?.length) return [{ value: '', label: 'No hay bodegas disponibles' }];
-		return warehouses.map((w) => ({
+		if (!activeWarehouses.length) return [{ value: '', label: 'No hay bodegas disponibles' }];
+		return activeWarehouses.map((w) => ({
 			value: String(w.id),
 			label: `${w.name} (${w.code})`,
 		}));
-	}, [warehouses]);
+	}, [activeWarehouses]);
 
 	const customerOptions: TSelectOption[] = useMemo(() => {
 		if (!customer_supplier?.length)
@@ -291,7 +297,7 @@ const CrearLote: React.FC = () => {
 	const handleCancel = () => navigate('/technical-reviews/lotes');
 	const handleCreateBatch = () => formik.handleSubmit();
 
-	const showEmptyWarehouses = !warehouseLoading && (!warehouses || warehouses.length === 0);
+	const showEmptyWarehouses = !warehouseLoading && activeWarehouses.length === 0;
 	const showEmptyCustomers =
 		!customerSupplierLoading && (!customer_supplier || customer_supplier.length === 0);
 

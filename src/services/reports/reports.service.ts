@@ -1,10 +1,52 @@
 import ApiService from '@/services/ApiService';
 import type {
 	IReportsListResponse,
-	IReportResult,
 	IReportFilters,
 	IReportExportParams,
+	IReportDownload,
 } from '@/interface/reports.interface';
+import { isRecord } from '@/utils/isRecord.util';
+
+/** Nombre del archivo en `Content-Disposition` (`filename*=UTF-8''…` o `filename="…"`). */
+export const reportFileNameFrom = (disposition: unknown): string | null => {
+	if (typeof disposition !== 'string') return null;
+	const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+	const quotedName = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+	try {
+		return encodedName ? decodeURIComponent(encodedName) : (quotedName ?? null);
+	} catch {
+		return encodedName ?? quotedName ?? null;
+	}
+};
+
+/** `Blob.text()` donde existe; `FileReader` en entornos que no lo implementan (jsdom). */
+const readBlobText = (blob: Blob): Promise<string> => {
+	if (typeof blob.text === 'function') return blob.text();
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+		reader.onerror = () => reject(reader.error);
+		reader.readAsText(blob);
+	});
+};
+
+/**
+ * Mensaje del backend en un error de exportación. Como la petición pide
+ * `responseType: 'blob'`, el cuerpo JSON de un 422 o 403 llega como `Blob` y
+ * hay que leerlo para no mostrar un aviso genérico.
+ */
+export const readExportErrorMessage = async (error: unknown): Promise<string | null> => {
+	const data = isRecord(error) && isRecord(error.response) ? error.response.data : null;
+	if (!(data instanceof Blob)) return null;
+	try {
+		const parsed: unknown = JSON.parse(await readBlobText(data));
+		return isRecord(parsed) && typeof parsed.message === 'string' && parsed.message.trim()
+			? parsed.message.trim()
+			: null;
+	} catch {
+		return null;
+	}
+};
 
 export const ReportsService = {
 	getTypes(subsidiaryId: number) {
@@ -14,20 +56,41 @@ export const ReportsService = {
 		});
 	},
 
-	getResults(subsidiaryId: number, type: string, filters: IReportFilters = {}) {
-		return ApiService.fetchData<IReportResult | any>({
+	/**
+	 * Cuerpo crudo de la respuesta: según el tipo llega el paginador de Laravel
+	 * (`current_page` en la raíz) o el sobre `{ data, meta }`. Quien lo consume
+	 * decide cómo leerlo.
+	 */
+	getResults(
+		subsidiaryId: number,
+		type: string,
+		filters: IReportFilters = {},
+		signal?: AbortSignal,
+	): Promise<unknown> {
+		return ApiService.fetchData<unknown>({
 			url: `/subsidiaries/${subsidiaryId}/reports/${type}`,
 			method: 'get',
 			params: filters,
-		}).then((res) => res.data); // Return the raw response data without stripping
+			signal,
+		}).then((res) => res.data);
 	},
 
-	export(subsidiaryId: number, type: string, params: IReportExportParams) {
-		return ApiService.fetchData({
+	async export(
+		subsidiaryId: number,
+		type: string,
+		params: IReportExportParams,
+		signal?: AbortSignal,
+	): Promise<IReportDownload> {
+		const response = await ApiService.fetchData<Blob>({
 			url: `/subsidiaries/${subsidiaryId}/reports/${type}/export`,
 			method: 'get',
 			params,
 			responseType: 'blob',
+			signal,
 		});
+		return {
+			blob: response.data,
+			fileName: reportFileNameFrom(response.headers?.['content-disposition']),
+		};
 	},
 };

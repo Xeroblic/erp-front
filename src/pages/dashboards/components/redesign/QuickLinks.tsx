@@ -23,6 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import useThemeColor from '@/hooks/useThemeColor';
+import { readSessionItem, writeSessionItem } from '@/utils/sessionStorage.util';
 
 const SESSION_ORDER_KEY = 'dashboard_quicklinks_order';
 
@@ -137,7 +138,7 @@ interface QuickLinksProps {
 
 const QuickLinks: React.FC<QuickLinksProps> = ({ columnCount }) => {
 	const [sections, setSections] = useState(() => {
-		const savedOrder = sessionStorage.getItem(SESSION_ORDER_KEY);
+		const savedOrder = readSessionItem(SESSION_ORDER_KEY);
 		if (savedOrder) {
 			try {
 				const parsedIds = JSON.parse(savedOrder);
@@ -167,10 +168,7 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ columnCount }) => {
 				const oldIndex = items.findIndex((item) => item.section === active.id);
 				const newIndex = items.findIndex((item) => item.section === over.id);
 				const newOrder = arrayMove(items, oldIndex, newIndex);
-				sessionStorage.setItem(
-					SESSION_ORDER_KEY,
-					JSON.stringify(newOrder.map((i) => i.section)),
-				);
+				writeSessionItem(SESSION_ORDER_KEY, JSON.stringify(newOrder.map((i) => i.section)));
 				return newOrder;
 			});
 		}

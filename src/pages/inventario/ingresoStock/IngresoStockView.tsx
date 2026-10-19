@@ -1,19 +1,25 @@
 import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import Alert from '@/components/ui/Alert';
+import INVENTORY_STOCK_USE_MOCKS from '@/config/inventoryStock.config';
+import Pages from '@/config/pages.config';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import SubheaderTitle from '@/components/layouts/Subheader/SubheaderTitle';
 import Container from '@/components/layouts/Container/Container';
 import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle, CardHeaderChild } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 import {
 	ProductsTable,
 	WorkspaceTable,
 	QuickProductModal,
 	FinalizeAdjustmentModal,
 	BrandDedupModal,
-	ProductDetailCard, // @Full_React: Importamos card de detalle
+	ProductDetailCard,
 } from './components';
 
 import { useIngresoStock } from './hooks/useIngresoStock';
@@ -44,6 +50,8 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 	} = state;
 
 	const isDetailVisible = selectedProduct !== null && !isWorkspaceOpen;
+	// Los enlaces llevan a Ajustes y traslados, que sigue la filial efectiva.
+	const { isMultiLocation } = useSubsidiaryRolloutStage();
 
 	const workspaceProductIds = useMemo(
 		() => new Set(workItems.map((item) => item.productId)),
@@ -54,17 +62,11 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 		<PageWrapper title='Ajuste Stock' name='Admin Stock' isProtectedRoute={true}>
 			<Subheader>
 				<SubheaderLeft>
-					<div className='flex items-center space-x-3'>
-						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20'>
-							<Icon icon='DuoBox' className='h-6 w-6' />
-						</div>
-						<div>
-							<h3 className='text-2xl font-bold'>Ajuste de Stock</h3>
-							<p className='text-sm text-zinc-500'>
-								Flujo de facturas/boletas y mermas sin salir de la pantalla.
-							</p>
-						</div>
-					</div>
+					<SubheaderTitle
+						icon='DuoBox'
+						title='Ajuste de Stock'
+						description='Flujo de facturas/boletas y mermas sin salir de la pantalla'
+					/>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Tooltip text='Crear un producto nuevo sin salir de esta pantalla'>
@@ -92,6 +94,45 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 
 			<Container>
 				<div className='flex flex-col gap-6 py-8'>
+					{/*
+					 * Esta pantalla convive con Recepciones, Traslados internos y Ajuste
+					 * de inventario hasta que el backend publique sus endpoints; el aviso
+					 * sólo deriva a la correcta. Va detrás del flag porque, con los mocks
+					 * apagados, esos tres destinos sólo saben decir «no habilitado».
+					 */}
+					{INVENTORY_STOCK_USE_MOCKS && (
+						<Alert
+							color='blue'
+							variant='outline'
+							icon='HeroInformationCircle'
+							title={`Esta pantalla se está separando en ${isMultiLocation ? 'tres' : 'dos'}`}>
+							Para <strong>ingresar mercadería comprada</strong> usa{' '}
+							<Link
+								className='font-semibold underline'
+								to={Pages.inventory.subPages.recepciones.to}>
+								Recepciones
+							</Link>
+							{/* Con una sola ubicación (etapa 1) los traslados están ocultos. */}
+							{isMultiLocation && (
+								<>
+									; para <strong>mover unidades entre bodegas</strong>,{' '}
+									<Link
+										className='font-semibold underline'
+										to={`${Pages.inventory.subPages.ajustesTraslados.to}?tab=traslado`}>
+										Traslados internos
+									</Link>
+								</>
+							)}
+							; para <strong>corregir una diferencia de conteo</strong>,{' '}
+							<Link
+								className='font-semibold underline'
+								to={`${Pages.inventory.subPages.ajustesTraslados.to}?tab=ajuste`}>
+								Ajuste de inventario
+							</Link>
+							. Esas pantallas registran bodega, condición y procedencia, que acá no
+							existen.
+						</Alert>
+					)}
 					{lastBatchId && (
 						<div className='flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900'>
 							<span>
@@ -143,7 +184,6 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 							</Card>
 						</div>
 
-						{/* COLUMNA DERECHA: Card Detalle de Producto (Fase 1) */}
 						{isDetailVisible && selectedProduct && (
 							<div className='col-span-1 lg:col-span-5'>
 								<ProductDetailCard
@@ -159,7 +199,6 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 						)}
 					</div>
 
-					{/* ─── Zona de Trabajo (Fase 3: full-width, abajo) ─── */}
 					{isWorkspaceOpen && (
 						<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
 							<div className='col-span-1 lg:col-span-12'>
@@ -232,14 +271,11 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 									</CardBody>
 								</Card>
 							</div>
-
-							{/* Opcional: Podríamos re-utilizar la columna de col-span-5 para formulario de datos aquí si quisiéramos replicar el diseño exacto o simplemente dejarlo flotante. */}
 						</div>
 					)}
 				</div>
 			</Container>
 
-			{/* Modales Controlados */}
 			<QuickProductModal
 				isOpen={modals.isQuickProductModalOpen}
 				onClose={actions.closeQuickProductModal}

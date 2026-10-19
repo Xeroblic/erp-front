@@ -42,7 +42,7 @@ export interface IDeferredPaymentListItem {
 	due_date: string;
 	issue_date: string;
 	/** Momento en que el documento quedó saldado: último abono o marcado manual. */
-	paid_at: string | null;
+	paid_at?: string | null;
 	customer: IDeferredPaymentCustomer;
 }
 

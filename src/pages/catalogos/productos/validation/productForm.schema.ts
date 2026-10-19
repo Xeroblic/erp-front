@@ -183,12 +183,7 @@ export const productDetailSchema = Yup.object().shape({
 		.max(999, 'La garantía no puede exceder 999 meses')
 		.nullable(),
 
-	stock: Yup.number()
-		.typeError('El stock debe ser un número')
-		.integer('Debe ser un número entero')
-		.min(0, 'El stock no puede ser negativo')
-		.max(999999999, 'El stock es demasiado grande')
-		.nullable(),
+	// `stock` es de sólo lectura en el detalle: no se valida porque no se envía.
 
 	product_status: Yup.string().required('Selecciona el estado del producto'),
 });

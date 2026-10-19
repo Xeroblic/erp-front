@@ -14,6 +14,10 @@ import { serialNumbers } from '../../ESPECIA_CANAL13/list_serialNumber';
 import { getHardwareDisplayValue } from '../utils/hardwareAbsence';
 
 const HIGHLIGHT_ROW_COLOR = '86c723';
+// La nota del lote ocupa un bloque combinado a la derecha de las fechas (I2:J3), que baja
+// hasta la fila separadora previa a los encabezados para dar espacio a notas largas.
+const BATCH_NOTE_CELL = 'M2';
+const BATCH_NOTE_RANGE = 'M2:T4';
 const SERIALS_TO_HIGHLIGHT = new Set(serialNumbers.map((serial) => serial.trim().toUpperCase()));
 
 const shouldHighlightRow = (serialNumber?: string | null): boolean => {
@@ -68,7 +72,7 @@ export const normalizeDetailValue = (value: unknown): string => {
 	return String(value);
 };
 
-const resolveColumnValue = (item: IItem, key: string): string => {
+export const resolveColumnValue = (item: IItem, key: string): string => {
 	switch (key) {
 		case '__serial':
 			return item.serial_number ?? '';
@@ -78,9 +82,9 @@ const resolveColumnValue = (item: IItem, key: string): string => {
 			return normalizeDetailValue(g);
 		}
 		case '__customer':
-			return (item as any).customer_supplier?.name ?? '';
+			return item.customer_supplier?.name ?? '';
 		case '__supplier':
-			return (item as any).supplier?.name ?? '';
+			return item.supplier?.name ?? '';
 		case '__barcode':
 			return item.serial_number ? `*${item.serial_number}*` : '';
 		case '__created_by':
@@ -140,6 +144,7 @@ export const applyHeader = (
 	reviewDate?: string,
 	customerName?: string,
 	revisionName?: string,
+	batchNotes?: string | null,
 ) => {
 	if (logoImageId !== undefined) {
 		sheet.addImage(logoImageId, {
@@ -226,6 +231,22 @@ export const applyHeader = (
 
 	sheet.addRow([]);
 
+	// Va después de la fila separadora: combinar hasta la fila 4 antes de crearla haría
+	// que addRow agregara una fila extra y desplazara los encabezados.
+	const trimmedNotes = batchNotes?.trim();
+	if (trimmedNotes) {
+		const noteLabelCell = sheet.getCell('L2');
+		noteLabelCell.value = 'Nota:';
+		noteLabelCell.font = dateLabelStyle.font as Partial<ExcelJS.Font>;
+		noteLabelCell.alignment = { horizontal: 'left', vertical: 'top' };
+
+		sheet.mergeCells(BATCH_NOTE_RANGE);
+		const noteValueCell = sheet.getCell(BATCH_NOTE_CELL);
+		noteValueCell.value = trimmedNotes;
+		noteValueCell.font = dateValueStyle.font as Partial<ExcelJS.Font>;
+		noteValueCell.alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
+	}
+
 	if (groups && groups.length > 0) {
 		const groupRowNum = sheet.rowCount + 1;
 		const groupRow = sheet.addRow([]);
@@ -281,6 +302,8 @@ export const setColumnWidths = (sheet: ExcelJS.Worksheet, headers: string[]) => 
 		const column = sheet.getColumn(index + 1);
 		let maxLength = header.length + 3;
 		column.eachCell({ includeEmpty: true }, (cell) => {
+			// La nota es texto libre combinado en varias columnas: no debe ensanchar la suya.
+			if (cell.address === BATCH_NOTE_CELL) return;
 			const cellValue = cell.value;
 			const len =
 				cellValue == null
@@ -301,6 +324,7 @@ export const exportItemsToExcel = async (
 	onExportFetchAll?: (includeDetails?: boolean) => Promise<IItem[]>,
 	batchDate?: string,
 	customerName?: string,
+	batchNotes?: string | null,
 ) => {
 	// Force YYYY-MM-DD to DD-MM-YYYY format in the filename from the start
 	const exportFileName = rawExportFileName.replace(/(\d{4})-(\d{2})-(\d{2})/g, '$3-$2-$1');
@@ -353,6 +377,7 @@ export const exportItemsToExcel = async (
 				minReviewDate,
 				customerName,
 				exportFileName,
+				batchNotes,
 			);
 			sourceItems.forEach((item, idx) => {
 				const row = sheet.addRow([idx + 1, item.serial_number ?? '']);
@@ -433,6 +458,7 @@ export const exportItemsToExcel = async (
 						minReviewDate,
 						customerName,
 						exportFileName,
+						batchNotes,
 					);
 
 					const barcodeColIdx = columnDefs.findIndex((c) => c.key === '__barcode');
@@ -512,8 +538,21 @@ export const exportItemsToExcel = async (
 						'Nº',
 						'Serial Number',
 						...orderedKeys.map((k) => formatAttributeLabel(k)),
+						'Cliente',
+						'Proveedor',
 					];
-					applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`);
+					applyHeader(
+						sheet,
+						headers,
+						`Revisión de Equipos - ${sheetNameBase}`,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						batchNotes,
+					);
 
 					if (!payload.list.length) {
 						sheet.addRow(headers.map(() => ''));
@@ -523,6 +562,8 @@ export const exportItemsToExcel = async (
 								idx + 1,
 								item.serial_number || '',
 								...orderedKeys.map((k) => resolveColumnValue(item, k)),
+								resolveColumnValue(item, '__customer'),
+								resolveColumnValue(item, '__supplier'),
 							];
 							const excelRow = sheet.addRow(rowValues);
 							const isEven = idx % 2 === 0;

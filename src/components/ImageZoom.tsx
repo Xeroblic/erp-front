@@ -380,8 +380,10 @@ const ImageZoomComponent = ({
 					</div>
 				</ModalHeader>
 
-				{/* sin padding para maximizar viewport */}
-				<ModalBody className='bg-transparent p-0 [&:first-child]:pt-0'>{viewer}</ModalBody>
+				{/* sin padding para maximizar viewport: `!p-0` fuerza incluso el `pt-4`
+				    fijo del componente (antes alcanzaba con `p-0` porque ese `pt-4`
+				    sólo se aplicaba a `ModalBody` como primer hijo, y acá no lo es). */}
+				<ModalBody className='bg-transparent !p-0'>{viewer}</ModalBody>
 			</Modal>
 		</div>
 	);

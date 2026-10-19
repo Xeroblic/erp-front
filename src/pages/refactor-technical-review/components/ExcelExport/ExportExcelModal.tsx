@@ -16,6 +16,7 @@ export interface ExportExcelModalProps {
 	onExportFetchAll?: ExportFetcher;
 	batchDate?: string;
 	customerName?: string;
+	batchNotes?: string | null;
 }
 
 const ExportExcelModal: React.FC<ExportExcelModalProps> = ({
@@ -26,6 +27,7 @@ const ExportExcelModal: React.FC<ExportExcelModalProps> = ({
 	onExportFetchAll,
 	batchDate,
 	customerName,
+	batchNotes,
 }) => {
 	const [exportMode, setExportMode] = useState<ExportMode>('serials');
 	const [isExporting, setIsExporting] = useState(false);
@@ -40,6 +42,7 @@ const ExportExcelModal: React.FC<ExportExcelModalProps> = ({
 				onExportFetchAll,
 				batchDate,
 				customerName,
+				batchNotes,
 			);
 		} finally {
 			setIsExporting(false);

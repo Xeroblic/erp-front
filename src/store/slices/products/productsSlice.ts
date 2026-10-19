@@ -58,7 +58,8 @@ export interface ProductsState {
 	mediaError: string | null;
 }
 
-interface ApiValidationError {
+/** Rechazo de `createProduct`/`updateProduct`: mensaje y, en un 422, errores por campo. */
+export interface ApiValidationError {
 	message: string;
 	errors?: Record<string, string[]>;
 }
@@ -455,7 +456,11 @@ export const createProduct = createAsyncThunk<
 			if (data.short_description !== undefined)
 				body.short_description = data.short_description;
 			if (data.long_description !== undefined) body.long_description = data.long_description;
-			if (data.stock !== undefined) body.stock = Number(data.stock);
+			// Un producto de filial no tiene sucursal y el stock siempre vive en una:
+			// StoreSubsidiaryProductRequest rechaza `stock > 0` con un 422. Se ingresa
+			// después por recepción o ajuste en la sucursal donde está.
+			if (data.stock !== undefined && entityParam !== 'subsidiaries')
+				body.stock = Number(data.stock);
 
 			if (Array.isArray(categoryIds) && categoryIds.length) body.category_ids = categoryIds;
 
@@ -482,7 +487,7 @@ export const updateProduct = createAsyncThunk<
 		data: Partial<IProduct>;
 		categoryIds?: number[];
 	},
-	{ rejectValue: string }
+	{ rejectValue: ApiValidationError }
 >(
 	'products/updateProduct',
 	async ({ entityParam, entityId, productId, data, categoryIds }, { rejectWithValue }) => {
@@ -498,7 +503,7 @@ export const updateProduct = createAsyncThunk<
 			const raw = response.data?.data ?? response.data;
 			return normalizeProduct((raw as IProduct) ?? { ...data, id: productId });
 		} catch (error: unknown) {
-			return rejectWithValue(getErrorMessage(error, 'No se pudo actualizar el producto'));
+			return rejectWithValue(getErrorPayload(error, 'No se pudo actualizar el producto'));
 		}
 	},
 );
@@ -924,7 +929,7 @@ const productsSlice = createSlice({
 			})
 			.addCase(updateProduct.rejected, (state, action) => {
 				state.updating = false;
-				state.error = action.payload ?? 'No se pudo actualizar el producto';
+				state.error = action.payload?.message ?? 'No se pudo actualizar el producto';
 			})
 			.addCase(deleteProduct.pending, (state) => {
 				state.deleting = true;

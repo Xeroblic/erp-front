@@ -21,6 +21,11 @@ export interface SaleRecord {
 	billing_snapshot: BillingSnapshot | null;
 	branch_id: number | null;
 	branch_name: string | null;
+	/** Con `raw=1` el backend entrega el modelo completo: estos campos sólo llegan ahí. */
+	total?: string | number | null;
+	estado?: string | null;
+	payment_status?: string | null;
+	estado_pago?: string | null;
 }
 
 export interface SaleCustomer {

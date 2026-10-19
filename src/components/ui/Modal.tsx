@@ -91,7 +91,10 @@ interface IModalBodyProps extends HTMLAttributes<HTMLDivElement>, IModalBodyClon
 export const ModalBody: FC<IModalBodyProps> = (props) => {
 	const { children, className, isScrollable = defaultProps.isScrollable, ...rest } = props;
 
-	const classes = classNames('grow px-4 pb-4 [&:first-child]:pt-4', {
+	// `pt-4` fijo (no sólo `[&:first-child]`): con `ModalHeader` encima, separa el
+	// borde superior del contenido de la línea del título en vez de quedar pegado
+	// a su `pb-4`; sin header, es el mismo espaciado que ya tenía como primer hijo.
+	const classes = classNames('grow px-4 pb-4 pt-4', {
 		'overflow-y-auto': isScrollable,
 	});
 

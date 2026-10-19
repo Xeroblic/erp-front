@@ -2,6 +2,10 @@
 
 interface ImportMetaEnv {
 	readonly VITE_API_URL: string;
+	/** `'true'` para simular la trazabilidad agrupada (§14) en vez de usar la API. */
+	readonly VITE_INVENTORY_OPERATIONS_USE_MOCKS?: string;
+	/** `'true'` para simular las pantallas de Inventario en vez de leer `inventory-stock`. */
+	readonly VITE_INVENTORY_OVERVIEW_USE_MOCKS?: string;
 	// agrega más variables si es necesario
 }
 

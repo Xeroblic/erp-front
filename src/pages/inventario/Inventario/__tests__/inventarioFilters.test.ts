@@ -1,0 +1,192 @@
+import { describe, expect, it } from 'vitest';
+import {
+	DEFAULT_INVENTARIO_FILTROS,
+	filtraItems,
+	inventoryLocationParams,
+	operacionTipoInfo,
+	parseBodegaParam,
+	parseInventarioFilters,
+	serializeInventarioFilters,
+	trazabilidadParams,
+	UmbralSchema,
+	type IInventarioFilters,
+} from '@/pages/inventario/Inventario/types';
+
+describe('Filtros de Inventario en la URL', () => {
+	it('sin parámetros son los valores por defecto y no escriben nada', () => {
+		const filtros = parseInventarioFilters(new URLSearchParams());
+		expect(filtros).toEqual(DEFAULT_INVENTARIO_FILTROS);
+		expect(serializeInventarioFilters(filtros).toString()).toBe('');
+	});
+
+	it('ida y vuelta conserva todos los filtros', () => {
+		const filtros: IInventarioFilters = {
+			vista: 'general',
+			ubicacion: 'warehouse:12',
+			estado: 'critical',
+			busqueda: 'mouse',
+			orden: '-available_quantity',
+			tipo: null,
+			serie: null,
+			desde: '',
+			hasta: '',
+			page: 2,
+			perPage: 50,
+		};
+		const params = serializeInventarioFilters(filtros);
+		expect(params.toString()).toBe(
+			'bodega=12&estado=critical&q=mouse&orden=-available_quantity&page=2&per_page=50',
+		);
+		expect(parseInventarioFilters(params)).toEqual(filtros);
+	});
+
+	it('valores desconocidos o mal formados caen al valor por defecto', () => {
+		const filtros = parseInventarioFilters(
+			new URLSearchParams('vista=otra&bodega=abc&estado=x&orden=precio&page=-3&per_page=0'),
+		);
+		expect(filtros).toEqual(DEFAULT_INVENTARIO_FILTROS);
+		// Paginación: sólo enteros canónicos, igual que el resto de listados.
+		expect(parseInventarioFilters(new URLSearchParams('page=02&per_page=1e2'))).toMatchObject({
+			page: 1,
+			perPage: DEFAULT_INVENTARIO_FILTROS.perPage,
+		});
+	});
+
+	it('no acepta un tamaño de página sobre el tope del backend ni un ID de bodega desbordado', () => {
+		expect(parseInventarioFilters(new URLSearchParams('per_page=100')).perPage).toBe(100);
+		expect(parseInventarioFilters(new URLSearchParams('per_page=500')).perPage).toBe(
+			DEFAULT_INVENTARIO_FILTROS.perPage,
+		);
+		expect(
+			parseInventarioFilters(new URLSearchParams('bodega=12345678901234567890')).ubicacion,
+		).toBe('branch');
+		expect(parseBodegaParam('12345678901234567890')).toBeNull();
+		expect(parseBodegaParam('12')).toBe('warehouse:12');
+		expect(parseBodegaParam('sin-ubicacion')).toBe('unlocated');
+	});
+
+	it('Sin ubicación gana a una bodega y se traduce al filtro del contrato', () => {
+		const filtros = parseInventarioFilters(new URLSearchParams('sin_ubicacion=1&bodega=8'));
+		expect(filtros.ubicacion).toBe('unlocated');
+		expect(inventoryLocationParams(filtros.ubicacion)).toEqual({ unlocated: 1 });
+		expect(inventoryLocationParams('warehouse:8')).toEqual({ warehouse_id: 8 });
+		expect(inventoryLocationParams('branch')).toEqual({});
+	});
+});
+
+describe('Filtros de Trazabilidad en la URL', () => {
+	it('ida y vuelta conserva el tipo de operación, la serie y el rango de fechas', () => {
+		const filtros: IInventarioFilters = {
+			...DEFAULT_INVENTARIO_FILTROS,
+			vista: 'trazabilidad',
+			ubicacion: 'unlocated',
+			busqueda: 'PCExpress',
+			tipo: 'stock_receipt',
+			serie: 'con',
+			desde: '2026-09-01',
+			hasta: '2026-09-30',
+		};
+		const params = serializeInventarioFilters(filtros);
+
+		expect(params.get('vista')).toBe('trazabilidad');
+		expect(params.get('tipo')).toBe('stock_receipt');
+		expect(params.get('serie')).toBe('con');
+		expect(params.get('desde')).toBe('2026-09-01');
+		expect(params.get('hasta')).toBe('2026-09-30');
+		expect(parseInventarioFilters(params)).toEqual(filtros);
+	});
+
+	it('descarta un tipo desconocido y fechas que no existen en el calendario', () => {
+		const filtros = parseInventarioFilters(
+			new URLSearchParams(
+				'vista=trazabilidad&tipo=robo&serie=1&desde=2026-02-30&hasta=30-09-2026',
+			),
+		);
+
+		expect(filtros).toMatchObject({
+			vista: 'trazabilidad',
+			tipo: null,
+			serie: null,
+			desde: '',
+			hasta: '',
+		});
+	});
+
+	it('acepta los tipos del backend, descarta el saldo inicial viejo y rotula un tipo desconocido con su nombre', () => {
+		expect(parseInventarioFilters(new URLSearchParams('tipo=initial_stock')).tipo).toBe(
+			'initial_stock',
+		);
+		// Un enlace guardado con el tipo del mock anterior: el backend lo rechazaría con 422.
+		expect(parseInventarioFilters(new URLSearchParams('tipo=initial_balance')).tipo).toBe(null);
+		expect(operacionTipoInfo('stock_receipt').label).toBe('Recepción');
+		expect(operacionTipoInfo('equipment_move')).toMatchObject({
+			label: 'equipment_move',
+			icon: 'HeroQuestionMarkCircle',
+		});
+	});
+
+	it('traduce los filtros al §14 acotados a la sucursal activa', () => {
+		const params = trazabilidadParams(
+			{
+				ubicacion: 'warehouse:8',
+				tipo: 'inventory_adjustment',
+				serie: 'sin',
+				busqueda: '  conteo ',
+				desde: '2026-09-01',
+				hasta: '',
+				page: 2,
+				perPage: 20,
+			},
+			4,
+		);
+
+		expect(params).toEqual({
+			branch_id: 4,
+			warehouse_id: 8,
+			operation_type: 'inventory_adjustment',
+			serial_tracking: 0,
+			search: 'conteo',
+			occurred_from: '2026-09-01',
+			occurred_to: undefined,
+			page: 2,
+			per_page: 20,
+		});
+	});
+
+	it('«Con serie» y «Sin serie» se traducen a serial_tracking 1 y 0; sin selección se omite', () => {
+		const base = {
+			ubicacion: 'branch' as const,
+			tipo: null,
+			busqueda: '',
+			desde: '',
+			hasta: '',
+			page: 1,
+			perPage: 15,
+		};
+
+		expect(trazabilidadParams({ ...base, serie: 'con' }, 4).serial_tracking).toBe(1);
+		expect(trazabilidadParams({ ...base, serie: 'sin' }, 4).serial_tracking).toBe(0);
+		expect(trazabilidadParams({ ...base, serie: null }, 4).serial_tracking).toBeUndefined();
+	});
+
+	it('sólo marca ítems cuando un filtro elige productos, no operaciones', () => {
+		expect(filtraItems({ branch_id: 4, operation_type: 'stock_receipt' })).toBe(false);
+		expect(filtraItems({ branch_id: 4, occurred_from: '2026-09-01' })).toBe(false);
+		expect(filtraItems({ branch_id: 4, search: 'mouse' })).toBe(true);
+		expect(filtraItems({ branch_id: 4, unlocated: 1 })).toBe(true);
+		expect(filtraItems({ branch_id: 4, product_id: 31 })).toBe(true);
+		// Una venta mixta aparece con los dos valores: el detalle marca los ítems del tipo pedido.
+		expect(filtraItems({ branch_id: 4, serial_tracking: 1 })).toBe(true);
+	});
+});
+
+describe('UmbralSchema', () => {
+	it('acepta vacío o enteros y rechaza decimales, signos y excesos', () => {
+		expect(UmbralSchema.isValidSync({ threshold: '' })).toBe(true);
+		expect(UmbralSchema.isValidSync({ threshold: '0' })).toBe(true);
+		expect(UmbralSchema.isValidSync({ threshold: '15' })).toBe(true);
+		expect(UmbralSchema.isValidSync({ threshold: '1.5' })).toBe(false);
+		expect(UmbralSchema.isValidSync({ threshold: '-2' })).toBe(false);
+		expect(UmbralSchema.isValidSync({ threshold: '2000000' })).toBe(false);
+	});
+});

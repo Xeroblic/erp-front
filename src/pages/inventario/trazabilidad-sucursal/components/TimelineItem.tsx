@@ -456,20 +456,16 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 
 	return (
 		<div className='relative flex gap-4'>
-			{/* Timeline line */}
 			{!isLast && (
 				<div className='absolute left-[19px] top-10 h-[calc(100%-2rem)] w-0.5 bg-gradient-to-b from-zinc-300 to-zinc-200 dark:from-zinc-600 dark:to-zinc-700' />
 			)}
 
-			{/* Icon circle */}
 			<div
 				className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${config.bgColor} shadow-lg`}>
 				<Icon icon={config.icon} className='h-5 w-5 text-white' />
 			</div>
 
-			{/* Content */}
 			<div className='flex-1 pb-6'>
-				{/* Header - Always visible */}
 				<button
 					type='button'
 					onClick={toggleExpand}
@@ -479,23 +475,19 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 					className='group w-full rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm transition-all duration-200 hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-blue-600 dark:focus-visible:ring-offset-zinc-900'>
 					<div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
 						<div className='flex flex-1 flex-col gap-1'>
-							{/* Product name */}
 							<span className='text-base font-semibold text-zinc-900 dark:text-white'>
 								{movement.product?.name ?? 'Producto desconocido'}
 							</span>
-							{/* SKU */}
 							<span className='font-mono text-xs text-zinc-500 dark:text-zinc-400'>
 								SKU: {movement.product?.sku ?? 'N/A'}
 							</span>
 						</div>
 
 						<div className='flex flex-wrap items-center gap-2'>
-							{/* Movement type badge */}
 							<Badge color={config.color} variant='solid' className='px-2 text-xs'>
 								{config.label}
 							</Badge>
 
-							{/* Quantity delta */}
 							<Badge
 								variant='outline'
 								className={`px-2 font-mono text-sm font-bold ${quantityStyle.color}`}>
@@ -503,12 +495,10 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 								{movement.quantity_delta}
 							</Badge>
 
-							{/* Date */}
 							<span className='text-xs text-zinc-500 dark:text-zinc-400'>
 								{formatShortDate(movement.occurred_at)}
 							</span>
 
-							{/* Expand icon */}
 							<Icon
 								icon={isExpanded ? 'HeroChevronUp' : 'HeroChevronDown'}
 								className='h-5 w-5 text-zinc-400 transition-transform duration-200 group-hover:text-blue-500'
@@ -517,7 +507,6 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 					</div>
 				</button>
 
-				{/* Expanded details */}
 				<div
 					id={detailsId}
 					aria-hidden={!isExpanded}

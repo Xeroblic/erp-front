@@ -5,6 +5,12 @@ import {
 	ISaleItem,
 	ICreateSaleRequest,
 	ICloseSaleRequest,
+	ICloseSaleResponse,
+	ISaleFulfillmentOptions,
+	ISaleReturn,
+	IStartSaleReturnRequest,
+	IConfirmSaleReturnRequest,
+	IConfirmSaleReturnReceiptResponse,
 } from '@/interface/sales.interface';
 
 // Filtros alineados a la documentación
@@ -15,12 +21,6 @@ export interface SalesListFilters {
 	per_page?: number;
 	page?: number;
 	with_customer?: 0 | 1;
-}
-
-// Interfaces de respuesta específicas del servicio
-export interface CloseSaleResponse {
-	message: string;
-	sale_id: number;
 }
 
 /**
@@ -177,19 +177,37 @@ export const fetchSaleItems = async (
 };
 
 /**
- * Cierra una venta asignando series (Change Status a Completed)
+ * Vista previa del cierre (etapa 2): desde qué ubicaciones puede salir cada ítem sin
+ * serie, en qué modo y una sugerencia. No reserva nada, así que nunca se cachea: cada
+ * lectura tiene que traer el stock vigente.
+ */
+export const getSaleFulfillmentOptions = async (
+	subsidiaryId: number,
+	saleId: number,
+): Promise<ISaleFulfillmentOptions> => {
+	const resp = await ApiService.fetchData<{ data: ISaleFulfillmentOptions }>({
+		url: `${base(subsidiaryId)}/${saleId}/fulfillment-options`,
+		method: 'get',
+	});
+	return resp.data.data;
+};
+
+/**
+ * Cierra una venta: vende las series indicadas y descuenta FIFO los ítems sin serie,
+ * de «Sin ubicación» o, en la etapa 2, de las ubicaciones de `allocations`. Devuelve
+ * la raíz completa: `data` es lo que el cierre aplicó y `message` queda a su lado.
  */
 export const closeSale = async (
 	subsidiaryId: number,
 	saleId: number,
 	payload: ICloseSaleRequest,
-): Promise<CloseSaleResponse> => {
-	const resp = await ApiService.fetchData<any>({
+): Promise<ICloseSaleResponse> => {
+	const resp = await ApiService.fetchData<ICloseSaleResponse, ICloseSaleRequest>({
 		url: `${base(subsidiaryId)}/${saleId}/close`,
 		method: 'post',
-		data: payload as any,
+		data: payload,
 	});
-	return (resp.data?.data ?? resp.data) as CloseSaleResponse;
+	return resp.data;
 };
 
 /** Ítem no serializado reingresado al inventario tras confirmar la devolución. */
@@ -208,9 +226,11 @@ export interface ConfirmReturnResponse {
 }
 
 /**
- * Confirma la recepción física en bodega de los productos devueltos de una venta
- * previamente revertida (refunded). Devuelve al stock las series en estado
- * RETURNED y reingresa la cantidad pendiente de los ítems no serializados.
+ * Confirmación de la etapa 1: sin cuerpo ni `Idempotency-Key`. Confirma la recepción
+ * física de una venta revertida (refunded): devuelve al stock las series RETURNED y
+ * reingresa lo pendiente sin serie, todo apto y a la ubicación de la que salió.
+ * También vale en la etapa 2 para una reversión de la etapa 1 que quedó pendiente
+ * (venta sin `pending_return`); con `pending_return` el backend responde 422.
  */
 export const confirmSaleReturn = async (
 	subsidiaryId: number,
@@ -221,6 +241,83 @@ export const confirmSaleReturn = async (
 		method: 'post',
 	});
 	return (resp.data?.data ?? resp.data) as ConfirmReturnResponse;
+};
+
+/**
+ * Inicia la devolución física de una venta cerrada (etapa 2). Reabre la venta y no
+ * repone nada: el stock vuelve al recibirla. 201 con la nueva; 200 con la pendiente.
+ */
+export const startSaleReturn = async (
+	subsidiaryId: number,
+	saleId: number,
+	payload: IStartSaleReturnRequest,
+	headers: Record<string, string>,
+): Promise<ISaleReturn> => {
+	const resp = await ApiService.fetchData<{ data: ISaleReturn }, IStartSaleReturnRequest>({
+		url: `${base(subsidiaryId)}/${saleId}/returns`,
+		method: 'post',
+		data: payload,
+		headers,
+	});
+	return resp.data.data;
+};
+
+/**
+ * Lo esperado de una devolución y, una vez recibida, lo recibido. Sin caché: la
+ * devolución puede recibirse desde otra pantalla mientras esta espera.
+ */
+export const fetchSaleReturn = async (
+	subsidiaryId: number,
+	saleId: number,
+	returnId: number,
+	signal?: AbortSignal,
+): Promise<ISaleReturn> => {
+	const resp = await ApiService.fetchData<{ data: ISaleReturn }>({
+		url: `${base(subsidiaryId)}/${saleId}/returns/${returnId}`,
+		method: 'get',
+		signal,
+	});
+	return resp.data.data;
+};
+
+/** Sucursales visibles de la filial, incluyendo el acceso heredado de empresa/filial. */
+export const fetchSaleReturnBranchIds = async (
+	subsidiaryId: number,
+	signal?: AbortSignal,
+): Promise<number[]> => {
+	const response = await ApiService.fetchData<{
+		data: Array<{ id: number; subsidiary_id: number }>;
+	}>({
+		url: '/branches',
+		method: 'get',
+		params: { subsidiary_id: subsidiaryId },
+		signal,
+	});
+	return response.data.data
+		.filter((branch) => branch.subsidiary_id === subsidiaryId)
+		.map((branch) => branch.id);
+};
+
+/**
+ * Recibe la devolución de la etapa 2: todo o nada, cada unidad con ubicación y
+ * condición. Exige `Idempotency-Key`; un reintento con la misma devuelve el mismo 200.
+ */
+export const receiveSaleReturn = async (
+	subsidiaryId: number,
+	saleId: number,
+	payload: IConfirmSaleReturnRequest,
+	headers: Record<string, string>,
+): Promise<IConfirmSaleReturnReceiptResponse> => {
+	const resp = await ApiService.fetchData<
+		IConfirmSaleReturnReceiptResponse,
+		IConfirmSaleReturnRequest
+	>({
+		url: `${base(subsidiaryId)}/${saleId}/confirm-return`,
+		method: 'post',
+		data: payload,
+		headers,
+	});
+	return resp.data;
 };
 
 /** Una corrección atómica de serie (swap) sobre una línea de venta. */
@@ -358,7 +455,11 @@ export const salesService = {
 	fetchSaleDetail,
 	fetchSaleItems,
 	closeSale,
+	getSaleFulfillmentOptions,
 	confirmSaleReturn,
+	startSaleReturn,
+	fetchSaleReturn,
+	receiveSaleReturn,
 	correctSaleSerials,
 	createSale,
 	fetchPendingSerialAssignment,

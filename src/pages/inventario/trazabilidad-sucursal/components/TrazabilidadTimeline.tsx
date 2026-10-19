@@ -4,7 +4,7 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import { IInventoryMovement } from '@/interface/inventoryMovements.interface';
 import { IInventoryPagination } from '@/store/slices/inventory/inventorySlice';
-import TimelineItem from './TimelineItem';
+import { TimelineItem } from './TimelineItem';
 
 type FetchStatus = 'idle' | 'loading' | 'loading-more' | 'success' | 'timeout' | 'error';
 
@@ -35,7 +35,6 @@ export function TrazabilidadTimeline({
 	onReload,
 	onLoadMore,
 }: TrazabilidadTimelineProps) {
-	// Estado: Sin sucursal seleccionada
 	if (!branchId) {
 		return (
 			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-xl border border-dashed border-amber-300 bg-amber-50/50 py-16 text-center dark:border-amber-700 dark:bg-amber-950/20'>
@@ -51,7 +50,6 @@ export function TrazabilidadTimeline({
 		);
 	}
 
-	// Estado: Cargando inicial
 	if (fetchStatus === 'loading' || (loading && !hasFetched)) {
 		return (
 			<div className='flex min-h-[35vh] flex-col items-center justify-center py-16'>
@@ -63,7 +61,6 @@ export function TrazabilidadTimeline({
 		);
 	}
 
-	// Estado: Timeout
 	if (fetchStatus === 'timeout') {
 		return (
 			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-xl border border-dashed border-red-300 bg-red-50/50 py-16 text-center dark:border-red-700 dark:bg-red-950/20'>
@@ -87,7 +84,6 @@ export function TrazabilidadTimeline({
 		);
 	}
 
-	// Estado: Error
 	if (fetchStatus === 'error' || error) {
 		return (
 			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-xl border border-dashed border-red-300 bg-red-50/50 py-16 text-center dark:border-red-700 dark:bg-red-950/20'>
@@ -110,10 +106,9 @@ export function TrazabilidadTimeline({
 		);
 	}
 
-	// Estado: Sin movimientos
 	if (hasFetched && movimientos.length === 0) {
 		return (
-			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-500/20 py-16 text-center dark:border-zinc-700 dark:bg-zinc-950/20'>
+			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50 py-16 text-center dark:border-zinc-700 dark:bg-zinc-950/20'>
 				<Icon icon='DuoBinocular' className='mb-4 h-16 w-16 text-zinc-400' />
 				<Badge className='px-2 text-xl font-bold text-gray-600 dark:text-gray-300'>
 					Sin movimientos registrados
@@ -133,10 +128,8 @@ export function TrazabilidadTimeline({
 		);
 	}
 
-	// Estado: Con datos - Mostrar Timeline
 	return (
 		<div>
-			{/* Header */}
 			<div className='mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
 				<div className='flex flex-wrap items-center gap-2'>
 					{currentBranchName && (
@@ -162,7 +155,6 @@ export function TrazabilidadTimeline({
 				</Button>
 			</div>
 
-			{/* Timeline */}
 			<div className='relative isolate pl-2'>
 				{movimientos.map((movement, index) => (
 					<TimelineItem
@@ -173,7 +165,6 @@ export function TrazabilidadTimeline({
 				))}
 			</div>
 
-			{/* Load More Button */}
 			{pagination.hasNextPage && (
 				<div className='mt-6 flex flex-col items-center'>
 					<Button
@@ -201,7 +192,6 @@ export function TrazabilidadTimeline({
 				</div>
 			)}
 
-			{/* All loaded message */}
 			{!pagination.hasNextPage && movimientos.length > 0 && (
 				<div className='mt-6 flex flex-col items-center rounded-lg border border-zinc-200 bg-zinc-50 py-4 dark:border-zinc-700 dark:bg-zinc-900'>
 					<Icon icon='HeroCheckCircle' className='mb-2 h-6 w-6 text-emerald-500' />

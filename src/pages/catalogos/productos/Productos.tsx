@@ -304,14 +304,12 @@ const Productos: React.FC = () => {
 		data: Partial<IProduct>;
 		categoryIds: number[];
 	}) => {
-		try {
-			await createProduct(payload);
-			toast.success('Producto creado correctamente');
-			setCreateOpen(false);
-		} catch (err: unknown) {
-			console.error('Create product failed', err);
-			toast.error(getErrorMessage(err, 'No se pudo crear el producto'));
-		}
+		// Sin catch: el modal mapea los `errors` del 422 a sus campos, muestra el
+		// mensaje y queda abierto con lo cargado. Si el error se absorbe acá, el
+		// modal lo toma como éxito, se cierra y se pierde el formulario.
+		await createProduct(payload);
+		toast.success('Producto creado correctamente');
+		setCreateOpen(false);
 	};
 
 	const handleDeleteProduct = async (product: IProduct) => {
@@ -504,6 +502,7 @@ const Productos: React.FC = () => {
 				isLoading={creating}
 				brandsLoading={brandsLoading}
 				defaultBranchId={currentBranchId ?? activeBranchId ?? null}
+				isSubsidiaryProduct={viewMode === 'subsidiaries'}
 			/>
 
 			<DeleteProductModal
