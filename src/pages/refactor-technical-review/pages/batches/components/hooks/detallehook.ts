@@ -255,7 +255,7 @@ export const useDetalleLote = () => {
 					setIsMissingSerialModalOpen(true);
 				}
 			} catch (error) {
-				console.error('Error en escaneo:', error);
+				toast.error(getErrorMessage(error, 'No se pudo buscar la serie escaneada.'));
 			}
 		},
 		[batch, branchId, operationMode, handleViewItem],

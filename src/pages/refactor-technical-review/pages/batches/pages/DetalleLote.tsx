@@ -181,7 +181,25 @@ const DetalleLote: React.FC = () => {
 
 			{/* Guardar (cantidad esperada o notas) no debe desmontar el detalle: cada
 			    sección muestra su propio estado de carga. */}
-			<DetalleLoteVisual {...hookProps} />
+			<DetalleLoteVisual
+				batch={hookProps.batch}
+				updatingBatch={hookProps.updatingBatch}
+				isEditingExpectedQty={hookProps.isEditingExpectedQty}
+				expectedQtyDraft={hookProps.expectedQtyDraft}
+				setExpectedQtyDraft={hookProps.setExpectedQtyDraft}
+				expectedQtyError={hookProps.expectedQtyError}
+				setExpectedQtyError={hookProps.setExpectedQtyError}
+				handleStartEditingExpectedQty={hookProps.handleStartEditingExpectedQty}
+				handleCancelExpectedQty={hookProps.handleCancelExpectedQty}
+				handleSaveExpectedQty={hookProps.handleSaveExpectedQty}
+				expectedQty={hookProps.expectedQty}
+				receivedQty={hookProps.receivedQty}
+				completedQty={hookProps.completedQty}
+				pendingQty={hookProps.pendingQty}
+				progressPercentage={hookProps.progressPercentage}
+				activeTab={hookProps.activeTab}
+				setActiveTab={hookProps.setActiveTab}
+			/>
 			<Container className='mt-6 w-full px-2 sm:w-11/12 sm:px-0'>
 				<ListReview batchId={hookProps.batch.id} activeTab={hookProps.activeTab} />
 			</Container>
