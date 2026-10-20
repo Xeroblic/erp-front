@@ -66,6 +66,11 @@ interface Props {
 	 * listado. Sin ellas, el detalle usa las suyas y el intento vive mientras esté montado.
 	 */
 	returnWrites?: ISaleReturnWrites;
+	/**
+	 * Abre la recepción de la devolución en cuanto el detalle confirma que hay una
+	 * pendiente (la acción «Recibir devolución» del listado). Sin ella, no hace nada.
+	 */
+	openReceiveReturn?: boolean;
 }
 
 interface ICloseShortage {
@@ -144,6 +149,7 @@ const SaleDetailPage: React.FC<Props> = ({
 	isOpen,
 	onClose,
 	returnWrites: pageReturnWrites,
+	openReceiveReturn = false,
 }) => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
@@ -451,6 +457,18 @@ const SaleDetailPage: React.FC<Props> = ({
 			receiveReturnSlot.discard();
 		}
 	}, [loading, detailPendingReturnId, subsidiaryId, saleId, startReturnSlot, receiveReturnSlot]);
+
+	// La acción del listado abre la recepción una sola vez por venta: cerrarla deja el
+	// detalle abierto, sin volver a abrirla en cada relectura.
+	const autoOpenedReceiveRef = useRef<string | null>(null);
+	useEffect(() => {
+		const owner = `${subsidiaryId}:${saleId}`;
+		if (!openReceiveReturn || !isMultiLocation || autoOpenedReceiveRef.current === owner)
+			return;
+		if (detailPendingReturnId === undefined || detailPendingReturnId === null) return;
+		autoOpenedReceiveRef.current = owner;
+		setReceiveReturnOpen(true);
+	}, [openReceiveReturn, isMultiLocation, detailPendingReturnId, subsidiaryId, saleId]);
 
 	// Va después de todos los hooks: si isOpen cambia con el componente montado,
 	// un return previo alteraría la cantidad de hooks entre renders.
