@@ -1,6 +1,10 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import store, { logout, setToken } from '@/store';
 import tokenManager from '@/services/auth/tokenManager';
+import {
+	getPersistedAccessToken,
+	notifySessionExpired,
+	notifyTokenRefreshed,
+} from '@/services/auth/authStoreBridge';
 
 // --- Tipos ---
 interface CustomAxiosRequestConfig<D = unknown> extends InternalAxiosRequestConfig<D> {
@@ -60,10 +64,10 @@ const BaseService = axios.create({
 
 /**
  * Pide un token nuevo al backend usando el token actual y propaga el resultado
- * al tokenManager, al store y a la instancia de Axios.
+ * al tokenManager, al store (vía `authStoreBridge`) y a la instancia de Axios.
  */
 const requestNewToken = async (): Promise<string> => {
-	const currentToken = tokenManager.getAccessToken() ?? store.getState().auth.access;
+	const currentToken = tokenManager.getAccessToken() ?? getPersistedAccessToken();
 	if (!currentToken) throw new Error('No token to refresh');
 
 	// Limpiamos "Bearer " si existe
@@ -79,7 +83,7 @@ const requestNewToken = async (): Promise<string> => {
 	if (!newToken) throw new Error('Refresh response did not contain a token');
 
 	tokenManager.setAccessToken(newToken);
-	store.dispatch(setToken({ access: newToken }));
+	notifyTokenRefreshed(newToken);
 	BaseService.defaults.headers.common.Authorization = `Bearer ${newToken}`;
 
 	return newToken;
@@ -129,8 +133,7 @@ BaseService.interceptors.request.use(
 			return refreshPromise.then((token) => applyTokenToConfig(token));
 		}
 
-		const state = store.getState();
-		const token = tokenManager.getAccessToken() ?? state.auth.access;
+		const token = tokenManager.getAccessToken() ?? getPersistedAccessToken();
 
 		return applyTokenToConfig(token);
 	},
@@ -201,7 +204,7 @@ BaseService.interceptors.response.use(
 			const sessionIsDead = isAuthFailure || outsideRefreshWindow;
 
 			if (!isRefreshEndpoint && !isLoginEndpoint && sessionIsDead) {
-				store.dispatch(logout());
+				notifySessionExpired();
 				tokenManager.clearTokens();
 				cancelAllRequests();
 			}
