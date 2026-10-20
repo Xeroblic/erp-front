@@ -207,10 +207,16 @@ const technicalReviewsSlice = createSlice({
 			})
 			.addCase(batchesThunks.updateBatch.fulfilled, (state, action) => {
 				state.updating = false;
+				// El PATCH no carga la relación `items`, así que el backend omite
+				// `items_summary`: se conserva el que ya teníamos en vez de borrarlo.
+				const withSummary = (previous: IBatch | null | undefined): IBatch => ({
+					...action.payload,
+					items_summary: action.payload.items_summary ?? previous?.items_summary,
+				});
 				const index = state.batches.findIndex((b) => b.id === action.payload.id);
-				if (index !== -1) state.batches[index] = action.payload;
+				if (index !== -1) state.batches[index] = withSummary(state.batches[index]);
 				if (state.selectedBatch?.id === action.payload.id) {
-					state.selectedBatch = action.payload;
+					state.selectedBatch = withSummary(state.selectedBatch);
 				}
 			})
 			.addCase(batchesThunks.updateBatch.rejected, (state, action) => {
