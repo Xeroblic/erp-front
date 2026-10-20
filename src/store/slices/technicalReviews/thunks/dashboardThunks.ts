@@ -5,7 +5,7 @@ import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,
 } from '../technicalReviewsContext';
-import { setTechnicalReviewsContext } from '../slice/technicalReviewsSlice';
+import { setTechnicalReviewsContext } from '../technicalReviewsContextActions';
 
 export const fetchDashboardStats = createAsyncThunk<
 	{ total: number; pending: number; approved: number; rejected: number },

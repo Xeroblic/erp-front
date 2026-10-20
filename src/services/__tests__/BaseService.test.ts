@@ -3,17 +3,15 @@ import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import BaseService from '../BaseService';
 import tokenManager from '../auth/tokenManager';
-import store from '@/store';
+import { registerAuthStoreBridge } from '../auth/authStoreBridge';
 
-// 1. MOCKEAR EL STORE
-vi.mock('@/store', () => ({
-	default: {
-		getState: vi.fn(() => ({ auth: { access: 'initial-token' } })),
-		dispatch: vi.fn(),
-	},
-	logout: vi.fn(() => ({ type: 'auth/logout' })),
-	setToken: vi.fn((payload) => ({ type: 'auth/setToken', payload })),
-}));
+// 1. PUENTE CON EL STORE (BaseService no importa `@/store`; el store registra este puente)
+const bridge = {
+	getPersistedAccessToken: vi.fn((): string | null => 'initial-token'),
+	onTokenRefreshed: vi.fn(),
+	onSessionExpired: vi.fn(),
+};
+registerAuthStoreBridge(bridge);
 
 // Helper para crear tokens falsos reales (para que tokenManager no falle)
 const createValidToken = () => {
@@ -52,6 +50,14 @@ describe('BaseService Integration', () => {
 		expect(response.status).toBe(200);
 		expect(response.data).toEqual({ success: true });
 		expect(tokenManager.getAccessToken()).toBe('new-valid-token');
+		expect(bridge.onTokenRefreshed).toHaveBeenCalledWith('new-valid-token');
+	});
+
+	it('usa el token persistido del store cuando tokenManager no tiene uno en RAM', async () => {
+		bridge.getPersistedAccessToken.mockReturnValueOnce('new-valid-token');
+		const response = await BaseService.get('/api/protected');
+		expect(response.status).toBe(200);
+		expect(bridge.onTokenRefreshed).not.toHaveBeenCalled();
 	});
 
 	it('debería hacer logout si el refresh falla y no hay salvación', async () => {
@@ -62,12 +68,13 @@ describe('BaseService Integration', () => {
 		);
 
 		tokenManager.setAccessToken('expired-token');
+		expect.assertions(3);
 
 		try {
 			await BaseService.get('/api/protected');
 		} catch (error: any) {
 			expect(error.response?.status).toBe(401);
-			expect(store.dispatch).toHaveBeenCalledWith({ type: 'auth/logout' });
+			expect(bridge.onSessionExpired).toHaveBeenCalledTimes(1);
 			expect(tokenManager.getAccessToken()).toBeNull();
 		}
 	});
@@ -104,6 +111,6 @@ describe('BaseService Integration', () => {
 
 		// 4. Verificaciones
 		expect(response.status).toBe(200); // ¡ÉXITO!
-		expect(store.dispatch).not.toHaveBeenCalledWith({ type: 'auth/logout' });
+		expect(bridge.onSessionExpired).not.toHaveBeenCalled();
 	});
 });

@@ -11,6 +11,7 @@ import type {
 } from '../../../../interface/technicalReviews.interface';
 
 // Importar thunks por flujo
+import { setTechnicalReviewsContext } from '../technicalReviewsContextActions';
 import * as batchesThunks from '../thunks/batchesThunks';
 import * as itemsThunks from '../thunks/itemsThunks';
 import * as reviewThunks from '../thunks/reviewThunks';
@@ -90,13 +91,6 @@ const technicalReviewsSlice = createSlice({
 		setEndpointMode: (state, action: PayloadAction<'subsidiaries' | 'branches'>) => {
 			state.endpointMode = action.payload;
 		},
-		setTechnicalReviewsContext: (
-			state,
-			action: PayloadAction<{ branchId?: number | null; subsidiaryId?: number | null }>,
-		) => {
-			state.contextBranchId = action.payload.branchId ?? null;
-			state.contextSubsidiaryId = action.payload.subsidiaryId ?? null;
-		},
 		clearSelected: (state) => {
 			state.selectedBatch = null;
 			state.selectedItem = null;
@@ -115,6 +109,11 @@ const technicalReviewsSlice = createSlice({
 		},
 	},
 	extraReducers: (builder) => {
+		builder.addCase(setTechnicalReviewsContext, (state, action) => {
+			state.contextBranchId = action.payload.branchId ?? null;
+			state.contextSubsidiaryId = action.payload.subsidiaryId ?? null;
+		});
+
 		// ====================================================================
 		// LOTES (BATCHES)
 		// ====================================================================
@@ -660,14 +659,10 @@ const technicalReviewsSlice = createSlice({
 	},
 });
 
-export const {
-	setEndpointMode,
-	setTechnicalReviewsContext,
-	clearSelected,
-	clearErrors,
-	setSelectedBatch,
-	setSelectedItem,
-} = technicalReviewsSlice.actions;
+export const { setEndpointMode, clearSelected, clearErrors, setSelectedBatch, setSelectedItem } =
+	technicalReviewsSlice.actions;
+
+export { setTechnicalReviewsContext };
 
 // Exportar el tipo para usarlo en rootReducer
 export type { TechnicalReviewsState } from '../../../../interface/technicalReviews.interface';

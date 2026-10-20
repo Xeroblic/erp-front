@@ -1,6 +1,6 @@
 import { EMPTY_STATS } from '@/constants/brand.constant';
 import { IBrand, IBrandImage } from '@/interface/brand.interface';
-import { BrandStatsState } from '@/store/slices/brands/brandsSlice';
+import type { BrandStatsState } from '@/store/slices/brands/brandsSlice';
 
 const resolveBackendOrigin = (): URL | null => {
 	const envUrl =

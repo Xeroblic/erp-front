@@ -22,7 +22,7 @@ import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,
 } from '../technicalReviewsContext';
-import { setTechnicalReviewsContext } from '../slice/technicalReviewsSlice';
+import { setTechnicalReviewsContext } from '../technicalReviewsContextActions';
 
 const normalizeObject = (payload: any): any => payload?.data ?? payload ?? null;
 

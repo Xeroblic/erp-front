@@ -16,7 +16,7 @@ import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,
 } from '../technicalReviewsContext';
-import { setTechnicalReviewsContext } from '../slice/technicalReviewsSlice';
+import { setTechnicalReviewsContext } from '../technicalReviewsContextActions';
 
 export interface ITechnicalReviewsPageMeta {
 	total?: number;
