@@ -67,10 +67,7 @@ const DetalleLote: React.FC = () => {
 		: '';
 
 	return (
-		<PageWrapper
-			name='detalle-lote'
-			title={`Lote ${formattedBatchCode}`}
-			isProtectedRoute={true}>
+		<PageWrapper name='detalle-lote' title={`Lote ${formattedBatchCode}`} isProtectedRoute>
 			<Subheader>
 				<SubheaderLeft>
 					<Button
@@ -88,9 +85,7 @@ const DetalleLote: React.FC = () => {
 								className='hidden px-1 sm:inline-flex'
 								color={hookProps.statusColor()}>
 								{BATCH_STATUS_LABELS[
-									String(
-										hookProps.batch.status,
-									).toUpperCase() as keyof typeof BATCH_STATUS_LABELS
+									String(hookProps.batch.status).toUpperCase()
 								] || hookProps.batch.status}
 							</Badge>
 						</div>
@@ -184,19 +179,12 @@ const DetalleLote: React.FC = () => {
 				</SubheaderRight>
 			</Subheader>
 
-			{hookProps.updatingBatch ? (
-				<div className='flex flex-col items-center justify-center p-10'>
-					<p className='text-lg font-bold text-red-500'>Error al cargar el lote</p>
-					<p className='text-gray-600'>Por favor, intente nuevamente más tarde.</p>
-				</div>
-			) : (
-				<>
-					<DetalleLoteVisual {...hookProps} />
-					<Container className='mt-6 w-full px-2 sm:w-11/12 sm:px-0'>
-						<ListReview batchId={hookProps.batch!.id} activeTab={hookProps.activeTab} />
-					</Container>
-				</>
-			)}
+			{/* Guardar (cantidad esperada o notas) no debe desmontar el detalle: cada
+			    sección muestra su propio estado de carga. */}
+			<DetalleLoteVisual {...hookProps} />
+			<Container className='mt-6 w-full px-2 sm:w-11/12 sm:px-0'>
+				<ListReview batchId={hookProps.batch.id} activeTab={hookProps.activeTab} />
+			</Container>
 
 			<QuickEntryModal
 				isOpen={hookProps.isQuickEntryOpen}
@@ -227,7 +215,7 @@ const DetalleLote: React.FC = () => {
 				item={hookProps.selectedItemForPrint}
 				isOpen={hookProps.isPrintModalOpen}
 				onClose={hookProps.handleClosePrintModal}
-				autoPrint={true}
+				autoPrint
 			/>
 		</PageWrapper>
 	);

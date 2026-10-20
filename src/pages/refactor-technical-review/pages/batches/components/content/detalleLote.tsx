@@ -5,7 +5,9 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
-import { IBatch } from '@/interface/technicalReviews.interface';
+import { EquipmentType, IBatch } from '@/interface/technicalReviews.interface';
+import { isRecord } from '@/utils/isRecord.util';
+import BatchNotesCard from '@/pages/refactor-technical-review/pages/batches/components/content/BatchNotesCard';
 
 // ─── Equipment icon map ────────────────────────────────────────
 const equipmentIconMap: Record<string, string> = {
@@ -16,9 +18,26 @@ const equipmentIconMap: Record<string, string> = {
 	monitor: 'HeroTv',
 };
 
+type TBatchTab = EquipmentType | 'all';
+
+const isEquipmentType = (value: string): value is EquipmentType =>
+	Object.prototype.hasOwnProperty.call(equipmentIconMap, value);
+
+/** El resumen puede venir como número o como `{ value }` según la versión del backend. */
+const getTypeCount = (count: unknown): number => {
+	if (typeof count === 'number') return count;
+	if (isRecord(count) && typeof count.value === 'number') return count.value;
+	return 0;
+};
+
+const getProgressColor = (percentage: number): 'emerald' | 'amber' | 'blue' => {
+	if (percentage >= 100) return 'emerald';
+	if (percentage >= 50) return 'amber';
+	return 'blue';
+};
+
 export interface DetalleLoteProps {
 	batch: IBatch | null;
-	loading: boolean;
 	updatingBatch: boolean;
 	isEditingExpectedQty: boolean;
 	expectedQtyDraft: string;
@@ -33,8 +52,8 @@ export interface DetalleLoteProps {
 	completedQty: number;
 	pendingQty: number;
 	progressPercentage: number;
-	activeTab: 'all' | 'notebook' | 'desktop' | 'aio' | 'docking' | 'monitor';
-	setActiveTab: (tab: 'all' | 'notebook' | 'desktop' | 'aio' | 'docking' | 'monitor') => void;
+	activeTab: TBatchTab;
+	setActiveTab: (tab: TBatchTab) => void;
 }
 
 const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
@@ -59,10 +78,10 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 	if (!batch) return null;
 
 	const handleTypeClick = (type: string) => {
-		if (activeTab === type) {
+		if (activeTab === type || !isEquipmentType(type)) {
 			setActiveTab('all');
 		} else {
-			setActiveTab(type as any);
+			setActiveTab(type);
 		}
 	};
 
@@ -229,15 +248,7 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 						<span className='text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
 							Progreso General
 						</span>
-						<Badge
-							variant='solid'
-							color={
-								progressPercentage >= 100
-									? 'emerald'
-									: progressPercentage >= 50
-										? 'amber'
-										: 'blue'
-							}>
+						<Badge variant='solid' color={getProgressColor(progressPercentage)}>
 							{progressPercentage}%
 						</Badge>
 					</div>
@@ -275,16 +286,18 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
                             */}
 							{Object.entries(batch.items_summary.by_equipment_type).map(
 								([type, count]) => (
-									<div
+									<button
+										type='button'
 										key={type}
+										aria-pressed={activeTab === type}
 										onClick={() => handleTypeClick(type)}
-										className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
+										className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 text-left transition ${
 											activeTab === type
 												? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:border-blue-400 dark:bg-blue-900/20'
 												: 'border-zinc-200 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-700 dark:hover:border-zinc-600'
 										}`}>
-										<div
-											className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+										<span
+											className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
 												activeTab === type
 													? 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-200'
 													: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
@@ -295,20 +308,16 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 												}
 												className='h-5 w-5'
 											/>
-										</div>
-										<div>
-											<div className='text-xl font-bold text-zinc-900 dark:text-zinc-100'>
-												{typeof count === 'object' &&
-												count !== null &&
-												'value' in count
-													? (count as any).value
-													: count}
-											</div>
-											<div className='text-xs capitalize text-zinc-500'>
+										</span>
+										<span>
+											<span className='block text-xl font-bold text-zinc-900 dark:text-zinc-100'>
+												{getTypeCount(count)}
+											</span>
+											<span className='block text-xs capitalize text-zinc-500'>
 												{type}
-											</div>
-										</div>
-									</div>
+											</span>
+										</span>
+									</button>
 								),
 							)}
 						</div>
@@ -317,21 +326,7 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 			)}
 
 			{/* ─── Notas ────────────────────────────────────── */}
-			{batch.notes && (
-				<Card>
-					<CardBody className='p-5'>
-						<div className='mb-3 flex items-center gap-2'>
-							<Icon icon='HeroDocumentText' className='h-5 w-5 text-zinc-500' />
-							<h3 className='text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
-								Notas
-							</h3>
-						</div>
-						<p className='whitespace-pre-wrap text-sm leading-relaxed text-zinc-600 dark:text-zinc-400'>
-							{batch.notes}
-						</p>
-					</CardBody>
-				</Card>
-			)}
+			<BatchNotesCard batch={batch} />
 
 			{/* ─── Metadata ─────────────────────────────────── */}
 			<Card>
