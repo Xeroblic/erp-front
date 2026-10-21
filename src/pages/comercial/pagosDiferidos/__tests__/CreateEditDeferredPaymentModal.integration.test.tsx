@@ -6,11 +6,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import customerSalesReducer, {
 	type CustomerSalesState,
 } from '@/store/slices/customerSales/customerSalesSlice';
-import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
-import addDaysToDisplayDate from './deferredPaymentDateTestUtils';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import authReducer, { type AuthState } from '@/store/slices/auth/authSlice';
+import addDaysToDisplayDate from './deferredPaymentDateTestUtils';
+import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';
 
 const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn(), invalidateCache: vi.fn() }));
@@ -20,6 +20,19 @@ const customerSalesSpies = vi.hoisted(() => ({
 	overviewThunkImplementation: null as null | ((...args: unknown[]) => unknown),
 }));
 const customerModalSpies = vi.hoisted(() => ({ createOpenStates: [] as boolean[] }));
+
+const inputValue = (label: string): string => {
+	const input = screen.getByLabelText(label);
+	if (!(input instanceof HTMLInputElement)) throw new Error(`«${label}» no es un input`);
+	return input.value;
+};
+
+/** Responde con la primera ruta contenida en la URL pedida, o con `fallback`. */
+const respondByUrl = (
+	url: string,
+	routes: ReadonlyArray<readonly [string, unknown]>,
+	fallback: unknown,
+): unknown => routes.find(([path]) => url.includes(path))?.[1] ?? fallback;
 
 vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
 vi.mock('@/pages/comercial/clientesVentas/components/modals/CreateCustomerSaleModal', () => ({
@@ -158,7 +171,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByText(new RegExp(editedDocument.assignees[0].name))).toBeInTheDocument();
 		expect(
 			apiSpies.fetchData.mock.calls.some(
-				([request]) =>
+				([request]: unknown[]) =>
 					typeof request === 'object' &&
 					request !== null &&
 					'url' in request &&
@@ -259,30 +272,39 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		const editedDocument = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
-				data: url.includes('/credit-profile')
-					? {
-							data: {
-								id: 77,
-								customer_sale_id: editedDocument.customer.id,
-								is_active: true,
-								payment_term_days: 45,
-								credit_limit: '500000',
-								notes: null,
+				data: respondByUrl(
+					url,
+					[
+						[
+							'/credit-profile',
+							{
+								data: {
+									id: 77,
+									customer_sale_id: editedDocument.customer.id,
+									is_active: true,
+									payment_term_days: 45,
+									credit_limit: '500000',
+									notes: null,
+								},
 							},
-						}
-					: url.includes('/summary')
-						? {
+						],
+						[
+							'/summary',
+							{
 								data: {
 									total_outstanding: '100000',
 									overdue: { count: 0, amount: '0' },
 									due_within_7_days: { count: 0, amount: '0' },
 									current: { count: 0, amount: '0' },
 								},
-							}
-						: {
-								data: [],
-								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
 							},
+						],
+					],
+					{
+						data: [],
+						meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+					},
+				),
 			}),
 		);
 		const store = createTestStore();
@@ -319,7 +341,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		);
 	});
 
-	it('avisa al editar un documento cuyo cliente no tiene correo de cobranza', async () => {
+	it('avisa al editar un documento cuyo correo de cobranza no se puede usar', async () => {
 		const editedDocument = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
@@ -331,7 +353,8 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 								is_active: true,
 								payment_term_days: 45,
 								credit_limit: null,
-								collection_email: null,
+								// Importado sin validar: el backend tampoco lo considera enviable.
+								collection_email: 'cobranza.cliente.cl',
 								notes: null,
 							},
 						}
@@ -538,10 +561,13 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		};
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
-				data: url.includes('/overview')
-					? { ...emptyPagination, data: [customer], total: 1 }
-					: url.includes('/credit-profile')
-						? {
+				data: respondByUrl(
+					url,
+					[
+						['/overview', { ...emptyPagination, data: [customer], total: 1 }],
+						[
+							'/credit-profile',
+							{
 								data: {
 									id: 9,
 									customer_sale_id: customer.id,
@@ -550,11 +576,14 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									credit_limit: null,
 									notes: null,
 								},
-							}
-						: {
-								data: [],
-								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
 							},
+						],
+					],
+					{
+						data: [],
+						meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+					},
+				),
 			}),
 		);
 		const store = createTestStore();
@@ -581,7 +610,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			target: { value: '15-01-2026' },
 		});
 		await waitFor(() => {
-			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
+			const issueDate = inputValue('Fecha de emisión');
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
 				addDaysToDisplayDate(issueDate, 45),
 			);
@@ -659,10 +688,13 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		};
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
-				data: url.includes('/overview')
-					? { ...emptyPagination, data: [customer], total: 1 }
-					: url.includes('/credit-profile')
-						? {
+				data: respondByUrl(
+					url,
+					[
+						['/overview', { ...emptyPagination, data: [customer], total: 1 }],
+						[
+							'/credit-profile',
+							{
 								data: {
 									id: 10,
 									customer_sale_id: customer.id,
@@ -671,11 +703,14 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									credit_limit: '500000',
 									notes: null,
 								},
-							}
-						: {
-								data: [],
-								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
 							},
+						],
+					],
+					{
+						data: [],
+						meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+					},
+				),
 			}),
 		);
 		const store = createTestStore();
@@ -712,10 +747,13 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		};
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
-				data: url.includes('/overview')
-					? { ...emptyPagination, data: [customer], total: 1 }
-					: url.includes('/credit-profile')
-						? {
+				data: respondByUrl(
+					url,
+					[
+						['/overview', { ...emptyPagination, data: [customer], total: 1 }],
+						[
+							'/credit-profile',
+							{
 								data: {
 									id: 18,
 									customer_sale_id: customer.id,
@@ -724,11 +762,14 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									credit_limit: null,
 									notes: null,
 								},
-							}
-						: {
-								data: [],
-								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
 							},
+						],
+					],
+					{
+						data: [],
+						meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+					},
+				),
 			}),
 		);
 		const store = createTestStore();
@@ -778,10 +819,13 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		let profileWasCreated = false;
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
-				data: url.includes('/overview')
-					? { ...emptyPagination, data: [customer], total: 1 }
-					: url.includes('/credit-profile')
-						? {
+				data: respondByUrl(
+					url,
+					[
+						['/overview', { ...emptyPagination, data: [customer], total: 1 }],
+						[
+							'/credit-profile',
+							{
 								data: {
 									id: profileWasCreated ? 19 : null,
 									customer_sale_id: profileWasCreated ? customer.id : null,
@@ -790,11 +834,14 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									credit_limit: null,
 									notes: null,
 								},
-							}
-						: {
-								data: [],
-								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
 							},
+						],
+					],
+					{
+						data: [],
+						meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+					},
+				),
 			}),
 		);
 		const store = createTestStore();
@@ -812,7 +859,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			target: { value: '15-01-2026' },
 		});
 		await waitFor(() => {
-			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
+			const issueDate = inputValue('Fecha de emisión');
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
 				addDaysToDisplayDate(issueDate, 30),
 			);
@@ -832,7 +879,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		if (closeButton) fireEvent.click(closeButton);
 
 		await waitFor(() => {
-			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
+			const issueDate = inputValue('Fecha de emisión');
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
 				addDaysToDisplayDate(issueDate, 45),
 			);
@@ -925,10 +972,20 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		};
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
-				data: url.includes('/overview')
-					? { ...emptyPagination, data: [suspendedCustomer, activeCustomer], total: 2 }
-					: url.includes('/461/credit-profile')
-						? {
+				data: respondByUrl(
+					url,
+					[
+						[
+							'/overview',
+							{
+								...emptyPagination,
+								data: [suspendedCustomer, activeCustomer],
+								total: 2,
+							},
+						],
+						[
+							'/461/credit-profile',
+							{
 								data: {
 									id: 11,
 									customer_sale_id: 461,
@@ -937,17 +994,20 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									credit_limit: null,
 									notes: null,
 								},
-							}
-						: {
-								data: {
-									id: 12,
-									customer_sale_id: 462,
-									is_active: true,
-									payment_term_days: 30,
-									credit_limit: null,
-									notes: null,
-								},
 							},
+						],
+					],
+					{
+						data: {
+							id: 12,
+							customer_sale_id: 462,
+							is_active: true,
+							payment_term_days: 30,
+							credit_limit: null,
+							notes: null,
+						},
+					},
+				),
 			}),
 		);
 		const store = createTestStore();
@@ -1157,7 +1217,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			await Promise.resolve();
 		});
 		await waitFor(() => {
-			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
+			const issueDate = inputValue('Fecha de emisión');
 			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
 				addDaysToDisplayDate(issueDate, 21),
 			);
@@ -1288,10 +1348,13 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		};
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
-				data: url.includes('/overview')
-					? { ...emptyPagination, data: [customer], total: 1 }
-					: url.includes('/credit-profile')
-						? {
+				data: respondByUrl(
+					url,
+					[
+						['/overview', { ...emptyPagination, data: [customer], total: 1 }],
+						[
+							'/credit-profile',
+							{
 								data: {
 									id: null,
 									customer_sale_id: null,
@@ -1300,11 +1363,14 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									credit_limit: null,
 									notes: null,
 								},
-							}
-						: {
-								data: [],
-								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
 							},
+						],
+					],
+					{
+						data: [],
+						meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+					},
+				),
 			}),
 		);
 		const store = createTestStore();

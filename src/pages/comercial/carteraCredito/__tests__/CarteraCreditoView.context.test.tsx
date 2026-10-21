@@ -118,7 +118,7 @@ vi.mock('@/components/layouts/Subheader/Subheader', () => ({
 	SubheaderLeft: ({ children }: PropsWithChildren) => <div>{children}</div>,
 }));
 vi.mock('@/components/ui/Table', () => ({
-	default: ({ children }: PropsWithChildren) => <table>{children}</table>,
+	Table: ({ children }: PropsWithChildren) => <table>{children}</table>,
 	TBody: ({ children }: PropsWithChildren) => <tbody>{children}</tbody>,
 	Td: ({ children }: PropsWithChildren) => <td>{children}</td>,
 	THead: ({ children }: PropsWithChildren) => <thead>{children}</thead>,
@@ -128,7 +128,9 @@ vi.mock('@/components/ui/Table', () => ({
 vi.mock('@/components/ui/Tooltip', () => ({
 	default: ({ children }: PropsWithChildren) => children,
 }));
-vi.mock('@/templates/Table/TableFooterTemplateV2', () => ({ default: () => null }));
+vi.mock('@/templates/Table/TableFooterTemplateV2', () => ({
+	TableCardFooterTemplateV2: () => null,
+}));
 
 describe('CarteraCreditoView con cambio de subsidiaria', () => {
 	beforeEach(() => {

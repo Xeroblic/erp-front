@@ -3,8 +3,9 @@ import type { PaginationState } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 // eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
-import Table, { TBody, Td, THead, Tr } from '@/components/ui/Table';
-import TableCardFooterTemplateV2, {
+import { Table, TBody, Td, THead, Tr } from '@/components/ui/Table';
+import {
+	TableCardFooterTemplateV2,
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
 import type {
