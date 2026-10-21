@@ -12,6 +12,8 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
 import Progress from '@/components/ui/Progress';
 import ProtectedButton from '@/components/ui/ProtectedButton';
+import MissingCollectionEmailAlert from '@/pages/comercial/pagosDiferidos/components/parts/MissingCollectionEmailAlert';
+import { hasCollectionEmail } from '@/pages/comercial/pagosDiferidos/utils';
 import { formatCLP } from '@/utils/format.utils';
 import useCustomerCreditProfile from '../hooks/useCustomerCreditProfile';
 
@@ -120,6 +122,7 @@ const CustomerCreditProfileCardContent: React.FC<{
 	const collectionEmailError = formik.touched.collection_email
 		? formik.errors.collection_email
 		: undefined;
+	const isCollectionEmailMissing = !hasCollectionEmail(formik.values.collection_email);
 	const handleCreditLimitChange = (value: string) => {
 		formik.setFieldTouched('credit_limit', true, false).catch(() => undefined);
 		formik.setFieldValue('credit_limit', value.replace(/\D/g, '')).catch(() => undefined);
@@ -191,6 +194,12 @@ const CustomerCreditProfileCardContent: React.FC<{
 						<div className='flex flex-wrap items-center gap-3'>
 							<CreditStatusPill suspended={isSuspended} />
 						</div>
+						{!hasCollectionEmail(profile.collection_email) && (
+							<MissingCollectionEmailAlert
+								subsidiaryId={subsidiaryId}
+								onAddEmail={startEditing}
+							/>
+						)}
 						<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-700'>
 							<div>
 								<p className='text-zinc-500'>Plazo de pago</p>
@@ -349,9 +358,16 @@ const CustomerCreditProfileCardContent: React.FC<{
 								isValid={!collectionEmailError}
 								invalidFeedback={collectionEmailError}
 								aria-describedby={
-									collectionEmailError
-										? 'credit-profile-collection-email-error'
-										: undefined
+									[
+										collectionEmailError
+											? 'credit-profile-collection-email-error'
+											: null,
+										isCollectionEmailMissing
+											? 'credit-profile-collection-email-hint'
+											: null,
+									]
+										.filter(Boolean)
+										.join(' ') || undefined
 								}
 							/>
 							{collectionEmailError && (
@@ -361,6 +377,13 @@ const CustomerCreditProfileCardContent: React.FC<{
 									className='mt-1 text-sm text-red-600 dark:text-red-400'>
 									{collectionEmailError}
 								</p>
+							)}
+							{isCollectionEmailMissing && (
+								<MissingCollectionEmailAlert
+									id='credit-profile-collection-email-hint'
+									className='mt-2'
+									subsidiaryId={subsidiaryId}
+								/>
 							)}
 						</div>
 						<div>

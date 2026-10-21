@@ -11,12 +11,14 @@ import Label from '@/components/form/Label';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
+import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import OffCanvas, {
 	OffCanvasBody,
 	OffCanvasFooter,
 	OffCanvasHeader,
 } from '@/components/ui/OffCanvas';
 import Progress from '@/components/ui/Progress';
+import CustomerCreditProfileCard from '@/pages/comercial/clientesVentas/ClientesVentasDetalle/components/CustomerCreditProfileCard';
 import DaysUntilDueBadge from '../badges/DaysUntilDueBadge';
 import DeferredStatusPill from '../badges/DeferredStatusPill';
 import {
@@ -26,6 +28,7 @@ import {
 import DeferredPaymentActionsFooter from '../detail/DeferredPaymentActionsFooter';
 import DeferredPaymentItemsSection from '../detail/DeferredPaymentItemsSection';
 import AttachmentsDropOverlay from '../parts/AttachmentsDropOverlay';
+import MissingCollectionEmailAlert from '../parts/MissingCollectionEmailAlert';
 import RegisterDeferredPaymentModal from '../modals/RegisterDeferredPaymentModal';
 import ConfirmDeferredPaymentActionModal from '../modals/ConfirmDeferredPaymentActionModal';
 import useDeferredPaymentDetail from '../../hooks/useDeferredPaymentDetail';
@@ -90,6 +93,8 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	const [closeAfterDiscardingReceipt, setCloseAfterDiscardingReceipt] = useState(false);
 	const [paymentToVoid, setPaymentToVoid] = useState<IDeferredPaymentAbono | null>(null);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+	const [isCreditProfileEditorOpen, setIsCreditProfileEditorOpen] = useState(false);
+	const [isCreditProfileEditorSaving, setIsCreditProfileEditorSaving] = useState(false);
 	const markPaidReceiptInputRef = useRef<HTMLInputElement>(null);
 	useEffect(() => {
 		setIsRegisterOpen(false);
@@ -98,7 +103,18 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 		setCloseAfterDiscardingReceipt(false);
 		setPaymentToVoid(null);
 		setIsDeleteOpen(false);
+		setIsCreditProfileEditorOpen(false);
+		setIsCreditProfileEditorSaving(false);
 	}, [branch.branchId, branch.subsidiaryId, documentId]);
+	// Un documento pagado ya no genera recordatorios: el aviso dejaría de tener consecuencia.
+	const shouldWarnMissingCollectionEmail =
+		document !== null && !document.customer.has_collection_email && document.status !== 'paid';
+	const closeCreditProfileEditor = useCallback(() => {
+		if (isCreditProfileEditorSaving) return;
+		setIsCreditProfileEditorOpen(false);
+		// El flag viene en el documento: se vuelve a pedir para reflejar el correo recién guardado.
+		void actions.refresh();
+	}, [actions, isCreditProfileEditorSaving]);
 	const paymentActions = useDeferredPaymentActions(document, branch.subsidiaryId, () =>
 		setIsRegisterOpen(false),
 	);
@@ -120,6 +136,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 		isMarkPaidOpen ||
 		isDiscardMarkPaidReceiptOpen ||
 		isDeleteOpen ||
+		isCreditProfileEditorOpen ||
 		paymentToVoid !== null;
 	const handleDrawerOpenChange: React.Dispatch<React.SetStateAction<boolean>> = useCallback(
 		(nextState) => {
@@ -383,6 +400,12 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 											</p>
 										)}
 									</div>
+									{shouldWarnMissingCollectionEmail && (
+										<MissingCollectionEmailAlert
+											subsidiaryId={branch.subsidiaryId}
+											onAddEmail={() => setIsCreditProfileEditorOpen(true)}
+										/>
+									)}
 								</CardBody>
 							</Card>
 							<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
@@ -693,6 +716,28 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 						</>
 					}
 				/>
+			)}
+			{document && isCreditProfileEditorOpen && (
+				<Modal
+					isOpen
+					setIsOpen={(nextState) => {
+						const shouldOpen =
+							typeof nextState === 'function'
+								? nextState(isCreditProfileEditorOpen)
+								: nextState;
+						if (!shouldOpen) closeCreditProfileEditor();
+					}}
+					size='lg'
+					isStaticBackdrop>
+					<ModalHeader>Editar perfil de crédito</ModalHeader>
+					<ModalBody>
+						<CustomerCreditProfileCard
+							customerSaleId={document.customer.id}
+							startInEditMode
+							onSavingChange={setIsCreditProfileEditorSaving}
+						/>
+					</ModalBody>
+				</Modal>
 			)}
 		</>
 	);

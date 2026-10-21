@@ -3,8 +3,9 @@ import type { PaginationState } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 // eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
-import Table, { TBody, Td, THead, Tr } from '@/components/ui/Table';
-import TableCardFooterTemplateV2, {
+import { Table, TBody, Td, THead, Tr } from '@/components/ui/Table';
+import {
+	TableCardFooterTemplateV2,
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
 import type {
@@ -19,6 +20,7 @@ import {
 } from '../../utils';
 import DaysUntilDueBadge from '../badges/DaysUntilDueBadge';
 import DeferredStatusPill from '../badges/DeferredStatusPill';
+import MissingCollectionEmailBadge from '../badges/MissingCollectionEmailBadge';
 
 interface DeferredPaymentsTableProps {
 	rows: IDeferredPaymentListItem[];
@@ -306,6 +308,10 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 												'Cliente sin nombre'}
 										</p>
 										<p className='text-xs text-zinc-500'>{row.customer.rut}</p>
+										{!row.customer.has_collection_email &&
+											row.status !== 'paid' && (
+												<MissingCollectionEmailBadge />
+											)}
 									</Td>
 									<Td>{row.purchase_order ?? '\u2014'}</Td>
 									<Td className='text-right tabular-nums'>

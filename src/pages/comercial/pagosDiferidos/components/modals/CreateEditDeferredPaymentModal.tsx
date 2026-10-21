@@ -40,6 +40,7 @@ import DeferredPaymentField from '../parts/DeferredPaymentField';
 import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
 import DeferredPaymentAttachmentsEditor from '../parts/DeferredPaymentAttachmentsEditor';
 import AttachmentsDropOverlay from '../parts/AttachmentsDropOverlay';
+import MissingCollectionEmailAlert from '../parts/MissingCollectionEmailAlert';
 import useAttachmentsFileDrop from '../../hooks/useAttachmentsFileDrop';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
 import { useDeferredPaymentAttachments } from '../../hooks/useDeferredPaymentAttachments';
@@ -53,6 +54,7 @@ import {
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
 	formatDeferredPaymentAmount,
 	formatDeferredPaymentInputAmount,
+	hasCollectionEmail,
 	parseDeferredPaymentAmount,
 } from '../../utils';
 
@@ -1032,6 +1034,15 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										))}
 									</div>
 								)}
+								{hasCreatedCreditProfile &&
+									!isCreditProfileLoading &&
+									!hasCollectionEmail(creditProfile.collection_email) && (
+										<MissingCollectionEmailAlert
+											className='mt-3'
+											subsidiaryId={subsidiaryId}
+											onAddEmail={() => setIsCreditProfileCreatorOpen(true)}
+										/>
+									)}
 								{!hasCreatedCreditProfile && creditProfileError && (
 									<Alert
 										color='red'

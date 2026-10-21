@@ -120,6 +120,7 @@ const listProfile: IDeferredPaymentCreditProfileListItem = {
 	outstanding_balance: '0.00',
 	available_credit: '500000.00',
 	credit_limit_exceeded: false,
+	has_collection_email: true,
 	customer: null,
 	created_at: null,
 	updated_at: null,

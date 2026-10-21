@@ -16,6 +16,7 @@ const profile = (customerSaleId: number): IDeferredPaymentCreditProfileListItem 
 	outstanding_balance: '0.00',
 	available_credit: '500000.00',
 	credit_limit_exceeded: false,
+	has_collection_email: true,
 	customer: {
 		id: customerSaleId,
 		customer_code: null,
@@ -117,7 +118,7 @@ vi.mock('@/components/layouts/Subheader/Subheader', () => ({
 	SubheaderLeft: ({ children }: PropsWithChildren) => <div>{children}</div>,
 }));
 vi.mock('@/components/ui/Table', () => ({
-	default: ({ children }: PropsWithChildren) => <table>{children}</table>,
+	Table: ({ children }: PropsWithChildren) => <table>{children}</table>,
 	TBody: ({ children }: PropsWithChildren) => <tbody>{children}</tbody>,
 	Td: ({ children }: PropsWithChildren) => <td>{children}</td>,
 	THead: ({ children }: PropsWithChildren) => <thead>{children}</thead>,
@@ -127,7 +128,9 @@ vi.mock('@/components/ui/Table', () => ({
 vi.mock('@/components/ui/Tooltip', () => ({
 	default: ({ children }: PropsWithChildren) => children,
 }));
-vi.mock('@/templates/Table/TableFooterTemplateV2', () => ({ default: () => null }));
+vi.mock('@/templates/Table/TableFooterTemplateV2', () => ({
+	TableCardFooterTemplateV2: () => null,
+}));
 
 describe('CarteraCreditoView con cambio de subsidiaria', () => {
 	beforeEach(() => {
@@ -211,5 +214,25 @@ describe('CarteraCreditoView con cambio de subsidiaria', () => {
 		view.rerender(<CarteraCreditoView />);
 
 		expect(screen.getByRole('button', { name: 'Exportar' })).toBeEnabled();
+	});
+
+	it('identifica sólo a los clientes sin correo de cobranza', () => {
+		carteraState = {
+			...carteraState,
+			data: {
+				rows: [
+					{ ...profile(1), has_collection_email: false },
+					{ ...profile(2), has_collection_email: true },
+				],
+				meta: null,
+			},
+		};
+		render(<CarteraCreditoView />);
+
+		const rows = screen.getAllByRole('row');
+		const rowOf = (name: string) => rows.find((row) => row.textContent?.includes(name));
+		expect(rowOf('Cliente 1')).toHaveTextContent('Sin correo de cobranza');
+		expect(rowOf('Cliente 1')).toHaveTextContent(/no recibirá los recordatorios automáticos/);
+		expect(rowOf('Cliente 2')).not.toHaveTextContent('Sin correo de cobranza');
 	});
 });

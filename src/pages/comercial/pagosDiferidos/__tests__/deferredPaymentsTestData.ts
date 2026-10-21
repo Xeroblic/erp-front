@@ -38,7 +38,7 @@ const createRow = (
 	due_date: toIsoDate(daysUntilDue),
 	issue_date: toIsoDate(daysUntilDue - 30),
 	paid_at: status === 'paid' ? `${toIsoDate(daysUntilDue - 1)}T12:00:00.000Z` : null,
-	customer: { id, billing_company: company, contact_name: null, rut },
+	customer: { id, billing_company: company, contact_name: null, rut, has_collection_email: true },
 });
 
 export const DEFERRED_PAYMENT_LIST_FIXTURES: IDeferredPaymentListItem[] = [
