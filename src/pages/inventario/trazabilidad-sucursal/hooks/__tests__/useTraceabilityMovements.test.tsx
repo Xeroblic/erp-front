@@ -184,23 +184,6 @@ describe('useTraceabilityMovements', () => {
 		expect(hook.result.current.loading).toBe(false);
 	});
 
-	it('al cambiar de sucursal deja de mostrar los movimientos de la sucursal anterior', async () => {
-		const hook = renderTraceability();
-		await act(async () => {
-			requests[0].resolve(okResponse([makeMovement(10, 1)], true));
-			await Promise.resolve();
-		});
-		await waitFor(() => expect(hook.result.current.movimientos).toHaveLength(1));
-
-		act(() => {
-			branchContext.branchId = 2;
-			hook.rerender();
-		});
-
-		expect(hook.result.current.movimientos).toEqual([]);
-		expect(hook.result.current.pagination.hasNextPage).toBe(false);
-	});
-
 	it('desde el primer render tras cambiar de sucursal no expone datos, paginación ni estado de la anterior', async () => {
 		const { hook, renders } = renderRecordingTraceability();
 		await act(async () => {

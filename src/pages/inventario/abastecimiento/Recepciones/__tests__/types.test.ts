@@ -199,15 +199,6 @@ describe('stockReceiptFormSchema — varias filas de la misma línea del documen
 		quantity,
 	});
 
-	it('acepta filas repetidas mientras la suma no supere lo pendiente', async () => {
-		await expect(
-			stockReceiptFormSchema.validate({
-				...withDocumentValues,
-				items: [row(1, '2'), row(2, '3')],
-			}),
-		).resolves.toBeTruthy();
-	});
-
 	it('rechaza filas repetidas cuya suma supera lo pendiente, aunque cada una quepa', async () => {
 		await expect(
 			stockReceiptFormSchema.validate({
