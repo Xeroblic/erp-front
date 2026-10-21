@@ -67,7 +67,7 @@ const LatestReviewsTable: React.FC = () => {
 				return (
 					<div className='flex flex-col'>
 						<span className='font-semibold text-gray-700 dark:text-gray-300'>
-							{details?.brand} {details?.model}
+							{String(details?.brand ?? '')} {String(details?.model ?? '')}
 						</span>
 						<span className='text-xs capitalize text-gray-500'>
 							{row.original.equipment_type}

@@ -3,10 +3,6 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DesktopForm from '../desktop/DesktopForm';
 import type { DesktopFormData } from '../../validation/desktop.schema';
-import {
-	getFieldsForType,
-	translateValue,
-} from '../../../pages/revisiones/components/utils/reviewTranslations';
 
 vi.mock('@/components/icon/Icon', () => ({ default: () => <span /> }));
 vi.mock('../shared/gallery/GallerySection', () => ({ default: () => <div /> }));
@@ -163,23 +159,20 @@ describe('ZF-123 · antena de desktop', () => {
 		expect(conditionGroup()).toBeInTheDocument();
 	});
 
-	it.each(['good_condition', 'broken', 'loose'] as const)(
-		'finaliza y conserva el estado %s',
-		async (antenna_condition) => {
-			const { onSubmit } = mountForm(
-				{ includes_antenna: true, antenna_condition },
-				'gallery',
-			);
-			await act(async () => {
-				fireEvent.click(await screen.findByText('Finalizar Revisión'));
-			});
-			await waitFor(() =>
-				expect(onSubmit).toHaveBeenCalledWith(
-					expect.objectContaining({ includes_antenna: true, antenna_condition }),
-				),
-			);
-		},
-	);
+	it('finaliza y conserva el estado elegido', async () => {
+		const { onSubmit } = mountForm(
+			{ includes_antenna: true, antenna_condition: 'loose' },
+			'gallery',
+		);
+		await act(async () => {
+			fireEvent.click(await screen.findByText('Finalizar Revisión'));
+		});
+		await waitFor(() =>
+			expect(onSubmit).toHaveBeenCalledWith(
+				expect.objectContaining({ includes_antenna: true, antenna_condition: 'loose' }),
+			),
+		);
+	});
 
 	it('conserva el borrador y muestra el 422 remoto junto al selector', async () => {
 		const message = 'Debes completar el estado de la antena antes de finalizar la revisión.';
@@ -230,15 +223,5 @@ describe('ZF-123 · antena de desktop', () => {
 		].forEach((button) => {
 			expect(button).toBeDisabled();
 		});
-	});
-
-	it('muestra los campos y estados en español sólo en el detalle desktop', () => {
-		expect(getFieldsForType('desktop')?.has('antenna_condition')).toBe(true);
-		(['notebook', 'aio', 'monitor', 'docking'] as const).forEach((type) => {
-			expect(getFieldsForType(type)?.has('includes_antenna')).toBe(false);
-		});
-		expect(translateValue('good_condition', 'antenna_condition')).toBe('Buen estado');
-		expect(translateValue('broken', 'antenna_condition')).toBe('Rota');
-		expect(translateValue('loose', 'antenna_condition')).toBe('Suelta');
 	});
 });

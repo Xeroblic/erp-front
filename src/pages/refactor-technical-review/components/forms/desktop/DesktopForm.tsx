@@ -305,7 +305,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	};
 
 	const handleFinish = () => {
-		handleSubmit(submitReview, (validationErrors) => {
+		void handleSubmit(submitReview, (validationErrors) => {
 			if (validationErrors.antenna_condition) showAntennaError();
 			const messages = Object.values(validationErrors as Record<string, { message?: string }>)
 				.map((e) => e?.message)

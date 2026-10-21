@@ -1,5 +1,3 @@
-import { IItem } from '@/interface/technicalReviews.interface';
-
 export const EQUIPMENT_TYPE_LABELS: Record<string, string> = {
 	notebook: 'Notebook',
 	desktop: 'Desktop',

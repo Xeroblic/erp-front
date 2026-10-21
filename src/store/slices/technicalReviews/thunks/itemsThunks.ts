@@ -15,6 +15,7 @@ import {
 	resolveTechnicalReviewsContext,
 } from '../technicalReviewsContext';
 import { setTechnicalReviewsContext } from '../technicalReviewsContextActions';
+import type { ITechnicalReviewsPageMeta } from './batchesThunks';
 
 const normalizeArray = (payload: any): any[] => {
 	const raw = payload?.data ?? payload;
@@ -24,7 +25,7 @@ const normalizeArray = (payload: any): any[] => {
 const normalizeObject = (payload: any): any => payload?.data ?? payload ?? null;
 
 export const fetchItems = createAsyncThunk<
-	{ items: IItem[]; meta?: any },
+	{ items: IItem[]; meta?: ITechnicalReviewsPageMeta | null },
 	{ branchId?: number | null; subsidiaryId?: number | null; params?: FetchItemsParams },
 	{ state: RootState; rejectValue: string }
 >(

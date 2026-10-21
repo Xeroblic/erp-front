@@ -7,3 +7,5 @@ export const EMPTY_STATS: BrandStatsState = {
 	total_products: 0,
 	total_sales: 0,
 };
+
+export default EMPTY_STATS;

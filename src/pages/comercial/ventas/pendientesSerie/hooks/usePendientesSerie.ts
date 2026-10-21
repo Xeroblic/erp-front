@@ -13,7 +13,6 @@ import pendingSerialReducer, {
 	selectPendingSerialLoading,
 	selectPendingSerialError,
 } from '@/store/slices/pendingSerial/pendingSerialSlice';
-import type { PendingSerialSale } from '@/services/salesService';
 
 injectReducer('pendingSerial', pendingSerialReducer);
 
@@ -45,7 +44,7 @@ export const usePendientesSerie = () => {
 
 	const fetchList = useCallback(() => {
 		if (!subsidiaryId) return;
-		dispatch(
+		void dispatch(
 			loadPendingSerialList({
 				subsidiaryId,
 				filters: {
@@ -63,7 +62,7 @@ export const usePendientesSerie = () => {
 
 	// Mantiene el contador del badge en sincronía al entrar a la bandeja.
 	useEffect(() => {
-		if (subsidiaryId) dispatch(loadPendingSerialCount({ subsidiaryId }));
+		if (subsidiaryId) void dispatch(loadPendingSerialCount({ subsidiaryId }));
 	}, [dispatch, subsidiaryId, list.length]);
 
 	const goToSale = useCallback(
@@ -83,7 +82,7 @@ export const usePendientesSerie = () => {
 	);
 
 	return {
-		data: { list: list as PendingSerialSale[], total, pageCount },
+		data: { list, total, pageCount },
 		state: {
 			loading,
 			error,
@@ -98,3 +97,5 @@ export const usePendientesSerie = () => {
 		actions: { goToSale, refetch: fetchList },
 	};
 };
+
+export default usePendientesSerie;

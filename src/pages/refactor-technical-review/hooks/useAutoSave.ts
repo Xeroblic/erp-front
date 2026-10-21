@@ -270,19 +270,20 @@ export const useAutoSave = ({
 
 		if (!enabledRef.current) return;
 
-		idleTimerRef.current = setTimeout(async () => {
+		idleTimerRef.current = setTimeout(() => {
 			// User is idle → auto-save
 			const hadPendingChanges = hasPendingChanges();
-			const success = await saveNow(true);
-			if (success && hadPendingChanges) {
-				setShowIdleSaveModal(true);
-			}
+			void saveNow(true).then((success) => {
+				if (success && hadPendingChanges) {
+					setShowIdleSaveModal(true);
+				}
+			});
 		}, idleTimeoutMs);
 	}, [idleTimeoutMs, saveNow, hasPendingChanges]);
 
 	// Set up activity listeners
 	useEffect(() => {
-		if (!enabled || (!branchId && !subsidiaryId) || !itemId) return;
+		if (!enabled || (!branchId && !subsidiaryId) || !itemId) return undefined;
 
 		// Start initial idle timer
 		resetIdleTimer();

@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
 import type { RootState } from '@/store/rootReducer';
+import { getRejectMessage } from '@/utils/technicalReviewErrors';
 import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,
@@ -23,7 +24,7 @@ export const fetchDashboardStats = createAsyncThunk<
 				}),
 			);
 
-			const fetchCount = async (params: any) => {
+			const fetchCount = async (params: Record<string, string>) => {
 				const response = await ApiService.fetchData<{ meta?: { total: number } }>({
 					url: buildTechnicalReviewsEndpoint(context, '/items'),
 					method: 'get',
@@ -43,13 +44,10 @@ export const fetchDashboardStats = createAsyncThunk<
 			const pending = pendingCount + inReviewCount;
 
 			return { total, pending, approved, rejected };
-		} catch (error: any) {
-			console.error('Error fetching dashboard stats:', error);
-			return rejectWithValue(
-				error?.response?.data?.message ??
-					error?.message ??
-					'Error fetching dashboard stats',
-			);
+		} catch (error: unknown) {
+			return rejectWithValue(getRejectMessage(error, 'Error fetching dashboard stats'));
 		}
 	},
 );
+
+export default fetchDashboardStats;

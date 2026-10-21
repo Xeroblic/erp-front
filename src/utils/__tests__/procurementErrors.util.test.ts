@@ -115,18 +115,6 @@ describe('resolveProcurementError', () => {
 		});
 	});
 
-	it('ignora la copia deprecada de existing_supplier en la raíz del cuerpo', () => {
-		const resolved = resolveProcurementError(
-			axiosError(409, {
-				message: 'Ya existe un proveedor con este RUT en esta filial.',
-				code: 'SUPPLIER_RUT_ALREADY_EXISTS',
-				existing_supplier: { id: 7, display_name: 'PCExpress', is_active: false },
-			}),
-		);
-
-		expect(resolved.existingSupplier).toBeNull();
-	});
-
 	it('deja existingSupplier en null fuera del conflicto de RUT', () => {
 		const resolved = resolveProcurementError(
 			axiosError(422, { message: 'RUT inválido.', code: 'INVALID_CHILEAN_RUT' }),

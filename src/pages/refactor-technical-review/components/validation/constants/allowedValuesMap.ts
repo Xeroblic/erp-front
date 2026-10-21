@@ -149,7 +149,7 @@ export const sanitizeByAllowedValues = (
 
 	const result = { ...data };
 
-	for (const [field, allowedValues] of Object.entries(allowedMap)) {
+	Object.entries(allowedMap).forEach(([field, allowedValues]) => {
 		const value = result[field];
 		if (value !== undefined && value !== null && value !== '') {
 			if (!allowedValues.includes(value as string)) {
@@ -157,7 +157,7 @@ export const sanitizeByAllowedValues = (
 				delete result[field];
 			}
 		}
-	}
+	});
 
 	return result;
 };

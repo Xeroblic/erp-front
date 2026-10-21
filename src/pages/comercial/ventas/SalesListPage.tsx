@@ -559,7 +559,14 @@ const SalesListPage: React.FC = () => {
 				enableColumnFilter: false,
 			},
 		],
-		[handleViewDetail, handleReceiveReturn, subsidiaryId, pendingMap, isMultiLocation],
+		[
+			handleViewDetail,
+			handleReceiveReturn,
+			handleDownloadTicket,
+			subsidiaryId,
+			pendingMap,
+			isMultiLocation,
+		],
 	);
 
 	const buildFilters = useCallback(

@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeAll, afterEach, afterAll, vi } from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
+import { isAxiosError } from 'axios';
 import BaseService from '../BaseService';
-import tokenManager from '../auth/tokenManager';
+import { tokenManager } from '../auth/tokenManager';
 import { registerAuthStoreBridge } from '../auth/authStoreBridge';
 
 // 1. PUENTE CON EL STORE (BaseService no importa `@/store`; el store registra este puente)
@@ -72,8 +73,8 @@ describe('BaseService Integration', () => {
 
 		try {
 			await BaseService.get('/api/protected');
-		} catch (error: any) {
-			expect(error.response?.status).toBe(401);
+		} catch (error: unknown) {
+			expect(isAxiosError(error) ? error.response?.status : null).toBe(401);
 			expect(bridge.onSessionExpired).toHaveBeenCalledTimes(1);
 			expect(tokenManager.getAccessToken()).toBeNull();
 		}

@@ -6,6 +6,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
 import type { RootState } from '@/store/rootReducer';
 import { isRecord } from '@/utils/isRecord.util';
+import { getRejectMessage } from '@/utils/technicalReviewErrors';
 import type {
 	IBatch,
 	FetchBatchesParams,
@@ -47,17 +48,6 @@ const normalizeMeta = (payload: unknown): ITechnicalReviewsPageMeta | null => {
 		per_page: toOptionalNumber(meta.per_page),
 		last_page: toOptionalNumber(meta.last_page),
 	};
-};
-
-/** Mensaje del backend (`response.data.message`), del error o el de respaldo. */
-const getRejectMessage = (error: unknown, fallback: string): string => {
-	const response = isRecord(error) ? error.response : undefined;
-	const data = isRecord(response) ? response.data : undefined;
-	if (isRecord(data) && typeof data.message === 'string' && data.message) return data.message;
-	if (isRecord(error) && typeof error.message === 'string' && error.message) {
-		return error.message;
-	}
-	return fallback;
 };
 
 /**

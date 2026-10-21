@@ -258,13 +258,9 @@ export const calculateReviewDuration = (
 	const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 	const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
 
-	if (hours > 0) {
-		return `${hours}h ${minutes}min`;
-	} else if (minutes > 0) {
-		return `${minutes}min ${seconds}seg`;
-	} else {
-		return `${seconds}seg`;
-	}
+	if (hours > 0) return `${hours}h ${minutes}min`;
+	if (minutes > 0) return `${minutes}min ${seconds}seg`;
+	return `${seconds}seg`;
 };
 
 /** Genera texto de conectividad para observaciones/clipboard */
@@ -285,7 +281,7 @@ export const generateConnectivityText = (
 
 	Object.entries(portFields).forEach(([field, label]) => {
 		const value = item.details?.[field];
-		const numValue = typeof value === 'number' ? value : parseInt(String(value)) || 0;
+		const numValue = typeof value === 'number' ? value : parseInt(String(value), 10) || 0;
 
 		if (numValue > 0) {
 			activePorts.push(label);

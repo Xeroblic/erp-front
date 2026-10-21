@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { CellContext, ColumnDef } from '@tanstack/react-table';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
@@ -9,6 +9,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import DataTable from '@/components/ui/DataTable';
+import Tooltip from '@/components/ui/Tooltip';
 import type { TColors } from '@/types/colors.type';
 import { formatDate } from '@/utils/format.utils';
 import type { PendingSerialSale } from '@/services/salesService';
@@ -17,7 +18,6 @@ import SaleDetailPage from '@/pages/comercial/ventas/detail/components/modals/Sa
 import { useSaleReturnWrites } from '@/pages/comercial/ventas/detail/hooks/useSaleReturnWrites';
 import { pendingSerialToSaleItems } from '../utils';
 import { usePendientesSerie } from './hooks/usePendientesSerie';
-import Tooltip from '@/components/ui/Tooltip';
 
 const statusColor: Record<string, TColors> = {
 	pending: 'amber',
@@ -26,6 +26,39 @@ const statusColor: Record<string, TColors> = {
 	processing: 'emerald',
 	paid: 'emerald',
 	completed: 'emerald',
+};
+
+type PendingSerialCell = CellContext<PendingSerialSale, unknown>;
+
+const renderSaleNumber = ({ row }: PendingSerialCell) => {
+	const sale = row.original;
+	return (
+		<div className='flex flex-col gap-0.5'>
+			<span className='font-semibold text-zinc-900 dark:text-zinc-100'>
+				{sale.sale_number}
+			</span>
+			{sale.wc_order_number && (
+				<span className='text-xs text-zinc-500'>Woo #{sale.wc_order_number}</span>
+			)}
+		</div>
+	);
+};
+
+const renderStatus = ({ row }: PendingSerialCell) => (
+	<Badge variant='outline' color={statusColor[row.original.status] ?? 'zinc'}>
+		{row.original.status}
+	</Badge>
+);
+
+const renderPendingSeries = ({ row }: PendingSerialCell) => {
+	const items = row.original.serialized_items ?? [];
+	const units = items.reduce((sum, it) => sum + (it.hold_quantity || 0), 0);
+	return (
+		<div className='flex flex-col gap-0.5'>
+			<span className='font-semibold'>{units} unidad(es)</span>
+			<span className='text-xs text-zinc-500'>{items.length} producto(s)</span>
+		</div>
+	);
 };
 
 const PendientesSerieView: React.FC = () => {
@@ -54,21 +87,7 @@ const PendientesSerieView: React.FC = () => {
 			{
 				accessorKey: 'sale_number',
 				header: 'N° Venta',
-				cell: ({ row }) => {
-					const sale = row.original;
-					return (
-						<div className='flex flex-col gap-0.5'>
-							<span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-								{sale.sale_number}
-							</span>
-							{sale.wc_order_number && (
-								<span className='text-xs text-zinc-500'>
-									Woo #{sale.wc_order_number}
-								</span>
-							)}
-						</div>
-					);
-				},
+				cell: renderSaleNumber,
 			},
 			{
 				accessorKey: 'customer_name',
@@ -78,27 +97,12 @@ const PendientesSerieView: React.FC = () => {
 			{
 				accessorKey: 'status',
 				header: 'Estado',
-				cell: ({ row }) => (
-					<Badge variant='outline' color={statusColor[row.original.status] ?? 'zinc'}>
-						{row.original.status}
-					</Badge>
-				),
+				cell: renderStatus,
 			},
 			{
 				id: 'pending_series',
 				header: 'Series pendientes',
-				cell: ({ row }) => {
-					const items = row.original.serialized_items ?? [];
-					const units = items.reduce((sum, it) => sum + (it.hold_quantity || 0), 0);
-					return (
-						<div className='flex flex-col gap-0.5'>
-							<span className='font-semibold'>{units} unidad(es)</span>
-							<span className='text-xs text-zinc-500'>
-								{items.length} producto(s)
-							</span>
-						</div>
-					);
-				},
+				cell: renderPendingSeries,
 			},
 			{
 				accessorKey: 'created_at',
@@ -108,6 +112,8 @@ const PendientesSerieView: React.FC = () => {
 			{
 				id: 'actions',
 				header: '',
+				// Necesita los callbacks de la vista; `columns` está memoizado sobre callbacks estables.
+				// eslint-disable-next-line react/no-unstable-nested-components
 				cell: ({ row }) => (
 					<div className='flex justify-end gap-2'>
 						<Tooltip text='Ver detalle'>
