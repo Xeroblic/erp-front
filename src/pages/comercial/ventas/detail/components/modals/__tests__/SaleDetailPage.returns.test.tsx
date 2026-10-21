@@ -280,6 +280,50 @@ describe('acciones de la venta según pending_return', () => {
 	});
 });
 
+describe('openReceiveReturn (acción «Recibir devolución» del listado)', () => {
+	const renderOpeningReceipt = () =>
+		render(
+			<Provider store={createStore()}>
+				<SaleDetailPage
+					subsidiaryId={1}
+					saleId={90}
+					isOpen
+					onClose={vi.fn()}
+					openReceiveReturn
+				/>
+			</Provider>,
+		);
+
+	it('abre la recepción en cuanto la venta confirma la devolución pendiente', async () => {
+		renderOpeningReceipt();
+		expect(await screen.findByRole('group', { name: 'MOU-01 — Mouse' })).toBeInTheDocument();
+	});
+
+	it('cerrar la recepción deja el detalle abierto sin volver a abrirla', async () => {
+		renderOpeningReceipt();
+		await screen.findByRole('group', { name: 'MOU-01 — Mouse' });
+		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+		await waitFor(() =>
+			expect(screen.queryByRole('group', { name: 'MOU-01 — Mouse' })).not.toBeInTheDocument(),
+		);
+		expect(screen.getByRole('button', { name: 'Recibir devolución' })).toBeInTheDocument();
+	});
+
+	it('sin devolución pendiente sólo muestra el detalle', async () => {
+		detail = { ...detail, is_closed: true, can_close: false, pending_return: null };
+		renderOpeningReceipt();
+		await screen.findByRole('button', { name: 'Iniciar devolución' });
+		expect(screen.queryByRole('group', { name: 'MOU-01 — Mouse' })).not.toBeInTheDocument();
+	});
+
+	it('en la etapa 1 no abre nada', async () => {
+		stage.isMultiLocation = false;
+		renderOpeningReceipt();
+		await waitFor(() => expect(detailReads().length).toBeGreaterThan(0));
+		expect(callsTo((cfg) => cfg.url.endsWith('/returns/12'))).toHaveLength(0);
+	});
+});
+
 describe('etapa 1: el flujo actual no cambia', () => {
 	beforeEach(() => {
 		stage.isMultiLocation = false;

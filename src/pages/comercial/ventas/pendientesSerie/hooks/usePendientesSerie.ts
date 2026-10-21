@@ -4,6 +4,7 @@ import { useDebounce } from 'use-debounce';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 import pendingSerialReducer, {
 	loadPendingSerialList,
 	loadPendingSerialCount,
@@ -22,6 +23,8 @@ export const usePendientesSerie = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const { subsidiaryId, branchId, hasValidBranch } = useCurrentBranch();
+	// Etapa 2: el cierre pide la ubicación de salida de los ítems sin serie.
+	const { isMultiLocation } = useSubsidiaryRolloutStage(subsidiaryId);
 
 	const list = useAppSelector(selectPendingSerialList);
 	const meta = useAppSelector(selectPendingSerialMeta);
@@ -81,7 +84,15 @@ export const usePendientesSerie = () => {
 
 	return {
 		data: { list: list as PendingSerialSale[], total, pageCount },
-		state: { loading, error, hasValidBranch, subsidiaryId, branchId, emptyMessage },
+		state: {
+			loading,
+			error,
+			hasValidBranch,
+			subsidiaryId,
+			branchId,
+			emptyMessage,
+			isMultiLocation,
+		},
 		search: { value: search, onChange: setSearch },
 		pagination: { state: pagination, onChange: setPagination },
 		actions: { goToSale, refetch: fetchList },

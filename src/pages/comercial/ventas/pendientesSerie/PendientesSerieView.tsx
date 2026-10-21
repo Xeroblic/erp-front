@@ -199,6 +199,7 @@ const PendientesSerieView: React.FC = () => {
 					subsidiaryId={state.subsidiaryId}
 					saleId={assignSale.id}
 					items={pendingSerialToSaleItems(assignSale)}
+					isMultiLocation={state.isMultiLocation}
 					onSuccess={() => {
 						closeAssign();
 						actions.refetch();
