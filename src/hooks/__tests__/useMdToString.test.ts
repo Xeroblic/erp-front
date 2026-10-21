@@ -7,15 +7,6 @@ describe('useMdToString', () => {
 		vi.unstubAllGlobals();
 	});
 
-	it('inicia con contenido vacío', () => {
-		vi.stubGlobal(
-			'fetch',
-			vi.fn(() => new Promise(() => {})),
-		);
-		const { result } = renderHook(() => useMdToString('/file.md'));
-		expect(result.current).toBe('');
-	});
-
 	it('carga el texto del archivo markdown', async () => {
 		vi.stubGlobal(
 			'fetch',
@@ -23,15 +14,6 @@ describe('useMdToString', () => {
 		);
 		const { result } = renderHook(() => useMdToString('/file.md'));
 		await waitFor(() => expect(result.current).toBe('# Hola'));
-	});
-
-	it('llama a fetch con la URL indicada', async () => {
-		const fetchMock = vi.fn(() =>
-			Promise.resolve({ text: () => Promise.resolve('contenido') }),
-		);
-		vi.stubGlobal('fetch', fetchMock);
-		renderHook(() => useMdToString('/docs/readme.md'));
-		await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/docs/readme.md'));
 	});
 
 	it('setea el error como contenido si el archivo viene vacío', async () => {

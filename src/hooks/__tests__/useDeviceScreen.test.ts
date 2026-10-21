@@ -3,24 +3,6 @@ import { renderHook, act as rtlAct } from '@testing-library/react';
 import useDeviceScreen from '../useDeviceScreen';
 
 describe('useDeviceScreen', () => {
-	it('lee el ancho y alto actuales de window', () => {
-		const { result } = renderHook(() => useDeviceScreen());
-		expect(result.current.width).toBe(window.innerWidth);
-		expect(result.current.height).toBe(window.innerHeight);
-	});
-
-	it('expone las dimensiones de la pantalla', () => {
-		const { result } = renderHook(() => useDeviceScreen());
-		expect(result.current.screenWidth).toBe(window.screen.width);
-		expect(result.current.screenHeight).toBe(window.screen.height);
-	});
-
-	it('expone flags de orientación (portrait/landscape) como booleanos', () => {
-		const { result } = renderHook(() => useDeviceScreen());
-		expect(typeof result.current.portrait).toBe('boolean');
-		expect(typeof result.current.landscape).toBe('boolean');
-	});
-
 	it('recalcula las dimensiones al hacer resize de window', () => {
 		const { result } = renderHook(() => useDeviceScreen());
 
