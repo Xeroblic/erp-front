@@ -31,3 +31,12 @@ export const toTechnicalReviewError = (error: unknown): TechnicalReviewValidatio
 		errors,
 	};
 };
+
+/** Mensaje del backend (`response.data.message`), del error o el de respaldo. */
+export const getRejectMessage = (error: unknown, fallback: string): string => {
+	const data = asRecord(asRecord(asRecord(error)?.response)?.data);
+	if (typeof data?.message === 'string' && data.message) return data.message;
+	const message = asRecord(error)?.message;
+	if (typeof message === 'string' && message) return message;
+	return fallback;
+};

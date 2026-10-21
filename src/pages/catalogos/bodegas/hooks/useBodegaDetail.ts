@@ -165,7 +165,7 @@ export const useBodegaDetail = () => {
 				setAttachProduct(null);
 			} catch (e: unknown) {
 				const apiError = e as IWarehouseApiError;
-				const fields = apiError.fields;
+				const { fields } = apiError;
 				if (fields?.quantity) {
 					toast.error('No hay capacidad suficiente en la bodega');
 				} else if (fields?.product_id) {
@@ -276,3 +276,5 @@ export const useBodegaDetail = () => {
 
 	return { state, derived, actions };
 };
+
+export default useBodegaDetail;

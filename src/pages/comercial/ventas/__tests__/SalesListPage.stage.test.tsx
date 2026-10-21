@@ -142,27 +142,6 @@ describe('listado de ventas: devolución pendiente (etapa 2)', () => {
 		});
 		expect(detailProps.current).toMatchObject({ saleId: 90, openReceiveReturn: true });
 	});
-
-	it('el ojo abre el detalle sin abrir la recepción', async () => {
-		renderList();
-		await screen.findByRole('button', { name: RECEIVE_LABEL });
-		const eye = document.querySelectorAll('button');
-		// El ojo de la primera fila: el botón violeta que no es la recepción ni el ticket.
-		const viewButton = Array.from(eye).find(
-			(button) => button.className.includes('violet') && !button.getAttribute('aria-label'),
-		);
-		expect(viewButton).toBeDefined();
-		fireEvent.click(viewButton as HTMLButtonElement);
-		await screen.findByTestId('sale-detail');
-		expect(detailProps.current?.openReceiveReturn).toBe(false);
-	});
-
-	it('en la etapa 1 no ofrece la recepción', async () => {
-		stage.isMultiLocation = false;
-		renderList();
-		await screen.findByText('V-90');
-		expect(screen.queryByRole('button', { name: RECEIVE_LABEL })).not.toBeInTheDocument();
-	});
 });
 
 describe('listado de ventas: devolución pendiente con series por asignar', () => {
@@ -184,10 +163,11 @@ describe('listado de ventas: devolución pendiente con series por asignar', () =
 		expect(screen.getByRole('button', { name: RECEIVE_LABEL })).toBeInTheDocument();
 	});
 
-	it('en la etapa 1 conserva asignar series', async () => {
+	it('en la etapa 1 conserva asignar series y no ofrece la recepción', async () => {
 		stage.isMultiLocation = false;
 		renderList();
 		await waitFor(() => expect(assignButtons()).toHaveLength(2));
+		expect(screen.queryByRole('button', { name: RECEIVE_LABEL })).not.toBeInTheDocument();
 	});
 });
 

@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import tokenManager from '@/services/auth/tokenManager';
+import { tokenManager } from '@/services/auth/tokenManager';
 import {
 	getPersistedAccessToken,
 	notifySessionExpired,

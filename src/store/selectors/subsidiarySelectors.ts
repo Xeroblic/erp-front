@@ -30,11 +30,12 @@ export const selectEffectiveSubsidiaryId = (state: RootState): number | null => 
 		authUser?.subsidiary_id ?? null,
 	];
 
-	for (const candidate of directCandidates) {
-		const normalized = toNumber(candidate);
-		if (normalized !== null) {
-			return normalized;
-		}
+	const directId =
+		directCandidates
+			.map((candidate) => toNumber(candidate))
+			.find((normalized) => normalized !== null) ?? null;
+	if (directId !== null) {
+		return directId;
 	}
 
 	const preferredBranchId =

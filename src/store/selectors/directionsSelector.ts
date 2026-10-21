@@ -26,7 +26,7 @@ export const selectComunasSearchOptions = createSelector(
 
 			return {
 				value: comuna.codigo,
-				label: label,
+				label,
 				data: {
 					comuna_id: comuna.codigo,
 					province_id: provincia?.codigo || null,
@@ -38,3 +38,5 @@ export const selectComunasSearchOptions = createSelector(
 		return options.sort((a, b) => a.label.localeCompare(b.label));
 	},
 );
+
+export default selectComunasSearchOptions;

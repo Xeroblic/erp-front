@@ -100,7 +100,11 @@ export const resolveColumnValue = (item: IItem, key: string): string => {
 			const details = item.details || {};
 			const extra = item.extra_attributes || {};
 			const st = details.battery_status || extra.battery_status;
-			const pt = details.battery_percentage ?? extra.battery_percentage;
+			const rawPercentage: unknown = details.battery_percentage ?? extra.battery_percentage;
+			const pt =
+				typeof rawPercentage === 'number' || typeof rawPercentage === 'string'
+					? rawPercentage
+					: null;
 
 			const brandStr = String(
 				(item as any).brand || details.brand || extra.brand || '',

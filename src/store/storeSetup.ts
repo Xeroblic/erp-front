@@ -11,12 +11,13 @@ import {
 } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { PERSIST_STORE_NAME } from '@/constants/app.constant';
-import rootReducer, { RootState, AsyncReducers } from './rootReducer';
 import RtkQueryService from '@/services/RtkQueryService';
-import tokenManager from '@/services/auth/tokenManager';
-import { logout, setToken } from './slices/auth/authSlice';
+import { tokenManager } from '@/services/auth/tokenManager';
 import { initTokenRefreshWorker } from '@/services/auth/tokenRefreshWorker';
 import { registerAuthStoreBridge } from '@/services/auth/authStoreBridge';
+import { isRecord } from '@/utils/isRecord.util';
+import rootReducer, { RootState, AsyncReducers } from './rootReducer';
+import { logout, setToken } from './slices/auth/authSlice';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const middlewares: any[] = [RtkQueryService.middleware];
@@ -49,7 +50,7 @@ store.asyncReducers = {};
 
 // Exponer el store globalmente para acceso desde themeConfig
 if (typeof window !== 'undefined') {
-	(window as any).__REDUX_STORE__ = store;
+	(window as Window & { __REDUX_STORE__?: unknown }).__REDUX_STORE__ = store;
 }
 
 export const persistor = persistStore(store);
@@ -61,8 +62,10 @@ type PersistedAuthState = {
 const parsePersistedAuthState = (rawValue: string | null): PersistedAuthState | null => {
 	if (!rawValue) return null;
 	try {
-		const parsedRoot = JSON.parse(rawValue);
-		if (!parsedRoot?.auth) return null;
+		const parsedRoot: unknown = JSON.parse(rawValue);
+		if (!isRecord(parsedRoot) || typeof parsedRoot.auth !== 'string' || !parsedRoot.auth) {
+			return null;
+		}
 		return JSON.parse(parsedRoot.auth) as PersistedAuthState;
 	} catch (error) {
 		if (process.env.NODE_ENV === 'development') {
