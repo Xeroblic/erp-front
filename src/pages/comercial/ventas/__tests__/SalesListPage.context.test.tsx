@@ -59,6 +59,14 @@ vi.mock('@/store/selectors/subsidiarySelectors', () => ({
 	selectEffectiveSubsidiaryId: (state: { context: { subsidiaryId: number | null } }) =>
 		state.context.subsidiaryId,
 }));
+// La etapa de la filial la cubre SalesListPage.stage.test; aquí basta la etapa 1.
+vi.mock('@/hooks/useSubsidiaryRolloutStage', () => ({
+	useSubsidiaryRolloutStage: () => ({
+		multiLocationEnabled: false,
+		isMultiLocation: false,
+		isLoading: false,
+	}),
+}));
 vi.mock('@/services/salesService', () => ({
 	fetchPendingSerialAssignment: salesServiceSpies.fetchPendingSerialAssignment,
 	startSaleReturn: salesServiceSpies.startSaleReturn,

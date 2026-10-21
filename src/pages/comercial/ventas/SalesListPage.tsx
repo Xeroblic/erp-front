@@ -32,6 +32,7 @@ import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subhead
 import Icon from '@/components/icon/Icon';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import useContextScopedSelection from '@/hooks/useContextScopedSelection';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 // import Tooltip from '@/components/ui/Tooltip';
 import type { ISale } from '@/interface/sales.interface';
 import SaleDetailPage from './detail/components/modals/SaleDetailPage';
@@ -120,6 +121,10 @@ const SalesListPage: React.FC = () => {
 		sale: ISale;
 		subsidiaryId: number;
 	} | null>(null);
+	// Venta cuya acción «Recibir devolución» abrió el detalle.
+	const [receiveReturnSaleId, setReceiveReturnSaleId] = useState<number | null>(null);
+	// Etapa 2: el cierre elige ubicaciones y una devolución pendiente se recibe desde la fila.
+	const { isMultiLocation } = useSubsidiaryRolloutStage(subsidiaryId);
 	const pendingRequestSubsidiaryRef = useRef<number | null>(null);
 	const assignSaleForCurrentSubsidiary =
 		assignSale?.subsidiaryId === subsidiaryId ? assignSale.sale : null;
@@ -305,7 +310,18 @@ const SalesListPage: React.FC = () => {
 
 	const handleViewDetail = useCallback(
 		(saleId: number) => {
+			setReceiveReturnSaleId(null);
 			detailSelection.select(saleId);
+			handleDetailModalState(true);
+		},
+		[detailSelection, handleDetailModalState],
+	);
+
+	// Etapa 2: «Recibir devolución» abre el detalle directo en la recepción.
+	const handleReceiveReturn = useCallback(
+		(targetSaleId: number) => {
+			setReceiveReturnSaleId(targetSaleId);
+			detailSelection.select(targetSaleId);
 			handleDetailModalState(true);
 		},
 		[detailSelection, handleDetailModalState],
@@ -429,28 +445,47 @@ const SalesListPage: React.FC = () => {
 				header: 'Acciones',
 				cell: ({ row }) => (
 					<div className='flex justify-center gap-2'>
-						{pendingMap.has(row.original.id) && (
-							<Tooltip text='Esta venta tiene series pendientes de asignar'>
-								<Button
+						{isMultiLocation && row.original.pending_return && (
+							<Tooltip text='Recibir la devolución pendiente'>
+								<ProtectedButton
+									permission='confirm-sale-return'
+									subsidiaryId={subsidiaryId}
+									scope='access'
+									fallbackMode='hidden'
 									variant='solid'
 									size='sm'
 									color='amber'
-									className='bg-amber-500/30'
-									onClick={() => {
-										const pendingSale = pendingMap.get(row.original.id);
-										if (pendingSale && subsidiaryId) {
-											setAssignSale({ sale: pendingSale, subsidiaryId });
-										}
-									}}>
-									<Icon
-										icon='DuoBarcodeRead'
-										color='white'
-										className='hover:text-amber-200'
-										size='text-xl'
-									/>
-								</Button>
+									aria-label={`Recibir la devolución de la venta ${row.original.id}`}
+									onClick={() => handleReceiveReturn(row.original.id)}
+									isDisable={!subsidiaryId}>
+									<Icon icon='HeroInboxArrowDown' color='white' size='text-xl' />
+								</ProtectedButton>
 							</Tooltip>
 						)}
+						{/* Con la devolución pendiente el cierre responde 409: se recibe primero. */}
+						{pendingMap.has(row.original.id) &&
+							!(isMultiLocation && row.original.pending_return) && (
+								<Tooltip text='Esta venta tiene series pendientes de asignar'>
+									<Button
+										variant='solid'
+										size='sm'
+										color='amber'
+										className='bg-amber-500/30'
+										onClick={() => {
+											const pendingSale = pendingMap.get(row.original.id);
+											if (pendingSale && subsidiaryId) {
+												setAssignSale({ sale: pendingSale, subsidiaryId });
+											}
+										}}>
+										<Icon
+											icon='DuoBarcodeRead'
+											color='white'
+											className='hover:text-amber-200'
+											size='text-xl'
+										/>
+									</Button>
+								</Tooltip>
+							)}
 						<Tooltip text='Descargar ticket de envio'>
 							<Button
 								variant='outline'
@@ -524,7 +559,7 @@ const SalesListPage: React.FC = () => {
 				enableColumnFilter: false,
 			},
 		],
-		[handleViewDetail, subsidiaryId, pendingMap],
+		[handleViewDetail, handleReceiveReturn, subsidiaryId, pendingMap, isMultiLocation],
 	);
 
 	const buildFilters = useCallback(
@@ -885,6 +920,7 @@ const SalesListPage: React.FC = () => {
 					isOpen={detailModalVisible}
 					onClose={() => handleDetailModalState(false)}
 					returnWrites={returnWrites}
+					openReceiveReturn={receiveReturnSaleId === detailSelection.selectedId}
 				/>
 			)}
 
@@ -895,6 +931,7 @@ const SalesListPage: React.FC = () => {
 					subsidiaryId={Number(subsidiaryId)}
 					saleId={assignSaleForCurrentSubsidiary.id}
 					items={pendingSerialToSaleItems(assignSaleForCurrentSubsidiary)}
+					isMultiLocation={isMultiLocation}
 					onSuccess={() => {
 						setAssignSale(null);
 						refetchPending();
