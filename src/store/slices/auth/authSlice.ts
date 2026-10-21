@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import tokenManager from '@/services/auth/tokenManager';
-import { RootState, AppDispatch } from '@/store';
+import type { RootState, AppDispatch } from '@/store';
 import { IGruposUsuarios, IUserMe, IPerfilResponse } from '@/interface/user.interface';
 import { clearAppStorage } from '@/utils/appStorage';
 import { normalizeUserProfile } from '@/utils/normalizeUserProfile';

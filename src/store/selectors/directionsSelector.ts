@@ -1,6 +1,6 @@
 // src/store/selectors/directionSelector.ts
 import { createSelector } from '@reduxjs/toolkit';
-import { RootState } from '@/store/rootReducer'; // Ajusta la ruta
+import type { RootState } from '@/store/rootReducer';
 
 const selectAllRegiones = (state: RootState) => state.core.listaRegiones || [];
 const selectAllProvincias = (state: RootState) => state.core.listaProvincias || [];

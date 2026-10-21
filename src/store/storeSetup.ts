@@ -16,6 +16,7 @@ import RtkQueryService from '@/services/RtkQueryService';
 import tokenManager from '@/services/auth/tokenManager';
 import { logout, setToken } from './slices/auth/authSlice';
 import { initTokenRefreshWorker } from '@/services/auth/tokenRefreshWorker';
+import { registerAuthStoreBridge } from '@/services/auth/authStoreBridge';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const middlewares: any[] = [RtkQueryService.middleware];
@@ -119,6 +120,18 @@ const setupCrossTabAuthSync = () => {
 
 	window.addEventListener('storage', syncAuthState);
 };
+
+// La capa HTTP no importa el store (cerraría un ciclo con los slices): lee el token y
+// propaga el refresh y el cierre de sesión a través de este puente.
+registerAuthStoreBridge({
+	getPersistedAccessToken: () => store.getState().auth.access,
+	onTokenRefreshed: (token) => {
+		store.dispatch(setToken({ access: token }));
+	},
+	onSessionExpired: () => {
+		store.dispatch(logout());
+	},
+});
 
 setupCrossTabAuthSync();
 initTokenRefreshWorker(store);
