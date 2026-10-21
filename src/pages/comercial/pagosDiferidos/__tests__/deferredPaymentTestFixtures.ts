@@ -23,6 +23,7 @@ const createDocument = (
 		billing_company: 'Cliente de prueba SpA',
 		rut: '76.123.456-7',
 		contact_name: 'Contacto Prueba',
+		has_collection_email: true,
 	},
 	assignees: [{ id: 37, name: 'Responsable', email: 'responsable@example.com' }],
 	items: [

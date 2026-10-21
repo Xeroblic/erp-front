@@ -529,7 +529,7 @@ const CarteraCreditoView: React.FC = () => {
 																Cupo excedido
 															</p>
 														)}
-														{row.has_collection_email === false && (
+														{!row.has_collection_email && (
 															<MissingCollectionEmailBadge />
 														)}
 													</Td>

@@ -31,7 +31,6 @@ import AttachmentsDropOverlay from '../parts/AttachmentsDropOverlay';
 import MissingCollectionEmailAlert from '../parts/MissingCollectionEmailAlert';
 import RegisterDeferredPaymentModal from '../modals/RegisterDeferredPaymentModal';
 import ConfirmDeferredPaymentActionModal from '../modals/ConfirmDeferredPaymentActionModal';
-import useCustomerCollectionEmail from '../../hooks/useCustomerCollectionEmail';
 import useDeferredPaymentDetail from '../../hooks/useDeferredPaymentDetail';
 import { useDeferredPaymentActions } from '../../hooks/useDeferredPaymentActions';
 import useAttachmentsFileDrop, { syncSingleFileInput } from '../../hooks/useAttachmentsFileDrop';
@@ -107,18 +106,15 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 		setIsCreditProfileEditorOpen(false);
 		setIsCreditProfileEditorSaving(false);
 	}, [branch.branchId, branch.subsidiaryId, documentId]);
-	const collectionEmail = useCustomerCollectionEmail({
-		customerSaleId: document?.customer.id ?? null,
-		subsidiaryId: branch.subsidiaryId,
-	});
 	// Un documento pagado ya no genera recordatorios: el aviso dejaría de tener consecuencia.
 	const shouldWarnMissingCollectionEmail =
-		collectionEmail.isMissing && document !== null && document.status !== 'paid';
+		document !== null && !document.customer.has_collection_email && document.status !== 'paid';
 	const closeCreditProfileEditor = useCallback(() => {
 		if (isCreditProfileEditorSaving) return;
 		setIsCreditProfileEditorOpen(false);
-		collectionEmail.reload().catch(() => undefined);
-	}, [collectionEmail, isCreditProfileEditorSaving]);
+		// El flag viene en el documento: se vuelve a pedir para reflejar el correo recién guardado.
+		void actions.refresh();
+	}, [actions, isCreditProfileEditorSaving]);
 	const paymentActions = useDeferredPaymentActions(document, branch.subsidiaryId, () =>
 		setIsRegisterOpen(false),
 	);

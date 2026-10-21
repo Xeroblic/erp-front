@@ -16,6 +16,7 @@ const profile = (customerSaleId: number): IDeferredPaymentCreditProfileListItem 
 	outstanding_balance: '0.00',
 	available_credit: '500000.00',
 	credit_limit_exceeded: false,
+	has_collection_email: true,
 	customer: {
 		id: customerSaleId,
 		customer_code: null,
@@ -213,14 +214,13 @@ describe('CarteraCreditoView con cambio de subsidiaria', () => {
 		expect(screen.getByRole('button', { name: 'Exportar' })).toBeEnabled();
 	});
 
-	it('identifica sólo a los clientes que el backend informa sin correo de cobranza', () => {
+	it('identifica sólo a los clientes sin correo de cobranza', () => {
 		carteraState = {
 			...carteraState,
 			data: {
 				rows: [
 					{ ...profile(1), has_collection_email: false },
 					{ ...profile(2), has_collection_email: true },
-					profile(3),
 				],
 				meta: null,
 			},
@@ -232,6 +232,5 @@ describe('CarteraCreditoView con cambio de subsidiaria', () => {
 		expect(rowOf('Cliente 1')).toHaveTextContent('Sin correo de cobranza');
 		expect(rowOf('Cliente 1')).toHaveTextContent(/no recibirá los recordatorios automáticos/);
 		expect(rowOf('Cliente 2')).not.toHaveTextContent('Sin correo de cobranza');
-		expect(rowOf('Cliente 3')).not.toHaveTextContent('Sin correo de cobranza');
 	});
 });

@@ -38,7 +38,14 @@ vi.mock('@/services/deferredPaymentsService', () => ({
 }));
 vi.mock('../hooks/useDeferredPaymentDetail');
 
-const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[2];
+const withCollectionEmail = (hasCollectionEmail: boolean) => ({
+	...DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
+	customer: {
+		...DEFERRED_PAYMENT_DETAIL_FIXTURES[2].customer,
+		has_collection_email: hasCollectionEmail,
+	},
+});
+const document = withCollectionEmail(false);
 const creditProfile = (collectionEmail: string | null): IDeferredPaymentCreditProfile => ({
 	id: 10,
 	customer_sale_id: document.customer.id,
@@ -54,14 +61,22 @@ it('advierte al cliente sin correo y sólo con permiso permite registrarlo para 
 	const portalRoot = window.document.createElement('div');
 	portalRoot.id = 'portal-root';
 	window.document.body.appendChild(portalRoot);
-	vi.mocked(useDeferredPaymentDetail).mockReturnValue({
-		document,
+	const detail = (current: typeof document, refresh: () => undefined) => ({
+		document: current,
 		loading: false,
 		error: null,
-		actions: { refresh: vi.fn() },
+		actions: { refresh },
 		branch: { branchId: 1, subsidiaryId: 1 },
 		hasDataContext: true,
 	});
+	// Como el store real, el refresco entrega el documento con el flag que calcula el backend.
+	const refresh = vi.fn(() => {
+		vi.mocked(useDeferredPaymentDetail).mockReturnValue(
+			detail(withCollectionEmail(true), refresh),
+		);
+		return undefined;
+	});
+	vi.mocked(useDeferredPaymentDetail).mockReturnValue(detail(document, refresh));
 	vi.mocked(deferredPaymentsService.getCreditProfile).mockResolvedValue(creditProfile(null));
 	vi.mocked(deferredPaymentsService.updateCreditProfile).mockResolvedValue(
 		creditProfile('cobranza@cliente.cl'),
@@ -89,9 +104,6 @@ it('advierte al cliente sin correo y sólo con permiso permite registrarlo para 
 	fireEvent.change(await screen.findByLabelText('Correo de cobranza'), {
 		target: { value: 'cobranza@cliente.cl' },
 	});
-	vi.mocked(deferredPaymentsService.getCreditProfile).mockResolvedValue(
-		creditProfile('cobranza@cliente.cl'),
-	);
 	fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones', hidden: true }));
 	await waitFor(() =>
 		expect(deferredPaymentsService.updateCreditProfile).toHaveBeenCalledWith(
@@ -104,5 +116,6 @@ it('advierte al cliente sin correo y sólo con permiso permite registrarlo para 
 	fireEvent.keyDown(window.document, { key: 'Escape' });
 
 	await waitFor(() => expect(screen.queryByText(WARNING)).not.toBeInTheDocument());
+	expect(refresh).toHaveBeenCalledTimes(1);
 	portalRoot.remove();
 });

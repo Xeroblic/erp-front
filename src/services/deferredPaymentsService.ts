@@ -89,6 +89,16 @@ const invalidateCreditProfiles = (subsidiaryId: number): void => {
 	ApiService.invalidateCache(creditProfilesUrl(subsidiaryId));
 };
 
+/**
+ * El perfil define `customer.has_collection_email` de los documentos del cliente, así que un cambio
+ * en él también deja obsoletos el listado y el detalle de pagos diferidos.
+ */
+const invalidateCustomerCreditProfile = (subsidiaryId: number, customerSaleId: number): void => {
+	ApiService.invalidateCache(creditProfileUrl(subsidiaryId, customerSaleId));
+	invalidateCreditProfiles(subsidiaryId);
+	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+};
+
 const requestConfig = (signal?: AbortSignal): Pick<AxiosRequestConfig, 'signal'> => ({ signal });
 
 const getDocuments = async (
@@ -392,8 +402,7 @@ const updateCreditProfile = async (
 		data: payload,
 		...requestConfig(signal),
 	});
-	ApiService.invalidateCache(creditProfileUrl(subsidiaryId, customerSaleId));
-	invalidateCreditProfiles(subsidiaryId);
+	invalidateCustomerCreditProfile(subsidiaryId, customerSaleId);
 	return unwrapResource(response.data);
 };
 
@@ -438,8 +447,7 @@ const deleteCreditProfile = async (subsidiaryId: number, customerSaleId: number)
 		url: creditProfileUrl(subsidiaryId, customerSaleId),
 		method: 'delete',
 	});
-	ApiService.invalidateCache(creditProfileUrl(subsidiaryId, customerSaleId));
-	invalidateCreditProfiles(subsidiaryId);
+	invalidateCustomerCreditProfile(subsidiaryId, customerSaleId);
 };
 
 const deferredPaymentsService = {
