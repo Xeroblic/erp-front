@@ -319,6 +319,50 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		);
 	});
 
+	it('avisa al editar un documento cuyo cliente no tiene correo de cobranza', async () => {
+		const editedDocument = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/credit-profile')
+					? {
+							data: {
+								id: 77,
+								customer_sale_id: editedDocument.customer.id,
+								is_active: true,
+								payment_term_days: 45,
+								credit_limit: null,
+								collection_email: null,
+								notes: null,
+							},
+						}
+					: {
+							data: [],
+							meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+						},
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
+		render(
+			<CreateEditDeferredPaymentModal
+				isOpen
+				deferredPaymentDocument={editedDocument}
+				onClose={vi.fn()}
+			/>,
+			{ wrapper: Wrapper },
+		);
+
+		expect(
+			await screen.findByText(/no recibirá los recordatorios automáticos de cobranza/),
+		).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Agregar correo de cobranza' }));
+		expect(
+			await screen.findByRole('form', { name: 'Formulario de condiciones de crédito' }),
+		).toBeInTheDocument();
+	});
+
 	it('recarga el perfil creado desde el modal secundario al editar un documento', async () => {
 		const editedDocument = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
 		let profileWasCreated = false;

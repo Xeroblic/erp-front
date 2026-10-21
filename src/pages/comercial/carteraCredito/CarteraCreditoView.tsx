@@ -27,6 +27,7 @@ import useContextScopedSelection, {
 import { formatDeferredPaymentAmount } from '@/pages/comercial/pagosDiferidos/utils';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import DeferredPaymentsExportDropdown from '../pagosDiferidos/components/parts/DeferredPaymentsExportDropdown';
+import MissingCollectionEmailBadge from '../pagosDiferidos/components/badges/MissingCollectionEmailBadge';
 import useDeferredPaymentsExport from '../pagosDiferidos/hooks/useDeferredPaymentsExport';
 import CreditProfileEditModal from './components/CreditProfileEditModal';
 import useCarteraCredito from './hooks/useCarteraCredito';
@@ -527,6 +528,9 @@ const CarteraCreditoView: React.FC = () => {
 															<p className='mt-1 text-xs font-semibold text-red-700 dark:text-red-300'>
 																Cupo excedido
 															</p>
+														)}
+														{row.has_collection_email === false && (
+															<MissingCollectionEmailBadge />
 														)}
 													</Td>
 													<Td className='text-right tabular-nums'>

@@ -27,6 +27,11 @@ export interface IDeferredPaymentCustomer {
 	billing_company: string | null;
 	rut: string;
 	contact_name: string | null;
+	/**
+	 * Si el perfil de crédito del cliente tiene correo de cobranza. Opcional hasta que el
+	 * backend lo exponga: ausente significa "desconocido", no "sin correo".
+	 */
+	has_collection_email?: boolean;
 }
 
 export interface IDeferredPaymentListItem {
@@ -233,6 +238,11 @@ export interface IDeferredPaymentCreditProfileListItem
 	outstanding_balance: string;
 	available_credit: string | null;
 	credit_limit_exceeded: boolean;
+	/**
+	 * Si el perfil tiene correo de cobranza. Opcional hasta que el backend lo exponga en el
+	 * listado: ausente significa "desconocido", no "sin correo".
+	 */
+	has_collection_email?: boolean;
 	created_at: string | null;
 	updated_at: string | null;
 }

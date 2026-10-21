@@ -19,6 +19,7 @@ import {
 } from '../../utils';
 import DaysUntilDueBadge from '../badges/DaysUntilDueBadge';
 import DeferredStatusPill from '../badges/DeferredStatusPill';
+import MissingCollectionEmailBadge from '../badges/MissingCollectionEmailBadge';
 
 interface DeferredPaymentsTableProps {
 	rows: IDeferredPaymentListItem[];
@@ -306,6 +307,10 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 												'Cliente sin nombre'}
 										</p>
 										<p className='text-xs text-zinc-500'>{row.customer.rut}</p>
+										{row.customer.has_collection_email === false &&
+											row.status !== 'paid' && (
+												<MissingCollectionEmailBadge />
+											)}
 									</Td>
 									<Td>{row.purchase_order ?? '\u2014'}</Td>
 									<Td className='text-right tabular-nums'>

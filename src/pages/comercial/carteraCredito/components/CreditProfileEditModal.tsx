@@ -18,6 +18,8 @@ import type {
 	IDeferredPaymentCreditProfileListItem,
 	UpdateDeferredPaymentCreditProfilePayload,
 } from '@/interface/deferredPayments.interface';
+import MissingCollectionEmailAlert from '@/pages/comercial/pagosDiferidos/components/parts/MissingCollectionEmailAlert';
+import { hasCollectionEmail } from '@/pages/comercial/pagosDiferidos/utils';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import getApiErrorMessage from '@/utils/deferredPaymentsError.utils';
 import { CreditProfileSchema, toCreditProfileFormValues } from '../types';
@@ -247,6 +249,7 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	const collectionEmailError = formik.touched.collection_email
 		? formik.errors.collection_email
 		: undefined;
+	const isCollectionEmailMissing = !hasCollectionEmail(formik.values.collection_email);
 	const handleCreditLimitChange = (value: string) => {
 		formik.setFieldTouched('credit_limit', true, false).catch(() => undefined);
 		formik.setFieldValue('credit_limit', value.replace(/\D/g, '')).catch(() => undefined);
@@ -517,7 +520,19 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 									isTouched={formik.touched.collection_email}
 									isValid={!collectionEmailError}
 									invalidFeedback={collectionEmailError}
+									aria-describedby={
+										isCollectionEmailMissing
+											? 'portfolio-credit-profile-collection-email-hint'
+											: undefined
+									}
 								/>
+								{isCollectionEmailMissing && (
+									<MissingCollectionEmailAlert
+										id='portfolio-credit-profile-collection-email-hint'
+										className='mt-2'
+										subsidiaryId={subsidiaryId}
+									/>
+								)}
 							</div>
 							<div>
 								<Label htmlFor='portfolio-credit-profile-notes'>Notas</Label>

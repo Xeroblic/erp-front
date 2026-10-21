@@ -17,6 +17,13 @@ export const DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS: Record<DeferredPaymentDocume
 	other: 'Otro',
 };
 
+/**
+ * Los recordatorios al cliente salen sólo a `collection_email` (el backend no recurre al
+ * correo general del cliente), así que un valor vacío o con sólo espacios cuenta como ausente.
+ */
+export const hasCollectionEmail = (collectionEmail: string | null | undefined): boolean =>
+	Boolean(collectionEmail?.trim());
+
 export const getDaysUntilDueText = (daysUntilDue: number): string => {
 	if (daysUntilDue === 0) return 'Vence hoy';
 	if (daysUntilDue < 0) {
