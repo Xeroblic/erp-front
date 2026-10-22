@@ -4,6 +4,22 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 
 ---
 
+## [v2.6.0] - 2026-10-22
+
+**Enfoque de la versión:** Etapa multi-ubicación completa en los listados de ventas, antena en la revisión técnica de desktops, notas del lote editables y aviso de correo de cobranza faltante, sobre el backend v1.8.
+
+### Puntos Destacados:
+
+- **Ventas:** en la etapa 2, el cierre desde el listado y desde «Pendientes de serie» muestra el selector de ubicación desde el inicio, y las ventas con devolución pendiente ofrecen «Recibir devolución».
+- **Revisiones técnicas:** antena y estado (Buen estado, Rota o Suelta) en desktops, con columnas en el Excel; notas del lote editables con `edit-technical-reviews-batches`.
+- **Pagos Diferidos y Cartera:** aviso en detalle, modales y listados cuando el cliente no tiene correo de cobranza válido, con acceso directo para registrarlo.
+- **Correcciones:** Bodegas sin «Sincronizar stock», clientes con Empresa y Contacto marcados juntos, conflicto de RUT de proveedor leído desde `context` y footer con la versión de `package.json`.
+- **Calidad:** sin ciclos de imports en `src`, deuda de tipos saldada en lo entregado desde v2.5.0, pruebas redundantes podadas y CI en 3 shards paralelos (10 min 34 s → 2 min 27 s).
+
+[Ver archivo detallado en Docs/releases/v2.6.0.md](./Docs/releases/v2.6.0.md)
+
+---
+
 ## [v2.5.0] - 2026-10-19
 
 **Enfoque de la versión:** Estreno de Abastecimiento e Inventario sobre el contrato de ubicaciones del backend (v1.7), con la etapa multi-ubicación lista para encenderse filial por filial, y cierre de venta que explica el faltante de stock.

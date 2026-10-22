@@ -1,20 +1,20 @@
 # Zentria ERP Frontend
 
-## Release Actual: v2.5.0 (2026-10-19)
+## Release Actual: v2.6.0 (2026-10-22)
 
-Esta versión estrena Abastecimiento y rehace Inventario sobre el contrato de ubicaciones del backend, con la etapa multi-ubicación lista para encenderse filial por filial.
+Esta versión completa la etapa multi-ubicación en los listados de ventas, suma la antena a la revisión técnica de desktops y advierte cuando un cliente no tiene correo de cobranza.
 
 ### Cambios relevantes del release
 
-- Proveedores de compras, documentos de compra con adjuntos y recepciones de stock contra la API real.
-- Inventario unificado por producto y bodega, con ajustes y traslados como asistente, documentación posterior y trazabilidad de productos sin serie.
-- Cierre de venta con faltante explicado por ítem y, en la etapa 2, ubicación de salida y devoluciones físicas.
-- Reportes de inventario rediseñados con reposición real y avisos de stock crítico enlazados a la ficha.
+- Cierre con ubicación y «Recibir devolución» desde el listado de ventas y «Pendientes de serie» en la etapa 2.
+- Antena y su estado en la revisión técnica de desktops, y notas del lote editables desde su detalle.
+- Aviso de correo de cobranza faltante en Pagos Diferidos y Cartera, con acceso directo para registrarlo.
+- Bodegas sin la sincronización de stock obsoleta, footer con la versión real del front y CI con pruebas en 3 shards paralelos.
 
 ### Referencias de versión
 
 - Notas generales: `RELEASE_NOTES.md`
-- Detalle completo de la versión actual: `Docs/releases/v2.5.0.md`
+- Detalle completo de la versión actual: `Docs/releases/v2.6.0.md`
 
 ---
 
