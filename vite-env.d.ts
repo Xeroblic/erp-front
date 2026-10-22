@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 /** Versión de `package.json`, inyectada por `define` en `vite.config.ts`. */
+// eslint-disable-next-line @typescript-eslint/naming-convention -- convención de Vite para constantes de `define`
 declare const __APP_VERSION__: string;
 
 interface ImportMetaEnv {
