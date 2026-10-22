@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import JsBarcode from 'jsbarcode';
 import { toast } from 'react-toastify';
+import { ANTENNA_CONDITION_OPTIONS } from '@/pages/refactor-technical-review/components/constants/desktop/desktop.options';
 import {
 	CONDITION_VALUES_ES,
 	EQUIPMENT_TYPE_LABELS,
@@ -74,6 +75,10 @@ export const normalizeDetailValue = (value: unknown): string => {
 
 export const resolveColumnValue = (item: IItem, key: string): string => {
 	switch (key) {
+		case 'antenna_condition': {
+			const value = item.details?.antenna_condition;
+			return ANTENNA_CONDITION_OPTIONS.find((option) => option.value === value)?.label ?? '';
+		}
 		case '__serial':
 			return item.serial_number ?? '';
 		case '__grade': {
@@ -95,7 +100,11 @@ export const resolveColumnValue = (item: IItem, key: string): string => {
 			const details = item.details || {};
 			const extra = item.extra_attributes || {};
 			const st = details.battery_status || extra.battery_status;
-			const pt = details.battery_percentage ?? extra.battery_percentage;
+			const rawPercentage: unknown = details.battery_percentage ?? extra.battery_percentage;
+			const pt =
+				typeof rawPercentage === 'number' || typeof rawPercentage === 'string'
+					? rawPercentage
+					: null;
 
 			const brandStr = String(
 				(item as any).brand || details.brand || extra.brand || '',

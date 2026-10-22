@@ -103,6 +103,9 @@ describe('permisos de bodegas contra la WarehousePolicy del backend', () => {
 			);
 
 		const { unmount } = renderDetail();
+		expect(screen.queryByRole('columnheader', { name: 'Modo' })).not.toBeInTheDocument();
+		expect(screen.queryByText('Sincronizado')).not.toBeInTheDocument();
+		expect(screen.getAllByRole('columnheader')).toHaveLength(5);
 		expect(
 			screen.queryByRole('button', { name: 'Quitar Notebook de la bodega' }),
 		).not.toBeInTheDocument();

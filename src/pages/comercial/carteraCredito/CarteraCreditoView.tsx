@@ -11,9 +11,10 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
-import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import Tooltip from '@/components/ui/Tooltip';
-import TableCardFooterTemplateV2, {
+import {
+	TableCardFooterTemplateV2,
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
 import type {
@@ -21,12 +22,14 @@ import type {
 	IDeferredPaymentCreditProfileListItem,
 } from '@/interface/deferredPayments.interface';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
-import useContextScopedSelection, {
+import {
+	useContextScopedSelection,
 	type OrganizationalContext,
 } from '@/hooks/useContextScopedSelection';
 import { formatDeferredPaymentAmount } from '@/pages/comercial/pagosDiferidos/utils';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import DeferredPaymentsExportDropdown from '../pagosDiferidos/components/parts/DeferredPaymentsExportDropdown';
+import MissingCollectionEmailBadge from '../pagosDiferidos/components/badges/MissingCollectionEmailBadge';
 import useDeferredPaymentsExport from '../pagosDiferidos/hooks/useDeferredPaymentsExport';
 import CreditProfileEditModal from './components/CreditProfileEditModal';
 import useCarteraCredito from './hooks/useCarteraCredito';
@@ -527,6 +530,9 @@ const CarteraCreditoView: React.FC = () => {
 															<p className='mt-1 text-xs font-semibold text-red-700 dark:text-red-300'>
 																Cupo excedido
 															</p>
+														)}
+														{!row.has_collection_email && (
+															<MissingCollectionEmailBadge />
 														)}
 													</Td>
 													<Td className='text-right tabular-nums'>

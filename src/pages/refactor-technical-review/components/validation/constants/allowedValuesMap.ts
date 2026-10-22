@@ -31,6 +31,7 @@ import {
 	ALLOWED_STORAGE_TECHNOLOGIES as DK_STORAGE,
 	ALLOWED_CHARGER_STATUSES as DK_CHARGER,
 	ALLOWED_COVER_CONDITIONS as DK_COVER,
+	ALLOWED_ANTENNA_CONDITIONS as DK_ANTENNA,
 } from './desktop.rules';
 
 import {
@@ -77,6 +78,7 @@ const NOTEBOOK_ALLOWED: AllowedValuesMap = {
 };
 
 const DESKTOP_ALLOWED: AllowedValuesMap = {
+	antenna_condition: DK_ANTENNA,
 	general_condition: DK_GENERAL,
 	storage_technology: DK_STORAGE,
 	charger_status: DK_CHARGER,
@@ -147,7 +149,7 @@ export const sanitizeByAllowedValues = (
 
 	const result = { ...data };
 
-	for (const [field, allowedValues] of Object.entries(allowedMap)) {
+	Object.entries(allowedMap).forEach(([field, allowedValues]) => {
 		const value = result[field];
 		if (value !== undefined && value !== null && value !== '') {
 			if (!allowedValues.includes(value as string)) {
@@ -155,7 +157,7 @@ export const sanitizeByAllowedValues = (
 				delete result[field];
 			}
 		}
-	}
+	});
 
 	return result;
 };

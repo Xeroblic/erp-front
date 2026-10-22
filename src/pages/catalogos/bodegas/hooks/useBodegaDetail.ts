@@ -111,12 +111,9 @@ export const useBodegaDetail = () => {
 	// Sólo cuentan los productos asociados; las unidades salen de `current_capacity`.
 	const summary = useMemo<IFichaBodegaResumen>(() => {
 		const products = warehouse?.products ?? [];
-		const synced = products.filter((product) => product.sync_stock).length;
 		return {
 			products: products.length,
 			units: warehouse?.current_capacity ?? 0,
-			synced,
-			manual: products.length - synced,
 		};
 	}, [warehouse?.products, warehouse?.current_capacity]);
 
@@ -148,7 +145,7 @@ export const useBodegaDetail = () => {
 	);
 
 	const onConfirmAttach = useCallback(
-		async (productId: number, sync: boolean, quantity: number) => {
+		async (productId: number, quantity: number) => {
 			if (!warehouse || !branchId) return;
 			if (isProductAssociated(productId)) {
 				setAttachProduct(null);
@@ -159,8 +156,7 @@ export const useBodegaDetail = () => {
 			try {
 				const payload: IAttachProductRequest = {
 					product_id: productId,
-					quantity: sync ? undefined : quantity,
-					sync_stock: sync,
+					quantity,
 				};
 				await dispatch(
 					attachWarehouseProducts({ branchId, warehouseId: warehouse.id, data: payload }),
@@ -169,11 +165,9 @@ export const useBodegaDetail = () => {
 				setAttachProduct(null);
 			} catch (e: unknown) {
 				const apiError = e as IWarehouseApiError;
-				const fields = apiError.fields;
+				const { fields } = apiError;
 				if (fields?.quantity) {
 					toast.error('No hay capacidad suficiente en la bodega');
-				} else if (fields?.sync_stock) {
-					toast.error('No hay stock disponible para sincronizar');
 				} else if (fields?.product_id) {
 					const msg = apiError.message.toLowerCase();
 					if (msg.includes('ya está asociado')) {
@@ -282,3 +276,5 @@ export const useBodegaDetail = () => {
 
 	return { state, derived, actions };
 };
+
+export default useBodegaDetail;

@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import { useAppDispatch } from '@/store';
 import { updateItemDetails } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { getTechnicalReviewFieldError } from '@/utils/technicalReviewErrors';
 // import useAuthorization from '@/hooks/useAuthorization';
 import EquipmentFormRouter from '../../../components/forms';
 import { ReviewPhotosProvider } from '../../../components/forms/shared/gallery/ReviewPhotosContext';
@@ -242,6 +243,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 
 			await onComplete();
 		} catch (error: unknown) {
+			if (getTechnicalReviewFieldError(error, 'antenna_condition')) throw error;
 			console.error(error);
 			const message =
 				typeof error === 'string'

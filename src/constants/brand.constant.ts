@@ -1,4 +1,4 @@
-import { BrandStatsState } from '@/store/slices/brands/brandsSlice';
+import type { BrandStatsState } from '@/store/slices/brands/brandsSlice';
 
 export const EMPTY_STATS: BrandStatsState = {
 	total_brands: 0,
@@ -7,3 +7,5 @@ export const EMPTY_STATS: BrandStatsState = {
 	total_products: 0,
 	total_sales: 0,
 };
+
+export default EMPTY_STATS;

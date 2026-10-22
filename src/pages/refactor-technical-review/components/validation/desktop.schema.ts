@@ -9,12 +9,21 @@ import {
 	ALLOWED_STORAGE_TECHNOLOGIES,
 	ALLOWED_CHARGER_STATUSES,
 	ALLOWED_COVER_CONDITIONS,
+	ALLOWED_ANTENNA_CONDITIONS,
 } from './constants/desktop.rules';
 import type { PortTypeCounts } from './constants/ports.rules';
 
 // ─── Schema Principal ─────────────────────────────────────────────────────────
 
 export const desktopSchema = Yup.object({
+	includes_antenna: Yup.boolean().nullable(),
+	antenna_condition: Yup.string()
+		.oneOf([...ALLOWED_ANTENNA_CONDITIONS], 'Estado de la antena no válido')
+		.nullable()
+		.when('includes_antenna', {
+			is: true,
+			then: (schema) => schema.required('Indica el estado de la antena'),
+		}),
 	// ─── Identificación ──────────────────────────────────────────────────────
 	brand: Yup.string()
 		.trim()
@@ -141,7 +150,7 @@ export const desktopSchema = Yup.object({
 		.test(
 			'ports-conflict',
 			'No puede marcar todos los puertos como funcionales si hay puertos defectuosos',
-			function (value): boolean {
+			function portsConflict(value): boolean {
 				const parent = this.parent as { all_ports_functional?: boolean | null };
 				return !(parent.all_ports_functional === true && Number(value) > 0);
 			},
@@ -173,7 +182,9 @@ export const desktopSchema = Yup.object({
 	// ─── Notas ───────────────────────────────────────────────────────────────
 	observations: Yup.string()
 		.trim()
-		.transform((value, originalValue) => (originalValue === '' ? null : value))
+		.transform((value: string | null, originalValue: unknown) =>
+			originalValue === '' ? null : value,
+		)
 		.max(1000, 'Máximo 1000 caracteres para observaciones')
 		.nullable(),
 
@@ -221,11 +232,11 @@ export const validateDesktopForm = async (
 	} catch (err) {
 		if (err instanceof Yup.ValidationError) {
 			const errors: Record<string, string> = {};
-			for (const inner of err.inner) {
+			err.inner.forEach((inner) => {
 				if (inner.path && !errors[inner.path]) {
 					errors[inner.path] = inner.message;
 				}
-			}
+			});
 			return { success: false, errors };
 		}
 		throw err;

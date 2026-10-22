@@ -105,13 +105,13 @@ export interface IItem {
 	grade?: string | null; // A, B, C, D, etc.
 	suggested_grade?: string | null;
 	confidence?: number | null; // 0-100
-	breakdown?: Record<string, any>; // Desglose de cálculo de grado
-	attributes_json?: Record<string, any>; // Atributos técnicos del equipo
-	extra_attributes?: Record<string, any>; // Atributos extra
+	breakdown?: Record<string, unknown>; // Desglose de cálculo de grado
+	attributes_json?: Record<string, unknown>; // Atributos técnicos del equipo
+	extra_attributes?: Record<string, unknown>; // Atributos extra
 	traceability_id?: number | null; // ID de trazabilidad para cambios de estado comercial
 	created_at?: string;
 	updated_at?: string;
-	details: Record<string, any> | null;
+	details: Record<string, unknown> | null;
 }
 
 /**
@@ -178,6 +178,9 @@ export interface FetchItemsParams {
  * Payload para guardar/actualizar detalles de una serie
  */
 export interface UpdateItemDetailsPayload {
+	/** Accesorios de recepción de desktop; no afectan el grado. */
+	includes_antenna?: boolean | null;
+	antenna_condition?: 'good_condition' | 'broken' | 'loose' | null;
 	// Campos comunes a todos los tipos
 	brand?: string;
 	model?: string;

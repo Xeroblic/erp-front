@@ -13,14 +13,36 @@ import {
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { TColors } from '@/types/colors.type';
-import { EquipmentType } from '@/interface/technicalReviews.interface';
 import ApiService from '@/services/ApiService';
+import { isRecord } from '@/utils/isRecord.util';
+import type { EquipmentType, IItem } from '@/interface/technicalReviews.interface';
 
 // Helper functions for API URL
-const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const TECHNICAL_REVIEWS_PREFIX = String(import.meta.env.VITE_API_TECHNICAL_REVIEWS_PREFIX ?? '');
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
 const ep = (branchId: number, path: string) =>
 	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${path}`);
+
+/** Mensaje de un rechazo: string del thunk, `response.data.message`, `message` o respaldo. */
+const getErrorMessage = (error: unknown, fallback: string): string => {
+	if (typeof error === 'string' && error) return error;
+	if (!isRecord(error)) return fallback;
+	const response = isRecord(error.response) ? error.response : undefined;
+	const data = isRecord(response?.data) ? response.data : undefined;
+	if (typeof data?.message === 'string' && data.message) return data.message;
+	if (typeof error.message === 'string' && error.message) return error.message;
+	return fallback;
+};
+
+/** Primer ítem de la búsqueda si su serie coincide exactamente (sin distinguir mayúsculas). */
+const findExactSerial = (payload: unknown, serial: string): IItem | null => {
+	const results = isRecord(payload) && Array.isArray(payload.data) ? payload.data : [];
+	const first: unknown = results[0];
+	if (!isRecord(first) || typeof first.serial_number !== 'string') return null;
+	return first.serial_number.toLowerCase() === serial.toLowerCase()
+		? (first as unknown as IItem)
+		: null;
+};
 
 export const useDetalleLote = () => {
 	const { batchId } = useParams<{ batchId: string }>();
@@ -51,7 +73,7 @@ export const useDetalleLote = () => {
 
 	const [operationMode, setOperationMode] = useState<'entry' | 'print'>('entry');
 	const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-	const [selectedItemForPrint, setSelectedItemForPrint] = useState<any>(null);
+	const [selectedItemForPrint, setSelectedItemForPrint] = useState<IItem | null>(null);
 
 	// Refs for focus management
 	const isTypeSelectorFocusedRef = useRef(false);
@@ -62,16 +84,17 @@ export const useDetalleLote = () => {
 	// ── Fetch batch on mount ───────────────────────────────────
 	useEffect(() => {
 		if (branchId && batchId) {
-			dispatch(fetchBatchById({ branchId, batchId: Number(batchId) }));
+			void dispatch(fetchBatchById({ branchId, batchId: Number(batchId) }));
 		}
 	}, [dispatch, branchId, batchId]);
 
 	// Sync draft when batch loads
+	const batchExpectedQuantity = batch?.expected_quantity;
 	useEffect(() => {
-		if (batch) {
-			setExpectedQtyDraft(String(batch.expected_quantity ?? 0));
+		if (batchExpectedQuantity !== undefined) {
+			setExpectedQtyDraft(String(batchExpectedQuantity ?? 0));
 		}
-	}, [batch?.expected_quantity]);
+	}, [batchExpectedQuantity]);
 
 	// ── Expected Qty handlers ──────────────────────────────────
 	const handleStartEditingExpectedQty = () => {
@@ -110,12 +133,10 @@ export const useDetalleLote = () => {
 			).unwrap();
 			setIsEditingExpectedQty(false);
 			setExpectedQtyError(null);
-		} catch (error: any) {
-			const message =
-				typeof error === 'string'
-					? error
-					: (error?.message ?? 'No se pudo actualizar la cantidad esperada');
-			setExpectedQtyError(message);
+		} catch (error: unknown) {
+			setExpectedQtyError(
+				getErrorMessage(error, 'No se pudo actualizar la cantidad esperada'),
+			);
 		}
 	};
 
@@ -139,7 +160,7 @@ export const useDetalleLote = () => {
 
 	// Auto-focus input when modal opens
 	useEffect(() => {
-		if (!isQuickEntryOpen) return;
+		if (!isQuickEntryOpen) return undefined;
 		const handle = window.setTimeout(() => {
 			quickEntryInputRef.current?.focus();
 		}, 50);
@@ -190,16 +211,10 @@ export const useDetalleLote = () => {
 			setQuickEntrySerial('');
 			setQuickEntryError(null);
 			setQuickEntrySuccess(`Serie ${serial} registrada en estado pendiente.`);
-			dispatch(fetchBatchById({ branchId, batchId: batch.id }));
+			void dispatch(fetchBatchById({ branchId, batchId: batch.id }));
 			toast.success(`Serie ${serial} registrada correctamente.`);
-		} catch (error: any) {
-			const message =
-				typeof error === 'string'
-					? error
-					: (error?.response?.data?.message ??
-						error?.message ??
-						'No se pudo registrar la serie');
-			setQuickEntryError(message);
+		} catch (error: unknown) {
+			setQuickEntryError(getErrorMessage(error, 'No se pudo registrar la serie'));
 		}
 	};
 
@@ -217,40 +232,30 @@ export const useDetalleLote = () => {
 			const normalizedSerial = serial.trim();
 
 			try {
-				const response = await ApiService.fetchData<{ data?: any[] }>({
+				const response = await ApiService.fetchData<unknown>({
 					url: ep(branchId, '/items'),
 					method: 'get',
 					params: { batch_id: batch.id, search: normalizedSerial, per_page: 1 },
 				});
-				const results = response.data?.data || [];
-				const foundItem = results[0];
+				const foundItem = findExactSerial(response.data, normalizedSerial);
 
 				if (operationMode === 'print') {
 					// MODO IMPRESIÓN
-					if (
-						foundItem &&
-						foundItem.serial_number.toLowerCase() === normalizedSerial.toLowerCase()
-					) {
+					if (foundItem) {
 						setSelectedItemForPrint(foundItem);
 						setIsPrintModalOpen(true);
 					} else {
 						toast.error(`La serie "${normalizedSerial}" no existe en este lote.`);
 					}
-				} else {
+				} else if (foundItem?.id) {
 					// MODO INGRESO
-					if (
-						foundItem &&
-						foundItem.id &&
-						foundItem.serial_number.toLowerCase() === normalizedSerial.toLowerCase()
-					) {
-						handleViewItem(foundItem.id);
-					} else {
-						setMissingSerial(normalizedSerial);
-						setIsMissingSerialModalOpen(true);
-					}
+					handleViewItem(foundItem.id);
+				} else {
+					setMissingSerial(normalizedSerial);
+					setIsMissingSerialModalOpen(true);
 				}
 			} catch (error) {
-				console.error('Error en escaneo:', error);
+				toast.error(getErrorMessage(error, 'No se pudo buscar la serie escaneada.'));
 			}
 		},
 		[batch, branchId, operationMode, handleViewItem],
@@ -274,7 +279,9 @@ export const useDetalleLote = () => {
 				const buffer = scannerBufferRef.current.trim();
 				scannerBufferRef.current = '';
 				if (buffer.length >= 3) {
-					handleScannedSerial(buffer);
+					// Que el Enter del escáner no active el botón que tenga el foco.
+					event.preventDefault();
+					void handleScannedSerial(buffer);
 				}
 				return;
 			}
@@ -397,3 +404,5 @@ export const useDetalleLote = () => {
 		setActiveTab,
 	};
 };
+
+export default useDetalleLote;

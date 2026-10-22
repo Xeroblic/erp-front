@@ -3,7 +3,8 @@
  * Orchestrator for the Desktop technical review form.
  * Composes sections in the FormShell with Yup validation.
  */
-import React, { useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
+import { getTechnicalReviewFieldError } from '@/utils/technicalReviewErrors';
 import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
@@ -120,7 +121,7 @@ const DESKTOP_SECTION_FIELDS: Record<string, FieldPath<DesktopFormData>[]> = {
 	],
 	aesthetics: ['general_condition', 'cover_condition', 'powers_on'],
 	connectivity: ['has_wifi', 'has_bluetooth', 'has_cd_drive'],
-	accessories: ['includes_charger', 'charger_status'],
+	accessories: ['includes_charger', 'charger_status', 'includes_antenna', 'antenna_condition'],
 	software: ['operating_system'],
 	observations: ['observations'],
 };
@@ -160,6 +161,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 		handleSubmit,
 		watch,
 		setValue,
+		setError,
 		getValues,
 		trigger,
 		getFieldState,
@@ -170,6 +172,31 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 		defaultValues: defaultValues || {},
 		mode: 'onBlur',
 	});
+	const [sectionRequest, setSectionRequest] = useState<{ key: string; token: number }>();
+	const showAntennaError = useCallback(() => {
+		setSectionRequest((previous) => ({
+			key: 'accessories',
+			token: (previous?.token ?? 0) + 1,
+		}));
+	}, []);
+	const submitReview = useCallback(
+		async (data: DesktopFormData) => {
+			try {
+				await onSubmit(data);
+			} catch (error: unknown) {
+				const antennaError = getTechnicalReviewFieldError(error, 'antenna_condition');
+				if (antennaError) {
+					setError('antenna_condition', { type: 'server', message: antennaError });
+					showAntennaError();
+					return;
+				}
+				toast.error(
+					error instanceof Error ? error.message : 'Error al guardar la revisión',
+				);
+			}
+		},
+		[onSubmit, setError, showAntennaError],
+	);
 
 	// Calculate Completeness (using refactored hook with 2nd arg)
 	// We watch all values to trigger updates
@@ -188,13 +215,30 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			watch,
 			setValue,
 			schemaFields,
-			onDirectSubmit: (partialData) => {
+			onDirectSubmit: async (partialData) => {
+				// El atajo «No enciende» omite el resolver completo, pero también debe
+				// respetar el estado obligatorio de una antena previamente declarada.
+				if (!(await trigger('antenna_condition'))) {
+					showAntennaError();
+					return;
+				}
 				const currentData = getValues();
 				const payload = { ...currentData, ...partialData } as DesktopFormData;
-				onSubmit(payload);
+				await submitReview(payload);
 			},
 		}),
-		[control, errors, readOnly, watch, setValue, getValues, onSubmit, schemaFields],
+		[
+			control,
+			errors,
+			readOnly,
+			watch,
+			setValue,
+			getValues,
+			trigger,
+			showAntennaError,
+			submitReview,
+			schemaFields,
+		],
 	);
 
 	// Expose getFormValues to parent for auto-save
@@ -261,32 +305,19 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	};
 
 	const handleFinish = () => {
-		handleSubmit(
-			async (data) => {
-				try {
-					await onSubmit(data);
-				} catch (error: unknown) {
-					const message =
-						error instanceof Error ? error.message : 'Error al guardar la revisión';
-					console.error('DesktopForm submit error:', error);
-					toast.error(message);
-				}
-			},
-			(validationErrors) => {
-				const messages = Object.values(
-					validationErrors as Record<string, { message?: string }>,
-				)
-					.map((e) => e?.message)
-					.filter(Boolean)
-					.slice(0, 5);
+		void handleSubmit(submitReview, (validationErrors) => {
+			if (validationErrors.antenna_condition) showAntennaError();
+			const messages = Object.values(validationErrors as Record<string, { message?: string }>)
+				.map((e) => e?.message)
+				.filter(Boolean)
+				.slice(0, 5);
 
-				if (messages.length > 0) {
-					toast.error(`Corrige los errores antes de continuar:\n${messages.join('\n')}`);
-				} else {
-					toast.error('Hay campos con errores. Revisa el formulario.');
-				}
-			},
-		)();
+			if (messages.length > 0) {
+				toast.error(`Corrige los errores antes de continuar:\n${messages.join('\n')}`);
+			} else {
+				toast.error('Hay campos con errores. Revisa el formulario.');
+			}
+		})();
 	};
 
 	return (
@@ -301,6 +332,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			onValidateStep={validateStep}
 			isSaving={isSaving}
 			initialSectionKey={initialSectionKey}
+			sectionRequest={sectionRequest}
 		/>
 	);
 };

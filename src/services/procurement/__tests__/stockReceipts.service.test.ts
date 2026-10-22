@@ -3,7 +3,6 @@ import type { IStockReceipt } from '@/interface/procurement.interface';
 
 /**
  * La fachada no simula nada: elige el doble o la API real según la bandera.
- * La simulación se prueba en `@/mocks/services/__tests__/stockReceipts.mock.test.ts`.
  * Las rutas y cabeceras de la rama real son las del backend (tareas 11 y 12).
  */
 

@@ -161,31 +161,6 @@ describe('port condition questions', () => {
 				expect(screen.queryByText(/Todos los Puertos Funcionan/)).not.toBeInTheDocument();
 			});
 
-			it('opens only the loose breakdown, leaving the defective one closed', () => {
-				renderSection(Section);
-
-				answer(/¿Hay puertos sueltos\?/, 'Sí');
-
-				expect(looseBreakdown()).toBeVisible();
-				expect(
-					screen.queryByRole('group', { name: /Qué puertos están defectuosos/ }),
-				).not.toBeInTheDocument();
-			});
-
-			/**
-			 * Con los contenedores en su propia grilla, activar sólo «sueltos» lo dejaba en la
-			 * primera columna, debajo de la pregunta por los defectuosos, y se leía como si le
-			 * perteneciera. Cada desglose tiene que quedar bajo su propia pregunta.
-			 */
-			it('keeps each breakdown under its own question', () => {
-				renderSection(Section, { defaultValues: { loose_port_types: { hdmi: 1 } } });
-
-				const column = columnOf(looseBreakdown(), /¿Hay puertos sueltos\?/);
-
-				expect(column).not.toBeNull();
-				expect(column?.textContent).not.toMatch(/¿Hay puertos defectuosos\?/);
-			});
-
 			/**
 			 * Registrar un puerto suelto no debe obligar a declarar puertos defectuosos: el
 			 * puerto suelto funciona. Antes eso era imposible, porque el único detalle colgaba
@@ -202,116 +177,6 @@ describe('port condition questions', () => {
 				expect(getForm().getValues('all_ports_functional')).toBe(true);
 			});
 
-			/**
-			 * Las dos preguntas arrancan en «No», y respondidas de verdad: sin valor en el
-			 * formulario los campos no viajan en el PATCH, el servidor conserva lo que
-			 * tuviera y el técnico se lleva la impresión contraria a lo que ve en pantalla.
-			 */
-			it('starts both questions answered as no', () => {
-				const getForm = renderSection(Section);
-
-				[/¿Hay puertos defectuosos\?/, /¿Hay puertos sueltos\?/].forEach((asked) => {
-					expect(
-						within(question(asked)).getByRole('button', { name: 'No' }),
-					).toHaveAttribute('aria-pressed', 'true');
-				});
-
-				expect(getForm().getValues('all_ports_functional')).toBe(true);
-				expect(getForm().getValues('loose_port_types')).toEqual({});
-			});
-
-			/** Una revisión ya respondida conserva lo suyo: el arranque no la pisa. */
-			it('does not overwrite an answer the review already has', () => {
-				const getForm = renderSection(Section, {
-					defaultValues: {
-						all_ports_functional: false,
-						defective_port_types: { hdmi: 1 },
-						loose_port_types: { usb_c: 2 },
-					},
-				});
-
-				expect(getForm().getValues('all_ports_functional')).toBe(false);
-				expect(getForm().getValues('loose_port_types')).toEqual({ usb_c: 2 });
-			});
-
-			/** Un `{}` ya guardado es «se midió, ninguno»: la respuesta es «no» y no se abre. */
-			it('reads a stored empty breakdown as a no', () => {
-				renderSection(Section, { defaultValues: { loose_port_types: {} } });
-
-				expect(
-					within(question(/¿Hay puertos sueltos\?/)).getByRole('button', { name: 'No' }),
-				).toHaveAttribute('aria-pressed', 'true');
-				expect(
-					screen.queryByRole('group', { name: /Qué puertos están sueltos/ }),
-				).not.toBeInTheDocument();
-			});
-
-			/** «Sí» sin marcar nada todavía es `{}`: «se midió», no un puerto inventado. */
-			it('does not invent a port when the question is answered yes', () => {
-				const getForm = renderSection(Section);
-
-				answer(/¿Hay puertos sueltos\?/, 'Sí');
-
-				expect(getForm().getValues('loose_port_types')).toEqual({});
-			});
-
-			it('counts each port type separately, like the equipment port grid', () => {
-				const getForm = renderSection(Section);
-
-				answer(/¿Hay puertos sueltos\?/, 'Sí');
-				const group = looseBreakdown();
-				increment(group, 'HDMI', 2);
-				increment(group, 'USB-C');
-
-				expect(getForm().getValues('loose_port_types')).toEqual({ hdmi: 2, usb_c: 1 });
-			});
-
-			/** Un tipo en cero se omite del mapa: el backend rechaza las cantidades menores a 1. */
-			it('drops a port type instead of storing it as zero', () => {
-				const getForm = renderSection(Section, {
-					defaultValues: { loose_port_types: { hdmi: 1, usb_c: 2 } },
-				});
-
-				fireEvent.click(
-					within(looseBreakdown()).getByRole('button', { name: 'Decrementar HDMI' }),
-				);
-
-				expect(getForm().getValues('loose_port_types')).toEqual({ usb_c: 2 });
-			});
-
-			/**
-			 * El backend dejó de acotar el desglose y ya no publica `value_max`; un schema
-			 * viejo en caché todavía puede traerlo (cuatro en este fixture) y el formulario
-			 * lo ignora: si mandara, el técnico no podría registrar los puertos que sí tiene.
-			 */
-			it('ignores the ceiling an outdated schema still publishes', () => {
-				const getForm = renderSection(Section, {
-					defaultValues: { loose_port_types: { hdmi: 4 } },
-				});
-
-				increment(looseBreakdown(), 'HDMI');
-
-				expect(getForm().getValues('loose_port_types')).toEqual({ hdmi: 5 });
-			});
-
-			/**
-			 * El `max:10` del backend rechazaba una docking con doce USB-A. Ya no existe, y
-			 * el formulario tampoco puede reponerlo por su cuenta.
-			 */
-			it('records more ports than the ceiling the backend used to impose', () => {
-				const getForm = renderSection(Section, {
-					defaultValues: { loose_port_types: { hdmi: 12 } },
-				});
-
-				const incrementHdmi = within(looseBreakdown()).getByRole('button', {
-					name: 'Incrementar HDMI',
-				});
-				expect(incrementHdmi).toBeEnabled();
-
-				fireEvent.click(incrementHdmi);
-				expect(getForm().getValues('loose_port_types')).toEqual({ hdmi: 13 });
-			});
-
 			it('derives the defective total from its breakdown', () => {
 				const getForm = renderSection(Section, {
 					defaultValues: { all_ports_functional: false, defective_port_types: {} },
@@ -323,143 +188,6 @@ describe('port condition questions', () => {
 
 				expect(getForm().getValues('defective_port_types')).toEqual({ hdmi: 2, usb_c: 1 });
 				expect(getForm().getValues('defective_ports_count')).toBe(3);
-			});
-
-			/**
-			 * La migración que agregó `defective_port_types` no rellenó las revisiones
-			 * anteriores: en producción hay 587 revisiones con `defective_ports_count > 0`
-			 * y el mapa en `null`, y `TechnicalReviewItemResource` las publica tal cual,
-			 * sin sintetizar el desglose. Derivar el total del mapa vacío ponía «0» al
-			 * lado del «Sí» de la misma pregunta.
-			 */
-			it('shows the persisted total while the breakdown does not exist', () => {
-				const getForm = renderSection(Section, {
-					defaultValues: {
-						all_ports_functional: false,
-						defective_ports_count: 3,
-						defective_port_types: null,
-					},
-				});
-
-				expect(screen.getByText(/Puertos defectuosos: 3/, { selector: 'p' })).toBeVisible();
-				// Abrir la revisión no puede reescribir el conteo que trajo el endpoint.
-				expect(getForm().getValues('defective_ports_count')).toBe(3);
-			});
-
-			/** El desglose que falta no se puede repartir por tipo: se avisa, no se inventa. */
-			it('says the historic review stored no breakdown', () => {
-				renderSection(Section, {
-					defaultValues: {
-						all_ports_functional: false,
-						defective_ports_count: 3,
-						defective_port_types: null,
-					},
-				});
-
-				expect(screen.getByText(/guardó el total sin el desglose por tipo/)).toBeVisible();
-			});
-
-			/** Con el mapa ya medido manda su suma, que es lo que el técnico marcó. */
-			it('derives the total from the breakdown once it exists', () => {
-				renderSection(Section, {
-					defaultValues: {
-						all_ports_functional: false,
-						defective_ports_count: 3,
-						defective_port_types: { hdmi: 1 },
-					},
-				});
-
-				expect(screen.getByText(/Puertos defectuosos: 1/, { selector: 'p' })).toBeVisible();
-				expect(
-					screen.queryByText(/guardó el total sin el desglose por tipo/),
-				).not.toBeInTheDocument();
-			});
-
-			/** Un `{}` guardado es «se midió, ninguno»: cero de verdad, y sin el aviso. */
-			it('reads a stored empty defective breakdown as a real zero', () => {
-				renderSection(Section, {
-					defaultValues: {
-						all_ports_functional: false,
-						defective_ports_count: 0,
-						defective_port_types: {},
-					},
-				});
-
-				expect(screen.getByText(/Puertos defectuosos: 0/, { selector: 'p' })).toBeVisible();
-				expect(
-					screen.queryByText(/guardó el total sin el desglose por tipo/),
-				).not.toBeInTheDocument();
-			});
-
-			it('clears the breakdown when the answer goes back to no', () => {
-				const getForm = renderSection(Section, {
-					defaultValues: {
-						all_ports_functional: false,
-						defective_ports_count: 3,
-						defective_port_types: { hdmi: 3 },
-						loose_port_types: { usb_c: 2 },
-					},
-				});
-
-				answer(/¿Hay puertos defectuosos\?/, 'No');
-				expect(getForm().getValues('all_ports_functional')).toBe(true);
-				expect(getForm().getValues('defective_port_types')).toEqual({});
-				expect(getForm().getValues('defective_ports_count')).toBe(0);
-
-				answer(/¿Hay puertos sueltos\?/, 'No');
-				expect(getForm().getValues('loose_port_types')).toEqual({});
-			});
-
-			it('falls back to the local port catalog when the backend publishes no schema', () => {
-				renderSection(Section, {
-					schemaFields: undefined,
-					defaultValues: { all_ports_functional: false },
-				});
-
-				answer(/¿Hay puertos sueltos\?/, 'Sí');
-
-				[looseBreakdown(), defectiveBreakdown()].forEach((group) => {
-					expect(
-						within(group).getAllByRole('button', { name: /^Incrementar / }),
-					).toHaveLength(9);
-					expect(
-						within(group).getByRole('button', { name: 'Incrementar Puerto de carga' }),
-					).toBeVisible();
-					expect(
-						within(group).getByRole('button', { name: 'Incrementar DVI' }),
-					).toBeVisible();
-				});
-			});
-
-			/**
-			 * El catálogo del formulario es hoy el mismo que publica el backend, pero el
-			 * filtro sigue siendo la guarda ante un tipo que esta pantalla no sabe mostrar.
-			 */
-			it('does not offer a port type outside the catalog', () => {
-				const withUnknownType: ITechnicalReviewSchema = {
-					...REMOTE_SCHEMA,
-					loose_port_types: {
-						...REMOTE_SCHEMA.loose_port_types,
-						options: [
-							{ value: 'hdmi', label: 'HDMI' },
-							{ value: 'thunderbolt', label: 'Thunderbolt' },
-						],
-					},
-				};
-
-				renderSection(Section, {
-					schemaFields: withUnknownType,
-					defaultValues: { loose_port_types: { hdmi: 1 } },
-				});
-
-				expect(
-					within(looseBreakdown()).queryByRole('button', {
-						name: 'Incrementar Thunderbolt',
-					}),
-				).toBeNull();
-				expect(
-					within(looseBreakdown()).getByRole('button', { name: 'Incrementar HDMI' }),
-				).toBeVisible();
 			});
 
 			/**
@@ -504,6 +232,286 @@ describe('port condition questions', () => {
 				answer(/¿Hay puertos defectuosos\?/, 'Sí');
 				expect(getForm().getValues('all_ports_functional')).toBeUndefined();
 			});
+		});
+	});
+
+	// La lógica de las preguntas vive en `PortConditionFields`, que comparten las cinco
+	// secciones: basta con recorrerla en una. Lo que cada sección cablea por su cuenta se
+	// prueba arriba en las cinco.
+	describe('shared question logic (notebook)', () => {
+		const Section = asSection(PortsSection);
+
+		it('opens only the loose breakdown, leaving the defective one closed', () => {
+			renderSection(Section);
+
+			answer(/¿Hay puertos sueltos\?/, 'Sí');
+
+			expect(looseBreakdown()).toBeVisible();
+			expect(
+				screen.queryByRole('group', { name: /Qué puertos están defectuosos/ }),
+			).not.toBeInTheDocument();
+		});
+
+		/**
+		 * Con los contenedores en su propia grilla, activar sólo «sueltos» lo dejaba en la
+		 * primera columna, debajo de la pregunta por los defectuosos, y se leía como si le
+		 * perteneciera. Cada desglose tiene que quedar bajo su propia pregunta.
+		 */
+		it('keeps each breakdown under its own question', () => {
+			renderSection(Section, { defaultValues: { loose_port_types: { hdmi: 1 } } });
+
+			const column = columnOf(looseBreakdown(), /¿Hay puertos sueltos\?/);
+
+			expect(column).not.toBeNull();
+			expect(column?.textContent).not.toMatch(/¿Hay puertos defectuosos\?/);
+		});
+
+		/**
+		 * Las dos preguntas arrancan en «No», y respondidas de verdad: sin valor en el
+		 * formulario los campos no viajan en el PATCH, el servidor conserva lo que
+		 * tuviera y el técnico se lleva la impresión contraria a lo que ve en pantalla.
+		 */
+		it('starts both questions answered as no', () => {
+			const getForm = renderSection(Section);
+
+			[/¿Hay puertos defectuosos\?/, /¿Hay puertos sueltos\?/].forEach((asked) => {
+				expect(within(question(asked)).getByRole('button', { name: 'No' })).toHaveAttribute(
+					'aria-pressed',
+					'true',
+				);
+			});
+
+			expect(getForm().getValues('all_ports_functional')).toBe(true);
+			expect(getForm().getValues('loose_port_types')).toEqual({});
+		});
+
+		/** Una revisión ya respondida conserva lo suyo: el arranque no la pisa. */
+		it('does not overwrite an answer the review already has', () => {
+			const getForm = renderSection(Section, {
+				defaultValues: {
+					all_ports_functional: false,
+					defective_port_types: { hdmi: 1 },
+					loose_port_types: { usb_c: 2 },
+				},
+			});
+
+			expect(getForm().getValues('all_ports_functional')).toBe(false);
+			expect(getForm().getValues('loose_port_types')).toEqual({ usb_c: 2 });
+		});
+
+		/** Un `{}` ya guardado es «se midió, ninguno»: la respuesta es «no» y no se abre. */
+		it('reads a stored empty breakdown as a no', () => {
+			renderSection(Section, { defaultValues: { loose_port_types: {} } });
+
+			expect(
+				within(question(/¿Hay puertos sueltos\?/)).getByRole('button', { name: 'No' }),
+			).toHaveAttribute('aria-pressed', 'true');
+			expect(
+				screen.queryByRole('group', { name: /Qué puertos están sueltos/ }),
+			).not.toBeInTheDocument();
+		});
+
+		/** «Sí» sin marcar nada todavía es `{}`: «se midió», no un puerto inventado. */
+		it('does not invent a port when the question is answered yes', () => {
+			const getForm = renderSection(Section);
+
+			answer(/¿Hay puertos sueltos\?/, 'Sí');
+
+			expect(getForm().getValues('loose_port_types')).toEqual({});
+		});
+
+		it('counts each port type separately, like the equipment port grid', () => {
+			const getForm = renderSection(Section);
+
+			answer(/¿Hay puertos sueltos\?/, 'Sí');
+			const group = looseBreakdown();
+			increment(group, 'HDMI', 2);
+			increment(group, 'USB-C');
+
+			expect(getForm().getValues('loose_port_types')).toEqual({ hdmi: 2, usb_c: 1 });
+		});
+
+		/** Un tipo en cero se omite del mapa: el backend rechaza las cantidades menores a 1. */
+		it('drops a port type instead of storing it as zero', () => {
+			const getForm = renderSection(Section, {
+				defaultValues: { loose_port_types: { hdmi: 1, usb_c: 2 } },
+			});
+
+			fireEvent.click(
+				within(looseBreakdown()).getByRole('button', { name: 'Decrementar HDMI' }),
+			);
+
+			expect(getForm().getValues('loose_port_types')).toEqual({ usb_c: 2 });
+		});
+
+		/**
+		 * El backend dejó de acotar el desglose y ya no publica `value_max`; un schema
+		 * viejo en caché todavía puede traerlo (cuatro en este fixture) y el formulario
+		 * lo ignora: si mandara, el técnico no podría registrar los puertos que sí tiene.
+		 */
+		it('ignores the ceiling an outdated schema still publishes', () => {
+			const getForm = renderSection(Section, {
+				defaultValues: { loose_port_types: { hdmi: 4 } },
+			});
+
+			increment(looseBreakdown(), 'HDMI');
+
+			expect(getForm().getValues('loose_port_types')).toEqual({ hdmi: 5 });
+		});
+
+		/**
+		 * El `max:10` del backend rechazaba una docking con doce USB-A. Ya no existe, y
+		 * el formulario tampoco puede reponerlo por su cuenta.
+		 */
+		it('records more ports than the ceiling the backend used to impose', () => {
+			const getForm = renderSection(Section, {
+				defaultValues: { loose_port_types: { hdmi: 12 } },
+			});
+
+			const incrementHdmi = within(looseBreakdown()).getByRole('button', {
+				name: 'Incrementar HDMI',
+			});
+			expect(incrementHdmi).toBeEnabled();
+
+			fireEvent.click(incrementHdmi);
+			expect(getForm().getValues('loose_port_types')).toEqual({ hdmi: 13 });
+		});
+
+		/**
+		 * La migración que agregó `defective_port_types` no rellenó las revisiones
+		 * anteriores: en producción hay 587 revisiones con `defective_ports_count > 0`
+		 * y el mapa en `null`, y `TechnicalReviewItemResource` las publica tal cual,
+		 * sin sintetizar el desglose. Derivar el total del mapa vacío ponía «0» al
+		 * lado del «Sí» de la misma pregunta.
+		 */
+		it('shows the persisted total while the breakdown does not exist', () => {
+			const getForm = renderSection(Section, {
+				defaultValues: {
+					all_ports_functional: false,
+					defective_ports_count: 3,
+					defective_port_types: null,
+				},
+			});
+
+			expect(screen.getByText(/Puertos defectuosos: 3/, { selector: 'p' })).toBeVisible();
+			// Abrir la revisión no puede reescribir el conteo que trajo el endpoint.
+			expect(getForm().getValues('defective_ports_count')).toBe(3);
+		});
+
+		/** El desglose que falta no se puede repartir por tipo: se avisa, no se inventa. */
+		it('says the historic review stored no breakdown', () => {
+			renderSection(Section, {
+				defaultValues: {
+					all_ports_functional: false,
+					defective_ports_count: 3,
+					defective_port_types: null,
+				},
+			});
+
+			expect(screen.getByText(/guardó el total sin el desglose por tipo/)).toBeVisible();
+		});
+
+		/** Con el mapa ya medido manda su suma, que es lo que el técnico marcó. */
+		it('derives the total from the breakdown once it exists', () => {
+			renderSection(Section, {
+				defaultValues: {
+					all_ports_functional: false,
+					defective_ports_count: 3,
+					defective_port_types: { hdmi: 1 },
+				},
+			});
+
+			expect(screen.getByText(/Puertos defectuosos: 1/, { selector: 'p' })).toBeVisible();
+			expect(
+				screen.queryByText(/guardó el total sin el desglose por tipo/),
+			).not.toBeInTheDocument();
+		});
+
+		/** Un `{}` guardado es «se midió, ninguno»: cero de verdad, y sin el aviso. */
+		it('reads a stored empty defective breakdown as a real zero', () => {
+			renderSection(Section, {
+				defaultValues: {
+					all_ports_functional: false,
+					defective_ports_count: 0,
+					defective_port_types: {},
+				},
+			});
+
+			expect(screen.getByText(/Puertos defectuosos: 0/, { selector: 'p' })).toBeVisible();
+			expect(
+				screen.queryByText(/guardó el total sin el desglose por tipo/),
+			).not.toBeInTheDocument();
+		});
+
+		it('clears the breakdown when the answer goes back to no', () => {
+			const getForm = renderSection(Section, {
+				defaultValues: {
+					all_ports_functional: false,
+					defective_ports_count: 3,
+					defective_port_types: { hdmi: 3 },
+					loose_port_types: { usb_c: 2 },
+				},
+			});
+
+			answer(/¿Hay puertos defectuosos\?/, 'No');
+			expect(getForm().getValues('all_ports_functional')).toBe(true);
+			expect(getForm().getValues('defective_port_types')).toEqual({});
+			expect(getForm().getValues('defective_ports_count')).toBe(0);
+
+			answer(/¿Hay puertos sueltos\?/, 'No');
+			expect(getForm().getValues('loose_port_types')).toEqual({});
+		});
+
+		it('falls back to the local port catalog when the backend publishes no schema', () => {
+			renderSection(Section, {
+				schemaFields: undefined,
+				defaultValues: { all_ports_functional: false },
+			});
+
+			answer(/¿Hay puertos sueltos\?/, 'Sí');
+
+			[looseBreakdown(), defectiveBreakdown()].forEach((group) => {
+				expect(
+					within(group).getAllByRole('button', { name: /^Incrementar / }),
+				).toHaveLength(9);
+				expect(
+					within(group).getByRole('button', { name: 'Incrementar Puerto de carga' }),
+				).toBeVisible();
+				expect(
+					within(group).getByRole('button', { name: 'Incrementar DVI' }),
+				).toBeVisible();
+			});
+		});
+
+		/**
+		 * El catálogo del formulario es hoy el mismo que publica el backend, pero el
+		 * filtro sigue siendo la guarda ante un tipo que esta pantalla no sabe mostrar.
+		 */
+		it('does not offer a port type outside the catalog', () => {
+			const withUnknownType: ITechnicalReviewSchema = {
+				...REMOTE_SCHEMA,
+				loose_port_types: {
+					...REMOTE_SCHEMA.loose_port_types,
+					options: [
+						{ value: 'hdmi', label: 'HDMI' },
+						{ value: 'thunderbolt', label: 'Thunderbolt' },
+					],
+				},
+			};
+
+			renderSection(Section, {
+				schemaFields: withUnknownType,
+				defaultValues: { loose_port_types: { hdmi: 1 } },
+			});
+
+			expect(
+				within(looseBreakdown()).queryByRole('button', {
+					name: 'Incrementar Thunderbolt',
+				}),
+			).toBeNull();
+			expect(
+				within(looseBreakdown()).getByRole('button', { name: 'Incrementar HDMI' }),
+			).toBeVisible();
 		});
 	});
 

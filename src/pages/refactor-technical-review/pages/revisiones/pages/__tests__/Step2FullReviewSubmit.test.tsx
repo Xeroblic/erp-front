@@ -63,18 +63,31 @@ vi.mock('../../../../components/forms', () => ({
 	},
 }));
 
-const renderReview = () =>
+const renderReview = (onComplete: () => Promise<void> = () => Promise.resolve()) =>
 	render(
 		<Step2FullReview
 			equipmentType='notebook'
 			serialNumber='SN-1'
 			initialData={{ id: 7, details: {} }}
 			onBack={() => undefined}
-			onComplete={() => Promise.resolve()}
+			onComplete={onComplete}
 		/>,
 	);
 
 describe('Step2FullReview final submit', () => {
+	it('propaga el error por campo de finalización hasta el formulario sin perderlo', async () => {
+		const failure = {
+			message: 'Validación fallida',
+			errors: { antenna_condition: ['Completa el estado de la antena'] },
+		};
+		renderReview(() => Promise.reject(failure));
+		await act(async () => {
+			await expect(
+				formRouterState.onSubmit?.({ includes_antenna: true, antenna_condition: 'loose' }),
+			).rejects.toEqual(failure);
+		});
+		expect(toastError).not.toHaveBeenCalled();
+	});
 	beforeEach(() => {
 		dispatch.mockReset().mockReturnValue({ unwrap: () => Promise.resolve({}) });
 		updateItemDetails.mockReset().mockImplementation((payload: unknown) => payload);

@@ -1,5 +1,3 @@
-import { IItem } from '@/interface/technicalReviews.interface';
-
 export const EQUIPMENT_TYPE_LABELS: Record<string, string> = {
 	notebook: 'Notebook',
 	desktop: 'Desktop',
@@ -204,6 +202,8 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'CD', key: 'has_cd_drive' },
 		{ header: 'Incluye', key: 'includes_charger' },
 		{ header: 'Estado', key: 'charger_status' },
+		{ header: 'Antena', key: 'includes_antenna' },
+		{ header: 'Estado antena', key: 'antenna_condition' },
 		{ header: 'S.O', key: 'operating_system' },
 		{ header: 'CATEGORIA', key: '__grade' },
 		{ header: 'Observaciones', key: 'observations' },
@@ -296,6 +296,7 @@ export const EXCEL_GROUPS: Record<string, ExcelGroupDef[]> = {
 		{ label: 'Puertos', color: '7030A0', span: 10 },
 		{ label: 'Otros', color: '4BACC6', span: 1 },
 		{ label: 'Cargador', color: 'BF8F00', span: 2 },
+		{ label: 'Antena', color: 'BF8F00', span: 2 },
 		{ label: 'Software', color: '808080', span: 1 },
 		{ label: 'Clasificación', color: 'C00000', span: 6 },
 	],

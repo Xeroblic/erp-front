@@ -183,16 +183,45 @@ describe('CreateCustomerSaleModal', () => {
 		// El backend descarta de sus listados a quien no tenga billing_company ni
 		// contact_name (`hasUsableName`): el formulario debe exigir uno de los dos antes
 		// de dejar viajar la petición, o el cliente queda inalcanzable tras crearse.
-		// El campo Empresa envuelve el Input en `Validation`, que sí pinta el texto del
-		// error (Input por sí solo sólo aplica el borde rojo).
+		// La regla es «al menos uno de los dos», así que se marcan ambos campos y no
+		// sólo el primero.
 		await waitFor(() =>
 			expect(screen.getByPlaceholderText('Empresa S.A.').className).toContain(
 				'!border-red-500',
 			),
 		);
-		expect(screen.getByText('Ingresa Empresa o Contacto.')).toBeInTheDocument();
+		expect(screen.getByPlaceholderText('Juan Pérez').className).toContain('!border-red-500');
+		expect(screen.getAllByText('Ingresa Empresa o Contacto.')).toHaveLength(2);
 		expect(apiSpies.fetchNormalized).not.toHaveBeenCalled();
 		expect(onSuccess).not.toHaveBeenCalled();
+	});
+
+	it('limpia el error de ambos campos al completar sólo uno de ellos', async () => {
+		renderModal();
+		fireEvent.change(screen.getByPlaceholderText('12345678-9'), {
+			target: { value: '20761872-1' },
+		});
+		fireEvent.change(screen.getByPlaceholderText('correo@example.cl'), {
+			target: { value: 'sin.empresa@prueboide.com' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+		await waitFor(() =>
+			expect(screen.getAllByText('Ingresa Empresa o Contacto.')).toHaveLength(2),
+		);
+
+		fireEvent.change(screen.getByPlaceholderText('Juan Pérez'), {
+			target: { value: 'Juan Pérez' },
+		});
+
+		await waitFor(() =>
+			expect(screen.queryByText('Ingresa Empresa o Contacto.')).not.toBeInTheDocument(),
+		);
+		expect(screen.getByPlaceholderText('Empresa S.A.').className).not.toContain(
+			'!border-red-500',
+		);
+		expect(screen.getByPlaceholderText('Juan Pérez').className).not.toContain(
+			'!border-red-500',
+		);
 	});
 
 	it('el rótulo de Empresa no anuncia un campo opcional que en ausencia de Contacto es obligatorio', () => {

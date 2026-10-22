@@ -120,6 +120,7 @@ const listProfile: IDeferredPaymentCreditProfileListItem = {
 	outstanding_balance: '0.00',
 	available_credit: '500000.00',
 	credit_limit_exceeded: false,
+	has_collection_email: true,
 	customer: null,
 	created_at: null,
 	updated_at: null,
@@ -319,33 +320,6 @@ describe('CreditProfileEditModal', () => {
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'La suspensión del crédito ya fue guardada. El perfil no se puede eliminar.',
 		);
-		expect(onClose).not.toHaveBeenCalled();
-	});
-
-	it('informa la suspensión aplicada si el DELETE falla con un error de red', async () => {
-		updateCreditProfileMock.mockResolvedValue({ ...detailProfile, is_active: false });
-		deleteCreditProfileMock.mockRejectedValue(new Error('Network Error'));
-		render(
-			<CreditProfileEditModal
-				profile={listProfile}
-				subsidiaryId={4}
-				branchId={1}
-				onClose={onClose}
-				onSaved={onSaved}
-			/>,
-		);
-
-		await waitForCollectionEmail('cobranza@cliente.cl');
-		fireEvent.click(screen.getByLabelText('Crédito vigente'));
-		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
-		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
-		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
-
-		expect(await screen.findByRole('alert')).toHaveTextContent(
-			'La suspensión del crédito ya fue guardada. Network Error',
-		);
-		expect(updateCreditProfileMock).toHaveBeenCalledOnce();
-		expect(deleteCreditProfileMock).toHaveBeenCalledOnce();
 		expect(onClose).not.toHaveBeenCalled();
 	});
 

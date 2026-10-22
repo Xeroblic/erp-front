@@ -14,13 +14,19 @@ export const WarehouseSchema = Yup.object({
 	maximum_capacity: Yup.number()
 		.nullable()
 		.min(0, 'La capacidad debe ser un número positivo')
-		.transform((value, originalValue) => (originalValue === '' ? null : value)),
+		.transform((value: number | null, originalValue: unknown) =>
+			originalValue === '' ? null : value,
+		),
 	manager_id: Yup.number()
 		.nullable()
-		.transform((value, originalValue) => (originalValue === '' ? null : value)),
+		.transform((value: number | null, originalValue: unknown) =>
+			originalValue === '' ? null : value,
+		),
 	commune_id: Yup.number()
 		.nullable()
-		.transform((value, originalValue) => (originalValue === '' ? null : value)),
+		.transform((value: number | null, originalValue: unknown) =>
+			originalValue === '' ? null : value,
+		),
 	description: Yup.string().optional(),
 	address: Yup.string().optional(),
 	schedule: Yup.string().optional(),
@@ -76,6 +82,4 @@ export interface IBodegasResumen {
 export interface IFichaBodegaResumen {
 	products: number;
 	units: number;
-	synced: number;
-	manual: number;
 }

@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Input from '@/components/form/Input';
-import { StatusPill } from '@/components/procurement';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import ProtectedButton from '@/components/ui/ProtectedButton';
@@ -13,7 +12,7 @@ import type { IProduct } from '@/interface/product.interface';
 import type { IWarehouseProduct } from '@/interface/warehouse.interface';
 import useClientPagination from '../../hooks/useClientPagination';
 
-const COLUMN_COUNT = 6;
+const COLUMN_COUNT = 5;
 
 interface IAssociatedRow extends IWarehouseProduct {
 	brand: string | null;
@@ -59,7 +58,7 @@ interface AssociatedProductsTableProps {
 	onRemoveProduct: (product: IWarehouseProduct) => void;
 }
 
-/** Productos asociados a la bodega: cantidad guardada, modo de stock y acciones. */
+/** Productos asociados a la bodega: cantidad guardada y acciones. */
 const AssociatedProductsTable: React.FC<AssociatedProductsTableProps> = ({
 	products,
 	allProducts,
@@ -158,9 +157,6 @@ const AssociatedProductsTable: React.FC<AssociatedProductsTableProps> = ({
 								align='right'
 							/>
 							<Th scope='col' className='text-center'>
-								Modo
-							</Th>
-							<Th scope='col' className='text-center'>
 								Acciones
 							</Th>
 						</Tr>
@@ -200,15 +196,6 @@ const AssociatedProductsTable: React.FC<AssociatedProductsTableProps> = ({
 									) : (
 										row.branchStock.toLocaleString('es-CL')
 									)}
-								</Td>
-								<Td>
-									<div className='flex justify-center'>
-										<StatusPill
-											color={row.sync_stock ? 'emerald' : 'zinc'}
-											width={8}>
-											{row.sync_stock ? 'Sincronizado' : 'Manual'}
-										</StatusPill>
-									</div>
 								</Td>
 								<Td>
 									<div className='flex flex-wrap justify-center gap-2'>

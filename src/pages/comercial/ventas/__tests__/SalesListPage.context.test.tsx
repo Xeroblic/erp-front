@@ -3,6 +3,7 @@ import { configureStore, createAction, createReducer } from '@reduxjs/toolkit';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import SalesListPage from '../SalesListPage';
 
 const navigateSpy = vi.hoisted(() => vi.fn());
 const routeState = vi.hoisted(() => ({ saleId: '7' }));
@@ -29,7 +30,7 @@ vi.mock('@/store/slices/salesSlice', () => ({
 	loadSalesList: (arg: unknown) => ({
 		type: 'sales/load',
 		meta: { arg },
-		unwrap: async () => undefined,
+		unwrap: () => Promise.resolve(undefined),
 	}),
 	selectSalesList: (() => {
 		const sales = [
@@ -59,6 +60,14 @@ vi.mock('@/store/selectors/subsidiarySelectors', () => ({
 	selectEffectiveSubsidiaryId: (state: { context: { subsidiaryId: number | null } }) =>
 		state.context.subsidiaryId,
 }));
+// La etapa de la filial la cubre SalesListPage.stage.test; aquí basta la etapa 1.
+vi.mock('@/hooks/useSubsidiaryRolloutStage', () => ({
+	useSubsidiaryRolloutStage: () => ({
+		multiLocationEnabled: false,
+		isMultiLocation: false,
+		isLoading: false,
+	}),
+}));
 vi.mock('@/services/salesService', () => ({
 	fetchPendingSerialAssignment: salesServiceSpies.fetchPendingSerialAssignment,
 	startSaleReturn: salesServiceSpies.startSaleReturn,
@@ -76,16 +85,20 @@ vi.mock('@/components/ui/Card', () => ({
 }));
 vi.mock('@/components/ui/Button', () => ({
 	default: ({ children, onClick }: PropsWithChildren & { onClick?: () => void }) => (
-		<button onClick={onClick}>{children}</button>
+		<button type='button' onClick={onClick}>
+			{children}
+		</button>
 	),
 }));
 vi.mock('@/components/ui/ProtectedButton', () => ({
 	default: ({ children, onClick }: PropsWithChildren & { onClick?: () => void }) => (
-		<button onClick={onClick}>{children}</button>
+		<button type='button' onClick={onClick}>
+			{children}
+		</button>
 	),
 }));
-vi.mock('@/components/form/Input', () => ({ default: () => <input /> }));
-vi.mock('@/components/form/SelectReact', () => ({ default: () => <select /> }));
+vi.mock('@/components/form/Input', () => ({ default: () => <input aria-label='Buscar' /> }));
+vi.mock('@/components/form/SelectReact', () => ({ default: () => <select aria-label='Estado' /> }));
 vi.mock('@/components/ui/DataTable', () => ({
 	default: ({
 		columns,
@@ -128,7 +141,7 @@ vi.mock('@/components/icon/Icon', () => ({
 	default: ({ icon }: { icon: string }) => <span>{icon}</span>,
 }));
 vi.mock('@/components/ui/Tooltip', () => ({
-	default: ({ children }: PropsWithChildren) => <>{children}</>,
+	default: ({ children }: PropsWithChildren) => children,
 }));
 vi.mock('../detail/components/modals/SaleDetailPage', () => ({
 	default: (props: Record<string, unknown>) => {
@@ -144,8 +157,6 @@ vi.mock('../detail/components/modals/DeleteSaleModal', () => ({
 	default: ({ isOpen }: { isOpen: boolean }) =>
 		isOpen ? <div data-testid='delete-sale-modal' /> : null,
 }));
-
-import SalesListPage from '../SalesListPage';
 
 const setSubsidiary = createAction<number | null>('context/setSubsidiary');
 const contextReducer = createReducer({ subsidiaryId: 1 as number | null }, (builder) => {
@@ -174,7 +185,9 @@ describe('SalesListPage con cambio de subsidiaria', () => {
 
 		await screen.findByTestId('sale-detail');
 		await screen.findByRole('button', { name: 'Ver pendientes' });
-		act(() => store.dispatch(setSubsidiary(2)));
+		act(() => {
+			store.dispatch(setSubsidiary(2));
+		});
 		await act(async () => {
 			await Promise.resolve();
 		});
@@ -199,7 +212,9 @@ describe('SalesListPage con cambio de subsidiaria', () => {
 		expect(screen.getByTestId('close-sale-modal')).toBeInTheDocument();
 		expect(screen.getByTestId('delete-sale-modal')).toBeInTheDocument();
 
-		act(() => store.dispatch(setSubsidiary(2)));
+		act(() => {
+			store.dispatch(setSubsidiary(2));
+		});
 		await act(async () => {
 			await Promise.resolve();
 		});

@@ -5,6 +5,8 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
 import type { RootState } from '@/store/rootReducer';
+import { isRecord } from '@/utils/isRecord.util';
+import { getRejectMessage } from '@/utils/technicalReviewErrors';
 import type {
 	IBatch,
 	FetchBatchesParams,
@@ -15,21 +17,45 @@ import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,
 } from '../technicalReviewsContext';
-import { setTechnicalReviewsContext } from '../slice/technicalReviewsSlice';
+import { setTechnicalReviewsContext } from '../technicalReviewsContextActions';
 
-const normalizeArray = (payload: any): any[] => {
-	const raw = payload?.data ?? payload;
+export interface ITechnicalReviewsPageMeta {
+	total?: number;
+	current_page?: number;
+	per_page?: number;
+	last_page?: number;
+}
+
+const unwrapData = (payload: unknown): unknown =>
+	isRecord(payload) && payload.data !== undefined ? payload.data : payload;
+
+const normalizeArray = (payload: unknown): unknown[] => {
+	const raw = unwrapData(payload);
 	return Array.isArray(raw) ? raw : [];
 };
 
-const normalizeObject = (payload: any): any => payload?.data ?? payload ?? null;
+const normalizeObject = (payload: unknown): unknown => unwrapData(payload) ?? null;
+
+const toOptionalNumber = (value: unknown): number | undefined =>
+	typeof value === 'number' ? value : undefined;
+
+const normalizeMeta = (payload: unknown): ITechnicalReviewsPageMeta | null => {
+	const meta = isRecord(payload) ? payload.meta : undefined;
+	if (!isRecord(meta)) return null;
+	return {
+		total: toOptionalNumber(meta.total),
+		current_page: toOptionalNumber(meta.current_page),
+		per_page: toOptionalNumber(meta.per_page),
+		last_page: toOptionalNumber(meta.last_page),
+	};
+};
 
 /**
  * Listado de Lotes
  * GET /api/branches/{branch}/technical-reviews/batches
  */
 export const fetchBatches = createAsyncThunk<
-	{ items: IBatch[]; meta?: any },
+	{ items: IBatch[]; meta?: ITechnicalReviewsPageMeta | null },
 	{ branchId?: number | null; subsidiaryId?: number | null; params?: FetchBatchesParams },
 	{ state: RootState; rejectValue: string }
 >(
@@ -43,7 +69,7 @@ export const fetchBatches = createAsyncThunk<
 					subsidiaryId: context.subsidiaryId,
 				}),
 			);
-			const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
+			const response = await ApiService.fetchData<unknown>({
 				url: buildTechnicalReviewsEndpoint(context, '/batches'),
 				method: 'get',
 				params: {
@@ -62,15 +88,11 @@ export const fetchBatches = createAsyncThunk<
 			});
 
 			const items = normalizeArray(response.data) as IBatch[];
-			const meta = response.data?.meta ?? null;
+			const meta = normalizeMeta(response.data);
 
 			return { items, meta };
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudieron cargar los lotes',
-			);
+		} catch (error: unknown) {
+			return rejectWithValue(getRejectMessage(error, 'No se pudieron cargar los lotes'));
 		}
 	},
 );
@@ -94,16 +116,14 @@ export const fetchBatchById = createAsyncThunk<
 					subsidiaryId: context.subsidiaryId,
 				}),
 			);
-			const response = await ApiService.fetchData<{ data?: any }>({
+			const response = await ApiService.fetchData<unknown>({
 				url: buildTechnicalReviewsEndpoint(context, `/batches/${batchId}`),
 				method: 'get',
 			});
 
 			return normalizeObject(response.data) as IBatch;
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ?? error?.message ?? 'No se pudo cargar el lote',
-			);
+		} catch (error: unknown) {
+			return rejectWithValue(getRejectMessage(error, 'No se pudo cargar el lote'));
 		}
 	},
 );
@@ -113,7 +133,7 @@ export const fetchBatchById = createAsyncThunk<
  * GET /api/branches/{branch}/technical-reviews/batches/{batch}/items
  */
 export const fetchBatchItems = createAsyncThunk<
-	{ items: IItem[]; meta?: any },
+	{ items: IItem[]; meta?: ITechnicalReviewsPageMeta | null },
 	{
 		branchId?: number | null;
 		subsidiaryId?: number | null;
@@ -135,7 +155,7 @@ export const fetchBatchItems = createAsyncThunk<
 					subsidiaryId: context.subsidiaryId,
 				}),
 			);
-			const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
+			const response = await ApiService.fetchData<unknown>({
 				url: buildTechnicalReviewsEndpoint(context, `/batches/${batchId}/items`),
 				method: 'get',
 				params: {
@@ -150,14 +170,12 @@ export const fetchBatchItems = createAsyncThunk<
 			});
 
 			const items = normalizeArray(response.data) as IItem[];
-			const meta = response.data?.meta ?? null;
+			const meta = normalizeMeta(response.data);
 
 			return { items, meta };
-		} catch (error: any) {
+		} catch (error: unknown) {
 			return rejectWithValue(
-				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudieron cargar las series del lote',
+				getRejectMessage(error, 'No se pudieron cargar las series del lote'),
 			);
 		}
 	},
@@ -192,17 +210,15 @@ export const createBatch = createAsyncThunk<
 					subsidiaryId: context.subsidiaryId,
 				}),
 			);
-			const response = await ApiService.fetchData<{ data?: any }>({
+			const response = await ApiService.fetchData<unknown>({
 				url: buildTechnicalReviewsEndpoint(context, '/batches'),
 				method: 'post',
 				data,
 			});
 
 			return normalizeObject(response.data) as IBatch;
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ?? error?.message ?? 'No se pudo crear el lote',
-			);
+		} catch (error: unknown) {
+			return rejectWithValue(getRejectMessage(error, 'No se pudo crear el lote'));
 		}
 	},
 );
@@ -222,7 +238,7 @@ export const updateBatch = createAsyncThunk<
 			customer_supplier_id: number;
 			entry_date: string;
 			expected_quantity: number;
-			notes: string;
+			notes: string | null;
 			status: string;
 		}>;
 	},
@@ -238,17 +254,15 @@ export const updateBatch = createAsyncThunk<
 					subsidiaryId: context.subsidiaryId,
 				}),
 			);
-			const response = await ApiService.fetchData<{ data?: any }>({
+			const response = await ApiService.fetchData<unknown>({
 				url: buildTechnicalReviewsEndpoint(context, `/batches/${batchId}`),
 				method: 'patch',
 				data,
 			});
 
 			return normalizeObject(response.data) as IBatch;
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ?? error?.message ?? 'No se pudo actualizar el lote',
-			);
+		} catch (error: unknown) {
+			return rejectWithValue(getRejectMessage(error, 'No se pudo actualizar el lote'));
 		}
 	},
 );
@@ -278,10 +292,8 @@ export const deleteBatch = createAsyncThunk<
 			});
 
 			return batchId;
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ?? error?.message ?? 'No se pudo eliminar el lote',
-			);
+		} catch (error: unknown) {
+			return rejectWithValue(getRejectMessage(error, 'No se pudo eliminar el lote'));
 		}
 	},
 );

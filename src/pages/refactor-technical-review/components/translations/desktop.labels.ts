@@ -31,6 +31,8 @@ export const DESKTOP_LABELS: Record<string, string> = {
 	loose_port_types: 'Qué Puertos Están Sueltos',
 	includes_charger: '¿Incluye Cable/Fuente?',
 	charger_status: 'Estado Cable/Fuente',
+	includes_antenna: '¿Incluye antena?',
+	antenna_condition: 'Estado de la antena',
 	operating_system: 'Sistema Operativo',
 	has_wifi: 'WiFi',
 	has_bluetooth: 'Bluetooth',

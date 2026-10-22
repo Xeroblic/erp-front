@@ -6,7 +6,6 @@ import type {
 
 /**
  * La fachada no simula nada: elige el doble o la API real según la bandera.
- * La simulación se prueba en `@/mocks/services/__tests__/inventoryOperations.mock.test.ts`.
  */
 
 const fetchData = vi.hoisted(() =>

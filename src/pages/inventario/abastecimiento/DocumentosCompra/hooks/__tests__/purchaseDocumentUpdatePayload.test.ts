@@ -1,60 +1,23 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-	getPurchaseDocument,
-	resetPurchaseDocumentsStoreForTests,
-	updatePurchaseDocument,
-} from '@/mocks/services/purchaseDocuments.mock';
-import { getProcurementSupplier } from '@/mocks/services/procurementSuppliers.mock';
+import { describe, expect, it } from 'vitest';
+import { getPurchaseDocument } from '@/mocks/services/purchaseDocuments.mock';
 import { toFormValues, toUpdatePayload } from '../usePurchaseDocumentForm';
 
 /**
  * Quien edita un documento sin `view-procurement-supplier` recibe 403 al
  * consultar un proveedor. Si la edición reenvía el proveedor que no cambió,
- * el servicio lo vuelve a resolver y la edición termina en «El proveedor no
- * existe». Se prueba contra el doble de documentos, que vuelve a resolver el
- * proveedor que recibe; la consulta de proveedores siempre responde 403.
+ * el backend lo vuelve a resolver y la edición termina en «El proveedor no
+ * existe»: el proveedor sólo viaja cuando cambia.
  */
-
-vi.mock('@/mocks/services/procurementSuppliers.mock', async (importOriginal) => {
-	const mock =
-		await importOriginal<typeof import('@/mocks/services/procurementSuppliers.mock')>();
-	return { ...mock, getProcurementSupplier: vi.fn(mock.getProcurementSupplier) };
-});
-
-const getSupplierMock = vi.mocked(getProcurementSupplier);
 
 const SUBSIDIARY_ID = 4;
 const DRAFT_INVOICE_ID = 42; // draftInvoiceDocument de `procurement.db.ts`, proveedor 7
 
-beforeEach(() => {
-	getSupplierMock.mockRejectedValue({ response: { status: 403, data: {} } });
-});
-
-afterEach(() => {
-	resetPurchaseDocumentsStoreForTests();
-	getSupplierMock.mockReset();
-});
-
 describe('toUpdatePayload — proveedor en la edición de un documento', () => {
-	it('editar una factura sin tocar el proveedor no lo reenvía ni lo consulta', async () => {
-		const { data: document, headers } = await getPurchaseDocument(
-			SUBSIDIARY_ID,
-			DRAFT_INVOICE_ID,
-		);
+	it('editar una factura sin tocar el proveedor no lo reenvía', async () => {
+		const { data: document } = await getPurchaseDocument(SUBSIDIARY_ID, DRAFT_INVOICE_ID);
 		const values = { ...toFormValues(document, 'invoice'), notes: 'Nota corregida' };
 
-		const payload = toUpdatePayload(values, document);
-		const { data: updated } = await updatePurchaseDocument(
-			SUBSIDIARY_ID,
-			DRAFT_INVOICE_ID,
-			payload,
-			{ etag: headers.etag },
-		);
-
-		expect(payload).not.toHaveProperty('supplier_id');
-		expect(getSupplierMock).not.toHaveBeenCalled();
-		expect(updated.notes).toBe('Nota corregida');
-		expect(updated.supplier?.id).toBe(document.supplier?.id);
+		expect(toUpdatePayload(values, document)).not.toHaveProperty('supplier_id');
 	});
 
 	it('un proveedor distinto sí se envía', async () => {

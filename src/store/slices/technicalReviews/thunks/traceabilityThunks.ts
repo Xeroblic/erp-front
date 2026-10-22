@@ -15,7 +15,8 @@ import {
 	buildTechnicalReviewsEndpoint,
 	resolveTechnicalReviewsContext,
 } from '../technicalReviewsContext';
-import { setTechnicalReviewsContext } from '../slice/technicalReviewsSlice';
+import { setTechnicalReviewsContext } from '../technicalReviewsContextActions';
+import type { ITechnicalReviewsPageMeta } from './batchesThunks';
 
 const normalizeArray = (payload: any): any[] => {
 	const raw = payload?.data ?? payload;
@@ -304,7 +305,7 @@ export const getTraceabilityHistory = createAsyncThunk<
  * GET /api/branches/{branch}/technical-reviews/traceability/available-for-sale
  */
 export const getAvailableForSale = createAsyncThunk<
-	{ items: IItem[]; meta?: any },
+	{ items: IItem[]; meta?: ITechnicalReviewsPageMeta | null },
 	{
 		branchId?: number | null;
 		subsidiaryId?: number | null;

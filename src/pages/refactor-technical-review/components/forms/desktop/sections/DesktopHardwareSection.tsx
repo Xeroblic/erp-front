@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { toast } from 'react-toastify';
 import { Controller } from 'react-hook-form';
 import Input from '@/components/form/Input';
@@ -34,6 +34,8 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	const storageTech = watch('storage_technology');
 	const noRam = watch('has_no_ram') === true;
 	const noStorage = watch('has_no_storage') === true;
+	const ramTypeLabelId = useId();
+	const storageTechLabelId = useId();
 	const { setRamAbsence, setStorageAbsence } = useHardwareAbsence<DesktopFormData>({
 		setHasNoRam: (value, options) => setValue('has_no_ram', value, options),
 		setHasNoStorage: (value, options) => setValue('has_no_storage', value, options),
@@ -74,11 +76,8 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 								ram_type: watch('ram_type') || undefined,
 								storage_size: watch('storage_size') || undefined,
 								storage_technology: watch('storage_technology') || undefined,
-								// ZF-102. `powers_on` es el único campo que el backend exige para
-								// cerrar un desktop (`COMPLETION_REQUIREMENTS`), y vive en la sección
-								// Estética: el atajo cierra la revisión de una sola pasada, así que si
-								// no lo responde acá el técnico nunca llega a responderlo y el cierre
-								// muere con «Debes completar si el equipo enciende».
+								// El atajo responde el encendido; DesktopForm valida también
+								// el estado de la antena cuando se había declarado incluida.
 								powers_on: false,
 								general_condition: 'scrap',
 								cover_condition: 'broken',
@@ -136,8 +135,15 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					hardwareLabel='RAM'
 					readOnly={readOnly}>
 					{/* RAM Type Selection Cards */}
-					<label className='mb-2 block text-xs font-semibold text-zinc-500'>Tipo</label>
-					<div className='mb-3 grid grid-cols-3 gap-2'>
+					<span
+						id={ramTypeLabelId}
+						className='mb-2 block text-xs font-semibold text-zinc-500'>
+						Tipo
+					</span>
+					<div
+						role='group'
+						aria-labelledby={ramTypeLabelId}
+						className='mb-3 grid grid-cols-3 gap-2'>
 						{RAM_TYPE_OPTIONS.map((opt) => (
 							<SelectionCard
 								key={opt.value}
@@ -203,10 +209,15 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					hardwareLabel='disco'
 					readOnly={readOnly}>
 					{/* Storage Technology Selection Cards */}
-					<label className='mb-2 block text-xs font-semibold text-zinc-500'>
+					<span
+						id={storageTechLabelId}
+						className='mb-2 block text-xs font-semibold text-zinc-500'>
 						Tecnología
-					</label>
-					<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-3'>
+					</span>
+					<div
+						role='group'
+						aria-labelledby={storageTechLabelId}
+						className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-3'>
 						{STORAGE_TECHNOLOGY_OPTIONS.map((opt) => (
 							<SelectionCard
 								key={opt.value}

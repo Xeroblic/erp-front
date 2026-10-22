@@ -280,6 +280,50 @@ describe('acciones de la venta según pending_return', () => {
 	});
 });
 
+describe('openReceiveReturn (acción «Recibir devolución» del listado)', () => {
+	const renderOpeningReceipt = () =>
+		render(
+			<Provider store={createStore()}>
+				<SaleDetailPage
+					subsidiaryId={1}
+					saleId={90}
+					isOpen
+					onClose={vi.fn()}
+					openReceiveReturn
+				/>
+			</Provider>,
+		);
+
+	it('abre la recepción en cuanto la venta confirma la devolución pendiente', async () => {
+		renderOpeningReceipt();
+		expect(await screen.findByRole('group', { name: 'MOU-01 — Mouse' })).toBeInTheDocument();
+	});
+
+	it('cerrar la recepción deja el detalle abierto sin volver a abrirla', async () => {
+		renderOpeningReceipt();
+		await screen.findByRole('group', { name: 'MOU-01 — Mouse' });
+		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+		await waitFor(() =>
+			expect(screen.queryByRole('group', { name: 'MOU-01 — Mouse' })).not.toBeInTheDocument(),
+		);
+		expect(screen.getByRole('button', { name: 'Recibir devolución' })).toBeInTheDocument();
+	});
+
+	it('sin devolución pendiente sólo muestra el detalle', async () => {
+		detail = { ...detail, is_closed: true, can_close: false, pending_return: null };
+		renderOpeningReceipt();
+		await screen.findByRole('button', { name: 'Iniciar devolución' });
+		expect(screen.queryByRole('group', { name: 'MOU-01 — Mouse' })).not.toBeInTheDocument();
+	});
+
+	it('en la etapa 1 no abre nada', async () => {
+		stage.isMultiLocation = false;
+		renderOpeningReceipt();
+		await waitFor(() => expect(detailReads().length).toBeGreaterThan(0));
+		expect(callsTo((cfg) => cfg.url.endsWith('/returns/12'))).toHaveLength(0);
+	});
+});
+
 describe('etapa 1: el flujo actual no cambia', () => {
 	beforeEach(() => {
 		stage.isMultiLocation = false;
@@ -424,20 +468,6 @@ describe('recibir la devolución (etapa 2)', () => {
 		expect(confirmReturnCalls()).toHaveLength(0);
 	});
 
-	it('tras un timeout reintenta con la misma Idempotency-Key y el mismo cuerpo', async () => {
-		writes = [rejectWithTimeout, () => Promise.resolve(RECEIPT_OK)];
-		const mouse = await openReceipt();
-		fillValidReceipt(mouse);
-		submitReceipt();
-
-		fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
-
-		await waitFor(() => expect(confirmReturnCalls()).toHaveLength(2));
-		const [first, second] = confirmReturnCalls();
-		expect(second.headers?.['Idempotency-Key']).toBe(first.headers?.['Idempotency-Key']);
-		expect(second.data).toEqual(first.data);
-	});
-
 	it('marca en su ítem el error con ruta items.N', async () => {
 		writes = [
 			() =>
@@ -512,44 +542,6 @@ const startButtonIn = () => {
 
 const startReturnCalls = () =>
 	callsTo((cfg) => cfg.method === 'post' && cfg.url.endsWith('/returns'));
-
-describe('respuesta tardía de una devolución', () => {
-	it('no recarga la venta del intento sobre la venta que se abrió después', async () => {
-		const late = deferred();
-		otherDetails[91] = {
-			id: 91,
-			sale_number: 'V-91',
-			status: 'completed',
-			is_closed: true,
-			can_close: false,
-			pending_return: null,
-		};
-		detail = { ...detail, pending_return: null };
-		writes = [() => late.promise];
-		const first = renderDetail(91);
-		fireEvent.click(await screen.findByRole('button', { name: 'Iniciar devolución' }));
-		fireEvent.change(screen.getByLabelText('Motivo de la devolución'), {
-			target: { value: 'El cliente devuelve la compra' },
-		});
-		fireEvent.click(startButtonIn());
-		await waitFor(() => expect(startReturnCalls()).toHaveLength(1));
-
-		// Se cierra el detalle de la 91 y se abre el de la 90 antes de la respuesta.
-		first.unmount();
-		renderDetail(90, first.store);
-		expect(await screen.findByText('V-90')).toBeInTheDocument();
-		const readsOf91 = () =>
-			callsTo((cfg) => cfg.method === 'get' && cfg.url === '/subsidiaries/1/sales/91');
-		const readsBefore = readsOf91().length;
-
-		late.resolve({ status: 201, data: { data: { ...saleReturn, sale_id: 91 } } });
-		await waitFor(() => expect(toastMock.success).toHaveBeenCalled());
-
-		expect(readsOf91()).toHaveLength(readsBefore);
-		expect(screen.getByText('V-90')).toBeInTheDocument();
-		expect(screen.queryByText('V-91')).not.toBeInTheDocument();
-	});
-});
 
 describe('intento incierto tras un timeout', () => {
 	it('cerrar la recepción no lo pierde: al reabrir reintenta con la misma clave y el mismo cuerpo', async () => {

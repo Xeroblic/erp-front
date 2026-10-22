@@ -97,12 +97,14 @@ describe('resolveProcurementError', () => {
 		expect(withContext.action).toBe('reload_selection');
 	});
 
-	it('extrae existing_supplier del 409 de RUT duplicado, la excepción que no usa el envoltorio común', () => {
+	it('extrae context.existing_supplier del 409 de RUT duplicado', () => {
 		const resolved = resolveProcurementError(
 			axiosError(409, {
 				message: 'Ya existe un proveedor con este RUT en esta filial.',
 				code: 'SUPPLIER_RUT_ALREADY_EXISTS',
-				existing_supplier: { id: 7, display_name: 'PCExpress', is_active: false },
+				context: {
+					existing_supplier: { id: 7, display_name: 'PCExpress', is_active: false },
+				},
 			}),
 		);
 

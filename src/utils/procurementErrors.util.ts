@@ -302,8 +302,9 @@ export interface IProcurementResolvedError {
 	/** `context` que un 409 puede traer con IDs/saldos para refrescar. */
 	context: Record<string, unknown> | null;
 	/**
-	 * Del 409 `SUPPLIER_RUT_ALREADY_EXISTS`, la única respuesta que no usa el
-	 * envoltorio común: se lee al nivel de `message`, no de `context`.
+	 * Del 409 `SUPPLIER_RUT_ALREADY_EXISTS`, leído de `context.existing_supplier`
+	 * como cualquier otro 409 con datos. La copia en la raíz del cuerpo está
+	 * deprecada y no se lee.
 	 */
 	existingSupplier: IProcurementSupplierRutConflict | null;
 }
@@ -386,6 +387,7 @@ export const resolveProcurementError = (
 	const resolved = definition ?? GENERIC_DEFINITION;
 
 	const backendMessage = asString(dataRecord?.message);
+	const context = asRecord(dataRecord?.context) ?? null;
 
 	return {
 		code: code ?? resolved.code,
@@ -395,8 +397,8 @@ export const resolveProcurementError = (
 			(definition ? resolved.fallbackMessage : (fallbackMessage ?? resolved.fallbackMessage)),
 		action: resolved.action,
 		fieldErrors: parseFieldErrors(dataRecord?.errors),
-		context: asRecord(dataRecord?.context) ?? null,
-		existingSupplier: parseSupplierConflict(dataRecord?.existing_supplier),
+		context,
+		existingSupplier: parseSupplierConflict(context?.existing_supplier),
 	};
 };
 

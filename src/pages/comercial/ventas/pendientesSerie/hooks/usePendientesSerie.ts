@@ -4,6 +4,7 @@ import { useDebounce } from 'use-debounce';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 import pendingSerialReducer, {
 	loadPendingSerialList,
 	loadPendingSerialCount,
@@ -12,7 +13,6 @@ import pendingSerialReducer, {
 	selectPendingSerialLoading,
 	selectPendingSerialError,
 } from '@/store/slices/pendingSerial/pendingSerialSlice';
-import type { PendingSerialSale } from '@/services/salesService';
 
 injectReducer('pendingSerial', pendingSerialReducer);
 
@@ -22,6 +22,8 @@ export const usePendientesSerie = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const { subsidiaryId, branchId, hasValidBranch } = useCurrentBranch();
+	// Etapa 2: el cierre pide la ubicación de salida de los ítems sin serie.
+	const { isMultiLocation } = useSubsidiaryRolloutStage(subsidiaryId);
 
 	const list = useAppSelector(selectPendingSerialList);
 	const meta = useAppSelector(selectPendingSerialMeta);
@@ -42,7 +44,7 @@ export const usePendientesSerie = () => {
 
 	const fetchList = useCallback(() => {
 		if (!subsidiaryId) return;
-		dispatch(
+		void dispatch(
 			loadPendingSerialList({
 				subsidiaryId,
 				filters: {
@@ -60,7 +62,7 @@ export const usePendientesSerie = () => {
 
 	// Mantiene el contador del badge en sincronía al entrar a la bandeja.
 	useEffect(() => {
-		if (subsidiaryId) dispatch(loadPendingSerialCount({ subsidiaryId }));
+		if (subsidiaryId) void dispatch(loadPendingSerialCount({ subsidiaryId }));
 	}, [dispatch, subsidiaryId, list.length]);
 
 	const goToSale = useCallback(
@@ -80,10 +82,20 @@ export const usePendientesSerie = () => {
 	);
 
 	return {
-		data: { list: list as PendingSerialSale[], total, pageCount },
-		state: { loading, error, hasValidBranch, subsidiaryId, branchId, emptyMessage },
+		data: { list, total, pageCount },
+		state: {
+			loading,
+			error,
+			hasValidBranch,
+			subsidiaryId,
+			branchId,
+			emptyMessage,
+			isMultiLocation,
+		},
 		search: { value: search, onChange: setSearch },
 		pagination: { state: pagination, onChange: setPagination },
 		actions: { goToSale, refetch: fetchList },
 	};
 };
+
+export default usePendientesSerie;

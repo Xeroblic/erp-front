@@ -26,9 +26,24 @@ interface FormShellProps<T extends FieldValues> {
 	isSaving?: boolean;
 	/** Initial section key to jump to on first mount (e.g. 'gallery' shortcut) */
 	initialSectionKey?: string;
+	/** Solicitud de mostrar una sección con errores sin desmontar el formulario. */
+	sectionRequest?: { key: string; token: number };
 }
 
-function FormShell<T extends FieldValues>({
+interface IStepToneClasses {
+	active: string;
+	completed: string;
+	idle: string;
+}
+
+/** Clase del paso según esté activo, ya completado o pendiente. */
+const stepTone = (isActive: boolean, isCompleted: boolean, classes: IStepToneClasses): string => {
+	if (isActive) return classes.active;
+	if (isCompleted) return classes.completed;
+	return classes.idle;
+};
+
+const FormShell = <T extends FieldValues>({
 	sections,
 	sectionProps,
 	onBack,
@@ -39,11 +54,18 @@ function FormShell<T extends FieldValues>({
 	onPersistDraft,
 	isSaving = false,
 	initialSectionKey,
-}: FormShellProps<T>) {
+	sectionRequest,
+}: FormShellProps<T>) => {
 	const [step, setStep] = useState(0);
 	const [direction, setDirection] = useState(1);
 
 	const MAX_STEPS = sections.length;
+
+	useEffect(() => {
+		if (!sectionRequest) return;
+		const index = sections.findIndex((section) => section.key === sectionRequest.key);
+		if (index >= 0) setStep(index);
+	}, [sectionRequest, sections]);
 
 	// Scroll to top on step change
 	useEffect(() => {
@@ -158,13 +180,15 @@ function FormShell<T extends FieldValues>({
 									}`}>
 									{/* Icon Circle */}
 									<div
-										className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 ${
-											isActive
-												? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-4 ring-blue-100 dark:ring-blue-900/50'
-												: isCompleted
-													? 'bg-blue-500 text-white'
-													: 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'
-										}`}>
+										className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 ${stepTone(
+											isActive,
+											isCompleted,
+											{
+												active: 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-4 ring-blue-100 dark:ring-blue-900/50',
+												completed: 'bg-blue-500 text-white',
+												idle: 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500',
+											},
+										)}`}>
 										{isCompleted && !isActive ? (
 											<Icon
 												icon='HeroCheck'
@@ -180,13 +204,15 @@ function FormShell<T extends FieldValues>({
 
 									{/* Label */}
 									<span
-										className={`whitespace-nowrap text-[10px] font-semibold transition-colors ${
-											isActive
-												? 'text-blue-700 dark:text-blue-300'
-												: isCompleted
-													? 'text-blue-500 dark:text-blue-400'
-													: 'text-zinc-400 dark:text-zinc-500'
-										}`}>
+										className={`whitespace-nowrap text-[10px] font-semibold transition-colors ${stepTone(
+											isActive,
+											isCompleted,
+											{
+												active: 'text-blue-700 dark:text-blue-300',
+												completed: 'text-blue-500 dark:text-blue-400',
+												idle: 'text-zinc-400 dark:text-zinc-500',
+											},
+										)}`}>
 										{section.label}
 									</span>
 								</button>
@@ -242,16 +268,18 @@ function FormShell<T extends FieldValues>({
 
 				{/* Progress Dots */}
 				<div className='flex gap-1.5'>
-					{sections.map((_, i) => (
+					{sections.map((section, i) => (
 						<div
-							key={i}
-							className={`h-2 rounded-full transition-all duration-300 ${
-								i === step
-									? 'w-6 bg-blue-600'
-									: i < step
-										? 'w-2 bg-blue-400'
-										: 'w-2 bg-zinc-300 dark:bg-zinc-600'
-							}`}
+							key={section.key}
+							className={`h-2 rounded-full transition-all duration-300 ${stepTone(
+								i === step,
+								i < step,
+								{
+									active: 'w-6 bg-blue-600',
+									completed: 'w-2 bg-blue-400',
+									idle: 'w-2 bg-zinc-300 dark:bg-zinc-600',
+								},
+							)}`}
 						/>
 					))}
 				</div>
@@ -281,6 +309,6 @@ function FormShell<T extends FieldValues>({
 			</div>
 		</div>
 	);
-}
+};
 
 export default FormShell;

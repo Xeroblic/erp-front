@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import useAutoSave from '../useAutoSave';
+import { useAutoSave } from '../useAutoSave';
 
 const { dispatch, updateItemDetails, toastError, toastWarning } = vi.hoisted(() => ({
 	dispatch: vi.fn(),

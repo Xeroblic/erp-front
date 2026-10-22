@@ -3,6 +3,7 @@
  * Reutiliza las traducciones existentes del módulo de revisión técnica.
  */
 import type { EquipmentType } from '@/interface/technicalReviews.interface';
+import { ANTENNA_CONDITION_OPTIONS } from '@/pages/refactor-technical-review/components/constants/desktop/desktop.options';
 import {
 	getNotebookLabel,
 	NOTEBOOK_LABELS,
@@ -135,6 +136,9 @@ const VALUE_TRANSLATIONS: Record<string, string> = {
  * los valores que no dependen del campo (booleanos, grados, estados de la revisión).
  */
 const FIELD_VALUE_TRANSLATIONS: Record<string, Record<string, string>> = {
+	antenna_condition: Object.fromEntries(
+		ANTENNA_CONDITION_OPTIONS.map(({ value, label }) => [value, label]),
+	),
 	general_condition: GENERAL_CONDITION_LABELS,
 	storage_technology: STORAGE_TECHNOLOGY_LABELS,
 	charger_status: CHARGER_STATUS_LABELS,
@@ -254,13 +258,9 @@ export const calculateReviewDuration = (
 	const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 	const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
 
-	if (hours > 0) {
-		return `${hours}h ${minutes}min`;
-	} else if (minutes > 0) {
-		return `${minutes}min ${seconds}seg`;
-	} else {
-		return `${seconds}seg`;
-	}
+	if (hours > 0) return `${hours}h ${minutes}min`;
+	if (minutes > 0) return `${minutes}min ${seconds}seg`;
+	return `${seconds}seg`;
 };
 
 /** Genera texto de conectividad para observaciones/clipboard */
@@ -281,7 +281,7 @@ export const generateConnectivityText = (
 
 	Object.entries(portFields).forEach(([field, label]) => {
 		const value = item.details?.[field];
-		const numValue = typeof value === 'number' ? value : parseInt(String(value)) || 0;
+		const numValue = typeof value === 'number' ? value : parseInt(String(value), 10) || 0;
 
 		if (numValue > 0) {
 			activePorts.push(label);

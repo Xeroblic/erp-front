@@ -1,3 +1,4 @@
+import * as Yup from 'yup';
 import type {
 	DeferredPaymentDocumentType,
 	DeferredPaymentStatus,
@@ -15,6 +16,19 @@ export const DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS: Record<DeferredPaymentDocume
 	invoice: 'Factura',
 	receipt: 'Boleta',
 	other: 'Otro',
+};
+
+const collectionEmailFormat = Yup.string().email();
+
+/**
+ * Los recordatorios al cliente salen sólo a `collection_email` y sólo si se puede enviar a esa
+ * dirección. Replica la regla de `has_collection_email` del backend para los lugares que reciben el
+ * perfil individual, que no trae el flag: un valor vacío, con sólo espacios o mal formado (p. ej.
+ * importado) cuenta como ausente.
+ */
+export const hasCollectionEmail = (collectionEmail: string | null | undefined): boolean => {
+	const trimmed = collectionEmail?.trim() ?? '';
+	return trimmed !== '' && collectionEmailFormat.isValidSync(trimmed);
 };
 
 export const getDaysUntilDueText = (daysUntilDue: number): string => {

@@ -83,6 +83,9 @@ export const ALLOWED_GENERAL_CONDITIONS = [
 
 export const ALLOWED_STORAGE_TECHNOLOGIES = ['HDD', 'SSD', 'M2', 'NVME', 'HYBRID'] as const;
 
+/** Dato de recepción; no participa en la calificación. */
+export const ALLOWED_ANTENNA_CONDITIONS = ['good_condition', 'broken', 'loose'] as const;
+
 export const ALLOWED_CHARGER_STATUSES = [
 	'good_condition',
 	'damaged_cable',

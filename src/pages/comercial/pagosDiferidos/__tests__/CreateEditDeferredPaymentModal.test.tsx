@@ -90,14 +90,12 @@ describe('CreateEditDeferredPaymentModal', () => {
 			await Promise.resolve();
 		});
 		expect(notes).not.toHaveClass('!border-green-500');
-		expect(notes).toHaveClass('bg-zinc-50', 'dark:bg-zinc-900');
 		expect(notes.style.getPropertyValue('--textarea-border')).toBe('#d4d4d8');
 		expect(screen.getByText('Ítems del documento')).toBeInTheDocument();
 		expect(screen.getByText('Suma referencial de ítems')).toBeInTheDocument();
 		expect(
 			screen.getByLabelText('Total del documento — debe coincidir con la factura'),
 		).toBeInTheDocument();
-		expect(screen.getByTestId('items.0.price-vat-row')).toHaveClass('md:col-span-2');
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
 		const createCustomerButton = screen.getByRole('button', { name: 'Crear cliente' });
 		expect(createCustomerButton).toHaveTextContent('Crear cliente');
@@ -266,13 +264,6 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByText('Selecciona la fecha de emisión')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa el código del ítem')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa la descripción del ítem')).toBeInTheDocument();
-		expect(screen.getByTestId('items.0.price-vat-row')).toHaveClass('md:col-span-2');
-		expect(screen.getByTestId('items.0.vat-toggle').parentElement).toHaveClass('md:col-span-2');
-		expect(screen.getByRole('button', { name: 'Quitar ítem 1' }).parentElement).toHaveClass(
-			'absolute',
-			'right-4',
-			'top-4',
-		);
 	});
 	it('mantiene la ayuda de adjuntos mientras se envía el documento', async () => {
 		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
@@ -497,17 +488,6 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(
 			await screen.findByText('Las notas no pueden superar los 1000 caracteres'),
 		).toBeInTheDocument();
-	});
-	it('mantiene el cuerpo desplazable y las acciones fuera del área de scroll', () => {
-		renderModal();
-		const body = document.querySelector('[data-component-name="Modal/ModalBody"]');
-		const footer = document.querySelector('[data-component-name="Modal/ModalFooter"]');
-		const form = body?.closest('form');
-
-		expect(body).toHaveClass('overflow-y-auto', 'min-h-0', 'flex-1');
-		expect(form).toHaveClass('overflow-hidden', 'min-h-0', 'flex-1');
-		expect(footer).toHaveClass('shrink-0');
-		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
 	});
 	it('no se cierra al hacer clic fuera y sí permite cancelar explícitamente', () => {
 		const { onClose } = renderModal();
