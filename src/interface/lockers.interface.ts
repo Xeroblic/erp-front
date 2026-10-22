@@ -1,52 +1,64 @@
+// Contrato de `routes/apis/lockers.php` del backend (rama `integration-freescout`).
+// El PIN nunca viene dentro de `locker`: sólo lo devuelven check-in, check-out, withdraw,
+// drop-off y reset, en la raíz de la respuesta.
+
+export type TLockerStatus = 'available' | 'occupied' | 'ready_for_pickup' | 'quarantine';
+
+export type TServiceOrderLogisticsStatus =
+	| 'checked_in'
+	| 'in_progress'
+	| 'ready_for_pickup'
+	| 'checked_out';
+
+// ============================================================================
+// ENTIDADES INTERNAS / PANEL TÉCNICO
+// ============================================================================
+
 export interface ILockerLocation {
 	id: number;
+	subsidiary_id: number;
 	name: string;
-	address?: string;
-	[key: string]: any;
+	address: string | null;
+	is_active: boolean;
+	lockers_count?: number;
 }
 
+/** `LockerResource`. */
 export interface ILockerInternal {
 	id: number;
-	locker_number: string;
-	number?: string;
+	location_id: number;
+	number: string;
 	qr_token: string;
-	status: string;
-	status_label?: string;
-	locker_pin?: string | null;
-	customer_name?: string;
-	customer_email?: string;
-	customer_phone?: string;
-	device_description?: string;
-	device_brand?: string;
-	device_model?: string;
-	serial_number?: string;
-	service_type?: string;
-	is_invoice?: boolean;
-	invoice_rut?: string;
-	invoice_company_name?: string;
-	invoice_company_address?: string;
-	check_in_at?: string;
-	check_out_at?: string;
-	created_at?: string;
-	updated_at?: string;
+	status: TLockerStatus;
+	status_label: string;
+	location?: ILockerLocation;
 	active_service_order?: IServiceOrder | null;
-	[key: string]: any;
 }
 
+/** `ServiceOrderResource`. */
 export interface IServiceOrder {
 	id: number;
-	locker_id?: number;
-	locker_number?: string;
-	customer_name?: string;
-	customer_email?: string;
-	device_description?: string;
-	device_brand?: string;
-	device_model?: string;
-	service_type?: string;
-	status?: string;
-	created_at?: string;
-	updated_at?: string;
-	[key: string]: any;
+	locker_id: number;
+	freescout_conversation_id: number | null;
+	customer_name: string;
+	customer_email: string;
+	customer_phone: string | null;
+	is_invoice: boolean;
+	invoice_rut: string | null;
+	invoice_company_name: string | null;
+	invoice_company_address: string | null;
+	service_type: string | null;
+	upgrade_type: string | null;
+	device_brand: string | null;
+	device_model: string | null;
+	device_description: string;
+	logistics_status: TServiceOrderLogisticsStatus;
+	logistics_status_label: string;
+	freescout_sync_pending: boolean;
+	checked_in_at: string | null;
+	checked_out_at: string | null;
+	locker?: ILockerInternal;
+	updated_at: string | null;
 }
 
 export interface ITechWithdrawRequest {
@@ -56,23 +68,24 @@ export interface ITechWithdrawRequest {
 export interface ITechDropOffRequest {
 	locker_id: number;
 	service_order_id: number;
-	new_locker_pin?: string;
 }
 
 export interface ITechResetRequest {
 	locker_id: number;
-	new_locker_pin?: string;
 }
 
-export interface ISetReadyForPickupRequest {
-	service_order_id: number;
-	pin_manual: string;
+/** Respuesta de withdraw y drop-off: la orden y el PIN nuevo que el técnico fija en el candado. */
+export interface ITechOrderActionResponse {
+	message: string;
+	data: IServiceOrder;
+	new_locker_pin: string | null;
 }
 
-export interface ILockerActionResponse {
-	success: boolean;
-	message?: string;
-	[key: string]: any;
+/** Respuesta de reset: el casillero y su PIN nuevo. */
+export interface ITechResetResponse {
+	message: string;
+	data: ILockerInternal;
+	new_locker_pin: string | null;
 }
 
 // ============================================================================
@@ -81,10 +94,10 @@ export interface ILockerActionResponse {
 
 export interface ILockerPublicInfo {
 	is_available: boolean;
-	message?: string;
-	available_lockers: string[];
-	locker_number?: string | number;
-	[key: string]: any;
+	message: string;
+	/** Sólo cuando el casillero no está disponible: números libres de la misma ubicación. */
+	available_lockers?: string[];
+	available_lockers_count?: number;
 }
 
 export interface ICheckInRequest {
@@ -105,23 +118,19 @@ export interface ICheckInRequest {
 }
 
 export interface ICheckOutRequest {
+	qr_token: string;
 	withdrawal_keyword: string;
 }
 
 export interface ICheckInResponse {
-	success: boolean;
-	message?: string;
+	message: string;
+	data: IServiceOrder;
 	locker_pin: string | null;
-	data?: {
-		locker?: {
-			number: string;
-		};
-	};
 }
 
 export interface ICheckOutResponse {
-	success: boolean;
-	message?: string;
-	locker_number?: string;
-	locker_pin?: string;
+	message: string;
+	data: IServiceOrder;
+	locker_number: string;
+	locker_pin: string | null;
 }

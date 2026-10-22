@@ -7,17 +7,24 @@ import {
 } from '@tanstack/react-table';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import Icon from '@/components/icon/Icon';
 import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import { ILockerInternal, IServiceOrder } from '@/interface/lockers.interface';
-import { getStatusConfig, getAvailableActions } from '../../types';
+import {
+	getAvailableActions,
+	getStatusConfig,
+	LOCKER_PERMISSIONS,
+	TLockerAction,
+} from '../../types';
 
 interface IListLockersProps {
 	lockers: ILockerInternal[];
 	serviceOrders: IServiceOrder[];
 	isLoading: boolean;
 	error: string | null;
-	openAction: (locker: ILockerInternal, type: 'withdraw' | 'dropoff' | 'reset' | 'ready') => void;
+	openAction: (locker: ILockerInternal, type: TLockerAction) => void;
+	subsidiaryId: number | null;
 	setDetailLocker: (locker: ILockerInternal) => void;
 }
 
@@ -29,6 +36,7 @@ const ListLockers: React.FC<IListLockersProps> = ({
 	isLoading,
 	error,
 	openAction,
+	subsidiaryId,
 	setDetailLocker,
 }) => {
 	// Mapa de órdenes para cruzar datos rápido
@@ -43,7 +51,7 @@ const ListLockers: React.FC<IListLockersProps> = ({
 	const StatusBadge = ({ status }: { status: string }) => {
 		const config = getStatusConfig(status);
 		return (
-			<Badge color={config.color as any} variant='solid' className='text-xs'>
+			<Badge color={config.color} variant='solid' className='text-xs'>
 				<span className='flex items-center gap-1'>
 					<Icon icon={config.icon} className='h-3 w-3' />
 					{config.label}
@@ -54,7 +62,7 @@ const ListLockers: React.FC<IListLockersProps> = ({
 
 	const columns = useMemo(
 		() => [
-			columnHelper.accessor((row) => row.locker_number || row.number || row.id, {
+			columnHelper.accessor('number', {
 				id: 'numero',
 				header: 'Nº',
 				cell: (info) => (
@@ -73,8 +81,8 @@ const ListLockers: React.FC<IListLockersProps> = ({
 				cell: (info) => {
 					const locker = info.row.original;
 					const order = locker.active_service_order || orderByLockerId[locker.id];
-					const clientName = order?.customer_name || locker.customer_name || '—';
-					const clientEmail = order?.customer_email || locker.customer_email;
+					const clientName = order?.customer_name ?? '—';
+					const clientEmail = order?.customer_email;
 					return (
 						<div>
 							<p className='font-medium text-zinc-800 dark:text-zinc-200'>
@@ -94,9 +102,7 @@ const ListLockers: React.FC<IListLockersProps> = ({
 					const deviceInfo =
 						order?.device_brand && order?.device_model
 							? `${order.device_brand} ${order.device_model}`
-							: locker.device_brand && locker.device_model
-								? `${locker.device_brand} ${locker.device_model}`
-								: order?.device_description || locker.device_description || '—';
+							: order?.device_description || '—';
 					return (
 						<div
 							className='max-w-[180px] truncate text-zinc-600 dark:text-zinc-400'
@@ -112,7 +118,7 @@ const ListLockers: React.FC<IListLockersProps> = ({
 				cell: (info) => {
 					const locker = info.row.original;
 					const order = locker.active_service_order || orderByLockerId[locker.id];
-					const serviceType = order?.service_type || locker.service_type || '—';
+					const serviceType = order?.service_type || '—';
 					return <span className='text-zinc-600 dark:text-zinc-400'>{serviceType}</span>;
 				},
 			}),
@@ -122,8 +128,7 @@ const ListLockers: React.FC<IListLockersProps> = ({
 				cell: (info) => {
 					const locker = info.row.original;
 					const order = locker.active_service_order || orderByLockerId[locker.id];
-					const checkInDate =
-						order?.checked_in_at || locker.check_in_at || order?.created_at;
+					const checkInDate = order?.checked_in_at;
 					return (
 						<span className='text-xs text-zinc-500'>
 							{checkInDate ? new Date(checkInDate).toLocaleString('es-CL') : '—'}
@@ -141,34 +146,43 @@ const ListLockers: React.FC<IListLockersProps> = ({
 					return (
 						<div className='flex flex-wrap items-center justify-end gap-1'>
 							{actions.includes('withdraw') && (
-								<Button
+								<ProtectedButton
+									permission={LOCKER_PERMISSIONS.operate}
+									subsidiaryId={subsidiaryId}
+									scope='access'
 									size='xs'
 									color='blue'
 									variant='outline'
 									icon='HeroArrowDownTray'
 									onClick={() => openAction(locker, 'withdraw')}>
 									Retirar
-								</Button>
+								</ProtectedButton>
 							)}
 							{actions.includes('dropoff') && (
-								<Button
+								<ProtectedButton
+									permission={LOCKER_PERMISSIONS.operate}
+									subsidiaryId={subsidiaryId}
+									scope='access'
 									size='xs'
 									color='emerald'
 									variant='outline'
 									icon='HeroArrowUpTray'
 									onClick={() => openAction(locker, 'dropoff')}>
 									Depositar
-								</Button>
+								</ProtectedButton>
 							)}
 							{actions.includes('reset') && (
-								<Button
+								<ProtectedButton
+									permission={LOCKER_PERMISSIONS.operate}
+									subsidiaryId={subsidiaryId}
+									scope='access'
 									size='xs'
 									color='red'
 									variant='outline'
 									icon='HeroArrowPath'
 									onClick={() => openAction(locker, 'reset')}>
 									Reset
-								</Button>
+								</ProtectedButton>
 							)}
 							{actions.includes('detail') && (
 								<Button
@@ -185,7 +199,7 @@ const ListLockers: React.FC<IListLockersProps> = ({
 				},
 			}),
 		],
-		[orderByLockerId, openAction, setDetailLocker],
+		[orderByLockerId, openAction, subsidiaryId, setDetailLocker],
 	);
 
 	const table = useReactTable({

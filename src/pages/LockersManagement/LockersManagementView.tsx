@@ -12,6 +12,7 @@ import LockerActionModal from './components/modal/LockerActionModal';
 import DetailLockerModal from './components/modal/DetailLockerModal';
 import SuccessPinModal from './components/modal/SuccessPinModal';
 import QRScannerModal from './components/modal/QRScannerModal';
+import { TLockerAction } from './types';
 
 // ─────────────────────────────────────────────────
 // Props
@@ -19,32 +20,27 @@ import QRScannerModal from './components/modal/QRScannerModal';
 interface ILockersManagementViewProps {
 	locations: ILockerLocation[];
 	selectedLocationId: number | null;
+	selectedSubsidiaryId: number | null;
 	lockers: ILockerInternal[];
 	serviceOrders: IServiceOrder[];
 	isLoading: boolean;
 	error: string | null;
 	selectedLocker: ILockerInternal | null;
-	actionType: 'withdraw' | 'dropoff' | 'reset' | 'ready' | null;
+	actionType: TLockerAction | null;
 	isActionLoading: boolean;
 	successPin: string | null;
 	successMessage: string | null;
 	selectedOrderId: number | null;
 	// Acciones
-	setSelectedLocker: (locker: ILockerInternal | null) => void;
 	setSuccessPin: (pin: string | null) => void;
 	changeLocation: (locationId: number) => void;
 	fetchLockers: () => void;
 	fetchServiceOrders: () => void;
-	openAction: (
-		locker: ILockerInternal,
-		type: 'withdraw' | 'dropoff' | 'reset' | 'ready',
-		orderId?: number,
-	) => void;
+	openAction: (locker: ILockerInternal, type: TLockerAction, orderId?: number) => void;
 	closeAction: () => void;
 	handleWithdraw: (serviceOrderId: number) => void;
-	handleDropOff: (serviceOrderId: number) => void;
-	handleReset: () => void;
-	handleSetReadyForPickup: (serviceOrderId: number, pinManual: string) => void;
+	handleDropOff: (lockerId: number, serviceOrderId: number) => void;
+	handleReset: (lockerId: number) => void;
 	handleScanQR: (token: string) => Promise<boolean>;
 }
 
@@ -54,6 +50,7 @@ interface ILockersManagementViewProps {
 const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 	locations,
 	selectedLocationId,
+	selectedSubsidiaryId,
 	lockers,
 	serviceOrders,
 	isLoading,
@@ -72,34 +69,27 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 	handleWithdraw,
 	handleDropOff,
 	handleReset,
-	handleSetReadyForPickup,
 	handleScanQR,
-	setSelectedLocker,
 }) => {
 	// --- Estado local para los modales y UI extra ---
 	const [detailLocker, setDetailLocker] = useState<ILockerInternal | null>(null);
 	const [isScanning, setIsScanning] = useState(false);
 	const [activeTab, setActiveTab] = useState<string>('casilleros');
 
+	// El casillero elegido en el modal viaja explícito: en drop-off puede no ser el que abrió la acción.
 	const handleActionSubmit = (data: {
 		orderId: number | null;
-		pinManual: string;
 		actionLocker: ILockerInternal | null;
 	}) => {
-		if (data.actionLocker && data.actionLocker.id !== selectedLocker?.id) {
-			setSelectedLocker(data.actionLocker);
-		}
+		const lockerId = data.actionLocker?.id ?? selectedLocker?.id;
 
 		if (actionType === 'withdraw' && data.orderId) {
 			handleWithdraw(data.orderId);
-		} else if (actionType === 'dropoff' && data.orderId) {
-			handleDropOff(data.orderId);
-		} else if (actionType === 'reset') {
-			handleReset();
-		} else if (actionType === 'ready' && data.orderId && data.pinManual) {
-			handleSetReadyForPickup(data.orderId, data.pinManual);
+		} else if (actionType === 'dropoff' && data.orderId && lockerId) {
+			handleDropOff(lockerId, data.orderId);
+		} else if (actionType === 'reset' && lockerId) {
+			handleReset(lockerId);
 		}
-		closeAction();
 	};
 
 	return (
@@ -132,6 +122,7 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 								changeLocation={changeLocation}
 								fetchLockers={fetchLockers}
 								openAction={openAction}
+								subsidiaryId={selectedSubsidiaryId}
 								setDetailLocker={setDetailLocker}
 								setIsScanning={setIsScanning}
 							/>
@@ -143,6 +134,7 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 								lockers={lockers}
 								serviceOrders={serviceOrders}
 								openAction={openAction}
+								subsidiaryId={selectedSubsidiaryId}
 							/>
 						</div>
 					</Tab>
@@ -165,6 +157,7 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 				lockers={lockers}
 				isActionLoading={isActionLoading}
 				initialOrderId={selectedOrderId}
+				subsidiaryId={selectedSubsidiaryId}
 				onClose={closeAction}
 				onSubmit={handleActionSubmit}
 			/>

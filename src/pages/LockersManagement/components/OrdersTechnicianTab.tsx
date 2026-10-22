@@ -1,55 +1,35 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import Card, { CardBody } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import { ILockerInternal, IServiceOrder } from '@/interface/lockers.interface';
-import { getAvailableActions } from '../types';
-import { toast } from '@/utils/toast.utils';
+import { getAvailableActions, LOCKER_PERMISSIONS, TLockerAction } from '../types';
 
 interface IOrdersTechnicianTabProps {
 	lockers: ILockerInternal[];
 	serviceOrders: IServiceOrder[];
-	openAction: (
-		locker: ILockerInternal,
-		type: 'withdraw' | 'dropoff' | 'reset' | 'ready',
-		orderId?: number,
-	) => void;
+	openAction: (locker: ILockerInternal, type: TLockerAction, orderId?: number) => void;
+	subsidiaryId: number | null;
 }
 
 const OrdersTechnicianTab: React.FC<IOrdersTechnicianTabProps> = ({
 	lockers,
 	serviceOrders,
 	openAction,
+	subsidiaryId,
 }) => {
 	// 1. Equipos para Retirar (Lockers ocupados esperando al técnico)
 	const lockersToWithdraw = lockers.filter((locker) =>
 		getAvailableActions(locker.status).includes('withdraw'),
 	);
 
-	// 2. Equipos para Depositar (Órdenes reparadas que deben meterse al casillero)
-	// Filtramos órdenes en estados que sugieren envío al locker, pero que NO estén físicamente adentro de uno.
-	const ordersToDropoff = serviceOrders.filter((order) => {
-		const status = order.logistics_status?.toLowerCase() || '';
-		const isValidStatus = ['checked_in', 'in_progress', 'entregado_tecnico'].includes(status);
-
-		if (!isValidStatus) return false;
-
-		// Si la orden tiene un locker_id, verificamos si ESE casillero está ocupado.
-		// Si el casillero está 'available', significa que el técnico tiene el equipo en la mano.
-		if (order.locker_id) {
-			const assignedLocker = lockers.find((l) => l.id === order.locker_id);
-			if (
-				assignedLocker &&
-				assignedLocker.status !== 'available' &&
-				assignedLocker.status !== 'Disponible'
-			) {
-				return false; // El equipo sigue adentro del casillero, no se puede depositar
-			}
-		}
-
-		return true;
-	});
+	// 2. Equipos para Depositar: órdenes que el técnico ya retiró (`in_progress`).
+	// El backend también acepta `checked_in`, pero sólo sobre su propio casillero aún ocupado.
+	const ordersToDropoff = serviceOrders.filter(
+		(order) => order.logistics_status === 'in_progress',
+	);
 
 	const handleOpenDropoff = (order: IServiceOrder) => {
 		// Para depositar, asignamos automáticamente el primer casillero "available" en el modal.
@@ -105,20 +85,17 @@ const OrdersTechnicianTab: React.FC<IOrdersTechnicianTabProps> = ({
 												color='blue'
 												variant='solid'
 												className='mb-2 text-xs font-bold'>
-												Casillero Nº{' '}
-												{locker.locker_number || locker.number || locker.id}
+												Casillero Nº {locker.number}
 											</Badge>
 											<h3 className='text-lg font-bold uppercase text-zinc-800 dark:text-zinc-100'>
-												{order?.customer_name ||
-													locker.customer_name ||
-													'Cliente sin registrar'}
+												{order?.customer_name ?? 'Cliente sin registrar'}
 											</h3>
 										</div>
 										<div className='text-right'>
 											<p className='font-mono text-xs text-zinc-400'>
-												{locker.check_in_at
+												{order?.checked_in_at
 													? new Date(
-															locker.check_in_at,
+															order.checked_in_at,
 														).toLocaleDateString('es-CL')
 													: '—'}
 											</p>
@@ -134,20 +111,23 @@ const OrdersTechnicianTab: React.FC<IOrdersTechnicianTabProps> = ({
 											<span className='truncate'>
 												{order?.device_brand && order?.device_model
 													? `${order.device_brand} ${order.device_model}`
-													: locker.device_description ||
+													: order?.device_description ||
 														'Equipo sin registrar'}
 											</span>
 										</p>
 									</div>
 
-									<Button
+									<ProtectedButton
+										permission={LOCKER_PERMISSIONS.operate}
+										subsidiaryId={subsidiaryId}
+										scope='access'
 										color='blue'
 										variant='solid'
 										className='h-12 w-full text-sm font-bold uppercase tracking-wide'
 										icon='HeroArrowDownTray'
 										onClick={() => openAction(locker, 'withdraw', order?.id)}>
 										Iniciar Retiro
-									</Button>
+									</ProtectedButton>
 								</CardBody>
 							</Card>
 						);
@@ -226,14 +206,17 @@ const OrdersTechnicianTab: React.FC<IOrdersTechnicianTabProps> = ({
 									</p>
 								</div>
 
-								<Button
+								<ProtectedButton
+									permission={LOCKER_PERMISSIONS.operate}
+									subsidiaryId={subsidiaryId}
+									scope='access'
 									color='emerald'
 									variant='solid'
 									className='h-12 w-full text-sm font-bold uppercase tracking-wide'
 									icon='HeroArrowUpTray'
 									onClick={() => handleOpenDropoff(order)}>
 									Iniciar Depósito
-								</Button>
+								</ProtectedButton>
 							</CardBody>
 						</Card>
 					))

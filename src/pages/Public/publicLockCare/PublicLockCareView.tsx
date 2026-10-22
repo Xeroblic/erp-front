@@ -24,6 +24,8 @@ interface PublicLockCareViewProps {
 	infoError: string | null;
 	formik: FormikProps<TicketFormValues>;
 	suggestedLockers: string[];
+	/** Ruta de retiro del casillero escaneado; sólo existe si no está disponible. */
+	checkOutPath: string | null;
 	pinReceived: string | null;
 	lockerNumberReceived: string | null;
 	isTerminosOpen: boolean;
@@ -40,6 +42,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 	isLoadingInfo,
 	infoError,
 	suggestedLockers,
+	checkOutPath,
 	formik,
 	pinReceived,
 	lockerNumberReceived,
@@ -287,9 +290,8 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 								)}
 								{/* --- FIN SECCIÓN NUEVA --- */}
 
-								{/* Detectar si es un caso de retiro pendiente */}
-								{(infoError.toLowerCase().includes('retiro') ||
-									infoError.toLowerCase().includes('listo')) && (
+								{/* El backend no distingue ocupado de listo para retiro: se ofrece siempre */}
+								{checkOutPath && (
 									<div className='mt-6 rounded-xl border border-blue-100 bg-blue-50 p-4 text-left'>
 										<p className='text-sm font-medium text-blue-800'>
 											¿Vienes a retirar tu equipo?
@@ -302,9 +304,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 											color='blue'
 											variant='solid'
 											className='mt-3 w-full justify-center py-2'
-											onClick={() =>
-												(window.location.href = '/lockers/check-out')
-											}>
+											onClick={() => window.location.assign(checkOutPath)}>
 											Ir a Retiro de Equipo
 										</Button>
 									</div>

@@ -3,13 +3,15 @@ import {
 	ILockerLocation,
 	ILockerInternal,
 	IServiceOrder,
-	ILockerActionResponse,
 	ITechWithdrawRequest,
 	ITechDropOffRequest,
 	ITechResetRequest,
-	ISetReadyForPickupRequest,
+	ITechOrderActionResponse,
+	ITechResetResponse,
 } from '../../interface/lockers.interface';
 
+// Las acciones del técnico devuelven el PIN nuevo en la raíz (`new_locker_pin`), junto a `data`:
+// se leen con `fetchData` porque `fetchNormalized` desempaqueta `data` y lo perdería.
 export const lockersInternalService = {
 	getLocations: () =>
 		ApiService.fetchNormalized<ILockerLocation[]>({
@@ -29,6 +31,7 @@ export const lockersInternalService = {
 			method: 'GET',
 		}),
 
+	/** Paginado en el backend (20 por página): devuelve sólo la primera página. */
 	getServiceOrders: () =>
 		ApiService.fetchNormalized<IServiceOrder[]>({
 			url: '/lockers/service-orders',
@@ -36,32 +39,25 @@ export const lockersInternalService = {
 		}),
 
 	techWithdraw: (data: ITechWithdrawRequest) =>
-		ApiService.fetchNormalized<ILockerActionResponse>({
+		ApiService.fetchData<ITechOrderActionResponse, ITechWithdrawRequest>({
 			url: '/lockers/tech/withdraw',
 			method: 'POST',
 			data,
-		}),
+		}).then((res) => res.data),
 
 	techDropOff: (data: ITechDropOffRequest) =>
-		ApiService.fetchNormalized<ILockerActionResponse>({
+		ApiService.fetchData<ITechOrderActionResponse, ITechDropOffRequest>({
 			url: '/lockers/tech/drop-off',
 			method: 'POST',
 			data,
-		}),
-
-	setReadyForPickup: (data: ISetReadyForPickupRequest) =>
-		ApiService.fetchNormalized<ILockerActionResponse>({
-			url: '/lockers/set-ready-for-pickup',
-			method: 'PATCH',
-			data,
-		}),
+		}).then((res) => res.data),
 
 	resetLocker: (data: ITechResetRequest) =>
-		ApiService.fetchNormalized<ILockerActionResponse>({
+		ApiService.fetchData<ITechResetResponse, ITechResetRequest>({
 			url: '/lockers/tech/reset',
 			method: 'POST',
 			data,
-		}),
+		}).then((res) => res.data),
 };
 
 export default lockersInternalService;

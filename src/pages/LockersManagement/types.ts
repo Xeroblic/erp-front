@@ -1,75 +1,62 @@
-import * as Yup from 'yup';
+import { TLockerStatus } from '@/interface/lockers.interface';
 
 // ─────────────────────────────────────────────────
-// Estados del casillero según el flujo real
+// Estados del casillero según el flujo real (`LockerStatus` del backend)
 // ─────────────────────────────────────────────────
-// Fase 1 (Check-in)    → occupied
-// Fase 2 (Withdraw)    → available
-// Fase 4 (Drop-off)    → waiting_pickup / en espera de retiro
-// Fase 5 (Check-out)   → quarantine / en cuarentena
-// Fase 6 (Reset)       → available
+// Check-in del cliente → occupied
+// Withdraw del técnico → available (PIN nuevo)
+// Drop-off del técnico → ready_for_pickup (palabra clave al cliente)
+// Check-out del cliente → quarantine
+// Reset del técnico    → available (PIN nuevo)
 // ─────────────────────────────────────────────────
 
-export const LOCKER_STATUS_MAP: Record<string, { label: string; color: string; icon: string }> = {
+export type TLockerAction = 'withdraw' | 'dropoff' | 'reset';
+
+/** Acciones del técnico en la tabla; `detail` sólo abre el detalle. */
+export type TLockerRowAction = TLockerAction | 'detail';
+
+export const LOCKER_PERMISSIONS = {
+	view: 'view-locker',
+	operate: 'operate-locker',
+} as const;
+
+interface ILockerStatusConfig {
+	label: string;
+	color: string;
+	icon: string;
+}
+
+export const LOCKER_STATUS_MAP: Record<TLockerStatus, ILockerStatusConfig> = {
 	available: { label: 'Disponible', color: 'emerald', icon: 'HeroCheck' },
 	occupied: { label: 'Ocupado', color: 'amber', icon: 'HeroLockClosed' },
-	waiting_pickup: { label: 'Esperando Retiro', color: 'blue', icon: 'HeroBell' },
-	quarantine: { label: 'En Cuarentena', color: 'violet', icon: 'HeroClock' },
-	maintenance: { label: 'Mantenimiento', color: 'red', icon: 'HeroWrench' },
-	reserved: { label: 'Reservado', color: 'sky', icon: 'HeroBookmark' },
+	ready_for_pickup: { label: 'Listo para retiro', color: 'blue', icon: 'HeroBell' },
+	quarantine: { label: 'En cuarentena', color: 'violet', icon: 'HeroClock' },
 };
 
-/**
- * Devuelve la configuración visual para un estado.
- * Soporta variantes del backend (snake_case, texto en español, etc.)
- */
-export const getStatusConfig = (status: string) => {
-	// Normalizar posibles variantes
-	const normalized = status?.toLowerCase().replace(/[\s-]/g, '_') ?? '';
+/** Orden de las tarjetas de resumen. */
+export const LOCKER_STATUS_ORDER: TLockerStatus[] = [
+	'available',
+	'occupied',
+	'ready_for_pickup',
+	'quarantine',
+];
 
-	// Mapeo de variantes conocidas
-	const aliasMap: Record<string, string> = {
-		available: 'available',
-		disponible: 'available',
-		occupied: 'occupied',
-		ocupado: 'occupied',
-		waiting_pickup: 'waiting_pickup',
-		waiting_for_pickup: 'waiting_pickup',
-		en_espera_de_retiro: 'waiting_pickup',
-		ready_for_pickup: 'waiting_pickup',
-		quarantine: 'quarantine',
-		en_cuarentena: 'quarantine',
-		maintenance: 'maintenance',
-		mantenimiento: 'maintenance',
-		reserved: 'reserved',
-		reservado: 'reserved',
-	};
-
-	const key = aliasMap[normalized] || normalized;
-	return (
-		LOCKER_STATUS_MAP[key] || { label: status, color: 'zinc', icon: 'HeroQuestionMarkCircle' }
-	);
-};
+export const getStatusConfig = (status: string): ILockerStatusConfig =>
+	status in LOCKER_STATUS_MAP
+		? LOCKER_STATUS_MAP[status as TLockerStatus]
+		: { label: status, color: 'zinc', icon: 'HeroQuestionMarkCircle' };
 
 /**
- * Determina qué acciones están disponibles según el estado del casillero.
- * Sigue el flujo del diagrama exactamente:
+ * Acciones que el backend acepta según el estado del casillero:
  *
- * occupied        → Retirar equipo (Fase 2: tech/withdraw)
- * available       → Depositar equipo reparado (Fase 4: tech/drop-off) — solo si hay orden pendiente
- * waiting_pickup  → (Sin acción técnica — el cliente hace check-out)
- * quarantine      → Resetear casillero (Fase 6: tech/reset)
+ * occupied         → withdraw (sólo órdenes en `checked_in`)
+ * available        → drop-off (órdenes en `checked_in` o `in_progress`)
+ * ready_for_pickup → ninguna: el cliente hace check-out
+ * quarantine       → reset (sólo casilleros en cuarentena)
  */
-export const getAvailableActions = (status: string): string[] => {
-	const config = getStatusConfig(status);
-	const label = config.label;
-
-	// Usar el label normalizado para decidir
-	if (label === 'Ocupado') return ['withdraw', 'reset', 'detail'];
-	if (label === 'Disponible') return ['dropoff', 'detail'];
-	if (label === 'Esperando Retiro') return ['reset', 'detail'];
-	if (label === 'En Cuarentena') return ['reset', 'detail'];
-	if (label === 'Mantenimiento') return ['reset', 'detail'];
-
-	return ['reset', 'detail'];
+export const getAvailableActions = (status: TLockerStatus): TLockerRowAction[] => {
+	if (status === 'occupied') return ['withdraw', 'detail'];
+	if (status === 'available') return ['dropoff', 'detail'];
+	if (status === 'quarantine') return ['reset', 'detail'];
+	return ['detail'];
 };

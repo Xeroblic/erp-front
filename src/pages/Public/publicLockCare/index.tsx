@@ -7,6 +7,7 @@ export default function PublicLockCare() {
 		isLoadingInfo,
 		infoError,
 		suggestedLockers,
+		checkOutPath,
 		formik,
 		pinReceived,
 		lockerNumberReceived,
@@ -25,6 +26,7 @@ export default function PublicLockCare() {
 			isLoadingInfo={isLoadingInfo}
 			infoError={infoError}
 			suggestedLockers={suggestedLockers}
+			checkOutPath={checkOutPath}
 			formik={formik}
 			pinReceived={pinReceived}
 			lockerNumberReceived={lockerNumberReceived}

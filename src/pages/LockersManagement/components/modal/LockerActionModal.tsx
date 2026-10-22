@@ -1,28 +1,25 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import Icon from '@/components/icon/Icon';
 import Label from '@/components/form/Label';
-import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Badge from '@/components/ui/Badge';
 import { ILockerInternal, IServiceOrder } from '@/interface/lockers.interface';
-import { getStatusConfig } from '../../types';
+import { getStatusConfig, LOCKER_PERMISSIONS, TLockerAction } from '../../types';
 
 interface ILockerActionModalProps {
 	isOpen: boolean;
-	actionType: 'withdraw' | 'dropoff' | 'reset' | 'ready' | null;
+	actionType: TLockerAction | null;
 	selectedLocker: ILockerInternal | null;
 	serviceOrders: IServiceOrder[];
 	lockers: ILockerInternal[];
 	isActionLoading: boolean;
 	initialOrderId?: number | null;
+	subsidiaryId: number | null;
 	onClose: () => void;
-	onSubmit: (data: {
-		orderId: number | null;
-		pinManual: string;
-		actionLocker: ILockerInternal | null;
-	}) => void;
+	onSubmit: (data: { orderId: number | null; actionLocker: ILockerInternal | null }) => void;
 }
 
 const DetailRow = ({
@@ -48,11 +45,11 @@ const LockerActionModal: React.FC<ILockerActionModalProps> = ({
 	lockers,
 	isActionLoading,
 	initialOrderId,
+	subsidiaryId,
 	onClose,
 	onSubmit,
 }) => {
 	const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-	const [pinManual, setPinManual] = useState('');
 	const [actionLocker, setActionLocker] = useState<ILockerInternal | null>(null);
 
 	useEffect(() => {
@@ -64,73 +61,58 @@ const LockerActionModal: React.FC<ILockerActionModalProps> = ({
 	useEffect(() => {
 		if (!isOpen) {
 			setSelectedOrderId(null);
-			setPinManual('');
 			setActionLocker(null);
 		} else if (initialOrderId) {
 			setSelectedOrderId(initialOrderId);
 		}
 	}, [isOpen, initialOrderId]);
 
+	// Retiro: la orden activa del casillero viene en `active_service_order`.
 	useEffect(() => {
 		if (actionType === 'withdraw' && actionLocker) {
-			const order = serviceOrders.find((o) => o.locker_id === actionLocker.id);
-			if (order) setSelectedOrderId(order.id);
+			const orderId =
+				actionLocker.active_service_order?.id ??
+				serviceOrders.find((o) => o.locker_id === actionLocker.id)?.id;
+			if (orderId) setSelectedOrderId(orderId);
 		}
 	}, [actionType, actionLocker, serviceOrders]);
 
 	const orderOptions: TSelectOption[] = useMemo(() => {
-		let filtered = serviceOrders;
+		let filtered: IServiceOrder[] = [];
 		if (actionType === 'withdraw' && actionLocker) {
-			filtered = serviceOrders.filter((o) => o.locker_id === actionLocker.id);
+			const activeOrder = actionLocker.active_service_order;
+			filtered = activeOrder
+				? [activeOrder]
+				: serviceOrders.filter(
+						(o) =>
+							o.locker_id === actionLocker.id && o.logistics_status === 'checked_in',
+					);
 		} else if (actionType === 'dropoff') {
-			filtered = serviceOrders;
-		} else if (actionType === 'ready') {
-			filtered = serviceOrders.filter((o) => !!o.locker_id);
+			// Equipos que el técnico ya retiró y debe devolver al cliente.
+			filtered = serviceOrders.filter((o) => o.logistics_status === 'in_progress');
 		}
 
-		return filtered.map((order) => {
-			const rawStatus = order.logistics_status || 'SIN ESTADO';
-			const statusLabel =
-				order.logistics_status_label || rawStatus.replace(/_/g, ' ').toUpperCase();
-			const normalizedStatus = rawStatus.toLowerCase();
-			const isRecommended =
-				normalizedStatus === 'checked_in' ||
-				normalizedStatus === 'in_progress' ||
-				normalizedStatus === 'entregado_tecnico';
-			const icon = isRecommended ? '✅' : '❌';
-
-			return {
-				value: String(order.id),
-				label: `ORDEN #${order.id} — ${order.customer_name || 'Sin Cliente'} [${icon} ${statusLabel}]`,
-			};
-		});
+		return filtered.map((order) => ({
+			value: String(order.id),
+			label: `ORDEN #${order.id} — ${order.customer_name} [${order.logistics_status_label}]`,
+		}));
 	}, [serviceOrders, actionType, actionLocker]);
 
 	const lockerOptions: TSelectOption[] = useMemo(() => {
 		return lockers
-			.filter(
-				(l) =>
-					l.status === 'available' ||
-					l.status === 'maintenance' ||
-					l.id === actionLocker?.id,
-			)
+			.filter((l) => l.status === 'available' || l.id === actionLocker?.id)
 			.map((l) => ({
 				value: String(l.id),
-				label: `Casillero Nº ${l.locker_number || l.id}`,
+				label: `Casillero Nº ${l.number}`,
 			}));
 	}, [lockers, actionLocker]);
 
-	const canSubmit =
-		actionType === 'reset'
-			? true
-			: actionType === 'ready'
-				? !!selectedOrderId && pinManual.length === 4
-				: !!selectedOrderId;
+	const canSubmit = actionType === 'reset' ? true : !!selectedOrderId;
 
 	const StatusBadge = ({ status }: { status: string }) => {
 		const config = getStatusConfig(status);
 		return (
-			<Badge color={config.color as any} variant='solid' className='text-xs'>
+			<Badge color={config.color} variant='solid' className='text-xs'>
 				<span className='flex items-center gap-1'>
 					<Icon icon={config.icon} className='h-3 w-3' />
 					{config.label}
@@ -140,7 +122,7 @@ const LockerActionModal: React.FC<ILockerActionModalProps> = ({
 	};
 
 	const handleSubmit = () => {
-		onSubmit({ orderId: selectedOrderId, pinManual, actionLocker });
+		onSubmit({ orderId: selectedOrderId, actionLocker });
 	};
 
 	return (
@@ -153,19 +135,15 @@ const LockerActionModal: React.FC<ILockerActionModalProps> = ({
 								? 'HeroArrowDownTray'
 								: actionType === 'dropoff'
 									? 'HeroArrowUpTray'
-									: actionType === 'ready'
-										? 'HeroBell'
-										: 'HeroArrowPath'
+									: 'HeroArrowPath'
 						}
 						className='h-5 w-5'
 					/>
 					{actionType === 'withdraw'
-						? 'Fase 2 — Retirar Equipo'
+						? 'Retirar Equipo'
 						: actionType === 'dropoff'
-							? 'Fase 4 — Depositar Equipo'
-							: actionType === 'ready'
-								? 'Marcar Listo para Retiro'
-								: 'Fase 6 — Resetear Casillero'}
+							? 'Depositar Equipo'
+							: 'Resetear Casillero'}
 				</div>
 			</ModalHeader>
 			<ModalBody>
@@ -200,7 +178,7 @@ const LockerActionModal: React.FC<ILockerActionModalProps> = ({
 									<>
 										<DetailRow
 											label='Casillero'
-											value={`Nº ${actionLocker.locker_number || actionLocker.number || actionLocker.id}`}
+											value={`Nº ${actionLocker.number}`}
 										/>
 										<div>
 											<span className='font-medium text-zinc-500'>
@@ -219,30 +197,23 @@ const LockerActionModal: React.FC<ILockerActionModalProps> = ({
 					<div className='rounded-lg border border-zinc-200 bg-white p-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
 						{actionType === 'withdraw' && (
 							<p>
-								<strong>Fase 2:</strong> Retira el equipo del casillero. Se generará
-								un nuevo PIN automáticamente y el casillero quedará{' '}
+								Retira el equipo del casillero. Se generará un nuevo PIN, que debes
+								fijar en el candado, y el casillero quedará{' '}
 								<strong>Disponible</strong>.
 							</p>
 						)}
 						{actionType === 'dropoff' && (
 							<p>
-								<strong>Fase 4:</strong> Deposita el equipo reparado en este
-								casillero. Se generará un nuevo PIN y el estado cambiará a{' '}
-								<strong>Esperando Retiro</strong>. El cliente recibirá una
-								notificación.
+								Deposita el equipo en este casillero. Se generará un nuevo PIN para
+								el candado y el estado cambiará a <strong>Listo para retiro</strong>
+								. El cliente recibirá por correo la palabra clave para retirarlo.
 							</p>
 						)}
 						{actionType === 'reset' && (
 							<p>
-								<strong>Fase 6:</strong> Resetea el casillero después del retiro del
-								cliente. Se genera un nuevo PIN y el casillero vuelve a estar{' '}
-								<strong>Disponible</strong>.
-							</p>
-						)}
-						{actionType === 'ready' && (
-							<p>
-								Marca la orden como lista para que el cliente retire. Ingresa el PIN
-								que se le comunicará al cliente.
+								Resetea el casillero después del retiro del cliente. Se genera un
+								nuevo PIN, que debes fijar en el candado, y el casillero vuelve a
+								estar <strong>Disponible</strong>.
 							</p>
 						)}
 					</div>
@@ -280,41 +251,23 @@ const LockerActionModal: React.FC<ILockerActionModalProps> = ({
 							)}
 						</div>
 					)}
-
-					{actionType === 'ready' && (
-						<div>
-							<Label htmlFor='pinManual'>PIN de Retiro (4 dígitos)*</Label>
-							<Input
-								id='pinManual'
-								name='pinManual'
-								type='text'
-								maxLength={4}
-								placeholder='Ej: 3589'
-								value={pinManual}
-								onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-									setPinManual(e.target.value.replace(/\D/g, ''));
-								}}
-							/>
-							<p className='mt-1 text-xs text-zinc-400'>
-								Este PIN se le enviará al cliente para que retire su equipo.
-							</p>
-						</div>
-					)}
 				</div>
 			</ModalBody>
 			<ModalFooter>
 				<Button variant='outline' onClick={onClose}>
 					Cancelar
 				</Button>
-				<Button
+				<ProtectedButton
+					permission={LOCKER_PERMISSIONS.operate}
+					subsidiaryId={subsidiaryId}
+					scope='access'
+					fallbackMode='disabled'
 					color={
 						actionType === 'reset'
 							? 'red'
 							: actionType === 'withdraw'
 								? 'blue'
-								: actionType === 'ready'
-									? 'amber'
-									: 'emerald'
+								: 'emerald'
 					}
 					variant='solid'
 					isLoading={isActionLoading}
@@ -324,10 +277,8 @@ const LockerActionModal: React.FC<ILockerActionModalProps> = ({
 						? 'Confirmar Retiro'
 						: actionType === 'dropoff'
 							? 'Confirmar Depósito'
-							: actionType === 'ready'
-								? 'Marcar Listo'
-								: 'Resetear'}
-				</Button>
+							: 'Resetear'}
+				</ProtectedButton>
 			</ModalFooter>
 		</Modal>
 	);
