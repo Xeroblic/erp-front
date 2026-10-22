@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 
+/** Versión de `package.json`, inyectada por `define` en `vite.config.ts`. */
+declare const __APP_VERSION__: string;
+
 interface ImportMetaEnv {
 	readonly VITE_API_URL: string;
 	/** `'true'` para simular la trazabilidad agrupada (§14) en vez de usar la API. */

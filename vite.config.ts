@@ -2,10 +2,19 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react-swc';
 import EnvironmentPlugin from 'vite-plugin-environment';
 import path from 'path';
+import { readFileSync } from 'fs';
 import { visualizer } from 'rollup-plugin-visualizer';
+
+const { version: appVersion } = JSON.parse(
+	readFileSync(path.join(__dirname, 'package.json'), 'utf-8'),
+) as { version: string };
 
 // https://vitejs.dev/config/
 export default defineConfig({
+	define: {
+		// Versión del front que muestra el footer; sale de package.json en cada build.
+		__APP_VERSION__: JSON.stringify(appVersion),
+	},
 	plugins: [
 		react(),
 		EnvironmentPlugin('all', { prefix: 'VITE_' }),

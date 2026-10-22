@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import dayjs from 'dayjs';
 import Footer, { FooterLeft, FooterRight } from '../../../components/layouts/Footer/Footer';
 import Icon from '@/components/icon/Icon';
-import { useVersion } from '@/hooks/useVersion';
 
 const DefaultFooterTemplate = () => {
 	const footerMeta = useMemo(() => {
@@ -29,14 +28,12 @@ const DefaultFooterTemplate = () => {
 			return Object.freeze(fallback);
 		}
 	}, []);
-	const version = useVersion();
-
 	return (
 		<Footer>
 			<FooterLeft className='text-zinc-500'>
 				<div className='flex items-center gap-2'>
 					<span>Copyright © {dayjs().format('YYYY')}</span>
-					{version && <span>• Versión {version}</span>}
+					<span>• Versión {__APP_VERSION__}</span>
 				</div>
 			</FooterLeft>
 			<FooterRight className='text-zinc-500'>
