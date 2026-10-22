@@ -2,8 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IInventoryStockRow, IProcurementProduct } from '@/interface/procurement.interface';
 
 /**
- * La fachada elige el doble o la API real según su bandera. La simulación se
- * prueba en `@/mocks/services/__tests__/inventoryOverview.mock.test.ts`; acá,
+ * La fachada elige el doble o la API real según su bandera. Acá se prueba
  * cómo la rama real arma cada pieza con `inventory-stock`, `origins` y el
  * catálogo de bodegas.
  */

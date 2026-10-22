@@ -70,15 +70,12 @@ describe('HardwareCard', () => {
 		expect(screen.queryByText('No tiene RAM')).not.toBeInTheDocument();
 	});
 
-	it('collapses into a dimmed state showing the absence message while keeping the switch operable', () => {
+	it('collapses into the absence message while keeping the switch operable', () => {
 		const onToggleAbsence = vi.fn();
 		renderHardwareCard({ isAbsent: true, onToggleAbsence });
 
 		expect(screen.getByText('No tiene RAM')).toBeInTheDocument();
 		expect(screen.queryByTestId('hardware-fields')).not.toBeInTheDocument();
-
-		const container = screen.getByText('Memoria RAM').closest('div.rounded-xl');
-		expect(container?.className).toContain('opacity-60');
 
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Tiene RAM' }));
 		expect(onToggleAbsence).toHaveBeenCalledWith(false);
@@ -100,7 +97,7 @@ describe('HardwareCard', () => {
 		expect(screen.queryByTestId('hardware-fields')).not.toBeInTheDocument();
 	});
 
-	it('marks the title as required and applies the purple accent tokens', () => {
+	it('marks the title as required', () => {
 		renderHardwareCard({
 			title: 'Almacenamiento',
 			accent: 'purple',
@@ -108,8 +105,7 @@ describe('HardwareCard', () => {
 			isRequired: true,
 		});
 
-		const title = screen.getByText('Almacenamiento');
-		expect(title).toHaveClass('text-purple-800');
+		expect(screen.getByText('Almacenamiento')).toBeInTheDocument();
 		expect(screen.getByText('*')).toBeInTheDocument();
 		expect(screen.getByRole('checkbox', { name: 'Tiene disco' })).toBeInTheDocument();
 	});

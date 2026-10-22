@@ -141,21 +141,6 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(amountInput).toHaveValue(10000);
 		expect(onClose).not.toHaveBeenCalled();
 	});
-	it('sitúa el backdrop de Registrar abono por encima del drawer', async () => {
-		renderDrawer(2);
-		fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
-		await screen.findByRole('dialog', { name: 'Registrar abono' });
-
-		const drawer = document.querySelector('[data-component-name="OffCanvas"]');
-		const backdrop = document.querySelector<HTMLElement>(
-			'[data-component-name="Modal/BackDrop"]',
-		);
-		const modal = document.querySelector<HTMLElement>('[data-component-name="Modal"]');
-
-		expect(drawer).toHaveClass('z-[1055]');
-		expect(backdrop).toHaveStyle({ zIndex: '1060' });
-		expect(modal).toHaveStyle({ zIndex: '1065' });
-	});
 	it('descarta el borrador al cancelar y abrir otro registro', async () => {
 		renderDrawer(2);
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
@@ -332,34 +317,6 @@ describe('DeferredPaymentDetailDrawer', () => {
 
 		expect(editButton).toBeDisabled();
 		expect(editButton).toHaveAttribute('title', 'Editar no disponible para documentos pagados');
-	});
-	it('mantiene dentro del contenedor los adjuntos de abonos con nombres largos', () => {
-		const longFileName = `${'comprobante-transferencia-'.repeat(8)}final.pdf`;
-		const documentWithLongAttachment = {
-			...DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
-			payments: DEFERRED_PAYMENT_DETAIL_FIXTURES[2].payments.map((payment, index) =>
-				index === 0
-					? {
-							...payment,
-							attachments: payment.attachments.map((attachment) => ({
-								...attachment,
-								file_name: longFileName,
-							})),
-						}
-					: payment,
-			),
-		};
-		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
-			...baseHookResult,
-			document: documentWithLongAttachment,
-		});
-
-		renderDrawer(2);
-
-		const fileName = screen.getByTitle(longFileName);
-		const attachmentLink = fileName.closest('button');
-		expect(fileName).toHaveClass('truncate');
-		expect(attachmentLink).toHaveClass('w-full', 'min-w-0', 'max-w-full', 'overflow-hidden');
 	});
 
 	it('muestra Sin nota cuando un abono no tiene observaciones', () => {

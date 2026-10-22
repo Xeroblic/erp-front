@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeCommunePayload, extractMediaUrl } from '@/utils/apiHelpers';
+import { normalizeCommunePayload, extractMediaUrl, validateFile } from '@/utils/apiHelpers';
 
 describe('apiHelpers', () => {
 	it('normalizeCommunePayload converts commune objects and keys to commune_id number or null', () => {
@@ -18,5 +18,16 @@ describe('apiHelpers', () => {
 
 		const media = { data: [{ full_url: 'http://example.com/c.jpg' }] };
 		expect(extractMediaUrl(media)).toBe('http://example.com/c.jpg');
+	});
+
+	it('validateFile rejects oversized and wrong mime', () => {
+		const small = new File([new ArrayBuffer(10)], 'small.png', { type: 'image/png' });
+		expect(validateFile(small, { maxKB: 1 })).toEqual({ ok: true });
+
+		const big = new File([new ArrayBuffer(1024 * 1024 * 2)], 'big.png', { type: 'image/png' });
+		expect(validateFile(big, { maxKB: 100 }).ok).toBe(false);
+
+		const svg = new File([new ArrayBuffer(10)], 'f.svg', { type: 'image/svg+xml' });
+		expect(validateFile(svg, { allowedMimes: ['image/png'] }).ok).toBe(false);
 	});
 });
