@@ -25,7 +25,7 @@ export const mapFormToCheckInPayload = (values: TicketFormValues, qrToken: strin
 			values.requiresInvoice === 'si' ? values.invoiceAddress : undefined,
 		serial_number: serial || undefined,
 		service_type: values.serviceType || undefined,
-		upgrade_type: values.upgradeType || undefined,
+		upgrade_type: isRepair ? undefined : values.upgradeType || undefined,
 		device_brand: brand,
 		device_model: model,
 	};

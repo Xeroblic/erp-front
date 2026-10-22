@@ -7,7 +7,13 @@ import Label from '@/components/form/Label';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Badge from '@/components/ui/Badge';
 import { ILockerInternal, IServiceOrder } from '@/interface/lockers.interface';
-import { getStatusConfig, LOCKER_PERMISSIONS, TLockerAction } from '../../types';
+import {
+	getDropoffLockers,
+	getEligibleOrders,
+	getStatusConfig,
+	LOCKER_PERMISSIONS,
+	TLockerAction,
+} from '../../types';
 
 interface ILockerActionModalProps {
 	isOpen: boolean;
@@ -77,35 +83,23 @@ const LockerActionModal: React.FC<ILockerActionModalProps> = ({
 		}
 	}, [actionType, actionLocker, serviceOrders]);
 
-	const orderOptions: TSelectOption[] = useMemo(() => {
-		let filtered: IServiceOrder[] = [];
-		if (actionType === 'withdraw' && actionLocker) {
-			const activeOrder = actionLocker.active_service_order;
-			filtered = activeOrder
-				? [activeOrder]
-				: serviceOrders.filter(
-						(o) =>
-							o.locker_id === actionLocker.id && o.logistics_status === 'checked_in',
-					);
-		} else if (actionType === 'dropoff') {
-			// Equipos que el técnico ya retiró y debe devolver al cliente.
-			filtered = serviceOrders.filter((o) => o.logistics_status === 'in_progress');
-		}
+	const orderOptions: TSelectOption[] = useMemo(
+		() =>
+			getEligibleOrders(actionType, actionLocker, serviceOrders).map((order) => ({
+				value: String(order.id),
+				label: `ORDEN #${order.id} — ${order.customer_name} [${order.logistics_status_label}]`,
+			})),
+		[serviceOrders, actionType, actionLocker],
+	);
 
-		return filtered.map((order) => ({
-			value: String(order.id),
-			label: `ORDEN #${order.id} — ${order.customer_name} [${order.logistics_status_label}]`,
-		}));
-	}, [serviceOrders, actionType, actionLocker]);
-
-	const lockerOptions: TSelectOption[] = useMemo(() => {
-		return lockers
-			.filter((l) => l.status === 'available' || l.id === actionLocker?.id)
-			.map((l) => ({
+	const lockerOptions: TSelectOption[] = useMemo(
+		() =>
+			getDropoffLockers(lockers, actionLocker?.id ?? null).map((l) => ({
 				value: String(l.id),
 				label: `Casillero Nº ${l.number}`,
-			}));
-	}, [lockers, actionLocker]);
+			})),
+		[lockers, actionLocker],
+	);
 
 	const canSubmit = actionType === 'reset' ? true : !!selectedOrderId;
 

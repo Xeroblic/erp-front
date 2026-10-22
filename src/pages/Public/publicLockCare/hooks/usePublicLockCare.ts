@@ -63,11 +63,7 @@ export const usePublicLockCare = () => {
 				setLockerInfo(info);
 
 				if (!info.is_available) {
-					setInfoError(
-						info.message && typeof info.message === 'string'
-							? info.message.replace('.', '')
-							: 'Este casillero se encuentra ocupado.',
-					);
+					setInfoError(info.message || 'Este casillero se encuentra ocupado.');
 
 					setSuggestedLockers((info.available_lockers ?? []).map(String));
 				}

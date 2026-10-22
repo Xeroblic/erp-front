@@ -12,7 +12,7 @@ import LockerActionModal from './components/modal/LockerActionModal';
 import DetailLockerModal from './components/modal/DetailLockerModal';
 import SuccessPinModal from './components/modal/SuccessPinModal';
 import QRScannerModal from './components/modal/QRScannerModal';
-import { TLockerAction } from './types';
+import { ILockerActionSubmit, resolveActionCommand, TLockerAction } from './types';
 
 // ─────────────────────────────────────────────────
 // Props
@@ -76,20 +76,12 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 	const [isScanning, setIsScanning] = useState(false);
 	const [activeTab, setActiveTab] = useState<string>('casilleros');
 
-	// El casillero elegido en el modal viaja explícito: en drop-off puede no ser el que abrió la acción.
-	const handleActionSubmit = (data: {
-		orderId: number | null;
-		actionLocker: ILockerInternal | null;
-	}) => {
-		const lockerId = data.actionLocker?.id ?? selectedLocker?.id;
+	const handleActionSubmit = (data: ILockerActionSubmit) => {
+		const command = resolveActionCommand(actionType, data, selectedLocker);
 
-		if (actionType === 'withdraw' && data.orderId) {
-			handleWithdraw(data.orderId);
-		} else if (actionType === 'dropoff' && data.orderId && lockerId) {
-			handleDropOff(lockerId, data.orderId);
-		} else if (actionType === 'reset' && lockerId) {
-			handleReset(lockerId);
-		}
+		if (command?.kind === 'withdraw') handleWithdraw(command.orderId);
+		if (command?.kind === 'dropoff') handleDropOff(command.lockerId, command.orderId);
+		if (command?.kind === 'reset') handleReset(command.lockerId);
 	};
 
 	return (
