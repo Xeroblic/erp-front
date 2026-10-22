@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { toast } from 'react-toastify';
 import lockersInternalService from '@/services/lockers/lockersInternalService';
 import { ILockerInternal, ILockerLocation, IServiceOrder } from '@/interface/lockers.interface';
-import { toast } from '@/utils/toast.utils';
+import { resolveLockerError } from '@/utils/lockerErrors.util';
+import { TLockerAction } from '../types';
 
 export const useLockersManagement = () => {
 	// --- Datos principales ---
@@ -14,36 +16,37 @@ export const useLockersManagement = () => {
 
 	// --- Modal de acción ---
 	const [selectedLocker, setSelectedLocker] = useState<ILockerInternal | null>(null);
-	const [actionType, setActionType] = useState<'withdraw' | 'dropoff' | 'reset' | 'ready' | null>(
-		null,
-	);
+	const [actionType, setActionType] = useState<TLockerAction | null>(null);
+	const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 	const [isActionLoading, setIsActionLoading] = useState(false);
 
 	// --- Modal de éxito con PIN ---
 	const [successPin, setSuccessPin] = useState<string | null>(null);
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+	// Filial de la ubicación activa: la usan los guards de las acciones del técnico.
+	const selectedSubsidiaryId = useMemo(
+		() => locations.find((loc) => loc.id === selectedLocationId)?.subsidiary_id ?? null,
+		[locations, selectedLocationId],
+	);
+
 	// --- Cargar ubicaciones ---
 	const fetchLocations = useCallback(async () => {
 		try {
 			setIsLoading(true);
 			setError(null);
-			const response = await lockersInternalService.getLocations();
-			const locs = Array.isArray(response) ? response : ((response as any)?.data ?? []);
+			const locs = await lockersInternalService.getLocations();
 			setLocations(locs);
-
 			// Si hay ubicaciones, seleccionar la primera por defecto
-			if (locs.length > 0 && !selectedLocationId) {
-				setSelectedLocationId(locs[0].id);
-			}
-		} catch (err: any) {
-			const msg = err?.response?.data?.message || 'Error al cargar ubicaciones';
+			setSelectedLocationId((current) => current ?? locs[0]?.id ?? null);
+		} catch (err: unknown) {
+			const msg = resolveLockerError(err, 'Error al cargar ubicaciones').message;
 			setError(msg);
 			toast.error(msg);
 		} finally {
 			setIsLoading(false);
 		}
-	}, [selectedLocationId]);
+	}, []);
 
 	// --- Cargar casilleros de la ubicación seleccionada ---
 	const fetchLockers = useCallback(async () => {
@@ -52,13 +55,9 @@ export const useLockersManagement = () => {
 		try {
 			setIsLoading(true);
 			setError(null);
-			const response = await lockersInternalService.getLockersByLocation(selectedLocationId);
-			const lockersData = Array.isArray(response)
-				? response
-				: ((response as any)?.data ?? []);
-			setLockers(lockersData);
-		} catch (err: any) {
-			const msg = err?.response?.data?.message || 'Error al cargar casilleros';
+			setLockers(await lockersInternalService.getLockersByLocation(selectedLocationId));
+		} catch (err: unknown) {
+			const msg = resolveLockerError(err, 'Error al cargar casilleros').message;
 			setError(msg);
 			toast.error(msg);
 		} finally {
@@ -69,22 +68,20 @@ export const useLockersManagement = () => {
 	// --- Cargar órdenes de servicio ---
 	const fetchServiceOrders = useCallback(async () => {
 		try {
-			const response = await lockersInternalService.getServiceOrders();
-			const orders = Array.isArray(response) ? response : ((response as any)?.data ?? []);
-			setServiceOrders(orders);
+			setServiceOrders(await lockersInternalService.getServiceOrders());
 		} catch {
 			// No bloquear la UI si falla la carga de órdenes
 		}
 	}, []);
 
 	useEffect(() => {
-		fetchLocations();
-		fetchServiceOrders();
+		void fetchLocations();
+		void fetchServiceOrders();
 	}, [fetchLocations, fetchServiceOrders]);
 
 	useEffect(() => {
 		if (selectedLocationId) {
-			fetchLockers();
+			void fetchLockers();
 		}
 	}, [selectedLocationId, fetchLockers]);
 
@@ -93,18 +90,12 @@ export const useLockersManagement = () => {
 		setSelectedLocationId(locationId);
 	}, []);
 
-	const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-
 	// --- Abrir / cerrar modal de acción ---
 	const openAction = useCallback(
-		(
-			locker: ILockerInternal,
-			type: 'withdraw' | 'dropoff' | 'reset' | 'ready',
-			orderId?: number,
-		) => {
+		(locker: ILockerInternal, type: TLockerAction, orderId?: number) => {
 			setSelectedLocker(locker);
 			setActionType(type);
-			setSelectedOrderId(orderId || null);
+			setSelectedOrderId(orderId ?? null);
 		},
 		[],
 	);
@@ -115,138 +106,124 @@ export const useLockersManagement = () => {
 		setSelectedOrderId(null);
 	}, []);
 
+	// El PIN nuevo lo genera el backend: el técnico lo fija en el candado.
+	const showNewPin = useCallback((pin: string | null, message: string) => {
+		if (pin) {
+			setSuccessPin(pin);
+			setSuccessMessage(message);
+		} else {
+			toast.success(message.replace(/:$/, '.'));
+		}
+	}, []);
+
 	// --- Escaneo de QR ---
 	const handleScanQR = useCallback(async (token: string) => {
 		try {
 			setIsActionLoading(true);
-			const response = await lockersInternalService.getPrivateInfo(token);
-			const locker = (response as any)?.data ?? response;
+			const locker = await lockersInternalService.getPrivateInfo(token);
 
-			if (locker) {
+			if (locker.status === 'available') {
 				setSelectedLocker(locker);
-				// Al escanear, si está disponible, asumimos depósito. Si está ocupado, retiro.
-				if (locker.status === 'available' || locker.status === 'Disponible') {
-					setActionType('dropoff');
-				} else {
-					setActionType('withdraw');
-				}
+				setActionType('dropoff');
 				return true;
 			}
-			return false;
-		} catch (err: any) {
-			toast.error(err?.response?.data?.message || 'Error al procesar el código QR.');
+			if (locker.status === 'occupied') {
+				setSelectedLocker(locker);
+				setActionType('withdraw');
+				setSelectedOrderId(locker.active_service_order?.id ?? null);
+				return true;
+			}
+			if (locker.status === 'quarantine') {
+				setSelectedLocker(locker);
+				setActionType('reset');
+				return true;
+			}
+
+			toast.info(`El casillero Nº ${locker.number} está listo para retiro del cliente.`);
+			return true;
+		} catch (err: unknown) {
+			toast.error(resolveLockerError(err, 'Error al procesar el código QR.').message);
 			return false;
 		} finally {
 			setIsActionLoading(false);
 		}
 	}, []);
 
-	// --- Fase 2: Técnico retira equipo (Withdraw / Pick Off) ---
-	// El backend captura el PIN antiguo ANTES de resetear y lo devuelve como pin_to_open
+	// --- Técnico retira equipo (withdraw): el casillero queda disponible con PIN nuevo ---
 	const handleWithdraw = useCallback(
 		async (serviceOrderId: number) => {
-			if (!selectedLocker) return;
 			setIsActionLoading(true);
 			try {
 				const response = await lockersInternalService.techWithdraw({
 					service_order_id: serviceOrderId,
 				});
-
-				// El backend devuelve el locker actualizado, incluyendo el PIN necesario para abrir
-				const pinToOpen =
-					(response as any)?.locker?.locker_pin || (response as any)?.pin_to_open || null;
-				setSuccessPin(pinToOpen);
-				setSuccessMessage(
-					'Equipo retirado exitosamente. Usa este PIN para abrir la puerta del casillero:',
+				showNewPin(
+					response.new_locker_pin,
+					'Equipo retirado. Fija este nuevo PIN en el candado del casillero:',
 				);
 				closeAction();
-				fetchLockers();
-				fetchServiceOrders();
-			} catch (err: any) {
-				toast.error(err?.response?.data?.message || 'Error al retirar el equipo.');
+				void fetchLockers();
+				void fetchServiceOrders();
+			} catch (err: unknown) {
+				toast.error(resolveLockerError(err, 'Error al retirar el equipo.').message);
 			} finally {
 				setIsActionLoading(false);
 			}
 		},
-		[selectedLocker, closeAction, fetchLockers, fetchServiceOrders],
+		[showNewPin, closeAction, fetchLockers, fetchServiceOrders],
 	);
 
-	// --- Fase 3: Técnico deposita equipo reparado (Drop-off) ---
+	// --- Técnico deja el equipo (drop-off): se genera la palabra clave y se avisa al cliente ---
 	const handleDropOff = useCallback(
-		async (serviceOrderId: number) => {
-			if (!selectedLocker) return;
+		async (lockerId: number, serviceOrderId: number) => {
 			setIsActionLoading(true);
 			try {
 				const response = await lockersInternalService.techDropOff({
-					locker_id: selectedLocker.id,
+					locker_id: lockerId,
 					service_order_id: serviceOrderId,
 				});
-				const pinGenerated =
-					(response as any)?.new_locker_pin ||
-					(response as any)?.locker?.locker_pin ||
-					null;
-				setSuccessPin(pinGenerated);
-				setSuccessMessage('Equipo depositado. El nuevo PIN del casillero es:');
+				showNewPin(
+					response.new_locker_pin,
+					'Equipo depositado y palabra clave enviada al cliente. Fija este PIN en el candado:',
+				);
 				closeAction();
-				fetchLockers();
-				fetchServiceOrders();
-			} catch (err: any) {
-				toast.error(err?.response?.data?.message || 'Error al depositar el equipo.');
+				void fetchLockers();
+				void fetchServiceOrders();
+			} catch (err: unknown) {
+				toast.error(resolveLockerError(err, 'Error al depositar el equipo.').message);
 			} finally {
 				setIsActionLoading(false);
 			}
 		},
-		[selectedLocker, lockers, closeAction, fetchLockers, fetchServiceOrders],
+		[showNewPin, closeAction, fetchLockers, fetchServiceOrders],
 	);
 
-	// --- Fase 5: Reset de casillero ---
-	const handleReset = useCallback(async () => {
-		if (!selectedLocker) return;
-		setIsActionLoading(true);
-		try {
-			const response = await lockersInternalService.resetLocker({
-				locker_id: selectedLocker.id,
-			});
-			const pinGenerated =
-				(response as any)?.new_locker_pin || (response as any)?.locker?.locker_pin || null;
-			setSuccessPin(pinGenerated);
-			setSuccessMessage('Casillero reseteado. El nuevo PIN es:');
-			closeAction();
-			fetchLockers();
-		} catch (err: any) {
-			toast.error(err?.response?.data?.message || 'Error al resetear el casillero.');
-		} finally {
-			setIsActionLoading(false);
-		}
-	}, [selectedLocker, lockers, closeAction, fetchLockers]);
-
-	// --- Marcar listo para retiro del cliente ---
-	const handleSetReadyForPickup = useCallback(
-		async (serviceOrderId: number, pinManual: string) => {
+	// --- Reset de un casillero en cuarentena ---
+	const handleReset = useCallback(
+		async (lockerId: number) => {
 			setIsActionLoading(true);
 			try {
-				await lockersInternalService.setReadyForPickup({
-					service_order_id: serviceOrderId,
-					pin_manual: pinManual,
-				});
-				toast.success('Orden marcada como lista para retiro.');
-				closeAction();
-				fetchServiceOrders();
-			} catch (err: any) {
-				toast.error(
-					err?.response?.data?.message || 'Error al marcar como lista para retiro.',
+				const response = await lockersInternalService.resetLocker({ locker_id: lockerId });
+				showNewPin(
+					response.new_locker_pin,
+					'Casillero reseteado. Fija este nuevo PIN en el candado:',
 				);
+				closeAction();
+				void fetchLockers();
+			} catch (err: unknown) {
+				toast.error(resolveLockerError(err, 'Error al resetear el casillero.').message);
 			} finally {
 				setIsActionLoading(false);
 			}
 		},
-		[closeAction, fetchServiceOrders],
+		[showNewPin, closeAction, fetchLockers],
 	);
 
 	return {
 		// Datos
 		locations,
 		selectedLocationId,
+		selectedSubsidiaryId,
 		lockers,
 		serviceOrders,
 		isLoading,
@@ -261,7 +238,6 @@ export const useLockersManagement = () => {
 		selectedOrderId,
 
 		// Acciones
-		setSelectedLocker,
 		setSuccessPin,
 		changeLocation,
 		fetchLockers,
@@ -271,7 +247,6 @@ export const useLockersManagement = () => {
 		handleWithdraw,
 		handleDropOff,
 		handleReset,
-		handleSetReadyForPickup,
 		handleScanQR,
 	};
 };

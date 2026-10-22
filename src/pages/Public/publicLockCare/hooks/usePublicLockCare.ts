@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useFormik } from 'formik';
 import { useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { TicketFormValues } from '@/pages/Public/formLockCleare/components/FormLockCare.types';
 import { formLockCareValidationSchema } from '@/pages/Public/formLockCleare/components/FormLockCare.validation';
 import lockersPublicService from '@/services/lockers/lockersPublicService';
 import { ILockerPublicInfo } from '@/interface/lockers.interface';
+import { resolveLockerError } from '@/utils/lockerErrors.util';
 import { mapFormToCheckInPayload } from '../types';
-import { toast } from '@/utils/toast.utils';
 
 const initialValues: TicketFormValues = {
 	// ... tus initialValues se mantienen igual
@@ -68,20 +69,14 @@ export const usePublicLockCare = () => {
 							: 'Este casillero se encuentra ocupado.',
 					);
 
-					let lockersArray: string[] = [];
-					const available = info.available_lockers as unknown as string | string[];
-					if (Array.isArray(available)) {
-						lockersArray = available.map(String);
-					} else if (typeof available === 'string') {
-						lockersArray = available.split(',').map((n: string) => n.trim());
-					}
-					setSuggestedLockers(lockersArray);
+					setSuggestedLockers((info.available_lockers ?? []).map(String));
 				}
-			} catch (error: any) {
-				const apiMessage = error?.response?.data?.message;
+			} catch (error: unknown) {
 				setInfoError(
-					apiMessage ||
+					resolveLockerError(
+						error,
 						'Error de conexión al verificar el casillero. Intente nuevamente.',
+					).message,
 				);
 			} finally {
 				setIsLoadingInfo(false);
@@ -103,12 +98,8 @@ export const usePublicLockCare = () => {
 				const payload = mapFormToCheckInPayload(values, token);
 				const response = await lockersPublicService.checkInLocker(payload);
 
-				const pinFromResponse = response.locker_pin;
-				const lockerNum =
-					response.data?.locker?.number || String(lockerInfo?.locker_number || '');
-
-				setPinReceived(pinFromResponse);
-				setLockerNumberReceived(lockerNum);
+				setPinReceived(response.locker_pin);
+				setLockerNumberReceived(response.data.locker?.number ?? null);
 
 				setIsCheckInComplete(true);
 				setIsPinModalOpen(true);
@@ -116,11 +107,12 @@ export const usePublicLockCare = () => {
 				toast.success('Registro completado exitosamente.');
 				helpers.resetForm();
 				setIsTerminosOpen(false);
-			} catch (error: any) {
-				const apiMessage = error?.response?.data?.message;
+			} catch (error: unknown) {
 				toast.error(
-					apiMessage ||
+					resolveLockerError(
+						error,
 						'No se pudo completar el registro. Verifica los datos e intenta de nuevo.',
+					).message,
 				);
 			} finally {
 				helpers.setSubmitting(false);
@@ -128,7 +120,11 @@ export const usePublicLockCare = () => {
 		},
 	});
 
-	// ... handleOpenTerms, etc se mantienen igual
+	// El mismo QR del casillero lleva al retiro: el backend exige su token junto a la palabra clave.
+	const checkOutPath =
+		token && lockerInfo && !lockerInfo.is_available
+			? `/lockers/${encodeURIComponent(token)}/check-out`
+			: null;
 
 	const handleOpenTerms = useCallback(() => setIsTerminosOpen(true), []);
 	const handleCloseTerms = useCallback(() => setIsTerminosOpen(false), []);
@@ -143,7 +139,8 @@ export const usePublicLockCare = () => {
 		isLoadingInfo,
 		infoError,
 		lockerInfo,
-		suggestedLockers, // <-- IMPORTANTE: Lo exponemos aquí para la vista
+		suggestedLockers,
+		checkOutPath,
 		formik,
 		pinReceived,
 		lockerNumberReceived,

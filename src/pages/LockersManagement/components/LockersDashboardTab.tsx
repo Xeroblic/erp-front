@@ -6,7 +6,7 @@ import Badge from '@/components/ui/Badge';
 import Label from '@/components/form/Label';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { ILockerInternal, ILockerLocation, IServiceOrder } from '@/interface/lockers.interface';
-import { getStatusConfig } from '../types';
+import { LOCKER_STATUS_MAP, LOCKER_STATUS_ORDER, TLockerAction } from '../types';
 import ListLockers from './table/ListLockers';
 
 interface ILockersDashboardTabProps {
@@ -18,7 +18,8 @@ interface ILockersDashboardTabProps {
 	error: string | null;
 	changeLocation: (locationId: number) => void;
 	fetchLockers: () => void;
-	openAction: (locker: ILockerInternal, type: 'withdraw' | 'dropoff' | 'reset' | 'ready') => void;
+	openAction: (locker: ILockerInternal, type: TLockerAction) => void;
+	subsidiaryId: number | null;
 	setDetailLocker: (locker: ILockerInternal) => void;
 	setIsScanning: (isScanning: boolean) => void;
 }
@@ -33,21 +34,14 @@ const LockersDashboardTab: React.FC<ILockersDashboardTabProps> = ({
 	changeLocation,
 	fetchLockers,
 	openAction,
+	subsidiaryId,
 	setDetailLocker,
 	setIsScanning,
 }) => {
 	const statusCounts = useMemo(() => {
-		const counts: Record<string, number> = {
-			Disponible: 0,
-			Ocupado: 0,
-			'Esperando Retiro': 0,
-			'En Cuarentena': 0,
-		};
+		const counts: Record<string, number> = {};
 		lockers.forEach((l) => {
-			const config = getStatusConfig(l.status);
-			if (counts[config.label] !== undefined) {
-				counts[config.label]++;
-			}
+			counts[l.status] = (counts[l.status] ?? 0) + 1;
 		});
 		return counts;
 	}, [lockers]);
@@ -57,12 +51,10 @@ const LockersDashboardTab: React.FC<ILockersDashboardTabProps> = ({
 		label: loc.name || `Ubicación ${loc.id}`,
 	}));
 
-	const summaryCards = [
-		{ label: 'Disponible', color: 'emerald', icon: 'HeroCheck' },
-		{ label: 'Ocupado', color: 'amber', icon: 'HeroLockClosed' },
-		{ label: 'Esperando Retiro', color: 'blue', icon: 'HeroBell' },
-		{ label: 'En Cuarentena', color: 'violet', icon: 'HeroClock' },
-	];
+	const summaryCards = LOCKER_STATUS_ORDER.map((status) => ({
+		status,
+		...LOCKER_STATUS_MAP[status],
+	}));
 
 	return (
 		<div className='flex flex-col gap-4'>
@@ -111,8 +103,8 @@ const LockersDashboardTab: React.FC<ILockersDashboardTabProps> = ({
 
 			{/* Resumen de estados */}
 			<div className='grid grid-cols-2 gap-4 sm:grid-cols-4'>
-				{summaryCards.map(({ label, color, icon }) => (
-					<Card key={label}>
+				{summaryCards.map(({ status, label, color, icon }) => (
+					<Card key={status}>
 						<CardBody className='p-4'>
 							<div className='flex items-center gap-3'>
 								<div
@@ -122,7 +114,7 @@ const LockersDashboardTab: React.FC<ILockersDashboardTabProps> = ({
 								<div>
 									<p className='text-xs font-medium text-zinc-500'>{label}</p>
 									<p className='text-2xl font-bold text-zinc-800 dark:text-zinc-200'>
-										{statusCounts[label] ?? 0}
+										{statusCounts[status] ?? 0}
 									</p>
 								</div>
 							</div>
@@ -143,6 +135,7 @@ const LockersDashboardTab: React.FC<ILockersDashboardTabProps> = ({
 						isLoading={isLoading}
 						error={error}
 						openAction={openAction}
+						subsidiaryId={subsidiaryId}
 						setDetailLocker={setDetailLocker}
 					/>
 				</CardBody>

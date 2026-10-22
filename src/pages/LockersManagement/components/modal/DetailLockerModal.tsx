@@ -43,12 +43,12 @@ const DetailLockerModal: React.FC<IDetailLockerModalProps> = ({
 	});
 
 	const order = detailLocker.active_service_order || orderByLockerId[detailLocker.id];
-	const lockerNum = detailLocker.locker_number || detailLocker.number || String(detailLocker.id);
+	const lockerNum = detailLocker.number;
 
 	const StatusBadge = ({ status }: { status: string }) => {
 		const config = getStatusConfig(status);
 		return (
-			<Badge color={config.color as any} variant='solid' className='text-xs'>
+			<Badge color={config.color} variant='solid' className='text-xs'>
 				<span className='flex items-center gap-1'>
 					<Icon icon={config.icon} className='h-3 w-3' />
 					{config.label}
@@ -86,14 +86,11 @@ const DetailLockerModal: React.FC<IDetailLockerModalProps> = ({
 										: '—'
 								}
 							/>
-							<DetailRow label='PIN Actual' value={detailLocker.locker_pin || '—'} />
 							<DetailRow
 								label='Ingreso'
 								value={
-									order?.checked_in_at || detailLocker.check_in_at
-										? new Date(
-												order?.checked_in_at || detailLocker.check_in_at!,
-											).toLocaleString('es-CL')
+									order?.checked_in_at
+										? new Date(order.checked_in_at).toLocaleString('es-CL')
 										: '—'
 								}
 							/>
@@ -105,18 +102,9 @@ const DetailLockerModal: React.FC<IDetailLockerModalProps> = ({
 							Datos del Cliente
 						</h4>
 						<div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
-							<DetailRow
-								label='Nombre'
-								value={order?.customer_name || detailLocker.customer_name || '—'}
-							/>
-							<DetailRow
-								label='Email'
-								value={order?.customer_email || detailLocker.customer_email || '—'}
-							/>
-							<DetailRow
-								label='Teléfono'
-								value={order?.customer_phone || detailLocker.customer_phone || '—'}
-							/>
+							<DetailRow label='Nombre' value={order?.customer_name || '—'} />
+							<DetailRow label='Email' value={order?.customer_email || '—'} />
+							<DetailRow label='Teléfono' value={order?.customer_phone || '—'} />
 						</div>
 					</div>
 
@@ -125,29 +113,12 @@ const DetailLockerModal: React.FC<IDetailLockerModalProps> = ({
 							Datos del Equipo
 						</h4>
 						<div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
-							<DetailRow
-								label='Marca'
-								value={order?.device_brand || detailLocker.device_brand || '—'}
-							/>
-							<DetailRow
-								label='Modelo'
-								value={order?.device_model || detailLocker.device_model || '—'}
-							/>
-							<DetailRow
-								label='Nº Serie'
-								value={detailLocker.serial_number || order?.serial_number || '—'}
-							/>
-							<DetailRow
-								label='Servicio'
-								value={order?.service_type || detailLocker.service_type || '—'}
-							/>
+							<DetailRow label='Marca' value={order?.device_brand || '—'} />
+							<DetailRow label='Modelo' value={order?.device_model || '—'} />
+							<DetailRow label='Servicio' value={order?.service_type || '—'} />
 							<DetailRow
 								label='Descripción'
-								value={
-									order?.device_description ||
-									detailLocker.device_description ||
-									'—'
-								}
+								value={order?.device_description || '—'}
 								fullWidth
 							/>
 						</div>
@@ -159,20 +130,12 @@ const DetailLockerModal: React.FC<IDetailLockerModalProps> = ({
 								Orden de Servicio #{order.id}
 							</h4>
 							<div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
+								<DetailRow label='Estado' value={order.logistics_status_label} />
 								<DetailRow
-									label='Estado'
+									label='Actualizada'
 									value={
-										order.logistics_status_label ||
-										order.logistics_status ||
-										order.status ||
-										'—'
-									}
-								/>
-								<DetailRow
-									label='Creada'
-									value={
-										order.created_at
-											? new Date(order.created_at).toLocaleString('es-CL')
+										order.updated_at
+											? new Date(order.updated_at).toLocaleString('es-CL')
 											: '—'
 									}
 								/>

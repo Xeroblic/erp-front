@@ -269,7 +269,6 @@ const DefaultAsideTemplate = () => {
 
 							<AuthorityCheckNav
 								authority={Pages.technical.subPages.lockersManagement.authority}
-								roles={Pages.technical.subPages.lockersManagement.roles}
 								userAuthority={userAuthority}>
 								<NavItem
 									text={Pages.technical.subPages.lockersManagement.text}

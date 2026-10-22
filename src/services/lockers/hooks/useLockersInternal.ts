@@ -4,7 +4,6 @@ import {
 	ITechWithdrawRequest,
 	ITechDropOffRequest,
 	ITechResetRequest,
-	ISetReadyForPickupRequest,
 } from '@/interface/lockers.interface';
 
 // ============================================================================
@@ -43,7 +42,7 @@ export const useGetServiceOrders = () => {
 };
 
 // ============================================================================
-// 🛠️ MUTATIONS (POST / PATCH)
+// 🛠️ MUTATIONS (POST)
 // ============================================================================
 
 export const useTechWithdraw = () => {
@@ -62,18 +61,6 @@ export const useTechDropOff = () => {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: (data: ITechDropOffRequest) => lockersInternalService.techDropOff(data),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['lockers'] });
-			queryClient.invalidateQueries({ queryKey: ['serviceOrders'] });
-		},
-	});
-};
-
-export const useSetReadyForPickup = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (data: ISetReadyForPickupRequest) =>
-			lockersInternalService.setReadyForPickup(data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['lockers'] });
 			queryClient.invalidateQueries({ queryKey: ['serviceOrders'] });

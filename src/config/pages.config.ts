@@ -82,7 +82,7 @@ export const authPages = {
 			},
 			checkOutLockCare: {
 				id: 'checkOutLockCare',
-				to: '/lockers/check-out',
+				to: '/lockers/:token/check-out',
 				text: 'Retiro Lock Care',
 				icon: 'DuoUnlock',
 				authority: [],
@@ -885,8 +885,9 @@ export const privatePages = {
 				to: '/lockers-management',
 				text: 'Casilleros',
 				icon: 'DuoLockClosed',
-				authority: ['view-technical-reviews-batches'],
-				roles: ['super-admin'],
+				// Las rutas de lectura del backend exigen `view-locker`; operar exige además
+				// `operate-locker`, que se valida por botón y no aquí (la ruta exige todos).
+				authority: ['view-locker'],
 			},
 		},
 	},
