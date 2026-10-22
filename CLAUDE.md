@@ -246,9 +246,10 @@ nacida de un PR rechazado, con su condición observable de cierre. Recorrerlas e
 el diff las toca — son la causa de la mayoría de las correcciones, y ninguna se detecta razonando
 en abstracto.
 
-**CI:** el workflow `Calidad de PR` ejecuta `check:eol`, `prettier:check`, `lint:imports`,
-`typecheck` y `test:run` en cada pull request. No abras ni actualices un PR con esa corrida en
-rojo: es la verificación que el revisor va a mirar primero.
+**CI:** el workflow `Calidad de PR` ejecuta `check:eol`, `prettier:check`, `lint:imports` y
+`typecheck` en un job, y la suite completa de Vitest en otro, en paralelo y repartida en 3 shards
+(`tests (1/3)`… `tests (3/3)`). No abras ni actualices un PR con esa corrida en rojo: es la
+verificación que el revisor va a mirar primero.
 
 **Vía rápida:** un cambio literal y determinista de hasta 3 archivos de configuración,
 documentación o copy, con el resultado completamente especificado y sin tocar lógica, API,
