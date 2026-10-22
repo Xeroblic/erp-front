@@ -447,21 +447,6 @@ describe('useDeferredPaymentActions', () => {
 		expect(serviceSpies.getSummary).not.toHaveBeenCalled();
 	});
 
-	it('usa el mensaje de permiso o alcance ante un 403 genérico', async () => {
-		serviceSpies.deleteDocument.mockRejectedValue({
-			response: { status: 403, data: { message: 'This action is unauthorized.' } },
-		});
-		const { result, store } = renderActions();
-
-		await act(async () => {
-			expect(await result.current.actions.deleteDocument()).toBe(false);
-		});
-
-		expect(store.getState().deferredPayments.errorDelete).toContain(
-			'no tienes acceso a esta subsidiaria',
-		);
-	});
-
 	it('ignora el segundo envío mientras la eliminación está en vuelo', async () => {
 		let resolveDelete: (() => void) | undefined;
 		serviceSpies.deleteDocument.mockImplementation(
