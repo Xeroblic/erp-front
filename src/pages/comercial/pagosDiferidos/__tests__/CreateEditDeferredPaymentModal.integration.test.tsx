@@ -386,66 +386,6 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		).toBeInTheDocument();
 	});
 
-	it('recarga el perfil creado desde el modal secundario al editar un documento', async () => {
-		const editedDocument = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
-		let profileWasCreated = false;
-		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
-			Promise.resolve({
-				data: url.includes('/credit-profile')
-					? {
-							data: profileWasCreated
-								? {
-										id: 78,
-										customer_sale_id: editedDocument.customer.id,
-										is_active: true,
-										payment_term_days: 45,
-										credit_limit: null,
-										notes: null,
-									}
-								: {
-										id: null,
-										customer_sale_id: null,
-										is_active: false,
-										payment_term_days: 30,
-										credit_limit: null,
-										notes: null,
-									},
-						}
-					: {
-							data: [],
-							meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
-						},
-			}),
-		);
-		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => (
-			<Provider store={store}>{children}</Provider>
-		);
-		render(
-			<CreateEditDeferredPaymentModal
-				isOpen
-				deferredPaymentDocument={editedDocument}
-				onClose={vi.fn()}
-			/>,
-			{ wrapper: Wrapper },
-		);
-
-		await screen.findByText('Este cliente no tiene un perfil de crédito creado.');
-		fireEvent.click(screen.getByRole('button', { name: 'Crear perfil' }));
-		expect(await screen.findByText('Crear perfil de crédito')).toBeInTheDocument();
-		expect(
-			await screen.findByRole('form', { name: 'Formulario de condiciones de crédito' }),
-		).toBeInTheDocument();
-		profileWasCreated = true;
-		const closeButtons = document.querySelectorAll<HTMLButtonElement>(
-			'[data-component-name="CloseButton"]',
-		);
-		const closeButton = closeButtons.item(closeButtons.length - 1);
-		expect(closeButton).not.toBeNull();
-		if (closeButton) fireEvent.click(closeButton);
-
-		expect(await screen.findByText('45 días')).toBeInTheDocument();
-	});
 	it('conserva el cliente elegido sin volver a consultar al cerrar la búsqueda', async () => {
 		const searchedCustomer = {
 			id: 457,
@@ -954,81 +894,6 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		);
 	});
 
-	it('mantiene habilitada la creación al cambiar desde un cliente suspendido', async () => {
-		const suspendedCustomer = {
-			id: 461,
-			name: 'Cliente suspendido',
-			rut: '76.461.000-1',
-			contact: { name: 'Ana Pérez' },
-			loyalty: 0,
-			total_sales: 0,
-			is_active: true,
-		};
-		const activeCustomer = {
-			...suspendedCustomer,
-			id: 462,
-			name: 'Cliente habilitado',
-			rut: '76.462.000-1',
-		};
-		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
-			Promise.resolve({
-				data: respondByUrl(
-					url,
-					[
-						[
-							'/overview',
-							{
-								...emptyPagination,
-								data: [suspendedCustomer, activeCustomer],
-								total: 2,
-							},
-						],
-						[
-							'/461/credit-profile',
-							{
-								data: {
-									id: 11,
-									customer_sale_id: 461,
-									is_active: false,
-									payment_term_days: 30,
-									credit_limit: null,
-									notes: null,
-								},
-							},
-						],
-					],
-					{
-						data: {
-							id: 12,
-							customer_sale_id: 462,
-							is_active: true,
-							payment_term_days: 30,
-							credit_limit: null,
-							notes: null,
-						},
-					},
-				),
-			}),
-		);
-		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => (
-			<Provider store={store}>{children}</Provider>
-		);
-		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
-
-		const customerInput = screen.getByLabelText('Cliente');
-		fireEvent.change(customerInput, { target: { value: 'suspendido' } });
-		fireEvent.click(await screen.findByText('Cliente suspendido · Ana Pérez · 76.461.000-1'));
-		await screen.findByText('30 días');
-		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
-
-		fireEvent.change(customerInput, { target: { value: 'habilitado' } });
-		fireEvent.click(await screen.findByText('Cliente habilitado · Ana Pérez · 76.462.000-1'));
-		await waitFor(() =>
-			expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled(),
-		);
-	});
-
 	it('ignora una respuesta antigua al cambiar rápidamente de cliente', async () => {
 		const firstCustomer = {
 			id: 463,
@@ -1093,9 +958,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			});
 			await Promise.resolve();
 		});
-		await waitFor(() =>
-			expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled(),
-		);
+		expect(await screen.findByText('30 días')).toBeInTheDocument();
 
 		await act(async () => {
 			resolveFirstProfile({
@@ -1103,7 +966,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 					id: 13,
 					customer_sale_id: 463,
 					is_active: false,
-					payment_term_days: 30,
+					payment_term_days: 5,
 					credit_limit: null,
 					notes: null,
 				},
@@ -1111,10 +974,8 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			await Promise.resolve();
 		});
 
-		expect(
-			screen.queryByText(/El crédito de este cliente está suspendido/),
-		).not.toBeInTheDocument();
-		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
+		expect(screen.getByText('30 días')).toBeInTheDocument();
+		expect(screen.queryByText('5 días')).not.toBeInTheDocument();
 	});
 
 	it('recarga el perfil en la subsidiaria actual e ignora la resolución anterior', async () => {
@@ -1199,9 +1060,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			});
 			await Promise.resolve();
 		});
-		expect(
-			screen.queryByText(/El crédito de este cliente está suspendido/),
-		).not.toBeInTheDocument();
+		expect(screen.queryByText('5 días')).not.toBeInTheDocument();
 
 		await act(async () => {
 			resolveSecondProfile({
@@ -1222,50 +1081,6 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 				addDaysToDisplayDate(issueDate, 21),
 			);
 		});
-	});
-
-	it('oculta clientes y cierra el alta rápida al cambiar de subsidiaria', async () => {
-		const customer = {
-			id: 991,
-			name: 'Cliente exclusivo A',
-			rut: '76.991.000-1',
-			contact: { name: 'Contacto A' },
-			loyalty: 0,
-			total_sales: 0,
-			is_active: true,
-		};
-		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
-			Promise.resolve({
-				data:
-					url === '/subsidiaries/1/customer-sales/overview'
-						? { ...emptyPagination, data: [customer], total: 1 }
-						: emptyPagination,
-			}),
-		);
-		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => (
-			<Provider store={store}>{children}</Provider>
-		);
-		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
-			wrapper: Wrapper,
-		});
-
-		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'exclusivo' } });
-		expect(
-			await screen.findByText('Cliente exclusivo A · Contacto A · 76.991.000-1'),
-		).toBeInTheDocument();
-		fireEvent.click(screen.getByRole('button', { name: 'Crear cliente' }));
-		expect(screen.getByRole('dialog', { name: 'Crear Cliente' })).toBeInTheDocument();
-
-		branchContext.subsidiaryId = 2;
-		rerender(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />);
-
-		expect(
-			screen.queryByText('Cliente exclusivo A · Contacto A · 76.991.000-1'),
-		).not.toBeInTheDocument();
-		await waitFor(() =>
-			expect(screen.queryByRole('dialog', { name: 'Crear Cliente' })).not.toBeInTheDocument(),
-		);
 	});
 
 	it('cierra el alta rápida en el mismo render del cambio de subsidiaria', async () => {

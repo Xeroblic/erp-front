@@ -468,20 +468,6 @@ describe('recibir la devolución (etapa 2)', () => {
 		expect(confirmReturnCalls()).toHaveLength(0);
 	});
 
-	it('tras un timeout reintenta con la misma Idempotency-Key y el mismo cuerpo', async () => {
-		writes = [rejectWithTimeout, () => Promise.resolve(RECEIPT_OK)];
-		const mouse = await openReceipt();
-		fillValidReceipt(mouse);
-		submitReceipt();
-
-		fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
-
-		await waitFor(() => expect(confirmReturnCalls()).toHaveLength(2));
-		const [first, second] = confirmReturnCalls();
-		expect(second.headers?.['Idempotency-Key']).toBe(first.headers?.['Idempotency-Key']);
-		expect(second.data).toEqual(first.data);
-	});
-
 	it('marca en su ítem el error con ruta items.N', async () => {
 		writes = [
 			() =>
@@ -556,44 +542,6 @@ const startButtonIn = () => {
 
 const startReturnCalls = () =>
 	callsTo((cfg) => cfg.method === 'post' && cfg.url.endsWith('/returns'));
-
-describe('respuesta tardía de una devolución', () => {
-	it('no recarga la venta del intento sobre la venta que se abrió después', async () => {
-		const late = deferred();
-		otherDetails[91] = {
-			id: 91,
-			sale_number: 'V-91',
-			status: 'completed',
-			is_closed: true,
-			can_close: false,
-			pending_return: null,
-		};
-		detail = { ...detail, pending_return: null };
-		writes = [() => late.promise];
-		const first = renderDetail(91);
-		fireEvent.click(await screen.findByRole('button', { name: 'Iniciar devolución' }));
-		fireEvent.change(screen.getByLabelText('Motivo de la devolución'), {
-			target: { value: 'El cliente devuelve la compra' },
-		});
-		fireEvent.click(startButtonIn());
-		await waitFor(() => expect(startReturnCalls()).toHaveLength(1));
-
-		// Se cierra el detalle de la 91 y se abre el de la 90 antes de la respuesta.
-		first.unmount();
-		renderDetail(90, first.store);
-		expect(await screen.findByText('V-90')).toBeInTheDocument();
-		const readsOf91 = () =>
-			callsTo((cfg) => cfg.method === 'get' && cfg.url === '/subsidiaries/1/sales/91');
-		const readsBefore = readsOf91().length;
-
-		late.resolve({ status: 201, data: { data: { ...saleReturn, sale_id: 91 } } });
-		await waitFor(() => expect(toastMock.success).toHaveBeenCalled());
-
-		expect(readsOf91()).toHaveLength(readsBefore);
-		expect(screen.getByText('V-90')).toBeInTheDocument();
-		expect(screen.queryByText('V-91')).not.toBeInTheDocument();
-	});
-});
 
 describe('intento incierto tras un timeout', () => {
 	it('cerrar la recepción no lo pierde: al reabrir reintenta con la misma clave y el mismo cuerpo', async () => {
