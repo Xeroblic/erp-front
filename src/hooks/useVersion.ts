@@ -22,10 +22,12 @@ const resolveVersion = async (versionEndpoint: string): Promise<string> => {
 			dedupe: true,
 		});
 
-		const next =
-			(data as any)?.version ?? (data as any)?.data ?? (data as any)?.versionSDE ?? data;
+		const record: Record<string, unknown> =
+			typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {};
+		const next: unknown = record.version ?? record.data ?? record.versionSDE ?? data;
 
-		const resolved = next ? next.toString().trim() : '';
+		const resolved =
+			typeof next === 'string' || typeof next === 'number' ? String(next).trim() : '';
 		if (resolved) {
 			cachedVersion = { value: resolved, fetchedAt: Date.now() };
 		}
