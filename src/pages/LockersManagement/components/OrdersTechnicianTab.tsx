@@ -5,7 +5,12 @@ import ProtectedButton from '@/components/ui/ProtectedButton';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import { ILockerInternal, IServiceOrder } from '@/interface/lockers.interface';
-import { getAvailableActions, LOCKER_PERMISSIONS, TLockerAction } from '../types';
+import {
+	getAvailableActions,
+	getEligibleOrders,
+	LOCKER_PERMISSIONS,
+	TLockerAction,
+} from '../types';
 
 interface IOrdersTechnicianTabProps {
 	lockers: ILockerInternal[];
@@ -25,11 +30,8 @@ const OrdersTechnicianTab: React.FC<IOrdersTechnicianTabProps> = ({
 		getAvailableActions(locker.status).includes('withdraw'),
 	);
 
-	// 2. Equipos para Depositar: órdenes que el técnico ya retiró (`in_progress`).
-	// El backend también acepta `checked_in`, pero sólo sobre su propio casillero aún ocupado.
-	const ordersToDropoff = serviceOrders.filter(
-		(order) => order.logistics_status === 'in_progress',
-	);
+	// 2. Equipos para Depositar: órdenes que el técnico ya retiró.
+	const ordersToDropoff = getEligibleOrders('dropoff', null, serviceOrders);
 
 	const handleOpenDropoff = (order: IServiceOrder) => {
 		// Para depositar, asignamos automáticamente el primer casillero "available" en el modal.
