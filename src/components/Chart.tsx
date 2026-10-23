@@ -1,17 +1,16 @@
-import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
-import ApexCharts from 'apexcharts';
+import React, { FC, memo, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import ApexCharts, { type ApexOptions } from 'apexcharts';
 import colors from 'tailwindcss/colors';
 import _ from 'lodash';
 
-// Initialize ApexCharts with default locale to prevent localization errors
-if (typeof window !== 'undefined') {
-	ApexCharts.exec = ApexCharts.exec || (() => {});
-}
-
-// Derive the Apex types from the class definition (the bundled d.ts exports only the class)
-type ApexOptions = Parameters<ApexCharts['updateOptions']>[0];
 type ChartSeries = Parameters<ApexCharts['updateSeries']>[0];
 type ChartType = NonNullable<NonNullable<ApexOptions['chart']>['type']>;
+
+/** ApexCharts falla sin avisar en la UI: el error queda en consola para poder depurarlo. */
+const reportChartError = (message: string, error: unknown): void => {
+	// eslint-disable-next-line no-console
+	console.error(message, error);
+};
 
 export interface IChartProps {
 	options?: ApexOptions;
@@ -156,34 +155,40 @@ const Chart: FC<IChartProps> = (props) => {
 		});
 	}, [defaultOptions, options, type, sanitizedWidth, sanitizedHeight]);
 
-	useEffect(() => {
-		let animationFrameId: number;
+	// La instancia se crea en el próximo frame: si la serie llega antes, el efecto de
+	// actualización todavía no tiene instancia, así que la creación lee lo vigente.
+	const latestConfigRef = useRef({ buildOptions, series });
+	useLayoutEffect(() => {
+		latestConfigRef.current = { buildOptions, series };
+	}, [buildOptions, series]);
 
+	useEffect(() => {
 		const initChart = () => {
 			if (!chartRef.current) return;
 			if (chartInstanceRef.current) {
 				try {
 					chartInstanceRef.current.destroy();
 				} catch (error) {
-					console.error('No se pudo limpiar el gráfico previo', error);
+					reportChartError('No se pudo limpiar el gráfico previo', error);
 				} finally {
 					chartInstanceRef.current = null;
 				}
 			}
 
+			const { buildOptions: currentOptions, series: currentSeries } = latestConfigRef.current;
 			const instance = new ApexCharts(chartRef.current, {
-				...buildOptions,
-				series,
+				...currentOptions,
+				series: currentSeries,
 			});
 
 			chartInstanceRef.current = instance;
-			instance.render().catch((error) => {
-				console.error('No se pudo renderizar el gráfico', error);
+			instance.render().catch((error: unknown) => {
+				reportChartError('No se pudo renderizar el gráfico', error);
 			});
 		};
 
 		// Usamos requestAnimationFrame para asegurar que el DOM esté listo y tenga dimensiones
-		animationFrameId = requestAnimationFrame(initChart);
+		const animationFrameId = requestAnimationFrame(initChart);
 
 		return () => {
 			cancelAnimationFrame(animationFrameId);
@@ -191,7 +196,7 @@ const Chart: FC<IChartProps> = (props) => {
 			try {
 				chartInstanceRef.current.destroy();
 			} catch (error) {
-				console.error('No se pudo destruir el gráfico', error);
+				reportChartError('No se pudo destruir el gráfico', error);
 			} finally {
 				chartInstanceRef.current = null;
 			}
@@ -202,12 +207,16 @@ const Chart: FC<IChartProps> = (props) => {
 	useEffect(() => {
 		const instance = chartInstanceRef.current;
 		if (!instance) return;
-		if (!chartRef.current || !chartRef.current.isConnected || !(instance as any).el) return;
+		// `el` sólo existe mientras la instancia está montada; los tipos de ApexCharts no lo declaran.
+		const isRendered = 'el' in instance && Boolean(instance.el);
+		if (!chartRef.current || !chartRef.current.isConnected || !isRendered) return;
+		const onUpdateError = (error: unknown) =>
+			reportChartError('No se pudo actualizar el gráfico', error);
 		try {
-			instance.updateOptions(buildOptions, true, true);
-			instance.updateSeries(series, true);
+			instance.updateOptions(buildOptions, true, true).catch(onUpdateError);
+			instance.updateSeries(series, true).catch(onUpdateError);
 		} catch (error) {
-			console.error('No se pudo actualizar el gráfico', error);
+			onUpdateError(error);
 		}
 	}, [buildOptions, series]);
 
