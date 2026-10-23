@@ -207,10 +207,20 @@ const renderDetail = (saleId = 90, store = createStore()) => {
 	return { store, unmount: view.unmount };
 };
 
+/**
+ * El ítem aparece al cargar la devolución, pero su parte inicial llega en el render
+ * siguiente, cuando Formik se reinicializa: se espera a ambos antes de llenarlo.
+ */
+const findMouseReceipt = async () => {
+	const mouse = await screen.findByRole('group', { name: 'MOU-01 — Mouse' });
+	await screen.findByLabelText('Ubicación de la parte 1 de MOU-01 — Mouse');
+	return mouse;
+};
+
 const openReceipt = async () => {
 	renderDetail();
 	fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
-	return screen.findByRole('group', { name: 'MOU-01 — Mouse' });
+	return findMouseReceipt();
 };
 
 const change = (label: string, value: string) =>
@@ -663,7 +673,7 @@ describe('intento incierto a nivel de página', () => {
 		writes = [rejectWithTimeout, () => Promise.resolve(RECEIPT_OK)];
 		const page = renderPage();
 		fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
-		fillValidReceipt(await screen.findByRole('group', { name: 'MOU-01 — Mouse' }));
+		fillValidReceipt(await findMouseReceipt());
 		submitReceipt();
 		await screen.findByRole('button', { name: 'Reintentar' });
 
@@ -683,7 +693,7 @@ describe('intento incierto a nivel de página', () => {
 		writes = [rejectWithTimeout, () => Promise.resolve(RECEIPT_OK)];
 		const page = renderPage();
 		fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
-		fillValidReceipt(await screen.findByRole('group', { name: 'MOU-01 — Mouse' }));
+		fillValidReceipt(await findMouseReceipt());
 		submitReceipt();
 		await screen.findByRole('button', { name: 'Reintentar' });
 
@@ -713,7 +723,7 @@ describe('intento incierto a nivel de página', () => {
 		writes = [rejectWithTimeout];
 		const page = renderPage();
 		fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
-		fillValidReceipt(await screen.findByRole('group', { name: 'MOU-01 — Mouse' }));
+		fillValidReceipt(await findMouseReceipt());
 		submitReceipt();
 		await screen.findByRole('button', { name: 'Reintentar' });
 
@@ -755,7 +765,7 @@ describe('regresiones de la auditoría del PR 292', () => {
 				fireEvent.click(startButtonIn());
 			} else {
 				fireEvent.click(await screen.findByRole('button', { name: 'Recibir devolución' }));
-				fillValidReceipt(await screen.findByRole('group', { name: 'MOU-01 — Mouse' }));
+				fillValidReceipt(await findMouseReceipt());
 				submitReceipt();
 			}
 			await waitFor(() => expect(callsTo(isWrite)).toHaveLength(1));

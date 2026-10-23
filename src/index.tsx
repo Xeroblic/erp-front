@@ -1,10 +1,7 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import { useSyncExternalStore } from 'use-sync-external-store/shim';
-import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/shim/with-selector';
 import reportWebVitals from './reportWebVitals';
 
 import { ThemeContextProvider } from './context/themeContext';
@@ -16,24 +13,12 @@ import LoadingScreen from './components/LoadingScreen';
 
 import './i18n';
 import './styles/index.css';
-import 'react-date-range/dist/styles.css';
-import 'react-date-range/dist/theme/default.css';
-import './styles/vendors.css';
 import './components/customCss/nav-anim.css';
 
 import store, { persistor } from './store';
 
 // Inicializar slice de personalización dinámicamente
 import './store/initializePersonalizacion';
-
-// Fallback para entornos que no exponen useSyncExternalStore en React (algunas lib usan el hook)
-
-if (!(React as any).useSyncExternalStore) {
-	(React as any).useSyncExternalStore = useSyncExternalStore;
-}
-if (!(React as any).useSyncExternalStoreWithSelector) {
-	(React as any).useSyncExternalStoreWithSelector = useSyncExternalStoreWithSelector;
-}
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
@@ -44,11 +29,7 @@ root.render(
 				loading={<LoadingScreen message='Inicializando aplicación...' />}
 				persistor={persistor}>
 				<ThemeContextProvider>
-					<BrowserRouter
-						future={{
-							v7_startTransition: true,
-							v7_relativeSplatPath: true,
-						}}>
+					<BrowserRouter>
 						<App />
 					</BrowserRouter>
 				</ThemeContextProvider>

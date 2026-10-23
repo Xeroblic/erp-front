@@ -155,6 +155,18 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [subsidiaryId]);
 
+	// Los mensajes de error se pintan en el render que sigue al envío: el foco espera ese
+	// commit para que el desplazamiento ya cuente con ellos. El objeto envolvente hace que
+	// dos envíos seguidos con los mismos errores vuelvan a enfocar.
+	const [pendingInvalidFocus, setPendingInvalidFocus] = useState<{ errors: unknown } | null>(
+		null,
+	);
+	useEffect(() => {
+		if (!pendingInvalidFocus) return;
+		setPendingInvalidFocus(null);
+		focusFirstInvalidPurchaseDocumentField(pendingInvalidFocus.errors);
+	}, [pendingInvalidFocus]);
+
 	const handleClose = () => {
 		if (isSubmitting) return;
 		setIsSupplierModalOpen(false);
@@ -233,9 +245,7 @@ const PurchaseDocumentFormModal: React.FC<IPurchaseDocumentFormModalProps> = ({
 								.then((errors) =>
 									formik
 										.submitForm()
-										.finally(() =>
-											focusFirstInvalidPurchaseDocumentField(errors),
-										),
+										.finally(() => setPendingInvalidFocus({ errors })),
 								)
 								.catch(() => undefined);
 						}}>

@@ -89,7 +89,7 @@ const createWrapper = (initialEntry: string) => {
 	const Wrapper = ({ children }: PropsWithChildren) => (
 		// Mismo flag que el `BrowserRouter` de la app: la URL se actualiza en
 		// una transición, después que el estado urgente del hook.
-		<MemoryRouter initialEntries={[initialEntry]} future={{ v7_startTransition: true }}>
+		<MemoryRouter initialEntries={[initialEntry]}>
 			<Provider store={store}>
 				{children}
 				<UrlProbe />
