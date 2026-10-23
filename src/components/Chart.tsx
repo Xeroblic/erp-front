@@ -1,4 +1,4 @@
-import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
+import React, { FC, memo, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import ApexCharts from 'apexcharts';
 import colors from 'tailwindcss/colors';
 import _ from 'lodash';
@@ -156,6 +156,13 @@ const Chart: FC<IChartProps> = (props) => {
 		});
 	}, [defaultOptions, options, type, sanitizedWidth, sanitizedHeight]);
 
+	// La instancia se crea en el próximo frame: si la serie llega antes, el efecto de
+	// actualización todavía no tiene instancia, así que la creación lee lo vigente.
+	const latestConfigRef = useRef({ buildOptions, series });
+	useLayoutEffect(() => {
+		latestConfigRef.current = { buildOptions, series };
+	}, [buildOptions, series]);
+
 	useEffect(() => {
 		let animationFrameId: number;
 
@@ -171,9 +178,10 @@ const Chart: FC<IChartProps> = (props) => {
 				}
 			}
 
+			const { buildOptions: currentOptions, series: currentSeries } = latestConfigRef.current;
 			const instance = new ApexCharts(chartRef.current, {
-				...buildOptions,
-				series,
+				...currentOptions,
+				series: currentSeries,
 			});
 
 			chartInstanceRef.current = instance;
