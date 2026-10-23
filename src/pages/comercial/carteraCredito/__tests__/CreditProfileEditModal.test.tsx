@@ -506,8 +506,9 @@ describe('CreditProfileEditModal', () => {
 		);
 
 		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
+		// El motivo depende del perfil cargado, que llega cuando Formik se reinicializa.
 		expect(
-			screen.getByText(
+			await screen.findByText(
 				'No puedes eliminar el perfil mientras el cliente tenga saldo pendiente.',
 			),
 		).toBeInTheDocument();
