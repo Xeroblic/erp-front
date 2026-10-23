@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
@@ -17,6 +17,162 @@ import { TColorIntensity } from '@/types/colorIntensities.type';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
+
+// Enhanced Step Content Component
+interface StepContentProps {
+	step: TutorialStep;
+	stepNumber: number;
+	themeColor: TColors;
+	themeColorShade: TColorIntensity;
+}
+
+const StepContent: React.FC<StepContentProps> = ({
+	step,
+	stepNumber,
+	themeColor,
+	themeColorShade,
+}) => {
+	const contentRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (contentRef.current) {
+			gsap.fromTo(
+				contentRef.current.children,
+				{ opacity: 0, y: 20 },
+				{ opacity: 1, y: 0, duration: 0.4, stagger: 0.1, ease: 'power2.out' },
+			);
+		}
+	}, [step]);
+
+	// Image size classes mapping
+	const imageSizeClasses = {
+		xs: 'max-w-[200px] max-h-[120px]',
+		sm: 'max-w-[300px] max-h-[180px]',
+		md: 'max-w-[450px] max-h-[270px]',
+		lg: 'max-w-[600px] max-h-[360px]',
+		xl: 'max-w-[800px] max-h-[480px]',
+		full: 'max-w-full max-h-[500px]',
+	};
+
+	// Combine legacy image with new images array
+	const allImages = [
+		...(step.image ? [{ src: step.image, size: 'md' as const, alt: step.title }] : []),
+		...(step.images || []),
+	];
+
+	return (
+		<div ref={contentRef} className='max-h-[55vh] min-h-[380px] overflow-y-auto py-6'>
+			{/* Step header with icon */}
+			<div className='mb-6 flex items-start gap-4'>
+				{/* Step number badge */}
+				<div
+					className={classNames(
+						'flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl',
+						`bg-${themeColor}-${themeColorShade}`,
+						'shadow-lg',
+					)}>
+					{step.icon ? (
+						<Icon icon={step.icon} className='text-2xl text-white' />
+					) : (
+						<span className='text-2xl font-bold text-white'>{stepNumber}</span>
+					)}
+				</div>
+
+				<div className='flex-1'>
+					<h3 className='mb-2 text-2xl font-bold text-gray-900 dark:text-white'>
+						{step.title}
+					</h3>
+					{/* Description */}
+					<div
+						className='prose prose-sm max-w-none leading-relaxed text-gray-600 dark:prose-invert dark:text-gray-300'
+						// La descripción admite HTML básico y sólo viene de pasos definidos en el código,
+						// nunca de datos del usuario o del backend.
+						// eslint-disable-next-line react/no-danger
+						dangerouslySetInnerHTML={{ __html: step.description }}
+					/>
+				</div>
+			</div>
+
+			{/* Media section */}
+			{(allImages.length > 0 || step.videoUrl) && (
+				<div className='mt-6 space-y-4'>
+					{/* Images grid/list */}
+					{allImages.length > 0 && (
+						<div
+							className={classNames(
+								'flex flex-wrap gap-4',
+								allImages.length === 1 ? 'justify-center' : 'justify-start',
+							)}>
+							{allImages.map((img) => {
+								const size = img.size || 'md';
+								return (
+									<div
+										key={img.src}
+										className={classNames(
+											'relative overflow-hidden rounded-2xl',
+											`border-2 border-${themeColor}-${themeColorShade}/30`,
+											'group bg-zinc-900/50 shadow-xl',
+											imageSizeClasses[size],
+										)}>
+										{/* Image overlay effect */}
+										<div className='absolute inset-0 z-10 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100' />
+										<img
+											src={img.src}
+											alt={img.alt || step.title}
+											className='h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]'
+										/>
+										{/* Corner decoration */}
+										<div
+											className={classNames(
+												'absolute right-2 top-2 rounded-lg px-2 py-1',
+												'bg-white/90 backdrop-blur-sm dark:bg-zinc-900/90',
+												'text-xs font-medium',
+												`text-${themeColor}-${themeColorShade}`,
+											)}>
+											<Icon
+												icon='HeroPhoto'
+												className='mr-1 inline text-sm'
+											/>
+											{size.toUpperCase()}
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					)}
+
+					{step.videoUrl && (
+						<div
+							className={classNames(
+								'relative overflow-hidden rounded-2xl',
+								`border-2 border-${themeColor}-${themeColorShade}/30`,
+								'aspect-video shadow-xl',
+							)}>
+							<iframe
+								src={step.videoUrl}
+								title={step.title}
+								className='h-full w-full'
+								allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+								allowFullScreen
+							/>
+							{/* Video decoration */}
+							<div
+								className={classNames(
+									'absolute right-3 top-3 rounded-lg px-3 py-1.5',
+									'bg-white/90 backdrop-blur-sm dark:bg-zinc-900/90',
+									'text-xs font-medium',
+									`text-${themeColor}-${themeColorShade}`,
+								)}>
+								<Icon icon='HeroPlayCircle' className='mr-1 inline' />
+								Video
+							</div>
+						</div>
+					)}
+				</div>
+			)}
+		</div>
+	);
+};
 
 const TutorialModal: React.FC<TutorialModalProps> = ({
 	steps,
@@ -87,7 +243,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 		}
 	}, [isOpen]);
 
-	const handleClose = () => {
+	const handleClose = useCallback(() => {
 		if (contentRef.current && backdropRef.current) {
 			const tl = gsap.timeline({
 				onComplete: () => {
@@ -117,7 +273,17 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 		} else {
 			setIsOpen(false);
 		}
-	};
+	}, [setIsOpen]);
+
+	// El fondo sólo responde al mouse: Escape es su equivalente de teclado.
+	useEffect(() => {
+		if (!isOpen) return undefined;
+		const closeOnEscape = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') handleClose();
+		};
+		document.addEventListener('keydown', closeOnEscape);
+		return () => document.removeEventListener('keydown', closeOnEscape);
+	}, [isOpen, handleClose]);
 
 	const handlePrev = () => {
 		if (swiperInstance && activeIndex > 0) {
@@ -144,6 +310,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 				{/* Animated Backdrop */}
 				<div
 					ref={backdropRef}
+					role='presentation'
 					className='absolute inset-0 bg-black/70 backdrop-blur-xl'
 					onClick={handleClose}>
 					{/* Floating particles background */}
@@ -319,6 +486,8 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 
 							{/* Close button with glow */}
 							<button
+								type='button'
+								aria-label='Cerrar tutorial'
 								onClick={handleClose}
 								className='group relative flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:bg-white/20 active:scale-95'>
 								<div className='absolute inset-0 rounded-full bg-white/20 opacity-0 blur transition-opacity group-hover:opacity-100' />
@@ -342,9 +511,12 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 
 					{/* Step indicators */}
 					<div className='flex justify-center gap-2 px-6 pb-4 pt-8'>
-						{steps.map((_, index) => (
+						{steps.map((step, index) => (
 							<button
-								key={index}
+								key={step.title}
+								type='button'
+								aria-label={`Ir al paso ${index + 1}: ${step.title}`}
+								aria-current={activeIndex === index ? 'step' : undefined}
 								onClick={() => swiperInstance?.slideTo(index)}
 								className={classNames(
 									'rounded-full transition-all duration-300',
@@ -366,12 +538,12 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 							modules={[Navigation, Pagination]}
 							spaceBetween={0}
 							slidesPerView={1}
-							allowTouchMove={true}
+							allowTouchMove
 							onSwiper={(swiper) => setSwiperInstance(swiper)}
 							onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
 							className='w-full'>
 							{steps.map((step, index) => (
-								<SwiperSlide key={index}>
+								<SwiperSlide key={step.title}>
 									<StepContent
 										step={step}
 										stepNumber={index + 1}
@@ -440,159 +612,6 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 				</div>
 			</div>
 		</Portal>
-	);
-};
-
-// Enhanced Step Content Component
-interface StepContentProps {
-	step: TutorialStep;
-	stepNumber: number;
-	themeColor: TColors;
-	themeColorShade: TColorIntensity;
-}
-
-const StepContent: React.FC<StepContentProps> = ({
-	step,
-	stepNumber,
-	themeColor,
-	themeColorShade,
-}) => {
-	const contentRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		if (contentRef.current) {
-			gsap.fromTo(
-				contentRef.current.children,
-				{ opacity: 0, y: 20 },
-				{ opacity: 1, y: 0, duration: 0.4, stagger: 0.1, ease: 'power2.out' },
-			);
-		}
-	}, [step]);
-
-	// Image size classes mapping
-	const imageSizeClasses = {
-		xs: 'max-w-[200px] max-h-[120px]',
-		sm: 'max-w-[300px] max-h-[180px]',
-		md: 'max-w-[450px] max-h-[270px]',
-		lg: 'max-w-[600px] max-h-[360px]',
-		xl: 'max-w-[800px] max-h-[480px]',
-		full: 'max-w-full max-h-[500px]',
-	};
-
-	// Combine legacy image with new images array
-	const allImages = [
-		...(step.image ? [{ src: step.image, size: 'md' as const, alt: step.title }] : []),
-		...(step.images || []),
-	];
-
-	return (
-		<div ref={contentRef} className='max-h-[55vh] min-h-[380px] overflow-y-auto py-6'>
-			{/* Step header with icon */}
-			<div className='mb-6 flex items-start gap-4'>
-				{/* Step number badge */}
-				<div
-					className={classNames(
-						'flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl',
-						`bg-${themeColor}-${themeColorShade}`,
-						'shadow-lg',
-					)}>
-					{step.icon ? (
-						<Icon icon={step.icon} className='text-2xl text-white' />
-					) : (
-						<span className='text-2xl font-bold text-white'>{stepNumber}</span>
-					)}
-				</div>
-
-				<div className='flex-1'>
-					<h3 className='mb-2 text-2xl font-bold text-gray-900 dark:text-white'>
-						{step.title}
-					</h3>
-					{/* Description */}
-					<div
-						className='prose prose-sm max-w-none leading-relaxed text-gray-600 dark:prose-invert dark:text-gray-300'
-						dangerouslySetInnerHTML={{ __html: step.description }}
-					/>
-				</div>
-			</div>
-
-			{/* Media section */}
-			{(allImages.length > 0 || step.videoUrl) && (
-				<div className='mt-6 space-y-4'>
-					{/* Images grid/list */}
-					{allImages.length > 0 && (
-						<div
-							className={classNames(
-								'flex flex-wrap gap-4',
-								allImages.length === 1 ? 'justify-center' : 'justify-start',
-							)}>
-							{allImages.map((img, idx) => {
-								const size = img.size || 'md';
-								return (
-									<div
-										key={idx}
-										className={classNames(
-											'relative overflow-hidden rounded-2xl',
-											`border-2 border-${themeColor}-${themeColorShade}/30`,
-											'group bg-zinc-900/50 shadow-xl',
-											imageSizeClasses[size],
-										)}>
-										{/* Image overlay effect */}
-										<div className='absolute inset-0 z-10 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100' />
-										<img
-											src={img.src}
-											alt={img.alt || step.title}
-											className='h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]'
-										/>
-										{/* Corner decoration */}
-										<div
-											className={classNames(
-												'absolute right-2 top-2 rounded-lg px-2 py-1',
-												'bg-white/90 backdrop-blur-sm dark:bg-zinc-900/90',
-												'text-xs font-medium',
-												`text-${themeColor}-${themeColorShade}`,
-											)}>
-											<Icon
-												icon='HeroPhoto'
-												className='mr-1 inline text-sm'
-											/>
-											{size.toUpperCase()}
-										</div>
-									</div>
-								);
-							})}
-						</div>
-					)}
-
-					{step.videoUrl && (
-						<div
-							className={classNames(
-								'relative overflow-hidden rounded-2xl',
-								`border-2 border-${themeColor}-${themeColorShade}/30`,
-								'aspect-video shadow-xl',
-							)}>
-							<iframe
-								src={step.videoUrl}
-								title={step.title}
-								className='h-full w-full'
-								allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-								allowFullScreen
-							/>
-							{/* Video decoration */}
-							<div
-								className={classNames(
-									'absolute right-3 top-3 rounded-lg px-3 py-1.5',
-									'bg-white/90 backdrop-blur-sm dark:bg-zinc-900/90',
-									'text-xs font-medium',
-									`text-${themeColor}-${themeColorShade}`,
-								)}>
-								<Icon icon='HeroPlayCircle' className='mr-1 inline' />
-								Video
-							</div>
-						</div>
-					)}
-				</div>
-			)}
-		</div>
 	);
 };
 
