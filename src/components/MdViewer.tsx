@@ -1,6 +1,4 @@
 // import React, { FC, useState } from 'react';
-// import { Prism } from 'react-syntax-highlighter';
-// import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 // import ReactMarkdown, { Options } from 'react-markdown';
 // import classNames from 'classnames';
 // import useDarkMode from '../hooks/useDarkMode';

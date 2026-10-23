@@ -16,9 +16,6 @@ import LoadingScreen from './components/LoadingScreen';
 
 import './i18n';
 import './styles/index.css';
-import 'react-date-range/dist/styles.css';
-import 'react-date-range/dist/theme/default.css';
-import './styles/vendors.css';
 import './components/customCss/nav-anim.css';
 
 import store, { persistor } from './store';
