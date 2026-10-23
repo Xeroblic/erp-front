@@ -7,14 +7,28 @@ import Icon from '@/components/icon/Icon';
 import { toast } from 'react-toastify';
 import useDashboardTour from '@/hooks/tour/home/useDashboardTour';
 
+/** Fila del reporte de ventas: según el modo, el backend nombra distinto la fecha y el monto. */
+type TSaleRow = Record<string, unknown>;
+
+interface IWeeklySalesSeries {
+	name: string;
+	data: number[];
+}
+
 interface WeeklySalesChartProps {
 	dateRange: '7d' | '30d';
 	setDateRange: (range: '7d' | '30d') => void;
-	chartSeries: any[];
+	chartSeries: IWeeklySalesSeries[];
 	chartCategories: string[];
 	totalAmount: number;
-	results: any[];
+	results: readonly TSaleRow[];
 }
+
+/** Primer campo con valor (el mismo criterio que `a || b`) que se puede escribir en el XML. */
+const xmlFieldOf = (sale: TSaleRow, keys: readonly string[], fallback: string): string => {
+	const value = keys.map((key) => sale[key]).find(Boolean);
+	return typeof value === 'string' || typeof value === 'number' ? String(value) : fallback;
+};
 
 const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 	dateRange,
@@ -35,11 +49,11 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 			}
 
 			let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n<sales>\n';
-			results.forEach((sale: any) => {
+			results.forEach((sale) => {
 				xmlContent += `  <sale>\n`;
-				xmlContent += `    <date>${sale.sale_date || sale.date || 'N/A'}</date>\n`;
-				xmlContent += `    <amount>${sale.total_amount || sale.amount || 0}</amount>\n`;
-				xmlContent += `    <id>${sale.id || ''}</id>\n`;
+				xmlContent += `    <date>${xmlFieldOf(sale, ['sale_date', 'date'], 'N/A')}</date>\n`;
+				xmlContent += `    <amount>${xmlFieldOf(sale, ['total_amount', 'amount'], '0')}</amount>\n`;
+				xmlContent += `    <id>${xmlFieldOf(sale, ['id'], '')}</id>\n`;
 				xmlContent += `  </sale>\n`;
 			});
 			xmlContent += '</sales>';
@@ -54,8 +68,7 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
 			toast.success('Reporte XML descargado');
-		} catch (error) {
-			console.error('Error generating XML', error);
+		} catch {
 			toast.error('Error al generar XML');
 		}
 	};
@@ -98,7 +111,7 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 						colors: isDarkTheme ? '#9ca3af' : '#6b7280',
 					},
 					formatter: (val: number) =>
-						`$${val > 1000 ? (val / 1000).toFixed(1) + 'k' : val}`,
+						`$${val > 1000 ? `${(val / 1000).toFixed(1)}k` : val}`,
 				},
 			},
 			grid: {
@@ -149,6 +162,7 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 						<div className='flex items-center gap-2' id='weekly-sales-header'>
 							<div className='flex rounded-md bg-gray-100 p-1 dark:bg-gray-800'>
 								<button
+									type='button'
 									onClick={() => setDateRange('7d')}
 									className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
 										dateRange === '7d'
@@ -158,6 +172,7 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 									7D
 								</button>
 								<button
+									type='button'
 									onClick={() => setDateRange('30d')}
 									className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
 										dateRange === '30d'
