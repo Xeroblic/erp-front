@@ -95,7 +95,7 @@
 		"react-markdown": "^9.1.0",
 		"react-popper": "^2.3.0",
 		"react-redux": "^9.3.0",
-		"react-router-dom": "^6.30.6",
+		"react-router-dom": "^7.18.4",
 		"react-select": "^5.10.2",
 		"react-toastify": "^10.0.6",
 		"react-use": "^17.6.1",

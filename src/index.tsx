@@ -41,11 +41,7 @@ root.render(
 				loading={<LoadingScreen message='Inicializando aplicación...' />}
 				persistor={persistor}>
 				<ThemeContextProvider>
-					<BrowserRouter
-						future={{
-							v7_startTransition: true,
-							v7_relativeSplatPath: true,
-						}}>
+					<BrowserRouter>
 						<App />
 					</BrowserRouter>
 				</ThemeContextProvider>

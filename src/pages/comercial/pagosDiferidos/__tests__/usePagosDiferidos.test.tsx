@@ -74,7 +74,7 @@ describe('usePagosDiferidos con servicio', () => {
 	const createHook = (options?: Parameters<typeof usePagosDiferidos>[0]) => {
 		const store = configureStore({ reducer: { deferredPayments: deferredPaymentsReducer } });
 		const Wrapper = ({ children }: PropsWithChildren) => (
-			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+			<MemoryRouter>
 				<Provider store={store}>{children}</Provider>
 			</MemoryRouter>
 		);
