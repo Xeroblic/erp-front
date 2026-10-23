@@ -678,14 +678,22 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		if (formik.values.customer_sale_id === customer.id)
 			setSelectedCustomer(toCustomerSaleOption(customer));
 	};
-	const focusFirstInvalidDeferredPaymentField = (errors: unknown) => {
-		const fieldId = getFirstInvalidDeferredPaymentFieldId(errors);
+	// Los mensajes de error se pintan en el render que sigue al envío: el foco espera ese
+	// commit para que el desplazamiento ya cuente con ellos. El objeto envolvente hace que
+	// dos envíos seguidos con los mismos errores vuelvan a enfocar.
+	const [pendingInvalidFocus, setPendingInvalidFocus] = useState<{ errors: unknown } | null>(
+		null,
+	);
+	useEffect(() => {
+		if (!pendingInvalidFocus) return;
+		setPendingInvalidFocus(null);
+		const fieldId = getFirstInvalidDeferredPaymentFieldId(pendingInvalidFocus.errors);
 		if (!fieldId) return;
 		const field = document.getElementById(fieldId);
 		if (!(field instanceof HTMLElement)) return;
 		field.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
 		field.focus({ preventScroll: true });
-	};
+	}, [pendingInvalidFocus]);
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={handleClose} size='2xl' isScrollable isStaticBackdrop>
@@ -717,7 +725,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 									toast.error(DEFERRED_PAYMENT_TOTAL_ERROR);
 								return formik
 									.submitForm()
-									.finally(() => focusFirstInvalidDeferredPaymentField(errors));
+									.finally(() => setPendingInvalidFocus({ errors }));
 							})
 							.catch(() => undefined);
 					}}>
