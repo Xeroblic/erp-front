@@ -1,5 +1,5 @@
-import React, { Suspense } from 'react';
-const Chart = React.lazy(() => import('react-apexcharts'));
+import React, { useMemo } from 'react';
+import Chart from '@/components/Chart';
 import Card, { CardBody, CardHeader, CardHeaderChild } from '@/components/ui/Card';
 import useDarkMode from '@/hooks/useDarkMode';
 import Button from '@/components/ui/Button';
@@ -60,70 +60,76 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 		}
 	};
 
-	const chartOptions: ApexCharts.ApexOptions = {
-		chart: {
-			type: 'area',
-			fontFamily: 'inherit',
-			toolbar: { show: false },
-			background: 'transparent',
-			animations: { enabled: true },
-		},
-		stroke: {
-			width: 3,
-			curve: 'smooth',
+	// `Chart` vuelve a dibujar cuando cambia la identidad de `options`: sin memo, cada
+	// render del dashboard reanimaría el gráfico.
+	const chartOptions = useMemo<ApexCharts.ApexOptions>(
+		() => ({
+			chart: {
+				type: 'area',
+				fontFamily: 'inherit',
+				toolbar: { show: false },
+				background: 'transparent',
+				animations: { enabled: true },
+			},
+			stroke: {
+				width: 3,
+				curve: 'smooth',
+				colors: ['#22c55e'],
+			},
+			dataLabels: { enabled: false },
+			xaxis: {
+				categories: chartCategories,
+				axisBorder: { show: false },
+				axisTicks: { show: false },
+				labels: {
+					style: {
+						colors: isDarkTheme ? '#9ca3af' : '#6b7280',
+					},
+					formatter: (val) => {
+						const d = new Date(val);
+						// Show day/month. If 30 days, maybe show less labels? ApexCharts handles density usually.
+						return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' });
+					},
+				},
+			},
+			yaxis: {
+				labels: {
+					style: {
+						colors: isDarkTheme ? '#9ca3af' : '#6b7280',
+					},
+					formatter: (val: number) =>
+						`$${val > 1000 ? (val / 1000).toFixed(1) + 'k' : val}`,
+				},
+			},
+			grid: {
+				borderColor: isDarkTheme ? '#374151' : '#e5e7eb',
+				strokeDashArray: 4,
+				yaxis: { lines: { show: true } },
+				xaxis: { lines: { show: false } },
+			},
 			colors: ['#22c55e'],
-		},
-		dataLabels: { enabled: false },
-		xaxis: {
-			categories: chartCategories,
-			axisBorder: { show: false },
-			axisTicks: { show: false },
-			labels: {
-				style: {
-					colors: isDarkTheme ? '#9ca3af' : '#6b7280',
-				},
-				formatter: (val) => {
-					const d = new Date(val);
-					// Show day/month. If 30 days, maybe show less labels? ApexCharts handles density usually.
-					return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' });
+			fill: {
+				type: 'gradient',
+				gradient: {
+					shadeIntensity: 0.5,
+					opacityFrom: 0.2,
+					opacityTo: 0.05,
+					stops: [0, 100],
+					colorStops: [
+						{ offset: 0, color: '#22c55e', opacity: 0.2 },
+						{ offset: 100, color: '#22c55e', opacity: 0 },
+					],
 				},
 			},
-		},
-		yaxis: {
-			labels: {
-				style: {
-					colors: isDarkTheme ? '#9ca3af' : '#6b7280',
+			tooltip: {
+				theme: isDarkTheme ? 'dark' : 'light',
+				y: {
+					formatter: (val: number) => `$${val.toLocaleString('es-CL')}`,
 				},
-				formatter: (val: number) => `$${val > 1000 ? (val / 1000).toFixed(1) + 'k' : val}`,
 			},
-		},
-		grid: {
-			borderColor: isDarkTheme ? '#374151' : '#e5e7eb',
-			strokeDashArray: 4,
-			yaxis: { lines: { show: true } },
-			xaxis: { lines: { show: false } },
-		},
-		colors: ['#22c55e'],
-		fill: {
-			type: 'gradient',
-			gradient: {
-				shadeIntensity: 0.5,
-				opacityFrom: 0.2,
-				opacityTo: 0.05,
-				stops: [0, 100],
-				colorStops: [
-					{ offset: 0, color: '#22c55e', opacity: 0.2 },
-					{ offset: 100, color: '#22c55e', opacity: 0 },
-				],
-			},
-		},
-		tooltip: {
-			theme: isDarkTheme ? 'dark' : 'light',
-			y: {
-				formatter: (val: number) => `$${val.toLocaleString('es-CL')}`,
-			},
-		},
-	};
+		}),
+		[chartCategories, isDarkTheme],
+	);
 
 	return (
 		<>
@@ -178,19 +184,7 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 							${totalAmount.toLocaleString('es-CL', { maximumFractionDigits: 0 })}
 						</span>
 					</div>
-					<Suspense
-						fallback={
-							<div className='h-[280px] w-full animate-pulse rounded-lg bg-gray-100/50'></div>
-						}>
-						{typeof window !== 'undefined' && (
-							<Chart
-								options={chartOptions}
-								series={chartSeries}
-								type='area'
-								height={380}
-							/>
-						)}
-					</Suspense>
+					<Chart options={chartOptions} series={chartSeries} type='area' height={380} />
 				</CardBody>
 			</Card>
 			<div className='fixed bottom-[50vh] right-6 z-50'>

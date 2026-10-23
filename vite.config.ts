@@ -50,7 +50,6 @@ export default defineConfig({
 						// Separate chart libraries to avoid inflating the main vendor chunk
 						if (
 							id.includes('apexcharts') ||
-							id.includes('react-apexcharts') ||
 							id.includes('recharts') ||
 							/node_modules[\\/]d3([\\/]|$)/.test(id)
 						) {
