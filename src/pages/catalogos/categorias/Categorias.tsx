@@ -45,7 +45,6 @@ const Categorias: React.FC = () => {
 		deleting,
 		createCategory,
 		updateCategory,
-		toggleCategoryStatus,
 		deleteCategory,
 		uploadCategoryGallery,
 		tree,
@@ -154,15 +153,6 @@ const Categorias: React.FC = () => {
 			setSelected(null);
 		} catch (err: any) {
 			toast.error(err?.message ?? 'No se pudo eliminar la categoria');
-		}
-	};
-
-	const handleToggleStatus = async (category: ICategory) => {
-		try {
-			await toggleCategoryStatus(category);
-			toast.info(`Categoria ${category.is_active ? 'desactivada' : 'activada'}`);
-		} catch (err: any) {
-			toast.error(err?.message ?? 'No se pudo cambiar el estado');
 		}
 	};
 
@@ -275,7 +265,6 @@ const Categorias: React.FC = () => {
 						onView={handleView}
 						onEdit={handleEdit}
 						onDelete={handleDelete}
-						onToggleStatus={handleToggleStatus}
 					/>
 				)}
 			</Container>

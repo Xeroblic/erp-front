@@ -22,7 +22,6 @@ interface CategoriesTableProps {
 	onView: (category: ICategory) => void;
 	onEdit: (category: ICategory) => void;
 	onDelete: (category: ICategory) => void;
-	onToggleStatus: (category: ICategory) => void;
 }
 
 const buildCategoryColumns = ({

@@ -14,12 +14,10 @@ import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 import { useClientes } from './components/hooks/useClientes';
 import CustomersTable from './components/tables/CustomersTable';
 import CrearCliente from './components/modals/CrearCliente';
-// import EditarCliente from './components/modals/EditarCliente';
 import EliminarCliente from './components/modals/EliminarCliente';
 import { useAppDispatch } from '@/store';
 import {
 	createCustomerSupplier,
-	updateCustomerSupplier,
 	deleteCustomerSupplier,
 } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
@@ -43,7 +41,6 @@ const Clientes: React.FC = () => {
 		pageSize: 5,
 	});
 	const [createOpen, setCreateOpen] = useState(false);
-	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selected, setSelected] = useState<ICustomerSupplier | null>(null);
 
@@ -67,10 +64,6 @@ const Clientes: React.FC = () => {
 	const onView = (c: ICustomerSupplier) => {
 		navigate(`/catalogos/clientes/${c.id}`);
 	};
-	const onEdit = (c: ICustomerSupplier) => {
-		setSelected(c);
-		setEditOpen(true);
-	};
 	const onDelete = (c: ICustomerSupplier) => {
 		setSelected(c);
 		setDeleteOpen(true);
@@ -84,18 +77,6 @@ const Clientes: React.FC = () => {
 			}),
 		);
 		setCreateOpen(false);
-	};
-
-	const handleEditSubmit = async (values: { name: string }) => {
-		if (!selected || !activeSubsidiaryId) return;
-		await dispatch(
-			updateCustomerSupplier({
-				subsidiaryId: activeSubsidiaryId,
-				data: { id: selected.id, name: values.name },
-			}),
-		);
-		setEditOpen(false);
-		setSelected(null);
 	};
 
 	const handleConfirmDelete = async () => {
@@ -164,7 +145,6 @@ const Clientes: React.FC = () => {
 					<CustomersTable
 						customers={customers}
 						onView={onView}
-						onEdit={onEdit}
 						onDelete={onDelete}
 						loading={loading}
 						meta={meta}
@@ -179,12 +159,6 @@ const Clientes: React.FC = () => {
 				onSubmit={handleCreateSubmit}
 				defaultSubsidiaryId={subsidiaryId}
 			/>
-			{/* <EditarCliente
-				isOpen={editOpen}
-				setIsOpen={setEditOpen}
-				customer={selected}
-				onSubmit={handleEditSubmit}
-			/> */}
 			<EliminarCliente
 				isOpen={deleteOpen}
 				setIsOpen={setDeleteOpen}

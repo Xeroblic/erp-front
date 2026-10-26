@@ -13,7 +13,6 @@ import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 interface CustomersTableProps {
 	customers: ICustomerSupplier[];
 	onView: (c: ICustomerSupplier) => void;
-	onEdit: (c: ICustomerSupplier) => void;
 	onDelete: (c: ICustomerSupplier) => void;
 	loading?: boolean;
 	meta?: PaginationMeta | null;

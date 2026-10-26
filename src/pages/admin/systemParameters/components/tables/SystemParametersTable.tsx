@@ -13,14 +13,6 @@ import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/ta
 interface SystemParametersTableProps {
 	parameters: SystemParameter[];
 	isLoading: boolean;
-	pagination: {
-		page: number;
-		pageSize: number;
-		total: number;
-		totalPages: number;
-	};
-	onPageChange: (page: number) => void;
-	onPageSizeChange: (pageSize: number) => void;
 	onViewDetails: (parameter: SystemParameter) => void;
 	onEdit: (parameter: SystemParameter) => void;
 	onDelete: (parameter: SystemParameter) => void;

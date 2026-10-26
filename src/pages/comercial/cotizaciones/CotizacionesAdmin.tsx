@@ -6,7 +6,6 @@ import QuotationsTable from './components/tables/QuotationsTable';
 import CreateQuotationModal from './components/modals/ModalCreacion/CreateQuotationModal';
 import EditQuotationModal from './components/modals/ModalEditar/EditQuotationModal';
 import { QuotationDetailsModal } from './components/modals/QuotationDetailsModal';
-import DuplicateQuotationModal from './components/modals/DuplicateQuotationModal';
 import DeleteQuotationModal from './components/modals/DeleteQuotationModal';
 import { getQuoteStatusLabel, normalizeQuoteStatusValue } from './constants/quoteStatuses';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -47,8 +46,6 @@ const CotizacionesAdmin: React.FC = () => {
 	const [detailsLoading, setDetailsLoading] = useState(false);
 
 	// Estados modales
-	const [duplicatingQuotation, setDuplicatingQuotation] = useState<IQuote | null>(null);
-	const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
 	const [deletingQuotation, setDeletingQuotation] = useState<IQuote | null>(null);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 	const [isActionLoading, setIsActionLoading] = useState(false);
@@ -70,7 +67,6 @@ const CotizacionesAdmin: React.FC = () => {
 		createQuotation,
 		updateQuotation,
 		deleteQuotation,
-		duplicateQuotation,
 		changeStatus,
 		convertToSale,
 		refreshData,
@@ -278,31 +274,6 @@ const CotizacionesAdmin: React.FC = () => {
 		}
 	};
 
-	const handleDuplicateClick = (id: number) => {
-		const quotation = quotations.find((q) => q.id === id);
-		if (quotation) {
-			setDuplicatingQuotation(quotation);
-			setIsDuplicateModalOpen(true);
-		}
-	};
-
-	const handleDuplicateConfirm = async () => {
-		if (!duplicatingQuotation) return;
-
-		setIsActionLoading(true);
-		try {
-			await duplicateQuotation(duplicatingQuotation.id);
-			toast.success('Cotización duplicada exitosamente');
-			setIsDuplicateModalOpen(false);
-			setDuplicatingQuotation(null);
-		} catch (error) {
-			toast.error('Error al duplicar la cotización');
-			console.error('Error al duplicar:', error);
-		} finally {
-			setIsActionLoading(false);
-		}
-	};
-
 	const handleDeleteClick = (id: number) => {
 		const quotation = quotations.find((q) => q.id === id);
 		if (quotation) {
@@ -329,9 +300,7 @@ const CotizacionesAdmin: React.FC = () => {
 	};
 
 	const handleCloseModals = () => {
-		setIsDuplicateModalOpen(false);
 		setIsDeleteModalOpen(false);
-		setDuplicatingQuotation(null);
 		setDeletingQuotation(null);
 	};
 
@@ -418,7 +387,6 @@ const CotizacionesAdmin: React.FC = () => {
 							pageSize={itemsPerPage}
 							onEdit={handleEdit}
 							onDelete={handleDeleteClick}
-							onDuplicate={handleDuplicateClick}
 							onView={handleView}
 							onChangeStatus={handleChangeStatus}
 							onConvertToSale={handleConvertToSale}
@@ -455,14 +423,6 @@ const CotizacionesAdmin: React.FC = () => {
 					isLoading={detailsLoading}
 					onDownloadPdf={handleDownloadPdf}
 					onApprove={handleApproveViewingQuotation}
-				/>
-
-				<DuplicateQuotationModal
-					isOpen={isDuplicateModalOpen}
-					onClose={handleCloseModals}
-					onConfirm={handleDuplicateConfirm}
-					quotation={duplicatingQuotation}
-					isLoading={isActionLoading}
 				/>
 
 				<DeleteQuotationModal

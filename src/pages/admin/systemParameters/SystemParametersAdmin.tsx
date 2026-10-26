@@ -24,7 +24,6 @@ const SystemParametersAdmin: React.FC = () => {
 		// Estado
 		parameters,
 		isLoading,
-		pagination,
 		filters,
 		stats,
 
@@ -45,10 +44,8 @@ const SystemParametersAdmin: React.FC = () => {
 		openDetailsModal,
 		closeDetailsModal,
 
-		// Manejadores de filtros y paginación
+		// Manejadores de filtros
 		handleFilterChange,
-		handlePageChange,
-		handlePageSizeChange,
 
 		// Acciones CRUD
 		handleCreateParameter,
@@ -309,9 +306,6 @@ const SystemParametersAdmin: React.FC = () => {
 					<SystemParametersTable
 						parameters={parameters}
 						isLoading={isLoading}
-						pagination={pagination}
-						onPageChange={handlePageChange}
-						onPageSizeChange={handlePageSizeChange}
 						onViewDetails={openDetailsModal}
 						onEdit={openEditModal}
 						onDelete={openDeleteModal}

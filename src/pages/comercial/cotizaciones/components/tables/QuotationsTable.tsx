@@ -22,7 +22,6 @@ interface QuotationsTableProps {
 	pageSize?: number;
 	onEdit?: (quotation: IQuote) => void;
 	onDelete?: (id: number) => void;
-	onDuplicate?: (id: number) => void;
 	onView?: (quotation: IQuote) => void;
 	onChangeStatus?: (id: number, status: QuoteStatus) => void;
 	onConvertToSale?: (id: number) => void;
@@ -218,7 +217,6 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	pageSize,
 	onEdit,
 	onDelete,
-	// onDuplicate,
 	onView,
 	onChangeStatus,
 	onConvertToSale,
