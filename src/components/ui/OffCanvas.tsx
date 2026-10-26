@@ -138,7 +138,7 @@ OffCanvasFooter.displayName = 'OffCanvasFooter';
  * @constructor
  */
 const BackDrop = () => {
-	const animationProps = {
+	const animationProps: MotionProps = {
 		initial: { opacity: 0 },
 		animate: { opacity: 1 },
 		exit: { opacity: 0 },
@@ -274,7 +274,7 @@ const OffCanvas: FC<IOffCanvasProps> = (props) => {
 	};
 	useEventListener('keydown', escFunction);
 
-	const animationProps = isAnimation
+	const animationProps: MotionProps | null = isAnimation
 		? {
 				animate: { opacity: 1, x: '0%', y: '0%' },
 				transition: { ease: 'easeInOut', duration: 0.3 },

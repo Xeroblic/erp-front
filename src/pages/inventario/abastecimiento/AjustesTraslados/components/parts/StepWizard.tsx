@@ -1,6 +1,6 @@
 import React, { FC, ReactNode, useCallback, useId, useLayoutEffect, useRef } from 'react';
 import classNames from 'classnames';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import type { TIcons } from '@/types/icons.type';
@@ -24,6 +24,19 @@ export interface IStepWizardProps {
 	finishActions: ReactNode;
 	children: ReactNode;
 }
+
+/**
+ * Desplazamiento del paso según la dirección de navegación (1 avanza, -1
+ * retrocede). Son funciones porque el paso que sale ya no se vuelve a
+ * renderizar: `AnimatePresence` le pasa por `custom` la dirección del cambio
+ * actual. Con un `exit` fijo conservaría la dirección con que entró y, tras
+ * retroceder y avanzar, saldría hacia el lado contrario.
+ */
+const stepVariants: Variants = {
+	enter: (direction: number) => ({ opacity: 0, x: direction * 40 }),
+	center: { opacity: 1, x: 0 },
+	exit: (direction: number) => ({ opacity: 0, x: direction * -40 }),
+};
 
 /**
  * Asistente con el formato de `FormShell` de revisiones técnicas: barra de
@@ -161,9 +174,10 @@ const StepWizard: FC<IStepWizardProps> = ({
 					<motion.section
 						key={step}
 						custom={direction}
-						initial={{ opacity: 0, x: direction * 40 }}
-						animate={{ opacity: 1, x: 0 }}
-						exit={{ opacity: 0, x: direction * -40 }}
+						variants={stepVariants}
+						initial='enter'
+						animate='center'
+						exit='exit'
 						transition={{ duration: 0.25, ease: 'easeInOut' }}
 						aria-labelledby={titleId}
 						className='p-6'>

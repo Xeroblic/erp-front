@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import type { FieldValues } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import type { SectionConfig, FormSectionProps } from './types';
+
+/**
+ * Desplazamiento de la sección según la dirección de navegación (1 avanza, -1
+ * retrocede). Son funciones porque la sección que sale ya no se vuelve a
+ * renderizar: `AnimatePresence` le pasa por `custom` la dirección del cambio
+ * actual. Con un `exit` fijo conservaría la dirección con que entró y saldría
+ * hacia el lado contrario.
+ */
+const sectionVariants: Variants = {
+	enter: (direction: number) => ({ opacity: 0, x: direction * 40 }),
+	center: { opacity: 1, x: 0 },
+	exit: (direction: number) => ({ opacity: 0, x: direction * -40 }),
+};
 
 interface FormShellProps<T extends FieldValues> {
 	sections: SectionConfig<T>[];
@@ -241,9 +254,10 @@ const FormShell = <T extends FieldValues>({
 					<motion.div
 						key={step}
 						custom={direction}
-						initial={{ opacity: 0, x: direction * 40 }}
-						animate={{ opacity: 1, x: 0 }}
-						exit={{ opacity: 0, x: direction * -40 }}
+						variants={sectionVariants}
+						initial='enter'
+						animate='center'
+						exit='exit'
 						transition={{ duration: 0.25, ease: 'easeInOut' }}
 						className='p-6'>
 						<h3 className='mb-6 flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-zinc-100'>
