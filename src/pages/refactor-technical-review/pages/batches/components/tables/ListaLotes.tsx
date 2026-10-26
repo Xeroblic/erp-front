@@ -130,7 +130,7 @@ const buildBatchColumns = ({
 	},
 ];
 
-export const ListaLotes = () => {
+const ListaLotes = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const { branchId } = useCurrentBranch();
@@ -145,7 +145,7 @@ export const ListaLotes = () => {
 
 	useEffect(() => {
 		if (branchId) {
-			dispatch(
+			void dispatch(
 				fetchBatches({
 					branchId,
 					params: {
@@ -178,3 +178,5 @@ export const ListaLotes = () => {
 		</Card>
 	);
 };
+
+export default ListaLotes;

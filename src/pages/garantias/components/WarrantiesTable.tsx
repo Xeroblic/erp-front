@@ -246,7 +246,7 @@ const WarrantiesTable: React.FC<WarrantiesTableProps> = ({
 					</TBody>
 				</Table>
 			</CardBody>
-			{data.length > 0 && <TableCardFooterTemplateV2 table={table as any} />}
+			{data.length > 0 && <TableCardFooterTemplateV2 table={table} />}
 		</Card>
 	);
 };

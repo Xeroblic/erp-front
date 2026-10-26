@@ -10,7 +10,7 @@ import { formatRoleName } from '../../utils/formatters';
 
 const columnHelper = createColumnHelper<AppTableFeatures, UserWithDetails>();
 
-export const createUserTableColumns = (
+const createUserTableColumns = (
 	onOpenPermissionsModal: (user: UserWithDetails) => void,
 	onToggleUserStatus: (user: UserWithDetails) => void,
 	toggleUserLoading: Set<number>,
@@ -26,7 +26,7 @@ export const createUserTableColumns = (
 			cell: (info) => {
 				const user = info.row.original;
 				const full = `${info.getValue() || ''} ${user.last_name || ''}`.trim();
-				const avatarUrl = getUserAvatarUrl(user as any);
+				const avatarUrl = getUserAvatarUrl(user);
 				return (
 					<div className='flex items-center gap-3'>
 						<Avatar src={avatarUrl} name={full} className='h-10 w-10' />
@@ -79,8 +79,8 @@ export const createUserTableColumns = (
 
 				return (
 					<div className='flex flex-wrap gap-1'>
-						{uniqueRoles.slice(0, 3).map((role, index) => (
-							<Badge key={index} color='blue' className='text-xs'>
+						{uniqueRoles.slice(0, 3).map((role) => (
+							<Badge key={role} color='blue' className='text-xs'>
 								{getRoleLabel(role)}
 							</Badge>
 						))}
@@ -127,40 +127,42 @@ export const createUserTableColumns = (
 		columnHelper.display({
 			id: 'actions',
 			header: 'Acciones',
-			cell: (info) => (
-				<div className='flex gap-2'>
-					<Button
-						size='sm'
-						variant='outline'
-						onClick={() => onOpenPermissionsModal(info.row.original)}
-						className='flex items-center gap-1'>
-						<Icon icon='HeroShieldCheck' className='h-4 w-4' />
-						Gestionar
-					</Button>
-					<Button
-						size='sm'
-						color={info.row.original.is_active ? 'red' : 'emerald'}
-						variant='outline'
-						onClick={() => onToggleUserStatus(info.row.original)}
-						className='flex items-center gap-1'
-						isDisable={toggleUserLoading.has(info.row.original.id)}>
-						<Icon
-							icon={
-								toggleUserLoading.has(info.row.original.id)
-									? 'HeroArrowPath'
-									: info.row.original.is_active
-										? 'HeroXMark'
-										: 'HeroCheck'
-							}
-							className={`h-4 w-4 ${toggleUserLoading.has(info.row.original.id) ? 'animate-spin' : ''}`}
-						/>
-						{toggleUserLoading.has(info.row.original.id)
-							? 'Procesando...'
-							: info.row.original.is_active
-								? 'Desactivar'
-								: 'Activar'}
-					</Button>
-				</div>
-			),
+			cell: (info) => {
+				const isToggling = toggleUserLoading.has(info.row.original.id);
+				let toggleIcon = info.row.original.is_active ? 'HeroXMark' : 'HeroCheck';
+				let toggleLabel = info.row.original.is_active ? 'Desactivar' : 'Activar';
+				if (isToggling) {
+					toggleIcon = 'HeroArrowPath';
+					toggleLabel = 'Procesando...';
+				}
+
+				return (
+					<div className='flex gap-2'>
+						<Button
+							size='sm'
+							variant='outline'
+							onClick={() => onOpenPermissionsModal(info.row.original)}
+							className='flex items-center gap-1'>
+							<Icon icon='HeroShieldCheck' className='h-4 w-4' />
+							Gestionar
+						</Button>
+						<Button
+							size='sm'
+							color={info.row.original.is_active ? 'red' : 'emerald'}
+							variant='outline'
+							onClick={() => onToggleUserStatus(info.row.original)}
+							className='flex items-center gap-1'
+							isDisable={toggleUserLoading.has(info.row.original.id)}>
+							<Icon
+								icon={toggleIcon}
+								className={`h-4 w-4 ${toggleUserLoading.has(info.row.original.id) ? 'animate-spin' : ''}`}
+							/>
+							{toggleLabel}
+						</Button>
+					</div>
+				);
+			},
 		}),
 	]);
+
+export default createUserTableColumns;

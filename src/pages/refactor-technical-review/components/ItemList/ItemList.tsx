@@ -4,8 +4,7 @@
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { createColumnHelper, PaginationState, OnChangeFn } from '@tanstack/react-table';
+import { ColumnDef, createColumnHelper, PaginationState, OnChangeFn } from '@tanstack/react-table';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
@@ -13,7 +12,6 @@ import DataTable from '@/components/ui/DataTable/DataTable';
 import Badge from '@/components/ui/Badge';
 import type { IItem, ListMeta } from '@/interface/technicalReviews.interface';
 import { useAppDispatch } from '@/store';
-import { deleteItem } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
@@ -43,7 +41,47 @@ interface ItemListProps {
 	customerName?: string;
 }
 
+/** El backend puede enviar el nombre plano en vez del objeto relacionado. */
+type ItemWithNames = IItem & {
+	product_name?: string | null;
+	warehouse_name?: string | null;
+};
+
 const columnHelper = createColumnHelper<AppTableFeatures, IItem>();
+
+const GradeCell = ({ item }: { item: IItem }) => {
+	const grade = extractValue(item.grade);
+	const suggestedGrade = extractValue(item.suggested_grade);
+
+	if (grade) {
+		return (
+			<Badge
+				variant='outline'
+				className='gap-1 rounded-full border-yellow-200 bg-yellow-50 px-2 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'>
+				<Icon icon='HeroStar' className='h-3 w-3' />
+				{grade}
+				{suggestedGrade && grade !== suggestedGrade && (
+					<span className='ml-1 text-[10px] text-yellow-600/70 dark:text-yellow-400/70'>
+						(Sug: {suggestedGrade})
+					</span>
+				)}
+			</Badge>
+		);
+	}
+
+	if (suggestedGrade) {
+		return (
+			<Badge
+				variant='outline'
+				className='gap-1 rounded-full border-gray-200 bg-gray-50 px-2 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'>
+				<Icon icon='HeroSparkles' className='h-3 w-3' />
+				{suggestedGrade}
+			</Badge>
+		);
+	}
+
+	return <span className='text-xs text-gray-400'>Pendiente</span>;
+};
 
 const buildItemColumns = ({
 	variant,
@@ -56,7 +94,7 @@ const buildItemColumns = ({
 	onPrint: (item: IItem) => void;
 	onDelete: (item: IItem) => void;
 }) => {
-	const cols = [
+	const cols: ColumnDef<AppTableFeatures, IItem>[] = [
 		columnHelper.display({
 			id: 'serial_number',
 			header: 'Serie',
@@ -84,7 +122,7 @@ const buildItemColumns = ({
 					<Badge
 						variant='outline'
 						className='gap-2 rounded-full border-blue-200 bg-blue-50 px-2 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300'>
-						<Icon icon={icon as any} className='h-3 w-3' />
+						<Icon icon={icon} className='h-3 w-3' />
 						{label}
 					</Badge>
 				);
@@ -111,34 +149,9 @@ const buildItemColumns = ({
 		columnHelper.display({
 			id: 'grade',
 			header: 'Grado',
-			cell: (info) => {
-				const item = info.row.original;
-				return extractValue(item.grade) ? (
-					<Badge
-						variant='outline'
-						className='gap-1 rounded-full border-yellow-200 bg-yellow-50 px-2 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'>
-						<Icon icon='HeroStar' className='h-3 w-3' />
-						{extractValue(item.grade)}
-						{extractValue(item.suggested_grade) &&
-							extractValue(item.grade) !== extractValue(item.suggested_grade) && (
-								<span className='ml-1 text-[10px] text-yellow-600/70 dark:text-yellow-400/70'>
-									(Sug: {extractValue(item.suggested_grade)})
-								</span>
-							)}
-					</Badge>
-				) : extractValue(item.suggested_grade) ? (
-					<Badge
-						variant='outline'
-						className='gap-1 rounded-full border-gray-200 bg-gray-50 px-2 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'>
-						<Icon icon='HeroSparkles' className='h-3 w-3' />
-						{extractValue(item.suggested_grade)}
-					</Badge>
-				) : (
-					<span className='text-xs text-gray-400'>Pendiente</span>
-				);
-			},
+			cell: (info) => <GradeCell item={info.row.original} />,
 		}),
-	] as any[];
+	];
 
 	if (variant === 'global') {
 		cols.splice(
@@ -149,7 +162,7 @@ const buildItemColumns = ({
 				id: 'product_name',
 				header: 'Producto',
 				cell: (info) => {
-					const item = info.row.original as any;
+					const item: ItemWithNames = info.row.original;
 					return (
 						<span className='text-sm text-gray-700 dark:text-gray-300'>
 							{item?.product?.name || item?.product_name || 'Sin producto'}
@@ -165,7 +178,7 @@ const buildItemColumns = ({
 				id: 'warehouse_name',
 				header: 'Bodega',
 				cell: (info) => {
-					const item = info.row.original as any;
+					const item: ItemWithNames = info.row.original;
 					return (
 						<span className='text-sm text-gray-700 dark:text-gray-300'>
 							{item?.warehouse?.name || item?.warehouse_name || '—'}
@@ -271,14 +284,6 @@ const ItemList: React.FC<ItemListProps> = ({
 	const [isPrintLabelOpen, setIsPrintLabelOpen] = useState(false);
 	const [itemToPrint, setItemToPrint] = useState<IItem | null>(null);
 
-	const handleItemClick = (itemId: number) => {
-		if (onItemClick) {
-			onItemClick(itemId);
-		} else {
-			navigate(`${baseUrl}/${itemId}`);
-		}
-	};
-
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [itemToDelete, setItemToDelete] = useState<IItem | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -349,7 +354,7 @@ const ItemList: React.FC<ItemListProps> = ({
 			if (onItemClick) {
 				onItemClick(selectedActionItem.id);
 			} else {
-				navigate(`${baseUrl}/${selectedActionItem.id}`);
+				void navigate(`${baseUrl}/${selectedActionItem.id}`);
 			}
 			setActionModalOpen(false);
 		}
@@ -357,7 +362,7 @@ const ItemList: React.FC<ItemListProps> = ({
 
 	const goToTraceability = () => {
 		if (selectedActionItem && branchId) {
-			navigate(`/technical-reviews/traceability/${selectedActionItem.serial_number}`);
+			void navigate(`/technical-reviews/traceability/${selectedActionItem.serial_number}`);
 			setActionModalOpen(false);
 		}
 	};
@@ -418,8 +423,10 @@ const ItemList: React.FC<ItemListProps> = ({
 				<ModalHeader>Exportar Datos</ModalHeader>
 				<ModalBody>
 					<div className='grid gap-4'>
-						<div
-							className={`cursor-pointer rounded-lg border p-4 transition-all hover:bg-gray-50 dark:hover:bg-zinc-800 ${
+						<button
+							type='button'
+							aria-pressed={exportMode === 'serials'}
+							className={`w-full cursor-pointer rounded-lg border p-4 text-left transition-all hover:bg-gray-50 dark:hover:bg-zinc-800 ${
 								exportMode === 'serials'
 									? 'border-blue-500 ring-1 ring-blue-500'
 									: 'border-gray-200 dark:border-gray-700'
@@ -443,10 +450,12 @@ const ItemList: React.FC<ItemListProps> = ({
 									</p>
 								</div>
 							</div>
-						</div>
+						</button>
 
-						<div
-							className={`cursor-pointer rounded-lg border p-4 transition-all hover:bg-gray-50 dark:hover:bg-zinc-800 ${
+						<button
+							type='button'
+							aria-pressed={exportMode === 'details'}
+							className={`w-full cursor-pointer rounded-lg border p-4 text-left transition-all hover:bg-gray-50 dark:hover:bg-zinc-800 ${
 								exportMode === 'details'
 									? 'border-blue-500 ring-1 ring-blue-500'
 									: 'border-gray-200 dark:border-gray-700'
@@ -470,7 +479,7 @@ const ItemList: React.FC<ItemListProps> = ({
 									</p>
 								</div>
 							</div>
-						</div>
+						</button>
 					</div>
 				</ModalBody>
 				<ModalFooter>
@@ -484,7 +493,7 @@ const ItemList: React.FC<ItemListProps> = ({
 						variant='solid'
 						color='blue'
 						onClick={() => {
-							handleExport();
+							void handleExport();
 							setIsExportModalOpen(false);
 						}}
 						isLoading={isExporting}>
@@ -513,7 +522,9 @@ const ItemList: React.FC<ItemListProps> = ({
 					<Button
 						variant='solid'
 						color='red'
-						onClick={() => itemToDelete && handleDelete(itemToDelete.id)}
+						onClick={() => {
+							if (itemToDelete) void handleDelete(itemToDelete.id);
+						}}
 						isLoading={isDeleting}>
 						Eliminar
 					</Button>
@@ -541,7 +552,8 @@ const ItemList: React.FC<ItemListProps> = ({
 						?
 					</p>
 					<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-						<div
+						<button
+							type='button'
 							className='flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white p-6 transition-all hover:bg-gray-50 hover:shadow-sm dark:border-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700'
 							onClick={goToReview}>
 							<div className='rounded-full bg-blue-100 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'>
@@ -555,9 +567,10 @@ const ItemList: React.FC<ItemListProps> = ({
 									Ir al detalle técnico y revisión
 								</p>
 							</div>
-						</div>
+						</button>
 
-						<div
+						<button
+							type='button'
 							className='flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white p-6 transition-all hover:bg-gray-50 hover:shadow-sm dark:border-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700'
 							onClick={goToTraceability}>
 							<div className='rounded-full bg-purple-100 p-3 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'>
@@ -571,7 +584,7 @@ const ItemList: React.FC<ItemListProps> = ({
 									Ver historial de vida y movimientos
 								</p>
 							</div>
-						</div>
+						</button>
 					</div>
 				</ModalBody>
 				<ModalFooter>

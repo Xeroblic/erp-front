@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useMemo } from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
-import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Icon from '@/components/icon/Icon';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
@@ -128,7 +128,7 @@ const buildSalesRequestColumns = ({
 	},
 ];
 
-export default function SolicitudesVentasPage() {
+const SolicitudesVentasPage = () => {
 	const [selectedRequest, setSelectedRequest] = useState<PortalRequestMock | null>(null);
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -247,4 +247,6 @@ export default function SolicitudesVentasPage() {
 			</Container>
 		</PageWrapper>
 	);
-}
+};
+
+export default SolicitudesVentasPage;

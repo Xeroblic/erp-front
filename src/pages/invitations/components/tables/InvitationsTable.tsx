@@ -9,7 +9,7 @@ import {
 
 import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
 import { Invitation } from '@/interface/invitacion.interface';
-import Badge from '@/components/ui/Badge';
+import Badge, { TBadgeVariants } from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
@@ -83,7 +83,7 @@ const buildInvitationColumns = ({
 					supervisor: 'Supervisor',
 				};
 
-				const roleColors: Record<string, { color: any; variant: any }> = {
+				const roleColors: Record<string, { color: TColors; variant: TBadgeVariants }> = {
 					admin: { color: 'purple', variant: 'solid' },
 					hr: { color: 'blue', variant: 'solid' },
 					employee: { color: 'zinc', variant: 'outline' },

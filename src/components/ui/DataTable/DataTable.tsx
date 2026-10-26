@@ -27,7 +27,7 @@ const STICKY_HEADER_CLASSES =
 	'[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-zinc-200 dark:[&_th]:bg-zinc-950';
 
 interface DataTableProps<TData extends RowData> {
-	columns: ColumnDef<AppTableFeatures, TData, any>[];
+	columns: ColumnDef<AppTableFeatures, TData>[];
 	data: TData[];
 	searchPlaceholder?: string;
 	searchValue?: string;
@@ -58,7 +58,7 @@ interface DataTableProps<TData extends RowData> {
 	stickyHeader?: boolean;
 }
 
-export default function DataTable<TData extends RowData>({
+const DataTable = <TData extends RowData>({
 	columns,
 	data,
 	searchPlaceholder = 'Buscar...',
@@ -80,7 +80,7 @@ export default function DataTable<TData extends RowData>({
 	className,
 	tableContainerClassName,
 	stickyHeader = false,
-}: DataTableProps<TData>) {
+}: DataTableProps<TData>) => {
 	const defaultSorting = React.useMemo<SortingState>(() => {
 		if (initialSortingState) return initialSortingState;
 
@@ -232,7 +232,7 @@ export default function DataTable<TData extends RowData>({
 						))}
 					</THead>
 					<TBody>
-						{loading ? (
+						{loading && (
 							<Tr>
 								<Td colSpan={columns.length} className='py-8 text-center'>
 									<div className='flex items-center justify-center space-x-2'>
@@ -244,7 +244,9 @@ export default function DataTable<TData extends RowData>({
 									</div>
 								</Td>
 							</Tr>
-						) : table.getRowModel().rows?.length ? (
+						)}
+						{!loading &&
+							Boolean(table.getRowModel().rows?.length) &&
 							table.getRowModel().rows.map((row) => (
 								<Tr
 									key={row.id}
@@ -258,8 +260,8 @@ export default function DataTable<TData extends RowData>({
 										</Td>
 									))}
 								</Tr>
-							))
-						) : (
+							))}
+						{!loading && !table.getRowModel().rows?.length && (
 							<Tr>
 								<Td colSpan={columns.length} className='py-8 text-center'>
 									<div className='flex flex-col items-center space-y-2'>
@@ -293,4 +295,6 @@ export default function DataTable<TData extends RowData>({
 			</div>
 		</div>
 	);
-}
+};
+
+export default DataTable;

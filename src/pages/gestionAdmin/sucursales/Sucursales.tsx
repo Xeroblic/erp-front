@@ -3,11 +3,7 @@ import { type NavigateFunction, useNavigate } from 'react-router-dom';
 import { createColumnHelper, flexRender, SortingState, useTable } from '@tanstack/react-table';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
-import {
-	fetchMisSucursales,
-	createSucursal,
-	deleteSucursal,
-} from '@/store/slices/sucursales/sucursalesSlice';
+import { fetchMisSucursales, deleteSucursal } from '@/store/slices/sucursales/sucursalesSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -180,7 +176,7 @@ const buildBranchColumns = ({
 		}),
 	]);
 
-export default function SucursalesLista() {
+const SucursalesLista = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const user = useAppSelector((s) => s.auth.user);
@@ -191,11 +187,9 @@ export default function SucursalesLista() {
 		createLoading: boolean;
 	}
 
-	const {
-		lista: sucursales = [],
-		loading,
-		createLoading,
-	}: SucursalesState = useAppSelector((s: { sucursales: SucursalesState }) => s.sucursales);
+	const { lista: sucursales = [], loading }: SucursalesState = useAppSelector(
+		(s: { sucursales: SucursalesState }) => s.sucursales,
+	);
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState('');
 	const [openCreate, setOpenCreate] = useState(false);
@@ -209,7 +203,7 @@ export default function SucursalesLista() {
 		if (hasLoadedSucursales.current) return;
 
 		hasLoadedSucursales.current = true;
-		dispatch(fetchMisSucursales());
+		void dispatch(fetchMisSucursales());
 	}, [dispatch, user]);
 
 	// columnas de la tabla
@@ -251,7 +245,7 @@ export default function SucursalesLista() {
 
 	const handleSuccess = () => {
 		handleCloseModal();
-		dispatch(fetchMisSucursales({ force: true }));
+		void dispatch(fetchMisSucursales({ force: true }));
 	};
 
 	const confirmDelete = async () => {
@@ -259,7 +253,7 @@ export default function SucursalesLista() {
 		try {
 			await dispatch(deleteSucursal(toDeleteId)).unwrap();
 			toast.success('Sucursal eliminada correctamente');
-			dispatch(fetchMisSucursales({ force: true }));
+			void dispatch(fetchMisSucursales({ force: true }));
 		} catch {
 			toast.error('Error al eliminar sucursal');
 		} finally {
@@ -311,14 +305,15 @@ export default function SucursalesLista() {
 			<Container className='pt-4'>
 				<Card>
 					<CardBody className='overflow-x-auto'>
-						{loading ? (
+						{loading && (
 							<div className='p-8 text-center'>
 								<div className='flex items-center justify-center gap-3'>
 									<div className='h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent' />
 									<span className='text-zinc-600'>Cargando sucursales...</span>
 								</div>
 							</div>
-						) : sucursales.length === 0 ? (
+						)}
+						{!loading && sucursales.length === 0 && (
 							<div className='flex flex-col items-center justify-center py-12 text-center'>
 								<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800'>
 									<Icon
@@ -341,7 +336,8 @@ export default function SucursalesLista() {
 									Crear Primera Sucursal
 								</Button>
 							</div>
-						) : (
+						)}
+						{!loading && sucursales.length !== 0 && (
 							<>
 								<Table className='w-full'>
 									<THead>
@@ -432,4 +428,6 @@ export default function SucursalesLista() {
 			)}
 		</PageWrapper>
 	);
-}
+};
+
+export default SucursalesLista;

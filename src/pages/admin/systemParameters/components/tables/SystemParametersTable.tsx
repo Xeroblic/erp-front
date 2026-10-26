@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
 
 import { SystemParameter } from '@/interface';
@@ -31,13 +31,13 @@ const columnHelper = createColumnHelper<AppTableFeatures, SystemParameter>();
 
 // Función para formatear el valor según su tipo
 const formatValue = (parameter: SystemParameter) => {
-	const { value, data_type } = parameter;
+	const { value, data_type: dataType } = parameter;
 
 	if (value.length > 50) {
 		return `${value.substring(0, 50)}...`;
 	}
 
-	switch (data_type) {
+	switch (dataType) {
 		case 'boolean':
 			return value === 'true' ? 'Verdadero' : 'Falso';
 		case 'json':
@@ -196,32 +196,6 @@ const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
 	onDelete,
 	loadingActions,
 }) => {
-	// Función para obtener el color de la categoria
-	const getCategoryColor = (category: string) => {
-		const colors = {
-			general: 'blue',
-			system: 'red',
-			email: 'green',
-			security: 'yellow',
-			integration: 'purple',
-			ui: 'pink',
-			business: 'indigo',
-		} as const;
-		return colors[category as keyof typeof colors] || 'gray';
-	};
-
-	// Función para obtener el color del tipo de dato
-	const getDataTypeColor = (dataType: string) => {
-		const colors = {
-			string: 'green',
-			number: 'blue',
-			boolean: 'purple',
-			json: 'orange',
-			date: 'pink',
-		} as const;
-		return colors[dataType as keyof typeof colors] || 'gray';
-	};
-
 	const columns = useMemo(
 		() => buildParameterColumns({ onViewDetails, onEdit, onDelete, loadingActions }),
 		[onViewDetails, onEdit, onDelete, loadingActions],

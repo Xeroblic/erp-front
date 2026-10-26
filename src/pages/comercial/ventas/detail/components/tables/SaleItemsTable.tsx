@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import DataTable from '@/components/ui/DataTable';
 import { ISaleItem } from '@/interface/sales.interface';
-import { formatCLP } from '@/utils/format.utils';
 import { priceFormatWhitDecimals } from '@/utils/priceFormat.util';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
@@ -29,8 +28,10 @@ const buildSaleItemColumns = (): ColumnDef<AppTableFeatures, ISaleItem>[] => [
 			const description = row.original.product?.description?.trim();
 
 			// Extract serials from meta_json
-			const meta = row.original.meta_json as any;
-			const soldSerials = meta?.reservation?.sold_serials as string[] | undefined;
+			const { reservation } = (row.original.meta_json ?? {}) as {
+				reservation?: { sold_serials?: string[] };
+			};
+			const soldSerials = reservation?.sold_serials;
 
 			return (
 				<div className='flex flex-col gap-1'>
@@ -54,9 +55,9 @@ const buildSaleItemColumns = (): ColumnDef<AppTableFeatures, ISaleItem>[] => [
 					{/* Sold Serials */}
 					{soldSerials && soldSerials.length > 0 && (
 						<div className='mt-1 flex flex-wrap gap-1'>
-							{soldSerials.map((sn, idx) => (
+							{soldSerials.map((sn) => (
 								<span
-									key={idx}
+									key={sn}
 									className='inline-flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'>
 									SN: {sn}
 								</span>

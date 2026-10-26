@@ -394,7 +394,7 @@ const SalesListPage: React.FC = () => {
 	}, [dispatch, subsidiaryId]);
 
 	useEffect(() => {
-		refetchPending();
+		void refetchPending();
 	}, [refetchPending]);
 	// const [creatingQuote, setCreatingQuote] = useState(false);
 
@@ -407,7 +407,7 @@ const SalesListPage: React.FC = () => {
 			sourceId: routeSaleId ?? undefined,
 			onInvalidate: () => {
 				dispatch(clearDetail());
-				navigate('/comercial/ventas', { replace: true });
+				void navigate('/comercial/ventas', { replace: true });
 			},
 		},
 	);
@@ -543,9 +543,9 @@ const SalesListPage: React.FC = () => {
 	);
 
 	const handleViewDetail = useCallback(
-		(saleId: number) => {
+		(targetSaleId: number) => {
 			setReceiveReturnSaleId(null);
-			detailSelection.select(saleId);
+			detailSelection.select(targetSaleId);
 			handleDetailModalState(true);
 		},
 		[detailSelection, handleDetailModalState],
@@ -565,16 +565,14 @@ const SalesListPage: React.FC = () => {
 	// 	navigate('/comercial/ventas/crear');
 	// };
 
+	// El thunk ya informa el éxito o el error de la descarga.
 	const handleDownloadTicket = useCallback(
-		(saleId: number) => {
-			try {
-				dispatch(downloadShippingLabel({ subsidiaryId: Number(subsidiaryId), id: saleId }));
-				toast.success('La etiqueta de envio a sido descargada satifactoriamente :D');
-			} catch (error) {
-				toast.error('Hubo un error al descargar la etiqueta de envio');
-			}
+		(targetSaleId: number) => {
+			void dispatch(
+				downloadShippingLabel({ subsidiaryId: Number(subsidiaryId), id: targetSaleId }),
+			);
 		},
-		[subsidiaryId],
+		[dispatch, subsidiaryId],
 	);
 
 	const detailModalVisible = detailSelection.isOpen && Boolean(subsidiaryId);
@@ -642,7 +640,6 @@ const SalesListPage: React.FC = () => {
 			try {
 				await dispatch(loadSalesList({ subsidiaryId, filters })).unwrap();
 			} catch (error) {
-				console.error('Error al aplicar filtros en ventas', error);
 				const message =
 					typeof error === 'string'
 						? error
@@ -711,16 +708,18 @@ const SalesListPage: React.FC = () => {
 			return;
 		}
 		const filtersToApply: SalesListFilters = { ...debouncedServerFilters };
-		applyFilters(filtersToApply);
+		void applyFilters(filtersToApply);
 	}, [applyFilters, debouncedServerFilters, subsidiaryId]);
 
 	const filtersBusy = loading || isFiltering;
 
-	const emptyMessage = subsidiaryId
-		? searchTerm || status || wcOrderId
-			? 'No encontramos ventas que coincidan con los filtros aplicados'
-			: 'No hay ventas registradas'
-		: 'Selecciona una empresa para cargar ventas';
+	let emptyMessage = 'Selecciona una empresa para cargar ventas';
+	if (subsidiaryId) {
+		emptyMessage =
+			searchTerm || status || wcOrderId
+				? 'No encontramos ventas que coincidan con los filtros aplicados'
+				: 'No hay ventas registradas';
+	}
 
 	return (
 		<>
@@ -975,8 +974,8 @@ const SalesListPage: React.FC = () => {
 					isMultiLocation={isMultiLocation}
 					onSuccess={() => {
 						setAssignSale(null);
-						refetchPending();
-						applyFilters(buildFilters());
+						void refetchPending();
+						void applyFilters(buildFilters());
 					}}
 				/>
 			)}
@@ -991,7 +990,7 @@ const SalesListPage: React.FC = () => {
 					subsidiaryId={Number(subsidiaryId)}
 					onDeleted={() => {
 						setSaleToDelete(null);
-						applyFilters(buildFilters());
+						void applyFilters(buildFilters());
 					}}
 				/>
 			)}

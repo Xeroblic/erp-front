@@ -235,6 +235,7 @@ const buildCategoryColumns = ({
 									</Button>
 								</Tooltip>
 								<button
+									type='button'
 									onClick={() => {
 										onEdit(category);
 										setOpenDropdownId(null);
@@ -244,6 +245,7 @@ const buildCategoryColumns = ({
 									Editar
 								</button>
 								<button
+									type='button'
 									onClick={() => {
 										onDelete(category);
 										setOpenDropdownId(null);
@@ -284,13 +286,11 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({ rows, onView, onEdit,
 		return () => document.removeEventListener('click', handleDocClick);
 	}, [openDropdownId]);
 
-	const activeFilterCount = React.useMemo(() => {
-		let count = 0;
-		if (levelFilter !== 'all') count++;
-		if (productFilter !== 'all') count++;
-		if (statusFilter !== 'all') count++;
-		return count;
-	}, [levelFilter, productFilter, statusFilter]);
+	const activeFilterCount = React.useMemo(
+		() =>
+			[levelFilter, productFilter, statusFilter].filter((filter) => filter !== 'all').length,
+		[levelFilter, productFilter, statusFilter],
+	);
 
 	const filteredRows = React.useMemo(() => {
 		let result = rows;

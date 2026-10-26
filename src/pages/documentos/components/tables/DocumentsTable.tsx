@@ -10,7 +10,6 @@ import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { IDocument } from '../../types/documentos.types';
 import {
 	formatDateTime,
-	formatFileSize,
 	getDocumentTypeColor,
 	getDocumentTypeLabel,
 	getFileIcon,
@@ -66,7 +65,7 @@ const buildDocumentColumns = ({
 		header: 'Tipo',
 		cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) => {
 			const d = row.original;
-			return <Badge color={getDocumentTypeColor(d) as any}>{getDocumentTypeLabel(d)}</Badge>;
+			return <Badge color={getDocumentTypeColor(d)}>{getDocumentTypeLabel(d)}</Badge>;
 		},
 	},
 
@@ -106,8 +105,14 @@ const buildDocumentColumns = ({
 	{
 		accessorKey: 'uploaded_by',
 		header: 'Subido por',
-		cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) =>
-			row.original?.uploaded_by || row.original.metadata?.uploaded_by_name || 'N/A',
+		cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) => {
+			const uploadedByName: unknown = row.original.metadata?.uploaded_by_name;
+			return (
+				row.original?.uploaded_by ||
+				(typeof uploadedByName === 'string' ? uploadedByName : '') ||
+				'N/A'
+			);
+		},
 	},
 
 	{

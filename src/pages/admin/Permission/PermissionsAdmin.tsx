@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import type { MultiValue } from 'react-select';
 import { flexRender, SortingState, useTable } from '@tanstack/react-table';
-import { useAppDispatch, useAppSelector } from '@/store';
 import { type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { TSelectOption } from '@/components/form/SelectReact';
 
@@ -17,14 +16,12 @@ import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplate
 
 // Componentes modulares
 import { usePermissionLabels } from '@/hooks/usePermissionLabels';
-import { Permission, Role } from '@/store/slices/permissions/permissionsSlice';
 import { clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { PermissionsModal } from './components/modals/PermissionsModal';
-import { createUserTableColumns } from './components/tables/UserTableColumns';
+import createUserTableColumns from './components/tables/UserTableColumns';
 import { usePermissionsManagement } from './hooks/usePermissionsManagement';
-import { resolveRoleLabel, resolvePermissionLabel } from './utils/formatters';
 
-export default function PermissionsAdmin() {
+const PermissionsAdmin = () => {
 	// Hook personalizado para gestión de permisos
 	const {
 		users,
@@ -32,7 +29,6 @@ export default function PermissionsAdmin() {
 		roles,
 		usersLoading,
 		permissionsLoading,
-		filters,
 		selectedUserForPermissions,
 		selectedPermissionIds,
 		selectedRoleIds,
@@ -44,7 +40,6 @@ export default function PermissionsAdmin() {
 		closePermissionsModal,
 		toggleUser,
 		savePermissions,
-		setSelectedUserForPermissions,
 		setSelectedPermissionIds,
 		setSelectedRoleIds,
 	} = usePermissionsManagement();
@@ -55,7 +50,7 @@ export default function PermissionsAdmin() {
 	const { getRoleLabel } = usePermissionLabels();
 
 	useEffect(() => {
-		loadInitialData();
+		void loadInitialData();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Solo ejecutar una vez al montar
 
@@ -115,9 +110,23 @@ export default function PermissionsAdmin() {
 		closePermissionsModal();
 	}, [savePermissions, closePermissionsModal]);
 
+	const handleOpenPermissionsClick = useCallback(
+		(user: UserWithDetails) => {
+			void handleOpenPermissionsModal(user);
+		},
+		[handleOpenPermissionsModal],
+	);
+
+	const handleToggleUserClick = useCallback(
+		(user: UserWithDetails) => {
+			void toggleUser(user);
+		},
+		[toggleUser],
+	);
+
 	const columns = createUserTableColumns(
-		handleOpenPermissionsModal,
-		toggleUser,
+		handleOpenPermissionsClick,
+		handleToggleUserClick,
 		toggleUserLoading,
 		getRoleLabel,
 	);
@@ -131,32 +140,6 @@ export default function PermissionsAdmin() {
 		onSortingChange: setSorting,
 		initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
 	});
-
-	const roleOptions = useMemo<TSelectOption[]>(
-		() =>
-			(roles || [])
-				.map(
-					(r: Role): TSelectOption => ({
-						value: String(r.id),
-						label: resolveRoleLabel(r),
-					}),
-				)
-				.sort((a: TSelectOption, b: TSelectOption) => a.label.localeCompare(b.label, 'es')),
-		[roles],
-	);
-
-	const permissionOptions = useMemo<TSelectOption[]>(
-		() =>
-			(permissions || [])
-				.map(
-					(p: Permission): TSelectOption => ({
-						value: String(p.id),
-						label: resolvePermissionLabel(p),
-					}),
-				)
-				.sort((a: TSelectOption, b: TSelectOption) => a.label.localeCompare(b.label, 'es')),
-		[permissions],
-	);
 
 	const handleRoleChange = useCallback(
 		(selected: MultiValue<TSelectOption>) => {
@@ -256,7 +239,7 @@ export default function PermissionsAdmin() {
 						</Subheader>
 					</CardHeader>
 					<CardBody className='overflow-auto p-0'>
-						{usersLoading === 'loading' ? (
+						{usersLoading === 'loading' && (
 							<div className='p-12 text-center'>
 								<Icon
 									icon='HeroArrowPath'
@@ -264,18 +247,23 @@ export default function PermissionsAdmin() {
 								/>
 								<p className='text-zinc-600'>Cargando usuarios...</p>
 							</div>
-						) : !users || users.length === 0 ? (
-							<div className='p-12 text-center text-zinc-600'>
-								<Icon
-									icon='HeroUsers'
-									className='mx-auto mb-4 h-16 w-16 text-zinc-300'
-								/>
-								<p className='text-lg font-medium'>No hay usuarios registrados</p>
-								<p className='mt-2 text-sm text-zinc-400'>
-									Los usuarios aparecerán aquí cuando estén disponibles
-								</p>
-							</div>
-						) : (
+						)}
+						{(usersLoading !== 'loading' && !users) ||
+							(users.length === 0 && (
+								<div className='p-12 text-center text-zinc-600'>
+									<Icon
+										icon='HeroUsers'
+										className='mx-auto mb-4 h-16 w-16 text-zinc-300'
+									/>
+									<p className='text-lg font-medium'>
+										No hay usuarios registrados
+									</p>
+									<p className='mt-2 text-sm text-zinc-400'>
+										Los usuarios aparecerán aquí cuando estén disponibles
+									</p>
+								</div>
+							))}
+						{usersLoading !== 'loading' && !(!users || users.length === 0) && (
 							<>
 								<div className='overflow-x-auto'>
 									<Table className='min-w-full'>
@@ -345,4 +333,6 @@ export default function PermissionsAdmin() {
 			/>
 		</PageWrapper>
 	);
-}
+};
+
+export default PermissionsAdmin;

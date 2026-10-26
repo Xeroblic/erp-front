@@ -152,7 +152,7 @@ const buildProductColumns = ({
 	},
 ];
 
-export const ProductsTable = ({
+const ProductsTable = ({
 	products,
 	loading = false,
 	onSelectProduct,
@@ -184,3 +184,5 @@ export const ProductsTable = ({
 		/>
 	);
 };
+
+export default ProductsTable;

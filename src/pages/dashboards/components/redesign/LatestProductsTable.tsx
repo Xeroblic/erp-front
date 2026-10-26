@@ -85,7 +85,7 @@ const LatestProductsTable: React.FC = () => {
 		// Only fetch once when component mounts and branchId is available
 		if (branchId && !hasFetchedRef.current) {
 			hasFetchedRef.current = true;
-			dispatch(
+			void dispatch(
 				fetchProductsList({
 					entityParam: 'branches',
 					entityId: branchId,

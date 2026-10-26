@@ -29,6 +29,13 @@ type UserRow = UserWithDetails & {
 	totalPermissionsCount: number;
 };
 
+/** Variantes de tamaño con que llega la imagen del usuario. */
+type AvatarImageKey = 'md' | 'sm' | 'lg' | 'original_url' | 'url';
+
+// En variables: `jsx-a11y/aria-role` confunde el `role` de `PermissionGuard` con un rol ARIA.
+const ADMIN_ROLE = 'admin';
+const SUPER_ADMIN_ROLE = 'super-admin';
+
 const columnHelper = createColumnHelper<AppTableFeatures, UserRow>();
 
 type Props = {
@@ -72,12 +79,13 @@ const buildUserColumns = ({
 							let avatarUrl: string | null = null;
 							if (typeof img === 'string') avatarUrl = img;
 							else if (img && typeof img === 'object') {
+								const sizes = img as Partial<Record<AvatarImageKey, string>>;
 								avatarUrl =
-									(img as any).md ??
-									(img as any).sm ??
-									(img as any).lg ??
-									(img as any).original_url ??
-									(img as any).url ??
+									sizes.md ??
+									sizes.sm ??
+									sizes.lg ??
+									sizes.original_url ??
+									sizes.url ??
 									null;
 							}
 							if (!avatarUrl) avatarUrl = typedUser?.image_url ?? null;
@@ -182,7 +190,7 @@ const buildUserColumns = ({
 				header: 'Acciones',
 				cell: (info) => (
 					<div className='flex gap-2'>
-						<PermissionGuard role='admin'>
+						<PermissionGuard role={ADMIN_ROLE}>
 							<Tooltip text='Gestionar perfil y accesos'>
 								<Button
 									variant='ghost'
@@ -194,7 +202,7 @@ const buildUserColumns = ({
 							</Tooltip>
 						</PermissionGuard>
 
-						<PermissionGuard role='super-admin'>
+						<PermissionGuard role={SUPER_ADMIN_ROLE}>
 							<Tooltip
 								text={
 									info.row.original.is_active
@@ -274,7 +282,7 @@ const TableUser: React.FC<Props> = ({
 
 	const handleManageUser = useCallback(
 		(userId: number) => {
-			navigate(`/gestion/roles-permisos/${userId}`);
+			void navigate(`/gestion/roles-permisos/${userId}`);
 		},
 		[navigate],
 	);

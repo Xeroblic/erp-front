@@ -141,12 +141,13 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 				</div>
 			</ModalHeader>
 			<ModalBody>
-				{loading ? (
+				{loading && (
 					<div className='py-6 text-center text-sm'>
 						<div className='mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent' />
 						Cargando documento...
 					</div>
-				) : document ? (
+				)}
+				{!loading && document && (
 					<div className='space-y-5'>
 						<Card className='border border-dashed border-gray-200 bg-transparent shadow-sm'>
 							<CardHeader className='pb-2'>
@@ -159,7 +160,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 								<div className='space-y-3 text-sm'>
 									<div className='flex items-center justify-between'>
 										<span className='font-medium'>Tipo de documento</span>
-										<Badge color={getDocumentTypeColor(document) as any}>
+										<Badge color={getDocumentTypeColor(document)}>
 											{getDocumentTypeLabel(document)}
 										</Badge>
 									</div>
@@ -266,7 +267,8 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 							</CardBody>
 						</Card>
 					</div>
-				) : (
+				)}
+				{!loading && !document && (
 					<div className='py-6 text-center text-sm'>
 						Selecciona un documento para ver sus detalles.
 					</div>

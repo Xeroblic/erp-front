@@ -8,7 +8,7 @@ interface SubsidiariesTableContentProps {
 	table: TableInstance<AppTableFeatures, ISubempresa>;
 }
 
-export default function SubsidiariesTableContent({ table }: SubsidiariesTableContentProps) {
+const SubsidiariesTableContent = ({ table }: SubsidiariesTableContentProps) => {
 	return (
 		<div className='overflow-x-auto'>
 			<Table>
@@ -42,4 +42,6 @@ export default function SubsidiariesTableContent({ table }: SubsidiariesTableCon
 			</Table>
 		</div>
 	);
-}
+};
+
+export default SubsidiariesTableContent;

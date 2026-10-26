@@ -175,7 +175,7 @@ const buildWorkItemColumns = ({
 	},
 ];
 
-export const WorkspaceTable = ({
+const WorkspaceTable = ({
 	items,
 	getSignedQuantity,
 	onQuantityChange,
@@ -198,3 +198,5 @@ export const WorkspaceTable = ({
 		/>
 	);
 };
+
+export default WorkspaceTable;

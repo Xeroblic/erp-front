@@ -118,7 +118,7 @@ const columns: ColumnDef<AppTableFeatures, PedidoMock>[] = [
 	},
 ];
 
-export default function PedidosTable({ data, title }: PedidosTableProps) {
+const PedidosTable = ({ data, title }: PedidosTableProps) => {
 	return (
 		<div className='w-full'>
 			{title && (
@@ -137,4 +137,6 @@ export default function PedidosTable({ data, title }: PedidosTableProps) {
 			</div>
 		</div>
 	);
-}
+};
+
+export default PedidosTable;

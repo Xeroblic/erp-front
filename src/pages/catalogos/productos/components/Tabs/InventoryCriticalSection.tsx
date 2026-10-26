@@ -10,6 +10,8 @@ import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/ta
 import type { CriticalItemRow } from './inventoryTab.types';
 import { formatNumber, getFriendlyDate } from './inventoryTab.utils';
 
+const SKELETON_KEYS = ['skeleton-1', 'skeleton-2', 'skeleton-3', 'skeleton-4'];
+
 interface InventoryCriticalSectionProps {
 	criticalItems: CriticalItemRow[];
 	totalCriticalCount: number;
@@ -157,24 +159,26 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 						</div>
 					)}
 
-					{loading ? (
+					{loading && (
 						<div className='space-y-3'>
-							{Array.from({ length: 4 }).map((_, index) => (
+							{SKELETON_KEYS.map((key) => (
 								<div
-									key={index}
+									key={key}
 									className='flex gap-3 rounded border border-dashed border-neutral-200 p-3 dark:border-neutral-700'>
 									<div className='h-12 flex-1 animate-pulse rounded bg-neutral-100 dark:bg-neutral-800' />
 									<div className='h-8 w-28 animate-pulse rounded bg-neutral-100 dark:bg-neutral-800' />
 								</div>
 							))}
 						</div>
-					) : criticalItems.length === 0 ? (
+					)}
+					{!loading && criticalItems.length === 0 && (
 						<div className='rounded-lg border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500 dark:border-neutral-700'>
 							{criticalSearch || showOnlyOutOfStock
 								? 'No se encontraron productos con los filtros aplicados.'
 								: 'No hay productos con alertas de stock para esta sucursal.'}
 						</div>
-					) : (
+					)}
+					{!loading && criticalItems.length !== 0 && (
 						<div className='overflow-hidden rounded-lg border border-dashed border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900/40'>
 							<table className='min-w-full divide-y divide-neutral-200 dark:divide-neutral-800'>
 								<thead className='bg-neutral-50 dark:bg-neutral-900/60'>

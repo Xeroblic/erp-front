@@ -34,36 +34,46 @@ interface StockCatalogRow {
 	statusPreview: string;
 }
 
+/** Primer valor numérico finito (acepta strings numéricos); 0 si ninguno lo es. */
 const toNumber = (...values: unknown[]): number => {
-	for (const value of values) {
-		if (typeof value === 'number' && Number.isFinite(value)) return value;
-		if (typeof value === 'string' && value.trim() !== '') {
-			const parsed = Number(value);
-			if (Number.isFinite(parsed)) return parsed;
-		}
-	}
-	return 0;
+	const parsed = values
+		.map((value) => {
+			if (typeof value === 'number') return value;
+			if (typeof value === 'string' && value.trim() !== '') return Number(value);
+			return Number.NaN;
+		})
+		.find((value) => Number.isFinite(value));
+	return parsed ?? 0;
 };
 
+/** Primer string no vacío (o número finito convertido); '' si ninguno lo es. */
 const toString = (...values: unknown[]): string => {
-	for (const value of values) {
-		if (typeof value === 'string' && value.trim().length > 0) return value;
-		if (typeof value === 'number' && Number.isFinite(value)) return String(value);
-	}
-	return '';
+	const found = values.find(
+		(value) =>
+			(typeof value === 'string' && value.trim().length > 0) ||
+			(typeof value === 'number' && Number.isFinite(value)),
+	);
+	return found === undefined ? '' : String(found);
 };
 
+const TRUTHY_STRINGS = ['true', '1', 'yes', 'si'];
+const FALSY_STRINGS = ['false', '0', 'no'];
+
+/** Primer valor interpretable como booleano; `false` si ninguno lo es. */
 const toBoolean = (...values: unknown[]): boolean => {
-	for (const value of values) {
-		if (typeof value === 'boolean') return value;
-		if (typeof value === 'number') return value > 0;
-		if (typeof value === 'string') {
-			const normalized = value.trim().toLowerCase();
-			if (['true', '1', 'yes', 'si'].includes(normalized)) return true;
-			if (['false', '0', 'no'].includes(normalized)) return false;
-		}
-	}
-	return false;
+	const parsed = values
+		.map((value): boolean | null => {
+			if (typeof value === 'boolean') return value;
+			if (typeof value === 'number') return value > 0;
+			if (typeof value === 'string') {
+				const normalized = value.trim().toLowerCase();
+				if (TRUTHY_STRINGS.includes(normalized)) return true;
+				if (FALSY_STRINGS.includes(normalized)) return false;
+			}
+			return null;
+		})
+		.find((value) => value !== null);
+	return parsed ?? false;
 };
 
 const toRecord = (value: unknown): Record<string, unknown> | null => {
@@ -90,13 +100,6 @@ const extractGrades = (value: unknown): Record<string, Record<string, unknown>> 
 		if (record) acc[gradeKey] = record;
 		return acc;
 	}, {});
-};
-
-const getQuantityTone = (quantity: number): 'emerald' | 'amber' | 'red' | 'blue' => {
-	if (quantity <= 0) return 'red';
-	if (quantity <= 3) return 'amber';
-	if (quantity >= 10) return 'blue';
-	return 'emerald';
 };
 
 /**
@@ -238,13 +241,12 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 		);
 	}, 0);
 	const branchMap = new Map<number, { name: string; quantity: number }>();
-	for (const [, grade] of gradeEntries) {
-		const branches = Array.isArray(grade.branches) ? grade.branches : [];
-		for (const branch of branches) {
+	gradeEntries.forEach(([, grade]) => {
+		const branches: unknown[] = Array.isArray(grade.branches) ? grade.branches : [];
+		branches.forEach((branch) => {
 			const record = toRecord(branch);
-			if (!record) continue;
-			const branchId = toNumber(record.branch_id);
-			if (!branchId) continue;
+			const branchId = record ? toNumber(record.branch_id) : 0;
+			if (!record || !branchId) return;
 			const current = branchMap.get(branchId);
 			branchMap.set(branchId, {
 				name: toString(record.branch_name, current?.name, `Sucursal ${branchId}`),
@@ -252,8 +254,8 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 					(current?.quantity ?? 0) +
 					toNumber(record.quantity, toRecord(record.stock_status)?.available),
 			});
-		}
-	}
+		});
+	});
 	const branchesCount = branchMap.size;
 	const totalStock = availableStock + reservedStock + onHoldStock + inQuotationStock + soldStock;
 	const gradeSummary = gradeEntries.map(([gradeKey, grade]) => {
@@ -268,11 +270,11 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 		.map((grade) => `${grade.label}:${grade.quantity}`)
 		.join(' · ');
 	const topBranch = branchSummary[0];
-	const distributionPreview = topBranch
-		? branchSummary.length > 1
-			? `${topBranch.label}: ${topBranch.quantity} +${branchSummary.length - 1}`
-			: `${topBranch.label}: ${topBranch.quantity}`
-		: 'Sin sucursales';
+	let distributionPreview = 'Sin sucursales';
+	if (topBranch) {
+		const extraBranches = branchSummary.length > 1 ? ` +${branchSummary.length - 1}` : '';
+		distributionPreview = `${topBranch.label}: ${topBranch.quantity}${extraBranches}`;
+	}
 	const statusPreview = [
 		reservedStock > 0 ? `R ${reservedStock}` : null,
 		onHoldStock > 0 ? `E ${onHoldStock}` : null,
@@ -440,7 +442,7 @@ const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) =
 
 	const openProductDetail = useCallback(
 		(productId: number | null) => {
-			if (productId) navigate(`/catalogos/productos/${productId}`);
+			if (productId) void navigate(`/catalogos/productos/${productId}`);
 		},
 		[navigate],
 	);

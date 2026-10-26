@@ -263,7 +263,9 @@ const buildIntegrationColumns = ({
 										name={`toggle-active-${row.original.id}`}
 										variant='switch'
 										checked={row.original.is_active}
-										onChange={() => void handleToggleActive(row.original)}
+										onChange={() => {
+											void handleToggleActive(row.original);
+										}}
 										disabled={togglingId !== null}
 									/>
 								)}
@@ -329,9 +331,9 @@ export const IntegrationsListContent: React.FC = () => {
 	useEffect(() => {
 		if (subsidiaryId) {
 			if (viewMode === 'active') {
-				dispatch(fetchIntegrations({ subsidiaryId }));
+				void dispatch(fetchIntegrations({ subsidiaryId }));
 			} else {
-				dispatch(fetchTrashedIntegrations({ subsidiaryId }));
+				void dispatch(fetchTrashedIntegrations({ subsidiaryId }));
 			}
 		} else {
 			toast.error('No se pudo identificar la subsidiaria actual. Verifica tu sesión.');
@@ -382,7 +384,7 @@ export const IntegrationsListContent: React.FC = () => {
 		setSelectedIntegrationLocal(null);
 		dispatch(setSelectedIntegration(null));
 		if (subsidiaryId) {
-			dispatch(fetchIntegrations({ subsidiaryId }));
+			void dispatch(fetchIntegrations({ subsidiaryId }));
 		}
 	};
 
@@ -398,7 +400,7 @@ export const IntegrationsListContent: React.FC = () => {
 					}),
 				).unwrap();
 				toast.success(`"${integration.name}" restaurada correctamente`);
-				dispatch(fetchTrashedIntegrations({ subsidiaryId }));
+				void dispatch(fetchTrashedIntegrations({ subsidiaryId }));
 			} catch (err: unknown) {
 				const message = typeof err === 'string' ? err : 'Error al restaurar la integración';
 				if (
@@ -447,8 +449,9 @@ export const IntegrationsListContent: React.FC = () => {
 							i.mode !== 'webhook' &&
 							i.is_active,
 					);
-					for (const conflict of conflicts) {
-						// eslint-disable-next-line no-await-in-loop
+					// En secuencia: si una desactivación falla, no se sigue con las demás.
+					await conflicts.reduce<Promise<void>>(async (previous, conflict) => {
+						await previous;
 						await dispatch(
 							updateIntegration({
 								subsidiaryId,
@@ -456,7 +459,7 @@ export const IntegrationsListContent: React.FC = () => {
 								payload: { is_active: false },
 							}),
 						).unwrap();
-					}
+					}, Promise.resolve());
 					// 2) Activar la seleccionada.
 					await dispatch(
 						updateIntegration({
@@ -473,10 +476,10 @@ export const IntegrationsListContent: React.FC = () => {
 				}
 				// No hace falta recargar toda la lista: cada `updateIntegration.fulfilled`
 				// actualiza el item en el store. Evita el spinner global y el parpadeo.
-			} catch (error: unknown) {
+			} catch (toggleError: unknown) {
 				toast.error(
-					typeof error === 'string'
-						? error
+					typeof toggleError === 'string'
+						? toggleError
 						: 'No se pudo cambiar el estado de la integración',
 				);
 			} finally {
@@ -559,6 +562,11 @@ export const IntegrationsListContent: React.FC = () => {
 		);
 	}
 
+	const isTrashView = viewMode !== 'active';
+	const visibleCount = isTrashView ? trashedIntegrations.length : integrations.length;
+	const showListSpinner = loading && visibleCount === 0;
+	const showListEmpty = !loading && visibleCount === 0;
+
 	return (
 		<>
 			<Container>
@@ -627,41 +635,7 @@ export const IntegrationsListContent: React.FC = () => {
 						</div>
 					</CardHeader>
 					<CardBody>
-						{viewMode === 'active' ? (
-							loading && integrations.length === 0 ? (
-								<div className='flex justify-center py-8'>
-									<Icon
-										icon='HeroArrowPath'
-										className='animate-spin'
-										size='text-4xl'
-									/>
-								</div>
-							) : integrations.length === 0 ? (
-								<div className='py-8 text-center text-gray-500'>
-									<Icon
-										icon='HeroGlobeAlt'
-										size='text-6xl'
-										className='mx-auto mb-4'
-									/>
-									<p className='text-lg'>No hay integraciones configuradas</p>
-									<Button
-										variant='outline'
-										icon='HeroPlus'
-										onClick={handleCreate}
-										className='mt-4'>
-										Crear Primera Integración
-									</Button>
-								</div>
-							) : (
-								<DataTable<Integration>
-									columns={columns}
-									data={integrations}
-									loading={false}
-									emptyMessage='No hay integraciones configuradas'
-									searchPlaceholder='Buscar integración...'
-								/>
-							)
-						) : loading && trashedIntegrations.length === 0 ? (
+						{showListSpinner && (
 							<div className='flex justify-center py-8'>
 								<Icon
 									icon='HeroArrowPath'
@@ -669,7 +643,25 @@ export const IntegrationsListContent: React.FC = () => {
 									size='text-4xl'
 								/>
 							</div>
-						) : trashedIntegrations.length === 0 ? (
+						)}
+						{showListEmpty && !isTrashView && (
+							<div className='py-8 text-center text-gray-500'>
+								<Icon
+									icon='HeroGlobeAlt'
+									size='text-6xl'
+									className='mx-auto mb-4'
+								/>
+								<p className='text-lg'>No hay integraciones configuradas</p>
+								<Button
+									variant='outline'
+									icon='HeroPlus'
+									onClick={handleCreate}
+									className='mt-4'>
+									Crear Primera Integración
+								</Button>
+							</div>
+						)}
+						{showListEmpty && isTrashView && (
 							<div className='py-8 text-center text-gray-500'>
 								<Icon icon='HeroTrash' size='text-6xl' className='mx-auto mb-4' />
 								<p className='text-lg'>La papelera está vacía</p>
@@ -677,7 +669,17 @@ export const IntegrationsListContent: React.FC = () => {
 									Las integraciones eliminadas aparecerán aquí
 								</p>
 							</div>
-						) : (
+						)}
+						{!isTrashView && integrations.length > 0 && (
+							<DataTable<Integration>
+								columns={columns}
+								data={integrations}
+								loading={false}
+								emptyMessage='No hay integraciones configuradas'
+								searchPlaceholder='Buscar integración...'
+							/>
+						)}
+						{isTrashView && trashedIntegrations.length > 0 && (
 							<DataTable<Integration>
 								columns={trashedColumns}
 								data={trashedIntegrations}

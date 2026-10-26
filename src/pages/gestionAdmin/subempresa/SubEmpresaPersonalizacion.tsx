@@ -3,6 +3,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import { createColumnHelper, flexRender, SortingState, useTable } from '@tanstack/react-table';
+import type { MultiValue, SingleValue } from 'react-select';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMisSubsidiarias } from '@/store/slices/subempresa/subEmpresaSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -23,8 +24,21 @@ import Modal, {
 } from '@/components/ui/Modal';
 import { ISubempresa } from '@/interface/empresas.interface';
 import Label from '@/components/form/Label';
-import SelectReact from '@/components/form/SelectReact';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { AppTableFeatures, clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+
+type FiltroEstado = 'todos' | 'con_personalizacion' | 'sin_personalizacion';
+
+const FILTRO_ESTADO_OPTIONS: { value: FiltroEstado; label: string }[] = [
+	{ value: 'todos', label: 'Todas' },
+	{ value: 'con_personalizacion', label: 'Con personalización' },
+	{ value: 'sin_personalizacion', label: 'Sin personalización' },
+];
+
+/** Valor de una opción simple de `SelectReact`; `undefined` si se limpió. */
+const getSingleOptionValue = (
+	option: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
+): string | undefined => (option && 'value' in option ? option.value : undefined);
 
 // CU017 - Interfaces y tipos
 interface ISubempresaPersonalizacion {
@@ -221,16 +235,13 @@ const buildPersonalizationColumns = ({
 		}),
 	]);
 
-export default function SubEmpresaPersonalizacion() {
+const SubEmpresaPersonalizacion = () => {
 	const dispatch = useAppDispatch();
 	const user = useAppSelector((s) => s.auth.user);
 	const { lista: subempresas = [], loading } = useAppSelector((s) => s.subEmpresa);
 
 	// Estados principales
-	const [filtroEstado, setFiltroEstado] = useState<
-		'todos' | 'con_personalizacion' | 'sin_personalizacion'
-	>('todos');
-	const [filtroTexto, setFiltroTexto] = useState('');
+	const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState('');
 
@@ -272,7 +283,7 @@ export default function SubEmpresaPersonalizacion() {
 	// Cargar datos iniciales
 	useEffect(() => {
 		if (user) {
-			dispatch(fetchMisSubsidiarias());
+			void dispatch(fetchMisSubsidiarias());
 		}
 	}, [dispatch, user]);
 
@@ -313,7 +324,9 @@ export default function SubEmpresaPersonalizacion() {
 
 			try {
 				// Simular llamada a API
-				await new Promise((resolve) => setTimeout(resolve, 1500));
+				await new Promise<void>((resolve) => {
+					setTimeout(resolve, 1500);
+				});
 
 				const personalizacionExistente = personalizaciones.find(
 					(p) => p.subempresa_id === selectedSubempresa.id,
@@ -387,7 +400,7 @@ export default function SubEmpresaPersonalizacion() {
 
 			setSelectedSubempresa(subempresa);
 			setModoEdicion(true);
-			setValues({
+			void setValues({
 				color_principal: personalizacion.color_principal,
 				color_secundario: personalizacion.color_secundario || '#1E40AF',
 				texto_encabezado: personalizacion.texto_encabezado || '',
@@ -423,7 +436,9 @@ export default function SubEmpresaPersonalizacion() {
 		if (!selectedSubempresa) return;
 
 		try {
-			await new Promise((resolve) => setTimeout(resolve, 1000));
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 1000);
+			});
 
 			const updatedPersonalizaciones = personalizaciones.filter(
 				(p) => p.subempresa_id !== selectedSubempresa.id,
@@ -464,19 +479,12 @@ export default function SubEmpresaPersonalizacion() {
 
 	const subempresasFiltradas = useMemo(() => {
 		return subempresasConPersonalizacion.filter((subempresa) => {
-			// Filtro por texto
-			if (filtroTexto) {
-				const nombre = subempresa.subsidiary_name ?? '';
-				const coincideTexto = nombre.toLowerCase().includes(filtroTexto.toLowerCase());
-				if (!coincideTexto) return false;
-			}
-
 			// Filtro por estado de personalización
 			if (filtroEstado === 'con_personalizacion') return subempresa.tienePersonalizacion;
 			if (filtroEstado === 'sin_personalizacion') return !subempresa.tienePersonalizacion;
 			return true;
 		});
-	}, [subempresasConPersonalizacion, filtroTexto, filtroEstado]);
+	}, [subempresasConPersonalizacion, filtroEstado]);
 
 	// Configuración de la tabla
 	const table = useTable({
@@ -600,29 +608,17 @@ export default function SubEmpresaPersonalizacion() {
 
 								<SelectReact
 									name='filtroEstado'
-									options={[
-										{ value: 'todos', label: 'Todas' },
-										{
-											value: 'con_personalizacion',
-											label: 'Con personalización',
-										},
-										{
-											value: 'sin_personalizacion',
-											label: 'Sin personalización',
-										},
-									]}
-									value={{
-										value: filtroEstado,
-										label:
-											filtroEstado === 'todos'
-												? 'Todas'
-												: filtroEstado === 'con_personalizacion'
-													? 'Con personalización'
-													: 'Sin personalización',
+									options={FILTRO_ESTADO_OPTIONS}
+									value={FILTRO_ESTADO_OPTIONS.find(
+										(o) => o.value === filtroEstado,
+									)}
+									onChange={(option) => {
+										const value = getSingleOptionValue(option);
+										setFiltroEstado(
+											FILTRO_ESTADO_OPTIONS.find((o) => o.value === value)
+												?.value ?? 'todos',
+										);
 									}}
-									onChange={(option: any) =>
-										setFiltroEstado(option?.value || 'todos')
-									}
 									placeholder='Filtrar por estado...'
 									className='w-full md:w-48'
 								/>
@@ -632,7 +628,7 @@ export default function SubEmpresaPersonalizacion() {
 
 					<CardBody>
 						{/* Tabla de subempresas con TanStack */}
-						{loading ? (
+						{loading && (
 							<div className='py-12 text-center'>
 								<div className='flex items-center justify-center gap-3'>
 									<div className='h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent' />
@@ -641,7 +637,8 @@ export default function SubEmpresaPersonalizacion() {
 									</span>
 								</div>
 							</div>
-						) : subempresasFiltradas.length === 0 ? (
+						)}
+						{!loading && subempresasFiltradas.length === 0 && (
 							<div className='py-12 text-center'>
 								<Icon
 									icon='HeroMagnifyingGlass'
@@ -654,7 +651,8 @@ export default function SubEmpresaPersonalizacion() {
 									Ajusta los filtros de búsqueda para ver más resultados.
 								</p>
 							</div>
-						) : (
+						)}
+						{!loading && subempresasFiltradas.length > 0 && (
 							<>
 								<Table className='w-full'>
 									<THead>
@@ -898,10 +896,10 @@ export default function SubEmpresaPersonalizacion() {
 										value={IDIOMAS_OPTIONS.find(
 											(i) => i.value === formik.values.idioma_predeterminado,
 										)}
-										onChange={(option: any) =>
+										onChange={(option) =>
 											formik.setFieldValue(
 												'idioma_predeterminado',
-												option?.value,
+												getSingleOptionValue(option),
 											)
 										}
 										placeholder='Seleccionar idioma...'
@@ -922,8 +920,11 @@ export default function SubEmpresaPersonalizacion() {
 										value={ZONAS_HORARIAS_OPTIONS.find(
 											(z) => z.value === formik.values.zona_horaria,
 										)}
-										onChange={(option: any) =>
-											formik.setFieldValue('zona_horaria', option?.value)
+										onChange={(option) =>
+											formik.setFieldValue(
+												'zona_horaria',
+												getSingleOptionValue(option),
+											)
 										}
 										placeholder='Seleccionar zona horaria...'
 									/>
@@ -942,8 +943,11 @@ export default function SubEmpresaPersonalizacion() {
 										value={MONEDAS_OPTIONS.find(
 											(m) => m.value === formik.values.moneda_local,
 										)}
-										onChange={(option: any) =>
-											formik.setFieldValue('moneda_local', option?.value)
+										onChange={(option) =>
+											formik.setFieldValue(
+												'moneda_local',
+												getSingleOptionValue(option),
+											)
 										}
 										placeholder='Seleccionar moneda...'
 									/>
@@ -962,8 +966,11 @@ export default function SubEmpresaPersonalizacion() {
 										value={SEPARADORES_DECIMALES_OPTIONS.find(
 											(s) => s.value === formik.values.separador_decimal,
 										)}
-										onChange={(option: any) =>
-											formik.setFieldValue('separador_decimal', option?.value)
+										onChange={(option) =>
+											formik.setFieldValue(
+												'separador_decimal',
+												getSingleOptionValue(option),
+											)
 										}
 										placeholder='Seleccionar separador...'
 									/>
@@ -983,8 +990,11 @@ export default function SubEmpresaPersonalizacion() {
 										value={FORMATOS_FECHA_OPTIONS.find(
 											(f) => f.value === formik.values.formato_fecha,
 										)}
-										onChange={(option: any) =>
-											formik.setFieldValue('formato_fecha', option?.value)
+										onChange={(option) =>
+											formik.setFieldValue(
+												'formato_fecha',
+												getSingleOptionValue(option),
+											)
 										}
 										placeholder='Seleccionar formato de fecha...'
 									/>
@@ -1092,4 +1102,6 @@ export default function SubEmpresaPersonalizacion() {
 			</Modal>
 		</PageWrapper>
 	);
-}
+};
+
+export default SubEmpresaPersonalizacion;

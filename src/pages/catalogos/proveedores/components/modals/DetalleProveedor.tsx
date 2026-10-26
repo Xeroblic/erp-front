@@ -1,8 +1,7 @@
-import React, { Dispatch, SetStateAction, useMemo, useState, useEffect } from 'react';
+import React, { Dispatch, SetStateAction, useMemo, useEffect } from 'react';
 import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
@@ -116,8 +115,8 @@ const DetalleProveedor: React.FC<DetalleProveedorProps> = ({
 	const availableCustomers = useMemo(() => {
 		if (!allCustomers || !associatedCustomers) return [];
 
-		const associatedIds = new Set(associatedCustomers.map((c: any) => c.id));
-		return allCustomers.filter((c: any) => !associatedIds.has(c.id));
+		const associatedIds = new Set(associatedCustomers.map((c) => c.id));
+		return allCustomers.filter((c) => !associatedIds.has(c.id));
 	}, [allCustomers, associatedCustomers]);
 
 	// Columnas para clientes ASOCIADOS
@@ -222,7 +221,7 @@ const DetalleProveedor: React.FC<DetalleProveedorProps> = ({
 									Clientes Asociados ({associatedCustomers?.length || 0})
 								</h4>
 							</div>
-							{loadingAssociated ? (
+							{loadingAssociated && (
 								<div className='flex items-center justify-center py-8'>
 									<Icon
 										icon='HeroArrowPath'
@@ -230,50 +229,55 @@ const DetalleProveedor: React.FC<DetalleProveedorProps> = ({
 									/>
 									<span className='ml-2 text-sm text-gray-600'>Cargando...</span>
 								</div>
-							) : associatedTable.getRowModel().rows.length === 0 ? (
-								<div className='py-8 text-center text-sm text-gray-500 dark:text-gray-400'>
-									Este proveedor no tiene clientes asociados.
-								</div>
-							) : (
-								<div className='overflow-x-auto'>
-									<table className='w-full text-left text-sm'>
-										<thead className='border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'>
-											{associatedTable
-												.getHeaderGroups()
-												.map((headerGroup) => (
-													<tr key={headerGroup.id}>
-														{headerGroup.headers.map((header) => (
-															<th
-																key={header.id}
-																className='px-4 py-3 font-semibold text-gray-700 dark:text-gray-300'>
+							)}
+							{!loadingAssociated &&
+								associatedTable.getRowModel().rows.length === 0 && (
+									<div className='py-8 text-center text-sm text-gray-500 dark:text-gray-400'>
+										Este proveedor no tiene clientes asociados.
+									</div>
+								)}
+							{!loadingAssociated &&
+								associatedTable.getRowModel().rows.length !== 0 && (
+									<div className='overflow-x-auto'>
+										<table className='w-full text-left text-sm'>
+											<thead className='border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'>
+												{associatedTable
+													.getHeaderGroups()
+													.map((headerGroup) => (
+														<tr key={headerGroup.id}>
+															{headerGroup.headers.map((header) => (
+																<th
+																	key={header.id}
+																	className='px-4 py-3 font-semibold text-gray-700 dark:text-gray-300'>
+																	{flexRender(
+																		header.column.columnDef
+																			.header,
+																		header.getContext(),
+																	)}
+																</th>
+															))}
+														</tr>
+													))}
+											</thead>
+											<tbody className='divide-y divide-gray-200 dark:divide-gray-700'>
+												{associatedTable.getRowModel().rows.map((row) => (
+													<tr
+														key={row.id}
+														className='hover:bg-gray-50 dark:hover:bg-gray-800'>
+														{row.getVisibleCells().map((cell) => (
+															<td key={cell.id} className='px-4 py-3'>
 																{flexRender(
-																	header.column.columnDef.header,
-																	header.getContext(),
+																	cell.column.columnDef.cell,
+																	cell.getContext(),
 																)}
-															</th>
+															</td>
 														))}
 													</tr>
 												))}
-										</thead>
-										<tbody className='divide-y divide-gray-200 dark:divide-gray-700'>
-											{associatedTable.getRowModel().rows.map((row) => (
-												<tr
-													key={row.id}
-													className='hover:bg-gray-50 dark:hover:bg-gray-800'>
-													{row.getVisibleCells().map((cell) => (
-														<td key={cell.id} className='px-4 py-3'>
-															{flexRender(
-																cell.column.columnDef.cell,
-																cell.getContext(),
-															)}
-														</td>
-													))}
-												</tr>
-											))}
-										</tbody>
-									</table>
-								</div>
-							)}
+											</tbody>
+										</table>
+									</div>
+								)}
 						</div>
 
 						{/* TABLA 2: Clientes DISPONIBLES (NO asociados) */}
@@ -283,7 +287,7 @@ const DetalleProveedor: React.FC<DetalleProveedorProps> = ({
 									Clientes Disponibles ({availableCustomers?.length || 0})
 								</h4>
 							</div>
-							{loadingAll ? (
+							{loadingAll && (
 								<div className='flex items-center justify-center py-8'>
 									<Icon
 										icon='HeroArrowPath'
@@ -291,11 +295,13 @@ const DetalleProveedor: React.FC<DetalleProveedorProps> = ({
 									/>
 									<span className='ml-2 text-sm text-gray-600'>Cargando...</span>
 								</div>
-							) : availableTable.getRowModel().rows.length === 0 ? (
+							)}
+							{!loadingAll && availableTable.getRowModel().rows.length === 0 && (
 								<div className='py-8 text-center text-sm text-gray-500 dark:text-gray-400'>
 									No hay clientes disponibles para asociar.
 								</div>
-							) : (
+							)}
+							{!loadingAll && availableTable.getRowModel().rows.length !== 0 && (
 								<div className='overflow-x-auto'>
 									<table className='w-full text-left text-sm'>
 										<thead className='border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'>

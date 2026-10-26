@@ -22,7 +22,7 @@ const columnHelper = createColumnHelper<AppTableFeatures, ILockerInternal>();
 const StatusBadge = ({ status }: { status: string }) => {
 	const config = getStatusConfig(status);
 	return (
-		<Badge color={config.color as any} variant='solid' className='text-xs'>
+		<Badge color={config.color} variant='solid' className='text-xs'>
 			<span className='flex items-center gap-1'>
 				<Icon icon={config.icon} className='h-3 w-3' />
 				{config.label}
@@ -75,12 +75,13 @@ const buildLockerColumns = ({
 			cell: (info) => {
 				const locker = info.row.original;
 				const order = locker.active_service_order || orderByLockerId[locker.id];
-				const deviceInfo =
-					order?.device_brand && order?.device_model
-						? `${order.device_brand} ${order.device_model}`
-						: locker.device_brand && locker.device_model
-							? `${locker.device_brand} ${locker.device_model}`
-							: order?.device_description || locker.device_description || '—';
+				let deviceInfo = order?.device_description || locker.device_description || '—';
+				if (locker.device_brand && locker.device_model) {
+					deviceInfo = `${locker.device_brand} ${locker.device_model}`;
+				}
+				if (order?.device_brand && order?.device_model) {
+					deviceInfo = `${order.device_brand} ${order.device_model}`;
+				}
 				return (
 					<div
 						className='max-w-[180px] truncate text-zinc-600 dark:text-zinc-400'
@@ -106,7 +107,12 @@ const buildLockerColumns = ({
 			cell: (info) => {
 				const locker = info.row.original;
 				const order = locker.active_service_order || orderByLockerId[locker.id];
-				const checkInDate = order?.checked_in_at || locker.check_in_at || order?.created_at;
+				// `checked_in_at` no está declarado en `IServiceOrder`; llega por la firma de índice.
+				const orderCheckIn: unknown = order?.checked_in_at;
+				const checkInDate =
+					(typeof orderCheckIn === 'string' ? orderCheckIn : undefined) ||
+					locker.check_in_at ||
+					order?.created_at;
 				return (
 					<span className='text-xs text-zinc-500'>
 						{checkInDate ? new Date(checkInDate).toLocaleString('es-CL') : '—'}

@@ -158,13 +158,13 @@ const buildSubsidiaryColumns = ({
 		}),
 	]);
 
-export default function SubempresasTable({
+const SubempresasTable = ({
 	subempresas,
 	loading,
 	onEdit,
 	onDelete,
 	onCreate,
-}: SubempresasTableProps) {
+}: SubempresasTableProps) => {
 	const navigate = useNavigate();
 	const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -257,4 +257,6 @@ export default function SubempresasTable({
 			</CardBody>
 		</Card>
 	);
-}
+};
+
+export default SubempresasTable;

@@ -36,16 +36,18 @@ const AssociationTable = <T extends RowData>({
 				</CardTitle>
 			</CardHeader>
 			<CardBody>
-				{loading ? (
+				{loading && (
 					<div className='flex items-center justify-center py-8'>
 						<Icon icon='HeroArrowPath' className='h-6 w-6 animate-spin text-blue-600' />
 						<span className='ml-2 text-sm text-gray-600'>Cargando...</span>
 					</div>
-				) : table.getRowModel().rows.length === 0 ? (
+				)}
+				{!loading && table.getRowModel().rows.length === 0 && (
 					<div className='py-8 text-center text-sm text-gray-500 dark:text-gray-400'>
 						{emptyMessage}
 					</div>
-				) : (
+				)}
+				{!loading && table.getRowModel().rows.length > 0 && (
 					<div className='overflow-x-auto'>
 						<table className='w-full text-left text-sm'>
 							<thead className='border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'>

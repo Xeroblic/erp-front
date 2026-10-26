@@ -5,9 +5,21 @@ import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
-import type { ISupplier } from '@/interface/supplier.interface';
+import type { ICustomerSupplierMin, ISupplier } from '@/interface/supplier.interface';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+
+/** Variantes con que el backend ha enviado los clientes asociados de un proveedor. */
+type AssociatedCustomer = Partial<ICustomerSupplierMin> & {
+	customer_name?: string;
+	customer_id?: number;
+	customer?: { name?: string } | null;
+};
+
+type SupplierWithCustomers = Omit<ISupplier, 'customerSuppliers'> & {
+	customerSuppliers?: AssociatedCustomer[];
+	customer_suppliers?: AssociatedCustomer[];
+};
 
 type SuppliersTableProps = {
 	suppliers: ISupplier[];
@@ -22,7 +34,7 @@ const buildSupplierColumns = ({
 }: {
 	onView: SuppliersTableProps['onView'];
 	onDelete: SuppliersTableProps['onDelete'];
-}): ColumnDef<AppTableFeatures, ISupplier, any>[] => [
+}): ColumnDef<AppTableFeatures, ISupplier>[] => [
 	{
 		header: 'Proveedor',
 		accessorKey: 'name',
@@ -53,10 +65,9 @@ const buildSupplierColumns = ({
 		header: 'Clientes asociados',
 		accessorKey: 'customer_suppliers',
 		cell: ({ row }) => {
+			const supplier: SupplierWithCustomers = row.original;
 			const customerSuppliers =
-				(row.original as any).customerSuppliers ||
-				(row.original as any).customer_suppliers ||
-				[];
+				supplier.customerSuppliers || supplier.customer_suppliers || [];
 			const hasCustomers = customerSuppliers.length > 0;
 
 			if (!hasCustomers) {
@@ -71,7 +82,7 @@ const buildSupplierColumns = ({
 
 			return (
 				<div className='flex flex-col gap-1.5 py-1'>
-					{customerSuppliers.slice(0, 3).map((cs: any, idx: number) => (
+					{customerSuppliers.slice(0, 3).map((cs, idx) => (
 						<div key={cs.id || idx}>
 							<Badge variant='outline' color='sky' className='text-xs'>
 								{cs.customer_name ||

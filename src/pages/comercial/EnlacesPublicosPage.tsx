@@ -102,7 +102,7 @@ const buildPublicLinkColumns = ({
 					size='sm'
 					icon='HeroClipboardCopy'
 					onClick={() => {
-						navigator.clipboard.writeText(
+						void navigator.clipboard.writeText(
 							`${window.location.origin}/portal-pedidos/${row.original.hash}`,
 						);
 					}}>
@@ -121,7 +121,7 @@ const buildPublicLinkColumns = ({
 	},
 ];
 
-export default function EnlacesPublicosPage() {
+const EnlacesPublicosPage = () => {
 	const navigate = useNavigate();
 
 	const columns = useMemo(() => buildPublicLinkColumns({ navigate }), [navigate]);
@@ -164,4 +164,6 @@ export default function EnlacesPublicosPage() {
 			</Container>
 		</PageWrapper>
 	);
-}
+};
+
+export default EnlacesPublicosPage;

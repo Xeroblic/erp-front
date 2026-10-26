@@ -22,11 +22,14 @@ interface ProductsTableProps {
 	onRefresh?: () => Promise<void> | void;
 }
 
+const SKELETON_KEYS = ['skeleton-1', 'skeleton-2', 'skeleton-3'];
+
 const TableSkeleton: React.FC = () => (
 	<>
-		{Array.from({ length: 3 }).map((_, index) => (
-			<tr key={index}>
+		{SKELETON_KEYS.map((key) => (
+			<tr key={key}>
 				<td colSpan={8} className='px-6 py-4'>
+					<span className='sr-only'>Cargando productos...</span>
 					<div className='flex items-center gap-3'>
 						<div className='h-12 w-12 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-700' />
 						<div className='flex-1 space-y-2'>
@@ -113,11 +116,18 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 		[dispatch, subsidiaryId, onRefresh],
 	);
 
+	const handleToggleStatusClick = useCallback(
+		(product: IProduct) => {
+			void handleToggleStatus(product);
+		},
+		[handleToggleStatus],
+	);
+
 	const columns = useProductColumns({
 		isAdmin,
 		subsidiaryId,
 		isUpdating,
-		onToggleStatus: handleToggleStatus,
+		onToggleStatus: handleToggleStatusClick,
 		onView,
 		onDelete,
 	});
@@ -155,11 +165,10 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 							))}
 						</thead>
 						<tbody className='divide-y divide-zinc-200 dark:divide-zinc-800'>
-							{loading ? (
-								<TableSkeleton />
-							) : products.length === 0 ? (
-								<TableEmpty />
-							) : (
+							{loading && <TableSkeleton />}
+							{!loading && products.length === 0 && <TableEmpty />}
+							{!loading &&
+								products.length !== 0 &&
 								table.getRowModel().rows.map((row) => {
 									const product = row.original;
 									const isExpanded = Boolean(expandedRows[product.id]);
@@ -198,8 +207,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 											)}
 										</React.Fragment>
 									);
-								})
-							)}
+								})}
 						</tbody>
 					</table>
 				</div>

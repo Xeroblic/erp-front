@@ -8,7 +8,7 @@ import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 const columnHelper = createColumnHelper<AppTableFeatures, ISubempresa>();
 
-export const useSubsidiaryColumns = (
+const useSubsidiaryColumns = (
 	handleEdit: (subsidiary: ISubempresa) => void,
 	navigate: (path: string) => void,
 ) => {
@@ -137,7 +137,7 @@ export const useSubsidiaryColumns = (
 				header: 'Comuna',
 				cell: (info) => {
 					const subsidiary = info.row.original;
-					const communeName = (subsidiary as any)?.commune?.name;
+					const communeName = subsidiary.commune?.name;
 
 					return communeName ? (
 						<div className='flex items-center gap-1'>
@@ -183,3 +183,5 @@ export const useSubsidiaryColumns = (
 		[handleEdit, navigate],
 	);
 };
+
+export default useSubsidiaryColumns;
