@@ -32,6 +32,14 @@ declare module 'pdfmake/interfaces' {
 	}
 }
 
+// Build del navegador sin tipos: `loadPdfMake` valida su forma antes de usarlo.
+declare module 'pdfmake/build/pdfmake' {
+	const pdfMake: unknown;
+	export default pdfMake;
+}
+
+// CJS: `module.exports` es el mapa archivo → contenido en base64.
 declare module 'pdfmake/build/vfs_fonts' {
-	export const vfs: Record<string, string>;
+	const vfs: Record<string, string>;
+	export default vfs;
 }
