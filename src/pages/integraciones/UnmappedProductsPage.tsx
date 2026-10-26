@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { SingleValue } from 'react-select';
@@ -24,6 +24,125 @@ import type { UnmappedWooCommerceProduct } from '@/types/integrations.types';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+
+const SALE_STATUS_LABELS: Record<string, string> = {
+	draft: 'Borrador',
+	confirmed: 'Confirmada',
+	partially_paid: 'Pago parcial',
+	paid: 'Pagada',
+	delivered: 'Entregada',
+	cancelled: 'Cancelada',
+	refunded: 'Reembolsada',
+};
+
+const buildUnmappedProductColumns = ({
+	activeTab,
+	onMapProduct,
+	onIgnoreProduct,
+}: {
+	activeTab: 'pending' | 'mapped';
+	onMapProduct: (product: UnmappedWooCommerceProduct) => void;
+	onIgnoreProduct: (product: UnmappedWooCommerceProduct) => Promise<void>;
+}): ColumnDef<AppTableFeatures, UnmappedWooCommerceProduct>[] => [
+	{
+		accessorFn: (row) =>
+			String(
+				row.external_product_id ??
+					(row as any).woocommerce_product_id ??
+					row.line_item_data?.product_id ??
+					'',
+			),
+		header: 'ID WC',
+		cell: ({ row }) => {
+			const product = row.original;
+			const wcId =
+				product.external_product_id ??
+				(product as any).woocommerce_product_id ??
+				product.line_item_data?.product_id ??
+				'-';
+			return <span>{wcId}</span>;
+		},
+	},
+	{
+		id: 'product',
+		accessorFn: (row) => `${row.name ?? ''} ${row.sale?.sale_number ?? ''}`.trim(),
+		header: 'Producto',
+		cell: ({ row }) => (
+			<div>
+				<p className='font-medium'>{row.original.name}</p>
+				<p className='text-xs'>Venta: {row.original.sale?.sale_number ?? 'N/A'}</p>
+			</div>
+		),
+	},
+	{
+		id: 'sku',
+		accessorFn: (row) => row.sku ?? '',
+		header: 'SKU',
+		cell: ({ row }) => (
+			<code className='rounded px-2 py-1 text-xs'>{row.original.sku || 'Sin SKU'}</code>
+		),
+	},
+	{
+		id: 'price',
+		accessorFn: (row) => row.price ?? '',
+		header: 'Precio',
+		cell: ({ row }) => {
+			const value = Number(row.original.price ?? 0);
+			return new Intl.NumberFormat('es-CL', {
+				style: 'currency',
+				currency: 'CLP',
+			}).format(Number.isFinite(value) ? value : 0);
+		},
+	},
+	{
+		id: 'status',
+		accessorFn: (row) => row.sale?.status ?? '',
+		header: 'Estado venta',
+		cell: ({ row }) => {
+			const status = row.original.sale?.status ?? 'N/A';
+			const label = SALE_STATUS_LABELS[status] ?? status;
+			const badgeColor =
+				status === 'paid' ? 'green' : status === 'cancelled' ? 'red' : 'gray';
+			return <Badge color={badgeColor}>{label}</Badge>;
+		},
+	},
+	{
+		id: 'actions',
+		header: 'Acciones',
+		cell: ({ row }) => {
+			if (activeTab === 'mapped') {
+				return row.original.mapped_product ? (
+					<div className='text-xs'>
+						Mapeado con {row.original.mapped_product.name} (
+						{row.original.mapped_product.sku})
+					</div>
+				) : (
+					<span className='0 text-xs'>Sin referencia</span>
+				);
+			}
+
+			return (
+				<div className='flex flex-wrap gap-2'>
+					<Button
+						size='sm'
+						variant='outline'
+						icon='HeroLink'
+						onClick={() => onMapProduct(row.original)}>
+						Mapear
+					</Button>
+					<Button
+						size='sm'
+						variant='outline'
+						color='red'
+						onClick={() => onIgnoreProduct(row.original)}
+						icon='HeroXMark'>
+						Ignorar
+					</Button>
+				</div>
+			);
+		},
+	},
+];
 
 export const UnmappedProductsContent: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -121,147 +240,48 @@ export const UnmappedProductsContent: React.FC = () => {
 		}
 	};
 
-	const handleIgnoreProduct = async (product: UnmappedWooCommerceProduct) => {
-		if (!subsidiaryId || !selectedIntegrationId) return;
-		if (!confirm('¿Estás seguro de ignorar este producto?')) return;
+	const handleIgnoreProduct = useCallback(
+		async (product: UnmappedWooCommerceProduct) => {
+			if (!subsidiaryId || !selectedIntegrationId) return;
+			if (!confirm('¿Estás seguro de ignorar este producto?')) return;
 
-		const resultAction = await dispatch(
-			ignoreProduct({
-				subsidiaryId,
-				integrationId: selectedIntegrationId,
-				unmappedProductId: product.id,
-			}),
-		);
+			const resultAction = await dispatch(
+				ignoreProduct({
+					subsidiaryId,
+					integrationId: selectedIntegrationId,
+					unmappedProductId: product.id,
+				}),
+			);
 
-		if (ignoreProduct.fulfilled.match(resultAction)) {
-			toast.success('Producto marcado como ignorado');
-			dispatch(fetchUnmappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }));
-		} else {
-			toast.error('Error al ignorar el producto');
-		}
-	};
+			if (ignoreProduct.fulfilled.match(resultAction)) {
+				toast.success('Producto marcado como ignorado');
+				dispatch(
+					fetchUnmappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }),
+				);
+			} else {
+				toast.error('Error al ignorar el producto');
+			}
+		},
+		[dispatch, selectedIntegrationId, subsidiaryId],
+	);
+
+	const handleOpenMapModal = useCallback((product: UnmappedWooCommerceProduct) => {
+		setSelectedProduct(product);
+		setMappingSku(product.sku || '');
+		setMappingProductId('');
+		setShowMapModal(true);
+	}, []);
 
 	const displayedProducts = activeTab === 'pending' ? unmappedProducts : mappedProducts;
 
-	const SALE_STATUS_LABELS: Record<string, string> = {
-		draft: 'Borrador',
-		confirmed: 'Confirmada',
-		partially_paid: 'Pago parcial',
-		paid: 'Pagada',
-		delivered: 'Entregada',
-		cancelled: 'Cancelada',
-		refunded: 'Reembolsada',
-	};
-
-	const columns = useMemo<ColumnDef<AppTableFeatures, UnmappedWooCommerceProduct>[]>(
-		() => [
-			{
-				accessorFn: (row) =>
-					String(
-						row.external_product_id ??
-							(row as any).woocommerce_product_id ??
-							row.line_item_data?.product_id ??
-							'',
-					),
-				header: 'ID WC',
-				cell: ({ row }) => {
-					const product = row.original;
-					const wcId =
-						product.external_product_id ??
-						(product as any).woocommerce_product_id ??
-						product.line_item_data?.product_id ??
-						'-';
-					return <span>{wcId}</span>;
-				},
-			},
-			{
-				id: 'product',
-				accessorFn: (row) => `${row.name ?? ''} ${row.sale?.sale_number ?? ''}`.trim(),
-				header: 'Producto',
-				cell: ({ row }) => (
-					<div>
-						<p className='font-medium'>{row.original.name}</p>
-						<p className='text-xs'>Venta: {row.original.sale?.sale_number ?? 'N/A'}</p>
-					</div>
-				),
-			},
-			{
-				id: 'sku',
-				accessorFn: (row) => row.sku ?? '',
-				header: 'SKU',
-				cell: ({ row }) => (
-					<code className='rounded px-2 py-1 text-xs'>
-						{row.original.sku || 'Sin SKU'}
-					</code>
-				),
-			},
-			{
-				id: 'price',
-				accessorFn: (row) => row.price ?? '',
-				header: 'Precio',
-				cell: ({ row }) => {
-					const value = Number(row.original.price ?? 0);
-					return new Intl.NumberFormat('es-CL', {
-						style: 'currency',
-						currency: 'CLP',
-					}).format(Number.isFinite(value) ? value : 0);
-				},
-			},
-			{
-				id: 'status',
-				accessorFn: (row) => row.sale?.status ?? '',
-				header: 'Estado venta',
-				cell: ({ row }) => {
-					const status = row.original.sale?.status ?? 'N/A';
-					const label = SALE_STATUS_LABELS[status] ?? status;
-					const badgeColor =
-						status === 'paid' ? 'green' : status === 'cancelled' ? 'red' : 'gray';
-					return <Badge color={badgeColor}>{label}</Badge>;
-				},
-			},
-			{
-				id: 'actions',
-				header: 'Acciones',
-				cell: ({ row }) => {
-					if (activeTab === 'mapped') {
-						return row.original.mapped_product ? (
-							<div className='text-xs'>
-								Mapeado con {row.original.mapped_product.name} (
-								{row.original.mapped_product.sku})
-							</div>
-						) : (
-							<span className='0 text-xs'>Sin referencia</span>
-						);
-					}
-
-					return (
-						<div className='flex flex-wrap gap-2'>
-							<Button
-								size='sm'
-								variant='outline'
-								icon='HeroLink'
-								onClick={() => {
-									setSelectedProduct(row.original);
-									setMappingSku(row.original.sku || '');
-									setMappingProductId('');
-									setShowMapModal(true);
-								}}>
-								Mapear
-							</Button>
-							<Button
-								size='sm'
-								variant='outline'
-								color='red'
-								onClick={() => handleIgnoreProduct(row.original)}
-								icon='HeroXMark'>
-								Ignorar
-							</Button>
-						</div>
-					);
-				},
-			},
-		],
-		[activeTab],
+	const columns = useMemo(
+		() =>
+			buildUnmappedProductColumns({
+				activeTab,
+				onMapProduct: handleOpenMapModal,
+				onIgnoreProduct: handleIgnoreProduct,
+			}),
+		[activeTab, handleOpenMapModal, handleIgnoreProduct],
 	);
 
 	return (

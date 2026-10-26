@@ -91,6 +91,236 @@ type SummaryCardConfig = {
 	valueClass?: string;
 };
 
+const buildSaleColumns = ({
+	handleViewDetail,
+	handleReceiveReturn,
+	handleDownloadTicket,
+	subsidiaryId,
+	pendingMap,
+	isMultiLocation,
+	setAssignSale,
+	setSaleToDelete,
+}: {
+	handleViewDetail: (saleId: number) => void;
+	handleReceiveReturn: (saleId: number) => void;
+	handleDownloadTicket: (saleId: number) => void;
+	subsidiaryId: number | null;
+	pendingMap: Map<number, PendingSerialSale>;
+	isMultiLocation: boolean;
+	setAssignSale: (value: { sale: PendingSerialSale; subsidiaryId: number }) => void;
+	setSaleToDelete: (value: { sale: ISale; subsidiaryId: number }) => void;
+}): ColumnDef<AppTableFeatures, ISale>[] => [
+	{
+		accessorKey: 'sale_date',
+		header: 'Fecha',
+		cell: ({ row }) => (
+			<div className='font-medium text-zinc-900 dark:text-zinc-100'>
+				{/* Arreglar formatDate */}
+				{/* {row.original.sale_date ? formatDate(row.original.sale_date) : '—'} */}
+				{row.original.sale_date ? row.original.sale_date : '—'}
+			</div>
+		),
+	},
+	{
+		accessorKey: 'sale_number',
+		header: 'Nº Venta',
+		cell: ({ row }) => (
+			<div className='text-sm font-bold text-zinc-700 dark:text-zinc-200'>
+				{row.original.sale_number}
+			</div>
+		),
+	},
+	{
+		accessorKey: 'customer',
+		header: 'Cliente',
+		cell: ({ row }) => {
+			const { customer } = row.original;
+			const name =
+				customer?.name ||
+				customer?.billing_company ||
+				`${customer?.primary_contact?.name || ''}`.trim() ||
+				'Cliente sin nombre';
+			const rut = customer?.rut || 'S/RUT';
+			const email = customer?.email || customer?.primary_contact?.email;
+
+			return (
+				<div className='flex flex-col'>
+					<span className='text-sm font-medium text-zinc-700 dark:text-zinc-200'>
+						{name}
+					</span>
+					<span className='text-xs text-zinc-500'>{rut}</span>
+					{email && <span className='text-xs text-zinc-400'>{email}</span>}
+				</div>
+			);
+		},
+	},
+	{
+		accessorKey: 'status',
+		header: 'Estado',
+		cell: ({ row }) => {
+			const currentStatus = (row.original.status || '').toLowerCase();
+			const badgeConfig = statusBadgeMap[currentStatus] ?? {
+				color: 'zinc',
+				intensity: '500',
+			};
+			return (
+				<div className='flex flex-col items-start gap-1'>
+					<Badge
+						color={badgeConfig.color}
+						colorIntensity={badgeConfig.intensity}
+						variant='solid'
+						className='rounded-md'>
+						{translateStatus(row.original.status)}
+					</Badge>
+					{/* Etapa 2: la devolución física espera recepción; la venta no se puede cerrar. */}
+					{row.original.pending_return && (
+						<Badge
+							color='amber'
+							variant='outline'
+							className='whitespace-nowrap rounded-md text-xs'>
+							Devolución pendiente
+						</Badge>
+					)}
+				</div>
+			);
+		},
+	},
+	{
+		accessorKey: 'total_amount',
+		header: 'Total (CLP)',
+		cell: ({ row }) => (
+			<div className='text-right text-sm font-bold text-zinc-900 dark:text-zinc-100'>
+				{formatCLP(row.original.total_amount || 0)}
+			</div>
+		),
+	},
+	{
+		accessorKey: 'items_count',
+		header: 'Ítems',
+		cell: ({ row }) => (
+			<div className='text-center text-sm text-zinc-500'>{row.original.items_count ?? 0}</div>
+		),
+	},
+	{
+		id: 'actions',
+		header: 'Acciones',
+		cell: ({ row }) => (
+			<div className='flex justify-center gap-2'>
+				{isMultiLocation && row.original.pending_return && (
+					<Tooltip text='Recibir la devolución pendiente'>
+						<ProtectedButton
+							permission='confirm-sale-return'
+							subsidiaryId={subsidiaryId}
+							scope='access'
+							fallbackMode='hidden'
+							variant='solid'
+							size='sm'
+							color='amber'
+							aria-label={`Recibir la devolución de la venta ${row.original.id}`}
+							onClick={() => handleReceiveReturn(row.original.id)}
+							isDisable={!subsidiaryId}>
+							<Icon icon='HeroInboxArrowDown' color='white' size='text-xl' />
+						</ProtectedButton>
+					</Tooltip>
+				)}
+				{/* Con la devolución pendiente el cierre responde 409: se recibe primero. */}
+				{pendingMap.has(row.original.id) &&
+					!(isMultiLocation && row.original.pending_return) && (
+						<Tooltip text='Esta venta tiene series pendientes de asignar'>
+							<Button
+								variant='solid'
+								size='sm'
+								color='amber'
+								className='bg-amber-500/30'
+								onClick={() => {
+									const pendingSale = pendingMap.get(row.original.id);
+									if (pendingSale && subsidiaryId) {
+										setAssignSale({ sale: pendingSale, subsidiaryId });
+									}
+								}}>
+								<Icon
+									icon='DuoBarcodeRead'
+									color='white'
+									className='hover:text-amber-200'
+									size='text-xl'
+								/>
+							</Button>
+						</Tooltip>
+					)}
+				<Tooltip text='Descargar ticket de envio'>
+					<Button
+						variant='outline'
+						size='sm'
+						color='blue'
+						className='bg-blue-600/30'
+						onClick={() => handleDownloadTicket(row.original.id)}
+						isDisable={!subsidiaryId}>
+						<Icon
+							icon='DuoFile'
+							color='blue'
+							className='hover:text-bold hover:text-blue-600'
+							size='text-xl'
+						/>
+					</Button>
+				</Tooltip>
+				<Button
+					variant='outline'
+					size='xs'
+					color='violet'
+					className='bg-violet-500/20'
+					onClick={() => handleViewDetail(row.original.id)}
+					isDisable={!subsidiaryId}>
+					<Icon
+						icon='HeroEye'
+						color='violet'
+						className='hover:text-bold hover:text-violet-600'
+						size='text-xl'
+					/>
+				</Button>
+				{(() => {
+					const isClosedSale =
+						Boolean(row.original.is_closed) ||
+						Boolean(row.original.inventory_finalized);
+					return (
+						<Tooltip
+							text={
+								isClosedSale
+									? 'No se puede eliminar una venta cerrada'
+									: 'Eliminar venta'
+							}>
+							<ProtectedButton
+								permission='delete-sale'
+								fallbackMode='hidden'
+								variant='outline'
+								size='xs'
+								color='red'
+								className='bg-red-200/30'
+								onClick={() => {
+									if (subsidiaryId) {
+										setSaleToDelete({
+											sale: row.original,
+											subsidiaryId,
+										});
+									}
+								}}
+								isDisable={!subsidiaryId || isClosedSale}>
+								<Icon
+									icon='HeroTrash'
+									color='red'
+									className='hover:text-bold hover:text-red-600'
+									size='text-xl'
+								/>
+							</ProtectedButton>
+						</Tooltip>
+					);
+				})()}
+			</div>
+		),
+		enableSorting: false,
+		enableColumnFilter: false,
+	},
+];
+
 const SalesListPage: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
@@ -349,220 +579,18 @@ const SalesListPage: React.FC = () => {
 
 	const detailModalVisible = detailSelection.isOpen && Boolean(subsidiaryId);
 
-	const columns = useMemo<ColumnDef<AppTableFeatures, ISale>[]>(
-		() => [
-			{
-				accessorKey: 'sale_date',
-				header: 'Fecha',
-				cell: ({ row }) => (
-					<div className='font-medium text-zinc-900 dark:text-zinc-100'>
-						{/* Arreglar formatDate */}
-						{/* {row.original.sale_date ? formatDate(row.original.sale_date) : '—'} */}
-						{row.original.sale_date ? row.original.sale_date : '—'}
-					</div>
-				),
-			},
-			{
-				accessorKey: 'sale_number',
-				header: 'Nº Venta',
-				cell: ({ row }) => (
-					<div className='text-sm font-bold text-zinc-700 dark:text-zinc-200'>
-						{row.original.sale_number}
-					</div>
-				),
-			},
-			{
-				accessorKey: 'customer',
-				header: 'Cliente',
-				cell: ({ row }) => {
-					const { customer } = row.original;
-					const name =
-						customer?.name ||
-						customer?.billing_company ||
-						`${customer?.primary_contact?.name || ''}`.trim() ||
-						'Cliente sin nombre';
-					const rut = customer?.rut || 'S/RUT';
-					const email = customer?.email || customer?.primary_contact?.email;
-
-					return (
-						<div className='flex flex-col'>
-							<span className='text-sm font-medium text-zinc-700 dark:text-zinc-200'>
-								{name}
-							</span>
-							<span className='text-xs text-zinc-500'>{rut}</span>
-							{email && <span className='text-xs text-zinc-400'>{email}</span>}
-						</div>
-					);
-				},
-			},
-			{
-				accessorKey: 'status',
-				header: 'Estado',
-				cell: ({ row }) => {
-					const currentStatus = (row.original.status || '').toLowerCase();
-					const badgeConfig = statusBadgeMap[currentStatus] ?? {
-						color: 'zinc',
-						intensity: '500',
-					};
-					return (
-						<div className='flex flex-col items-start gap-1'>
-							<Badge
-								color={badgeConfig.color}
-								colorIntensity={badgeConfig.intensity}
-								variant='solid'
-								className='rounded-md'>
-								{translateStatus(row.original.status)}
-							</Badge>
-							{/* Etapa 2: la devolución física espera recepción; la venta no se puede cerrar. */}
-							{row.original.pending_return && (
-								<Badge
-									color='amber'
-									variant='outline'
-									className='whitespace-nowrap rounded-md text-xs'>
-									Devolución pendiente
-								</Badge>
-							)}
-						</div>
-					);
-				},
-			},
-			{
-				accessorKey: 'total_amount',
-				header: 'Total (CLP)',
-				cell: ({ row }) => (
-					<div className='text-right text-sm font-bold text-zinc-900 dark:text-zinc-100'>
-						{formatCLP(row.original.total_amount || 0)}
-					</div>
-				),
-			},
-			{
-				accessorKey: 'items_count',
-				header: 'Ítems',
-				cell: ({ row }) => (
-					<div className='text-center text-sm text-zinc-500'>
-						{row.original.items_count ?? 0}
-					</div>
-				),
-			},
-			{
-				id: 'actions',
-				header: 'Acciones',
-				cell: ({ row }) => (
-					<div className='flex justify-center gap-2'>
-						{isMultiLocation && row.original.pending_return && (
-							<Tooltip text='Recibir la devolución pendiente'>
-								<ProtectedButton
-									permission='confirm-sale-return'
-									subsidiaryId={subsidiaryId}
-									scope='access'
-									fallbackMode='hidden'
-									variant='solid'
-									size='sm'
-									color='amber'
-									aria-label={`Recibir la devolución de la venta ${row.original.id}`}
-									onClick={() => handleReceiveReturn(row.original.id)}
-									isDisable={!subsidiaryId}>
-									<Icon icon='HeroInboxArrowDown' color='white' size='text-xl' />
-								</ProtectedButton>
-							</Tooltip>
-						)}
-						{/* Con la devolución pendiente el cierre responde 409: se recibe primero. */}
-						{pendingMap.has(row.original.id) &&
-							!(isMultiLocation && row.original.pending_return) && (
-								<Tooltip text='Esta venta tiene series pendientes de asignar'>
-									<Button
-										variant='solid'
-										size='sm'
-										color='amber'
-										className='bg-amber-500/30'
-										onClick={() => {
-											const pendingSale = pendingMap.get(row.original.id);
-											if (pendingSale && subsidiaryId) {
-												setAssignSale({ sale: pendingSale, subsidiaryId });
-											}
-										}}>
-										<Icon
-											icon='DuoBarcodeRead'
-											color='white'
-											className='hover:text-amber-200'
-											size='text-xl'
-										/>
-									</Button>
-								</Tooltip>
-							)}
-						<Tooltip text='Descargar ticket de envio'>
-							<Button
-								variant='outline'
-								size='sm'
-								color='blue'
-								className='bg-blue-600/30'
-								onClick={() => handleDownloadTicket(row.original.id)}
-								isDisable={!subsidiaryId}>
-								<Icon
-									icon='DuoFile'
-									color='blue'
-									className='hover:text-bold hover:text-blue-600'
-									size='text-xl'
-								/>
-							</Button>
-						</Tooltip>
-						<Button
-							variant='outline'
-							size='xs'
-							color='violet'
-							className='bg-violet-500/20'
-							onClick={() => handleViewDetail(row.original.id)}
-							isDisable={!subsidiaryId}>
-							<Icon
-								icon='HeroEye'
-								color='violet'
-								className='hover:text-bold hover:text-violet-600'
-								size='text-xl'
-							/>
-						</Button>
-						{(() => {
-							const isClosedSale =
-								Boolean(row.original.is_closed) ||
-								Boolean(row.original.inventory_finalized);
-							return (
-								<Tooltip
-									text={
-										isClosedSale
-											? 'No se puede eliminar una venta cerrada'
-											: 'Eliminar venta'
-									}>
-									<ProtectedButton
-										permission='delete-sale'
-										fallbackMode='hidden'
-										variant='outline'
-										size='xs'
-										color='red'
-										className='bg-red-200/30'
-										onClick={() => {
-											if (subsidiaryId) {
-												setSaleToDelete({
-													sale: row.original,
-													subsidiaryId,
-												});
-											}
-										}}
-										isDisable={!subsidiaryId || isClosedSale}>
-										<Icon
-											icon='HeroTrash'
-											color='red'
-											className='hover:text-bold hover:text-red-600'
-											size='text-xl'
-										/>
-									</ProtectedButton>
-								</Tooltip>
-							);
-						})()}
-					</div>
-				),
-				enableSorting: false,
-				enableColumnFilter: false,
-			},
-		],
+	const columns = useMemo(
+		() =>
+			buildSaleColumns({
+				handleViewDetail,
+				handleReceiveReturn,
+				handleDownloadTicket,
+				subsidiaryId,
+				pendingMap,
+				isMultiLocation,
+				setAssignSale,
+				setSaleToDelete,
+			}),
 		[
 			handleViewDetail,
 			handleReceiveReturn,
@@ -570,6 +598,8 @@ const SalesListPage: React.FC = () => {
 			subsidiaryId,
 			pendingMap,
 			isMultiLocation,
+			setAssignSale,
+			setSaleToDelete,
 		],
 	);
 

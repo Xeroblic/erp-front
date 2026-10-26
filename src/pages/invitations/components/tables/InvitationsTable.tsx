@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
 	OnChangeFn,
 	PaginationState,
@@ -36,52 +36,14 @@ interface InvitationsTableProps {
 
 const columnHelper = createColumnHelper<AppTableFeatures, Invitation>();
 
-const InvitationsTable: React.FC<InvitationsTableProps> = ({
-	invitations,
-	isLoading,
-	pagination,
-	onPageChange,
-	onPageSizeChange,
-	openCreateModal,
-}) => {
-	const { handleResendInvitation, handleCancelInvitation, isActionLoading } =
-		useInvitationsManagement();
-
-	// Estados para los modales
-	const [selectedInvitation, setSelectedInvitation] = useState<Invitation | null>(null);
-	const [modals, setModals] = useState({
-		details: false,
-		delete: false,
-		resend: false,
-	});
-
-	// Funciones para manejar modales
-	const openModal = (type: 'details' | 'delete' | 'resend', invitation: Invitation) => {
-		setSelectedInvitation(invitation);
-		setModals((prev) => ({ ...prev, [type]: true }));
-	};
-
-	const closeModal = (type: 'details' | 'delete' | 'resend') => {
-		setModals((prev) => ({ ...prev, [type]: false }));
-		setSelectedInvitation(null);
-	};
-
-	// Handlers para las acciones
-	const handleDeleteConfirm = async () => {
-		if (selectedInvitation) {
-			await handleCancelInvitation(selectedInvitation.id);
-			closeModal('delete');
-		}
-	};
-
-	const handleResendConfirm = async () => {
-		if (selectedInvitation) {
-			await handleResendInvitation(selectedInvitation.id);
-			closeModal('resend');
-		}
-	};
-
-	const columns = columnHelper.columns([
+const buildInvitationColumns = ({
+	isActionLoading,
+	openModal,
+}: {
+	isActionLoading: (id: number) => boolean;
+	openModal: (type: 'details' | 'delete' | 'resend', invitation: Invitation) => void;
+}) =>
+	columnHelper.columns([
 		columnHelper.accessor('email', {
 			header: 'Email',
 			cell: (info) => {
@@ -334,6 +296,59 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 			},
 		}),
 	]);
+
+const InvitationsTable: React.FC<InvitationsTableProps> = ({
+	invitations,
+	isLoading,
+	pagination,
+	onPageChange,
+	onPageSizeChange,
+	openCreateModal,
+}) => {
+	const { handleResendInvitation, handleCancelInvitation, isActionLoading } =
+		useInvitationsManagement();
+
+	// Estados para los modales
+	const [selectedInvitation, setSelectedInvitation] = useState<Invitation | null>(null);
+	const [modals, setModals] = useState({
+		details: false,
+		delete: false,
+		resend: false,
+	});
+
+	// Funciones para manejar modales
+	const openModal = useCallback(
+		(type: 'details' | 'delete' | 'resend', invitation: Invitation) => {
+			setSelectedInvitation(invitation);
+			setModals((prev) => ({ ...prev, [type]: true }));
+		},
+		[],
+	);
+
+	const closeModal = (type: 'details' | 'delete' | 'resend') => {
+		setModals((prev) => ({ ...prev, [type]: false }));
+		setSelectedInvitation(null);
+	};
+
+	// Handlers para las acciones
+	const handleDeleteConfirm = async () => {
+		if (selectedInvitation) {
+			await handleCancelInvitation(selectedInvitation.id);
+			closeModal('delete');
+		}
+	};
+
+	const handleResendConfirm = async () => {
+		if (selectedInvitation) {
+			await handleResendInvitation(selectedInvitation.id);
+			closeModal('resend');
+		}
+	};
+
+	const columns = useMemo(
+		() => buildInvitationColumns({ isActionLoading, openModal }),
+		[isActionLoading, openModal],
+	);
 
 	const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
 		const current: PaginationState = {

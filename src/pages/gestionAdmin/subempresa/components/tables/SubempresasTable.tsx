@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { type NavigateFunction, useNavigate } from 'react-router-dom';
 import { createColumnHelper, flexRender, SortingState, useTable } from '@tanstack/react-table';
 import Card, { CardBody } from '@/components/ui/Card';
 import { Table, Th, THead, Tr, TBody, Td } from '@/components/ui/Table';
@@ -21,6 +21,143 @@ interface SubempresasTableProps {
 	onCreate: () => void;
 }
 
+const buildSubsidiaryColumns = ({
+	navigate,
+	onEdit,
+	onDelete,
+}: {
+	navigate: NavigateFunction;
+	onEdit: SubempresasTableProps['onEdit'];
+	onDelete: SubempresasTableProps['onDelete'];
+}) =>
+	columnHelper.columns([
+		columnHelper.accessor('subsidiary_name', {
+			header: 'Subempresa',
+			cell: (info) => (
+				<div className='flex items-center gap-3'>
+					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary-100'>
+						<Icon icon='HeroBuildingStorefront' className='text-lg text-primary-600' />
+					</div>
+					<div>
+						<div className='font-medium'>{info.getValue()}</div>
+						<div className='text-xs text-zinc-500'>ID: {info.row.original.id}</div>
+					</div>
+				</div>
+			),
+		}),
+		columnHelper.accessor('subsidiary_rut', {
+			header: 'RUT',
+			cell: (info) => {
+				const value = info.getValue();
+				return value ? (
+					<span className='font-mono text-sm'>{value}</span>
+				) : (
+					<Badge variant='outline' className='text-zinc-400'>
+						Sin RUT
+					</Badge>
+				);
+			},
+		}),
+		columnHelper.accessor('subsidiary_phone', {
+			header: 'Teléfono',
+			cell: (info) => {
+				const value = info.getValue();
+				return value ? (
+					<div className='flex items-center gap-1'>
+						<Icon icon='HeroPhone' className='text-xs text-zinc-400' />
+						<span className='text-sm'>{value}</span>
+					</div>
+				) : (
+					<Badge variant='outline' className='text-zinc-400'>
+						Sin teléfono
+					</Badge>
+				);
+			},
+		}),
+		columnHelper.accessor('subsidiary_email', {
+			header: 'Email',
+			cell: (info) => {
+				const value = info.getValue();
+				return value ? (
+					<div className='flex items-center gap-1'>
+						<Icon icon='HeroEnvelope' className='text-xs text-zinc-400' />
+						<span className='text-sm'>{value}</span>
+					</div>
+				) : (
+					<Badge variant='outline' className='text-zinc-400'>
+						Sin email
+					</Badge>
+				);
+			},
+		}),
+		columnHelper.display({
+			id: 'manager',
+			header: 'Gerente',
+			cell: (info) => {
+				const subempresa = info.row.original;
+				const managerName = subempresa.manager?.name || '';
+				const managerEmail = subempresa.manager?.email || '';
+				const managerPhone =
+					subempresa.manager?.phone || subempresa.manager?.phone_number || '';
+
+				if (!managerName) {
+					return (
+						<Badge variant='outline' className='text-zinc-400'>
+							Sin gerente
+						</Badge>
+					);
+				}
+
+				return (
+					<div className='flex flex-col'>
+						<div className='flex items-center gap-1'>
+							<Icon icon='HeroUser' className='text-xs text-zinc-400' />
+							<span className='text-sm font-medium text-zinc-800 dark:text-zinc-100'>
+								{managerName}
+							</span>
+						</div>
+						{managerEmail && (
+							<span className='text-xs text-zinc-500'>{managerEmail}</span>
+						)}
+						{managerPhone && (
+							<span className='text-xs text-zinc-500'>{managerPhone}</span>
+						)}
+					</div>
+				);
+			},
+		}),
+		columnHelper.display({
+			id: 'acciones',
+			header: 'Acciones',
+			cell: (info) => (
+				<div className='flex justify-end gap-2'>
+					<Button
+						variant='outline'
+						size='sm'
+						icon='HeroPencil'
+						onClick={() => onEdit(info.row.original)}
+						className='p-1'
+					/>
+					<Button
+						variant='outline'
+						size='sm'
+						icon='HeroEye'
+						onClick={() => navigate(`/gestion/subempresa/${info.row.original.id}`)}
+						className='p-1'
+					/>
+					<Button
+						variant='solid'
+						size='sm'
+						icon='HeroTrash'
+						color='red'
+						onClick={() => onDelete(info.row.original.id)}
+						className='p-1'
+					/>
+				</div>
+			),
+		}),
+	]);
+
 export default function SubempresasTable({
 	subempresas,
 	loading,
@@ -32,141 +169,7 @@ export default function SubempresasTable({
 	const [sorting, setSorting] = useState<SortingState>([]);
 
 	const columns = useMemo(
-		() =>
-			columnHelper.columns([
-				columnHelper.accessor('subsidiary_name', {
-					header: 'Subempresa',
-					cell: (info) => (
-						<div className='flex items-center gap-3'>
-							<div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary-100'>
-								<Icon
-									icon='HeroBuildingStorefront'
-									className='text-lg text-primary-600'
-								/>
-							</div>
-							<div>
-								<div className='font-medium'>{info.getValue()}</div>
-								<div className='text-xs text-zinc-500'>
-									ID: {info.row.original.id}
-								</div>
-							</div>
-						</div>
-					),
-				}),
-				columnHelper.accessor('subsidiary_rut', {
-					header: 'RUT',
-					cell: (info) => {
-						const value = info.getValue();
-						return value ? (
-							<span className='font-mono text-sm'>{value}</span>
-						) : (
-							<Badge variant='outline' className='text-zinc-400'>
-								Sin RUT
-							</Badge>
-						);
-					},
-				}),
-				columnHelper.accessor('subsidiary_phone', {
-					header: 'Teléfono',
-					cell: (info) => {
-						const value = info.getValue();
-						return value ? (
-							<div className='flex items-center gap-1'>
-								<Icon icon='HeroPhone' className='text-xs text-zinc-400' />
-								<span className='text-sm'>{value}</span>
-							</div>
-						) : (
-							<Badge variant='outline' className='text-zinc-400'>
-								Sin teléfono
-							</Badge>
-						);
-					},
-				}),
-				columnHelper.accessor('subsidiary_email', {
-					header: 'Email',
-					cell: (info) => {
-						const value = info.getValue();
-						return value ? (
-							<div className='flex items-center gap-1'>
-								<Icon icon='HeroEnvelope' className='text-xs text-zinc-400' />
-								<span className='text-sm'>{value}</span>
-							</div>
-						) : (
-							<Badge variant='outline' className='text-zinc-400'>
-								Sin email
-							</Badge>
-						);
-					},
-				}),
-				columnHelper.display({
-					id: 'manager',
-					header: 'Gerente',
-					cell: (info) => {
-						const subempresa = info.row.original;
-						const managerName = subempresa.manager?.name || '';
-						const managerEmail = subempresa.manager?.email || '';
-						const managerPhone =
-							subempresa.manager?.phone || subempresa.manager?.phone_number || '';
-
-						if (!managerName) {
-							return (
-								<Badge variant='outline' className='text-zinc-400'>
-									Sin gerente
-								</Badge>
-							);
-						}
-
-						return (
-							<div className='flex flex-col'>
-								<div className='flex items-center gap-1'>
-									<Icon icon='HeroUser' className='text-xs text-zinc-400' />
-									<span className='text-sm font-medium text-zinc-800 dark:text-zinc-100'>
-										{managerName}
-									</span>
-								</div>
-								{managerEmail && (
-									<span className='text-xs text-zinc-500'>{managerEmail}</span>
-								)}
-								{managerPhone && (
-									<span className='text-xs text-zinc-500'>{managerPhone}</span>
-								)}
-							</div>
-						);
-					},
-				}),
-				columnHelper.display({
-					id: 'acciones',
-					header: 'Acciones',
-					cell: (info) => (
-						<div className='flex justify-end gap-2'>
-							<Button
-								variant='outline'
-								size='sm'
-								icon='HeroPencil'
-								onClick={() => onEdit(info.row.original)}
-								className='p-1'
-							/>
-							<Button
-								variant='outline'
-								size='sm'
-								icon='HeroEye'
-								onClick={() =>
-									navigate(`/gestion/subempresa/${info.row.original.id}`)
-								}
-								className='p-1'
-							/>
-							<Button
-								variant='solid'
-								size='sm'
-								icon='HeroTrash'
-								color='red'
-								onClick={() => onDelete(info.row.original.id)}
-								className='p-1'
-							/>
-						</div>
-					),
-				}),
-			]),
+		() => buildSubsidiaryColumns({ navigate, onEdit, onDelete }),
 		[navigate, onEdit, onDelete],
 	);
 

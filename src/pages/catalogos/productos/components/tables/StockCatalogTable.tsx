@@ -305,6 +305,131 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 	};
 };
 
+const buildStockCatalogColumns = ({
+	openProductDetail,
+}: {
+	openProductDetail: (productId: number | null) => void;
+}): ColumnDef<AppTableFeatures, StockCatalogRow>[] => [
+	{
+		id: 'name',
+		// Incluye la SKU en el valor filtrable para que el buscador (includesString)
+		// también encuentre por SKU, no solo por nombre.
+		accessorFn: (catalogRow) => `${catalogRow.name} ${catalogRow.sku}`,
+		header: 'Producto',
+		cell: ({ row }) => (
+			<div className='max-w-[280px] space-y-1'>
+				{row.original.productId ? (
+					<button
+						type='button'
+						onClick={() => openProductDetail(row.original.productId)}
+						title={row.original.name}
+						className='group inline-flex items-center gap-1 text-left font-semibold text-neutral-900 transition-colors hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400'>
+						<span className='line-clamp-2 break-words'>{row.original.name}</span>
+						<Icon
+							icon='HeroArrowTopRightOnSquare'
+							className='h-3.5 w-3.5 flex-none text-neutral-300 transition-colors group-hover:text-blue-500 dark:text-neutral-600'
+						/>
+					</button>
+				) : (
+					<p
+						className='line-clamp-2 break-words font-semibold text-neutral-900 dark:text-neutral-100'
+						title={row.original.name}>
+						{row.original.name}
+					</p>
+				)}
+				<div className='flex flex-wrap items-center gap-2 text-[11px] text-neutral-500'>
+					<span className='break-all'>SKU: {row.original.sku}</span>
+					<span>ID: {row.original.productId ?? 'N/D'}</span>
+				</div>
+				<div>
+					<Badge
+						variant='outline'
+						color={row.original.serialTracking ? 'emerald' : 'zinc'}
+						className='w-fit'>
+						{row.original.serialTracking ? 'Serializado' : 'Estándar'}
+					</Badge>
+				</div>
+			</div>
+		),
+	},
+	{
+		accessorKey: 'availableStock',
+		header: 'Disponible',
+		cell: ({ row }) => (
+			<div className='min-w-[64px]'>
+				<p className='text-lg font-semibold leading-none text-neutral-900 dark:text-neutral-100'>
+					{row.original.availableStock}
+				</p>
+			</div>
+		),
+	},
+	{
+		accessorKey: 'distributedStock',
+		header: 'Distribuido',
+		cell: ({ row }) => (
+			<div className='min-w-[78px]'>
+				<p className='text-base font-semibold text-neutral-900 dark:text-neutral-100'>
+					{row.original.distributedStock}
+				</p>
+				<p className='text-[11px] text-neutral-400'>
+					Sucursales: {row.original.branchesCount}
+				</p>
+			</div>
+		),
+	},
+	{
+		id: 'grades',
+		header: 'Grados',
+		cell: ({ row }) => (
+			<div className='max-w-[180px]'>
+				<p className='text-xs font-medium text-neutral-700 dark:text-neutral-200'>
+					{row.original.gradesCount} grados
+				</p>
+				<p className='mt-1 truncate text-[11px] text-neutral-500'>
+					{row.original.gradesPreview || 'Sin grados'}
+				</p>
+			</div>
+		),
+	},
+	{
+		accessorKey: 'totalStock',
+		header: 'Stock total',
+		cell: ({ row }) => (
+			<div className='min-w-[78px]'>
+				<Tooltip text='Stock total = disponible + reservado + en espera + en cotización + vendido. Ver el desglose en la columna Estados.'>
+					<p className='inline-block cursor-help text-base font-semibold text-neutral-900 underline decoration-dotted underline-offset-4 dark:text-neutral-100'>
+						{row.original.totalStock}
+					</p>
+				</Tooltip>
+				<p className='text-[11px] text-neutral-400'>
+					{row.original.availableStock} disponibles
+				</p>
+			</div>
+		),
+	},
+	{
+		id: 'distribution',
+		header: 'Distribución',
+		cell: ({ row }) => (
+			<div className='max-w-[160px]'>
+				<p className='truncate text-[11px] text-neutral-500'>
+					{row.original.distributionPreview}
+				</p>
+			</div>
+		),
+	},
+	{
+		id: 'statusBreakdown',
+		header: 'Estados',
+		cell: ({ row }) => (
+			<StockStatusBreakdown
+				row={row.original}
+				onOpenDetail={() => openProductDetail(row.original.productId)}
+			/>
+		),
+	},
+];
+
 const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) => {
 	const navigate = useNavigate();
 
@@ -320,129 +445,8 @@ const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) =
 		[navigate],
 	);
 
-	const columns = useMemo<ColumnDef<AppTableFeatures, StockCatalogRow>[]>(
-		() => [
-			{
-				id: 'name',
-				// Incluye la SKU en el valor filtrable para que el buscador (includesString)
-				// también encuentre por SKU, no solo por nombre.
-				accessorFn: (catalogRow) => `${catalogRow.name} ${catalogRow.sku}`,
-				header: 'Producto',
-				cell: ({ row }) => (
-					<div className='max-w-[280px] space-y-1'>
-						{row.original.productId ? (
-							<button
-								type='button'
-								onClick={() => openProductDetail(row.original.productId)}
-								title={row.original.name}
-								className='group inline-flex items-center gap-1 text-left font-semibold text-neutral-900 transition-colors hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400'>
-								<span className='line-clamp-2 break-words'>
-									{row.original.name}
-								</span>
-								<Icon
-									icon='HeroArrowTopRightOnSquare'
-									className='h-3.5 w-3.5 flex-none text-neutral-300 transition-colors group-hover:text-blue-500 dark:text-neutral-600'
-								/>
-							</button>
-						) : (
-							<p
-								className='line-clamp-2 break-words font-semibold text-neutral-900 dark:text-neutral-100'
-								title={row.original.name}>
-								{row.original.name}
-							</p>
-						)}
-						<div className='flex flex-wrap items-center gap-2 text-[11px] text-neutral-500'>
-							<span className='break-all'>SKU: {row.original.sku}</span>
-							<span>ID: {row.original.productId ?? 'N/D'}</span>
-						</div>
-						<div>
-							<Badge
-								variant='outline'
-								color={row.original.serialTracking ? 'emerald' : 'zinc'}
-								className='w-fit'>
-								{row.original.serialTracking ? 'Serializado' : 'Estándar'}
-							</Badge>
-						</div>
-					</div>
-				),
-			},
-			{
-				accessorKey: 'availableStock',
-				header: 'Disponible',
-				cell: ({ row }) => (
-					<div className='min-w-[64px]'>
-						<p className='text-lg font-semibold leading-none text-neutral-900 dark:text-neutral-100'>
-							{row.original.availableStock}
-						</p>
-					</div>
-				),
-			},
-			{
-				accessorKey: 'distributedStock',
-				header: 'Distribuido',
-				cell: ({ row }) => (
-					<div className='min-w-[78px]'>
-						<p className='text-base font-semibold text-neutral-900 dark:text-neutral-100'>
-							{row.original.distributedStock}
-						</p>
-						<p className='text-[11px] text-neutral-400'>
-							Sucursales: {row.original.branchesCount}
-						</p>
-					</div>
-				),
-			},
-			{
-				id: 'grades',
-				header: 'Grados',
-				cell: ({ row }) => (
-					<div className='max-w-[180px]'>
-						<p className='text-xs font-medium text-neutral-700 dark:text-neutral-200'>
-							{row.original.gradesCount} grados
-						</p>
-						<p className='mt-1 truncate text-[11px] text-neutral-500'>
-							{row.original.gradesPreview || 'Sin grados'}
-						</p>
-					</div>
-				),
-			},
-			{
-				accessorKey: 'totalStock',
-				header: 'Stock total',
-				cell: ({ row }) => (
-					<div className='min-w-[78px]'>
-						<Tooltip text='Stock total = disponible + reservado + en espera + en cotización + vendido. Ver el desglose en la columna Estados.'>
-							<p className='inline-block cursor-help text-base font-semibold text-neutral-900 underline decoration-dotted underline-offset-4 dark:text-neutral-100'>
-								{row.original.totalStock}
-							</p>
-						</Tooltip>
-						<p className='text-[11px] text-neutral-400'>
-							{row.original.availableStock} disponibles
-						</p>
-					</div>
-				),
-			},
-			{
-				id: 'distribution',
-				header: 'Distribución',
-				cell: ({ row }) => (
-					<div className='max-w-[160px]'>
-						<p className='truncate text-[11px] text-neutral-500'>
-							{row.original.distributionPreview}
-						</p>
-					</div>
-				),
-			},
-			{
-				id: 'statusBreakdown',
-				header: 'Estados',
-				cell: ({ row }) => (
-					<StockStatusBreakdown
-						row={row.original}
-						onOpenDetail={() => openProductDetail(row.original.productId)}
-					/>
-				),
-			},
-		],
+	const columns = useMemo(
+		() => buildStockCatalogColumns({ openProductDetail }),
 		[openProductDetail],
 	);
 

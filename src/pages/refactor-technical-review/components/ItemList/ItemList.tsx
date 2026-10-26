@@ -2,7 +2,7 @@
  * ItemList - Tabla reutilizable de series/ítems
  * Usado en: pages/items/index.tsx y BatchTabs.tsx
  */
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { createColumnHelper, PaginationState, OnChangeFn } from '@tanstack/react-table';
@@ -42,6 +42,208 @@ interface ItemListProps {
 	batchDate?: string;
 	customerName?: string;
 }
+
+const columnHelper = createColumnHelper<AppTableFeatures, IItem>();
+
+const buildItemColumns = ({
+	variant,
+	onOpenActions,
+	onPrint,
+	onDelete,
+}: {
+	variant: NonNullable<ItemListProps['variant']>;
+	onOpenActions: (item: IItem) => void;
+	onPrint: (item: IItem) => void;
+	onDelete: (item: IItem) => void;
+}) => {
+	const cols = [
+		columnHelper.display({
+			id: 'serial_number',
+			header: 'Serie',
+			cell: (info) => {
+				const item = info.row.original;
+				return (
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroQrCode' className='h-4 w-4 text-gray-400' />
+						<span className='font-mono text-sm font-medium text-gray-900 dark:text-gray-100'>
+							{item.serial_number}
+						</span>
+					</div>
+				);
+			},
+		}),
+
+		// Tipo
+		columnHelper.display({
+			id: 'equipment_type',
+			header: 'Tipo',
+			cell: (info) => {
+				const item = info.row.original;
+				const { label, icon } = resolveEquipmentTypeMeta(item.equipment_type);
+				return (
+					<Badge
+						variant='outline'
+						className='gap-2 rounded-full border-blue-200 bg-blue-50 px-2 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300'>
+						<Icon icon={icon as any} className='h-3 w-3' />
+						{label}
+					</Badge>
+				);
+			},
+		}),
+
+		// Estado revisión
+		columnHelper.display({
+			id: 'review_status',
+			header: 'Estado Revisión',
+			cell: (info) => <StatusBadge type='review' status={info.row.original.review_status} />,
+		}),
+
+		// Estado comercial
+		columnHelper.display({
+			id: 'current_status',
+			header: 'Estado Comercial',
+			cell: (info) => (
+				<StatusBadge type='commercial' status={info.row.original.current_status} />
+			),
+		}),
+
+		// Grado
+		columnHelper.display({
+			id: 'grade',
+			header: 'Grado',
+			cell: (info) => {
+				const item = info.row.original;
+				return extractValue(item.grade) ? (
+					<Badge
+						variant='outline'
+						className='gap-1 rounded-full border-yellow-200 bg-yellow-50 px-2 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'>
+						<Icon icon='HeroStar' className='h-3 w-3' />
+						{extractValue(item.grade)}
+						{extractValue(item.suggested_grade) &&
+							extractValue(item.grade) !== extractValue(item.suggested_grade) && (
+								<span className='ml-1 text-[10px] text-yellow-600/70 dark:text-yellow-400/70'>
+									(Sug: {extractValue(item.suggested_grade)})
+								</span>
+							)}
+					</Badge>
+				) : extractValue(item.suggested_grade) ? (
+					<Badge
+						variant='outline'
+						className='gap-1 rounded-full border-gray-200 bg-gray-50 px-2 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'>
+						<Icon icon='HeroSparkles' className='h-3 w-3' />
+						{extractValue(item.suggested_grade)}
+					</Badge>
+				) : (
+					<span className='text-xs text-gray-400'>Pendiente</span>
+				);
+			},
+		}),
+	] as any[];
+
+	if (variant === 'global') {
+		cols.splice(
+			1,
+			0,
+			// Producto (solo global)
+			columnHelper.display({
+				id: 'product_name',
+				header: 'Producto',
+				cell: (info) => {
+					const item = info.row.original as any;
+					return (
+						<span className='text-sm text-gray-700 dark:text-gray-300'>
+							{item?.product?.name || item?.product_name || 'Sin producto'}
+						</span>
+					);
+				},
+			}),
+		);
+
+		cols.push(
+			// Bodega (solo global)
+			columnHelper.display({
+				id: 'warehouse_name',
+				header: 'Bodega',
+				cell: (info) => {
+					const item = info.row.original as any;
+					return (
+						<span className='text-sm text-gray-700 dark:text-gray-300'>
+							{item?.warehouse?.name || item?.warehouse_name || '—'}
+						</span>
+					);
+				},
+			}),
+			// Última actualización (solo global)
+			columnHelper.display({
+				id: 'updated_at',
+				header: 'Actualización',
+				cell: (info) => (
+					<span className='text-sm text-gray-500 dark:text-gray-400'>
+						{formatDateTime(
+							info.row.original.updated_at || info.row.original.created_at,
+						)}
+					</span>
+				),
+			}),
+		);
+	}
+
+	// Acciones
+	cols.push(
+		columnHelper.display({
+			id: 'actions',
+			header: 'Acciones',
+			cell: (info) => {
+				const item = info.row.original;
+				const reviewStatus = (extractValue(item.review_status) || '').toLowerCase();
+				const isApproved = reviewStatus === 'approved';
+				return (
+					<div className='inline-flex w-full justify-end gap-2'>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={(e) => {
+								e.stopPropagation();
+								onOpenActions(item);
+							}}
+							title='Ver acciones'>
+							<Icon icon='HeroEye' className='h-4 w-4' />
+						</Button>
+						<Button
+							variant='outline'
+							size='sm'
+							color='blue'
+							onClick={(e) => {
+								e.stopPropagation();
+								onPrint(item);
+							}}
+							title='Imprimir etiqueta'>
+							<Icon icon='HeroPrinter' className='h-4 w-4' />
+						</Button>
+						<Button
+							variant='outline'
+							size='sm'
+							color='red'
+							isDisable={isApproved}
+							onClick={(e) => {
+								e.stopPropagation();
+								onDelete(item);
+							}}
+							title={
+								isApproved
+									? 'No se puede eliminar una revisión aprobada'
+									: 'Eliminar revisión'
+							}>
+							<Icon icon='HeroTrash' className='h-4 w-4' />
+						</Button>
+					</div>
+				);
+			},
+		}),
+	);
+
+	return cols;
+};
 
 const ItemList: React.FC<ItemListProps> = ({
 	items,
@@ -116,10 +318,31 @@ const ItemList: React.FC<ItemListProps> = ({
 	const [actionModalOpen, setActionModalOpen] = useState(false);
 	const [selectedActionItem, setSelectedActionItem] = useState<IItem | null>(null);
 
-	const handleActionClick = (item: IItem) => {
+	const handleActionClick = useCallback((item: IItem) => {
 		setSelectedActionItem(item);
 		setActionModalOpen(true);
-	};
+	}, []);
+
+	const handlePrintItem = useCallback((item: IItem) => {
+		setItemToPrint(item);
+		setIsPrintLabelOpen(true);
+	}, []);
+
+	const handleAskDeleteItem = useCallback((item: IItem) => {
+		setItemToDelete(item);
+		setDeleteModalOpen(true);
+	}, []);
+
+	const columns = useMemo(
+		() =>
+			buildItemColumns({
+				variant,
+				onOpenActions: handleActionClick,
+				onPrint: handlePrintItem,
+				onDelete: handleAskDeleteItem,
+			}),
+		[variant, handleActionClick, handlePrintItem, handleAskDeleteItem],
+	);
 
 	const goToReview = () => {
 		if (selectedActionItem) {
@@ -140,201 +363,6 @@ const ItemList: React.FC<ItemListProps> = ({
 	};
 
 	// TanStack Table setup (debe ejecutarse SIEMPRE antes de cualquier return condicional)
-	const columnHelper = useMemo(() => createColumnHelper<AppTableFeatures, IItem>(), []);
-
-	const columns = useMemo(() => {
-		const cols = [
-			columnHelper.display({
-				id: 'serial_number',
-				header: 'Serie',
-				cell: (info) => {
-					const item = info.row.original;
-					return (
-						<div className='flex items-center gap-2'>
-							<Icon icon='HeroQrCode' className='h-4 w-4 text-gray-400' />
-							<span className='font-mono text-sm font-medium text-gray-900 dark:text-gray-100'>
-								{item.serial_number}
-							</span>
-						</div>
-					);
-				},
-			}),
-
-			// Tipo
-			columnHelper.display({
-				id: 'equipment_type',
-				header: 'Tipo',
-				cell: (info) => {
-					const item = info.row.original;
-					const { label, icon } = resolveEquipmentTypeMeta(item.equipment_type);
-					return (
-						<Badge
-							variant='outline'
-							className='gap-2 rounded-full border-blue-200 bg-blue-50 px-2 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300'>
-							<Icon icon={icon as any} className='h-3 w-3' />
-							{label}
-						</Badge>
-					);
-				},
-			}),
-
-			// Estado revisión
-			columnHelper.display({
-				id: 'review_status',
-				header: 'Estado Revisión',
-				cell: (info) => (
-					<StatusBadge type='review' status={info.row.original.review_status} />
-				),
-			}),
-
-			// Estado comercial
-			columnHelper.display({
-				id: 'current_status',
-				header: 'Estado Comercial',
-				cell: (info) => (
-					<StatusBadge type='commercial' status={info.row.original.current_status} />
-				),
-			}),
-
-			// Grado
-			columnHelper.display({
-				id: 'grade',
-				header: 'Grado',
-				cell: (info) => {
-					const item = info.row.original;
-					return extractValue(item.grade) ? (
-						<Badge
-							variant='outline'
-							className='gap-1 rounded-full border-yellow-200 bg-yellow-50 px-2 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'>
-							<Icon icon='HeroStar' className='h-3 w-3' />
-							{extractValue(item.grade)}
-							{extractValue(item.suggested_grade) &&
-								extractValue(item.grade) !== extractValue(item.suggested_grade) && (
-									<span className='ml-1 text-[10px] text-yellow-600/70 dark:text-yellow-400/70'>
-										(Sug: {extractValue(item.suggested_grade)})
-									</span>
-								)}
-						</Badge>
-					) : extractValue(item.suggested_grade) ? (
-						<Badge
-							variant='outline'
-							className='gap-1 rounded-full border-gray-200 bg-gray-50 px-2 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'>
-							<Icon icon='HeroSparkles' className='h-3 w-3' />
-							{extractValue(item.suggested_grade)}
-						</Badge>
-					) : (
-						<span className='text-xs text-gray-400'>Pendiente</span>
-					);
-				},
-			}),
-		] as any[];
-
-		if (variant === 'global') {
-			cols.splice(
-				1,
-				0,
-				// Producto (solo global)
-				columnHelper.display({
-					id: 'product_name',
-					header: 'Producto',
-					cell: (info) => {
-						const item = info.row.original as any;
-						return (
-							<span className='text-sm text-gray-700 dark:text-gray-300'>
-								{item?.product?.name || item?.product_name || 'Sin producto'}
-							</span>
-						);
-					},
-				}),
-			);
-
-			cols.push(
-				// Bodega (solo global)
-				columnHelper.display({
-					id: 'warehouse_name',
-					header: 'Bodega',
-					cell: (info) => {
-						const item = info.row.original as any;
-						return (
-							<span className='text-sm text-gray-700 dark:text-gray-300'>
-								{item?.warehouse?.name || item?.warehouse_name || '—'}
-							</span>
-						);
-					},
-				}),
-				// Última actualización (solo global)
-				columnHelper.display({
-					id: 'updated_at',
-					header: 'Actualización',
-					cell: (info) => (
-						<span className='text-sm text-gray-500 dark:text-gray-400'>
-							{formatDateTime(
-								info.row.original.updated_at || info.row.original.created_at,
-							)}
-						</span>
-					),
-				}),
-			);
-		}
-
-		// Acciones
-		cols.push(
-			columnHelper.display({
-				id: 'actions',
-				header: 'Acciones',
-				cell: (info) => {
-					const item = info.row.original;
-					const reviewStatus = (extractValue(item.review_status) || '').toLowerCase();
-					const isApproved = reviewStatus === 'approved';
-					return (
-						<div className='inline-flex w-full justify-end gap-2'>
-							<Button
-								variant='outline'
-								size='sm'
-								onClick={(e) => {
-									e.stopPropagation();
-									handleActionClick(item);
-								}}
-								title='Ver acciones'>
-								<Icon icon='HeroEye' className='h-4 w-4' />
-							</Button>
-							<Button
-								variant='outline'
-								size='sm'
-								color='blue'
-								onClick={(e) => {
-									e.stopPropagation();
-									setItemToPrint(item);
-									setIsPrintLabelOpen(true);
-								}}
-								title='Imprimir etiqueta'>
-								<Icon icon='HeroPrinter' className='h-4 w-4' />
-							</Button>
-							<Button
-								variant='outline'
-								size='sm'
-								color='red'
-								isDisable={isApproved}
-								onClick={(e) => {
-									e.stopPropagation();
-									setItemToDelete(item);
-									setDeleteModalOpen(true);
-								}}
-								title={
-									isApproved
-										? 'No se puede eliminar una revisión aprobada'
-										: 'Eliminar revisión'
-								}>
-								<Icon icon='HeroTrash' className='h-4 w-4' />
-							</Button>
-						</div>
-					);
-				},
-			}),
-		);
-
-		return cols;
-	}, [columnHelper, variant]);
 
 	const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
 		const current: PaginationState = {

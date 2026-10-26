@@ -10,6 +10,71 @@ import { IProduct } from '@/interface/product.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
+const buildLatestProductColumns = (): ColumnDef<AppTableFeatures, IProduct>[] => [
+	{
+		accessorKey: 'name',
+		header: 'Producto',
+		cell: ({ row }) => (
+			<div className='flex items-center gap-3'>
+				<div className='flex h-8 w-8 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800'>
+					<Icon icon='HeroTag' className='text-zinc-400' />
+				</div>
+				<div>
+					<div className='font-medium text-zinc-900 dark:text-zinc-100'>
+						{row.original.name}
+					</div>
+					<div className='text-[10px] text-zinc-400'>
+						{row.original?.brand?.name || 'Generico'}
+					</div>
+				</div>
+			</div>
+		),
+	},
+	{
+		accessorKey: 'sku',
+		header: 'SKU',
+		cell: ({ row }) => (
+			<span className='font-mono text-xs text-zinc-500'>{row.original.sku}</span>
+		),
+	},
+	{
+		accessorKey: 'stock',
+		header: 'Stock',
+		cell: ({ row }) => (
+			<Badge
+				variant='outline'
+				className={
+					(row.original.stock || 0) > 0
+						? 'border-emerald-200 px-2 text-emerald-600'
+						: 'border-red-200 px-2 text-red-600'
+				}>
+				{row.original.stock || 0} un.
+			</Badge>
+		),
+	},
+	{
+		accessorKey: 'price',
+		header: 'Precio',
+		cell: ({ row }) => (
+			<span className='font-semibold text-zinc-700 dark:text-zinc-300'>
+				${row.original.price?.toLocaleString('es-CL') || '0'}
+			</span>
+		),
+	},
+	{
+		accessorKey: 'is_active',
+		header: 'Estado',
+		cell: ({ row }) => (
+			<Badge
+				color={row.original.is_active ? 'blue' : 'gray'}
+				variant='solid'
+				className={row.original.is_active ? 'bg-emerald-500 px-2' : 'bg-gray-500 px-2'}>
+				{row.original.is_active ? 'Activo' : 'Inactivo'}
+			</Badge>
+		),
+	},
+];
+
 const LatestProductsTable: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
@@ -43,75 +108,7 @@ const LatestProductsTable: React.FC = () => {
 			.slice(0, 5);
 	}, [products]);
 
-	const columns = useMemo<ColumnDef<AppTableFeatures, IProduct>[]>(
-		() => [
-			{
-				accessorKey: 'name',
-				header: 'Producto',
-				cell: ({ row }) => (
-					<div className='flex items-center gap-3'>
-						<div className='flex h-8 w-8 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800'>
-							<Icon icon='HeroTag' className='text-zinc-400' />
-						</div>
-						<div>
-							<div className='font-medium text-zinc-900 dark:text-zinc-100'>
-								{row.original.name}
-							</div>
-							<div className='text-[10px] text-zinc-400'>
-								{row.original?.brand?.name || 'Generico'}
-							</div>
-						</div>
-					</div>
-				),
-			},
-			{
-				accessorKey: 'sku',
-				header: 'SKU',
-				cell: ({ row }) => (
-					<span className='font-mono text-xs text-zinc-500'>{row.original.sku}</span>
-				),
-			},
-			{
-				accessorKey: 'stock',
-				header: 'Stock',
-				cell: ({ row }) => (
-					<Badge
-						variant='outline'
-						className={
-							(row.original.stock || 0) > 0
-								? 'border-emerald-200 px-2 text-emerald-600'
-								: 'border-red-200 px-2 text-red-600'
-						}>
-						{row.original.stock || 0} un.
-					</Badge>
-				),
-			},
-			{
-				accessorKey: 'price',
-				header: 'Precio',
-				cell: ({ row }) => (
-					<span className='font-semibold text-zinc-700 dark:text-zinc-300'>
-						${row.original.price?.toLocaleString('es-CL') || '0'}
-					</span>
-				),
-			},
-			{
-				accessorKey: 'is_active',
-				header: 'Estado',
-				cell: ({ row }) => (
-					<Badge
-						color={row.original.is_active ? 'blue' : 'gray'}
-						variant='solid'
-						className={
-							row.original.is_active ? 'bg-emerald-500 px-2' : 'bg-gray-500 px-2'
-						}>
-						{row.original.is_active ? 'Activo' : 'Inactivo'}
-					</Badge>
-				),
-			},
-		],
-		[],
-	);
+	const columns = useMemo(() => buildLatestProductColumns(), []);
 
 	return (
 		<Card className='border-zinc-100 shadow-sm dark:border-zinc-800'>

@@ -25,13 +25,243 @@ interface CategoriesTableProps {
 	onToggleStatus: (category: ICategory) => void;
 }
 
-const CategoriesTable: React.FC<CategoriesTableProps> = ({
-	rows,
+const buildCategoryColumns = ({
+	isDarkTheme,
+	openDropdownId,
+	setOpenDropdownId,
+	actionRefs,
 	onView,
 	onEdit,
 	onDelete,
-	onToggleStatus,
-}) => {
+}: {
+	isDarkTheme: boolean;
+	openDropdownId: string | null;
+	setOpenDropdownId: React.Dispatch<React.SetStateAction<string | null>>;
+	actionRefs: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
+	onView: CategoriesTableProps['onView'];
+	onEdit: CategoriesTableProps['onEdit'];
+	onDelete: CategoriesTableProps['onDelete'];
+}): ColumnDef<AppTableFeatures, CategoryTableRow>[] => [
+	{
+		id: 'image',
+		header: 'Imagen',
+		enableSorting: false,
+		cell: ({ row }) => {
+			const img = row.original.category.image;
+			return (
+				<div className='h-10 w-10 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-700'>
+					{img?.url ? (
+						<img
+							src={img.thumb || img.url}
+							alt={img.alt || row.original.category.name}
+							className='h-full w-full object-cover'
+						/>
+					) : (
+						<div className='flex h-full w-full items-center justify-center bg-zinc-100 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
+							N/A
+						</div>
+					)}
+				</div>
+			);
+		},
+	},
+	{
+		id: 'name',
+		accessorFn: (row) => row.category.name,
+		header: 'Categoria',
+		enableSorting: false,
+		cell: ({ row }) => {
+			const { category, depth, parentNames } = row.original;
+			const fullPath = parentNames.length
+				? `${parentNames.join(' > ')} > ${category.name}`
+				: category.name;
+			const indent = depth ? depth * 16 : 0;
+			return (
+				<div
+					className={`space-y-1 ${
+						depth
+							? 'border-l border-dashed border-indigo-200 pl-4 dark:border-indigo-600/60'
+							: ''
+					}`}
+					style={{ marginLeft: indent }}>
+					<div className='flex items-center gap-2'>
+						{depth > 0 && (
+							<span
+								className='text-xs text-indigo-500 dark:text-indigo-300'
+								aria-hidden>
+								↳
+							</span>
+						)}
+						<span
+							className={`text-sm font-medium ${isDarkTheme ? 'text-indigo-300' : 'text-gray-900'}`}>
+							{category.name}
+						</span>
+					</div>
+					<div className='text-xs text-gray-500 dark:text-gray-400'>
+						{row.original.parentNames.length === 0
+							? 'Principal'
+							: category.description || ''}
+					</div>
+					{parentNames.length > 0 && (
+						<div className='text-xs text-gray-400 dark:text-gray-500'>
+							Ruta: {fullPath}
+						</div>
+					)}
+				</div>
+			);
+		},
+	},
+	{
+		id: 'parent',
+		header: 'Padre',
+		enableSorting: false,
+		cell: ({ row }) => {
+			const { parentNames } = row.original;
+			const parentLabel =
+				parentNames.length === 0
+					? 'Principal'
+					: parentNames[parentNames.length - 1] || 'Principal';
+			return <div className='text-sm'>{parentLabel === ' ' ? 'Principal' : parentLabel}</div>;
+		},
+	},
+	{
+		id: 'products',
+		accessorFn: (row) => row.category.products_count ?? 0,
+		header: 'Productos',
+		enableSorting: false,
+		cell: ({ row }) => (
+			<div className='text-sm'>{row.original.category.products_count ?? 0}</div>
+		),
+	},
+	{
+		id: 'status',
+		accessorFn: (row) => row.category.is_active,
+		header: 'Estado',
+		enableSorting: false,
+		cell: ({ row }) => (
+			<Badge
+				color={row.original.category.is_active ? 'emerald' : 'red'}
+				variant='outline'
+				className='text-xs'>
+				{row.original.category.is_active ? 'Activa' : 'Inactiva'}
+			</Badge>
+		),
+	},
+	{
+		id: 'actions',
+		header: 'Acciones',
+		enableSorting: false,
+		cell: ({ row }) => {
+			const { category } = row.original;
+			const idKey = String(category.id ?? row.id);
+			const menuItemClass = 'flex w-full items-center gap-2 px-4 py-2 text-left';
+
+			return (
+				<div
+					ref={(el) => {
+						actionRefs.current[idKey] = el;
+					}}
+					className='flex items-center justify-end space-x-2'>
+					<div className='hidden space-x-2 sm:flex'>
+						<Tooltip text='Ir a detalles'>
+							<Button
+								aria-label='Ver detalles'
+								size='sm'
+								variant='outline'
+								color='violet'
+								className='group'
+								onClick={() => onView(category)}>
+								<Icon
+									icon='HeroEye'
+									className='h-4 w-4 text-violet-600 group-hover:text-violet-400'
+								/>
+							</Button>
+						</Tooltip>
+						<Tooltip text='Editar categoria'>
+							<Button
+								aria-label='Editar categoria'
+								size='sm'
+								variant='outline'
+								color='lime'
+								onClick={() => onEdit(category)}
+								className='group'>
+								<Icon
+									icon='HeroPencilSquare'
+									className='h-4 w-4 text-lime-600 group-hover:text-lime-400'
+								/>
+							</Button>
+						</Tooltip>
+						<Tooltip text='Eliminar categoria'>
+							<Button
+								aria-label='Eliminar categoria'
+								size='sm'
+								variant='outline'
+								color='red'
+								onClick={() => onDelete(category)}
+								className='group'>
+								<Icon
+									icon='HeroTrash'
+									className='h-4 w-4 text-red-600 group-hover:text-red-400'
+								/>
+							</Button>
+						</Tooltip>
+					</div>
+
+					<div className='relative sm:hidden'>
+						<Button
+							size='sm'
+							variant='outline'
+							onClick={() =>
+								setOpenDropdownId((prev) => (prev === idKey ? null : idKey))
+							}
+							aria-expanded={openDropdownId === idKey}
+							aria-controls={`category-actions-${idKey}`}>
+							<Icon icon='HeroDotsVertical' className='h-4 w-4' />
+						</Button>
+
+						{openDropdownId === idKey && (
+							<div
+								id={`category-actions-${idKey}`}
+								className='absolute right-0 z-20 mt-2 w-44 rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800'>
+								<Tooltip text='Ir a detalle'>
+									<Button
+										onClick={() => {
+											onView(category);
+											setOpenDropdownId(null);
+										}}
+										className={menuItemClass}>
+										<Icon icon='HeroEye' className='h-4 w-4' />
+										Ver
+									</Button>
+								</Tooltip>
+								<button
+									onClick={() => {
+										onEdit(category);
+										setOpenDropdownId(null);
+									}}
+									className={menuItemClass}>
+									<Icon icon='HeroPencilSquare' className='h-4 w-4' />
+									Editar
+								</button>
+								<button
+									onClick={() => {
+										onDelete(category);
+										setOpenDropdownId(null);
+									}}
+									className={`${menuItemClass} text-red-600`}>
+									<Icon icon='HeroTrash' className='h-4 w-4' />
+									Eliminar
+								</button>
+							</div>
+						)}
+					</div>
+				</div>
+			);
+		},
+	},
+];
+
+const CategoriesTable: React.FC<CategoriesTableProps> = ({ rows, onView, onEdit, onDelete }) => {
 	const { isDarkTheme } = useDarkMode();
 	const [openDropdownId, setOpenDropdownId] = React.useState<string | null>(null);
 	const actionRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
@@ -92,231 +322,18 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 		setStatusFilter('all');
 	}, []);
 
-	const columns = React.useMemo<ColumnDef<AppTableFeatures, CategoryTableRow>[]>(
-		() => [
-			{
-				id: 'image',
-				header: 'Imagen',
-				enableSorting: false,
-				cell: ({ row }) => {
-					const img = row.original.category.image;
-					return (
-						<div className='h-10 w-10 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-700'>
-							{img?.url ? (
-								<img
-									src={img.thumb || img.url}
-									alt={img.alt || row.original.category.name}
-									className='h-full w-full object-cover'
-								/>
-							) : (
-								<div className='flex h-full w-full items-center justify-center bg-zinc-100 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
-									N/A
-								</div>
-							)}
-						</div>
-					);
-				},
-			},
-			{
-				id: 'name',
-				accessorFn: (row) => row.category.name,
-				header: 'Categoria',
-				enableSorting: false,
-				cell: ({ row }) => {
-					const { category, depth, parentNames } = row.original;
-					const fullPath = parentNames.length
-						? `${parentNames.join(' > ')} > ${category.name}`
-						: category.name;
-					const indent = depth ? depth * 16 : 0;
-					return (
-						<div
-							className={`space-y-1 ${
-								depth
-									? 'border-l border-dashed border-indigo-200 pl-4 dark:border-indigo-600/60'
-									: ''
-							}`}
-							style={{ marginLeft: indent }}>
-							<div className='flex items-center gap-2'>
-								{depth > 0 && (
-									<span
-										className='text-xs text-indigo-500 dark:text-indigo-300'
-										aria-hidden>
-										↳
-									</span>
-								)}
-								<span
-									className={`text-sm font-medium ${isDarkTheme ? 'text-indigo-300' : 'text-gray-900'}`}>
-									{category.name}
-								</span>
-							</div>
-							<div className='text-xs text-gray-500 dark:text-gray-400'>
-								{row.original.parentNames.length === 0
-									? 'Principal'
-									: category.description || ''}
-							</div>
-							{parentNames.length > 0 && (
-								<div className='text-xs text-gray-400 dark:text-gray-500'>
-									Ruta: {fullPath}
-								</div>
-							)}
-						</div>
-					);
-				},
-			},
-			{
-				id: 'parent',
-				header: 'Padre',
-				enableSorting: false,
-				cell: ({ row }) => {
-					const { parentNames } = row.original;
-					const parentLabel =
-						parentNames.length === 0
-							? 'Principal'
-							: parentNames[parentNames.length - 1] || 'Principal';
-					return (
-						<div className='text-sm'>
-							{parentLabel === ' ' ? 'Principal' : parentLabel}
-						</div>
-					);
-				},
-			},
-			{
-				id: 'products',
-				accessorFn: (row) => row.category.products_count ?? 0,
-				header: 'Productos',
-				enableSorting: false,
-				cell: ({ row }) => (
-					<div className='text-sm'>{row.original.category.products_count ?? 0}</div>
-				),
-			},
-			{
-				id: 'status',
-				accessorFn: (row) => row.category.is_active,
-				header: 'Estado',
-				enableSorting: false,
-				cell: ({ row }) => (
-					<Badge
-						color={row.original.category.is_active ? 'emerald' : 'red'}
-						variant='outline'
-						className='text-xs'>
-						{row.original.category.is_active ? 'Activa' : 'Inactiva'}
-					</Badge>
-				),
-			},
-			{
-				id: 'actions',
-				header: 'Acciones',
-				enableSorting: false,
-				cell: ({ row }) => {
-					const { category } = row.original;
-					const idKey = String(category.id ?? row.id);
-					const menuItemClass = 'flex w-full items-center gap-2 px-4 py-2 text-left';
-
-					return (
-						<div
-							ref={(el) => {
-								actionRefs.current[idKey] = el;
-							}}
-							className='flex items-center justify-end space-x-2'>
-							<div className='hidden space-x-2 sm:flex'>
-								<Tooltip text='Ir a detalles'>
-									<Button
-										aria-label='Ver detalles'
-										size='sm'
-										variant='outline'
-										color='violet'
-										className='group'
-										onClick={() => onView(category)}>
-										<Icon
-											icon='HeroEye'
-											className='h-4 w-4 text-violet-600 group-hover:text-violet-400'
-										/>
-									</Button>
-								</Tooltip>
-								<Tooltip text='Editar categoria'>
-									<Button
-										aria-label='Editar categoria'
-										size='sm'
-										variant='outline'
-										color='lime'
-										onClick={() => onEdit(category)}
-										className='group'>
-										<Icon
-											icon='HeroPencilSquare'
-											className='h-4 w-4 text-lime-600 group-hover:text-lime-400'
-										/>
-									</Button>
-								</Tooltip>
-								<Tooltip text='Eliminar categoria'>
-									<Button
-										aria-label='Eliminar categoria'
-										size='sm'
-										variant='outline'
-										color='red'
-										onClick={() => onDelete(category)}
-										className='group'>
-										<Icon
-											icon='HeroTrash'
-											className='h-4 w-4 text-red-600 group-hover:text-red-400'
-										/>
-									</Button>
-								</Tooltip>
-							</div>
-
-							<div className='relative sm:hidden'>
-								<Button
-									size='sm'
-									variant='outline'
-									onClick={() =>
-										setOpenDropdownId((prev) => (prev === idKey ? null : idKey))
-									}
-									aria-expanded={openDropdownId === idKey}
-									aria-controls={`category-actions-${idKey}`}>
-									<Icon icon='HeroDotsVertical' className='h-4 w-4' />
-								</Button>
-
-								{openDropdownId === idKey && (
-									<div
-										id={`category-actions-${idKey}`}
-										className='absolute right-0 z-20 mt-2 w-44 rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800'>
-										<Tooltip text='Ir a detalle'>
-											<Button
-												onClick={() => {
-													onView(category);
-													setOpenDropdownId(null);
-												}}
-												className={menuItemClass}>
-												<Icon icon='HeroEye' className='h-4 w-4' />
-												Ver
-											</Button>
-										</Tooltip>
-										<button
-											onClick={() => {
-												onEdit(category);
-												setOpenDropdownId(null);
-											}}
-											className={menuItemClass}>
-											<Icon icon='HeroPencilSquare' className='h-4 w-4' />
-											Editar
-										</button>
-										<button
-											onClick={() => {
-												onDelete(category);
-												setOpenDropdownId(null);
-											}}
-											className={`${menuItemClass} text-red-600`}>
-											<Icon icon='HeroTrash' className='h-4 w-4' />
-											Eliminar
-										</button>
-									</div>
-								)}
-							</div>
-						</div>
-					);
-				},
-			},
-		],
-		[isDarkTheme, onDelete, onEdit, onToggleStatus, onView, openDropdownId],
+	const columns = React.useMemo(
+		() =>
+			buildCategoryColumns({
+				isDarkTheme,
+				openDropdownId,
+				setOpenDropdownId,
+				actionRefs,
+				onView,
+				onEdit,
+				onDelete,
+			}),
+		[isDarkTheme, openDropdownId, onView, onEdit, onDelete],
 	);
 
 	return (

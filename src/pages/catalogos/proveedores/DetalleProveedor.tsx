@@ -29,6 +29,72 @@ type CustomerRow = {
 
 const columnHelper = createColumnHelper<AppTableFeatures, CustomerRow>();
 
+const buildAssociatedCustomerColumns = ({
+	detach,
+	isEditable,
+	detaching,
+}: {
+	detach: ReturnType<typeof useSupplierCustomers>['detach'];
+	isEditable: boolean;
+	detaching: boolean;
+}) =>
+	columnHelper.columns([
+		columnHelper.accessor('name', {
+			header: 'Nombre',
+			cell: (info) => (
+				<span className='font-medium text-gray-900 dark:text-white'>{info.getValue()}</span>
+			),
+		}),
+		columnHelper.display({
+			id: 'actions',
+			header: 'Acciones',
+			cell: ({ row }) => (
+				<Button
+					color='red'
+					size='sm'
+					icon='HeroXMark'
+					onClick={() => detach([row.original.id])}
+					isDisable={!isEditable || detaching}
+					isLoading={detaching}>
+					{detaching ? 'Desasociando...' : 'Desasociar'}
+				</Button>
+			),
+		}),
+	]);
+
+const buildAvailableCustomerColumns = ({
+	attach,
+	isEditable,
+	attaching,
+}: {
+	attach: ReturnType<typeof useSupplierCustomers>['attach'];
+	isEditable: boolean;
+	attaching: boolean;
+}) =>
+	columnHelper.columns([
+		columnHelper.accessor('name', {
+			header: 'Nombre',
+			cell: (info) => (
+				<span className='font-medium text-gray-900 dark:text-white'>{info.getValue()}</span>
+			),
+		}),
+		columnHelper.display({
+			id: 'actions',
+			header: 'Acciones',
+			cell: ({ row }) => (
+				<Button
+					color='blue'
+					size='sm'
+					icon='HeroPlus'
+					onClick={() => attach([row.original.id])}
+					isDisable={!isEditable || attaching}
+					isLoading={attaching}>
+					{attaching ? 'Asociando...' : 'Asociar'}
+				</Button>
+			),
+		}),
+	]);
+
 const DetalleProveedorPage: React.FC = () => {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
@@ -168,63 +234,13 @@ const DetalleProveedorPage: React.FC = () => {
 	}, [allCustomers, associatedCustomers]);
 
 	const associatedColumns = useMemo(
-		() =>
-			columnHelper.columns([
-				columnHelper.accessor('name', {
-					header: 'Nombre',
-					cell: (info) => (
-						<span className='font-medium text-gray-900 dark:text-white'>
-							{info.getValue()}
-						</span>
-					),
-				}),
-				columnHelper.display({
-					id: 'actions',
-					header: 'Acciones',
-					cell: ({ row }) => (
-						<Button
-							color='red'
-							size='sm'
-							icon='HeroXMark'
-							onClick={() => detach([row.original.id])}
-							isDisable={!isEditable || detaching}
-							isLoading={detaching}>
-							{detaching ? 'Desasociando...' : 'Desasociar'}
-						</Button>
-					),
-				}),
-			]),
+		() => buildAssociatedCustomerColumns({ detach, isEditable, detaching }),
 		[detach, isEditable, detaching],
 	);
 
 	// Columnas para clientes DISPONIBLES
 	const availableColumns = useMemo(
-		() =>
-			columnHelper.columns([
-				columnHelper.accessor('name', {
-					header: 'Nombre',
-					cell: (info) => (
-						<span className='font-medium text-gray-900 dark:text-white'>
-							{info.getValue()}
-						</span>
-					),
-				}),
-				columnHelper.display({
-					id: 'actions',
-					header: 'Acciones',
-					cell: ({ row }) => (
-						<Button
-							color='blue'
-							size='sm'
-							icon='HeroPlus'
-							onClick={() => attach([row.original.id])}
-							isDisable={!isEditable || attaching}
-							isLoading={attaching}>
-							{attaching ? 'Asociando...' : 'Asociar'}
-						</Button>
-					),
-				}),
-			]),
+		() => buildAvailableCustomerColumns({ attach, isEditable, attaching }),
 		[attach, isEditable, attaching],
 	);
 

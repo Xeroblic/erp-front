@@ -25,6 +25,60 @@ type CustomerRow = {
 
 const columnHelper = createColumnHelper<AppTableFeatures, CustomerRow>();
 
+const buildAssociatedCustomerColumns = ({
+	detach,
+}: {
+	detach: ReturnType<typeof useSupplierCustomers>['detach'];
+}) =>
+	columnHelper.columns([
+		columnHelper.accessor('name', {
+			header: 'Nombre',
+			cell: (info) => (
+				<span className='font-medium text-gray-900 dark:text-white'>{info.getValue()}</span>
+			),
+		}),
+		columnHelper.display({
+			id: 'actions',
+			header: 'Acciones',
+			cell: ({ row }) => (
+				<Button
+					color='red'
+					size='sm'
+					icon='HeroXMark'
+					onClick={() => detach([row.original.id])}>
+					Desasociar
+				</Button>
+			),
+		}),
+	]);
+
+const buildAvailableCustomerColumns = ({
+	attach,
+}: {
+	attach: ReturnType<typeof useSupplierCustomers>['attach'];
+}) =>
+	columnHelper.columns([
+		columnHelper.accessor('name', {
+			header: 'Nombre',
+			cell: (info) => (
+				<span className='font-medium text-gray-900 dark:text-white'>{info.getValue()}</span>
+			),
+		}),
+		columnHelper.display({
+			id: 'actions',
+			header: 'Acciones',
+			cell: ({ row }) => (
+				<Button
+					color='blue'
+					size='sm'
+					icon='HeroPlus'
+					onClick={() => attach([row.original.id])}>
+					Asociar
+				</Button>
+			),
+		}),
+	]);
+
 const DetalleProveedor: React.FC<DetalleProveedorProps> = ({
 	isOpen,
 	setIsOpen,
@@ -67,62 +121,10 @@ const DetalleProveedor: React.FC<DetalleProveedorProps> = ({
 	}, [allCustomers, associatedCustomers]);
 
 	// Columnas para clientes ASOCIADOS
-	const associatedColumns = useMemo(
-		() =>
-			columnHelper.columns([
-				columnHelper.accessor('name', {
-					header: 'Nombre',
-					cell: (info) => (
-						<span className='font-medium text-gray-900 dark:text-white'>
-							{info.getValue()}
-						</span>
-					),
-				}),
-				columnHelper.display({
-					id: 'actions',
-					header: 'Acciones',
-					cell: ({ row }) => (
-						<Button
-							color='red'
-							size='sm'
-							icon='HeroXMark'
-							onClick={() => detach([row.original.id])}>
-							Desasociar
-						</Button>
-					),
-				}),
-			]),
-		[detach],
-	);
+	const associatedColumns = useMemo(() => buildAssociatedCustomerColumns({ detach }), [detach]);
 
 	// Columnas para clientes DISPONIBLES
-	const availableColumns = useMemo(
-		() =>
-			columnHelper.columns([
-				columnHelper.accessor('name', {
-					header: 'Nombre',
-					cell: (info) => (
-						<span className='font-medium text-gray-900 dark:text-white'>
-							{info.getValue()}
-						</span>
-					),
-				}),
-				columnHelper.display({
-					id: 'actions',
-					header: 'Acciones',
-					cell: ({ row }) => (
-						<Button
-							color='blue'
-							size='sm'
-							icon='HeroPlus'
-							onClick={() => attach([row.original.id])}>
-							Asociar
-						</Button>
-					),
-				}),
-			]),
-		[attach],
-	);
+	const availableColumns = useMemo(() => buildAvailableCustomerColumns({ attach }), [attach]);
 
 	// Tabla para clientes ASOCIADOS
 	const associatedTable = useTable({

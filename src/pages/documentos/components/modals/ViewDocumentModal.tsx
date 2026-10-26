@@ -29,6 +29,74 @@ type ViewDocumentModalProps = {
 	loading?: boolean;
 };
 
+const buildAttachmentColumns = ({
+	onDeleteAttachment,
+}: {
+	onDeleteAttachment: ViewDocumentModalProps['onDeleteAttachment'];
+}): ColumnDef<AppTableFeatures, IDocumentAttachment>[] => [
+	{
+		accessorKey: 'file_name',
+		header: 'Archivo',
+		cell: ({ row }) => {
+			const att = row.original;
+			return (
+				<div className='flex items-center space-x-2'>
+					<Icon icon={getFileIcon(att.mime_type || '')} className='h-4 w-4' />
+					<a
+						href={att.url}
+						target='_blank'
+						rel='noopener noreferrer'
+						className='font-medium text-primary-700 hover:underline'>
+						{att.original_name || att.file_name || `Adjunto #${att.id}`}
+					</a>
+				</div>
+			);
+		},
+	},
+	{
+		accessorKey: 'size',
+		header: 'Tamaño',
+		cell: ({ row }) => formatFileSize(row.original.size || 0),
+	},
+	{
+		accessorKey: 'uploaded_at',
+		header: 'Subido',
+		cell: ({ row }) =>
+			row.original.uploaded_at ? formatDateTime(row.original.uploaded_at) : '—',
+	},
+	{
+		id: 'actions',
+		header: 'Acciones',
+		cell: ({ row }) => {
+			const att = row.original;
+			return (
+				<div className='flex items-center space-x-2'>
+					<Button
+						size='xs'
+						variant='outline'
+						color='emerald'
+						className='px-2'
+						onClick={() => window.open(att.url, '_blank', 'noopener')}>
+						<Icon icon='HeroArrowDownTray' color='emerald' className='h-4 w-4' />
+						Descargar
+					</Button>
+					{onDeleteAttachment && (
+						<Button
+							size='xs'
+							variant='outline'
+							className='px-2'
+							color='red'
+							onClick={() => onDeleteAttachment(att.id)}>
+							<Icon icon='HeroTrash' color='red' className='ml-1 h-4 w-4' />
+							Eliminar
+						</Button>
+					)}
+				</div>
+			);
+		},
+	},
+];
+
 const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 	isOpen,
 	setIsOpen,
@@ -54,74 +122,8 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 		event.target.value = '';
 	};
 
-	const attachmentColumns = useMemo<ColumnDef<AppTableFeatures, IDocumentAttachment>[]>(
-		() => [
-			{
-				accessorKey: 'file_name',
-				header: 'Archivo',
-				cell: ({ row }) => {
-					const att = row.original;
-					return (
-						<div className='flex items-center space-x-2'>
-							<Icon icon={getFileIcon(att.mime_type || '')} className='h-4 w-4' />
-							<a
-								href={att.url}
-								target='_blank'
-								rel='noopener noreferrer'
-								className='font-medium text-primary-700 hover:underline'>
-								{att.original_name || att.file_name || `Adjunto #${att.id}`}
-							</a>
-						</div>
-					);
-				},
-			},
-			{
-				accessorKey: 'size',
-				header: 'Tamaño',
-				cell: ({ row }) => formatFileSize(row.original.size || 0),
-			},
-			{
-				accessorKey: 'uploaded_at',
-				header: 'Subido',
-				cell: ({ row }) =>
-					row.original.uploaded_at ? formatDateTime(row.original.uploaded_at) : '—',
-			},
-			{
-				id: 'actions',
-				header: 'Acciones',
-				cell: ({ row }) => {
-					const att = row.original;
-					return (
-						<div className='flex items-center space-x-2'>
-							<Button
-								size='xs'
-								variant='outline'
-								color='emerald'
-								className='px-2'
-								onClick={() => window.open(att.url, '_blank', 'noopener')}>
-								<Icon
-									icon='HeroArrowDownTray'
-									color='emerald'
-									className='h-4 w-4'
-								/>
-								Descargar
-							</Button>
-							{onDeleteAttachment && (
-								<Button
-									size='xs'
-									variant='outline'
-									className='px-2'
-									color='red'
-									onClick={() => onDeleteAttachment(att.id)}>
-									<Icon icon='HeroTrash' color='red' className='ml-1 h-4 w-4' />
-									Eliminar
-								</Button>
-							)}
-						</div>
-					);
-				},
-			},
-		],
+	const attachmentColumns = useMemo(
+		() => buildAttachmentColumns({ onDeleteAttachment }),
 		[onDeleteAttachment],
 	);
 

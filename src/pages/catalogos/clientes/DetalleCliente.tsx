@@ -30,6 +30,72 @@ type SupplierRow = {
 
 const columnHelper = createColumnHelper<AppTableFeatures, SupplierRow>();
 
+const buildAssociatedSupplierColumns = ({
+	detach,
+	isEditable,
+	detaching,
+}: {
+	detach: ReturnType<typeof useCustomerSuppliers>['detach'];
+	isEditable: boolean;
+	detaching: boolean;
+}) =>
+	columnHelper.columns([
+		columnHelper.accessor('name', {
+			header: 'Nombre del Proveedor',
+			cell: (info) => (
+				<span className='font-medium text-gray-900 dark:text-white'>{info.getValue()}</span>
+			),
+		}),
+		columnHelper.display({
+			id: 'actions',
+			header: 'Acciones',
+			cell: ({ row }) => (
+				<Button
+					color='red'
+					size='sm'
+					icon='HeroXMark'
+					onClick={() => detach([row.original.id])}
+					isDisable={!isEditable || detaching}
+					isLoading={detaching}>
+					{detaching ? 'Desasociando...' : 'Desasociar'}
+				</Button>
+			),
+		}),
+	]);
+
+const buildAvailableSupplierColumns = ({
+	attach,
+	isEditable,
+	attaching,
+}: {
+	attach: ReturnType<typeof useCustomerSuppliers>['attach'];
+	isEditable: boolean;
+	attaching: boolean;
+}) =>
+	columnHelper.columns([
+		columnHelper.accessor('name', {
+			header: 'Nombre del Proveedor',
+			cell: (info) => (
+				<span className='font-medium text-gray-900 dark:text-white'>{info.getValue()}</span>
+			),
+		}),
+		columnHelper.display({
+			id: 'actions',
+			header: 'Acciones',
+			cell: ({ row }) => (
+				<Button
+					color='blue'
+					size='sm'
+					icon='HeroPlus'
+					onClick={() => attach([row.original.id])}
+					isDisable={!isEditable || attaching}
+					isLoading={attaching}>
+					{attaching ? 'Asociando...' : 'Asociar'}
+				</Button>
+			),
+		}),
+	]);
+
 const DetalleClientePage: React.FC = () => {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
@@ -105,63 +171,13 @@ const DetalleClientePage: React.FC = () => {
 
 	// Columnas para proveedores ASOCIADOS
 	const associatedColumns = useMemo(
-		() =>
-			columnHelper.columns([
-				columnHelper.accessor('name', {
-					header: 'Nombre del Proveedor',
-					cell: (info) => (
-						<span className='font-medium text-gray-900 dark:text-white'>
-							{info.getValue()}
-						</span>
-					),
-				}),
-				columnHelper.display({
-					id: 'actions',
-					header: 'Acciones',
-					cell: ({ row }) => (
-						<Button
-							color='red'
-							size='sm'
-							icon='HeroXMark'
-							onClick={() => detach([row.original.id])}
-							isDisable={!isEditable || detaching}
-							isLoading={detaching}>
-							{detaching ? 'Desasociando...' : 'Desasociar'}
-						</Button>
-					),
-				}),
-			]),
+		() => buildAssociatedSupplierColumns({ detach, isEditable, detaching }),
 		[detach, isEditable, detaching],
 	);
 
 	// Columnas para proveedores DISPONIBLES
 	const availableColumns = useMemo(
-		() =>
-			columnHelper.columns([
-				columnHelper.accessor('name', {
-					header: 'Nombre del Proveedor',
-					cell: (info) => (
-						<span className='font-medium text-gray-900 dark:text-white'>
-							{info.getValue()}
-						</span>
-					),
-				}),
-				columnHelper.display({
-					id: 'actions',
-					header: 'Acciones',
-					cell: ({ row }) => (
-						<Button
-							color='blue'
-							size='sm'
-							icon='HeroPlus'
-							onClick={() => attach([row.original.id])}
-							isDisable={!isEditable || attaching}
-							isLoading={attaching}>
-							{attaching ? 'Asociando...' : 'Asociar'}
-						</Button>
-					),
-				}),
-			]),
+		() => buildAvailableSupplierColumns({ attach, isEditable, attaching }),
 		[attach, isEditable, attaching],
 	);
 

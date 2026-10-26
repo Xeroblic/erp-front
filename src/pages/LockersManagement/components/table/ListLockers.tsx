@@ -19,6 +19,156 @@ interface IListLockersProps {
 
 const columnHelper = createColumnHelper<AppTableFeatures, ILockerInternal>();
 
+const StatusBadge = ({ status }: { status: string }) => {
+	const config = getStatusConfig(status);
+	return (
+		<Badge color={config.color as any} variant='solid' className='text-xs'>
+			<span className='flex items-center gap-1'>
+				<Icon icon={config.icon} className='h-3 w-3' />
+				{config.label}
+			</span>
+		</Badge>
+	);
+};
+const buildLockerColumns = ({
+	orderByLockerId,
+	openAction,
+	setDetailLocker,
+}: {
+	orderByLockerId: Record<number, IServiceOrder>;
+	openAction: IListLockersProps['openAction'];
+	setDetailLocker: IListLockersProps['setDetailLocker'];
+}) =>
+	columnHelper.columns([
+		columnHelper.accessor((row) => row.locker_number || row.number || row.id, {
+			id: 'numero',
+			header: 'Nº',
+			cell: (info) => (
+				<span className='font-mono font-semibold text-zinc-800 dark:text-zinc-200'>
+					{info.getValue()}
+				</span>
+			),
+		}),
+		columnHelper.accessor('status', {
+			header: 'Estado',
+			cell: (info) => <StatusBadge status={info.getValue()} />,
+		}),
+		columnHelper.display({
+			id: 'cliente',
+			header: 'Cliente',
+			cell: (info) => {
+				const locker = info.row.original;
+				const order = locker.active_service_order || orderByLockerId[locker.id];
+				const clientName = order?.customer_name || locker.customer_name || '—';
+				const clientEmail = order?.customer_email || locker.customer_email;
+				return (
+					<div>
+						<p className='font-medium text-zinc-800 dark:text-zinc-200'>{clientName}</p>
+						{clientEmail && <p className='text-xs text-zinc-400'>{clientEmail}</p>}
+					</div>
+				);
+			},
+		}),
+		columnHelper.display({
+			id: 'equipo',
+			header: 'Equipo',
+			cell: (info) => {
+				const locker = info.row.original;
+				const order = locker.active_service_order || orderByLockerId[locker.id];
+				const deviceInfo =
+					order?.device_brand && order?.device_model
+						? `${order.device_brand} ${order.device_model}`
+						: locker.device_brand && locker.device_model
+							? `${locker.device_brand} ${locker.device_model}`
+							: order?.device_description || locker.device_description || '—';
+				return (
+					<div
+						className='max-w-[180px] truncate text-zinc-600 dark:text-zinc-400'
+						title={deviceInfo}>
+						{deviceInfo}
+					</div>
+				);
+			},
+		}),
+		columnHelper.display({
+			id: 'servicio',
+			header: 'Servicio',
+			cell: (info) => {
+				const locker = info.row.original;
+				const order = locker.active_service_order || orderByLockerId[locker.id];
+				const serviceType = order?.service_type || locker.service_type || '—';
+				return <span className='text-zinc-600 dark:text-zinc-400'>{serviceType}</span>;
+			},
+		}),
+		columnHelper.display({
+			id: 'ingreso',
+			header: 'Ingreso',
+			cell: (info) => {
+				const locker = info.row.original;
+				const order = locker.active_service_order || orderByLockerId[locker.id];
+				const checkInDate = order?.checked_in_at || locker.check_in_at || order?.created_at;
+				return (
+					<span className='text-xs text-zinc-500'>
+						{checkInDate ? new Date(checkInDate).toLocaleString('es-CL') : '—'}
+					</span>
+				);
+			},
+		}),
+		columnHelper.display({
+			id: 'acciones',
+			header: 'Acciones',
+			cell: (info) => {
+				const locker = info.row.original;
+				const actions = getAvailableActions(locker.status);
+
+				return (
+					<div className='flex flex-wrap items-center justify-end gap-1'>
+						{actions.includes('withdraw') && (
+							<Button
+								size='xs'
+								color='blue'
+								variant='outline'
+								icon='HeroArrowDownTray'
+								onClick={() => openAction(locker, 'withdraw')}>
+								Retirar
+							</Button>
+						)}
+						{actions.includes('dropoff') && (
+							<Button
+								size='xs'
+								color='emerald'
+								variant='outline'
+								icon='HeroArrowUpTray'
+								onClick={() => openAction(locker, 'dropoff')}>
+								Depositar
+							</Button>
+						)}
+						{actions.includes('reset') && (
+							<Button
+								size='xs'
+								color='red'
+								variant='outline'
+								icon='HeroArrowPath'
+								onClick={() => openAction(locker, 'reset')}>
+								Reset
+							</Button>
+						)}
+						{actions.includes('detail') && (
+							<Button
+								size='xs'
+								color='zinc'
+								variant='outline'
+								icon='HeroEye'
+								onClick={() => setDetailLocker(locker)}>
+								Detalle
+							</Button>
+						)}
+					</div>
+				);
+			},
+		}),
+	]);
+
 const ListLockers: React.FC<IListLockersProps> = ({
 	lockers,
 	serviceOrders,
@@ -36,156 +186,8 @@ const ListLockers: React.FC<IListLockersProps> = ({
 		return map;
 	}, [serviceOrders]);
 
-	const StatusBadge = ({ status }: { status: string }) => {
-		const config = getStatusConfig(status);
-		return (
-			<Badge color={config.color as any} variant='solid' className='text-xs'>
-				<span className='flex items-center gap-1'>
-					<Icon icon={config.icon} className='h-3 w-3' />
-					{config.label}
-				</span>
-			</Badge>
-		);
-	};
-
 	const columns = useMemo(
-		() =>
-			columnHelper.columns([
-				columnHelper.accessor((row) => row.locker_number || row.number || row.id, {
-					id: 'numero',
-					header: 'Nº',
-					cell: (info) => (
-						<span className='font-mono font-semibold text-zinc-800 dark:text-zinc-200'>
-							{info.getValue()}
-						</span>
-					),
-				}),
-				columnHelper.accessor('status', {
-					header: 'Estado',
-					cell: (info) => <StatusBadge status={info.getValue()} />,
-				}),
-				columnHelper.display({
-					id: 'cliente',
-					header: 'Cliente',
-					cell: (info) => {
-						const locker = info.row.original;
-						const order = locker.active_service_order || orderByLockerId[locker.id];
-						const clientName = order?.customer_name || locker.customer_name || '—';
-						const clientEmail = order?.customer_email || locker.customer_email;
-						return (
-							<div>
-								<p className='font-medium text-zinc-800 dark:text-zinc-200'>
-									{clientName}
-								</p>
-								{clientEmail && (
-									<p className='text-xs text-zinc-400'>{clientEmail}</p>
-								)}
-							</div>
-						);
-					},
-				}),
-				columnHelper.display({
-					id: 'equipo',
-					header: 'Equipo',
-					cell: (info) => {
-						const locker = info.row.original;
-						const order = locker.active_service_order || orderByLockerId[locker.id];
-						const deviceInfo =
-							order?.device_brand && order?.device_model
-								? `${order.device_brand} ${order.device_model}`
-								: locker.device_brand && locker.device_model
-									? `${locker.device_brand} ${locker.device_model}`
-									: order?.device_description || locker.device_description || '—';
-						return (
-							<div
-								className='max-w-[180px] truncate text-zinc-600 dark:text-zinc-400'
-								title={deviceInfo}>
-								{deviceInfo}
-							</div>
-						);
-					},
-				}),
-				columnHelper.display({
-					id: 'servicio',
-					header: 'Servicio',
-					cell: (info) => {
-						const locker = info.row.original;
-						const order = locker.active_service_order || orderByLockerId[locker.id];
-						const serviceType = order?.service_type || locker.service_type || '—';
-						return (
-							<span className='text-zinc-600 dark:text-zinc-400'>{serviceType}</span>
-						);
-					},
-				}),
-				columnHelper.display({
-					id: 'ingreso',
-					header: 'Ingreso',
-					cell: (info) => {
-						const locker = info.row.original;
-						const order = locker.active_service_order || orderByLockerId[locker.id];
-						const checkInDate =
-							order?.checked_in_at || locker.check_in_at || order?.created_at;
-						return (
-							<span className='text-xs text-zinc-500'>
-								{checkInDate ? new Date(checkInDate).toLocaleString('es-CL') : '—'}
-							</span>
-						);
-					},
-				}),
-				columnHelper.display({
-					id: 'acciones',
-					header: 'Acciones',
-					cell: (info) => {
-						const locker = info.row.original;
-						const actions = getAvailableActions(locker.status);
-
-						return (
-							<div className='flex flex-wrap items-center justify-end gap-1'>
-								{actions.includes('withdraw') && (
-									<Button
-										size='xs'
-										color='blue'
-										variant='outline'
-										icon='HeroArrowDownTray'
-										onClick={() => openAction(locker, 'withdraw')}>
-										Retirar
-									</Button>
-								)}
-								{actions.includes('dropoff') && (
-									<Button
-										size='xs'
-										color='emerald'
-										variant='outline'
-										icon='HeroArrowUpTray'
-										onClick={() => openAction(locker, 'dropoff')}>
-										Depositar
-									</Button>
-								)}
-								{actions.includes('reset') && (
-									<Button
-										size='xs'
-										color='red'
-										variant='outline'
-										icon='HeroArrowPath'
-										onClick={() => openAction(locker, 'reset')}>
-										Reset
-									</Button>
-								)}
-								{actions.includes('detail') && (
-									<Button
-										size='xs'
-										color='zinc'
-										variant='outline'
-										icon='HeroEye'
-										onClick={() => setDetailLocker(locker)}>
-										Detalle
-									</Button>
-								)}
-							</div>
-						);
-					},
-				}),
-			]),
+		() => buildLockerColumns({ orderByLockerId, openAction, setDetailLocker }),
 		[orderByLockerId, openAction, setDetailLocker],
 	);
 

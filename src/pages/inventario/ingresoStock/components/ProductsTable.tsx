@@ -47,6 +47,111 @@ const getStockTone = (stock: number): 'zinc' | 'amber' | 'emerald' => {
 	return 'emerald';
 };
 
+const buildProductColumns = ({
+	onSelectProduct,
+	selectedProductIds,
+}: {
+	onSelectProduct: ProductsTableProps['onSelectProduct'];
+	selectedProductIds: ProductsTableProps['selectedProductIds'];
+}): ColumnDef<AppTableFeatures, IProduct>[] => [
+	{
+		accessorKey: 'id',
+		header: 'ID',
+		cell: ({ row }) => (
+			<span className='font-mono text-xs text-neutral-400'>#{row.original.id}</span>
+		),
+	},
+	{
+		id: 'name',
+		// Incluye la SKU en el valor filtrable: el buscador global del DataTable
+		// (includesString) sólo busca sobre los valores de las columnas, y la SKU
+		// se renderiza dentro de esta celda. Sin esto, "buscar por SKU" no encuentra nada.
+		accessorFn: (product) => `${product.name ?? ''} ${product.sku ?? ''}`,
+		header: 'Nombre Producto',
+		cell: ({ row }) => (
+			<div className='flex items-center gap-3'>
+				<div className='flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-400'>
+					<Icon icon='HeroCube' className='h-4 w-4' />
+				</div>
+				<div className='min-w-0 max-w-[280px]'>
+					<p
+						className='line-clamp-2 break-words font-semibold text-neutral-900 dark:text-neutral-100'
+						title={row.original.name}>
+						{row.original.name}
+					</p>
+					<p className='mt-0.5 break-all font-mono text-[11px] text-neutral-400'>
+						SKU: {row.original.sku}
+					</p>
+				</div>
+			</div>
+		),
+	},
+	{
+		accessorKey: 'stock',
+		header: 'Stock Total',
+		cell: ({ row }) => {
+			const stock = Number(row.original.stock ?? 0);
+			const tone = getStockTone(stock);
+			return (
+				<Tooltip
+					text={
+						stock <= 0
+							? 'Sin stock disponible — el ajuste lo dejará en positivo.'
+							: `${stock} unidades disponibles en stock.`
+					}>
+					<span className='inline-flex'>
+						<Badge
+							variant='outline'
+							color={tone}
+							className='inline-flex items-center gap-1'>
+							<Icon icon='HeroArchiveBox' className='h-3 w-3' />
+							<strong>{stock}</strong>
+							<span className='font-normal opacity-70'>u.</span>
+						</Badge>
+					</span>
+				</Tooltip>
+			);
+		},
+	},
+	{
+		accessorKey: 'price',
+		header: 'Precio',
+		cell: ({ row }) => (
+			<span className='font-semibold text-neutral-800 dark:text-neutral-100'>
+				{clpFormatter.format(Number(row.original.price ?? 0))}
+			</span>
+		),
+	},
+	{
+		id: 'actions',
+		header: 'Acciones',
+		enableSorting: false,
+		cell: ({ row }) => {
+			const alreadyAdded = selectedProductIds?.has(row.original.id) ?? false;
+			return (
+				<div className='flex items-center justify-end'>
+					<Tooltip
+						text={
+							alreadyAdded
+								? 'Este producto ya está en la zona de trabajo'
+								: 'Ingresar o ajustar el stock de este producto'
+						}>
+						<Button
+							color='emerald'
+							variant='solid'
+							size='sm'
+							icon={alreadyAdded ? 'HeroCheck' : 'HeroArrowsRightLeft'}
+							isDisable={alreadyAdded}
+							onClick={() => onSelectProduct(row.original)}>
+							{alreadyAdded ? 'En la zona' : 'Ingresar / Ajustar'}
+						</Button>
+					</Tooltip>
+				</div>
+			);
+		},
+	},
+];
+
 export const ProductsTable = ({
 	products,
 	loading = false,
@@ -58,105 +163,8 @@ export const ProductsTable = ({
 	totalResults,
 	onSearchChange,
 }: ProductsTableProps) => {
-	const columns = useMemo<ColumnDef<AppTableFeatures, IProduct>[]>(
-		() => [
-			{
-				accessorKey: 'id',
-				header: 'ID',
-				cell: ({ row }) => (
-					<span className='font-mono text-xs text-neutral-400'>#{row.original.id}</span>
-				),
-			},
-			{
-				id: 'name',
-				// Incluye la SKU en el valor filtrable: el buscador global del DataTable
-				// (includesString) sólo busca sobre los valores de las columnas, y la SKU
-				// se renderiza dentro de esta celda. Sin esto, "buscar por SKU" no encuentra nada.
-				accessorFn: (product) => `${product.name ?? ''} ${product.sku ?? ''}`,
-				header: 'Nombre Producto',
-				cell: ({ row }) => (
-					<div className='flex items-center gap-3'>
-						<div className='flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-400'>
-							<Icon icon='HeroCube' className='h-4 w-4' />
-						</div>
-						<div className='min-w-0 max-w-[280px]'>
-							<p
-								className='line-clamp-2 break-words font-semibold text-neutral-900 dark:text-neutral-100'
-								title={row.original.name}>
-								{row.original.name}
-							</p>
-							<p className='mt-0.5 break-all font-mono text-[11px] text-neutral-400'>
-								SKU: {row.original.sku}
-							</p>
-						</div>
-					</div>
-				),
-			},
-			{
-				accessorKey: 'stock',
-				header: 'Stock Total',
-				cell: ({ row }) => {
-					const stock = Number(row.original.stock ?? 0);
-					const tone = getStockTone(stock);
-					return (
-						<Tooltip
-							text={
-								stock <= 0
-									? 'Sin stock disponible — el ajuste lo dejará en positivo.'
-									: `${stock} unidades disponibles en stock.`
-							}>
-							<span className='inline-flex'>
-								<Badge
-									variant='outline'
-									color={tone}
-									className='inline-flex items-center gap-1'>
-									<Icon icon='HeroArchiveBox' className='h-3 w-3' />
-									<strong>{stock}</strong>
-									<span className='font-normal opacity-70'>u.</span>
-								</Badge>
-							</span>
-						</Tooltip>
-					);
-				},
-			},
-			{
-				accessorKey: 'price',
-				header: 'Precio',
-				cell: ({ row }) => (
-					<span className='font-semibold text-neutral-800 dark:text-neutral-100'>
-						{clpFormatter.format(Number(row.original.price ?? 0))}
-					</span>
-				),
-			},
-			{
-				id: 'actions',
-				header: 'Acciones',
-				enableSorting: false,
-				cell: ({ row }) => {
-					const alreadyAdded = selectedProductIds?.has(row.original.id) ?? false;
-					return (
-						<div className='flex items-center justify-end'>
-							<Tooltip
-								text={
-									alreadyAdded
-										? 'Este producto ya está en la zona de trabajo'
-										: 'Ingresar o ajustar el stock de este producto'
-								}>
-								<Button
-									color='emerald'
-									variant='solid'
-									size='sm'
-									icon={alreadyAdded ? 'HeroCheck' : 'HeroArrowsRightLeft'}
-									isDisable={alreadyAdded}
-									onClick={() => onSelectProduct(row.original)}>
-									{alreadyAdded ? 'En la zona' : 'Ingresar / Ajustar'}
-								</Button>
-							</Tooltip>
-						</div>
-					);
-				},
-			},
-		],
+	const columns = useMemo(
+		() => buildProductColumns({ onSelectProduct, selectedProductIds }),
 		[onSelectProduct, selectedProductIds],
 	);
 

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState, useRef, useMemo } from 'react';
+import { type NavigateFunction, useNavigate } from 'react-router-dom';
 import { createColumnHelper, flexRender, SortingState, useTable } from '@tanstack/react-table';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -31,40 +31,16 @@ import SucursalModal from './components/SucursalModal';
 
 const columnHelper = createColumnHelper<AppTableFeatures, ISucursal>();
 
-export default function SucursalesLista() {
-	const dispatch = useAppDispatch();
-	const navigate = useNavigate();
-	const user = useAppSelector((s) => s.auth.user);
-
-	interface SucursalesState {
-		lista: ISucursal[];
-		loading: boolean;
-		createLoading: boolean;
-	}
-
-	const {
-		lista: sucursales = [],
-		loading,
-		createLoading,
-	}: SucursalesState = useAppSelector((s: { sucursales: SucursalesState }) => s.sucursales);
-	const [sorting, setSorting] = useState<SortingState>([]);
-	const [globalFilter, setGlobalFilter] = useState('');
-	const [openCreate, setOpenCreate] = useState(false);
-	const [openDelete, setOpenDelete] = useState(false);
-	const [toDeleteId, setToDeleteId] = useState<number | null>(null);
-	const [editingSucursal, setEditingSucursal] = useState<ISucursal | null>(null);
-	const hasLoadedSucursales = useRef(false);
-
-	useEffect(() => {
-		if (!user) return;
-		if (hasLoadedSucursales.current) return;
-
-		hasLoadedSucursales.current = true;
-		dispatch(fetchMisSucursales());
-	}, [dispatch, user]);
-
-	// columnas de la tabla
-	const columns = columnHelper.columns([
+const buildBranchColumns = ({
+	navigate,
+	onEdit,
+	onAskDelete,
+}: {
+	navigate: NavigateFunction;
+	onEdit: (sucursal: ISucursal) => void;
+	onAskDelete: (id: number) => void;
+}) =>
+	columnHelper.columns([
 		columnHelper.accessor('branch_name', {
 			header: 'Sucursal',
 			cell: (info) => (
@@ -181,7 +157,7 @@ export default function SucursalesLista() {
 						variant='outline'
 						size='sm'
 						icon='HeroPencil'
-						onClick={() => handleEdit(info.row.original)}
+						onClick={() => onEdit(info.row.original)}
 						className='p-1'
 					/>
 					<Button
@@ -196,16 +172,61 @@ export default function SucursalesLista() {
 						size='sm'
 						icon='HeroTrash'
 						color='red'
-						onClick={() => {
-							setToDeleteId(info.row.original.id);
-							setOpenDelete(true);
-						}}
+						onClick={() => onAskDelete(info.row.original.id)}
 						className='p-1'
 					/>
 				</div>
 			),
 		}),
 	]);
+
+export default function SucursalesLista() {
+	const dispatch = useAppDispatch();
+	const navigate = useNavigate();
+	const user = useAppSelector((s) => s.auth.user);
+
+	interface SucursalesState {
+		lista: ISucursal[];
+		loading: boolean;
+		createLoading: boolean;
+	}
+
+	const {
+		lista: sucursales = [],
+		loading,
+		createLoading,
+	}: SucursalesState = useAppSelector((s: { sucursales: SucursalesState }) => s.sucursales);
+	const [sorting, setSorting] = useState<SortingState>([]);
+	const [globalFilter, setGlobalFilter] = useState('');
+	const [openCreate, setOpenCreate] = useState(false);
+	const [openDelete, setOpenDelete] = useState(false);
+	const [toDeleteId, setToDeleteId] = useState<number | null>(null);
+	const [editingSucursal, setEditingSucursal] = useState<ISucursal | null>(null);
+	const hasLoadedSucursales = useRef(false);
+
+	useEffect(() => {
+		if (!user) return;
+		if (hasLoadedSucursales.current) return;
+
+		hasLoadedSucursales.current = true;
+		dispatch(fetchMisSucursales());
+	}, [dispatch, user]);
+
+	// columnas de la tabla
+	const handleEdit = useCallback((sucursal: ISucursal) => {
+		setEditingSucursal(sucursal);
+		setOpenCreate(true);
+	}, []);
+
+	const handleAskDelete = useCallback((id: number) => {
+		setToDeleteId(id);
+		setOpenDelete(true);
+	}, []);
+
+	const columns = useMemo(
+		() => buildBranchColumns({ navigate, onEdit: handleEdit, onAskDelete: handleAskDelete }),
+		[navigate, handleEdit, handleAskDelete],
+	);
 
 	const table = useTable({
 		features: clientTableFeatures,
@@ -217,11 +238,6 @@ export default function SucursalesLista() {
 		onGlobalFilterChange: setGlobalFilter,
 		initialState: { pagination: { pageIndex: 0, pageSize: 5 } },
 	});
-
-	const handleEdit = (sucursal: ISucursal) => {
-		setEditingSucursal(sucursal);
-		setOpenCreate(true);
-	};
 
 	const handleCreate = () => {
 		setEditingSucursal(null);

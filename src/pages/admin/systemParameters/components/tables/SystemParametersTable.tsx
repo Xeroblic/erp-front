@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
 
 import { SystemParameter } from '@/interface';
@@ -29,64 +29,41 @@ interface SystemParametersTableProps {
 
 const columnHelper = createColumnHelper<AppTableFeatures, SystemParameter>();
 
-const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
-	parameters,
-	isLoading,
+// Función para formatear el valor según su tipo
+const formatValue = (parameter: SystemParameter) => {
+	const { value, data_type } = parameter;
+
+	if (value.length > 50) {
+		return `${value.substring(0, 50)}...`;
+	}
+
+	switch (data_type) {
+		case 'boolean':
+			return value === 'true' ? 'Verdadero' : 'Falso';
+		case 'json':
+			try {
+				const parsed = JSON.parse(value);
+				return `${JSON.stringify(parsed, null, 2).substring(0, 50)}...`;
+			} catch {
+				return value;
+			}
+		default:
+			return value;
+	}
+};
+
+const buildParameterColumns = ({
 	onViewDetails,
 	onEdit,
 	onDelete,
 	loadingActions,
-}) => {
-	// Función para obtener el color de la categoria
-	const getCategoryColor = (category: string) => {
-		const colors = {
-			general: 'blue',
-			system: 'red',
-			email: 'green',
-			security: 'yellow',
-			integration: 'purple',
-			ui: 'pink',
-			business: 'indigo',
-		} as const;
-		return colors[category as keyof typeof colors] || 'gray';
-	};
-
-	// Función para obtener el color del tipo de dato
-	const getDataTypeColor = (dataType: string) => {
-		const colors = {
-			string: 'green',
-			number: 'blue',
-			boolean: 'purple',
-			json: 'orange',
-			date: 'pink',
-		} as const;
-		return colors[dataType as keyof typeof colors] || 'gray';
-	};
-
-	// Función para formatear el valor según su tipo
-	const formatValue = (parameter: SystemParameter) => {
-		const { value, data_type } = parameter;
-
-		if (value.length > 50) {
-			return `${value.substring(0, 50)}...`;
-		}
-
-		switch (data_type) {
-			case 'boolean':
-				return value === 'true' ? 'Verdadero' : 'Falso';
-			case 'json':
-				try {
-					const parsed = JSON.parse(value);
-					return `${JSON.stringify(parsed, null, 2).substring(0, 50)}...`;
-				} catch {
-					return value;
-				}
-			default:
-				return value;
-		}
-	};
-
-	const columns = columnHelper.columns([
+}: {
+	onViewDetails: SystemParametersTableProps['onViewDetails'];
+	onEdit: SystemParametersTableProps['onEdit'];
+	onDelete: SystemParametersTableProps['onDelete'];
+	loadingActions: Set<number>;
+}) =>
+	columnHelper.columns([
 		columnHelper.accessor('key', {
 			header: 'Clave',
 			cell: (info) => {
@@ -210,6 +187,45 @@ const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
 			},
 		}),
 	]);
+
+const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
+	parameters,
+	isLoading,
+	onViewDetails,
+	onEdit,
+	onDelete,
+	loadingActions,
+}) => {
+	// Función para obtener el color de la categoria
+	const getCategoryColor = (category: string) => {
+		const colors = {
+			general: 'blue',
+			system: 'red',
+			email: 'green',
+			security: 'yellow',
+			integration: 'purple',
+			ui: 'pink',
+			business: 'indigo',
+		} as const;
+		return colors[category as keyof typeof colors] || 'gray';
+	};
+
+	// Función para obtener el color del tipo de dato
+	const getDataTypeColor = (dataType: string) => {
+		const colors = {
+			string: 'green',
+			number: 'blue',
+			boolean: 'purple',
+			json: 'orange',
+			date: 'pink',
+		} as const;
+		return colors[dataType as keyof typeof colors] || 'gray';
+	};
+
+	const columns = useMemo(
+		() => buildParameterColumns({ onViewDetails, onEdit, onDelete, loadingActions }),
+		[onViewDetails, onEdit, onDelete, loadingActions],
+	);
 
 	const table = useTable({
 		features: appTableFeatures,

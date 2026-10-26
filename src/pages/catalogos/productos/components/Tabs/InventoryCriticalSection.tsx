@@ -22,6 +22,75 @@ interface InventoryCriticalSectionProps {
 	containerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
+const buildCriticalItemColumns = ({
+	onViewProduct,
+}: {
+	onViewProduct: InventoryCriticalSectionProps['onViewProduct'];
+}): ColumnDef<AppTableFeatures, CriticalItemRow>[] => [
+	{
+		id: 'product',
+		header: 'Producto',
+		cell: ({ row }) => {
+			const item = row.original;
+			return (
+				<div className='space-y-1'>
+					<p className='font-medium text-neutral-800 dark:text-neutral-100'>
+						{item.name}
+					</p>
+					<p className='text-xs text-neutral-500 dark:text-neutral-400'>
+						SKU: {item.sku} · Marca: {item.brand}
+					</p>
+					<p className='text-xs text-neutral-400 dark:text-neutral-500'>
+						Actualizado: {getFriendlyDate(item.updatedAt)}
+					</p>
+				</div>
+			);
+		},
+	},
+	{
+		id: 'stock',
+		header: 'Stock',
+		cell: ({ row }) => (
+			<span className='text-sm font-semibold text-neutral-700 dark:text-neutral-200'>
+				{formatNumber(row.original.stock)}
+			</span>
+		),
+	},
+	{
+		id: 'status',
+		header: 'Estado',
+		cell: ({ row }) => {
+			const { status, stock } = row.original;
+			const label = status === 'out' ? 'Sin stock' : `Stock bajo (${formatNumber(stock)})`;
+			return (
+				<Badge color={status === 'out' ? 'red' : 'amber'} variant='outline'>
+					{label}
+				</Badge>
+			);
+		},
+	},
+	{
+		id: 'actions',
+		header: 'Acciones',
+		cell: ({ row }) => {
+			const { product } = row.original;
+			const disabled = !onViewProduct || !product;
+			return (
+				<Button
+					size='sm'
+					variant='outline'
+					icon='HeroEye'
+					isDisable={disabled}
+					onClick={() => {
+						if (!disabled && onViewProduct && product) onViewProduct(product);
+					}}>
+					Ver producto
+				</Button>
+			);
+		},
+	},
+];
+
 const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 	criticalItems,
 	totalCriticalCount,
@@ -33,74 +102,7 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 	onViewProduct,
 	containerRef,
 }) => {
-	const columns = useMemo<ColumnDef<AppTableFeatures, CriticalItemRow>[]>(
-		() => [
-			{
-				id: 'product',
-				header: 'Producto',
-				cell: ({ row }) => {
-					const item = row.original;
-					return (
-						<div className='space-y-1'>
-							<p className='font-medium text-neutral-800 dark:text-neutral-100'>
-								{item.name}
-							</p>
-							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
-								SKU: {item.sku} · Marca: {item.brand}
-							</p>
-							<p className='text-xs text-neutral-400 dark:text-neutral-500'>
-								Actualizado: {getFriendlyDate(item.updatedAt)}
-							</p>
-						</div>
-					);
-				},
-			},
-			{
-				id: 'stock',
-				header: 'Stock',
-				cell: ({ row }) => (
-					<span className='text-sm font-semibold text-neutral-700 dark:text-neutral-200'>
-						{formatNumber(row.original.stock)}
-					</span>
-				),
-			},
-			{
-				id: 'status',
-				header: 'Estado',
-				cell: ({ row }) => {
-					const { status, stock } = row.original;
-					const label =
-						status === 'out' ? 'Sin stock' : `Stock bajo (${formatNumber(stock)})`;
-					return (
-						<Badge color={status === 'out' ? 'red' : 'amber'} variant='outline'>
-							{label}
-						</Badge>
-					);
-				},
-			},
-			{
-				id: 'actions',
-				header: 'Acciones',
-				cell: ({ row }) => {
-					const { product } = row.original;
-					const disabled = !onViewProduct || !product;
-					return (
-						<Button
-							size='sm'
-							variant='outline'
-							icon='HeroEye'
-							isDisable={disabled}
-							onClick={() => {
-								if (!disabled && onViewProduct && product) onViewProduct(product);
-							}}>
-							Ver producto
-						</Button>
-					);
-				},
-			},
-		],
-		[onViewProduct],
-	);
+	const columns = useMemo(() => buildCriticalItemColumns({ onViewProduct }), [onViewProduct]);
 
 	const table = useTable({
 		features: appTableFeatures,
