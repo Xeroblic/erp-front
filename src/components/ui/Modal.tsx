@@ -185,7 +185,7 @@ const getFocusableElements = (container: HTMLElement): HTMLElement[] =>
  * @constructor
  */
 const BackDrop = ({ zIndex }: { zIndex: number }) => {
-	const animationProps = {
+	const animationProps: MotionProps = {
 		initial: { opacity: 0 },
 		animate: { opacity: 1 },
 		exit: { opacity: 0 },
@@ -492,7 +492,7 @@ const Modal: FC<IModalProps> = (props) => {
 	};
 	useEventListener('keydown', handleKeyboardNavigation);
 
-	const animationProps = isAnimation
+	const animationProps: MotionProps | null = isAnimation
 		? {
 				initial: { opacity: 0, y: '-50%' },
 				animate: { opacity: 1, x: '0%', y: '0%' },

@@ -1,7 +1,7 @@
+import { motion, type TargetAndTransition, type Variants } from 'framer-motion';
 import { DeliveryMan5WithDog } from '@/assets/images';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
-import { motion } from 'framer-motion';
 
 interface PagConstruccionProps {
 	/** Título principal de la sección */
@@ -21,7 +21,7 @@ const PagConstruccion = ({
 	className = '',
 }: PagConstruccionProps) => {
 	// Variantes para animaciones escalonadas
-	const containerVariants = {
+	const containerVariants: Variants = {
 		hidden: { opacity: 0 },
 		visible: {
 			opacity: 1,
@@ -32,7 +32,7 @@ const PagConstruccion = ({
 		},
 	};
 
-	const itemVariants = {
+	const itemVariants: Variants = {
 		hidden: { opacity: 0, y: 30 },
 		visible: {
 			opacity: 1,
@@ -46,7 +46,7 @@ const PagConstruccion = ({
 	};
 
 	// Animación de flotación para la imagen
-	const floatingAnimation = {
+	const floatingAnimation: TargetAndTransition = {
 		y: [-8, 8, -8],
 		transition: {
 			duration: 3,
@@ -56,7 +56,7 @@ const PagConstruccion = ({
 	};
 
 	// Animación de pulso suave
-	const pulseAnimation = {
+	const pulseAnimation: TargetAndTransition = {
 		scale: [1, 1.02, 1],
 		transition: {
 			duration: 2,
@@ -66,7 +66,7 @@ const PagConstruccion = ({
 	};
 
 	// Animación de rotación para engranajes
-	const rotateAnimation = {
+	const rotateAnimation: TargetAndTransition = {
 		rotate: 360,
 		transition: {
 			duration: 8,
@@ -89,10 +89,7 @@ const PagConstruccion = ({
 				className='absolute bottom-8 right-12 opacity-10'
 				animate={{
 					...rotateAnimation,
-					transition: {
-						...rotateAnimation.transition,
-						direction: 'reverse',
-					},
+					transition: rotateAnimation.transition,
 				}}
 				style={{ animationDirection: 'reverse' }}>
 				<Icon icon='DuoSettings' className='h-12 w-12 text-amber-500' />

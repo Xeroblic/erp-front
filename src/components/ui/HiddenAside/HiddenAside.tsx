@@ -1,5 +1,5 @@
 import React, { useState, ReactNode, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import classNames from 'classnames';
 import Icon from '@/components/icon/Icon';
 import Badge from '../Badge';
@@ -75,7 +75,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 	};
 
 	// --- LIQUID WAVE VARIANTS CORREGIDAS ---
-	const curveVariants = {
+	const curveVariants: Variants = {
 		closed: {
 			d: [
 				'M100 0 L100 1000 Q20 500 100 0 Z',

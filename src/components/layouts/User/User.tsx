@@ -1,6 +1,6 @@
 import React, { FC, HTMLAttributes, ReactNode, useId, useMemo, useState } from 'react';
 import classNames from 'classnames';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, type MotionProps } from 'framer-motion';
 import useRoundedSize from '../../../hooks/useRoundedSize';
 import useAsideStatus from '../../../hooks/useAsideStatus';
 import themeConfig from '../../../config/theme.config';
@@ -45,7 +45,7 @@ const User: FC<IUserProps> = (props) => {
 
 	const { roundedCustom } = useRoundedSize('rounded-xl');
 
-	const avatarMotionProps = useMemo(
+	const avatarMotionProps = useMemo<MotionProps>(
 		() => ({
 			animate: {
 				scale: isOpen ? 1.05 : 1,
