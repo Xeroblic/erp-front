@@ -13,7 +13,6 @@ import FooterRouter from '../components/router/FooterRouter';
 import useFontSize from '../hooks/useFontSize';
 import useThemeColor from '../hooks/useThemeColor';
 import getOS from '../utils/getOS.util';
-import 'react-toastify/dist/ReactToastify.css';
 import useDarkMode from '../hooks/useDarkMode';
 import { logout, obtenerPersonalizacionThunk, useAppDispatch, useAppSelector } from '@/store';
 import AppInitializer from '../components/AppInitializer';
