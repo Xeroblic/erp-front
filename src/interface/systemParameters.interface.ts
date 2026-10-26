@@ -51,12 +51,6 @@ export interface SystemParametersState {
 	filteredParameters: SystemParameter[];
 	isLoading: boolean;
 	error: string | null;
-	pagination: {
-		page: number;
-		pageSize: number;
-		total: number;
-		totalPages: number;
-	};
 	filters: SystemParameterFilters;
 }
 

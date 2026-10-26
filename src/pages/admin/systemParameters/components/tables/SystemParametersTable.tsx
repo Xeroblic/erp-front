@@ -8,7 +8,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
 import { Table, TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
-import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { AppTableFeatures, clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface SystemParametersTableProps {
 	parameters: SystemParameter[];
@@ -194,9 +194,10 @@ const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
 	);
 
 	const table = useTable({
-		features: appTableFeatures,
+		features: clientTableFeatures,
 		data: parameters || [],
 		columns,
+		initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
 	});
 
 	if (isLoading) {

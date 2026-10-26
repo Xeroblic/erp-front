@@ -17,7 +17,7 @@ import {
 	DeleteSystemParameterModal,
 	CreateEditSystemParameterModal,
 } from './components/modals';
-import { useSystemParametersManagement } from './hooks/useSystemParametersManagement';
+import useSystemParametersManagement from './hooks/useSystemParametersManagement';
 
 type ParameterCategory = SystemParameter['category'];
 type ParameterDataType = SystemParameter['data_type'];
