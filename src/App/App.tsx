@@ -3,23 +3,24 @@ import localizedFormat from 'dayjs/plugin/localizedFormat';
 import dayjs from 'dayjs';
 import colors from 'tailwindcss/colors';
 import { ToastContainer } from 'react-toastify';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AsideRouter from '../components/router/AsideRouter';
-import Wrapper from '../components/layouts/Wrapper/Wrapper';
-import HeaderRouter from '../components/router/HeaderRouter';
-import ContentRouter from '../components/router/ContentRouter';
-import FooterRouter from '../components/router/FooterRouter';
-import useFontSize from '../hooks/useFontSize';
-import useThemeColor from '../hooks/useThemeColor';
-import getOS from '../utils/getOS.util';
-import 'react-toastify/dist/ReactToastify.css';
-import useDarkMode from '../hooks/useDarkMode';
-import { logout, obtenerPersonalizacionThunk, useAppDispatch, useAppSelector } from '@/store';
-import AppInitializer from '../components/AppInitializer';
-import NotificationsStreamProvider from '@/notifications/NotificationsStreamProvider';
-import tokenManager from '@/services/auth/tokenManager';
+import AppInitializer from '@/components/AppInitializer';
+import Wrapper from '@/components/layouts/Wrapper/Wrapper';
+import AsideRouter from '@/components/router/AsideRouter';
+import ContentRouter from '@/components/router/ContentRouter';
+import FooterRouter from '@/components/router/FooterRouter';
+import HeaderRouter from '@/components/router/HeaderRouter';
+import useDarkMode from '@/hooks/useDarkMode';
+import useFontSize from '@/hooks/useFontSize';
+import useThemeColor from '@/hooks/useThemeColor';
 import { useVersion } from '@/hooks/useVersion';
+import { tokenManager } from '@/services/auth/tokenManager';
+import { logout, obtenerPersonalizacionThunk, useAppDispatch, useAppSelector } from '@/store';
+import getOS from '@/utils/getOS.util';
+
+/** `index.html` define `removeSplashScreen` antes de montar la app. */
+type WindowWithSplash = Window & { removeSplashScreen?: () => void };
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -46,8 +47,9 @@ const App = () => {
 
 	useEffect(() => {
 		if (version === 'dev') {
-			if (typeof (window as any).removeSplashScreen === 'function') {
-				(window as any).removeSplashScreen();
+			const { removeSplashScreen } = window as WindowWithSplash;
+			if (typeof removeSplashScreen === 'function') {
+				removeSplashScreen();
 			} else {
 				const screen = document.getElementById('splash-screen');
 				if (screen) screen.remove();
@@ -55,20 +57,13 @@ const App = () => {
 		}
 	}, [version]);
 
-	// nueva validación: solo verificamos en memoria si es válido, sin re-renderizar por cambios en Redux
-	// El tokenManager ya está sincronizado por los servicios y el Initializer.
-	const hasValidSession = useMemo(() => {
-		const token = tokenManager.getAccessToken();
-		if (!token) return false;
-		return tokenManager.isTokenValid(token) || tokenManager.canRefresh(token);
-	}, []); // Empty dependency array: check only on mount/unmount or when component re-renders for other reasons.
-	// Actually, we want this to be stable. If we rely on isAuthenticated, we assume valid session.
-
 	// Eliminamos el useEffect redundante de sync access->tokenManager
 	// Ya lo hace AppInitializer y el servicio de refresh.
 
 	useEffect(() => {
-		const handler = () => dispatch(obtenerPersonalizacionThunk());
+		const handler = () => {
+			void dispatch(obtenerPersonalizacionThunk());
+		};
 		window.addEventListener('org-context-changed', handler);
 		return () => window.removeEventListener('org-context-changed', handler);
 	}, [dispatch]);
@@ -83,7 +78,7 @@ const App = () => {
 		if (!isValid && token) {
 			// El token no es válido, pero quizás podemos refrescar silenciosamente.
 			// Solo hacemos logout si realmente no hay forma de recuperar.
-			import('@/services/BaseService').then(({ triggerTokenRefresh }) => {
+			void import('@/services/BaseService').then(({ triggerTokenRefresh }) => {
 				triggerTokenRefresh()
 					.then(() => {
 						// Token refreshed successfully, force re-render
@@ -92,16 +87,16 @@ const App = () => {
 					.catch(() => {
 						// Refresh también falló → ahora sí, logout y redirigir
 						dispatch(logout());
-						navigate('/login', { replace: true });
+						void navigate('/login', { replace: true });
 					});
 			});
 		} else if (!isValid && !token) {
 			dispatch(logout());
-			navigate('/login', { replace: true });
+			void navigate('/login', { replace: true });
 		}
 	}, [dispatch, isAuthenticated, navigate]);
 
-	const shouldRenderAuthenticatedApp = isAuthenticated; // && hasValidSession is redundant if we trust isAuthenticated + interceptor
+	const shouldRenderAuthenticatedApp = isAuthenticated;
 	// if (import.meta.env.DEV) {
 	// (window as any).tokenManager = tokenManager;
 	// }
@@ -123,7 +118,8 @@ const App = () => {
 						${colors.emerald['500']},
 						${colors[themeColor]['500']},
 						${colors.red['500']}
-				  );`}
+				  );
+				}`}
 			</style>
 
 			{shouldRenderAuthenticatedApp && (
