@@ -139,9 +139,41 @@ export const buildExecutiveSummary = (insights: string[]): PdfContent => {
 	} as PdfContent;
 };
 
+/** Ancho en em de Roboto Medium (la negrita de pdfmake): dígitos y `$` 0,568; `.` 0,278. */
+const KPI_VALUE_GLYPH_EM: Record<string, number> = { '.': 0.278, ',': 0.278, '-': 0.34 };
+const KPI_VALUE_DEFAULT_EM = 0.568;
+const KPI_VALUE_MAX_FONT_SIZE = 16;
+const KPI_VALUE_MIN_FONT_SIZE = 9;
+
+/** Mayor tamaño (en pasos de medio punto) con el que el monto cabe en una sola línea. */
+export const kpiValueFontSize = (value: string, availableWidth: number): number => {
+	const widthInEm = [...value].reduce(
+		(total, glyph) => total + (KPI_VALUE_GLYPH_EM[glyph] ?? KPI_VALUE_DEFAULT_EM),
+		0,
+	);
+	if (widthInEm === 0) return KPI_VALUE_MAX_FONT_SIZE;
+	const fitting = Math.floor((availableWidth / widthInEm) * 2) / 2;
+	return Math.min(KPI_VALUE_MAX_FONT_SIZE, Math.max(KPI_VALUE_MIN_FONT_SIZE, fitting));
+};
+
+/** Forma fija del minigráfico: es decorativo, no representa datos (0 = arriba de la franja). */
+const SPARKLINE_SHAPE = [0.7, 0.45, 0.6, 0.3, 0.5, 0.2, 0.4, 0.1, 0.25];
+
 export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 	const cardW = 121.3;
 	const cardH = 75;
+	const paddingX = 12;
+	// El texto termina cerca de y = 47: el minigráfico queda en la franja inferior, sin cruzarlo.
+	const sparkTop = 54;
+	const sparkHeight = 14;
+
+	// Puntos nuevos por tarjeta: pdfmake les suma la posición en el lugar, y compartirlos acumula
+	// el desplazamiento de las cuatro tarjetas y saca la línea de la página.
+	const sparkPoints = () =>
+		SPARKLINE_SHAPE.map((level, index) => ({
+			x: (cardW / (SPARKLINE_SHAPE.length - 1)) * index,
+			y: sparkTop + level * sparkHeight,
+		}));
 
 	const kpiCard = (
 		title: string,
@@ -149,17 +181,6 @@ export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 		bgColor: string,
 		sparkColor: string,
 	): PdfContent => {
-		// Generate random, constrained points for the fake Sparkline polygon
-		const points = [];
-		let y = 45;
-		for (let x = 0; x <= cardW; x += 15) {
-			points.push({ x: x, y: y });
-			y += Math.random() * 20 - 10;
-			// Boundaries
-			if (y < 30) y = 30;
-			if (y > 65) y = 65;
-		}
-
 		return {
 			stack: [
 				{
@@ -170,7 +191,7 @@ export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 							lineWidth: 2,
 							closePath: false,
 							lineColor: sparkColor,
-							points: points,
+							points: sparkPoints(),
 						},
 					],
 				},
@@ -184,9 +205,15 @@ export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 							margin: [0, 0, 0, 8],
 							letterSpacing: 0.5,
 						},
-						{ text: value, fontSize: 16, bold: true, color: 'white' },
+						{
+							text: value,
+							fontSize: kpiValueFontSize(value, cardW - paddingX * 2),
+							bold: true,
+							color: 'white',
+							noWrap: true,
+						},
 					],
-					margin: [12, -65, 12, 0], // Negative top margin pulls UI text over the canvas rectangle
+					margin: [paddingX, -65, paddingX, 0], // Negative top margin pulls UI text over the canvas rectangle
 				},
 			],
 			width: cardW,
