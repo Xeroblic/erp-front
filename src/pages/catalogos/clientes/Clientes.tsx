@@ -1,6 +1,16 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PaginationState } from '@tanstack/react-table';
+import ProtectedButton from '@/components/ui/ProtectedButton';
+import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
+import { useAppDispatch } from '@/store';
+import {
+	createCustomerSupplier,
+	deleteCustomerSupplier,
+} from '@/store/slices/customerSuppliers/customerSuppliersSlice';
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useAuthorization from '@/hooks/useAuthorization';
 import PageWrapper from '../../../components/layouts/PageWrapper/PageWrapper';
 import Subheader, {
 	SubheaderLeft,
@@ -8,23 +18,13 @@ import Subheader, {
 } from '../../../components/layouts/Subheader/Subheader';
 import Container from '../../../components/layouts/Container/Container';
 import Icon from '../../../components/icon/Icon';
-import ProtectedButton from '@/components/ui/ProtectedButton';
 import { ICustomerSupplierFilters } from './components/types';
-import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 import { useClientes } from './components/hooks/useClientes';
 import CustomersTable from './components/tables/CustomersTable';
 import CrearCliente from './components/modals/CrearCliente';
 import EliminarCliente from './components/modals/EliminarCliente';
-import { useAppDispatch } from '@/store';
-import {
-	createCustomerSupplier,
-	deleteCustomerSupplier,
-} from '@/store/slices/customerSuppliers/customerSuppliersSlice';
-import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 
 // Hooks centralizados de autorización
-import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import useAuthorization from '@/hooks/useAuthorization';
 
 const Clientes: React.FC = () => {
 	const navigate = useNavigate();
@@ -62,7 +62,7 @@ const Clientes: React.FC = () => {
 	// ── Handlers ──────────────────────────────────────────────────────────
 	const onCreate = () => setCreateOpen(true);
 	const onView = (c: ICustomerSupplier) => {
-		navigate(`/catalogos/clientes/${c.id}`);
+		void navigate(`/catalogos/clientes/${c.id}`);
 	};
 	const onDelete = (c: ICustomerSupplier) => {
 		setSelected(c);
