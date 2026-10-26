@@ -19,7 +19,12 @@ import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/compon
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
-import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
+import Modal, {
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+	ModalHeader,
+} from '@/components/ui/Modal';
 import type { UnmappedWooCommerceProduct } from '@/types/integrations.types';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
@@ -42,13 +47,13 @@ const buildUnmappedProductColumns = ({
 }: {
 	activeTab: 'pending' | 'mapped';
 	onMapProduct: (product: UnmappedWooCommerceProduct) => void;
-	onIgnoreProduct: (product: UnmappedWooCommerceProduct) => Promise<void>;
+	onIgnoreProduct: (product: UnmappedWooCommerceProduct) => void;
 }): ColumnDef<AppTableFeatures, UnmappedWooCommerceProduct>[] => [
 	{
 		accessorFn: (row) =>
 			String(
 				row.external_product_id ??
-					(row as any).woocommerce_product_id ??
+					row.woocommerce_product_id ??
 					row.line_item_data?.product_id ??
 					'',
 			),
@@ -57,7 +62,7 @@ const buildUnmappedProductColumns = ({
 			const product = row.original;
 			const wcId =
 				product.external_product_id ??
-				(product as any).woocommerce_product_id ??
+				product.woocommerce_product_id ??
 				product.line_item_data?.product_id ??
 				'-';
 			return <span>{wcId}</span>;
@@ -101,8 +106,9 @@ const buildUnmappedProductColumns = ({
 		cell: ({ row }) => {
 			const status = row.original.sale?.status ?? 'N/A';
 			const label = SALE_STATUS_LABELS[status] ?? status;
-			const badgeColor =
-				status === 'paid' ? 'green' : status === 'cancelled' ? 'red' : 'gray';
+			let badgeColor = 'gray';
+			if (status === 'paid') badgeColor = 'green';
+			if (status === 'cancelled') badgeColor = 'red';
 			return <Badge color={badgeColor}>{label}</Badge>;
 		},
 	},
@@ -158,6 +164,8 @@ export const UnmappedProductsContent: React.FC = () => {
 	const [mappingSku, setMappingSku] = useState('');
 	const [mappingProductId, setMappingProductId] = useState('');
 	const [activeTab, setActiveTab] = useState<'pending' | 'mapped'>('pending');
+	const [productToIgnore, setProductToIgnore] = useState<UnmappedWooCommerceProduct | null>(null);
+	const [showIgnoreModal, setShowIgnoreModal] = useState(false);
 
 	const integrationOptions = useMemo<TSelectOption[]>(
 		() =>
@@ -178,7 +186,7 @@ export const UnmappedProductsContent: React.FC = () => {
 	// Cargar integraciones al montar
 	useEffect(() => {
 		if (subsidiaryId) {
-			dispatch(fetchIntegrations({ subsidiaryId }));
+			void dispatch(fetchIntegrations({ subsidiaryId }));
 		}
 	}, [dispatch, subsidiaryId]);
 
@@ -186,9 +194,13 @@ export const UnmappedProductsContent: React.FC = () => {
 	useEffect(() => {
 		if (!subsidiaryId || !selectedIntegrationId) return;
 		if (activeTab === 'pending') {
-			dispatch(fetchUnmappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }));
+			void dispatch(
+				fetchUnmappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }),
+			);
 		} else {
-			dispatch(fetchMappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }));
+			void dispatch(
+				fetchMappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }),
+			);
 		}
 	}, [dispatch, subsidiaryId, selectedIntegrationId, activeTab]);
 
@@ -227,11 +239,11 @@ export const UnmappedProductsContent: React.FC = () => {
 			setMappingProductId('');
 			// Refrescar lista activa
 			if (activeTab === 'pending') {
-				dispatch(
+				void dispatch(
 					fetchUnmappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }),
 				);
 			} else {
-				dispatch(
+				void dispatch(
 					fetchMappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }),
 				);
 			}
@@ -240,30 +252,37 @@ export const UnmappedProductsContent: React.FC = () => {
 		}
 	};
 
-	const handleIgnoreProduct = useCallback(
-		async (product: UnmappedWooCommerceProduct) => {
-			if (!subsidiaryId || !selectedIntegrationId) return;
-			if (!confirm('¿Estás seguro de ignorar este producto?')) return;
+	const handleAskIgnoreProduct = useCallback((product: UnmappedWooCommerceProduct) => {
+		setProductToIgnore(product);
+		setShowIgnoreModal(true);
+	}, []);
 
-			const resultAction = await dispatch(
-				ignoreProduct({
-					subsidiaryId,
-					integrationId: selectedIntegrationId,
-					unmappedProductId: product.id,
-				}),
+	const handleCloseIgnoreModal = () => {
+		setShowIgnoreModal(false);
+		setProductToIgnore(null);
+	};
+
+	const handleIgnoreProduct = async () => {
+		if (!subsidiaryId || !selectedIntegrationId || !productToIgnore) return;
+
+		const resultAction = await dispatch(
+			ignoreProduct({
+				subsidiaryId,
+				integrationId: selectedIntegrationId,
+				unmappedProductId: productToIgnore.id,
+			}),
+		);
+
+		if (ignoreProduct.fulfilled.match(resultAction)) {
+			toast.success('Producto marcado como ignorado');
+			handleCloseIgnoreModal();
+			void dispatch(
+				fetchUnmappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }),
 			);
-
-			if (ignoreProduct.fulfilled.match(resultAction)) {
-				toast.success('Producto marcado como ignorado');
-				dispatch(
-					fetchUnmappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }),
-				);
-			} else {
-				toast.error('Error al ignorar el producto');
-			}
-		},
-		[dispatch, selectedIntegrationId, subsidiaryId],
-	);
+		} else {
+			toast.error('Error al ignorar el producto');
+		}
+	};
 
 	const handleOpenMapModal = useCallback((product: UnmappedWooCommerceProduct) => {
 		setSelectedProduct(product);
@@ -279,9 +298,9 @@ export const UnmappedProductsContent: React.FC = () => {
 			buildUnmappedProductColumns({
 				activeTab,
 				onMapProduct: handleOpenMapModal,
-				onIgnoreProduct: handleIgnoreProduct,
+				onIgnoreProduct: handleAskIgnoreProduct,
 			}),
-		[activeTab, handleOpenMapModal, handleIgnoreProduct],
+		[activeTab, handleOpenMapModal, handleAskIgnoreProduct],
 	);
 
 	return (
@@ -300,7 +319,7 @@ export const UnmappedProductsContent: React.FC = () => {
 						icon='HeroArrowPath'
 						onClick={() => {
 							if (subsidiaryId && selectedIntegrationId) {
-								dispatch(
+								void dispatch(
 									activeTab === 'pending'
 										? fetchUnmappedProducts({
 												subsidiaryId,
@@ -463,6 +482,30 @@ export const UnmappedProductsContent: React.FC = () => {
 						</div>
 					)}
 				</ModalBody>
+			</Modal>
+
+			<Modal isOpen={showIgnoreModal} setIsOpen={setShowIgnoreModal} size='sm'>
+				<ModalHeader>Ignorar producto</ModalHeader>
+				<ModalBody>
+					<p className='text-sm'>
+						¿Estás seguro de ignorar <strong>{productToIgnore?.name}</strong>? Dejará de
+						aparecer en los productos pendientes de mapeo.
+					</p>
+				</ModalBody>
+				<ModalFooter>
+					<ModalFooterChild>
+						<Button variant='outline' color='zinc' onClick={handleCloseIgnoreModal}>
+							Cancelar
+						</Button>
+						<Button
+							variant='solid'
+							color='red'
+							onClick={handleIgnoreProduct}
+							isDisable={loading}>
+							{loading ? 'Ignorando...' : 'Ignorar'}
+						</Button>
+					</ModalFooterChild>
+				</ModalFooter>
 			</Modal>
 		</>
 	);
