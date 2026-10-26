@@ -6,8 +6,8 @@ import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
 import Input from '@/components/form/Input';
 import DataTable from '@/components/ui/DataTable/DataTable';
-import type { IWorkItem } from '../types';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import type { IWorkItem } from '../types';
 
 const clpFormatter = new Intl.NumberFormat('es-CL', {
 	style: 'currency',

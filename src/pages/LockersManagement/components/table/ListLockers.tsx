@@ -3,10 +3,10 @@ import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table'
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
+import { Table, TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import { ILockerInternal, IServiceOrder } from '@/interface/lockers.interface';
-import { getStatusConfig, getAvailableActions } from '../../types';
 import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { getStatusConfig, getAvailableActions } from '../../types';
 
 interface IListLockersProps {
 	lockers: ILockerInternal[];

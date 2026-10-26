@@ -7,18 +7,18 @@ import {
 	useTable,
 } from '@tanstack/react-table';
 
-import { useInvitationsManagement } from '../../hooks/useInvitationsManagement';
-import { InvitationDetailsModal, DeleteConfirmationModal, ResendInvitationModal } from '../modals';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
 import { Invitation } from '@/interface/invitacion.interface';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
-import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
+import { Table, TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import { TColors } from '@/types/colors.type';
 import { INVITATION_STATUS_MAP, normalizeInvitationStatus } from '@/constants/invitations.constant';
 import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { InvitationDetailsModal, DeleteConfirmationModal, ResendInvitationModal } from '../modals';
+import { useInvitationsManagement } from '../../hooks/useInvitationsManagement';
 
 interface InvitationsTableProps {
 	invitations: Invitation[];

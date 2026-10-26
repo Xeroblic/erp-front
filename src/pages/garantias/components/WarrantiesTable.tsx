@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react';
 import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
+import { Table, TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
-import WarrantyStatusBadge from './WarrantyStatusBadge';
+import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
 import type { Warranty } from '@/interface/warranties.interface';
-import { formatProductDisplay } from '../utils/warranty.utils';
 import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import WarrantyStatusBadge from './WarrantyStatusBadge';
+import { formatProductDisplay } from '../utils/warranty.utils';
 
 type DecoratedWarranty = Warranty & {
 	warrantyTypeLabel?: string;

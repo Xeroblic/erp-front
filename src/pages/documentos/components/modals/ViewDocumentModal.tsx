@@ -6,6 +6,7 @@ import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import DataTable from '@/components/ui/DataTable';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { IDocument, IDocumentAttachment } from '../../types/documentos.types';
 import {
 	formatDateTime,
@@ -16,7 +17,6 @@ import {
 	getFileTypeLabel,
 	getModuleLabel,
 } from '../utils';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 type ViewDocumentModalProps = {
 	isOpen: boolean;

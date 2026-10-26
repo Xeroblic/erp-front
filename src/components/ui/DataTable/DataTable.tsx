@@ -11,11 +11,11 @@ import {
 	OnChangeFn,
 	RowData,
 } from '@tanstack/react-table';
-import Table, { THead, Tr, Th, TBody, Td } from '@/components/ui/Table';
+import { Table, THead, Tr, Th, TBody, Td } from '@/components/ui/Table';
 import Input from '@/components/form/Input';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
 import { AppTableFeatures, clientTableFeatures } from './tableFeatures';
 
 /**

@@ -4,12 +4,12 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import { formatDate } from '../../../proveedores/components/utils';
-import { useCustomerSuppliers } from '../hooks/useCustomerSuppliers';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchSuppliers } from '@/store/slices/suppliers/suppliersSlice';
 import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { useCustomerSuppliers } from '../hooks/useCustomerSuppliers';
+import { formatDate } from '../../../proveedores/components/utils';
 
 type DetalleClienteProps = {
 	isOpen: boolean;

@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useTable } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import Card, { CardBody } from '@/components/ui/Card';
-import { CreateSubsidiaryModal } from '../modals';
 import { ISubempresa } from '@/interface/empresas.interface';
+import { appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { CreateSubsidiaryModal } from '../modals';
 import {
 	useSubsidiaryColumns,
 	SubsidiariesTableHeader,
@@ -11,7 +12,6 @@ import {
 	SubsidiariesEmptyState,
 	SubsidiariesTableContent,
 } from '../table';
-import { appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface SubsidiariesTableProps {
 	subsidiaries: ISubempresa[];

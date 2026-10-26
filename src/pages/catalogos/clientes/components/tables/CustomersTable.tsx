@@ -102,7 +102,7 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
 								variant='outline'
 								onClick={() => onView(row.original)}
 								className='border-violet-200 text-violet-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 dark:border-violet-500/30 dark:text-violet-300 dark:hover:bg-violet-500/10'>
-								<Icon icon='HeroEye' color={'violet'} className='text-2xl' />
+								<Icon icon='HeroEye' color='violet' className='text-2xl' />
 							</Button>
 						</Tooltip>
 						<Tooltip text='Eliminar'>
@@ -112,7 +112,7 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
 								color='red'
 								onClick={() => onDelete(row.original)}
 								className='border-rose-200 text-rose-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10'>
-								<Icon icon='HeroTrash' color={'red'} className='text-2xl' />
+								<Icon icon='HeroTrash' color='red' className='text-2xl' />
 							</Button>
 						</Tooltip>
 					</div>

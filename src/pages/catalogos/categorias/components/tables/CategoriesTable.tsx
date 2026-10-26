@@ -1,7 +1,6 @@
 import React from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { CategoryTableRow } from '@/components/helper/category.helper';
-import { ICategory } from '../../types';
 import Card, { CardBody } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
@@ -12,6 +11,7 @@ import Tooltip from '@/components/ui/Tooltip';
 import DataTable from '@/components/ui/DataTable';
 import useDarkMode from '@/hooks/useDarkMode';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { ICategory } from '../../types';
 
 type LevelFilter = 'all' | 'root' | 'child';
 type ProductFilter = 'all' | 'with' | 'without';

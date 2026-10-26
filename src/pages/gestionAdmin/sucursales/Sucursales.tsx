@@ -12,22 +12,22 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody } from '@/components/ui/Card';
-import Table, { Th, THead, Tr, TBody, Td } from '@/components/ui/Table';
+import { Table, Th, THead, Tr, TBody, Td } from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
 import Modal, {
 	ModalHeader,
 	ModalBody,
 	ModalFooter,
 	ModalFooterChild,
 } from '@/components/ui/Modal';
-import SucursalModal from './components/SucursalModal';
 import { ISucursal } from '@/interface/empresas.interface';
 import Tooltip from '@/components/ui/Tooltip';
 import { AppTableFeatures, clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import SucursalModal from './components/SucursalModal';
 
 const columnHelper = createColumnHelper<AppTableFeatures, ISucursal>();
 

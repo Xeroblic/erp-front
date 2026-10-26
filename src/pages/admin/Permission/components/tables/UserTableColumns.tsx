@@ -3,10 +3,10 @@ import { type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice'
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { formatRoleName } from '../../utils/formatters';
 import Avatar from '@/components/Avatar';
-import getUserAvatarUrl from '@/utils/getUserAvatarUrl';
+import { getUserAvatarUrl } from '@/utils/getUserAvatarUrl';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { formatRoleName } from '../../utils/formatters';
 
 const columnHelper = createColumnHelper<AppTableFeatures, UserWithDetails>();
 

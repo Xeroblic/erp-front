@@ -3,9 +3,9 @@ import { ColumnDef, PaginationState } from '@tanstack/react-table';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import type { IEquipmentWithdrawalListItem } from '@/interface/equipmentWithdrawals.interface';
 import { formatDate } from '@/utils/format.utils';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import StaleChip from '../parts/StaleChip';
 import WithdrawalStatusBadge from '../parts/WithdrawalStatusBadge';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface IRetirosTableProps {
 	rows: IEquipmentWithdrawalListItem[];

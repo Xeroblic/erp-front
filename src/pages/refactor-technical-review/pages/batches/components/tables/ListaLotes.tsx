@@ -20,7 +20,7 @@ import Card, { CardBody } from '@/components/ui/Card';
 import Tooltip from '@/components/ui/Tooltip';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
-export function ListaLotes() {
+export const ListaLotes = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const { branchId } = useCurrentBranch();
@@ -118,8 +118,7 @@ export function ListaLotes() {
 
 				return (
 					<Badge variant='solid' className='px-1' color={color}>
-						{BATCH_STATUS_LABELS[statusValue as keyof typeof BATCH_STATUS_LABELS] ||
-							statusValue}
+						{BATCH_STATUS_LABELS[statusValue] || statusValue}
 					</Badge>
 				);
 			},
@@ -168,10 +167,10 @@ export function ListaLotes() {
 					pageCount={meta?.last_page || 1}
 					paginationState={pagination}
 					initialSortingState={[{ id: 'id', desc: true }]}
-					manualPagination={true}
+					manualPagination
 					onPaginationChange={setPagination}
 				/>
 			</CardBody>
 		</Card>
 	);
-}
+};

@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import type { TColors } from '@/types/colors.type';
 import type { IProduct } from '@/interface/product.interface';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { useProductReviews } from './hooks/useProductReviews';
 import type { ProductReviewRow } from './types';
 import {
@@ -15,7 +16,6 @@ import {
 	REVIEW_STATUS_LABEL,
 	humanizeStatus,
 } from './types';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface ReviewsTabProps {
 	product: IProduct;

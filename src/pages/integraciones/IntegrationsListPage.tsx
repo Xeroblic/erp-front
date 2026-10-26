@@ -20,12 +20,12 @@ import {
 } from '@/store/slices/integrations/integrationsSlice';
 import type { Integration } from '@/types/integrations.types';
 import type { TIcons } from '@/types/icons.type';
-import ModalIntegration from './components/ModalIntegration';
-import RestoreConflictModal from './components/RestoreConflictModal';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import RestoreConflictModal from './components/RestoreConflictModal';
+import ModalIntegration from './components/ModalIntegration';
 
 export const IntegrationsListContent: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -473,67 +473,64 @@ export const IntegrationsListContent: React.FC = () => {
 
 	if (!subsidiaryId) {
 		return (
-			<>
-				<Container>
-					<Card>
-						<CardBody>
-							<div className='py-8 text-center'>
-								<Icon
-									icon='HeroExclamationTriangle'
-									size='text-6xl'
-									className='mx-auto mb-4 text-yellow-500'
-								/>
-								<h2 className='mb-2 text-2xl font-bold text-gray-800'>
-									No se pudo identificar la subsidiaria actual
-								</h2>
-								<p className='mb-4 text-gray-600'>
-									Tu usuario no tiene asignada una subsidiaria. Esto puede deberse
-									a:
-								</p>
-								<ul className='mb-6 inline-block space-y-2 text-left text-sm text-gray-600'>
-									<li>✗ Tu cuenta no está vinculada a ninguna subsidiaria</li>
-									<li>✗ Necesitas permisos específicos</li>
-									<li>✗ La sesión necesita ser actualizada</li>
-								</ul>
-								<div className='mt-6 space-x-2'>
-									<Button
-										variant='solid'
-										icon='HeroArrowPath'
-										onClick={() => window.location.reload()}>
-										Recargar Página
-									</Button>
-									<Button
-										variant='outline'
-										icon='HeroArrowRightOnRectangle'
-										onClick={() => {
-											// Implementar logout
-											window.location.href = '/login';
-										}}>
-										Cerrar Sesión
-									</Button>
-								</div>
-								<div className='mt-6 rounded-lg bg-gray-100 p-4 text-left text-xs'>
-									<p className='mb-2 font-semibold'>Debug Info:</p>
-									<pre className='overflow-auto text-xs'>
-										{JSON.stringify(
-											{
-												hasUser: !!currentUser,
-												userId: currentUser?.id,
-												subsidiary: currentUser?.subsidiary,
-												personalizacion:
-													currentUser?.personalizacion?.subsidiary_id,
-												branch: currentUser?.branch?.subsidiary,
-											},
-											null,
-											2,
-										)}
-									</pre>
-								</div>
+			<Container>
+				<Card>
+					<CardBody>
+						<div className='py-8 text-center'>
+							<Icon
+								icon='HeroExclamationTriangle'
+								size='text-6xl'
+								className='mx-auto mb-4 text-yellow-500'
+							/>
+							<h2 className='mb-2 text-2xl font-bold text-gray-800'>
+								No se pudo identificar la subsidiaria actual
+							</h2>
+							<p className='mb-4 text-gray-600'>
+								Tu usuario no tiene asignada una subsidiaria. Esto puede deberse a:
+							</p>
+							<ul className='mb-6 inline-block space-y-2 text-left text-sm text-gray-600'>
+								<li>✗ Tu cuenta no está vinculada a ninguna subsidiaria</li>
+								<li>✗ Necesitas permisos específicos</li>
+								<li>✗ La sesión necesita ser actualizada</li>
+							</ul>
+							<div className='mt-6 space-x-2'>
+								<Button
+									variant='solid'
+									icon='HeroArrowPath'
+									onClick={() => window.location.reload()}>
+									Recargar Página
+								</Button>
+								<Button
+									variant='outline'
+									icon='HeroArrowRightOnRectangle'
+									onClick={() => {
+										// Implementar logout
+										window.location.href = '/login';
+									}}>
+									Cerrar Sesión
+								</Button>
 							</div>
-						</CardBody>
-					</Card>
-				</Container>
-			</>
+							<div className='mt-6 rounded-lg bg-gray-100 p-4 text-left text-xs'>
+								<p className='mb-2 font-semibold'>Debug Info:</p>
+								<pre className='overflow-auto text-xs'>
+									{JSON.stringify(
+										{
+											hasUser: !!currentUser,
+											userId: currentUser?.id,
+											subsidiary: currentUser?.subsidiary,
+											personalizacion:
+												currentUser?.personalizacion?.subsidiary_id,
+											branch: currentUser?.branch?.subsidiary,
+										},
+										null,
+										2,
+									)}
+								</pre>
+							</div>
+						</div>
+					</CardBody>
+				</Card>
+			</Container>
 		);
 	}
 

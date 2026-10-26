@@ -224,7 +224,7 @@ const TableUser: React.FC<Props> = ({
 						header: 'Acciones',
 						cell: (info) => (
 							<div className='flex gap-2'>
-								<PermissionGuard role={'admin'}>
+								<PermissionGuard role='admin'>
 									<Tooltip text='Gestionar perfil y accesos'>
 										<Button
 											variant='ghost'
@@ -236,7 +236,7 @@ const TableUser: React.FC<Props> = ({
 									</Tooltip>
 								</PermissionGuard>
 
-								<PermissionGuard role={'super-admin'}>
+								<PermissionGuard role='super-admin'>
 									<Tooltip
 										text={
 											info.row.original.is_active

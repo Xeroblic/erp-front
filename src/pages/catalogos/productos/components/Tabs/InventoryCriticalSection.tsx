@@ -6,9 +6,9 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
 import type { IProduct } from '@/interface/product.interface';
+import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import type { CriticalItemRow } from './inventoryTab.types';
 import { formatNumber, getFriendlyDate } from './inventoryTab.utils';
-import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface InventoryCriticalSectionProps {
 	criticalItems: CriticalItemRow[];

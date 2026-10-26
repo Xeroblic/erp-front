@@ -112,7 +112,7 @@ export default function SolicitudesVentasPage() {
 			accessorKey: 'estado',
 			header: 'Estado',
 			cell: ({ row }) => {
-				const estado = row.getValue('estado') as string;
+				const estado = row.getValue<string>('estado');
 				let color: 'yellow' | 'emerald' | 'red' = 'yellow';
 				if (estado === 'Aprobado') color = 'emerald';
 				if (estado === 'Rechazado') color = 'red';

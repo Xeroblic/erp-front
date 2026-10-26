@@ -5,6 +5,8 @@ import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 
+import DataTable from '@/components/ui/DataTable';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { IDocument } from '../../types/documentos.types';
 import {
 	formatDateTime,
@@ -15,8 +17,6 @@ import {
 	getFileTypeLabel,
 	getModuleLabel,
 } from '../utils';
-import DataTable from '@/components/ui/DataTable';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 type DocumentsTableProps = {
 	documents: IDocument[];

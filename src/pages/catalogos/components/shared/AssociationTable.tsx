@@ -14,7 +14,7 @@ interface AssociationTableProps<T extends RowData> {
 	isEditMode?: boolean;
 }
 
-function AssociationTable<T extends RowData>({
+const AssociationTable = <T extends RowData>({
 	title,
 	count,
 	table,
@@ -22,7 +22,7 @@ function AssociationTable<T extends RowData>({
 	emptyMessage,
 	showOnlyInEditMode = false,
 	isEditMode = false,
-}: AssociationTableProps<T>) {
+}: AssociationTableProps<T>) => {
 	// Si debe mostrarse solo en modo edición y no estamos en modo edición, no renderizar
 	if (showOnlyInEditMode && !isEditMode) {
 		return null;
@@ -86,6 +86,6 @@ function AssociationTable<T extends RowData>({
 			</CardBody>
 		</Card>
 	);
-}
+};
 
 export default AssociationTable;

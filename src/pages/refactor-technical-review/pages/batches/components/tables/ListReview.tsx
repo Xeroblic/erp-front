@@ -117,7 +117,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 			...(debouncedSearch && { search: debouncedSearch }),
 			...(reviewStatusFilter !== 'all' &&
 				reviewStatusFilter !== 'sold' && {
-					review_status: reviewStatusFilter as ReviewStatus,
+					review_status: reviewStatusFilter,
 				}),
 			// El filtro 'sold' para el lote 17 es puramente local sobre la lista serialNumbers
 			// ya que los equipos aún no están marcados como sold en el backend.

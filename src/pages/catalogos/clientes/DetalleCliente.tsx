@@ -12,9 +12,9 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import { fetchSuppliers } from '@/store/slices/suppliers/suppliersSlice';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
-import { useCustomerSuppliers } from './components/hooks/useCustomerSuppliers';
 import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { useCustomerSuppliers } from './components/hooks/useCustomerSuppliers';
 
 // Tipo basado en la estructura real de la BD
 interface ICustomerSupplierExtended extends ICustomerSupplier {

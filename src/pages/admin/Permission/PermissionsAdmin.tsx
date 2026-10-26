@@ -9,20 +9,20 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
-import Table, { THead, Tr, Th, TBody, Td } from '@/components/ui/Table';
+import { Table, THead, Tr, Th, TBody, Td } from '@/components/ui/Table';
 import Badge from '@/components/ui/Badge';
 import Input from '@/components/form/Input';
 import Icon from '@/components/icon/Icon';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
 
 // Componentes modulares
+import { usePermissionLabels } from '@/hooks/usePermissionLabels';
+import { Permission, Role } from '@/store/slices/permissions/permissionsSlice';
+import { clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { PermissionsModal } from './components/modals/PermissionsModal';
 import { createUserTableColumns } from './components/tables/UserTableColumns';
 import { usePermissionsManagement } from './hooks/usePermissionsManagement';
 import { resolveRoleLabel, resolvePermissionLabel } from './utils/formatters';
-import { usePermissionLabels } from '@/hooks/usePermissionLabels';
-import { Permission, Role } from '@/store/slices/permissions/permissionsSlice';
-import { clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 export default function PermissionsAdmin() {
 	// Hook personalizado para gestión de permisos

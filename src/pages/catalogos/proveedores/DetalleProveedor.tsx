@@ -12,11 +12,11 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchSuppliers } from '@/store/slices/suppliers/suppliersSlice';
 import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
-import { useSupplierCustomers } from './components/hooks/useSupplierCustomers';
 import type { ISupplier } from '@/interface/supplier.interface';
-import { formatDate } from './components/utils';
 import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
 import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { formatDate } from './components/utils';
+import { useSupplierCustomers } from './components/hooks/useSupplierCustomers';
 
 interface ISupplierExtended extends ISupplier {
 	customers_count?: number;

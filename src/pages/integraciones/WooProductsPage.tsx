@@ -25,8 +25,8 @@ import DataTable from '@/components/ui/DataTable/DataTable';
 import WooIntegrationSelector from '@/pages/catalogos/productos/components/modals/components/WooIntegrationSelector';
 import useCan from '@/hooks/useCan';
 import type { WooProduct } from '@/types/integrations.types';
-import UnlinkAllProductsModal from './components/UnlinkAllProductsModal';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import UnlinkAllProductsModal from './components/UnlinkAllProductsModal';
 
 export const WooProductsContent: React.FC = () => {
 	const dispatch = useAppDispatch();

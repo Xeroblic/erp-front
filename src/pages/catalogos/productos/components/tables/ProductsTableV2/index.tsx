@@ -7,10 +7,10 @@ import useCan from '@/hooks/useCan';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleProductStatus } from '@/store/slices/products/productsSlice';
 import type { IProduct, ProductListMeta } from '@/interface/product.interface';
+import { appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { useProductColumns } from './useProductColumns';
 import ProductVariantsRow from './ProductVariantsRow';
 import { extractProductVariants } from './productTable.utils';
-import { appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface ProductsTableProps {
 	products: IProduct[];

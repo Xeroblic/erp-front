@@ -11,9 +11,12 @@ import salesReducer, {
 	selectSalesMeta,
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
-import type { SalesListFilters } from '@/services/salesService';
+import {
+	type SalesListFilters,
+	fetchPendingSerialAssignment,
+	type PendingSerialSale,
+} from '@/services/salesService';
 import { formatCLP } from '@/utils/format.utils';
-import { translateStatus, pendingSerialToSaleItems } from './utils';
 // import ApiService from '@/services/ApiService';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -31,19 +34,19 @@ import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Icon from '@/components/icon/Icon';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
-import useContextScopedSelection from '@/hooks/useContextScopedSelection';
+import { useContextScopedSelection } from '@/hooks/useContextScopedSelection';
 import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 // import Tooltip from '@/components/ui/Tooltip';
 import type { ISale } from '@/interface/sales.interface';
-import SaleDetailPage from './detail/components/modals/SaleDetailPage';
-import CloseSaleModal from './detail/components/modals/CloseSaleModal';
-import DeleteSaleModal from './detail/components/modals/DeleteSaleModal';
 import Tooltip from '@/components/ui/Tooltip';
 import { downloadShippingLabel } from '@/store/slices/sales/salesSlice';
-import { fetchPendingSerialAssignment, type PendingSerialSale } from '@/services/salesService';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSaleReturnWrites } from './detail/hooks/useSaleReturnWrites';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import DeleteSaleModal from './detail/components/modals/DeleteSaleModal';
+import CloseSaleModal from './detail/components/modals/CloseSaleModal';
+import SaleDetailPage from './detail/components/modals/SaleDetailPage';
+import { translateStatus, pendingSerialToSaleItems } from './utils';
+import { useSaleReturnWrites } from './detail/hooks/useSaleReturnWrites';
 
 injectReducer('salesModule', salesReducer);
 
@@ -950,7 +953,7 @@ const SalesListPage: React.FC = () => {
 
 			{subsidiaryId && saleToDeleteForCurrentSubsidiary && (
 				<DeleteSaleModal
-					isOpen={true}
+					isOpen
 					setIsOpen={(open) => {
 						if (!open) setSaleToDelete(null);
 					}}

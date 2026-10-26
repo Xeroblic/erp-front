@@ -86,7 +86,7 @@ export default function EnlacesPublicosPage() {
 			accessorKey: 'estado',
 			header: 'Estado',
 			cell: ({ row }) => {
-				const estado = row.getValue('estado') as string;
+				const estado = row.getValue<string>('estado');
 				return <Badge color={estado === 'Activo' ? 'emerald' : 'zinc'}>{estado}</Badge>;
 			},
 		},
@@ -123,10 +123,7 @@ export default function EnlacesPublicosPage() {
 	];
 
 	return (
-		<PageWrapper
-			isProtectedRoute={true}
-			title='Enlaces Públicos (Ventas)'
-			name='Enlaces Públicos'>
+		<PageWrapper isProtectedRoute title='Enlaces Públicos (Ventas)' name='Enlaces Públicos'>
 			<Subheader>
 				<SubheaderLeft>
 					<div className='flex items-center gap-3'>

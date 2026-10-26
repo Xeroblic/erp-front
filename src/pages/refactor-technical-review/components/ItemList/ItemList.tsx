@@ -12,16 +12,16 @@ import Icon from '@/components/icon/Icon';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import Badge from '@/components/ui/Badge';
 import type { IItem, ListMeta } from '@/interface/technicalReviews.interface';
-import StatusBadge from '../StatusBadge';
 import { useAppDispatch } from '@/store';
 import { deleteItem } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import StatusBadge from '../StatusBadge';
 import PrintLabel from '../PrintLabel';
 import { extractValue, formatDateTime, resolveEquipmentTypeMeta } from '../utils/utilsItems';
 import { exportItemsToExcel } from '../ExcelExport/exportExcel';
 import handleDeleteItem from './hooks/Item_list';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 type ExportMode = 'serials' | 'details';
 
@@ -362,7 +362,7 @@ const ItemList: React.FC<ItemListProps> = ({
 						columns={columns}
 						loading={loading}
 						emptyMessage={emptyMessage}
-						manualPagination={true}
+						manualPagination
 						pageCount={meta?.last_page || 1}
 						paginationState={{
 							pageIndex: Math.max((meta?.current_page || 1) - 1, 0),

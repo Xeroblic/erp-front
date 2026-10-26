@@ -11,10 +11,10 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Dropdown, { DropdownToggle, DropdownMenu, DropdownItem } from '@/components/ui/Dropdown';
-import { getQuoteStatusBadge, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
 import { formatDate } from '@/utils/format.utils';
 import Tooltip from '@/components/ui/Tooltip';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { getQuoteStatusBadge, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
 
 interface QuotationsTableProps {
 	data: IQuote[];
@@ -89,7 +89,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 				cell: (info) => {
 					const badge = getQuoteStatusBadge(info.getValue());
 					return (
-						<Badge variant={'outline'} color={badge.color} className='text-md px-2'>
+						<Badge variant='outline' color={badge.color} className='text-md px-2'>
 							{badge.label}
 						</Badge>
 					);
@@ -195,7 +195,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 									color='emerald'
 									onClick={() => onConvertToSale?.(info.row.original.id)}
 									className='bg-emerald-600 p-1 hover:bg-emerald-700/20'>
-									<Icon icon='DuoFire' color={'white'} className='text-xl' />
+									<Icon icon='DuoFire' color='white' className='text-xl' />
 								</Button>
 							</Tooltip>
 						)}
@@ -220,11 +220,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 										color='red'
 										onClick={() => onDelete?.(info.row.original.id)}
 										className='bg-red-600 p-0 hover:bg-red-700/20'>
-										<Icon
-											icon='HeroTrash'
-											color={'white'}
-											className='text-xl'
-										/>
+										<Icon icon='HeroTrash' color='white' className='text-xl' />
 									</Button>
 								</Tooltip>
 							</>

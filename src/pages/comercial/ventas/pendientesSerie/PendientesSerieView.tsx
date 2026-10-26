@@ -16,9 +16,9 @@ import type { PendingSerialSale } from '@/services/salesService';
 import CloseSaleModal from '@/pages/comercial/ventas/detail/components/modals/CloseSaleModal';
 import SaleDetailPage from '@/pages/comercial/ventas/detail/components/modals/SaleDetailPage';
 import { useSaleReturnWrites } from '@/pages/comercial/ventas/detail/hooks/useSaleReturnWrites';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { pendingSerialToSaleItems } from '../utils';
 import { usePendientesSerie } from './hooks/usePendientesSerie';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 const statusColor: Record<string, TColors> = {
 	pending: 'amber',

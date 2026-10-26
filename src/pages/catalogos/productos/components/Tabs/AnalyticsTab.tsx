@@ -4,11 +4,10 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import { ColumnDef, PaginationState } from '@tanstack/react-table';
-import type { IProduct } from '@/interface/product.interface';
-import type { ProductListMeta } from '@/interface/product.interface';
-import StockSeriesModal from '../modals/StockSeriesModal';
+import type { IProduct, ProductListMeta } from '@/interface/product.interface';
 import DataTable from '@/components/ui/DataTable';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import StockSeriesModal from '../modals/StockSeriesModal';
 
 interface StockAdminTabProps {
 	subsidiaryId: number;
@@ -162,7 +161,7 @@ const StockAdminTab: React.FC<StockAdminTabProps> = ({
 						loading={loading}
 						searchValue={globalFilter}
 						onSearchChange={setGlobalFilter}
-						manualPagination={true}
+						manualPagination
 						pageCount={meta.last_page}
 						paginationState={pagination}
 						onPaginationChange={setPagination}

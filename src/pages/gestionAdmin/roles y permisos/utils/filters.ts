@@ -1,6 +1,6 @@
 import type { FilterFn } from '@tanstack/react-table';
-import type { UserRow } from '../types';
 import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import type { UserRow } from '../types';
 
 export const globalFilterFn: FilterFn<AppTableFeatures, UserRow> = (
 	row,
