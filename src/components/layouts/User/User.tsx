@@ -1,12 +1,12 @@
 import React, { FC, HTMLAttributes, ReactNode, useId, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { AnimatePresence, motion, type MotionProps } from 'framer-motion';
-import useRoundedSize from '../../../hooks/useRoundedSize';
-import useAsideStatus from '../../../hooks/useAsideStatus';
-import themeConfig from '../../../config/theme.config';
-import { getFirstLetter } from '../../../utils/getFirstLetter';
-import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
+import themeConfig from '@/config/theme.config';
+import useAsideStatus from '@/hooks/useAsideStatus';
 import useColorIntensity from '@/hooks/useColorIntensity';
+import { useReactiveThemeConfig } from '@/hooks/useReactiveThemeConfig';
+import useRoundedSize from '@/hooks/useRoundedSize';
+import { getFirstLetter } from '@/utils/getFirstLetter';
 
 interface IUserProps extends HTMLAttributes<HTMLDivElement> {
 	children: ReactNode;

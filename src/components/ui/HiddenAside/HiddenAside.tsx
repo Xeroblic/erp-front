@@ -2,7 +2,6 @@ import React, { useState, ReactNode, useEffect } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import classNames from 'classnames';
 import Icon from '@/components/icon/Icon';
-import Badge from '../Badge';
 import Button from '../Button';
 
 interface HiddenAsideProps {
@@ -40,23 +39,20 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 		typeof asideWidth === 'string' &&
 		(asideWidth.startsWith('w-') || asideWidth.startsWith('max-w-'));
 
-	const styleWidth = isTailwindClass
-		? undefined
-		: typeof asideWidth === 'number'
-			? `${asideWidth}px`
-			: asideWidth;
+	const cssWidth = typeof asideWidth === 'number' ? `${asideWidth}px` : asideWidth;
+	const styleWidth = isTailwindClass ? undefined : cssWidth;
 
 	const widthClass = isTailwindClass ? asideWidth : undefined;
 
 	// Measure width with ResizeObserver
 	useEffect(() => {
-		if (!asideRef.current) return;
+		if (!asideRef.current) return undefined;
 
 		const element = asideRef.current;
 		const observer = new ResizeObserver((entries) => {
-			for (const entry of entries) {
+			entries.forEach((entry) => {
 				setActualWidth(Math.round(entry.contentRect.width));
-			}
+			});
 		});
 
 		observer.observe(element);
@@ -150,7 +146,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 
 				{/* --- ASIDE PANEL --- */}
 				<motion.aside
-					ref={asideRef as any}
+					ref={asideRef}
 					initial={{ x: '100%', opacity: 0 }}
 					animate={{
 						x: isHovered ? '0%' : '100%',
