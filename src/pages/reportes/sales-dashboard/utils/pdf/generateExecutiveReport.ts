@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import loadPdfMake from '@/utils/pdfMake.util';
 import type { SalesDashboardStats, SaleRecord, ReportFiltersState } from '../../../types';
@@ -13,7 +14,6 @@ import {
 	buildMethodology,
 	type PdfContent,
 } from './reportBuilder';
-import { format } from 'date-fns';
 
 export interface ExecutiveReportData {
 	stats: SalesDashboardStats;
@@ -35,7 +35,7 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 		buildSmartKPIs(data.stats),
 		buildTopPerformersTable(data.topCustomers),
 		buildYearlyAnalytics(data.filteredResults),
-		...(buildSemesterDeepDive(data.filteredResults) as PdfContent[]),
+		...buildSemesterDeepDive(data.filteredResults),
 		buildRiskAnalytics(data.filteredResults),
 		buildMethodology(),
 	];
@@ -49,7 +49,7 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 			subject: 'Estadísticas de Ventas',
 			creator: 'Módulo Reportables',
 		},
-		content: content,
+		content,
 		defaultStyle: {
 			font: 'Roboto', // Fuente que viene en vfs_fonts
 			fontSize: 10,

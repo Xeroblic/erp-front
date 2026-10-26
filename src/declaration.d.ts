@@ -12,7 +12,7 @@ declare module '*.xlsx?url' {
 // Declaración global para el store de Redux
 declare global {
 	interface Window {
-		__REDUX_STORE__?: any;
+		__REDUX_STORE__?: unknown;
 		lastDarkModeLog?: string; // Para controlar logs de dark mode
 	}
 }
