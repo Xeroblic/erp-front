@@ -177,7 +177,7 @@ const SalesDashboard: React.FC = () => {
 				style: { fontSize: '13px' },
 				x: { format: 'dd MMM yyyy' },
 				y: {
-					formatter: (val?: number) => {
+					formatter: (val: number | null) => {
 						if (typeof val !== 'number') return '$0';
 						return `$${val.toLocaleString('es-CL')}`;
 					},

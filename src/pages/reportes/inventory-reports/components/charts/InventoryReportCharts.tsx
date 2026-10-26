@@ -1,5 +1,5 @@
 import React, { type ReactNode, useMemo } from 'react';
-import type { ApexOptions } from 'apexcharts';
+import type { ApexFormatterOpts, ApexOptions } from 'apexcharts';
 import Chart from '@/components/Chart';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -119,9 +119,9 @@ const InventoryReportCharts: React.FC<{ stats: IInventoryReportStats }> = ({ sta
 			tooltip: {
 				theme: isDarkTheme ? 'dark' : 'light',
 				y: {
-					formatter: (value: number, { dataPointIndex }: { dataPointIndex: number }) =>
-						`${plural(value, 'unidad', 'unidades')} en ${plural(
-							stats.aging[dataPointIndex]?.products ?? 0,
+					formatter: (value: number | null, opts?: ApexFormatterOpts) =>
+						`${plural(value ?? 0, 'unidad', 'unidades')} en ${plural(
+							stats.aging[opts?.dataPointIndex ?? -1]?.products ?? 0,
 							'producto',
 							'productos',
 						)}`,
