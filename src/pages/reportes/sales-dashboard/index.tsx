@@ -7,14 +7,14 @@ import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Alert from '@/components/ui/Alert';
 import Badge from '@/components/ui/Badge';
+import type { ApexOptions } from 'apexcharts';
+import gsap from 'gsap';
+import useDarkMode from '@/hooks/useDarkMode';
 import SalesAnalytics from '../components/SalesAnalytics';
 import { useSalesDashboard } from './hooks/useSalesDashboard';
-import type { ApexOptions } from 'apexcharts';
 import ReportExportButton from '../components/ReportExportButton';
 import DashboardExportButton from './components/DashboardExportButton';
 import ReportFilters from '../components/ReportFilters';
-import gsap from 'gsap';
-import useDarkMode from '@/hooks/useDarkMode';
 
 const AnimatedNumber = ({ value }: { value: number }) => {
 	const spanRef = useRef<HTMLSpanElement>(null);
@@ -27,7 +27,7 @@ const AnimatedNumber = ({ value }: { value: number }) => {
 		// Get current value from text if possible, to animate from current -> new
 		const currentText = spanRef.current.innerText.replace(/\./g, '');
 		const currentVal = parseInt(currentText, 10);
-		if (!isNaN(currentVal)) {
+		if (!Number.isNaN(currentVal)) {
 			obj.val = currentVal;
 		}
 
@@ -281,7 +281,7 @@ const SalesDashboard: React.FC = () => {
 							</div>
 							<div className='relative mt-4'>
 								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
-									{'$'}
+									$
 									<AnimatedNumber value={stats.total} />
 								</h3>
 								<p className='mt-1 text-xs font-medium text-emerald-100'>
@@ -306,7 +306,7 @@ const SalesDashboard: React.FC = () => {
 							</div>
 							<div className='relative mt-4'>
 								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
-									{'$'}
+									$
 									<AnimatedNumber value={stats.avg} />
 								</h3>
 								<p className='mt-1 text-xs font-medium text-indigo-100'>
@@ -331,7 +331,7 @@ const SalesDashboard: React.FC = () => {
 							</div>
 							<div className='relative mt-4'>
 								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
-									{'$'}
+									$
 									<AnimatedNumber value={stats.refundedTotal} />
 								</h3>
 								<p className='mt-1 text-xs font-medium text-orange-100'>
@@ -356,7 +356,7 @@ const SalesDashboard: React.FC = () => {
 							</div>
 							<div className='relative mt-4'>
 								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
-									{'$'}
+									$
 									<AnimatedNumber value={stats.monthlyAvg} />
 								</h3>
 								<p className='mt-1 text-xs font-medium text-pink-100'>
@@ -381,7 +381,7 @@ const SalesDashboard: React.FC = () => {
 							</div>
 							<div className='relative mt-4'>
 								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
-									{'$'}
+									$
 									<AnimatedNumber value={stats.projectedTotal} />
 								</h3>
 								<p className='mt-1 text-xs font-medium text-blue-100'>
@@ -401,8 +401,8 @@ const SalesDashboard: React.FC = () => {
 									</h2>
 									<div className='flex items-center gap-2'>
 										<span className='relative flex h-2 w-2'>
-											<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75'></span>
-											<span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500'></span>
+											<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75' />
+											<span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500' />
 										</span>
 										<p className='text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
 											{filters.dateFrom || filters.dateTo
