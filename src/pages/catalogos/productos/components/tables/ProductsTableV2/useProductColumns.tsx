@@ -9,6 +9,7 @@ import StatusCell from './cells/StatusCell';
 import PublicationCell from './cells/PublicationCell';
 import CategoriesCell from './cells/CategoriesCell';
 import ActionsCell from './cells/ActionsCell';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface UseProductColumnsParams {
 	isAdmin: boolean;
@@ -26,7 +27,7 @@ export const useProductColumns = ({
 	onToggleStatus,
 	onView,
 	onDelete,
-}: UseProductColumnsParams): ColumnDef<IProduct>[] =>
+}: UseProductColumnsParams): ColumnDef<AppTableFeatures, IProduct>[] =>
 	useMemo(
 		() => [
 			{

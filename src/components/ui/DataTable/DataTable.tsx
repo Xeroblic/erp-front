@@ -2,23 +2,21 @@ import React from 'react';
 import {
 	ColumnDef,
 	flexRender,
-	getCoreRowModel,
-	getFilteredRowModel,
-	getPaginationRowModel,
-	getSortedRowModel,
-	useReactTable,
+	useTable,
 	SortingState,
-	VisibilityState,
+	ColumnVisibilityState,
 	ColumnFiltersState,
-	GlobalFilterTableState,
+	filterFn_includesString,
 	PaginationState,
 	OnChangeFn,
+	RowData,
 } from '@tanstack/react-table';
 import Table, { THead, Tr, Th, TBody, Td } from '@/components/ui/Table';
 import Input from '@/components/form/Input';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import { AppTableFeatures, clientTableFeatures } from './tableFeatures';
 
 /**
  * Cabecera fija: se aplica sobre las celdas (`th`) y no sobre `thead` porque el
@@ -28,8 +26,8 @@ import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 const STICKY_HEADER_CLASSES =
 	'[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-zinc-200 dark:[&_th]:bg-zinc-950';
 
-interface DataTableProps<TData> {
-	columns: ColumnDef<TData, any>[];
+interface DataTableProps<TData extends RowData> {
+	columns: ColumnDef<AppTableFeatures, TData, any>[];
 	data: TData[];
 	searchPlaceholder?: string;
 	searchValue?: string;
@@ -60,7 +58,7 @@ interface DataTableProps<TData> {
 	stickyHeader?: boolean;
 }
 
-export default function DataTable<TData>({
+export default function DataTable<TData extends RowData>({
 	columns,
 	data,
 	searchPlaceholder = 'Buscar...',
@@ -98,7 +96,7 @@ export default function DataTable<TData>({
 
 	const [sorting, setSorting] = React.useState<SortingState>(defaultSorting);
 	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-	const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+	const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({});
 	const [globalFilter, setGlobalFilter] = React.useState(searchValue);
 
 	// Paginación local (client-side) o controlada externamente (server-side)
@@ -107,19 +105,16 @@ export default function DataTable<TData>({
 		pageSize,
 	});
 
-	const table = useReactTable({
+	const table = useTable({
+		// Con `manualPagination` la tabla no corta las filas: llegan ya paginadas.
+		features: clientTableFeatures,
 		data,
 		columns,
-		getCoreRowModel: getCoreRowModel(),
-		// Solo usar getPaginationRowModel si NO es server-side
-		...(manualPagination ? {} : { getPaginationRowModel: getPaginationRowModel() }),
-		getSortedRowModel: getSortedRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
 		onSortingChange: setSorting,
 		onColumnFiltersChange: setColumnFilters,
 		onColumnVisibilityChange: setColumnVisibility,
 		onGlobalFilterChange: setGlobalFilter,
-		globalFilterFn: 'includesString',
+		globalFilterFn: filterFn_includesString,
 		// Server-side pagination & filtering
 		manualPagination,
 		manualFiltering: !!onSearchChange || manualPagination,
@@ -136,6 +131,7 @@ export default function DataTable<TData>({
 		},
 		initialState: {
 			pagination: {
+				pageIndex: 0,
 				pageSize,
 			},
 		},
@@ -252,7 +248,6 @@ export default function DataTable<TData>({
 							table.getRowModel().rows.map((row) => (
 								<Tr
 									key={row.id}
-									data-state={row.getIsSelected() && 'selected'}
 									className='hover:bg-gray-50 dark:hover:bg-gray-800'>
 									{row.getVisibleCells().map((cell) => (
 										<Td key={cell.id}>

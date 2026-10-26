@@ -21,6 +21,7 @@ import PrintLabel from '../PrintLabel';
 import { extractValue, formatDateTime, resolveEquipmentTypeMeta } from '../utils/utilsItems';
 import { exportItemsToExcel } from '../ExcelExport/exportExcel';
 import handleDeleteItem from './hooks/Item_list';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 type ExportMode = 'serials' | 'details';
 
@@ -139,7 +140,7 @@ const ItemList: React.FC<ItemListProps> = ({
 	};
 
 	// TanStack Table setup (debe ejecutarse SIEMPRE antes de cualquier return condicional)
-	const columnHelper = useMemo(() => createColumnHelper<IItem>(), []);
+	const columnHelper = useMemo(() => createColumnHelper<AppTableFeatures, IItem>(), []);
 
 	const columns = useMemo(() => {
 		const cols = [

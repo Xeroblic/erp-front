@@ -86,7 +86,7 @@ const ClientesVentasPagination: React.FC<ClientesVentasPaginationProps> = ({
 		pageSize: meta.per_page,
 	};
 	const table: TablePaginationController = {
-		getState: () => ({ pagination }),
+		state: { pagination },
 		setPageSize: (updater: Updater<number>) => {
 			const perPage = typeof updater === 'function' ? updater(pagination.pageSize) : updater;
 			onChange(1, perPage);

@@ -4,8 +4,9 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import { ISubempresa } from '@/interface/empresas.interface';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
-const columnHelper = createColumnHelper<ISubempresa>();
+const columnHelper = createColumnHelper<AppTableFeatures, ISubempresa>();
 
 export const useSubsidiaryColumns = (
 	handleEdit: (subsidiary: ISubempresa) => void,

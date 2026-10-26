@@ -4,8 +4,7 @@ import {
 	PaginationState,
 	createColumnHelper,
 	flexRender,
-	getCoreRowModel,
-	useReactTable,
+	useTable,
 } from '@tanstack/react-table';
 
 import { useInvitationsManagement } from '../../hooks/useInvitationsManagement';
@@ -19,6 +18,7 @@ import Card, { CardBody } from '@/components/ui/Card';
 import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import { TColors } from '@/types/colors.type';
 import { INVITATION_STATUS_MAP, normalizeInvitationStatus } from '@/constants/invitations.constant';
+import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface InvitationsTableProps {
 	invitations: Invitation[];
@@ -34,7 +34,7 @@ interface InvitationsTableProps {
 	openCreateModal: () => void;
 }
 
-const columnHelper = createColumnHelper<Invitation>();
+const columnHelper = createColumnHelper<AppTableFeatures, Invitation>();
 
 const InvitationsTable: React.FC<InvitationsTableProps> = ({
 	invitations,
@@ -81,7 +81,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 		}
 	};
 
-	const columns = [
+	const columns = columnHelper.columns([
 		columnHelper.accessor('email', {
 			header: 'Email',
 			cell: (info) => {
@@ -333,7 +333,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 				);
 			},
 		}),
-	];
+	]);
 
 	const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
 		const current: PaginationState = {
@@ -352,10 +352,10 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 		}
 	};
 
-	const table = useReactTable({
+	const table = useTable({
+		features: appTableFeatures,
 		data: invitations,
 		columns,
-		getCoreRowModel: getCoreRowModel(),
 		state: {
 			pagination: {
 				pageIndex: Math.max(pagination.page - 1, 0),

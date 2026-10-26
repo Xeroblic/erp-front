@@ -1,14 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import type { MultiValue } from 'react-select';
-import {
-	getCoreRowModel,
-	useReactTable,
-	getFilteredRowModel,
-	getPaginationRowModel,
-	getSortedRowModel,
-	flexRender,
-	SortingState,
-} from '@tanstack/react-table';
+import { flexRender, SortingState, useTable } from '@tanstack/react-table';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { TSelectOption } from '@/components/form/SelectReact';
@@ -30,6 +22,7 @@ import { usePermissionsManagement } from './hooks/usePermissionsManagement';
 import { resolveRoleLabel, resolvePermissionLabel } from './utils/formatters';
 import { usePermissionLabels } from '@/hooks/usePermissionLabels';
 import { Permission, Role } from '@/store/slices/permissions/permissionsSlice';
+import { clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 export default function PermissionsAdmin() {
 	// Hook personalizado para gestión de permisos
@@ -129,17 +122,14 @@ export default function PermissionsAdmin() {
 		getRoleLabel,
 	);
 
-	const table = useReactTable({
+	const table = useTable({
+		features: clientTableFeatures,
 		data: users,
 		columns,
 		state: { globalFilter, sorting },
 		onGlobalFilterChange: setGlobalFilter,
 		onSortingChange: setSorting,
-		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
-		getSortedRowModel: getSortedRowModel(),
-		getPaginationRowModel: getPaginationRowModel(),
-		initialState: { pagination: { pageSize: 10 } },
+		initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
 	});
 
 	const roleOptions = useMemo<TSelectOption[]>(

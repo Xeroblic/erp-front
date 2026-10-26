@@ -25,6 +25,7 @@ import RestoreConflictModal from './components/RestoreConflictModal';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 export const IntegrationsListContent: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -224,7 +225,7 @@ export const IntegrationsListContent: React.FC = () => {
 		return date.toLocaleString('es-CL');
 	}, []);
 
-	const trashedColumns = useMemo<ColumnDef<Integration, unknown>[]>(
+	const trashedColumns = useMemo<ColumnDef<AppTableFeatures, Integration, unknown>[]>(
 		() => [
 			{
 				header: 'Nombre',
@@ -300,7 +301,7 @@ export const IntegrationsListContent: React.FC = () => {
 		[getProviderLabel, getModeInfo, handleRestore, restoringId, branchId],
 	);
 
-	const columns = useMemo<ColumnDef<Integration, unknown>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, Integration, unknown>[]>(
 		() => [
 			{
 				header: 'Nombre',

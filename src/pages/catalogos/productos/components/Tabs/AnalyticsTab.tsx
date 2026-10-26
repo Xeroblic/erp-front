@@ -8,6 +8,7 @@ import type { IProduct } from '@/interface/product.interface';
 import type { ProductListMeta } from '@/interface/product.interface';
 import StockSeriesModal from '../modals/StockSeriesModal';
 import DataTable from '@/components/ui/DataTable';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface StockAdminTabProps {
 	subsidiaryId: number;
@@ -44,8 +45,8 @@ const StockAdminTab: React.FC<StockAdminTabProps> = ({
 		setSelectedProduct(null);
 	};
 
-	const columns = useMemo<ColumnDef<IProduct>[]>(() => {
-		const baseColumns: ColumnDef<IProduct>[] = [
+	const columns = useMemo<ColumnDef<AppTableFeatures, IProduct>[]>(() => {
+		const baseColumns: ColumnDef<AppTableFeatures, IProduct>[] = [
 			{
 				accessorKey: 'id',
 				header: 'ID.',
@@ -112,7 +113,6 @@ const StockAdminTab: React.FC<StockAdminTabProps> = ({
 			baseColumns.unshift({
 				id: 'selection',
 				header: 'Sel.',
-				size: 50,
 				cell: ({ row }) => {
 					const canSelect = row.original.serial_tracking;
 

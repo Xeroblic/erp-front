@@ -23,6 +23,7 @@ import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import type { UnmappedWooCommerceProduct } from '@/types/integrations.types';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 export const UnmappedProductsContent: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -152,7 +153,7 @@ export const UnmappedProductsContent: React.FC = () => {
 		refunded: 'Reembolsada',
 	};
 
-	const columns = useMemo<ColumnDef<UnmappedWooCommerceProduct>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, UnmappedWooCommerceProduct>[]>(
 		() => [
 			{
 				accessorFn: (row) =>

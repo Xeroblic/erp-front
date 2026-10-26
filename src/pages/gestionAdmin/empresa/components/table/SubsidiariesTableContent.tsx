@@ -2,9 +2,10 @@ import React from 'react';
 import { flexRender, Table as TableInstance } from '@tanstack/react-table';
 import Table, { TBody, THead, Tr, Th, Td } from '@/components/ui/Table';
 import { ISubempresa } from '@/interface/empresas.interface';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface SubsidiariesTableContentProps {
-	table: TableInstance<ISubempresa>;
+	table: TableInstance<AppTableFeatures, ISubempresa>;
 }
 
 export default function SubsidiariesTableContent({ table }: SubsidiariesTableContentProps) {

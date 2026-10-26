@@ -4,13 +4,14 @@ import DataTable from '@/components/ui/DataTable';
 import { ISaleItem } from '@/interface/sales.interface';
 import { formatCLP } from '@/utils/format.utils';
 import { priceFormatWhitDecimals } from '@/utils/priceFormat.util';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface SaleItemsTableProps {
 	items: ISaleItem[];
 }
 
 const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items }) => {
-	const columns = useMemo<ColumnDef<ISaleItem>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, ISaleItem>[]>(
 		() => [
 			{
 				accessorKey: 'sku',

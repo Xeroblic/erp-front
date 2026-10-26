@@ -12,6 +12,7 @@ import OffCanvas, { OffCanvasBody, OffCanvasHeader } from '@/components/ui/OffCa
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import SelectReact from '@/components/form/SelectReact';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface PortalRequestMock {
 	id: string;
@@ -55,7 +56,7 @@ export default function SolicitudesVentasPage() {
 		setIsDrawerOpen(true);
 	};
 
-	const columns: ColumnDef<PortalRequestMock>[] = [
+	const columns: ColumnDef<AppTableFeatures, PortalRequestMock>[] = [
 		{
 			accessorKey: 'id',
 			header: 'ID',

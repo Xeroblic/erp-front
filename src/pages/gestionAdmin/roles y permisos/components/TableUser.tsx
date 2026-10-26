@@ -18,6 +18,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { USERS_DEFAULT_PAGE_SIZE } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import Tooltip from '@/components/ui/Tooltip';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 type UserRow = UserWithDetails & {
 	displayName: string;
@@ -28,7 +29,7 @@ type UserRow = UserWithDetails & {
 	totalPermissionsCount: number;
 };
 
-const columnHelper = createColumnHelper<UserRow>();
+const columnHelper = createColumnHelper<AppTableFeatures, UserRow>();
 
 type Props = {
 	tableData: UserRow[];
@@ -286,7 +287,7 @@ const TableUser: React.FC<Props> = ({
 							</div>
 						),
 					}),
-			].filter(Boolean) as ColumnDef<UserRow, unknown>[],
+			].filter(Boolean) as ColumnDef<AppTableFeatures, UserRow, unknown>[],
 		// getRoleLabel entra como dependencia para que las etiquetas se
 		// recalculen cuando termine de cargar el catálogo de roles.
 		[isAdmin, getRoleLabel, handleManageUser, handleToggleStatus],

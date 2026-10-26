@@ -8,6 +8,7 @@ import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import type { PaginationMeta } from '@/services/salesService';
 import Tooltip from '@/components/ui/Tooltip';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface CustomersTableProps {
 	customers: ICustomerSupplier[];
@@ -31,7 +32,7 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
 }) => {
 	const totalCustomers = meta?.total ?? customers.length;
 
-	const columns = useMemo<ColumnDef<ICustomerSupplier>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, ICustomerSupplier>[]>(
 		() => [
 			{
 				header: 'Cliente',

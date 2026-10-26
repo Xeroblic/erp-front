@@ -33,6 +33,7 @@ import {
 	resolveEquipmentTypeMeta,
 } from '@/pages/refactor-technical-review/components/utils/utilsItems';
 import { serialNumbers } from '@/pages/refactor-technical-review/ESPECIA_CANAL13/list_serialNumber';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
@@ -206,7 +207,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 	};
 
 	// Columns
-	const columnHelper = createColumnHelper<IItem>();
+	const columnHelper = createColumnHelper<AppTableFeatures, IItem>();
 	const columns = useMemo(
 		() => [
 			columnHelper.display({

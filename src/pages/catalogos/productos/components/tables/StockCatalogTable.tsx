@@ -5,6 +5,7 @@ import Badge from '@/components/ui/Badge';
 import Tooltip from '@/components/ui/Tooltip';
 import Icon from '@/components/icon/Icon';
 import DataTable from '@/components/ui/DataTable';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface StockCatalogTableProps {
 	items: Record<string, unknown>[];
@@ -319,7 +320,7 @@ const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) =
 		[navigate],
 	);
 
-	const columns = useMemo<ColumnDef<StockCatalogRow>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, StockCatalogRow>[]>(
 		() => [
 			{
 				id: 'name',

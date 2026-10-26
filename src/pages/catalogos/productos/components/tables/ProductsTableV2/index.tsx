@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
+import { flexRender, useTable } from '@tanstack/react-table';
 import { toast } from 'react-toastify';
 import Card, { CardBody } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
@@ -10,6 +10,7 @@ import type { IProduct, ProductListMeta } from '@/interface/product.interface';
 import { useProductColumns } from './useProductColumns';
 import ProductVariantsRow from './ProductVariantsRow';
 import { extractProductVariants } from './productTable.utils';
+import { appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface ProductsTableProps {
 	products: IProduct[];
@@ -121,10 +122,10 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 		onDelete,
 	});
 
-	const table = useReactTable({
+	const table = useTable({
+		features: appTableFeatures,
 		data: products,
 		columns,
-		getCoreRowModel: getCoreRowModel(),
 	});
 	const columnCount = Math.max(1, table.getVisibleFlatColumns().length);
 

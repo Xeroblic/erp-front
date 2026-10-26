@@ -18,6 +18,7 @@ import { TColors } from '@/types/colors.type';
 import { BATCH_STATUS_LABELS } from '@/pages/refactor-technical-review/components/constants/technicalReview.constants';
 import Card, { CardBody } from '@/components/ui/Card';
 import Tooltip from '@/components/ui/Tooltip';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 export function ListaLotes() {
 	const dispatch = useAppDispatch();
@@ -48,7 +49,7 @@ export function ListaLotes() {
 		}
 	}, [dispatch, branchId, pagination.pageIndex, pagination.pageSize]);
 
-	const columns: ColumnDef<IBatch>[] = [
+	const columns: ColumnDef<AppTableFeatures, IBatch>[] = [
 		{
 			accessorKey: 'id',
 			header: 'ID',

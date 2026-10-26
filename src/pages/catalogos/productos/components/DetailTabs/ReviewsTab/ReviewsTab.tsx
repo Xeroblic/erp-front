@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { type ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
@@ -15,6 +15,7 @@ import {
 	REVIEW_STATUS_LABEL,
 	humanizeStatus,
 } from './types';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface ReviewsTabProps {
 	product: IProduct;
@@ -76,7 +77,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ product }) => {
 
 	const categoryName = product.categories?.[0]?.name ?? null;
 
-	const columns = useMemo<ColumnDef<ProductReviewRow>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, ProductReviewRow>[]>(
 		() => [
 			{
 				header: 'Serie',

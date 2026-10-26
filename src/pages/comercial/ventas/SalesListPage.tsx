@@ -43,6 +43,7 @@ import { downloadShippingLabel } from '@/store/slices/sales/salesSlice';
 import { fetchPendingSerialAssignment, type PendingSerialSale } from '@/services/salesService';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSaleReturnWrites } from './detail/hooks/useSaleReturnWrites';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 injectReducer('salesModule', salesReducer);
 
@@ -345,7 +346,7 @@ const SalesListPage: React.FC = () => {
 
 	const detailModalVisible = detailSelection.isOpen && Boolean(subsidiaryId);
 
-	const columns = useMemo<ColumnDef<ISale>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, ISale>[]>(
 		() => [
 			{
 				accessorKey: 'sale_date',

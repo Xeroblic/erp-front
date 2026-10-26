@@ -1,15 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	getFilteredRowModel,
-	getPaginationRowModel,
-	getSortedRowModel,
-	SortingState,
-	useReactTable,
-} from '@tanstack/react-table';
+import { createColumnHelper, flexRender, SortingState, useTable } from '@tanstack/react-table';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -36,8 +27,9 @@ import Modal, {
 import SucursalModal from './components/SucursalModal';
 import { ISucursal } from '@/interface/empresas.interface';
 import Tooltip from '@/components/ui/Tooltip';
+import { AppTableFeatures, clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
-const columnHelper = createColumnHelper<ISucursal>();
+const columnHelper = createColumnHelper<AppTableFeatures, ISucursal>();
 
 export default function SucursalesLista() {
 	const dispatch = useAppDispatch();
@@ -72,7 +64,7 @@ export default function SucursalesLista() {
 	}, [dispatch, user]);
 
 	// columnas de la tabla
-	const columns = [
+	const columns = columnHelper.columns([
 		columnHelper.accessor('branch_name', {
 			header: 'Sucursal',
 			cell: (info) => (
@@ -213,20 +205,17 @@ export default function SucursalesLista() {
 				</div>
 			),
 		}),
-	];
+	]);
 
-	const table = useReactTable({
+	const table = useTable({
+		features: clientTableFeatures,
 		data: sucursales,
 		columns,
 		state: { sorting, globalFilter },
 		onSortingChange: setSorting,
 		enableGlobalFilter: true,
 		onGlobalFilterChange: setGlobalFilter,
-		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
-		getSortedRowModel: getSortedRowModel(),
-		getPaginationRowModel: getPaginationRowModel(),
-		initialState: { pagination: { pageSize: 5 } },
+		initialState: { pagination: { pageIndex: 0, pageSize: 5 } },
 	});
 
 	const handleEdit = (sucursal: ISucursal) => {

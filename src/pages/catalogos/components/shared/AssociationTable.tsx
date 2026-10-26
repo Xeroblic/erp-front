@@ -1,19 +1,20 @@
 import React from 'react';
-import { flexRender, Table as ReactTable } from '@tanstack/react-table';
+import { flexRender, RowData, Table as ReactTable } from '@tanstack/react-table';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
-interface AssociationTableProps<T> {
+interface AssociationTableProps<T extends RowData> {
 	title: string;
 	count: number;
-	table: ReactTable<T>;
+	table: ReactTable<AppTableFeatures, T>;
 	loading?: boolean;
 	emptyMessage: string;
 	showOnlyInEditMode?: boolean;
 	isEditMode?: boolean;
 }
 
-function AssociationTable<T>({
+function AssociationTable<T extends RowData>({
 	title,
 	count,
 	table,

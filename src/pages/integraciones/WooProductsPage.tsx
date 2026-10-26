@@ -26,6 +26,7 @@ import WooIntegrationSelector from '@/pages/catalogos/productos/components/modal
 import useCan from '@/hooks/useCan';
 import type { WooProduct } from '@/types/integrations.types';
 import UnlinkAllProductsModal from './components/UnlinkAllProductsModal';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 export const WooProductsContent: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -166,7 +167,7 @@ export const WooProductsContent: React.FC = () => {
 		[dispatch, subsidiaryId, selectedIntegrationId, loadProducts],
 	);
 
-	const columns = useMemo<ColumnDef<WooProduct>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, WooProduct>[]>(
 		() => [
 			{
 				id: 'ids',

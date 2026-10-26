@@ -14,6 +14,7 @@ import Dropdown, { DropdownToggle, DropdownMenu, DropdownItem } from '@/componen
 import { getQuoteStatusBadge, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
 import { formatDate } from '@/utils/format.utils';
 import Tooltip from '@/components/ui/Tooltip';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface QuotationsTableProps {
 	data: IQuote[];
@@ -29,7 +30,7 @@ interface QuotationsTableProps {
 	onDownloadExcel?: (id: number) => void;
 }
 
-const columnHelper = createColumnHelper<IQuote>();
+const columnHelper = createColumnHelper<AppTableFeatures, IQuote>();
 
 const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	data,
@@ -54,7 +55,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	};
 
 	// columnas de la tabla
-	const columns = useMemo<ColumnDef<IQuote, any>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, IQuote, any>[]>(
 		() => [
 			columnHelper.accessor('id', {
 				enableSorting: true,

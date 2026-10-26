@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useReactTable, getCoreRowModel, flexRender, type ColumnDef } from '@tanstack/react-table';
+import { flexRender, type ColumnDef, useTable } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -8,6 +8,7 @@ import Input from '@/components/form/Input';
 import type { IProduct } from '@/interface/product.interface';
 import type { CriticalItemRow } from './inventoryTab.types';
 import { formatNumber, getFriendlyDate } from './inventoryTab.utils';
+import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface InventoryCriticalSectionProps {
 	criticalItems: CriticalItemRow[];
@@ -32,7 +33,7 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 	onViewProduct,
 	containerRef,
 }) => {
-	const columns = useMemo<ColumnDef<CriticalItemRow>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, CriticalItemRow>[]>(
 		() => [
 			{
 				id: 'product',
@@ -101,10 +102,10 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 		[onViewProduct],
 	);
 
-	const table = useReactTable({
+	const table = useTable({
+		features: appTableFeatures,
 		data: criticalItems,
 		columns,
-		getCoreRowModel: getCoreRowModel(),
 	});
 
 	return (

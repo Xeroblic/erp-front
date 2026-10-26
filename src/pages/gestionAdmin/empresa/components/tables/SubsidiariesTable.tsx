@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { useTable } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import Card, { CardBody } from '@/components/ui/Card';
 import { CreateSubsidiaryModal } from '../modals';
@@ -11,6 +11,7 @@ import {
 	SubsidiariesEmptyState,
 	SubsidiariesTableContent,
 } from '../table';
+import { appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface SubsidiariesTableProps {
 	subsidiaries: ISubempresa[];
@@ -49,10 +50,10 @@ export default function SubsidiariesTable({
 
 	const columns = useSubsidiaryColumns(handleEdit, navigate);
 
-	const table = useReactTable({
+	const table = useTable({
+		features: appTableFeatures,
 		data: subsidiaries,
 		columns,
-		getCoreRowModel: getCoreRowModel(),
 	});
 
 	if (loading) return <SubsidiariesLoadingState />;

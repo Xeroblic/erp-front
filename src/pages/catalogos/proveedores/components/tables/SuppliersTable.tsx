@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import type { ISupplier } from '@/interface/supplier.interface';
 import DataTable from '@/components/ui/DataTable/DataTable';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 type SuppliersTableProps = {
 	suppliers: ISupplier[];
@@ -23,7 +24,7 @@ const SuppliersTable: React.FC<SuppliersTableProps> = ({
 }) => {
 	const totalSuppliers = suppliers.length;
 
-	const columns = useMemo<ColumnDef<ISupplier, any>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, ISupplier, any>[]>(
 		() => [
 			{
 				header: 'Proveedor',

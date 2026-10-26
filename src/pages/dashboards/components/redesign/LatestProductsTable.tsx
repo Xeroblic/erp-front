@@ -8,6 +8,7 @@ import DataTable from '@/components/ui/DataTable/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
 import { IProduct } from '@/interface/product.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 const LatestProductsTable: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -42,7 +43,7 @@ const LatestProductsTable: React.FC = () => {
 			.slice(0, 5);
 	}, [products]);
 
-	const columns = useMemo<ColumnDef<IProduct>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, IProduct>[]>(
 		() => [
 			{
 				accessorKey: 'name',

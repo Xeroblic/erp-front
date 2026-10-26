@@ -6,6 +6,7 @@ import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
 import DataTable from '@/components/ui/DataTable';
 import type { IProduct } from '@/interface/product.interface';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface ProductsTableProps {
 	/** Ya filtrados: sin productos serializados. */
@@ -57,7 +58,7 @@ export const ProductsTable = ({
 	totalResults,
 	onSearchChange,
 }: ProductsTableProps) => {
-	const columns = useMemo<ColumnDef<IProduct>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, IProduct>[]>(
 		() => [
 			{
 				accessorKey: 'id',

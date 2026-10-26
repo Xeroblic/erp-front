@@ -233,7 +233,7 @@ const DocumentAttachmentsCard = forwardRef<
 		pageSize: meta?.per_page ?? PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT,
 	};
 	const table: TablePaginationController = {
-		getState: () => ({ pagination }),
+		state: { pagination },
 		setPageSize: () => undefined,
 		setPageIndex: (updater: Updater<number>) => {
 			const pageIndex =

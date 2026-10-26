@@ -11,6 +11,7 @@ import Select from '@/components/form/Select';
 import Tooltip from '@/components/ui/Tooltip';
 import DataTable from '@/components/ui/DataTable';
 import useDarkMode from '@/hooks/useDarkMode';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 type LevelFilter = 'all' | 'root' | 'child';
 type ProductFilter = 'all' | 'with' | 'without';
@@ -91,7 +92,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 		setStatusFilter('all');
 	}, []);
 
-	const columns = React.useMemo<ColumnDef<CategoryTableRow>[]>(
+	const columns = React.useMemo<ColumnDef<AppTableFeatures, CategoryTableRow>[]>(
 		() => [
 			{
 				id: 'image',

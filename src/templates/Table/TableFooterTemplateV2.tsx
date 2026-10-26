@@ -7,7 +7,7 @@ import { CardFooter, CardFooterChild } from '@/components/ui/Card';
 import { ITableProps } from '@/components/ui/Table';
 
 export interface TablePaginationController {
-	getState: () => { pagination: PaginationState };
+	state: { pagination: PaginationState };
 	setPageSize: (updater: Updater<number>) => void;
 	setPageIndex: (updater: Updater<number>) => void;
 	getCanPreviousPage: () => boolean;
@@ -32,7 +32,7 @@ export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({
 				<Select
 					aria-label='Por página'
 					disabled={isDisabled}
-					value={table.getState().pagination.pageSize}
+					value={table.state.pagination.pageSize}
 					onChange={(e) => {
 						table.setPageSize(Number(e.target.value));
 					}}
@@ -66,7 +66,7 @@ export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({
 						<Input
 							aria-label='Página'
 							disabled={isDisabled}
-							value={table.getState().pagination.pageIndex + 1}
+							value={table.state.pagination.pageIndex + 1}
 							onChange={(e) => {
 								const page = e.target.value ? Number(e.target.value) - 1 : 0;
 								table.setPageIndex(page);

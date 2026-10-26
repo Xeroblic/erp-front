@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import DataTable from '@/components/ui/DataTable';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface EnlaceMock {
 	id: string;
@@ -49,7 +50,7 @@ const mockEnlaces: EnlaceMock[] = [
 export default function EnlacesPublicosPage() {
 	const navigate = useNavigate();
 
-	const columns: ColumnDef<EnlaceMock>[] = [
+	const columns: ColumnDef<AppTableFeatures, EnlaceMock>[] = [
 		{
 			accessorKey: 'hash',
 			header: 'Identificador / Hash',

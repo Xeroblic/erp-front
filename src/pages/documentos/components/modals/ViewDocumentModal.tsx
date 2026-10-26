@@ -16,6 +16,7 @@ import {
 	getFileTypeLabel,
 	getModuleLabel,
 } from '../utils';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 type ViewDocumentModalProps = {
 	isOpen: boolean;
@@ -53,7 +54,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 		event.target.value = '';
 	};
 
-	const attachmentColumns = useMemo<ColumnDef<IDocumentAttachment>[]>(
+	const attachmentColumns = useMemo<ColumnDef<AppTableFeatures, IDocumentAttachment>[]>(
 		() => [
 			{
 				accessorKey: 'file_name',

@@ -16,6 +16,7 @@ import {
 	getModuleLabel,
 } from '../utils';
 import DataTable from '@/components/ui/DataTable';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 type DocumentsTableProps = {
 	documents: IDocument[];
@@ -37,7 +38,7 @@ const DocumentsTableV2: React.FC<DocumentsTableProps> = ({
 			{
 				accessorKey: 'name',
 				header: 'Documento',
-				cell: ({ row }: { row: Row<IDocument> }) => {
+				cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) => {
 					const doc = row.original;
 
 					return (
@@ -63,7 +64,7 @@ const DocumentsTableV2: React.FC<DocumentsTableProps> = ({
 			{
 				accessorKey: 'type',
 				header: 'Tipo',
-				cell: ({ row }: { row: Row<IDocument> }) => {
+				cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) => {
 					const d = row.original;
 					return (
 						<Badge color={getDocumentTypeColor(d) as any}>
@@ -76,7 +77,7 @@ const DocumentsTableV2: React.FC<DocumentsTableProps> = ({
 			{
 				accessorKey: 'output_format',
 				header: 'Archivo',
-				cell: ({ row }: { row: Row<IDocument> }) => (
+				cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) => (
 					<Badge variant='outline' color='gray'>
 						{getFileTypeLabel(row.original.output_format)}
 					</Badge>
@@ -86,7 +87,7 @@ const DocumentsTableV2: React.FC<DocumentsTableProps> = ({
 			{
 				accessorKey: 'related_module',
 				header: 'Módulo',
-				cell: ({ row }: { row: Row<IDocument> }) =>
+				cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) =>
 					getModuleLabel(row.original.related_module),
 			},
 
@@ -94,7 +95,7 @@ const DocumentsTableV2: React.FC<DocumentsTableProps> = ({
 			{
 				accessorKey: 'size',
 				header: 'Tamaño',
-				cell: ({ row }: { row: Row<IDocument> }) => {
+				cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) => {
 					const totalBytes =
 						row.original.attachments?.reduce((s, a) => s + (a.size ?? 0), 0) || 0;
 
@@ -109,21 +110,22 @@ const DocumentsTableV2: React.FC<DocumentsTableProps> = ({
 			{
 				accessorKey: 'uploaded_by',
 				header: 'Subido por',
-				cell: ({ row }: { row: Row<IDocument> }) =>
+				cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) =>
 					row.original?.uploaded_by || row.original.metadata?.uploaded_by_name || 'N/A',
 			},
 
 			{
 				accessorKey: 'created_at',
 				header: 'Fecha',
-				cell: ({ row }: { row: Row<IDocument> }) => formatDateTime(row.original.created_at),
+				cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) =>
+					formatDateTime(row.original.created_at),
 				enableSorting: true,
 			},
 
 			{
 				accessorKey: 'is_active',
 				header: 'Estado',
-				cell: ({ row }: { row: Row<IDocument> }) => (
+				cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) => (
 					<Badge variant='outline' color={row.original.is_active ? 'emerald' : 'red'}>
 						{row.original.is_active ? 'Activo' : 'Inactivo'}
 					</Badge>
@@ -133,7 +135,7 @@ const DocumentsTableV2: React.FC<DocumentsTableProps> = ({
 			{
 				id: 'actions',
 				header: 'Acciones',
-				cell: ({ row }: { row: Row<IDocument> }) => {
+				cell: ({ row }: { row: Row<AppTableFeatures, IDocument> }) => {
 					const doc = row.original;
 
 					return (

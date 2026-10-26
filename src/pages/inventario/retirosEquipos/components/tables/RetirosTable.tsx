@@ -5,6 +5,7 @@ import type { IEquipmentWithdrawalListItem } from '@/interface/equipmentWithdraw
 import { formatDate } from '@/utils/format.utils';
 import StaleChip from '../parts/StaleChip';
 import WithdrawalStatusBadge from '../parts/WithdrawalStatusBadge';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface IRetirosTableProps {
 	rows: IEquipmentWithdrawalListItem[];
@@ -15,7 +16,7 @@ interface IRetirosTableProps {
 	onPageChange: (pageIndex: number) => void;
 }
 
-const columns: ColumnDef<IEquipmentWithdrawalListItem>[] = [
+const columns: ColumnDef<AppTableFeatures, IEquipmentWithdrawalListItem>[] = [
 	{
 		id: 'code',
 		header: 'Código',

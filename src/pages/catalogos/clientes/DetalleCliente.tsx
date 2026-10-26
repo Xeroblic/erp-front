@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	useReactTable,
-} from '@tanstack/react-table';
+import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -19,6 +14,7 @@ import { fetchSuppliers } from '@/store/slices/suppliers/suppliersSlice';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
 import { useCustomerSuppliers } from './components/hooks/useCustomerSuppliers';
 import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
+import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 // Tipo basado en la estructura real de la BD
 interface ICustomerSupplierExtended extends ICustomerSupplier {
@@ -32,7 +28,7 @@ type SupplierRow = {
 	// Campos reales de suppliers: id, name, subsidiary_id, created_at, updated_at
 };
 
-const columnHelper = createColumnHelper<SupplierRow>();
+const columnHelper = createColumnHelper<AppTableFeatures, SupplierRow>();
 
 const DetalleClientePage: React.FC = () => {
 	const { id } = useParams<{ id: string }>();
@@ -109,75 +105,77 @@ const DetalleClientePage: React.FC = () => {
 
 	// Columnas para proveedores ASOCIADOS
 	const associatedColumns = useMemo(
-		() => [
-			columnHelper.accessor('name', {
-				header: 'Nombre del Proveedor',
-				cell: (info) => (
-					<span className='font-medium text-gray-900 dark:text-white'>
-						{info.getValue()}
-					</span>
-				),
-			}),
-			columnHelper.display({
-				id: 'actions',
-				header: 'Acciones',
-				cell: ({ row }) => (
-					<Button
-						color='red'
-						size='sm'
-						icon='HeroXMark'
-						onClick={() => detach([row.original.id])}
-						isDisable={!isEditable || detaching}
-						isLoading={detaching}>
-						{detaching ? 'Desasociando...' : 'Desasociar'}
-					</Button>
-				),
-			}),
-		],
+		() =>
+			columnHelper.columns([
+				columnHelper.accessor('name', {
+					header: 'Nombre del Proveedor',
+					cell: (info) => (
+						<span className='font-medium text-gray-900 dark:text-white'>
+							{info.getValue()}
+						</span>
+					),
+				}),
+				columnHelper.display({
+					id: 'actions',
+					header: 'Acciones',
+					cell: ({ row }) => (
+						<Button
+							color='red'
+							size='sm'
+							icon='HeroXMark'
+							onClick={() => detach([row.original.id])}
+							isDisable={!isEditable || detaching}
+							isLoading={detaching}>
+							{detaching ? 'Desasociando...' : 'Desasociar'}
+						</Button>
+					),
+				}),
+			]),
 		[detach, isEditable, detaching],
 	);
 
 	// Columnas para proveedores DISPONIBLES
 	const availableColumns = useMemo(
-		() => [
-			columnHelper.accessor('name', {
-				header: 'Nombre del Proveedor',
-				cell: (info) => (
-					<span className='font-medium text-gray-900 dark:text-white'>
-						{info.getValue()}
-					</span>
-				),
-			}),
-			columnHelper.display({
-				id: 'actions',
-				header: 'Acciones',
-				cell: ({ row }) => (
-					<Button
-						color='blue'
-						size='sm'
-						icon='HeroPlus'
-						onClick={() => attach([row.original.id])}
-						isDisable={!isEditable || attaching}
-						isLoading={attaching}>
-						{attaching ? 'Asociando...' : 'Asociar'}
-					</Button>
-				),
-			}),
-		],
+		() =>
+			columnHelper.columns([
+				columnHelper.accessor('name', {
+					header: 'Nombre del Proveedor',
+					cell: (info) => (
+						<span className='font-medium text-gray-900 dark:text-white'>
+							{info.getValue()}
+						</span>
+					),
+				}),
+				columnHelper.display({
+					id: 'actions',
+					header: 'Acciones',
+					cell: ({ row }) => (
+						<Button
+							color='blue'
+							size='sm'
+							icon='HeroPlus'
+							onClick={() => attach([row.original.id])}
+							isDisable={!isEditable || attaching}
+							isLoading={attaching}>
+							{attaching ? 'Asociando...' : 'Asociar'}
+						</Button>
+					),
+				}),
+			]),
 		[attach, isEditable, attaching],
 	);
 
 	// Tablas
-	const associatedTable = useReactTable({
+	const associatedTable = useTable({
+		features: appTableFeatures,
 		data: associatedSuppliers || [],
 		columns: associatedColumns,
-		getCoreRowModel: getCoreRowModel(),
 	});
 
-	const availableTable = useReactTable({
+	const availableTable = useTable({
+		features: appTableFeatures,
 		data: availableSuppliers || [],
 		columns: availableColumns,
-		getCoreRowModel: getCoreRowModel(),
 	});
 
 	if (!customer) {

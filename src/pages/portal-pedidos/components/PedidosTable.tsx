@@ -3,6 +3,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 export interface PedidoMock {
 	id: string;
@@ -20,7 +21,7 @@ interface PedidosTableProps {
 	title?: string;
 }
 
-const columns: ColumnDef<PedidoMock>[] = [
+const columns: ColumnDef<AppTableFeatures, PedidoMock>[] = [
 	{
 		accessorKey: 'id',
 		header: 'ID Pedido',

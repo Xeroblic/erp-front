@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	useReactTable,
-} from '@tanstack/react-table';
+import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
 
 import { SystemParameter } from '@/interface';
 import Badge from '@/components/ui/Badge';
@@ -13,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
 import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface SystemParametersTableProps {
 	parameters: SystemParameter[];
@@ -31,7 +27,7 @@ interface SystemParametersTableProps {
 	loadingActions: Set<number>;
 }
 
-const columnHelper = createColumnHelper<SystemParameter>();
+const columnHelper = createColumnHelper<AppTableFeatures, SystemParameter>();
 
 const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
 	parameters,
@@ -90,7 +86,7 @@ const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
 		}
 	};
 
-	const columns = [
+	const columns = columnHelper.columns([
 		columnHelper.accessor('key', {
 			header: 'Clave',
 			cell: (info) => {
@@ -213,12 +209,12 @@ const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
 				);
 			},
 		}),
-	];
+	]);
 
-	const table = useReactTable({
+	const table = useTable({
+		features: appTableFeatures,
 		data: parameters || [],
 		columns,
-		getCoreRowModel: getCoreRowModel(),
 	});
 
 	if (isLoading) {

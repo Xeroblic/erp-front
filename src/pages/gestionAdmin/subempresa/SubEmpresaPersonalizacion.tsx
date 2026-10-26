@@ -2,16 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
-import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	getFilteredRowModel,
-	getPaginationRowModel,
-	getSortedRowModel,
-	SortingState,
-	useReactTable,
-} from '@tanstack/react-table';
+import { createColumnHelper, flexRender, SortingState, useTable } from '@tanstack/react-table';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMisSubsidiarias } from '@/store/slices/subempresa/subEmpresaSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -33,6 +24,7 @@ import Modal, {
 import { ISubempresa } from '@/interface/empresas.interface';
 import Label from '@/components/form/Label';
 import SelectReact from '@/components/form/SelectReact';
+import { AppTableFeatures, clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 // CU017 - Interfaces y tipos
 interface ISubempresaPersonalizacion {
@@ -95,7 +87,7 @@ interface ISubempresaConPersonalizacion extends ISubempresa {
 	tienePersonalizacion: boolean;
 }
 
-const columnHelper = createColumnHelper<ISubempresaConPersonalizacion>();
+const columnHelper = createColumnHelper<AppTableFeatures, ISubempresaConPersonalizacion>();
 
 export default function SubEmpresaPersonalizacion() {
 	const dispatch = useAppDispatch();
@@ -299,131 +291,137 @@ export default function SubEmpresaPersonalizacion() {
 
 	// Definición de columnas
 	const columns = useMemo(
-		() => [
-			columnHelper.accessor('subsidiary_name', {
-				header: 'Subempresa',
-				cell: (info) => {
-					const { personalizacion } = info.row.original;
-					return (
-						<div className='flex items-center'>
-							<div
-								className='mr-3 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600'
-								style={{
-									backgroundColor:
-										personalizacion?.color_principal || 'transparent',
-								}}>
-								<Icon
-									icon='HeroBuildingStorefront'
-									className={`h-5 w-5 ${
-										personalizacion?.color_principal
-											? 'text-white'
-											: 'text-gray-600 dark:text-gray-400'
-									}`}
-								/>
-							</div>
-							<div>
-								<div className='text-sm font-medium text-gray-900 dark:text-gray-100'>
-									{info.getValue()}
-								</div>
-								<div className='text-sm text-gray-500 dark:text-gray-400'>
-									ID: {info.row.original.id}
-								</div>
-							</div>
-						</div>
-					);
-				},
-			}),
-			columnHelper.accessor('tienePersonalizacion', {
-				header: 'Estado',
-				cell: (info) => {
-					const tienePersonalizacion = info.getValue();
-					return tienePersonalizacion ? (
-						<Badge color='emerald' className='flex items-center gap-1'>
-							<Icon icon='HeroCheckCircle' className='h-3 w-3' />
-							Personalizada
-						</Badge>
-					) : (
-						<Badge color='gray' className='flex items-center gap-1'>
-							<Icon icon='HeroXCircle' className='h-3 w-3' />
-							Por defecto
-						</Badge>
-					);
-				},
-			}),
-			columnHelper.display({
-				id: 'configuracion',
-				header: 'Configuración',
-				cell: (info) => {
-					const { personalizacion } = info.row.original;
-					return personalizacion ? (
-						<div className='space-y-1 text-xs text-gray-600 dark:text-gray-400'>
-							<div className='flex items-center gap-2'>
+		() =>
+			columnHelper.columns([
+				columnHelper.accessor('subsidiary_name', {
+					header: 'Subempresa',
+					cell: (info) => {
+						const { personalizacion } = info.row.original;
+						return (
+							<div className='flex items-center'>
 								<div
-									className='h-3 w-3 rounded-full border border-gray-300 dark:border-gray-600'
+									className='mr-3 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600'
 									style={{
-										backgroundColor: personalizacion.color_principal,
-									}}
-								/>
-								<span className='font-mono'>{personalizacion.color_principal}</span>
+										backgroundColor:
+											personalizacion?.color_principal || 'transparent',
+									}}>
+									<Icon
+										icon='HeroBuildingStorefront'
+										className={`h-5 w-5 ${
+											personalizacion?.color_principal
+												? 'text-white'
+												: 'text-gray-600 dark:text-gray-400'
+										}`}
+									/>
+								</div>
+								<div>
+									<div className='text-sm font-medium text-gray-900 dark:text-gray-100'>
+										{info.getValue()}
+									</div>
+									<div className='text-sm text-gray-500 dark:text-gray-400'>
+										ID: {info.row.original.id}
+									</div>
+								</div>
 							</div>
-							<div>
-								Idioma:{' '}
-								{
-									IDIOMAS_OPTIONS.find(
-										(i) => i.value === personalizacion.idioma_predeterminado,
-									)?.label
-								}
+						);
+					},
+				}),
+				columnHelper.accessor('tienePersonalizacion', {
+					header: 'Estado',
+					cell: (info) => {
+						const tienePersonalizacion = info.getValue();
+						return tienePersonalizacion ? (
+							<Badge color='emerald' className='flex items-center gap-1'>
+								<Icon icon='HeroCheckCircle' className='h-3 w-3' />
+								Personalizada
+							</Badge>
+						) : (
+							<Badge color='gray' className='flex items-center gap-1'>
+								<Icon icon='HeroXCircle' className='h-3 w-3' />
+								Por defecto
+							</Badge>
+						);
+					},
+				}),
+				columnHelper.display({
+					id: 'configuracion',
+					header: 'Configuración',
+					cell: (info) => {
+						const { personalizacion } = info.row.original;
+						return personalizacion ? (
+							<div className='space-y-1 text-xs text-gray-600 dark:text-gray-400'>
+								<div className='flex items-center gap-2'>
+									<div
+										className='h-3 w-3 rounded-full border border-gray-300 dark:border-gray-600'
+										style={{
+											backgroundColor: personalizacion.color_principal,
+										}}
+									/>
+									<span className='font-mono'>
+										{personalizacion.color_principal}
+									</span>
+								</div>
+								<div>
+									Idioma:{' '}
+									{
+										IDIOMAS_OPTIONS.find(
+											(i) =>
+												i.value === personalizacion.idioma_predeterminado,
+										)?.label
+									}
+								</div>
+								<div>Moneda: {personalizacion.moneda_local}</div>
 							</div>
-							<div>Moneda: {personalizacion.moneda_local}</div>
-						</div>
-					) : (
-						<span className='text-xs text-gray-400 dark:text-gray-500'>
-							Sin configurar
-						</span>
-					);
-				},
-			}),
-			columnHelper.display({
-				id: 'acciones',
-				header: 'Acciones',
-				cell: (info) => {
-					const subempresa = info.row.original;
-					const { personalizacion } = subempresa;
-					return (
-						<div className='flex justify-end gap-2'>
-							{personalizacion ? (
-								<>
+						) : (
+							<span className='text-xs text-gray-400 dark:text-gray-500'>
+								Sin configurar
+							</span>
+						);
+					},
+				}),
+				columnHelper.display({
+					id: 'acciones',
+					header: 'Acciones',
+					cell: (info) => {
+						const subempresa = info.row.original;
+						const { personalizacion } = subempresa;
+						return (
+							<div className='flex justify-end gap-2'>
+								{personalizacion ? (
+									<>
+										<Button
+											variant='outline'
+											size='sm'
+											onClick={() => handleEditarPersonalizacion(subempresa)}
+											title='Editar personalización'>
+											<Icon icon='HeroPencil' className='h-4 w-4' />
+										</Button>
+										<Button
+											variant='outline'
+											size='sm'
+											color='amber'
+											onClick={() =>
+												handleEliminarPersonalizacion(subempresa)
+											}
+											title='Restablecer a valores por defecto'>
+											<Icon icon='HeroArrowPath' className='h-4 w-4' />
+										</Button>
+									</>
+								) : (
 									<Button
 										variant='outline'
 										size='sm'
-										onClick={() => handleEditarPersonalizacion(subempresa)}
-										title='Editar personalización'>
-										<Icon icon='HeroPencil' className='h-4 w-4' />
+										color='blue'
+										onClick={() => handleCrearPersonalizacion(subempresa)}
+										title='Crear personalización'>
+										<Icon icon='HeroPaintBrush' className='h-4 w-4' />
 									</Button>
-									<Button
-										variant='outline'
-										size='sm'
-										color='amber'
-										onClick={() => handleEliminarPersonalizacion(subempresa)}
-										title='Restablecer a valores por defecto'>
-										<Icon icon='HeroArrowPath' className='h-4 w-4' />
-									</Button>
-								</>
-							) : (
-								<Button
-									variant='outline'
-									size='sm'
-									color='blue'
-									onClick={() => handleCrearPersonalizacion(subempresa)}
-									title='Crear personalización'>
-									<Icon icon='HeroPaintBrush' className='h-4 w-4' />
-								</Button>
-							)}
-						</div>
-					);
-				},
-			}),
-		],
+								)}
+							</div>
+						);
+					},
+				}),
+			]),
 		[personalizaciones],
 	);
 
@@ -458,18 +456,15 @@ export default function SubEmpresaPersonalizacion() {
 	}, [subempresasConPersonalizacion, filtroTexto, filtroEstado]);
 
 	// Configuración de la tabla
-	const table = useReactTable({
+	const table = useTable({
+		features: clientTableFeatures,
 		data: subempresasFiltradas,
 		columns,
 		state: { sorting, globalFilter },
 		onSortingChange: setSorting,
 		enableGlobalFilter: true,
 		onGlobalFilterChange: setGlobalFilter,
-		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
-		getSortedRowModel: getSortedRowModel(),
-		getPaginationRowModel: getPaginationRowModel(),
-		initialState: { pagination: { pageSize: 10 } },
+		initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
 	});
 
 	return (

@@ -7,6 +7,7 @@ import Tooltip from '@/components/ui/Tooltip';
 import Input from '@/components/form/Input';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import type { IWorkItem } from '../types';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 const clpFormatter = new Intl.NumberFormat('es-CL', {
 	style: 'currency',
@@ -76,7 +77,7 @@ export const WorkspaceTable = ({
 	onQuantityChange,
 	onRemoveItem,
 }: WorkspaceTableProps) => {
-	const columns = useMemo<ColumnDef<IWorkItem, unknown>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, IWorkItem, unknown>[]>(
 		() => [
 			{
 				id: 'product',
