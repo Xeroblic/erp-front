@@ -5,35 +5,7 @@ import {
 	type IExportTable,
 	type TExportCell,
 } from '@/pages/reportes/inventory-reports/export/reportDocument';
-
-/** Lo que se usa de `pdfmake/build/pdfmake`, que no publica tipos para esa ruta. */
-type TPdfMakeDocument = {
-	getBlob: (callback: (blob: Blob) => void) => Promise<Blob> | void;
-};
-type TPdfMake = {
-	vfs?: Record<string, string>;
-	createPdf: (definition: TDocumentDefinitions) => TPdfMakeDocument;
-};
-
-const isPdfMake = (value: unknown): value is TPdfMake =>
-	typeof value === 'object' &&
-	value !== null &&
-	'createPdf' in value &&
-	typeof value.createPdf === 'function';
-
-/** Misma carga que el reporte ejecutivo de Ventas: build del navegador y fuentes Roboto. */
-const loadPdfMake = async (): Promise<TPdfMake> => {
-	// @ts-expect-error El paquete no expone tipos para la ruta de build
-	const pdfMakeModule: unknown = await import('pdfmake/build/pdfmake');
-	const candidate =
-		typeof pdfMakeModule === 'object' && pdfMakeModule !== null && 'default' in pdfMakeModule
-			? pdfMakeModule.default
-			: pdfMakeModule;
-	if (!isPdfMake(candidate)) throw new Error('No se pudo cargar el generador de PDF.');
-	const { loadPdfFonts } = await import('@/pages/comercial/cotizaciones/utils/pdf/fonts');
-	loadPdfFonts(candidate);
-	return candidate;
-};
+import loadPdfMake from '@/utils/pdfMake.util';
 
 const PAGE_MARGIN = 36;
 const A4_WIDTH = { portrait: 595, landscape: 842 };
@@ -167,16 +139,7 @@ const reportToPdfDefinition = (doc: IExportDocument): TDocumentDefinitions => {
 
 const reportToPdfBlob = async (doc: IExportDocument): Promise<Blob> => {
 	const pdfMake = await loadPdfMake();
-	const pdf = pdfMake.createPdf(reportToPdfDefinition(doc));
-	return new Promise<Blob>((resolve, reject) => {
-		try {
-			// 0.2 entrega el blob por callback; versiones nuevas devuelven una promesa.
-			const pending = pdf.getBlob(resolve);
-			if (pending instanceof Promise) pending.then(resolve, reject);
-		} catch (error) {
-			reject(error);
-		}
-	});
+	return pdfMake.createPdf(reportToPdfDefinition(doc)).getBlob();
 };
 
 export default reportToPdfBlob;

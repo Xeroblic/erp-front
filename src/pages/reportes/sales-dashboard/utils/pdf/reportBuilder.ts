@@ -1,3 +1,7 @@
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import type { SalesDashboardStats, SaleRecord } from '../../../types';
+
 // Tipos customizados para pdfmake (para evitar `any` y conflictos de interfaz)
 export type PdfContent = Record<string, unknown> | string | PdfContent[];
 export type PdfTableCell = Record<string, unknown> | string | PdfContent[];
@@ -7,9 +11,25 @@ interface IPdfTableNode {
 	table: { body: unknown[] };
 }
 
-import type { SalesDashboardStats, SaleRecord } from '../../../types';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+/** Color de la variación interanual: verde si crece, rojo si cae y gris si se mantiene. */
+const yoyColorOf = (yoy: number): string => {
+	if (yoy > 0) return '#10b981';
+	if (yoy < 0) return '#ef4444';
+	return '#64748b';
+};
+
+/**
+ * Título de un recuadro de síntesis. El marcador es `■` porque Roboto, la única fuente del PDF, no
+ * trae `✧` ni otros símbolos decorativos: pdfmake los dibuja como un cuadro vacío.
+ */
+const calloutTitle = (text: string): PdfContent => ({
+	text: [{ text: '■  ', fontSize: 7 }, text],
+	fontSize: 10,
+	bold: true,
+	color: '#38bdf8',
+	margin: [0, 0, 0, 8],
+	letterSpacing: 1,
+});
 
 const currencyFormatter = new Intl.NumberFormat('es-CL', {
 	style: 'currency',
@@ -100,14 +120,7 @@ export const buildExecutiveSummary = (insights: string[]): PdfContent => {
 				[
 					{
 						stack: [
-							{
-								text: '✧ SÍNTESIS DE INTELIGENCIA ARTIFICIAL',
-								fontSize: 10,
-								bold: true,
-								color: '#38bdf8',
-								margin: [0, 0, 0, 8],
-								letterSpacing: 1,
-							},
+							calloutTitle('SÍNTESIS DE INTELIGENCIA ARTIFICIAL'),
 							{
 								ul: insights.map((insight) => ({
 									text: insight,
@@ -139,9 +152,41 @@ export const buildExecutiveSummary = (insights: string[]): PdfContent => {
 	} as PdfContent;
 };
 
+/** Ancho en em de Roboto Medium (la negrita de pdfmake): dígitos y `$` 0,568; `.` 0,278. */
+const KPI_VALUE_GLYPH_EM: Record<string, number> = { '.': 0.278, ',': 0.278, '-': 0.34 };
+const KPI_VALUE_DEFAULT_EM = 0.568;
+const KPI_VALUE_MAX_FONT_SIZE = 16;
+const KPI_VALUE_MIN_FONT_SIZE = 9;
+
+/** Mayor tamaño (en pasos de medio punto) con el que el monto cabe en una sola línea. */
+export const kpiValueFontSize = (value: string, availableWidth: number): number => {
+	const widthInEm = [...value].reduce(
+		(total, glyph) => total + (KPI_VALUE_GLYPH_EM[glyph] ?? KPI_VALUE_DEFAULT_EM),
+		0,
+	);
+	if (widthInEm === 0) return KPI_VALUE_MAX_FONT_SIZE;
+	const fitting = Math.floor((availableWidth / widthInEm) * 2) / 2;
+	return Math.min(KPI_VALUE_MAX_FONT_SIZE, Math.max(KPI_VALUE_MIN_FONT_SIZE, fitting));
+};
+
+/** Forma fija del minigráfico: es decorativo, no representa datos (0 = arriba de la franja). */
+const SPARKLINE_SHAPE = [0.7, 0.45, 0.6, 0.3, 0.5, 0.2, 0.4, 0.1, 0.25];
+
 export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 	const cardW = 121.3;
 	const cardH = 75;
+	const paddingX = 12;
+	// El texto termina cerca de y = 47: el minigráfico queda en la franja inferior, sin cruzarlo.
+	const sparkTop = 54;
+	const sparkHeight = 14;
+
+	// Puntos nuevos por tarjeta: pdfmake les suma la posición en el lugar, y compartirlos acumula
+	// el desplazamiento de las cuatro tarjetas y saca la línea de la página.
+	const sparkPoints = () =>
+		SPARKLINE_SHAPE.map((level, index) => ({
+			x: (cardW / (SPARKLINE_SHAPE.length - 1)) * index,
+			y: sparkTop + level * sparkHeight,
+		}));
 
 	const kpiCard = (
 		title: string,
@@ -149,17 +194,6 @@ export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 		bgColor: string,
 		sparkColor: string,
 	): PdfContent => {
-		// Generate random, constrained points for the fake Sparkline polygon
-		const points = [];
-		let y = 45;
-		for (let x = 0; x <= cardW; x += 15) {
-			points.push({ x: x, y: y });
-			y += Math.random() * 20 - 10;
-			// Boundaries
-			if (y < 30) y = 30;
-			if (y > 65) y = 65;
-		}
-
 		return {
 			stack: [
 				{
@@ -170,7 +204,7 @@ export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 							lineWidth: 2,
 							closePath: false,
 							lineColor: sparkColor,
-							points: points,
+							points: sparkPoints(),
 						},
 					],
 				},
@@ -184,9 +218,19 @@ export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 							margin: [0, 0, 0, 8],
 							letterSpacing: 0.5,
 						},
-						{ text: value, fontSize: 16, bold: true, color: 'white' },
+						{
+							text: value,
+							fontSize: kpiValueFontSize(value, cardW - paddingX * 2),
+							bold: true,
+							color: 'white',
+							noWrap: true,
+						},
 					],
-					margin: [12, -65, 12, 0], // Negative top margin pulls UI text over the canvas rectangle
+					// Sube el texto sobre el rectángulo sin restar su altura del flujo: con un margen negativo,
+					// lo que sigue a las tarjetas quedaba pegado a ellas.
+					// El bloque desplazado ignora el margen izquierdo: el relleno va en `x`.
+					relativePosition: { x: paddingX, y: -65 },
+					margin: [0, 0, paddingX * 2, 0],
 				},
 			],
 			width: cardW,
@@ -435,7 +479,7 @@ export const buildYearlyAnalytics = (filteredResults: SaleRecord[]): PdfContent 
 	const maxTotal = Math.max(...sortedYears.map((y) => years[y].total), 1);
 
 	const chartStack = sortedYears.map((year) => {
-		const total = years[year].total;
+		const { total } = years[year];
 		const barWidth = Math.max((total / maxTotal) * 100, 1);
 		return {
 			columns: [
@@ -531,7 +575,7 @@ export const buildYearlyAnalytics = (filteredResults: SaleRecord[]): PdfContent 
 								const yoy =
 									((current.total - previous.total) / previous.total) * 100;
 								yoyText = yoy > 0 ? `+${yoy.toFixed(1)}%` : `${yoy.toFixed(1)}%`;
-								yoyColor = yoy > 0 ? '#10b981' : yoy < 0 ? '#ef4444' : '#64748b';
+								yoyColor = yoyColorOf(yoy);
 							}
 
 							const isEven = idx % 2 === 0;
@@ -646,20 +690,23 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 
 		const avgTicket = current.count > 0 ? current.total / current.count : 0;
 
-		let yoyPct = 0;
-		let yoyText = 'N/A';
+		let yoyText = 'Sin datos';
 		let yoyColor = '#64748b';
-		let directionWord = 'variación';
+		// Sin el mismo semestre del año anterior no hay variación que contar.
+		let comparisonText = `No hay ventas del mismo semestre de ${current.year - 1} para comparar.`;
 
 		if (previous && previous.total > 0) {
-			yoyPct = ((current.total - previous.total) / previous.total) * 100;
+			const yoyPct = ((current.total - previous.total) / previous.total) * 100;
 			yoyText = yoyPct > 0 ? `+${yoyPct.toFixed(1)}%` : `${yoyPct.toFixed(1)}%`;
-			yoyColor = yoyPct > 0 ? '#10b981' : yoyPct < 0 ? '#ef4444' : '#64748b';
-			directionWord = yoyPct > 0 ? 'expansión' : 'contracción';
+			yoyColor = yoyColorOf(yoyPct);
+			let directionWord = 'variación';
+			if (yoyPct > 0) directionWord = 'expansión';
+			else if (yoyPct < 0) directionWord = 'contracción';
+			comparisonText = `Comparado con el mismo periodo del año anterior, se observa una ${directionWord} del ${yoyText}.`;
 		} else if (previous && previous.total === 0 && current.total > 0) {
 			yoyText = '+100%';
 			yoyColor = '#10b981';
-			directionWord = 'expansión';
+			comparisonText = `El mismo semestre de ${current.year - 1} no registró ventas.`;
 		}
 
 		const topCustomers = Object.entries(current.customers)
@@ -667,8 +714,10 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 			.sort((a, b) => b.total - a.total)
 			.slice(0, 3);
 
-		const cardW = 158;
+		// Cuatro tarjetas y tres separadores de 10 pt en los 515 pt útiles de la página.
+		const cardW = 121.25;
 		const cardH = 75;
+		const cardPaddingX = 12;
 		const createCard = (
 			title: string,
 			value: string,
@@ -692,15 +741,23 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 							margin: [0, 0, 0, 8],
 							letterSpacing: 0.5,
 						},
-						{ text: value, fontSize: 16, bold: true, color: valColor },
+						{
+							text: value,
+							fontSize: kpiValueFontSize(value, cardW - cardPaddingX * 2),
+							bold: true,
+							color: valColor,
+							noWrap: true,
+						},
 					],
-					margin: [12, -60, 12, 0],
+					// Igual que en las tarjetas de KPI: el texto sube sin restar altura al flujo.
+					relativePosition: { x: cardPaddingX, y: -60 },
+					margin: [0, 0, cardPaddingX * 2, 0],
 				},
 			],
 			width: cardW,
 		});
 
-		const calloutText = `Durante el Semestre ${current.semester} del ${current.year}, el volumen de ventas alcanzó ${currencyFormatter.format(current.total)}. Comparado con el mismo periodo del año anterior, se observa una ${directionWord} del ${yoyText}, fuertemente impulsada por un ticket promedio de ${currencyFormatter.format(avgTicket)}.`;
+		const calloutText = `Durante el Semestre ${current.semester} del ${current.year}, el volumen de ventas alcanzó ${currencyFormatter.format(current.total)}, con un ticket promedio de ${currencyFormatter.format(avgTicket)}. ${comparisonText}`;
 
 		const monthNames = [
 			'Ene',
@@ -736,7 +793,7 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 				if (sliceAngle > 0.01) {
 					const points = [{ x: pieCx, y: pieCy }];
 					const steps = Math.max(10, Math.ceil(sliceAngle * 10));
-					for (let step = 0; step <= steps; step++) {
+					for (let step = 0; step <= steps; step += 1) {
 						const t = currentAngle + (step / steps) * sliceAngle;
 						points.push({
 							x: pieCx + pieRadius * Math.cos(t),
@@ -794,7 +851,7 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 					{
 						text:
 							current.total > 0
-								? ((val / current.total) * 100).toFixed(1) + '%'
+								? `${((val / current.total) * 100).toFixed(1)}%`
 								: '0%',
 						fontSize: 9,
 						color: '#64748b',
@@ -863,15 +920,11 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 							'#64748b',
 							'#0f172a',
 						),
-					],
-					margin: [0, 0, 0, 15],
-				},
-				{
-					columns: [
+						{ width: 10, text: '' },
 						createCard(
 							`Crecimiento vs ${current.year - 1}`,
 							yoyText,
-							'#ffffff',
+							'#f1f5f9',
 							'#64748b',
 							yoyColor,
 						),
@@ -922,14 +975,7 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 							[
 								{
 									stack: [
-										{
-											text: '✧ SÍNTESIS ANALÍTICA',
-											fontSize: 10,
-											bold: true,
-											color: '#38bdf8',
-											margin: [0, 0, 0, 8],
-											letterSpacing: 1,
-										},
+										calloutTitle('SÍNTESIS ANALÍTICA'),
 										{
 											text: calloutText,
 											fontSize: 10,
