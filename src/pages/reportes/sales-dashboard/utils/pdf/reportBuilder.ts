@@ -18,6 +18,19 @@ const yoyColorOf = (yoy: number): string => {
 	return '#64748b';
 };
 
+/**
+ * Título de un recuadro de síntesis. El marcador es `■` porque Roboto, la única fuente del PDF, no
+ * trae `✧` ni otros símbolos decorativos: pdfmake los dibuja como un cuadro vacío.
+ */
+const calloutTitle = (text: string): PdfContent => ({
+	text: [{ text: '■  ', fontSize: 7 }, text],
+	fontSize: 10,
+	bold: true,
+	color: '#38bdf8',
+	margin: [0, 0, 0, 8],
+	letterSpacing: 1,
+});
+
 const currencyFormatter = new Intl.NumberFormat('es-CL', {
 	style: 'currency',
 	currency: 'CLP',
@@ -107,14 +120,7 @@ export const buildExecutiveSummary = (insights: string[]): PdfContent => {
 				[
 					{
 						stack: [
-							{
-								text: '✧ SÍNTESIS DE INTELIGENCIA ARTIFICIAL',
-								fontSize: 10,
-								bold: true,
-								color: '#38bdf8',
-								margin: [0, 0, 0, 8],
-								letterSpacing: 1,
-							},
+							calloutTitle('SÍNTESIS DE INTELIGENCIA ARTIFICIAL'),
 							{
 								ul: insights.map((insight) => ({
 									text: insight,
@@ -220,7 +226,11 @@ export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 							noWrap: true,
 						},
 					],
-					margin: [paddingX, -65, paddingX, 0], // Negative top margin pulls UI text over the canvas rectangle
+					// Sube el texto sobre el rectángulo sin restar su altura del flujo: con un margen negativo,
+					// lo que sigue a las tarjetas quedaba pegado a ellas.
+					// El bloque desplazado ignora el margen izquierdo: el relleno va en `x`.
+					relativePosition: { x: paddingX, y: -65 },
+					margin: [0, 0, paddingX * 2, 0],
 				},
 			],
 			width: cardW,
@@ -680,20 +690,23 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 
 		const avgTicket = current.count > 0 ? current.total / current.count : 0;
 
-		let yoyPct = 0;
-		let yoyText = 'N/A';
+		let yoyText = 'Sin datos';
 		let yoyColor = '#64748b';
-		let directionWord = 'variación';
+		// Sin el mismo semestre del año anterior no hay variación que contar.
+		let comparisonText = `No hay ventas del mismo semestre de ${current.year - 1} para comparar.`;
 
 		if (previous && previous.total > 0) {
-			yoyPct = ((current.total - previous.total) / previous.total) * 100;
+			const yoyPct = ((current.total - previous.total) / previous.total) * 100;
 			yoyText = yoyPct > 0 ? `+${yoyPct.toFixed(1)}%` : `${yoyPct.toFixed(1)}%`;
 			yoyColor = yoyColorOf(yoyPct);
-			directionWord = yoyPct > 0 ? 'expansión' : 'contracción';
+			let directionWord = 'variación';
+			if (yoyPct > 0) directionWord = 'expansión';
+			else if (yoyPct < 0) directionWord = 'contracción';
+			comparisonText = `Comparado con el mismo periodo del año anterior, se observa una ${directionWord} del ${yoyText}.`;
 		} else if (previous && previous.total === 0 && current.total > 0) {
 			yoyText = '+100%';
 			yoyColor = '#10b981';
-			directionWord = 'expansión';
+			comparisonText = `El mismo semestre de ${current.year - 1} no registró ventas.`;
 		}
 
 		const topCustomers = Object.entries(current.customers)
@@ -701,8 +714,10 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 			.sort((a, b) => b.total - a.total)
 			.slice(0, 3);
 
-		const cardW = 158;
+		// Cuatro tarjetas y tres separadores de 10 pt en los 515 pt útiles de la página.
+		const cardW = 121.25;
 		const cardH = 75;
+		const cardPaddingX = 12;
 		const createCard = (
 			title: string,
 			value: string,
@@ -726,15 +741,23 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 							margin: [0, 0, 0, 8],
 							letterSpacing: 0.5,
 						},
-						{ text: value, fontSize: 16, bold: true, color: valColor },
+						{
+							text: value,
+							fontSize: kpiValueFontSize(value, cardW - cardPaddingX * 2),
+							bold: true,
+							color: valColor,
+							noWrap: true,
+						},
 					],
-					margin: [12, -60, 12, 0],
+					// Igual que en las tarjetas de KPI: el texto sube sin restar altura al flujo.
+					relativePosition: { x: cardPaddingX, y: -60 },
+					margin: [0, 0, cardPaddingX * 2, 0],
 				},
 			],
 			width: cardW,
 		});
 
-		const calloutText = `Durante el Semestre ${current.semester} del ${current.year}, el volumen de ventas alcanzó ${currencyFormatter.format(current.total)}. Comparado con el mismo periodo del año anterior, se observa una ${directionWord} del ${yoyText}, fuertemente impulsada por un ticket promedio de ${currencyFormatter.format(avgTicket)}.`;
+		const calloutText = `Durante el Semestre ${current.semester} del ${current.year}, el volumen de ventas alcanzó ${currencyFormatter.format(current.total)}, con un ticket promedio de ${currencyFormatter.format(avgTicket)}. ${comparisonText}`;
 
 		const monthNames = [
 			'Ene',
@@ -897,15 +920,11 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 							'#64748b',
 							'#0f172a',
 						),
-					],
-					margin: [0, 0, 0, 15],
-				},
-				{
-					columns: [
+						{ width: 10, text: '' },
 						createCard(
 							`Crecimiento vs ${current.year - 1}`,
 							yoyText,
-							'#ffffff',
+							'#f1f5f9',
 							'#64748b',
 							yoyColor,
 						),
@@ -956,14 +975,7 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 							[
 								{
 									stack: [
-										{
-											text: '✧ SÍNTESIS ANALÍTICA',
-											fontSize: 10,
-											bold: true,
-											color: '#38bdf8',
-											margin: [0, 0, 0, 8],
-											letterSpacing: 1,
-										},
+										calloutTitle('SÍNTESIS ANALÍTICA'),
 										{
 											text: calloutText,
 											fontSize: 10,
