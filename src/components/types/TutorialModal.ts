@@ -12,9 +12,9 @@ export interface TutorialImage {
 }
 
 export interface TutorialStep {
-	/** Título del paso */
+	/** Título del paso; único dentro del tutorial, porque identifica al paso (key). */
 	title: string;
-	/** Descripción del paso (puede incluir HTML básico) */
+	/** Descripción del paso (puede incluir HTML básico; sólo contenido definido en el código) */
 	description: string;
 	/** URL de imagen (opcional) - para compatibilidad con formato anterior */
 	image?: string;
