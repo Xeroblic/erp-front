@@ -1,3 +1,7 @@
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import type { SalesDashboardStats, SaleRecord } from '../../../types';
+
 // Tipos customizados para pdfmake (para evitar `any` y conflictos de interfaz)
 export type PdfContent = Record<string, unknown> | string | PdfContent[];
 export type PdfTableCell = Record<string, unknown> | string | PdfContent[];
@@ -7,9 +11,12 @@ interface IPdfTableNode {
 	table: { body: unknown[] };
 }
 
-import type { SalesDashboardStats, SaleRecord } from '../../../types';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+/** Color de la variación interanual: verde si crece, rojo si cae y gris si se mantiene. */
+const yoyColorOf = (yoy: number): string => {
+	if (yoy > 0) return '#10b981';
+	if (yoy < 0) return '#ef4444';
+	return '#64748b';
+};
 
 const currencyFormatter = new Intl.NumberFormat('es-CL', {
 	style: 'currency',
@@ -462,7 +469,7 @@ export const buildYearlyAnalytics = (filteredResults: SaleRecord[]): PdfContent 
 	const maxTotal = Math.max(...sortedYears.map((y) => years[y].total), 1);
 
 	const chartStack = sortedYears.map((year) => {
-		const total = years[year].total;
+		const { total } = years[year];
 		const barWidth = Math.max((total / maxTotal) * 100, 1);
 		return {
 			columns: [
@@ -558,7 +565,7 @@ export const buildYearlyAnalytics = (filteredResults: SaleRecord[]): PdfContent 
 								const yoy =
 									((current.total - previous.total) / previous.total) * 100;
 								yoyText = yoy > 0 ? `+${yoy.toFixed(1)}%` : `${yoy.toFixed(1)}%`;
-								yoyColor = yoy > 0 ? '#10b981' : yoy < 0 ? '#ef4444' : '#64748b';
+								yoyColor = yoyColorOf(yoy);
 							}
 
 							const isEven = idx % 2 === 0;
@@ -681,7 +688,7 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 		if (previous && previous.total > 0) {
 			yoyPct = ((current.total - previous.total) / previous.total) * 100;
 			yoyText = yoyPct > 0 ? `+${yoyPct.toFixed(1)}%` : `${yoyPct.toFixed(1)}%`;
-			yoyColor = yoyPct > 0 ? '#10b981' : yoyPct < 0 ? '#ef4444' : '#64748b';
+			yoyColor = yoyColorOf(yoyPct);
 			directionWord = yoyPct > 0 ? 'expansión' : 'contracción';
 		} else if (previous && previous.total === 0 && current.total > 0) {
 			yoyText = '+100%';
@@ -763,7 +770,7 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 				if (sliceAngle > 0.01) {
 					const points = [{ x: pieCx, y: pieCy }];
 					const steps = Math.max(10, Math.ceil(sliceAngle * 10));
-					for (let step = 0; step <= steps; step++) {
+					for (let step = 0; step <= steps; step += 1) {
 						const t = currentAngle + (step / steps) * sliceAngle;
 						points.push({
 							x: pieCx + pieRadius * Math.cos(t),
@@ -821,7 +828,7 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 					{
 						text:
 							current.total > 0
-								? ((val / current.total) * 100).toFixed(1) + '%'
+								? `${((val / current.total) * 100).toFixed(1)}%`
 								: '0%',
 						fontSize: 9,
 						color: '#64748b',
