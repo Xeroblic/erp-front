@@ -59,7 +59,6 @@ vi.mock('../hooks/useQuotationsManager', () => ({
 		createQuotation: vi.fn(),
 		updateQuotation: vi.fn(),
 		deleteQuotation: vi.fn(),
-		duplicateQuotation: vi.fn(),
 		changeStatus: vi.fn(),
 		convertToSale: vi.fn(),
 		refreshData: vi.fn(),
@@ -80,7 +79,6 @@ vi.mock('../components/modals/ModalEditar/EditQuotationModal', () => ({ default:
 vi.mock('../components/modals/QuotationDetailsModal', () => ({
 	QuotationDetailsModal: () => null,
 }));
-vi.mock('../components/modals/DuplicateQuotationModal', () => ({ default: () => null }));
 vi.mock('../components/modals/DeleteQuotationModal', () => ({ default: () => null }));
 vi.mock('../components/modals/ConfirmSale', () => ({ ConfirmSaleModal: () => null }));
 

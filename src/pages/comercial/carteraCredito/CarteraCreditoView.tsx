@@ -190,7 +190,7 @@ const CreditPortfolioPagination: React.FC<CreditPortfolioPaginationProps> = ({
 		pageSize: meta.per_page,
 	};
 	const table: TablePaginationController = {
-		getState: () => ({ pagination }),
+		state: { pagination },
 		setPageSize: (updater) => {
 			const pageSize = typeof updater === 'function' ? updater(pagination.pageSize) : updater;
 			onChange(1, pageSize);

@@ -18,7 +18,7 @@ export { useUserAccess } from './hooks/useUserAccess';
 
 // Utilidades
 export { transformUserToRow, transformUsersToRows } from './utils/transformers';
-export { globalFilterFn } from './utils/filters';
+export { default as globalFilterFn } from './utils/filters';
 
 // Constantes
 export { USER_DETAIL_TABS } from './constants/tabs';

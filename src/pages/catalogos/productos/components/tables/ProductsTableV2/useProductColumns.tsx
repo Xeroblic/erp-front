@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { IProduct } from '@/interface/product.interface';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import ProductCell from './cells/ProductCell';
 import PriceCell from './cells/PriceCell';
 import WooCell from './cells/WooCell';
@@ -26,7 +27,7 @@ export const useProductColumns = ({
 	onToggleStatus,
 	onView,
 	onDelete,
-}: UseProductColumnsParams): ColumnDef<IProduct>[] =>
+}: UseProductColumnsParams): ColumnDef<AppTableFeatures, IProduct>[] =>
 	useMemo(
 		() => [
 			{

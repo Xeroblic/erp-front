@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
 	OnChangeFn,
 	PaginationState,
 	createColumnHelper,
 	flexRender,
-	getCoreRowModel,
-	useReactTable,
+	useTable,
 } from '@tanstack/react-table';
 
-import { useInvitationsManagement } from '../../hooks/useInvitationsManagement';
-import { InvitationDetailsModal, DeleteConfirmationModal, ResendInvitationModal } from '../modals';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
 import { Invitation } from '@/interface/invitacion.interface';
-import Badge from '@/components/ui/Badge';
+import Badge, { TBadgeVariants } from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
-import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
+import { Table, TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import { TColors } from '@/types/colors.type';
 import { INVITATION_STATUS_MAP, normalizeInvitationStatus } from '@/constants/invitations.constant';
+import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { InvitationDetailsModal, DeleteConfirmationModal, ResendInvitationModal } from '../modals';
+import { useInvitationsManagement } from '../../hooks/useInvitationsManagement';
 
 interface InvitationsTableProps {
 	invitations: Invitation[];
@@ -34,54 +34,16 @@ interface InvitationsTableProps {
 	openCreateModal: () => void;
 }
 
-const columnHelper = createColumnHelper<Invitation>();
+const columnHelper = createColumnHelper<AppTableFeatures, Invitation>();
 
-const InvitationsTable: React.FC<InvitationsTableProps> = ({
-	invitations,
-	isLoading,
-	pagination,
-	onPageChange,
-	onPageSizeChange,
-	openCreateModal,
-}) => {
-	const { handleResendInvitation, handleCancelInvitation, isActionLoading } =
-		useInvitationsManagement();
-
-	// Estados para los modales
-	const [selectedInvitation, setSelectedInvitation] = useState<Invitation | null>(null);
-	const [modals, setModals] = useState({
-		details: false,
-		delete: false,
-		resend: false,
-	});
-
-	// Funciones para manejar modales
-	const openModal = (type: 'details' | 'delete' | 'resend', invitation: Invitation) => {
-		setSelectedInvitation(invitation);
-		setModals((prev) => ({ ...prev, [type]: true }));
-	};
-
-	const closeModal = (type: 'details' | 'delete' | 'resend') => {
-		setModals((prev) => ({ ...prev, [type]: false }));
-		setSelectedInvitation(null);
-	};
-
-	// Handlers para las acciones
-	const handleDeleteConfirm = async () => {
-		if (selectedInvitation) {
-			await handleCancelInvitation(selectedInvitation.id);
-			closeModal('delete');
-		}
-	};
-
-	const handleResendConfirm = async () => {
-		if (selectedInvitation) {
-			await handleResendInvitation(selectedInvitation.id);
-			closeModal('resend');
-		}
-	};
-
-	const columns = [
+const buildInvitationColumns = ({
+	isActionLoading,
+	openModal,
+}: {
+	isActionLoading: (id: number) => boolean;
+	openModal: (type: 'details' | 'delete' | 'resend', invitation: Invitation) => void;
+}) =>
+	columnHelper.columns([
 		columnHelper.accessor('email', {
 			header: 'Email',
 			cell: (info) => {
@@ -121,7 +83,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 					supervisor: 'Supervisor',
 				};
 
-				const roleColors: Record<string, { color: any; variant: any }> = {
+				const roleColors: Record<string, { color: TColors; variant: TBadgeVariants }> = {
 					admin: { color: 'purple', variant: 'solid' },
 					hr: { color: 'blue', variant: 'solid' },
 					employee: { color: 'zinc', variant: 'outline' },
@@ -333,7 +295,60 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 				);
 			},
 		}),
-	];
+	]);
+
+const InvitationsTable: React.FC<InvitationsTableProps> = ({
+	invitations,
+	isLoading,
+	pagination,
+	onPageChange,
+	onPageSizeChange,
+	openCreateModal,
+}) => {
+	const { handleResendInvitation, handleCancelInvitation, isActionLoading } =
+		useInvitationsManagement();
+
+	// Estados para los modales
+	const [selectedInvitation, setSelectedInvitation] = useState<Invitation | null>(null);
+	const [modals, setModals] = useState({
+		details: false,
+		delete: false,
+		resend: false,
+	});
+
+	// Funciones para manejar modales
+	const openModal = useCallback(
+		(type: 'details' | 'delete' | 'resend', invitation: Invitation) => {
+			setSelectedInvitation(invitation);
+			setModals((prev) => ({ ...prev, [type]: true }));
+		},
+		[],
+	);
+
+	const closeModal = (type: 'details' | 'delete' | 'resend') => {
+		setModals((prev) => ({ ...prev, [type]: false }));
+		setSelectedInvitation(null);
+	};
+
+	// Handlers para las acciones
+	const handleDeleteConfirm = async () => {
+		if (selectedInvitation) {
+			await handleCancelInvitation(selectedInvitation.id);
+			closeModal('delete');
+		}
+	};
+
+	const handleResendConfirm = async () => {
+		if (selectedInvitation) {
+			await handleResendInvitation(selectedInvitation.id);
+			closeModal('resend');
+		}
+	};
+
+	const columns = useMemo(
+		() => buildInvitationColumns({ isActionLoading, openModal }),
+		[isActionLoading, openModal],
+	);
 
 	const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
 		const current: PaginationState = {
@@ -352,10 +367,10 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 		}
 	};
 
-	const table = useReactTable({
+	const table = useTable({
+		features: appTableFeatures,
 		data: invitations,
 		columns,
-		getCoreRowModel: getCoreRowModel(),
 		state: {
 			pagination: {
 				pageIndex: Math.max(pagination.page - 1, 0),

@@ -1,13 +1,16 @@
 import React, { useMemo } from 'react';
-import { useReactTable, getCoreRowModel, flexRender, type ColumnDef } from '@tanstack/react-table';
+import { flexRender, type ColumnDef, useTable } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
 import type { IProduct } from '@/interface/product.interface';
+import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import type { CriticalItemRow } from './inventoryTab.types';
 import { formatNumber, getFriendlyDate } from './inventoryTab.utils';
+
+const SKELETON_KEYS = ['skeleton-1', 'skeleton-2', 'skeleton-3', 'skeleton-4'];
 
 interface InventoryCriticalSectionProps {
 	criticalItems: CriticalItemRow[];
@@ -21,6 +24,75 @@ interface InventoryCriticalSectionProps {
 	containerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
+const buildCriticalItemColumns = ({
+	onViewProduct,
+}: {
+	onViewProduct: InventoryCriticalSectionProps['onViewProduct'];
+}): ColumnDef<AppTableFeatures, CriticalItemRow>[] => [
+	{
+		id: 'product',
+		header: 'Producto',
+		cell: ({ row }) => {
+			const item = row.original;
+			return (
+				<div className='space-y-1'>
+					<p className='font-medium text-neutral-800 dark:text-neutral-100'>
+						{item.name}
+					</p>
+					<p className='text-xs text-neutral-500 dark:text-neutral-400'>
+						SKU: {item.sku} · Marca: {item.brand}
+					</p>
+					<p className='text-xs text-neutral-400 dark:text-neutral-500'>
+						Actualizado: {getFriendlyDate(item.updatedAt)}
+					</p>
+				</div>
+			);
+		},
+	},
+	{
+		id: 'stock',
+		header: 'Stock',
+		cell: ({ row }) => (
+			<span className='text-sm font-semibold text-neutral-700 dark:text-neutral-200'>
+				{formatNumber(row.original.stock)}
+			</span>
+		),
+	},
+	{
+		id: 'status',
+		header: 'Estado',
+		cell: ({ row }) => {
+			const { status, stock } = row.original;
+			const label = status === 'out' ? 'Sin stock' : `Stock bajo (${formatNumber(stock)})`;
+			return (
+				<Badge color={status === 'out' ? 'red' : 'amber'} variant='outline'>
+					{label}
+				</Badge>
+			);
+		},
+	},
+	{
+		id: 'actions',
+		header: 'Acciones',
+		cell: ({ row }) => {
+			const { product } = row.original;
+			const disabled = !onViewProduct || !product;
+			return (
+				<Button
+					size='sm'
+					variant='outline'
+					icon='HeroEye'
+					isDisable={disabled}
+					onClick={() => {
+						if (!disabled && onViewProduct && product) onViewProduct(product);
+					}}>
+					Ver producto
+				</Button>
+			);
+		},
+	},
+];
+
 const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 	criticalItems,
 	totalCriticalCount,
@@ -32,79 +104,12 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 	onViewProduct,
 	containerRef,
 }) => {
-	const columns = useMemo<ColumnDef<CriticalItemRow>[]>(
-		() => [
-			{
-				id: 'product',
-				header: 'Producto',
-				cell: ({ row }) => {
-					const item = row.original;
-					return (
-						<div className='space-y-1'>
-							<p className='font-medium text-neutral-800 dark:text-neutral-100'>
-								{item.name}
-							</p>
-							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
-								SKU: {item.sku} · Marca: {item.brand}
-							</p>
-							<p className='text-xs text-neutral-400 dark:text-neutral-500'>
-								Actualizado: {getFriendlyDate(item.updatedAt)}
-							</p>
-						</div>
-					);
-				},
-			},
-			{
-				id: 'stock',
-				header: 'Stock',
-				cell: ({ row }) => (
-					<span className='text-sm font-semibold text-neutral-700 dark:text-neutral-200'>
-						{formatNumber(row.original.stock)}
-					</span>
-				),
-			},
-			{
-				id: 'status',
-				header: 'Estado',
-				cell: ({ row }) => {
-					const { status, stock } = row.original;
-					const label =
-						status === 'out' ? 'Sin stock' : `Stock bajo (${formatNumber(stock)})`;
-					return (
-						<Badge color={status === 'out' ? 'red' : 'amber'} variant='outline'>
-							{label}
-						</Badge>
-					);
-				},
-			},
-			{
-				id: 'actions',
-				header: 'Acciones',
-				cell: ({ row }) => {
-					const { product } = row.original;
-					const disabled = !onViewProduct || !product;
-					return (
-						<Button
-							size='sm'
-							variant='outline'
-							icon='HeroEye'
-							isDisable={disabled}
-							onClick={() => {
-								if (!disabled && onViewProduct && product) onViewProduct(product);
-							}}>
-							Ver producto
-						</Button>
-					);
-				},
-			},
-		],
-		[onViewProduct],
-	);
+	const columns = useMemo(() => buildCriticalItemColumns({ onViewProduct }), [onViewProduct]);
 
-	const table = useReactTable({
+	const table = useTable({
+		features: appTableFeatures,
 		data: criticalItems,
 		columns,
-		getCoreRowModel: getCoreRowModel(),
 	});
 
 	return (
@@ -154,24 +159,26 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 						</div>
 					)}
 
-					{loading ? (
+					{loading && (
 						<div className='space-y-3'>
-							{Array.from({ length: 4 }).map((_, index) => (
+							{SKELETON_KEYS.map((key) => (
 								<div
-									key={index}
+									key={key}
 									className='flex gap-3 rounded border border-dashed border-neutral-200 p-3 dark:border-neutral-700'>
 									<div className='h-12 flex-1 animate-pulse rounded bg-neutral-100 dark:bg-neutral-800' />
 									<div className='h-8 w-28 animate-pulse rounded bg-neutral-100 dark:bg-neutral-800' />
 								</div>
 							))}
 						</div>
-					) : criticalItems.length === 0 ? (
+					)}
+					{!loading && criticalItems.length === 0 && (
 						<div className='rounded-lg border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500 dark:border-neutral-700'>
 							{criticalSearch || showOnlyOutOfStock
 								? 'No se encontraron productos con los filtros aplicados.'
 								: 'No hay productos con alertas de stock para esta sucursal.'}
 						</div>
-					) : (
+					)}
+					{!loading && criticalItems.length !== 0 && (
 						<div className='overflow-hidden rounded-lg border border-dashed border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900/40'>
 							<table className='min-w-full divide-y divide-neutral-200 dark:divide-neutral-800'>
 								<thead className='bg-neutral-50 dark:bg-neutral-900/60'>

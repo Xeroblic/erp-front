@@ -17,14 +17,40 @@ import {
 	DeleteSystemParameterModal,
 	CreateEditSystemParameterModal,
 } from './components/modals';
-import { useSystemParametersManagement } from './hooks/useSystemParametersManagement';
+import useSystemParametersManagement from './hooks/useSystemParametersManagement';
+
+type ParameterCategory = SystemParameter['category'];
+type ParameterDataType = SystemParameter['data_type'];
+
+const CATEGORY_OPTIONS: { value: ParameterCategory; label: string }[] = [
+	{ value: 'general', label: 'General' },
+	{ value: 'system', label: 'Sistema' },
+	{ value: 'email', label: 'Email' },
+	{ value: 'security', label: 'Seguridad' },
+	{ value: 'integration', label: 'Integración' },
+	{ value: 'ui', label: 'Interfaz' },
+	{ value: 'business', label: 'Negocio' },
+];
+
+const DATA_TYPE_OPTIONS: { value: ParameterDataType; label: string }[] = [
+	{ value: 'string', label: 'Texto' },
+	{ value: 'number', label: 'Número' },
+	{ value: 'boolean', label: 'Booleano' },
+	{ value: 'json', label: 'JSON' },
+	{ value: 'date', label: 'Fecha' },
+];
+
+const toCategory = (value: string): ParameterCategory | undefined =>
+	CATEGORY_OPTIONS.find((option) => option.value === value)?.value;
+
+const toDataType = (value: string): ParameterDataType | undefined =>
+	DATA_TYPE_OPTIONS.find((option) => option.value === value)?.value;
 
 const SystemParametersAdmin: React.FC = () => {
 	const {
 		// Estado
 		parameters,
 		isLoading,
-		pagination,
 		filters,
 		stats,
 
@@ -45,10 +71,8 @@ const SystemParametersAdmin: React.FC = () => {
 		openDetailsModal,
 		closeDetailsModal,
 
-		// Manejadores de filtros y paginación
+		// Manejadores de filtros
 		handleFilterChange,
-		handlePageChange,
-		handlePageSizeChange,
 
 		// Acciones CRUD
 		handleCreateParameter,
@@ -60,8 +84,11 @@ const SystemParametersAdmin: React.FC = () => {
 		loadingActions,
 	} = useSystemParametersManagement();
 
+	// Sólo al montar: `refreshParameters` cambia con cada filtro, y los filtros se aplican
+	// en el hook sin volver a cargar.
 	useEffect(() => {
-		refreshParameters();
+		void refreshParameters();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	return (
@@ -208,17 +235,15 @@ const SystemParametersAdmin: React.FC = () => {
 										value={filters.category || ''}
 										onChange={(e) =>
 											handleFilterChange({
-												category: (e.target.value as any) || undefined,
+												category: toCategory(e.target.value),
 											})
 										}>
 										<option value=''>Todas las categorías</option>
-										<option value='general'>General</option>
-										<option value='system'>Sistema</option>
-										<option value='email'>Email</option>
-										<option value='security'>Seguridad</option>
-										<option value='integration'>Integración</option>
-										<option value='ui'>Interfaz</option>
-										<option value='business'>Negocio</option>
+										{CATEGORY_OPTIONS.map((option) => (
+											<option key={option.value} value={option.value}>
+												{option.label}
+											</option>
+										))}
 									</Select>
 								</div>
 
@@ -230,15 +255,15 @@ const SystemParametersAdmin: React.FC = () => {
 										value={filters.data_type || ''}
 										onChange={(e) =>
 											handleFilterChange({
-												data_type: (e.target.value as any) || undefined,
+												data_type: toDataType(e.target.value),
 											})
 										}>
 										<option value=''>Todos los tipos</option>
-										<option value='string'>Texto</option>
-										<option value='number'>Número</option>
-										<option value='boolean'>Booleano</option>
-										<option value='json'>JSON</option>
-										<option value='date'>Fecha</option>
+										{DATA_TYPE_OPTIONS.map((option) => (
+											<option key={option.value} value={option.value}>
+												{option.label}
+											</option>
+										))}
 									</Select>
 								</div>
 
@@ -287,18 +312,19 @@ const SystemParametersAdmin: React.FC = () => {
 								</h3>
 								<div className='flex flex-wrap gap-2'>
 									{Object.entries(stats.byCategory).map(([category, count]) => (
-										<div
+										<button
+											type='button'
 											key={category}
 											className='cursor-pointer'
 											onClick={() =>
 												handleFilterChange({
-													category: category as any,
+													category: toCategory(category),
 												})
 											}>
 											<Badge color='blue' className='capitalize'>
 												{category} ({count})
 											</Badge>
-										</div>
+										</button>
 									))}
 								</div>
 							</CardBody>
@@ -309,9 +335,6 @@ const SystemParametersAdmin: React.FC = () => {
 					<SystemParametersTable
 						parameters={parameters}
 						isLoading={isLoading}
-						pagination={pagination}
-						onPageChange={handlePageChange}
-						onPageSizeChange={handlePageSizeChange}
 						onViewDetails={openDetailsModal}
 						onEdit={openEditModal}
 						onDelete={openDeleteModal}

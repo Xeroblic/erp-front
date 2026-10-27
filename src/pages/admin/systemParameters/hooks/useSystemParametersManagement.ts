@@ -10,19 +10,13 @@ import {
 } from '@/interface';
 import { systemParametersMock } from '../mocks/systemParameters.mock';
 
-export const useSystemParametersManagement = () => {
+const useSystemParametersManagement = () => {
 	// Estado local (usando mocks en lugar de Redux)
 	const [state, setState] = useState<SystemParametersState>({
 		parameters: systemParametersMock,
 		filteredParameters: systemParametersMock,
 		isLoading: false,
 		error: null,
-		pagination: {
-			page: 1,
-			pageSize: 10,
-			total: systemParametersMock.length,
-			totalPages: Math.ceil(systemParametersMock.length / 10),
-		},
 		filters: {},
 	});
 
@@ -79,36 +73,10 @@ export const useSystemParametersManagement = () => {
 				...prev,
 				filters: updatedFilters,
 				filteredParameters: filteredParams,
-				pagination: {
-					...prev.pagination,
-					page: 1,
-					total: filteredParams.length,
-					totalPages: Math.ceil(filteredParams.length / prev.pagination.pageSize),
-				},
 			}));
 		},
 		[state.parameters, state.filters, applyFilters],
 	);
-
-	// Manejar cambios de paginación
-	const handlePageChange = useCallback((page: number) => {
-		setState((prev) => ({
-			...prev,
-			pagination: { ...prev.pagination, page },
-		}));
-	}, []);
-
-	const handlePageSizeChange = useCallback((pageSize: number) => {
-		setState((prev) => ({
-			...prev,
-			pagination: {
-				...prev.pagination,
-				page: 1,
-				pageSize,
-				totalPages: Math.ceil(prev.filteredParameters.length / pageSize),
-			},
-		}));
-	}, []);
 
 	// Manejadores de modales
 	const openCreateModal = useCallback(() => setIsCreateModalOpen(true), []);
@@ -148,7 +116,9 @@ export const useSystemParametersManagement = () => {
 
 			try {
 				// Simular delay de API
-				await new Promise((resolve) => setTimeout(resolve, 1000));
+				await new Promise<void>((resolve) => {
+					setTimeout(resolve, 1000);
+				});
 
 				const newParameter: SystemParameter = {
 					...data,
@@ -167,11 +137,6 @@ export const useSystemParametersManagement = () => {
 					...prev,
 					parameters: updatedParameters,
 					filteredParameters: filteredParams,
-					pagination: {
-						...prev.pagination,
-						total: filteredParams.length,
-						totalPages: Math.ceil(filteredParams.length / prev.pagination.pageSize),
-					},
 					isLoading: false,
 				}));
 
@@ -195,7 +160,9 @@ export const useSystemParametersManagement = () => {
 				setLoadingActions((prev) => new Set(prev).add(id));
 
 				try {
-					await new Promise((resolve) => setTimeout(resolve, 800));
+					await new Promise<void>((resolve) => {
+						setTimeout(resolve, 800);
+					});
 
 					const updatedParameters = state.parameters.map((param) =>
 						param.id === id
@@ -237,7 +204,9 @@ export const useSystemParametersManagement = () => {
 				setLoadingActions((prev) => new Set(prev).add(id));
 
 				try {
-					await new Promise((resolve) => setTimeout(resolve, 600));
+					await new Promise<void>((resolve) => {
+						setTimeout(resolve, 600);
+					});
 
 					const updatedParameters = state.parameters.filter((param) => param.id !== id);
 					const filteredParams = applyFilters(updatedParameters, state.filters);
@@ -246,11 +215,6 @@ export const useSystemParametersManagement = () => {
 						...prev,
 						parameters: updatedParameters,
 						filteredParameters: filteredParams,
-						pagination: {
-							...prev.pagination,
-							total: filteredParams.length,
-							totalPages: Math.ceil(filteredParams.length / prev.pagination.pageSize),
-						},
 					}));
 
 					closeDeleteModal();
@@ -274,7 +238,9 @@ export const useSystemParametersManagement = () => {
 		setState((prev) => ({ ...prev, isLoading: true }));
 
 		try {
-			await new Promise((resolve) => setTimeout(resolve, 500));
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 500);
+			});
 			// En un escenario real, aquí haríamos fetch de la API
 			const filteredParams = applyFilters(systemParametersMock, state.filters);
 			setState((prev) => ({
@@ -291,13 +257,6 @@ export const useSystemParametersManagement = () => {
 			}));
 		}
 	}, [state.filters, applyFilters]);
-
-	// Datos paginados
-	const paginatedParameters = useMemo(() => {
-		const startIndex = (state.pagination.page - 1) * state.pagination.pageSize;
-		const endIndex = startIndex + state.pagination.pageSize;
-		return state.filteredParameters.slice(startIndex, endIndex);
-	}, [state.filteredParameters, state.pagination.page, state.pagination.pageSize]);
 
 	// Estadísticas
 	const stats = useMemo((): SystemParameterStats => {
@@ -318,11 +277,11 @@ export const useSystemParametersManagement = () => {
 
 	return {
 		// Estado
-		parameters: paginatedParameters,
+		// La tabla pagina en el cliente: recibe todos los parámetros filtrados.
+		parameters: state.filteredParameters,
 		allParameters: state.parameters,
 		isLoading: state.isLoading,
 		error: state.error,
-		pagination: state.pagination,
 		filters: state.filters,
 		stats,
 
@@ -343,10 +302,8 @@ export const useSystemParametersManagement = () => {
 		openDetailsModal,
 		closeDetailsModal,
 
-		// Manejadores de filtros y paginación
+		// Manejadores de filtros
 		handleFilterChange,
-		handlePageChange,
-		handlePageSizeChange,
 
 		// Acciones CRUD
 		handleCreateParameter,
@@ -358,3 +315,5 @@ export const useSystemParametersManagement = () => {
 		loadingActions,
 	};
 };
+
+export default useSystemParametersManagement;

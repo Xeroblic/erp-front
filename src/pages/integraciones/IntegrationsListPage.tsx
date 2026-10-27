@@ -20,11 +20,289 @@ import {
 } from '@/store/slices/integrations/integrationsSlice';
 import type { Integration } from '@/types/integrations.types';
 import type { TIcons } from '@/types/icons.type';
-import ModalIntegration from './components/ModalIntegration';
-import RestoreConflictModal from './components/RestoreConflictModal';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import RestoreConflictModal from './components/RestoreConflictModal';
+import ModalIntegration from './components/ModalIntegration';
+
+const getModeInfo = (mode: string) => {
+	const modes: Record<string, { label: string; icons: TIcons[] }> = {
+		webhook: { label: 'Webhook', icons: ['HeroSignal'] },
+		read: { label: 'Solo Lectura', icons: ['DuoBookOpen'] },
+		read_write: { label: 'Lectura/Escritura', icons: ['DuoBookOpen', 'DuoWrite'] },
+	};
+	return modes[mode] || { label: mode, icons: [] };
+};
+
+const getProviderLabel = (provider: string) => {
+	const providers: Record<string, string> = {
+		woocommerce: 'WooCommerce',
+	};
+	return providers[provider] || provider;
+};
+
+const formatDate = (value?: string | null) => {
+	if (!value) return null;
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return null;
+	return date.toLocaleString('es-CL');
+};
+
+const buildTrashedIntegrationColumns = ({
+	handleRestore,
+	restoringId,
+	branchId,
+}: {
+	handleRestore: (integration: Integration) => Promise<void>;
+	restoringId: string | null;
+	branchId: number | null;
+}): ColumnDef<AppTableFeatures, Integration, unknown>[] => [
+	{
+		header: 'Nombre',
+		accessorKey: 'name',
+		cell: ({ row }) => (
+			<div>
+				<div className='font-medium'>{row.original.name}</div>
+				<div className='text-xs text-gray-500'>{row.original.base_url}</div>
+			</div>
+		),
+	},
+	{
+		header: 'Proveedor',
+		accessorKey: 'provider',
+		cell: ({ row }) => getProviderLabel(row.original.provider),
+	},
+	{
+		header: 'Modo',
+		accessorKey: 'mode',
+		cell: ({ row }) => {
+			const { label } = getModeInfo(row.original.mode);
+			return <Badge variant='outline'>{label}</Badge>;
+		},
+	},
+	{
+		header: 'Eliminada el',
+		accessorKey: 'deleted_at',
+		cell: ({ row }) => {
+			const formatted = formatDate(row.original.deleted_at);
+			return formatted ? (
+				<span className='text-xs'>{formatted}</span>
+			) : (
+				<span className='text-gray-400'>-</span>
+			);
+		},
+	},
+	{
+		id: 'acciones',
+		header: 'Acciones',
+		cell: ({ row }) => {
+			const isRestoring = restoringId === row.original.id;
+			return (
+				<Tooltip text='Restaurar esta integración y sus productos vinculados'>
+					<ProtectedButton
+						permission='delete-integration'
+						branchId={branchId}
+						scope='access'
+						size='sm'
+						variant='outline'
+						color='emerald'
+						disabled={isRestoring || restoringId !== null}
+						onClick={() => handleRestore(row.original)}>
+						{isRestoring ? (
+							<Icon
+								icon='HeroArrowPath'
+								className='h-4 w-4 animate-spin text-emerald-500'
+							/>
+						) : (
+							<>
+								<Icon icon='HeroArrowUturnUp' className='me-1 text-emerald-500' />
+								Restaurar
+							</>
+						)}
+					</ProtectedButton>
+				</Tooltip>
+			);
+		},
+	},
+];
+
+const buildIntegrationColumns = ({
+	handleView,
+	handleEdit,
+	handleToggleActive,
+	togglingId,
+}: {
+	handleView: (integration: Integration) => void;
+	handleEdit: (integration: Integration) => void;
+	handleToggleActive: (integration: Integration) => Promise<void>;
+	togglingId: string | null;
+}): ColumnDef<AppTableFeatures, Integration, unknown>[] => [
+	{
+		header: 'Nombre',
+		accessorKey: 'name',
+		cell: ({ row }) => (
+			<div>
+				<div className='font-medium'>{row.original.name}</div>
+				<div className='text-xs text-gray-500'>{row.original.base_url}</div>
+			</div>
+		),
+	},
+	{
+		header: 'Proveedor',
+		accessorKey: 'provider',
+		cell: ({ row }) => getProviderLabel(row.original.provider),
+	},
+	{
+		header: 'Modo',
+		accessorKey: 'mode',
+		cell: ({ row }) => {
+			const modeColors: Record<string, string> = {
+				webhook: 'blue',
+				read: 'amber',
+				read_write: 'emerald',
+			};
+			const { label, icons } = getModeInfo(row.original.mode);
+			const webhookEvent = row.original.mode === 'webhook' ? row.original.event : null;
+			return (
+				<div className='flex items-center gap-1.5'>
+					<Tooltip text={label}>
+						<span className='inline-block'>
+							<Badge
+								variant='outline'
+								rounded='rounded-full'
+								color={modeColors[row.original.mode] || 'zinc'}
+								className='flex w-fit items-center justify-center px-1.5 py-1 shadow-sm'>
+								<span className='flex items-center gap-0.5'>
+									{icons.map((ic) => (
+										<Icon key={ic} icon={ic} className='text-2xl' />
+									))}
+								</span>
+							</Badge>
+						</span>
+					</Tooltip>
+					{webhookEvent && (
+						<Badge
+							variant='outline'
+							rounded='rounded-full'
+							color={webhookEvent.startsWith('product') ? 'violet' : 'blue'}
+							className='w-fit px-2 py-0.5'>
+							{webhookEvent}
+						</Badge>
+					)}
+				</div>
+			);
+		},
+	},
+	{
+		header: 'Estado',
+		accessorKey: 'is_active',
+		cell: ({ row }) =>
+			row.original.is_active ? (
+				<Badge color='green'>Activa</Badge>
+			) : (
+				<Badge color='red'>Inactiva</Badge>
+			),
+	},
+	{
+		header: 'Último Éxito',
+		accessorKey: 'last_success_at',
+		cell: ({ row }) => {
+			const formatted = formatDate(row.original.last_success_at);
+			return formatted ? (
+				<span className='text-xs'>{formatted}</span>
+			) : (
+				<span className='text-gray-400'>-</span>
+			);
+		},
+	},
+	{
+		header: 'Último Error',
+		accessorKey: 'last_error_at',
+		cell: ({ row }) => {
+			const formatted = formatDate(row.original.last_error_at);
+			return formatted ? (
+				<div>
+					<span className='text-xs text-red-600'>{formatted}</span>
+					{row.original.last_error_msg && (
+						<div className='max-w-xs truncate text-xs text-gray-500'>
+							{row.original.last_error_msg}
+						</div>
+					)}
+				</div>
+			) : (
+				<span className='text-gray-400'>-</span>
+			);
+		},
+	},
+	{
+		id: 'acciones',
+		header: 'Acciones',
+		cell: ({ row }) => {
+			const isRest = row.original.mode !== 'webhook';
+			const isToggling = togglingId === row.original.id;
+			return (
+				<div className='flex items-center gap-2'>
+					{isRest && (
+						<Tooltip
+							text={
+								row.original.is_active
+									? 'Desactivar esta tienda'
+									: 'Activar esta tienda (desactiva la otra API REST activa)'
+							}>
+							<span className='flex items-center'>
+								{isToggling ? (
+									<Icon
+										icon='HeroArrowPath'
+										className='h-4 w-4 animate-spin text-neutral-400'
+									/>
+								) : (
+									<Checkbox
+										id={`toggle-active-${row.original.id}`}
+										name={`toggle-active-${row.original.id}`}
+										variant='switch'
+										checked={row.original.is_active}
+										onChange={() => {
+											void handleToggleActive(row.original);
+										}}
+										disabled={togglingId !== null}
+									/>
+								)}
+							</span>
+						</Tooltip>
+					)}
+					<Tooltip text='Ver detalles'>
+						<Button
+							size='sm'
+							variant='outline'
+							color='violet'
+							className='group bg-violet-500/20 hover:bg-violet-600/20'
+							onClick={() => handleView(row.original)}>
+							<Icon
+								icon='HeroEye'
+								className='me-1 text-2xl text-violet-500 group-hover:text-violet-300'
+							/>
+						</Button>
+					</Tooltip>
+					<Tooltip text='Editar Integración'>
+						<Button
+							size='sm'
+							variant='outline'
+							color='sky'
+							className='group bg-sky-600 hover:bg-sky-600/20'
+							onClick={() => handleEdit(row.original)}>
+							<Icon
+								icon='HeroPencil'
+								className='me-1 text-2xl text-sky-500 group-hover:text-sky-300'
+							/>
+						</Button>
+					</Tooltip>
+				</div>
+			);
+		},
+	},
+];
 
 export const IntegrationsListContent: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -53,9 +331,9 @@ export const IntegrationsListContent: React.FC = () => {
 	useEffect(() => {
 		if (subsidiaryId) {
 			if (viewMode === 'active') {
-				dispatch(fetchIntegrations({ subsidiaryId }));
+				void dispatch(fetchIntegrations({ subsidiaryId }));
 			} else {
-				dispatch(fetchTrashedIntegrations({ subsidiaryId }));
+				void dispatch(fetchTrashedIntegrations({ subsidiaryId }));
 			}
 		} else {
 			toast.error('No se pudo identificar la subsidiaria actual. Verifica tu sesión.');
@@ -75,19 +353,25 @@ export const IntegrationsListContent: React.FC = () => {
 		setIsModalOpen(true);
 	};
 
-	const handleEdit = (integration: Integration) => {
-		setSelectedIntegrationLocal(integration);
-		dispatch(setSelectedIntegration(integration));
-		setModalMode('edit');
-		setIsModalOpen(true);
-	};
+	const handleEdit = useCallback(
+		(integration: Integration) => {
+			setSelectedIntegrationLocal(integration);
+			dispatch(setSelectedIntegration(integration));
+			setModalMode('edit');
+			setIsModalOpen(true);
+		},
+		[dispatch],
+	);
 
-	const handleView = (integration: Integration) => {
-		setSelectedIntegrationLocal(integration);
-		dispatch(setSelectedIntegration(integration));
-		setModalMode('view');
-		setIsModalOpen(true);
-	};
+	const handleView = useCallback(
+		(integration: Integration) => {
+			setSelectedIntegrationLocal(integration);
+			dispatch(setSelectedIntegration(integration));
+			setModalMode('view');
+			setIsModalOpen(true);
+		},
+		[dispatch],
+	);
 
 	const handleCloseModal = () => {
 		setIsModalOpen(false);
@@ -100,7 +384,7 @@ export const IntegrationsListContent: React.FC = () => {
 		setSelectedIntegrationLocal(null);
 		dispatch(setSelectedIntegration(null));
 		if (subsidiaryId) {
-			dispatch(fetchIntegrations({ subsidiaryId }));
+			void dispatch(fetchIntegrations({ subsidiaryId }));
 		}
 	};
 
@@ -116,7 +400,7 @@ export const IntegrationsListContent: React.FC = () => {
 					}),
 				).unwrap();
 				toast.success(`"${integration.name}" restaurada correctamente`);
-				dispatch(fetchTrashedIntegrations({ subsidiaryId }));
+				void dispatch(fetchTrashedIntegrations({ subsidiaryId }));
 			} catch (err: unknown) {
 				const message = typeof err === 'string' ? err : 'Error al restaurar la integración';
 				if (
@@ -142,399 +426,146 @@ export const IntegrationsListContent: React.FC = () => {
 	 * activa por proveedor, al activar una se desactivan automáticamente las otras
 	 * API REST activas del mismo proveedor (en una sola acción).
 	 */
-	const handleToggleActive = async (integration: Integration) => {
-		if (!subsidiaryId || togglingId) return;
-		setTogglingId(integration.id);
-		try {
-			if (integration.is_active) {
-				await dispatch(
-					updateIntegration({
-						subsidiaryId,
-						integrationId: integration.id,
-						payload: { is_active: false },
-					}),
-				).unwrap();
-				toast.success(`"${integration.name}" desactivada`);
-			} else {
-				// 1) Desactivar las otras API REST activas del mismo proveedor.
-				const conflicts = integrations.filter(
-					(i) =>
-						i.id !== integration.id &&
-						i.provider === integration.provider &&
-						i.mode !== 'webhook' &&
-						i.is_active,
-				);
-				for (const conflict of conflicts) {
-					// eslint-disable-next-line no-await-in-loop
+	const handleToggleActive = useCallback(
+		async (integration: Integration) => {
+			if (!subsidiaryId || togglingId) return;
+			setTogglingId(integration.id);
+			try {
+				if (integration.is_active) {
 					await dispatch(
 						updateIntegration({
 							subsidiaryId,
-							integrationId: conflict.id,
+							integrationId: integration.id,
 							payload: { is_active: false },
 						}),
 					).unwrap();
+					toast.success(`"${integration.name}" desactivada`);
+				} else {
+					// 1) Desactivar las otras API REST activas del mismo proveedor.
+					const conflicts = integrations.filter(
+						(i) =>
+							i.id !== integration.id &&
+							i.provider === integration.provider &&
+							i.mode !== 'webhook' &&
+							i.is_active,
+					);
+					// En secuencia: si una desactivación falla, no se sigue con las demás.
+					await conflicts.reduce<Promise<void>>(async (previous, conflict) => {
+						await previous;
+						await dispatch(
+							updateIntegration({
+								subsidiaryId,
+								integrationId: conflict.id,
+								payload: { is_active: false },
+							}),
+						).unwrap();
+					}, Promise.resolve());
+					// 2) Activar la seleccionada.
+					await dispatch(
+						updateIntegration({
+							subsidiaryId,
+							integrationId: integration.id,
+							payload: { is_active: true },
+						}),
+					).unwrap();
+					toast.success(
+						conflicts.length > 0
+							? `"${integration.name}" activada (se desactivó "${conflicts[0].name}")`
+							: `"${integration.name}" activada`,
+					);
 				}
-				// 2) Activar la seleccionada.
-				await dispatch(
-					updateIntegration({
-						subsidiaryId,
-						integrationId: integration.id,
-						payload: { is_active: true },
-					}),
-				).unwrap();
-				toast.success(
-					conflicts.length > 0
-						? `"${integration.name}" activada (se desactivó "${conflicts[0].name}")`
-						: `"${integration.name}" activada`,
+				// No hace falta recargar toda la lista: cada `updateIntegration.fulfilled`
+				// actualiza el item en el store. Evita el spinner global y el parpadeo.
+			} catch (toggleError: unknown) {
+				toast.error(
+					typeof toggleError === 'string'
+						? toggleError
+						: 'No se pudo cambiar el estado de la integración',
 				);
+			} finally {
+				setTogglingId(null);
 			}
-			// No hace falta recargar toda la lista: cada `updateIntegration.fulfilled`
-			// actualiza el item en el store. Evita el spinner global y el parpadeo.
-		} catch (error: unknown) {
-			toast.error(
-				typeof error === 'string'
-					? error
-					: 'No se pudo cambiar el estado de la integración',
-			);
-		} finally {
-			setTogglingId(null);
-		}
-	};
-
-	const getModeInfo = useCallback((mode: string) => {
-		const modes: Record<string, { label: string; icons: TIcons[] }> = {
-			webhook: { label: 'Webhook', icons: ['HeroSignal'] },
-			read: { label: 'Solo Lectura', icons: ['DuoBookOpen'] },
-			read_write: { label: 'Lectura/Escritura', icons: ['DuoBookOpen', 'DuoWrite'] },
-		};
-		return modes[mode] || { label: mode, icons: [] };
-	}, []);
-
-	const getProviderLabel = useCallback((provider: string) => {
-		const providers: Record<string, string> = {
-			woocommerce: 'WooCommerce',
-		};
-		return providers[provider] || provider;
-	}, []);
-
-	const formatDate = useCallback((value?: string | null) => {
-		if (!value) return null;
-		const date = new Date(value);
-		if (Number.isNaN(date.getTime())) return null;
-		return date.toLocaleString('es-CL');
-	}, []);
-
-	const trashedColumns = useMemo<ColumnDef<Integration, unknown>[]>(
-		() => [
-			{
-				header: 'Nombre',
-				accessorKey: 'name',
-				cell: ({ row }) => (
-					<div>
-						<div className='font-medium'>{row.original.name}</div>
-						<div className='text-xs text-gray-500'>{row.original.base_url}</div>
-					</div>
-				),
-			},
-			{
-				header: 'Proveedor',
-				accessorKey: 'provider',
-				cell: ({ row }) => getProviderLabel(row.original.provider),
-			},
-			{
-				header: 'Modo',
-				accessorKey: 'mode',
-				cell: ({ row }) => {
-					const { label } = getModeInfo(row.original.mode);
-					return <Badge variant='outline'>{label}</Badge>;
-				},
-			},
-			{
-				header: 'Eliminada el',
-				accessorKey: 'deleted_at',
-				cell: ({ row }) => {
-					const formatted = formatDate(row.original.deleted_at);
-					return formatted ? (
-						<span className='text-xs'>{formatted}</span>
-					) : (
-						<span className='text-gray-400'>-</span>
-					);
-				},
-			},
-			{
-				id: 'acciones',
-				header: 'Acciones',
-				cell: ({ row }) => {
-					const isRestoring = restoringId === row.original.id;
-					return (
-						<Tooltip text='Restaurar esta integración y sus productos vinculados'>
-							<ProtectedButton
-								permission='delete-integration'
-								branchId={branchId}
-								scope='access'
-								size='sm'
-								variant='outline'
-								color='emerald'
-								disabled={isRestoring || restoringId !== null}
-								onClick={() => handleRestore(row.original)}>
-								{isRestoring ? (
-									<Icon
-										icon='HeroArrowPath'
-										className='h-4 w-4 animate-spin text-emerald-500'
-									/>
-								) : (
-									<>
-										<Icon
-											icon='HeroArrowUturnUp'
-											className='me-1 text-emerald-500'
-										/>
-										Restaurar
-									</>
-								)}
-							</ProtectedButton>
-						</Tooltip>
-					);
-				},
-			},
-		],
-		[getProviderLabel, getModeInfo, handleRestore, restoringId, branchId],
+		},
+		[dispatch, integrations, subsidiaryId, togglingId],
 	);
 
-	const columns = useMemo<ColumnDef<Integration, unknown>[]>(
-		() => [
-			{
-				header: 'Nombre',
-				accessorKey: 'name',
-				cell: ({ row }) => (
-					<div>
-						<div className='font-medium'>{row.original.name}</div>
-						<div className='text-xs text-gray-500'>{row.original.base_url}</div>
-					</div>
-				),
-			},
-			{
-				header: 'Proveedor',
-				accessorKey: 'provider',
-				cell: ({ row }) => getProviderLabel(row.original.provider),
-			},
-			{
-				header: 'Modo',
-				accessorKey: 'mode',
-				cell: ({ row }) => {
-					const modeColors: Record<string, string> = {
-						webhook: 'blue',
-						read: 'amber',
-						read_write: 'emerald',
-					};
-					const { label, icons } = getModeInfo(row.original.mode);
-					const webhookEvent =
-						row.original.mode === 'webhook' ? row.original.event : null;
-					return (
-						<div className='flex items-center gap-1.5'>
-							<Tooltip text={label}>
-								<span className='inline-block'>
-									<Badge
-										variant='outline'
-										rounded='rounded-full'
-										color={modeColors[row.original.mode] || 'zinc'}
-										className='flex w-fit items-center justify-center px-1.5 py-1 shadow-sm'>
-										<span className='flex items-center gap-0.5'>
-											{icons.map((ic) => (
-												<Icon key={ic} icon={ic} className='text-2xl' />
-											))}
-										</span>
-									</Badge>
-								</span>
-							</Tooltip>
-							{webhookEvent && (
-								<Badge
-									variant='outline'
-									rounded='rounded-full'
-									color={webhookEvent.startsWith('product') ? 'violet' : 'blue'}
-									className='w-fit px-2 py-0.5'>
-									{webhookEvent}
-								</Badge>
-							)}
-						</div>
-					);
-				},
-			},
-			{
-				header: 'Estado',
-				accessorKey: 'is_active',
-				cell: ({ row }) =>
-					row.original.is_active ? (
-						<Badge color='green'>Activa</Badge>
-					) : (
-						<Badge color='red'>Inactiva</Badge>
-					),
-			},
-			{
-				header: 'Último Éxito',
-				accessorKey: 'last_success_at',
-				cell: ({ row }) => {
-					const formatted = formatDate(row.original.last_success_at);
-					return formatted ? (
-						<span className='text-xs'>{formatted}</span>
-					) : (
-						<span className='text-gray-400'>-</span>
-					);
-				},
-			},
-			{
-				header: 'Último Error',
-				accessorKey: 'last_error_at',
-				cell: ({ row }) => {
-					const formatted = formatDate(row.original.last_error_at);
-					return formatted ? (
-						<div>
-							<span className='text-xs text-red-600'>{formatted}</span>
-							{row.original.last_error_msg && (
-								<div className='max-w-xs truncate text-xs text-gray-500'>
-									{row.original.last_error_msg}
-								</div>
-							)}
-						</div>
-					) : (
-						<span className='text-gray-400'>-</span>
-					);
-				},
-			},
-			{
-				id: 'acciones',
-				header: 'Acciones',
-				cell: ({ row }) => {
-					const isRest = row.original.mode !== 'webhook';
-					const isToggling = togglingId === row.original.id;
-					return (
-						<div className='flex items-center gap-2'>
-							{isRest && (
-								<Tooltip
-									text={
-										row.original.is_active
-											? 'Desactivar esta tienda'
-											: 'Activar esta tienda (desactiva la otra API REST activa)'
-									}>
-									<span className='flex items-center'>
-										{isToggling ? (
-											<Icon
-												icon='HeroArrowPath'
-												className='h-4 w-4 animate-spin text-neutral-400'
-											/>
-										) : (
-											<Checkbox
-												id={`toggle-active-${row.original.id}`}
-												name={`toggle-active-${row.original.id}`}
-												variant='switch'
-												checked={row.original.is_active}
-												onChange={() =>
-													void handleToggleActive(row.original)
-												}
-												disabled={togglingId !== null}
-											/>
-										)}
-									</span>
-								</Tooltip>
-							)}
-							<Tooltip text='Ver detalles'>
-								<Button
-									size='sm'
-									variant='outline'
-									color='violet'
-									className='group bg-violet-500/20 hover:bg-violet-600/20'
-									onClick={() => handleView(row.original)}>
-									<Icon
-										icon='HeroEye'
-										className='me-1 text-2xl text-violet-500 group-hover:text-violet-300'
-									/>
-								</Button>
-							</Tooltip>
-							<Tooltip text='Editar Integración'>
-								<Button
-									size='sm'
-									variant='outline'
-									color='sky'
-									className='group bg-sky-600 hover:bg-sky-600/20'
-									onClick={() => handleEdit(row.original)}>
-									<Icon
-										icon='HeroPencil'
-										className='me-1 text-2xl text-sky-500 group-hover:text-sky-300'
-									/>
-								</Button>
-							</Tooltip>
-						</div>
-					);
-				},
-			},
-		],
-		[getProviderLabel, getModeInfo, handleView, handleEdit, handleToggleActive, togglingId],
+	const trashedColumns = useMemo(
+		() => buildTrashedIntegrationColumns({ handleRestore, restoringId, branchId }),
+		[handleRestore, restoringId, branchId],
+	);
+
+	const columns = useMemo(
+		() => buildIntegrationColumns({ handleView, handleEdit, handleToggleActive, togglingId }),
+		[handleView, handleEdit, handleToggleActive, togglingId],
 	);
 
 	if (!subsidiaryId) {
 		return (
-			<>
-				<Container>
-					<Card>
-						<CardBody>
-							<div className='py-8 text-center'>
-								<Icon
-									icon='HeroExclamationTriangle'
-									size='text-6xl'
-									className='mx-auto mb-4 text-yellow-500'
-								/>
-								<h2 className='mb-2 text-2xl font-bold text-gray-800'>
-									No se pudo identificar la subsidiaria actual
-								</h2>
-								<p className='mb-4 text-gray-600'>
-									Tu usuario no tiene asignada una subsidiaria. Esto puede deberse
-									a:
-								</p>
-								<ul className='mb-6 inline-block space-y-2 text-left text-sm text-gray-600'>
-									<li>✗ Tu cuenta no está vinculada a ninguna subsidiaria</li>
-									<li>✗ Necesitas permisos específicos</li>
-									<li>✗ La sesión necesita ser actualizada</li>
-								</ul>
-								<div className='mt-6 space-x-2'>
-									<Button
-										variant='solid'
-										icon='HeroArrowPath'
-										onClick={() => window.location.reload()}>
-										Recargar Página
-									</Button>
-									<Button
-										variant='outline'
-										icon='HeroArrowRightOnRectangle'
-										onClick={() => {
-											// Implementar logout
-											window.location.href = '/login';
-										}}>
-										Cerrar Sesión
-									</Button>
-								</div>
-								<div className='mt-6 rounded-lg bg-gray-100 p-4 text-left text-xs'>
-									<p className='mb-2 font-semibold'>Debug Info:</p>
-									<pre className='overflow-auto text-xs'>
-										{JSON.stringify(
-											{
-												hasUser: !!currentUser,
-												userId: currentUser?.id,
-												subsidiary: currentUser?.subsidiary,
-												personalizacion:
-													currentUser?.personalizacion?.subsidiary_id,
-												branch: currentUser?.branch?.subsidiary,
-											},
-											null,
-											2,
-										)}
-									</pre>
-								</div>
+			<Container>
+				<Card>
+					<CardBody>
+						<div className='py-8 text-center'>
+							<Icon
+								icon='HeroExclamationTriangle'
+								size='text-6xl'
+								className='mx-auto mb-4 text-yellow-500'
+							/>
+							<h2 className='mb-2 text-2xl font-bold text-gray-800'>
+								No se pudo identificar la subsidiaria actual
+							</h2>
+							<p className='mb-4 text-gray-600'>
+								Tu usuario no tiene asignada una subsidiaria. Esto puede deberse a:
+							</p>
+							<ul className='mb-6 inline-block space-y-2 text-left text-sm text-gray-600'>
+								<li>✗ Tu cuenta no está vinculada a ninguna subsidiaria</li>
+								<li>✗ Necesitas permisos específicos</li>
+								<li>✗ La sesión necesita ser actualizada</li>
+							</ul>
+							<div className='mt-6 space-x-2'>
+								<Button
+									variant='solid'
+									icon='HeroArrowPath'
+									onClick={() => window.location.reload()}>
+									Recargar Página
+								</Button>
+								<Button
+									variant='outline'
+									icon='HeroArrowRightOnRectangle'
+									onClick={() => {
+										// Implementar logout
+										window.location.href = '/login';
+									}}>
+									Cerrar Sesión
+								</Button>
 							</div>
-						</CardBody>
-					</Card>
-				</Container>
-			</>
+							<div className='mt-6 rounded-lg bg-gray-100 p-4 text-left text-xs'>
+								<p className='mb-2 font-semibold'>Debug Info:</p>
+								<pre className='overflow-auto text-xs'>
+									{JSON.stringify(
+										{
+											hasUser: !!currentUser,
+											userId: currentUser?.id,
+											subsidiary: currentUser?.subsidiary,
+											personalizacion:
+												currentUser?.personalizacion?.subsidiary_id,
+											branch: currentUser?.branch?.subsidiary,
+										},
+										null,
+										2,
+									)}
+								</pre>
+							</div>
+						</div>
+					</CardBody>
+				</Card>
+			</Container>
 		);
 	}
+
+	const isTrashView = viewMode !== 'active';
+	const visibleCount = isTrashView ? trashedIntegrations.length : integrations.length;
+	const showListSpinner = loading && visibleCount === 0;
+	const showListEmpty = !loading && visibleCount === 0;
 
 	return (
 		<>
@@ -604,41 +635,7 @@ export const IntegrationsListContent: React.FC = () => {
 						</div>
 					</CardHeader>
 					<CardBody>
-						{viewMode === 'active' ? (
-							loading && integrations.length === 0 ? (
-								<div className='flex justify-center py-8'>
-									<Icon
-										icon='HeroArrowPath'
-										className='animate-spin'
-										size='text-4xl'
-									/>
-								</div>
-							) : integrations.length === 0 ? (
-								<div className='py-8 text-center text-gray-500'>
-									<Icon
-										icon='HeroGlobeAlt'
-										size='text-6xl'
-										className='mx-auto mb-4'
-									/>
-									<p className='text-lg'>No hay integraciones configuradas</p>
-									<Button
-										variant='outline'
-										icon='HeroPlus'
-										onClick={handleCreate}
-										className='mt-4'>
-										Crear Primera Integración
-									</Button>
-								</div>
-							) : (
-								<DataTable<Integration>
-									columns={columns}
-									data={integrations}
-									loading={false}
-									emptyMessage='No hay integraciones configuradas'
-									searchPlaceholder='Buscar integración...'
-								/>
-							)
-						) : loading && trashedIntegrations.length === 0 ? (
+						{showListSpinner && (
 							<div className='flex justify-center py-8'>
 								<Icon
 									icon='HeroArrowPath'
@@ -646,7 +643,25 @@ export const IntegrationsListContent: React.FC = () => {
 									size='text-4xl'
 								/>
 							</div>
-						) : trashedIntegrations.length === 0 ? (
+						)}
+						{showListEmpty && !isTrashView && (
+							<div className='py-8 text-center text-gray-500'>
+								<Icon
+									icon='HeroGlobeAlt'
+									size='text-6xl'
+									className='mx-auto mb-4'
+								/>
+								<p className='text-lg'>No hay integraciones configuradas</p>
+								<Button
+									variant='outline'
+									icon='HeroPlus'
+									onClick={handleCreate}
+									className='mt-4'>
+									Crear Primera Integración
+								</Button>
+							</div>
+						)}
+						{showListEmpty && isTrashView && (
 							<div className='py-8 text-center text-gray-500'>
 								<Icon icon='HeroTrash' size='text-6xl' className='mx-auto mb-4' />
 								<p className='text-lg'>La papelera está vacía</p>
@@ -654,7 +669,17 @@ export const IntegrationsListContent: React.FC = () => {
 									Las integraciones eliminadas aparecerán aquí
 								</p>
 							</div>
-						) : (
+						)}
+						{!isTrashView && integrations.length > 0 && (
+							<DataTable<Integration>
+								columns={columns}
+								data={integrations}
+								loading={false}
+								emptyMessage='No hay integraciones configuradas'
+								searchPlaceholder='Buscar integración...'
+							/>
+						)}
+						{isTrashView && trashedIntegrations.length > 0 && (
 							<DataTable<Integration>
 								columns={trashedColumns}
 								data={trashedIntegrations}

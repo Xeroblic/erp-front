@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { type ColumnDef } from '@tanstack/react-table';
+import { type NavigateFunction, useNavigate } from 'react-router-dom';
+import type { ColumnDef } from '@tanstack/react-table';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import type { TColors } from '@/types/colors.type';
 import type { IProduct } from '@/interface/product.interface';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { useProductReviews } from './hooks/useProductReviews';
 import type { ProductReviewRow } from './types';
 import {
@@ -63,6 +64,118 @@ const inventoryLabel = (value: string | null): string => {
 	return INVENTORY_STATUS_LABEL[value] ?? value;
 };
 
+const buildReviewColumns = ({
+	navigate,
+}: {
+	navigate: NavigateFunction;
+}): ColumnDef<AppTableFeatures, ProductReviewRow>[] => [
+	{
+		header: 'Serie',
+		accessorKey: 'serialNumber',
+		cell: ({ row }) => (
+			<span className='font-mono font-medium text-neutral-800 dark:text-neutral-100'>
+				{row.original.serialNumber}
+			</span>
+		),
+	},
+	{
+		header: 'Tipo de equipo',
+		accessorKey: 'equipmentType',
+		cell: ({ row }) => {
+			const { equipmentType } = row.original;
+			if (!equipmentType) {
+				return <span className='text-neutral-400'>Sin clasificar</span>;
+			}
+			return (
+				<span className='text-neutral-600 dark:text-neutral-300'>
+					{EQUIPMENT_TYPE_LABEL[equipmentType] ?? humanizeStatus(equipmentType)}
+				</span>
+			);
+		},
+	},
+	{
+		header: 'Estado revisión',
+		accessorKey: 'reviewStatus',
+		cell: ({ row }) => {
+			const { reviewStatus } = row.original;
+			if (!reviewStatus) {
+				return (
+					<Badge variant='outline' color='stone'>
+						Sin revisión
+					</Badge>
+				);
+			}
+			return (
+				<Badge variant='solid' color={REVIEW_STATUS_COLOR[reviewStatus] ?? 'sky'}>
+					{REVIEW_STATUS_LABEL[reviewStatus] ?? humanizeStatus(reviewStatus)}
+				</Badge>
+			);
+		},
+	},
+	{
+		header: 'Grado',
+		accessorKey: 'grade',
+		cell: ({ row }) => {
+			const { grade } = row.original;
+			return grade ? (
+				<Badge variant='outline' color={gradeColor(grade)}>
+					{grade}
+				</Badge>
+			) : (
+				<span className='text-neutral-400'>—</span>
+			);
+		},
+	},
+	{
+		header: 'Inventario',
+		accessorKey: 'inventoryStatus',
+		cell: ({ row }) => {
+			const { inventoryStatus, branchName } = row.original;
+			if (!inventoryStatus) {
+				return <span className='text-neutral-400'>—</span>;
+			}
+			return (
+				<div>
+					<Badge variant='solid' color={inventoryColor(inventoryStatus)}>
+						{inventoryLabel(inventoryStatus)}
+					</Badge>
+					{branchName && (
+						<span className='mt-1 block text-xs text-neutral-400'>{branchName}</span>
+					)}
+				</div>
+			);
+		},
+	},
+	{
+		header: 'Revisado',
+		accessorKey: 'reviewedAt',
+		cell: ({ row }) => (
+			<span className='text-neutral-600 dark:text-neutral-300'>
+				{formatDate(row.original.reviewedAt)}
+			</span>
+		),
+	},
+	{
+		id: 'actions',
+		header: 'Acciones',
+		enableSorting: false,
+		cell: ({ row }) => (
+			<div className='text-right'>
+				<Button
+					variant='outline'
+					color='blue'
+					size='sm'
+					icon='HeroArrowTopRightOnSquare'
+					onClick={() =>
+						navigate(`/technical-reviews/traceability/${row.original.serialNumber}`)
+					}>
+					Ver revisión
+				</Button>
+			</div>
+		),
+	},
+];
+
 const ReviewsTab: React.FC<ReviewsTabProps> = ({ product }) => {
 	const navigate = useNavigate();
 
@@ -76,120 +189,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ product }) => {
 
 	const categoryName = product.categories?.[0]?.name ?? null;
 
-	const columns = useMemo<ColumnDef<ProductReviewRow>[]>(
-		() => [
-			{
-				header: 'Serie',
-				accessorKey: 'serialNumber',
-				cell: ({ row }) => (
-					<span className='font-mono font-medium text-neutral-800 dark:text-neutral-100'>
-						{row.original.serialNumber}
-					</span>
-				),
-			},
-			{
-				header: 'Tipo de equipo',
-				accessorKey: 'equipmentType',
-				cell: ({ row }) => {
-					const { equipmentType } = row.original;
-					if (!equipmentType) {
-						return <span className='text-neutral-400'>Sin clasificar</span>;
-					}
-					return (
-						<span className='text-neutral-600 dark:text-neutral-300'>
-							{EQUIPMENT_TYPE_LABEL[equipmentType] ?? humanizeStatus(equipmentType)}
-						</span>
-					);
-				},
-			},
-			{
-				header: 'Estado revisión',
-				accessorKey: 'reviewStatus',
-				cell: ({ row }) => {
-					const { reviewStatus } = row.original;
-					if (!reviewStatus) {
-						return (
-							<Badge variant='outline' color='stone'>
-								Sin revisión
-							</Badge>
-						);
-					}
-					return (
-						<Badge variant='solid' color={REVIEW_STATUS_COLOR[reviewStatus] ?? 'sky'}>
-							{REVIEW_STATUS_LABEL[reviewStatus] ?? humanizeStatus(reviewStatus)}
-						</Badge>
-					);
-				},
-			},
-			{
-				header: 'Grado',
-				accessorKey: 'grade',
-				cell: ({ row }) => {
-					const { grade } = row.original;
-					return grade ? (
-						<Badge variant='outline' color={gradeColor(grade)}>
-							{grade}
-						</Badge>
-					) : (
-						<span className='text-neutral-400'>—</span>
-					);
-				},
-			},
-			{
-				header: 'Inventario',
-				accessorKey: 'inventoryStatus',
-				cell: ({ row }) => {
-					const { inventoryStatus, branchName } = row.original;
-					if (!inventoryStatus) {
-						return <span className='text-neutral-400'>—</span>;
-					}
-					return (
-						<div>
-							<Badge variant='solid' color={inventoryColor(inventoryStatus)}>
-								{inventoryLabel(inventoryStatus)}
-							</Badge>
-							{branchName && (
-								<span className='mt-1 block text-xs text-neutral-400'>
-									{branchName}
-								</span>
-							)}
-						</div>
-					);
-				},
-			},
-			{
-				header: 'Revisado',
-				accessorKey: 'reviewedAt',
-				cell: ({ row }) => (
-					<span className='text-neutral-600 dark:text-neutral-300'>
-						{formatDate(row.original.reviewedAt)}
-					</span>
-				),
-			},
-			{
-				id: 'actions',
-				header: 'Acciones',
-				enableSorting: false,
-				cell: ({ row }) => (
-					<div className='text-right'>
-						<Button
-							variant='outline'
-							color='blue'
-							size='sm'
-							icon='HeroArrowTopRightOnSquare'
-							onClick={() =>
-								navigate(
-									`/technical-reviews/traceability/${row.original.serialNumber}`,
-								)
-							}>
-							Ver revisión
-						</Button>
-					</div>
-				),
-			},
-		],
-		[navigate],
-	);
+	const columns = useMemo(() => buildReviewColumns({ navigate }), [navigate]);
 
 	return (
 		<div className='space-y-4'>

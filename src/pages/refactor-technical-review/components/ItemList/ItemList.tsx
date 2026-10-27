@@ -2,21 +2,20 @@
  * ItemList - Tabla reutilizable de series/ítems
  * Usado en: pages/items/index.tsx y BatchTabs.tsx
  */
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { createColumnHelper, PaginationState, OnChangeFn } from '@tanstack/react-table';
+import { ColumnDef, createColumnHelper, PaginationState, OnChangeFn } from '@tanstack/react-table';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import Badge from '@/components/ui/Badge';
 import type { IItem, ListMeta } from '@/interface/technicalReviews.interface';
-import StatusBadge from '../StatusBadge';
 import { useAppDispatch } from '@/store';
-import { deleteItem } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import StatusBadge from '../StatusBadge';
 import PrintLabel from '../PrintLabel';
 import { extractValue, formatDateTime, resolveEquipmentTypeMeta } from '../utils/utilsItems';
 import { exportItemsToExcel } from '../ExcelExport/exportExcel';
@@ -41,6 +40,223 @@ interface ItemListProps {
 	batchDate?: string;
 	customerName?: string;
 }
+
+/** El backend puede enviar el nombre plano en vez del objeto relacionado. */
+type ItemWithNames = IItem & {
+	product_name?: string | null;
+	warehouse_name?: string | null;
+};
+
+const columnHelper = createColumnHelper<AppTableFeatures, IItem>();
+
+const GradeCell = ({ item }: { item: IItem }) => {
+	const grade = extractValue(item.grade);
+	const suggestedGrade = extractValue(item.suggested_grade);
+
+	if (grade) {
+		return (
+			<Badge
+				variant='outline'
+				className='gap-1 rounded-full border-yellow-200 bg-yellow-50 px-2 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'>
+				<Icon icon='HeroStar' className='h-3 w-3' />
+				{grade}
+				{suggestedGrade && grade !== suggestedGrade && (
+					<span className='ml-1 text-[10px] text-yellow-600/70 dark:text-yellow-400/70'>
+						(Sug: {suggestedGrade})
+					</span>
+				)}
+			</Badge>
+		);
+	}
+
+	if (suggestedGrade) {
+		return (
+			<Badge
+				variant='outline'
+				className='gap-1 rounded-full border-gray-200 bg-gray-50 px-2 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'>
+				<Icon icon='HeroSparkles' className='h-3 w-3' />
+				{suggestedGrade}
+			</Badge>
+		);
+	}
+
+	return <span className='text-xs text-gray-400'>Pendiente</span>;
+};
+
+const buildItemColumns = ({
+	variant,
+	onOpenActions,
+	onPrint,
+	onDelete,
+}: {
+	variant: NonNullable<ItemListProps['variant']>;
+	onOpenActions: (item: IItem) => void;
+	onPrint: (item: IItem) => void;
+	onDelete: (item: IItem) => void;
+}) => {
+	const cols: ColumnDef<AppTableFeatures, IItem>[] = [
+		columnHelper.display({
+			id: 'serial_number',
+			header: 'Serie',
+			cell: (info) => {
+				const item = info.row.original;
+				return (
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroQrCode' className='h-4 w-4 text-gray-400' />
+						<span className='font-mono text-sm font-medium text-gray-900 dark:text-gray-100'>
+							{item.serial_number}
+						</span>
+					</div>
+				);
+			},
+		}),
+
+		// Tipo
+		columnHelper.display({
+			id: 'equipment_type',
+			header: 'Tipo',
+			cell: (info) => {
+				const item = info.row.original;
+				const { label, icon } = resolveEquipmentTypeMeta(item.equipment_type);
+				return (
+					<Badge
+						variant='outline'
+						className='gap-2 rounded-full border-blue-200 bg-blue-50 px-2 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300'>
+						<Icon icon={icon} className='h-3 w-3' />
+						{label}
+					</Badge>
+				);
+			},
+		}),
+
+		// Estado revisión
+		columnHelper.display({
+			id: 'review_status',
+			header: 'Estado Revisión',
+			cell: (info) => <StatusBadge type='review' status={info.row.original.review_status} />,
+		}),
+
+		// Estado comercial
+		columnHelper.display({
+			id: 'current_status',
+			header: 'Estado Comercial',
+			cell: (info) => (
+				<StatusBadge type='commercial' status={info.row.original.current_status} />
+			),
+		}),
+
+		// Grado
+		columnHelper.display({
+			id: 'grade',
+			header: 'Grado',
+			cell: (info) => <GradeCell item={info.row.original} />,
+		}),
+	];
+
+	if (variant === 'global') {
+		cols.splice(
+			1,
+			0,
+			// Producto (solo global)
+			columnHelper.display({
+				id: 'product_name',
+				header: 'Producto',
+				cell: (info) => {
+					const item: ItemWithNames = info.row.original;
+					return (
+						<span className='text-sm text-gray-700 dark:text-gray-300'>
+							{item?.product?.name || item?.product_name || 'Sin producto'}
+						</span>
+					);
+				},
+			}),
+		);
+
+		cols.push(
+			// Bodega (solo global)
+			columnHelper.display({
+				id: 'warehouse_name',
+				header: 'Bodega',
+				cell: (info) => {
+					const item: ItemWithNames = info.row.original;
+					return (
+						<span className='text-sm text-gray-700 dark:text-gray-300'>
+							{item?.warehouse?.name || item?.warehouse_name || '—'}
+						</span>
+					);
+				},
+			}),
+			// Última actualización (solo global)
+			columnHelper.display({
+				id: 'updated_at',
+				header: 'Actualización',
+				cell: (info) => (
+					<span className='text-sm text-gray-500 dark:text-gray-400'>
+						{formatDateTime(
+							info.row.original.updated_at || info.row.original.created_at,
+						)}
+					</span>
+				),
+			}),
+		);
+	}
+
+	// Acciones
+	cols.push(
+		columnHelper.display({
+			id: 'actions',
+			header: 'Acciones',
+			cell: (info) => {
+				const item = info.row.original;
+				const reviewStatus = (extractValue(item.review_status) || '').toLowerCase();
+				const isApproved = reviewStatus === 'approved';
+				return (
+					<div className='inline-flex w-full justify-end gap-2'>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={(e) => {
+								e.stopPropagation();
+								onOpenActions(item);
+							}}
+							title='Ver acciones'>
+							<Icon icon='HeroEye' className='h-4 w-4' />
+						</Button>
+						<Button
+							variant='outline'
+							size='sm'
+							color='blue'
+							onClick={(e) => {
+								e.stopPropagation();
+								onPrint(item);
+							}}
+							title='Imprimir etiqueta'>
+							<Icon icon='HeroPrinter' className='h-4 w-4' />
+						</Button>
+						<Button
+							variant='outline'
+							size='sm'
+							color='red'
+							isDisable={isApproved}
+							onClick={(e) => {
+								e.stopPropagation();
+								onDelete(item);
+							}}
+							title={
+								isApproved
+									? 'No se puede eliminar una revisión aprobada'
+									: 'Eliminar revisión'
+							}>
+							<Icon icon='HeroTrash' className='h-4 w-4' />
+						</Button>
+					</div>
+				);
+			},
+		}),
+	);
+
+	return cols;
+};
 
 const ItemList: React.FC<ItemListProps> = ({
 	items,
@@ -67,14 +283,6 @@ const ItemList: React.FC<ItemListProps> = ({
 	// Estados para impresión de etiquetas
 	const [isPrintLabelOpen, setIsPrintLabelOpen] = useState(false);
 	const [itemToPrint, setItemToPrint] = useState<IItem | null>(null);
-
-	const handleItemClick = (itemId: number) => {
-		if (onItemClick) {
-			onItemClick(itemId);
-		} else {
-			navigate(`${baseUrl}/${itemId}`);
-		}
-	};
 
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [itemToDelete, setItemToDelete] = useState<IItem | null>(null);
@@ -115,17 +323,38 @@ const ItemList: React.FC<ItemListProps> = ({
 	const [actionModalOpen, setActionModalOpen] = useState(false);
 	const [selectedActionItem, setSelectedActionItem] = useState<IItem | null>(null);
 
-	const handleActionClick = (item: IItem) => {
+	const handleActionClick = useCallback((item: IItem) => {
 		setSelectedActionItem(item);
 		setActionModalOpen(true);
-	};
+	}, []);
+
+	const handlePrintItem = useCallback((item: IItem) => {
+		setItemToPrint(item);
+		setIsPrintLabelOpen(true);
+	}, []);
+
+	const handleAskDeleteItem = useCallback((item: IItem) => {
+		setItemToDelete(item);
+		setDeleteModalOpen(true);
+	}, []);
+
+	const columns = useMemo(
+		() =>
+			buildItemColumns({
+				variant,
+				onOpenActions: handleActionClick,
+				onPrint: handlePrintItem,
+				onDelete: handleAskDeleteItem,
+			}),
+		[variant, handleActionClick, handlePrintItem, handleAskDeleteItem],
+	);
 
 	const goToReview = () => {
 		if (selectedActionItem) {
 			if (onItemClick) {
 				onItemClick(selectedActionItem.id);
 			} else {
-				navigate(`${baseUrl}/${selectedActionItem.id}`);
+				void navigate(`${baseUrl}/${selectedActionItem.id}`);
 			}
 			setActionModalOpen(false);
 		}
@@ -133,207 +362,12 @@ const ItemList: React.FC<ItemListProps> = ({
 
 	const goToTraceability = () => {
 		if (selectedActionItem && branchId) {
-			navigate(`/technical-reviews/traceability/${selectedActionItem.serial_number}`);
+			void navigate(`/technical-reviews/traceability/${selectedActionItem.serial_number}`);
 			setActionModalOpen(false);
 		}
 	};
 
 	// TanStack Table setup (debe ejecutarse SIEMPRE antes de cualquier return condicional)
-	const columnHelper = useMemo(() => createColumnHelper<IItem>(), []);
-
-	const columns = useMemo(() => {
-		const cols = [
-			columnHelper.display({
-				id: 'serial_number',
-				header: 'Serie',
-				cell: (info) => {
-					const item = info.row.original;
-					return (
-						<div className='flex items-center gap-2'>
-							<Icon icon='HeroQrCode' className='h-4 w-4 text-gray-400' />
-							<span className='font-mono text-sm font-medium text-gray-900 dark:text-gray-100'>
-								{item.serial_number}
-							</span>
-						</div>
-					);
-				},
-			}),
-
-			// Tipo
-			columnHelper.display({
-				id: 'equipment_type',
-				header: 'Tipo',
-				cell: (info) => {
-					const item = info.row.original;
-					const { label, icon } = resolveEquipmentTypeMeta(item.equipment_type);
-					return (
-						<Badge
-							variant='outline'
-							className='gap-2 rounded-full border-blue-200 bg-blue-50 px-2 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300'>
-							<Icon icon={icon as any} className='h-3 w-3' />
-							{label}
-						</Badge>
-					);
-				},
-			}),
-
-			// Estado revisión
-			columnHelper.display({
-				id: 'review_status',
-				header: 'Estado Revisión',
-				cell: (info) => (
-					<StatusBadge type='review' status={info.row.original.review_status} />
-				),
-			}),
-
-			// Estado comercial
-			columnHelper.display({
-				id: 'current_status',
-				header: 'Estado Comercial',
-				cell: (info) => (
-					<StatusBadge type='commercial' status={info.row.original.current_status} />
-				),
-			}),
-
-			// Grado
-			columnHelper.display({
-				id: 'grade',
-				header: 'Grado',
-				cell: (info) => {
-					const item = info.row.original;
-					return extractValue(item.grade) ? (
-						<Badge
-							variant='outline'
-							className='gap-1 rounded-full border-yellow-200 bg-yellow-50 px-2 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'>
-							<Icon icon='HeroStar' className='h-3 w-3' />
-							{extractValue(item.grade)}
-							{extractValue(item.suggested_grade) &&
-								extractValue(item.grade) !== extractValue(item.suggested_grade) && (
-									<span className='ml-1 text-[10px] text-yellow-600/70 dark:text-yellow-400/70'>
-										(Sug: {extractValue(item.suggested_grade)})
-									</span>
-								)}
-						</Badge>
-					) : extractValue(item.suggested_grade) ? (
-						<Badge
-							variant='outline'
-							className='gap-1 rounded-full border-gray-200 bg-gray-50 px-2 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'>
-							<Icon icon='HeroSparkles' className='h-3 w-3' />
-							{extractValue(item.suggested_grade)}
-						</Badge>
-					) : (
-						<span className='text-xs text-gray-400'>Pendiente</span>
-					);
-				},
-			}),
-		] as any[];
-
-		if (variant === 'global') {
-			cols.splice(
-				1,
-				0,
-				// Producto (solo global)
-				columnHelper.display({
-					id: 'product_name',
-					header: 'Producto',
-					cell: (info) => {
-						const item = info.row.original as any;
-						return (
-							<span className='text-sm text-gray-700 dark:text-gray-300'>
-								{item?.product?.name || item?.product_name || 'Sin producto'}
-							</span>
-						);
-					},
-				}),
-			);
-
-			cols.push(
-				// Bodega (solo global)
-				columnHelper.display({
-					id: 'warehouse_name',
-					header: 'Bodega',
-					cell: (info) => {
-						const item = info.row.original as any;
-						return (
-							<span className='text-sm text-gray-700 dark:text-gray-300'>
-								{item?.warehouse?.name || item?.warehouse_name || '—'}
-							</span>
-						);
-					},
-				}),
-				// Última actualización (solo global)
-				columnHelper.display({
-					id: 'updated_at',
-					header: 'Actualización',
-					cell: (info) => (
-						<span className='text-sm text-gray-500 dark:text-gray-400'>
-							{formatDateTime(
-								info.row.original.updated_at || info.row.original.created_at,
-							)}
-						</span>
-					),
-				}),
-			);
-		}
-
-		// Acciones
-		cols.push(
-			columnHelper.display({
-				id: 'actions',
-				header: 'Acciones',
-				cell: (info) => {
-					const item = info.row.original;
-					const reviewStatus = (extractValue(item.review_status) || '').toLowerCase();
-					const isApproved = reviewStatus === 'approved';
-					return (
-						<div className='inline-flex w-full justify-end gap-2'>
-							<Button
-								variant='outline'
-								size='sm'
-								onClick={(e) => {
-									e.stopPropagation();
-									handleActionClick(item);
-								}}
-								title='Ver acciones'>
-								<Icon icon='HeroEye' className='h-4 w-4' />
-							</Button>
-							<Button
-								variant='outline'
-								size='sm'
-								color='blue'
-								onClick={(e) => {
-									e.stopPropagation();
-									setItemToPrint(item);
-									setIsPrintLabelOpen(true);
-								}}
-								title='Imprimir etiqueta'>
-								<Icon icon='HeroPrinter' className='h-4 w-4' />
-							</Button>
-							<Button
-								variant='outline'
-								size='sm'
-								color='red'
-								isDisable={isApproved}
-								onClick={(e) => {
-									e.stopPropagation();
-									setItemToDelete(item);
-									setDeleteModalOpen(true);
-								}}
-								title={
-									isApproved
-										? 'No se puede eliminar una revisión aprobada'
-										: 'Eliminar revisión'
-								}>
-								<Icon icon='HeroTrash' className='h-4 w-4' />
-							</Button>
-						</div>
-					);
-				},
-			}),
-		);
-
-		return cols;
-	}, [columnHelper, variant]);
 
 	const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
 		const current: PaginationState = {
@@ -361,7 +395,7 @@ const ItemList: React.FC<ItemListProps> = ({
 						columns={columns}
 						loading={loading}
 						emptyMessage={emptyMessage}
-						manualPagination={true}
+						manualPagination
 						pageCount={meta?.last_page || 1}
 						paginationState={{
 							pageIndex: Math.max((meta?.current_page || 1) - 1, 0),
@@ -389,8 +423,10 @@ const ItemList: React.FC<ItemListProps> = ({
 				<ModalHeader>Exportar Datos</ModalHeader>
 				<ModalBody>
 					<div className='grid gap-4'>
-						<div
-							className={`cursor-pointer rounded-lg border p-4 transition-all hover:bg-gray-50 dark:hover:bg-zinc-800 ${
+						<button
+							type='button'
+							aria-pressed={exportMode === 'serials'}
+							className={`w-full cursor-pointer rounded-lg border p-4 text-left transition-all hover:bg-gray-50 dark:hover:bg-zinc-800 ${
 								exportMode === 'serials'
 									? 'border-blue-500 ring-1 ring-blue-500'
 									: 'border-gray-200 dark:border-gray-700'
@@ -414,10 +450,12 @@ const ItemList: React.FC<ItemListProps> = ({
 									</p>
 								</div>
 							</div>
-						</div>
+						</button>
 
-						<div
-							className={`cursor-pointer rounded-lg border p-4 transition-all hover:bg-gray-50 dark:hover:bg-zinc-800 ${
+						<button
+							type='button'
+							aria-pressed={exportMode === 'details'}
+							className={`w-full cursor-pointer rounded-lg border p-4 text-left transition-all hover:bg-gray-50 dark:hover:bg-zinc-800 ${
 								exportMode === 'details'
 									? 'border-blue-500 ring-1 ring-blue-500'
 									: 'border-gray-200 dark:border-gray-700'
@@ -441,7 +479,7 @@ const ItemList: React.FC<ItemListProps> = ({
 									</p>
 								</div>
 							</div>
-						</div>
+						</button>
 					</div>
 				</ModalBody>
 				<ModalFooter>
@@ -455,7 +493,7 @@ const ItemList: React.FC<ItemListProps> = ({
 						variant='solid'
 						color='blue'
 						onClick={() => {
-							handleExport();
+							void handleExport();
 							setIsExportModalOpen(false);
 						}}
 						isLoading={isExporting}>
@@ -484,7 +522,9 @@ const ItemList: React.FC<ItemListProps> = ({
 					<Button
 						variant='solid'
 						color='red'
-						onClick={() => itemToDelete && handleDelete(itemToDelete.id)}
+						onClick={() => {
+							if (itemToDelete) void handleDelete(itemToDelete.id);
+						}}
 						isLoading={isDeleting}>
 						Eliminar
 					</Button>
@@ -512,7 +552,8 @@ const ItemList: React.FC<ItemListProps> = ({
 						?
 					</p>
 					<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-						<div
+						<button
+							type='button'
 							className='flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white p-6 transition-all hover:bg-gray-50 hover:shadow-sm dark:border-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700'
 							onClick={goToReview}>
 							<div className='rounded-full bg-blue-100 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'>
@@ -526,9 +567,10 @@ const ItemList: React.FC<ItemListProps> = ({
 									Ir al detalle técnico y revisión
 								</p>
 							</div>
-						</div>
+						</button>
 
-						<div
+						<button
+							type='button'
 							className='flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white p-6 transition-all hover:bg-gray-50 hover:shadow-sm dark:border-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700'
 							onClick={goToTraceability}>
 							<div className='rounded-full bg-purple-100 p-3 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'>
@@ -542,7 +584,7 @@ const ItemList: React.FC<ItemListProps> = ({
 									Ver historial de vida y movimientos
 								</p>
 							</div>
-						</div>
+						</button>
 					</div>
 				</ModalBody>
 				<ModalFooter>

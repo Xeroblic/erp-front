@@ -2,8 +2,9 @@ import React from 'react';
 import type { PaginationState, Updater } from '@tanstack/react-table';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-import TableCardFooterTemplateV2, {
+import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import {
+	TableCardFooterTemplateV2,
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
 import { formatDate } from '@/utils/format.utils';
@@ -54,7 +55,7 @@ const DocumentosCompraPagination: React.FC<{
 		pageSize: meta.per_page,
 	};
 	const table: TablePaginationController = {
-		getState: () => ({ pagination }),
+		state: { pagination },
 		setPageSize: (updater: Updater<number>) => {
 			const perPage = typeof updater === 'function' ? updater(pagination.pageSize) : updater;
 			onChange(1, perPage);

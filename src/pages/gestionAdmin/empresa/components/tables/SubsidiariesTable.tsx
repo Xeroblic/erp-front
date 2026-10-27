@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import React, { useCallback, useState } from 'react';
+import { useTable } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import Card, { CardBody } from '@/components/ui/Card';
-import { CreateSubsidiaryModal } from '../modals';
 import { ISubempresa } from '@/interface/empresas.interface';
+import { appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import { CreateSubsidiaryModal } from '../modals';
 import {
 	useSubsidiaryColumns,
 	SubsidiariesTableHeader,
@@ -18,11 +19,7 @@ interface SubsidiariesTableProps {
 	onRefresh: () => void;
 }
 
-export default function SubsidiariesTable({
-	subsidiaries,
-	loading,
-	onRefresh,
-}: SubsidiariesTableProps) {
+const SubsidiariesTable = ({ subsidiaries, loading, onRefresh }: SubsidiariesTableProps) => {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [editingSubsidiary, setEditingSubsidiary] = useState<ISubempresa | null>(null);
 	const navigate = useNavigate();
@@ -47,12 +44,19 @@ export default function SubsidiariesTable({
 		onRefresh();
 	};
 
-	const columns = useSubsidiaryColumns(handleEdit, navigate);
+	const goTo = useCallback(
+		(path: string) => {
+			void navigate(path);
+		},
+		[navigate],
+	);
 
-	const table = useReactTable({
+	const columns = useSubsidiaryColumns(handleEdit, goTo);
+
+	const table = useTable({
+		features: appTableFeatures,
 		data: subsidiaries,
 		columns,
-		getCoreRowModel: getCoreRowModel(),
 	});
 
 	if (loading) return <SubsidiariesLoadingState />;
@@ -83,4 +87,6 @@ export default function SubsidiariesTable({
 			/>
 		</>
 	);
-}
+};
+
+export default SubsidiariesTable;

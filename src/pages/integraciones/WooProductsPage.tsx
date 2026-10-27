@@ -21,10 +21,17 @@ import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/compon
 import Input from '@/components/form/Input';
 import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
+import Modal, {
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+	ModalHeader,
+} from '@/components/ui/Modal';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import WooIntegrationSelector from '@/pages/catalogos/productos/components/modals/components/WooIntegrationSelector';
 import useCan from '@/hooks/useCan';
 import type { WooProduct } from '@/types/integrations.types';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import UnlinkAllProductsModal from './components/UnlinkAllProductsModal';
 
 export const WooProductsContent: React.FC = () => {
@@ -45,6 +52,8 @@ export const WooProductsContent: React.FC = () => {
 
 	// Modal de desvinculación masiva (solo super-admin)
 	const [unlinkAllOpen, setUnlinkAllOpen] = useState(false);
+	const [productToUnpublish, setProductToUnpublish] = useState<WooProduct | null>(null);
+	const [showUnpublishModal, setShowUnpublishModal] = useState(false);
 
 	// Filtros locales
 	const [searchTerm, setSearchTerm] = useState('');
@@ -141,11 +150,19 @@ export const WooProductsContent: React.FC = () => {
 		[dispatch, subsidiaryId, selectedIntegrationId, loadProducts],
 	);
 
+	const handleAskUnpublish = useCallback((product: WooProduct) => {
+		setProductToUnpublish(product);
+		setShowUnpublishModal(true);
+	}, []);
+
+	const handleCloseUnpublishModal = () => {
+		setShowUnpublishModal(false);
+		setProductToUnpublish(null);
+	};
+
 	const handleUnpublish = useCallback(
 		async (product: WooProduct) => {
 			if (!subsidiaryId || !selectedIntegrationId) return;
-			if (!window.confirm(`¿Estás seguro de despublicar "${product.name}" de WooCommerce?`))
-				return;
 
 			try {
 				await dispatch(
@@ -166,7 +183,7 @@ export const WooProductsContent: React.FC = () => {
 		[dispatch, subsidiaryId, selectedIntegrationId, loadProducts],
 	);
 
-	const columns = useMemo<ColumnDef<WooProduct>[]>(
+	const columns = useMemo<ColumnDef<AppTableFeatures, WooProduct>[]>(
 		() => [
 			{
 				id: 'ids',
@@ -527,7 +544,7 @@ export const WooProductsContent: React.FC = () => {
 									variant='outline'
 									color='red'
 									onClick={() => {
-										handleUnpublish(product).catch(() => {});
+										handleAskUnpublish(product);
 									}}
 									isDisable={loading || isRowBusy}
 									aria-label='Despublicar'>
@@ -546,7 +563,14 @@ export const WooProductsContent: React.FC = () => {
 				},
 			},
 		],
-		[loading, syncingId, handleSyncPrice, handleSyncStock, handleSyncChildren, handleUnpublish],
+		[
+			loading,
+			syncingId,
+			handleSyncPrice,
+			handleSyncStock,
+			handleSyncChildren,
+			handleAskUnpublish,
+		],
 	);
 
 	return (
@@ -681,6 +705,34 @@ export const WooProductsContent: React.FC = () => {
 				onSuccess={loadProducts}
 				subsidiaryId={subsidiaryId}
 			/>
+
+			<Modal isOpen={showUnpublishModal} setIsOpen={setShowUnpublishModal} size='sm'>
+				<ModalHeader>Despublicar producto</ModalHeader>
+				<ModalBody>
+					<p className='text-sm'>
+						¿Estás seguro de despublicar <strong>{productToUnpublish?.name}</strong> de
+						WooCommerce?
+					</p>
+				</ModalBody>
+				<ModalFooter>
+					<ModalFooterChild>
+						<Button variant='outline' color='zinc' onClick={handleCloseUnpublishModal}>
+							Cancelar
+						</Button>
+						<Button
+							variant='solid'
+							color='red'
+							isDisable={loading}
+							onClick={() => {
+								if (!productToUnpublish) return;
+								handleCloseUnpublishModal();
+								void handleUnpublish(productToUnpublish);
+							}}>
+							Despublicar
+						</Button>
+					</ModalFooterChild>
+				</ModalFooter>
+			</Modal>
 		</>
 	);
 };

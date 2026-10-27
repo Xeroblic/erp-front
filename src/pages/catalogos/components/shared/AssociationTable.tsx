@@ -1,19 +1,20 @@
 import React from 'react';
-import { flexRender, Table as ReactTable } from '@tanstack/react-table';
+import { flexRender, RowData, Table as ReactTable } from '@tanstack/react-table';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
-interface AssociationTableProps<T> {
+interface AssociationTableProps<T extends RowData> {
 	title: string;
 	count: number;
-	table: ReactTable<T>;
+	table: ReactTable<AppTableFeatures, T>;
 	loading?: boolean;
 	emptyMessage: string;
 	showOnlyInEditMode?: boolean;
 	isEditMode?: boolean;
 }
 
-function AssociationTable<T>({
+const AssociationTable = <T extends RowData>({
 	title,
 	count,
 	table,
@@ -21,7 +22,7 @@ function AssociationTable<T>({
 	emptyMessage,
 	showOnlyInEditMode = false,
 	isEditMode = false,
-}: AssociationTableProps<T>) {
+}: AssociationTableProps<T>) => {
 	// Si debe mostrarse solo en modo edición y no estamos en modo edición, no renderizar
 	if (showOnlyInEditMode && !isEditMode) {
 		return null;
@@ -35,16 +36,18 @@ function AssociationTable<T>({
 				</CardTitle>
 			</CardHeader>
 			<CardBody>
-				{loading ? (
+				{loading && (
 					<div className='flex items-center justify-center py-8'>
 						<Icon icon='HeroArrowPath' className='h-6 w-6 animate-spin text-blue-600' />
 						<span className='ml-2 text-sm text-gray-600'>Cargando...</span>
 					</div>
-				) : table.getRowModel().rows.length === 0 ? (
+				)}
+				{!loading && table.getRowModel().rows.length === 0 && (
 					<div className='py-8 text-center text-sm text-gray-500 dark:text-gray-400'>
 						{emptyMessage}
 					</div>
-				) : (
+				)}
+				{!loading && table.getRowModel().rows.length > 0 && (
 					<div className='overflow-x-auto'>
 						<table className='w-full text-left text-sm'>
 							<thead className='border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'>
@@ -85,6 +88,6 @@ function AssociationTable<T>({
 			</CardBody>
 		</Card>
 	);
-}
+};
 
 export default AssociationTable;
