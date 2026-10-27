@@ -7,6 +7,9 @@
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw/http';
+import ApiService from '@/services/ApiService';
+import { makeIntegrationStore } from '@/test-utils/integrationStore';
+import productsReducer, { fetchProductsList, type ProductsState } from '../productsSlice';
 
 vi.mock('react-toastify', () => ({
 	toast: { success: vi.fn(), error: vi.fn() },
@@ -20,10 +23,6 @@ vi.mock('@/store', () => ({
 	logout: vi.fn(() => ({ type: 'auth/logout' })),
 	setToken: vi.fn((payload: unknown) => ({ type: 'auth/setToken', payload })),
 }));
-
-import ApiService from '@/services/ApiService';
-import productsReducer, { fetchProductsList, type ProductsState } from '../productsSlice';
-import { makeIntegrationStore } from '@/test-utils/integrationStore';
 
 const SUBSIDIARY = 7;
 

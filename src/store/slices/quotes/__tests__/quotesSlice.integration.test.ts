@@ -6,6 +6,19 @@
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw/http';
+import ApiService from '@/services/ApiService';
+import { makeIntegrationStore } from '@/test-utils/integrationStore';
+import type { Quote } from '@/interface/quotes.interface';
+import quotesReducer, {
+	fetchQuotes,
+	createQuote,
+	updateQuote,
+	deleteQuote,
+	convertQuoteToSale,
+	selectQuotes,
+	selectQuoteMeta,
+	selectQuotesState,
+} from '../quotesSlice';
 
 const { toastSuccess, toastError } = vi.hoisted(() => ({
 	toastSuccess: vi.fn(),
@@ -25,20 +38,6 @@ vi.mock('@/store', () => ({
 	logout: vi.fn(() => ({ type: 'auth/logout' })),
 	setToken: vi.fn((payload: unknown) => ({ type: 'auth/setToken', payload })),
 }));
-
-import ApiService from '@/services/ApiService';
-import quotesReducer, {
-	fetchQuotes,
-	createQuote,
-	updateQuote,
-	deleteQuote,
-	convertQuoteToSale,
-	selectQuotes,
-	selectQuoteMeta,
-	selectQuotesState,
-} from '../quotesSlice';
-import { makeIntegrationStore } from '@/test-utils/integrationStore';
-import type { Quote } from '@/interface/quotes.interface';
 
 const SUBSIDIARY = 7;
 

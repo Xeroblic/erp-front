@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } 
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw/http';
 import { delay } from 'msw/utils/delay';
+import ApiService from '../ApiService';
 
 vi.mock('@/store', () => ({
 	default: {
@@ -16,8 +17,6 @@ vi.mock('@/store', () => ({
 	logout: vi.fn(() => ({ type: 'auth/logout' })),
 	setToken: vi.fn((payload: unknown) => ({ type: 'auth/setToken', payload })),
 }));
-
-import ApiService from '../ApiService';
 
 let hits = 0;
 
