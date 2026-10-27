@@ -1,12 +1,11 @@
-import React, { useEffect } from 'react';
-import { useForm, type FieldPath } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { aioSchema, AioFormData } from '../../validation/aio.schema';
 import FormShell from '../shared/FormShell';
-import type { SectionConfig, FormSectionProps } from '../shared/types';
+import type { SectionConfig, FormSectionProps, ReviewFieldName } from '../shared/types';
+import { formatFinishErrors, useReviewForm } from '../shared/useReviewForm';
 import {
 	ALLOWED_SCREEN_CONDITIONS,
 	ALLOWED_STAND_CONDITIONS,
@@ -17,10 +16,10 @@ import {
 // Sections
 import AioBasicInfoSection from './sections/AioBasicInfoSection';
 import AioHardwareSection from './sections/AioHardwareSection';
-import AioScreenSection from './sections/AioScreenSection';
-import AioPortsSection from './sections/AioPortsSection';
-import AioAccessoriesSection from './sections/AioAccessoriesSection';
-import AioObservationsSection from './sections/AioObservationsSection';
+import { AioScreenSection } from './sections/AioScreenSection';
+import { AioPortsSection } from './sections/AioPortsSection';
+import { AioAccessoriesSection } from './sections/AioAccessoriesSection';
+import { AioObservationsSection } from './sections/AioObservationsSection';
 import GallerySection from '../shared/gallery/GallerySection';
 import {
 	isScreenCounterBelowMinimum,
@@ -72,7 +71,7 @@ const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 	},
 ];
 
-const AIO_SECTION_FIELDS: Record<string, FieldPath<AioFormData>[]> = {
+const AIO_SECTION_FIELDS: Record<string, ReviewFieldName<AioFormData>[]> = {
 	'basic-info': ['brand', 'model', 'line', 'general_condition'],
 	hardware: [
 		'processor',
@@ -110,6 +109,26 @@ const AIO_SECTION_FIELDS: Record<string, FieldPath<AioFormData>[]> = {
 	observations: ['operating_system', 'has_wifi', 'has_bluetooth', 'has_cd_drive', 'observations'],
 };
 
+/** Valores fuera de las listas permitidas, heredados de versiones anteriores del schema. */
+const LEGACY_CHECKS: [keyof AioFormData, readonly string[]][] = [
+	['screen_condition', ALLOWED_SCREEN_CONDITIONS],
+	['stand_condition', ALLOWED_STAND_CONDITIONS],
+	['cover_condition', ALLOWED_COVER_CONDITIONS],
+	['charger_status', ALLOWED_CHARGER_STATUSES],
+];
+
+/** Limpia esos valores al cargar para que no bloqueen la validación ni el guardado. */
+const sanitizeLegacyValues = (values: AioFormData): AioFormData => {
+	const next: Record<string, unknown> = { ...values };
+	LEGACY_CHECKS.forEach(([field, allowed]) => {
+		const current = next[field];
+		if (typeof current === 'string' && current && !allowed.includes(current)) {
+			next[field] = undefined;
+		}
+	});
+	return next as AioFormData;
+};
+
 interface AioFormProps {
 	defaultValues?: Record<string, unknown>;
 	onSubmit: (data: Record<string, unknown>) => Promise<void>;
@@ -141,181 +160,70 @@ const AioForm: React.FC<AioFormProps> = ({
 	schemaFields,
 }) => {
 	const {
-		control,
-		handleSubmit,
-		formState: { errors },
+		formik: { setFieldTouched },
+		values,
+		setFieldValue,
+		sectionProps: baseSectionProps,
 		getValues,
-		reset,
-		watch,
-		setValue,
-		trigger,
-		getFieldState,
-	} = useForm<AioFormData>({
-		resolver: yupResolver(
-			aioSchema,
-		) as unknown as import('react-hook-form').Resolver<AioFormData>,
-		defaultValues: (defaultValues as unknown as AioFormData) || {},
-		mode: 'onChange',
+		validateStep,
+		validateAll,
+	} = useReviewForm<AioFormData>({
+		schema: aioSchema,
+		initialValues: (defaultValues ?? {}) as unknown as AioFormData,
+		sectionFields: AIO_SECTION_FIELDS,
+		readOnly: !!readOnly,
+		schemaFields,
+		registerGetFormValues,
+		touchOnChange: true,
+		prepareReset: sanitizeLegacyValues,
 	});
-
-	// Register getter for AutoSave integration
-	useEffect(() => {
-		if (registerGetFormValues) {
-			registerGetFormValues(getValues);
-		}
-	}, [registerGetFormValues, getValues]);
-
-	// Deep reset handling on external change
-	const prevDefaultValues = React.useRef<string | null>(null);
-	useEffect(() => {
-		if (defaultValues) {
-			const stringified = JSON.stringify(defaultValues);
-			if (stringified !== prevDefaultValues.current) {
-				reset(defaultValues as unknown as AioFormData);
-				prevDefaultValues.current = stringified;
-			}
-		}
-	}, [defaultValues, reset]);
-
-	// Auto-cleanup for strict typing mismatches on load
-	useEffect(() => {
-		const currentScreen = watch('screen_condition');
-		if (
-			currentScreen &&
-			!ALLOWED_SCREEN_CONDITIONS.includes(
-				currentScreen as unknown as (typeof ALLOWED_SCREEN_CONDITIONS)[number],
-			)
-		) {
-			console.warn('[AutoFix] Resetting invalid AIO screen_condition:', currentScreen);
-			setValue('screen_condition', undefined as unknown as AioFormData['screen_condition'], {
-				shouldValidate: true,
-			});
-		}
-
-		const currentStand = watch('stand_condition');
-		if (
-			currentStand &&
-			!ALLOWED_STAND_CONDITIONS.includes(
-				currentStand as unknown as (typeof ALLOWED_STAND_CONDITIONS)[number],
-			)
-		) {
-			console.warn('[AutoFix] Resetting invalid AIO stand_condition:', currentStand);
-			setValue('stand_condition', undefined as unknown as AioFormData['stand_condition'], {
-				shouldValidate: true,
-			});
-		}
-
-		const currentCover = watch('cover_condition');
-		if (
-			currentCover &&
-			!ALLOWED_COVER_CONDITIONS.includes(
-				currentCover as unknown as (typeof ALLOWED_COVER_CONDITIONS)[number],
-			)
-		) {
-			setValue('cover_condition', undefined as unknown as AioFormData['cover_condition'], {
-				shouldValidate: true,
-			});
-		}
-
-		const currentCharger = watch('charger_status');
-		if (
-			currentCharger &&
-			!ALLOWED_CHARGER_STATUSES.includes(
-				currentCharger as unknown as (typeof ALLOWED_CHARGER_STATUSES)[number],
-			)
-		) {
-			setValue('charger_status', undefined as unknown as AioFormData['charger_status'], {
-				shouldValidate: true,
-			});
-		}
-	}, [watch, setValue]);
 
 	// Reconcilia el contador con su condición. Corre en el montaje y en cada cambio de
 	// las dos variables observadas (no sólo al cargar): si la condición está inactiva
 	// limpia el contador, y si está activa conserva el valor recibido —incluido el 0 de
 	// un borrador— pero lo valida de inmediato para que el error se vea sin tener que
-	// intentar avanzar de paso. `mode: 'onChange'` no valida un campo que nadie tocó.
-	const screenCondition = watch('screen_condition');
-	const deadPixelsCount = watch('dead_pixels_count');
+	// intentar avanzar de paso.
+	const screenCondition = values.screen_condition;
+	const deadPixelsCount = values.dead_pixels_count;
 	useEffect(() => {
 		if (readOnly) return;
 
 		const isDeadPixels = screenCondition === 'dead_pixels';
 		if (needsScreenCounterNormalization(isDeadPixels, deadPixelsCount)) {
-			setValue('dead_pixels_count', 0, {
-				shouldValidate: true,
-			});
+			setFieldValue('dead_pixels_count', 0, { touch: true });
 			return;
 		}
 
 		if (isDeadPixels && isScreenCounterBelowMinimum(deadPixelsCount)) {
-			void trigger('dead_pixels_count');
+			void setFieldTouched('dead_pixels_count', true);
 		}
-	}, [readOnly, screenCondition, deadPixelsCount, setValue, trigger]);
+	}, [readOnly, screenCondition, deadPixelsCount, setFieldValue, setFieldTouched]);
 
-	const sectionProps = {
-		control,
-		errors,
-		readOnly: !!readOnly,
-		watch,
-		setValue,
-		getValues,
-		schemaFields,
-		onDirectSubmit: (partialData: Partial<AioFormData>) => {
-			const currentData = getValues();
-			const payload = { ...currentData, ...partialData } as AioFormData;
-			onSubmit(payload as unknown as Record<string, unknown>);
-		},
-	};
+	const sectionProps: FormSectionProps<AioFormData> = useMemo(
+		() => ({
+			...baseSectionProps,
+			onDirectSubmit: (partialData: Partial<AioFormData>) => {
+				const payload = { ...getValues(), ...partialData } as AioFormData;
+				void onSubmit(payload as unknown as Record<string, unknown>);
+			},
+		}),
+		[baseSectionProps, getValues, onSubmit],
+	);
 
-	const validateStep = async (sectionKey: string) => {
-		const stepFields = AIO_SECTION_FIELDS[sectionKey] ?? [];
-		const isValid = await trigger(stepFields, { shouldFocus: true });
-
-		if (isValid) {
-			return { isValid: true };
+	const handleFinish = useCallback(async () => {
+		const result = await validateAll();
+		if (!result.isValid) {
+			toast.error(formatFinishErrors(result.messages));
+			return;
 		}
-
-		const firstError = stepFields
-			.map((field) => getFieldState(field).error?.message)
-			.find(Boolean);
-
-		return {
-			isValid: false,
-			message:
-				typeof firstError === 'string'
-					? firstError
-					: 'Debes completar los campos obligatorios antes de continuar.',
-		};
-	};
-
-	const handleFinish = () => {
-		handleSubmit(
-			async (data) => {
-				try {
-					await onSubmit(data as unknown as Record<string, unknown>);
-				} catch (error: unknown) {
-					const message =
-						error instanceof Error ? error.message : 'Error al guardar la revisión AIO';
-					toast.error(message);
-				}
-			},
-			(validationErrors) => {
-				const messages = Object.values(
-					validationErrors as Record<string, { message?: string }>,
-				)
-					.map((e) => e?.message)
-					.filter(Boolean)
-					.slice(0, 5);
-
-				if (messages.length > 0) {
-					toast.error(`Corrige los errores antes de continuar:\n${messages.join('\n')}`);
-				} else {
-					toast.error('Hay campos con errores. Revisa el formulario.');
-				}
-			},
-		)();
-	};
+		try {
+			await onSubmit(result.data as unknown as Record<string, unknown>);
+		} catch (error: unknown) {
+			const message =
+				error instanceof Error ? error.message : 'Error al guardar la revisión AIO';
+			toast.error(message);
+		}
+	}, [validateAll, onSubmit]);
 
 	return (
 		<FormShell<AioFormData>

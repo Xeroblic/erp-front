@@ -1,6 +1,5 @@
 import React, { useId } from 'react';
 import { toast } from 'react-toastify';
-import { Controller } from 'react-hook-form';
 import Input from '@/components/form/Input';
 import type { FormSectionProps } from '../../shared/types';
 import type { DesktopFormData } from '../../../validation/desktop.schema';
@@ -23,22 +22,22 @@ import {
 } from '../../shared/useHardwareAbsence';
 
 const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
-	control,
+	onFieldBlur,
 	errors,
 	readOnly,
-	watch,
-	setValue,
+	values,
+	setFieldValue,
 	onDirectSubmit,
 }) => {
-	const ramType = watch('ram_type');
-	const storageTech = watch('storage_technology');
-	const noRam = watch('has_no_ram') === true;
-	const noStorage = watch('has_no_storage') === true;
+	const ramType = values.ram_type;
+	const storageTech = values.storage_technology;
+	const noRam = values.has_no_ram === true;
+	const noStorage = values.has_no_storage === true;
 	const ramTypeLabelId = useId();
 	const storageTechLabelId = useId();
 	const { setRamAbsence, setStorageAbsence } = useHardwareAbsence<DesktopFormData>({
-		setHasNoRam: (value, options) => setValue('has_no_ram', value, options),
-		setHasNoStorage: (value, options) => setValue('has_no_storage', value, options),
+		setHasNoRam: (value, options) => setFieldValue('has_no_ram', value, options),
+		setHasNoStorage: (value, options) => setFieldValue('has_no_storage', value, options),
 	});
 
 	return (
@@ -48,11 +47,11 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 				<div className='mb-6'>
 					<NoEnciendeButton
 						onValidate={() => {
-							const ramSize = watch('ram_size');
-							const ramSlots = watch('ram_slots');
-							const watchedRamType = watch('ram_type');
-							const storageSize = watch('storage_size');
-							const watchedStorageTech = watch('storage_technology');
+							const ramSize = values.ram_size;
+							const ramSlots = values.ram_slots;
+							const watchedRamType = values.ram_type;
+							const storageSize = values.storage_size;
+							const watchedStorageTech = values.storage_technology;
 
 							const missingRam = !noRam && (!ramSize || !ramSlots || !watchedRamType);
 							const missingStorage =
@@ -68,14 +67,14 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 						}}
 						onConfirm={() => {
 							onDirectSubmit({
-								processor: watch('processor') || '0',
+								processor: values.processor || '0',
 								has_no_ram: noRam,
 								has_no_storage: noStorage,
-								ram_size: watch('ram_size') || undefined,
-								ram_slots: watch('ram_slots') || undefined,
-								ram_type: watch('ram_type') || undefined,
-								storage_size: watch('storage_size') || undefined,
-								storage_technology: watch('storage_technology') || undefined,
+								ram_size: values.ram_size || undefined,
+								ram_slots: values.ram_slots || undefined,
+								ram_type: values.ram_type || undefined,
+								storage_size: values.storage_size || undefined,
+								storage_technology: values.storage_technology || undefined,
 								// El atajo responde el encendido; DesktopForm valida también
 								// el estado de la antena cuando se había declarado incluida.
 								powers_on: false,
@@ -107,20 +106,14 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 				<label className='mb-4 block text-sm font-bold text-green-800 dark:text-green-200'>
 					{getDesktopLabel('processor')} <span className='text-red-500'>*</span>
 				</label>
-				<Controller
-					name='processor'
-					control={control}
-					render={({ field }) => (
-						<ProcessorSelector
-							deviceType='Desktop'
-							value={field.value || ''}
-							onChange={field.onChange}
-							readOnly={readOnly}
-						/>
-					)}
+				<ProcessorSelector
+					deviceType='Desktop'
+					value={values.processor || ''}
+					onChange={(value) => setFieldValue('processor', value)}
+					readOnly={readOnly}
 				/>
 				{errors.processor && (
-					<p className='mt-2 text-xs text-red-500'>{errors.processor.message}</p>
+					<p className='mt-2 text-xs text-red-500'>{errors.processor}</p>
 				)}
 			</div>
 
@@ -150,7 +143,7 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 								label={opt.label}
 								value={opt.value}
 								isSelected={ramType === opt.value}
-								onClick={() => !readOnly && setValue('ram_type', opt.value)}
+								onClick={() => !readOnly && setFieldValue('ram_type', opt.value)}
 								disabled={readOnly}
 							/>
 						))}
@@ -161,21 +154,15 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 						<label className='mb-1 block text-xs font-semibold text-zinc-500'>
 							{getDesktopLabel('ram_size')} <span className='text-red-500'>*</span>
 						</label>
-						<Controller
-							name='ram_size'
-							control={control}
-							render={({ field }) => (
-								<InputUnitSelector
-									value={field.value || ''}
-									onChange={field.onChange}
-									placeholder={DESKTOP_PLACEHOLDERS.ram_size}
-									disabled={readOnly}
-									isValid={!errors.ram_size}
-								/>
-							)}
+						<InputUnitSelector
+							value={values.ram_size || ''}
+							onChange={(value) => setFieldValue('ram_size', value)}
+							placeholder={DESKTOP_PLACEHOLDERS.ram_size}
+							disabled={readOnly}
+							isValid={!errors.ram_size}
 						/>
 						{errors.ram_size && (
-							<p className='mt-1 text-xs text-red-500'>{errors.ram_size.message}</p>
+							<p className='mt-1 text-xs text-red-500'>{errors.ram_size}</p>
 						)}
 					</div>
 
@@ -184,17 +171,13 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 						<label className='mb-1 block text-xs font-semibold text-zinc-500'>
 							{getDesktopLabel('ram_slots')}
 						</label>
-						<Controller
+						<Input
 							name='ram_slots'
-							control={control}
-							render={({ field }) => (
-								<Input
-									{...field}
-									value={field.value || ''}
-									placeholder={DESKTOP_PLACEHOLDERS.ram_slots}
-									disabled={readOnly}
-								/>
-							)}
+							onChange={(event) => setFieldValue('ram_slots', event.target.value)}
+							onBlur={() => onFieldBlur('ram_slots')}
+							value={values.ram_slots || ''}
+							placeholder={DESKTOP_PLACEHOLDERS.ram_slots}
+							disabled={readOnly}
 						/>
 						<p className='mt-1 text-xs text-zinc-400'>{DESKTOP_HINTS.ram_slots}</p>
 					</div>
@@ -225,37 +208,31 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 								value={opt.value}
 								isSelected={storageTech === opt.value}
 								onClick={() =>
-									!readOnly && setValue('storage_technology', opt.value)
+									!readOnly && setFieldValue('storage_technology', opt.value)
 								}
 								disabled={readOnly}
 							/>
 						))}
 					</div>
 					{errors.storage_technology && (
-						<p className='mb-2 text-xs text-red-500'>
-							{errors.storage_technology.message}
-						</p>
+						<p className='mb-2 text-xs text-red-500'>{errors.storage_technology}</p>
 					)}
 
 					{/* Storage Size */}
 					<label className='mb-1 block text-xs font-semibold text-zinc-500'>
 						{getDesktopLabel('storage_size')} <span className='text-red-500'>*</span>
 					</label>
-					<Controller
+					<Input
 						name='storage_size'
-						control={control}
-						render={({ field }) => (
-							<Input
-								{...field}
-								value={field.value || ''}
-								placeholder={DESKTOP_PLACEHOLDERS.storage_size}
-								disabled={readOnly}
-								className={errors.storage_size ? 'border-red-500' : ''}
-							/>
-						)}
+						onChange={(event) => setFieldValue('storage_size', event.target.value)}
+						onBlur={() => onFieldBlur('storage_size')}
+						value={values.storage_size || ''}
+						placeholder={DESKTOP_PLACEHOLDERS.storage_size}
+						disabled={readOnly}
+						className={errors.storage_size ? 'border-red-500' : ''}
 					/>
 					{errors.storage_size && (
-						<p className='mt-1 text-xs text-red-500'>{errors.storage_size.message}</p>
+						<p className='mt-1 text-xs text-red-500'>{errors.storage_size}</p>
 					)}
 				</HardwareCard>
 			</div>

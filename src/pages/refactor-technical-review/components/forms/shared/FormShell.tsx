@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import type { FieldValues } from 'react-hook-form';
+import type { FormikValues } from 'formik';
 import { toast } from 'react-toastify';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
@@ -19,11 +19,11 @@ const sectionVariants: Variants = {
 	exit: (direction: number) => ({ opacity: 0, x: direction * -40 }),
 };
 
-interface FormShellProps<T extends FieldValues> {
+interface FormShellProps<T extends FormikValues> {
 	sections: SectionConfig<T>[];
 	sectionProps: FormSectionProps<T>;
 	onBack: () => void;
-	onFinish: () => void;
+	onFinish: () => void | Promise<void>;
 	isSubmitting?: boolean;
 	/** Called when user navigates between sections (before transition) */
 	onStepChange?: (direction: 'next' | 'prev') => void;
@@ -56,7 +56,7 @@ const stepTone = (isActive: boolean, isCompleted: boolean, classes: IStepToneCla
 	return classes.idle;
 };
 
-const FormShell = <T extends FieldValues>({
+const FormShell = <T extends FormikValues>({
 	sections,
 	sectionProps,
 	onBack,
@@ -264,7 +264,15 @@ const FormShell = <T extends FieldValues>({
 							<Icon icon={currentSection.icon} className='h-5 w-5 text-blue-600' />
 							{currentSection.label}
 						</h3>
-						<SectionComponent {...sectionProps} />
+						<SectionComponent
+							values={sectionProps.values}
+							errors={sectionProps.errors}
+							readOnly={sectionProps.readOnly}
+							setFieldValue={sectionProps.setFieldValue}
+							onFieldBlur={sectionProps.onFieldBlur}
+							onDirectSubmit={sectionProps.onDirectSubmit}
+							schemaFields={sectionProps.schemaFields}
+						/>
 					</motion.div>
 				</AnimatePresence>
 			</div>
@@ -302,7 +310,9 @@ const FormShell = <T extends FieldValues>({
 					<Button
 						variant='solid'
 						color='emerald'
-						onClick={onFinish}
+						onClick={() => {
+							void onFinish();
+						}}
 						isLoading={isSubmitting}
 						disabled={isSubmitting || sectionProps.readOnly}
 						className='gap-2'>

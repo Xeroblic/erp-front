@@ -4,7 +4,7 @@
  * Las fotos van asociadas al item de la revisión.
  *
  * Se usa como una sección más del FormShell (misma tira de pestañas), pero no
- * participa del formulario react-hook-form: gestiona su propio estado vía
+ * participa del formulario Formik: gestiona su propio estado vía
  * `useReviewPhotos` y obtiene el contexto (item + subsidiaria) de
  * `ReviewPhotosContext`.
  *
@@ -13,7 +13,7 @@
  *   - Subir / eliminar: review-technical-reviews-items
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { FieldValues } from 'react-hook-form';
+import type { FormikValues } from 'formik';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import useCan from '@/hooks/useCan';
@@ -28,7 +28,10 @@ import {
 	PHOTO_VIEW_PERMISSION,
 } from './gallery.constants';
 
-function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>) {
+/** Claves estables de las cuatro tarjetas de carga. */
+const SKELETON_KEYS = ['first', 'second', 'third', 'fourth'];
+
+const GallerySection = <T extends FormikValues>({ readOnly }: FormSectionProps<T>) => {
 	const { subsidiaryId, itemId } = useReviewPhotosContext();
 	const { has } = useCan();
 
@@ -117,6 +120,105 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 		);
 	}
 
+	const renderPhotos = () => {
+		if (loading) {
+			return (
+				<div className='grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4'>
+					{SKELETON_KEYS.map((key) => (
+						<div
+							key={key}
+							className='aspect-square animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800'
+						/>
+					))}
+				</div>
+			);
+		}
+		if (photos.length === 0) {
+			return (
+				<div className='flex flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 py-12 text-center dark:border-zinc-700'>
+					<Icon icon='HeroPhoto' className='h-8 w-8 text-zinc-400' />
+					<p className='text-sm text-zinc-500'>Aún no hay fotos en esta revisión.</p>
+				</div>
+			);
+		}
+		return (
+			<div className='grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4'>
+				{photos.map((photo, index) => (
+					<div
+						key={photo.id}
+						className='group relative aspect-square overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800'>
+						<button
+							type='button'
+							onClick={() => setLightboxIndex(index)}
+							className='h-full w-full'
+							title={photo.alt ?? 'Ver foto'}>
+							<img
+								// Preview local (instantáneo) → thumb del servidor → full
+								src={previews[photo.id] ?? photo.thumb ?? photo.url}
+								alt={photo.alt ?? 'Foto de revisión'}
+								loading='lazy'
+								onError={(e) => {
+									// Si el thumb aún no está listo, cae a la imagen full
+									const img = e.currentTarget;
+									if (photo.url && img.src !== photo.url) {
+										img.src = photo.url;
+									}
+								}}
+								className='h-full w-full object-cover transition-transform duration-200 group-hover:scale-105'
+							/>
+						</button>
+
+						{/* Overlay: zoom */}
+						<div className='pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20'>
+							<Icon
+								icon='HeroMagnifyingGlassPlus'
+								className='h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-90'
+							/>
+						</div>
+
+						{/* Botón eliminar + confirmación (solo con permiso de edición) */}
+						{canEdit &&
+							(confirmId === photo.id ? (
+								<div className='absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-2 text-center'>
+									<p className='text-xs font-semibold text-white'>
+										¿Eliminar foto?
+									</p>
+									<div className='flex gap-2'>
+										<button
+											type='button'
+											onClick={() => handleConfirmDelete(photo.id)}
+											className='rounded-md bg-red-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-red-700'>
+											Sí
+										</button>
+										<button
+											type='button'
+											onClick={() => setConfirmId(null)}
+											className='rounded-md bg-white/20 px-2.5 py-1 text-xs font-bold text-white hover:bg-white/30'>
+											No
+										</button>
+									</div>
+								</div>
+							) : (
+								<button
+									type='button'
+									onClick={() => setConfirmId(photo.id)}
+									disabled={deletingId === photo.id}
+									title='Eliminar foto'
+									className='absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-lg ring-2 ring-white/80 transition-all hover:scale-110 hover:bg-red-700 focus:scale-110 focus:outline-none focus:ring-red-300 disabled:opacity-60 dark:ring-zinc-900/70'>
+									<Icon
+										icon={
+											deletingId === photo.id ? 'HeroArrowPath' : 'HeroTrash'
+										}
+										className={`h-5 w-5 ${deletingId === photo.id ? 'animate-spin' : ''}`}
+									/>
+								</button>
+							))}
+					</div>
+				))}
+			</div>
+		);
+	};
+
 	return (
 		<div className='space-y-5'>
 			{/* ─── Encabezado: conteo + refrescar ────────────────────────── */}
@@ -128,7 +230,9 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 				</p>
 				<button
 					type='button'
-					onClick={() => void refresh()}
+					onClick={() => {
+						void refresh();
+					}}
 					disabled={loading}
 					title='Actualizar galería'
 					className='flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
@@ -194,7 +298,9 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 					</span>
 					<button
 						type='button'
-						onClick={() => void refresh()}
+						onClick={() => {
+							void refresh();
+						}}
 						className='shrink-0 font-semibold underline underline-offset-2 hover:no-underline'>
 						Reintentar
 					</button>
@@ -202,106 +308,22 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 			)}
 
 			{/* ─── Grid / estados ────────────────────────────────────────── */}
-			{loading ? (
-				<div className='grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4'>
-					{Array.from({ length: 4 }).map((_, i) => (
-						<div
-							key={i}
-							className='aspect-square animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800'
-						/>
-					))}
-				</div>
-			) : photos.length === 0 ? (
-				<div className='flex flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 py-12 text-center dark:border-zinc-700'>
-					<Icon icon='HeroPhoto' className='h-8 w-8 text-zinc-400' />
-					<p className='text-sm text-zinc-500'>Aún no hay fotos en esta revisión.</p>
-				</div>
-			) : (
-				<div className='grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4'>
-					{photos.map((photo, index) => (
-						<div
-							key={photo.id}
-							className='group relative aspect-square overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800'>
-							<button
-								type='button'
-								onClick={() => setLightboxIndex(index)}
-								className='h-full w-full'
-								title={photo.alt ?? 'Ver foto'}>
-								<img
-									// Preview local (instantáneo) → thumb del servidor → full
-									src={previews[photo.id] ?? photo.thumb ?? photo.url}
-									alt={photo.alt ?? 'Foto de revisión'}
-									loading='lazy'
-									onError={(e) => {
-										// Si el thumb aún no está listo, cae a la imagen full
-										const img = e.currentTarget;
-										if (photo.url && img.src !== photo.url) {
-											img.src = photo.url;
-										}
-									}}
-									className='h-full w-full object-cover transition-transform duration-200 group-hover:scale-105'
-								/>
-							</button>
-
-							{/* Overlay: zoom */}
-							<div className='pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20'>
-								<Icon
-									icon='HeroMagnifyingGlassPlus'
-									className='h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-90'
-								/>
-							</div>
-
-							{/* Botón eliminar + confirmación (solo con permiso de edición) */}
-							{canEdit &&
-								(confirmId === photo.id ? (
-									<div className='absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-2 text-center'>
-										<p className='text-xs font-semibold text-white'>
-											¿Eliminar foto?
-										</p>
-										<div className='flex gap-2'>
-											<button
-												type='button'
-												onClick={() => handleConfirmDelete(photo.id)}
-												className='rounded-md bg-red-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-red-700'>
-												Sí
-											</button>
-											<button
-												type='button'
-												onClick={() => setConfirmId(null)}
-												className='rounded-md bg-white/20 px-2.5 py-1 text-xs font-bold text-white hover:bg-white/30'>
-												No
-											</button>
-										</div>
-									</div>
-								) : (
-									<button
-										type='button'
-										onClick={() => setConfirmId(photo.id)}
-										disabled={deletingId === photo.id}
-										title='Eliminar foto'
-										className='absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-lg ring-2 ring-white/80 transition-all hover:scale-110 hover:bg-red-700 focus:scale-110 focus:outline-none focus:ring-red-300 disabled:opacity-60 dark:ring-zinc-900/70'>
-										<Icon
-											icon={
-												deletingId === photo.id
-													? 'HeroArrowPath'
-													: 'HeroTrash'
-											}
-											className={`h-5 w-5 ${deletingId === photo.id ? 'animate-spin' : ''}`}
-										/>
-									</button>
-								))}
-						</div>
-					))}
-				</div>
-			)}
+			{renderPhotos()}
 
 			{/* ─── Lightbox ──────────────────────────────────────────────── */}
 			{lightboxPhoto && (
 				<div
 					role='dialog'
 					aria-modal='true'
-					onClick={closeLightbox}
 					className='fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm'>
+					{/* Fondo: un clic fuera de la foto cierra; el teclado usa Esc o «Cerrar». */}
+					<button
+						type='button'
+						tabIndex={-1}
+						aria-hidden='true'
+						onClick={closeLightbox}
+						className='absolute inset-0 cursor-default'
+					/>
 					{/* Cerrar */}
 					<button
 						type='button'
@@ -349,13 +371,12 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 					<img
 						src={lightboxPhoto.url}
 						alt={lightboxPhoto.alt ?? 'Foto de revisión'}
-						onClick={(e) => e.stopPropagation()}
-						className='max-h-[90vh] max-w-[85vw] rounded-lg object-contain shadow-2xl'
+						className='relative max-h-[90vh] max-w-[85vw] rounded-lg object-contain shadow-2xl'
 					/>
 				</div>
 			)}
 		</div>
 	);
-}
+};
 
 export default GallerySection;

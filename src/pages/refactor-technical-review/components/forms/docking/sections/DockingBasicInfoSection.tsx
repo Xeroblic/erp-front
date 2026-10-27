@@ -1,24 +1,24 @@
-import React, { useEffect, useMemo } from 'react';
-import { Controller } from 'react-hook-form';
-import { FormSectionProps } from '../../shared/types';
-import { DockingFormData } from '../../../validation/docking.schema';
+import React, { useMemo } from 'react';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import Validation from '@/components/form/Validation';
 import { useMarcas } from '@/pages/catalogos/marcas/components/hooks/useMarcas';
+import Icon from '@/components/icon/Icon';
+import { FormSectionProps } from '../../shared/types';
+import { DockingFormData } from '../../../validation/docking.schema';
 import { SelectionCard } from '../../../ui/SelectionCard';
 import { DOCKING_HINTS, DOCKING_PLACEHOLDERS } from '../../../constants/docking/docking.hints';
 import { GENERAL_CONDITION_OPTIONS } from '../../../constants/docking/docking.options';
 import { getDockingLabel } from '../../../translations/docking.labels';
-import Icon from '@/components/icon/Icon';
 
 const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
-	control,
+	onFieldBlur,
 	errors,
 	readOnly,
-	watch,
-	setValue,
+	values,
+	setFieldValue,
 }) => {
-	const currentCondition = watch('general_condition');
+	const currentCondition = values.general_condition;
 	const { brands, loading: loadingBrands } = useMarcas({ search: '', is_active: true });
 
 	const brandOptions: TSelectOption[] = useMemo(() => {
@@ -45,27 +45,23 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 						</span>
 						{getDockingLabel('brand')}
 					</label>
-					<Controller
-						name='brand'
-						control={control}
-						render={({ field }) => (
-							<SelectReact
-								name={field.name}
-								options={brandOptions}
-								value={
-									brandOptions.find((opt) => opt.value === field.value) || null
-								}
-								onChange={(option) => {
-									field.onChange((option as TSelectOption)?.value);
-								}}
-								isLoading={loadingBrands}
-								placeholder={DOCKING_PLACEHOLDERS.brand}
-								isDisabled={readOnly}
-								isValid={!errors.brand}
-								invalidFeedback={errors.brand?.message}
-							/>
-						)}
-					/>
+					<Validation
+						isValid={!errors.brand}
+						isTouched={Boolean(errors.brand)}
+						invalidFeedback={errors.brand}>
+						<SelectReact
+							name='brand'
+							options={brandOptions}
+							value={brandOptions.find((opt) => opt.value === values.brand) || null}
+							onChange={(option) => {
+								setFieldValue('brand', (option as TSelectOption)?.value);
+							}}
+							isLoading={loadingBrands}
+							placeholder={DOCKING_PLACEHOLDERS.brand}
+							onBlur={() => onFieldBlur('brand')}
+							isDisabled={readOnly}
+						/>
+					</Validation>
 					<p className='mt-1 text-xs text-zinc-500'>{DOCKING_HINTS.brand}</p>
 				</div>
 
@@ -77,22 +73,16 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 						</span>
 						{getDockingLabel('model')}
 					</label>
-					<Controller
+					<Input
 						name='model'
-						control={control}
-						render={({ field }) => (
-							<Input
-								{...field}
-								value={field.value ?? ''}
-								placeholder={DOCKING_PLACEHOLDERS.model}
-								disabled={readOnly}
-								className={errors.model ? 'border-red-500' : ''}
-							/>
-						)}
+						onChange={(event) => setFieldValue('model', event.target.value)}
+						onBlur={() => onFieldBlur('model')}
+						value={values.model ?? ''}
+						placeholder={DOCKING_PLACEHOLDERS.model}
+						disabled={readOnly}
+						className={errors.model ? 'border-red-500' : ''}
 					/>
-					{errors.model && (
-						<p className='mt-1 text-xs text-red-500'>{errors.model.message}</p>
-					)}
+					{errors.model && <p className='mt-1 text-xs text-red-500'>{errors.model}</p>}
 					<p className='mt-1 text-xs text-zinc-500'>{DOCKING_HINTS.model}</p>
 				</div>
 
@@ -104,22 +94,16 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 						</span>
 						{getDockingLabel('line')}
 					</label>
-					<Controller
+					<Input
 						name='line'
-						control={control}
-						render={({ field }) => (
-							<Input
-								{...field}
-								value={field.value ?? ''}
-								placeholder={DOCKING_PLACEHOLDERS.line}
-								disabled={readOnly}
-								className={errors.line ? 'border-red-500' : ''}
-							/>
-						)}
+						onChange={(event) => setFieldValue('line', event.target.value)}
+						onBlur={() => onFieldBlur('line')}
+						value={values.line ?? ''}
+						placeholder={DOCKING_PLACEHOLDERS.line}
+						disabled={readOnly}
+						className={errors.line ? 'border-red-500' : ''}
 					/>
-					{errors.line && (
-						<p className='mt-1 text-xs text-red-500'>{errors.line.message}</p>
-					)}
+					{errors.line && <p className='mt-1 text-xs text-red-500'>{errors.line}</p>}
 					<p className='mt-1 text-xs text-zinc-500'>{DOCKING_HINTS.line}</p>
 				</div>
 			</div>
@@ -138,15 +122,19 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 					{GENERAL_CONDITION_OPTIONS.map((opt) => (
 						<SelectionCard
 							key={opt.value}
-							label={opt.label as string}
-							value={opt.value as string}
+							label={opt.label}
+							value={opt.value}
 							isSelected={currentCondition === opt.value}
 							color='emerald'
 							onClick={() => {
 								if (readOnly) return;
-								setValue('general_condition', opt.value as any, {
-									shouldValidate: true,
-								});
+								setFieldValue(
+									'general_condition',
+									opt.value as DockingFormData['general_condition'],
+									{
+										touch: true,
+									},
+								);
 							}}
 						/>
 					))}
@@ -154,7 +142,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 
 				{errors.general_condition && (
 					<p className='mt-3 text-xs font-semibold text-red-500'>
-						{errors.general_condition.message}
+						{errors.general_condition}
 					</p>
 				)}
 			</div>

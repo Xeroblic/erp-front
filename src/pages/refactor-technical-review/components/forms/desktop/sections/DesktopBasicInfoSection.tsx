@@ -1,17 +1,19 @@
-import React, { useEffect, useMemo } from 'react';
-import { Controller } from 'react-hook-form';
+import React, { useMemo } from 'react';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import Validation from '@/components/form/Validation';
 import Icon from '@/components/icon/Icon';
+import { useMarcas } from '@/pages/catalogos/marcas/components/hooks/useMarcas';
 import type { FormSectionProps } from '../../shared/types';
 import type { DesktopFormData } from '../../../validation/desktop.schema';
 import { getDesktopLabel } from '../../../translations/desktop.labels';
 import { DESKTOP_HINTS, DESKTOP_PLACEHOLDERS } from '../../../constants/desktop/desktop.hints';
 // Hook for brands
-import { useMarcas } from '@/pages/catalogos/marcas/components/hooks/useMarcas';
 
 const DesktopBasicInfoSection: React.FC<FormSectionProps<DesktopFormData>> = ({
-	control,
+	values,
+	setFieldValue,
+	onFieldBlur,
 	errors,
 	readOnly,
 }) => {
@@ -34,25 +36,23 @@ const DesktopBasicInfoSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					<Icon icon='HeroTag' className='h-4 w-4' />
 					{getDesktopLabel('brand')} <span className='text-red-500'>*</span>
 				</label>
-				<Controller
-					name='brand'
-					control={control}
-					render={({ field }) => (
-						<SelectReact
-							name={field.name}
-							options={brandOptions}
-							value={brandOptions.find((opt) => opt.value === field.value)}
-							onChange={(option) => {
-								field.onChange((option as TSelectOption)?.value);
-							}}
-							isLoading={loadingBrands}
-							placeholder={DESKTOP_PLACEHOLDERS.brand}
-							isDisabled={readOnly}
-							isValid={!errors.brand}
-							invalidFeedback={errors.brand?.message}
-						/>
-					)}
-				/>
+				<Validation
+					isValid={!errors.brand}
+					isTouched={Boolean(errors.brand)}
+					invalidFeedback={errors.brand}>
+					<SelectReact
+						name='brand'
+						options={brandOptions}
+						value={brandOptions.find((opt) => opt.value === values.brand)}
+						onChange={(option) => {
+							setFieldValue('brand', (option as TSelectOption)?.value);
+						}}
+						isLoading={loadingBrands}
+						placeholder={DESKTOP_PLACEHOLDERS.brand}
+						onBlur={() => onFieldBlur('brand')}
+						isDisabled={readOnly}
+					/>
+				</Validation>
 				<p className='mt-1 text-xs text-zinc-500'>{DESKTOP_HINTS.brand}</p>
 			</div>
 
@@ -62,22 +62,16 @@ const DesktopBasicInfoSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					<Icon icon='HeroCpuChip' className='h-4 w-4' />
 					{getDesktopLabel('model')} <span className='text-red-500'>*</span>
 				</label>
-				<Controller
+				<Input
 					name='model'
-					control={control}
-					render={({ field }) => (
-						<Input
-							{...field}
-							value={field.value || ''}
-							placeholder={DESKTOP_PLACEHOLDERS.model}
-							disabled={readOnly}
-							className={errors.model ? 'border-red-500' : ''}
-						/>
-					)}
+					onChange={(event) => setFieldValue('model', event.target.value)}
+					onBlur={() => onFieldBlur('model')}
+					value={values.model || ''}
+					placeholder={DESKTOP_PLACEHOLDERS.model}
+					disabled={readOnly}
+					className={errors.model ? 'border-red-500' : ''}
 				/>
-				{errors.model && (
-					<p className='mt-1 text-xs text-red-500'>{errors.model.message}</p>
-				)}
+				{errors.model && <p className='mt-1 text-xs text-red-500'>{errors.model}</p>}
 				<p className='mt-1 text-xs text-zinc-500'>{DESKTOP_HINTS.model}</p>
 			</div>
 
@@ -87,17 +81,13 @@ const DesktopBasicInfoSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					<Icon icon='HeroQueueList' className='h-4 w-4' />
 					{getDesktopLabel('line')}
 				</label>
-				<Controller
+				<Input
 					name='line'
-					control={control}
-					render={({ field }) => (
-						<Input
-							{...field}
-							value={field.value || ''}
-							placeholder={DESKTOP_PLACEHOLDERS.line}
-							disabled={readOnly}
-						/>
-					)}
+					onChange={(event) => setFieldValue('line', event.target.value)}
+					onBlur={() => onFieldBlur('line')}
+					value={values.line || ''}
+					placeholder={DESKTOP_PLACEHOLDERS.line}
+					disabled={readOnly}
 				/>
 				<p className='mt-1 text-xs text-zinc-500'>{DESKTOP_HINTS.line}</p>
 			</div>

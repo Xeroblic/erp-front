@@ -54,7 +54,7 @@ export interface PortConditionFieldsProps {
 
 	/** Aviso local de puertos defectuosos, usado cuando el schema no publica el suyo. */
 	defectiveWarningFallback?: string;
-	/** Mensajes de error de react-hook-form, ya resueltos por la sección. */
+	/** Mensajes de error del formulario, ya resueltos por la sección. */
 	allPortsFunctionalError?: string;
 	defectiveCountError?: string;
 	/** Campos extra dentro del contenedor de defectuosos (monitor: puertos críticos). */

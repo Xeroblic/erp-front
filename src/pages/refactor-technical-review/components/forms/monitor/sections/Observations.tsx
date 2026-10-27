@@ -1,14 +1,15 @@
 import Icon from '@/components/icon/Icon';
 import React from 'react';
-import { getMonitorLabel } from '../../../translations/monitor.labels';
-import { Controller } from 'react-hook-form';
 import Textarea from '@/components/form/Textarea';
+import { getMonitorLabel } from '../../../translations/monitor.labels';
 import { MONITOR_HINTS, MONITOR_PLACEHOLDERS } from '../../../constants/monitor/monitor.hints';
 import { FormSectionProps } from '../../shared/types';
 import { MonitorFormData } from '../../../validation/monitor.schema';
 
 const Observations: React.FC<FormSectionProps<MonitorFormData>> = ({
-	control,
+	values,
+	setFieldValue,
+	onFieldBlur,
 	errors,
 	readOnly,
 }) => {
@@ -19,24 +20,18 @@ const Observations: React.FC<FormSectionProps<MonitorFormData>> = ({
 				{getMonitorLabel('observations')}
 			</label>
 			<p className='mb-4 text-xs text-zinc-500'>{MONITOR_HINTS.observations}</p>
-			<Controller
+			<Textarea
 				name='observations'
-				control={control}
-				render={({ field }) => (
-					<Textarea
-						{...field}
-						value={field.value ?? ''}
-						placeholder={MONITOR_PLACEHOLDERS.observations}
-						disabled={readOnly}
-						rows={4}
-						className={`w-full ${errors.observations ? 'border-red-500' : ''}`}
-					/>
-				)}
+				onChange={(event) => setFieldValue('observations', event.target.value)}
+				onBlur={() => onFieldBlur('observations')}
+				value={values.observations ?? ''}
+				placeholder={MONITOR_PLACEHOLDERS.observations}
+				disabled={readOnly}
+				rows={4}
+				className={`w-full ${errors.observations ? 'border-red-500' : ''}`}
 			/>
 			{errors.observations && (
-				<p className='mt-2 text-xs font-semibold text-red-500'>
-					{errors.observations.message}
-				</p>
+				<p className='mt-2 text-xs font-semibold text-red-500'>{errors.observations}</p>
 			)}
 		</div>
 	);
