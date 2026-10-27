@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react-swc';
+import tailwindcss from '@tailwindcss/vite';
 import EnvironmentPlugin from 'vite-plugin-environment';
 import path from 'path';
 import { readFileSync } from 'fs';
@@ -17,6 +18,7 @@ export default defineConfig({
 	},
 	plugins: [
 		react(),
+		tailwindcss(),
 		EnvironmentPlugin('all', { prefix: 'VITE_' }),
 		visualizer({
 			filename: 'stats.html',
@@ -27,6 +29,12 @@ export default defineConfig({
 		}),
 	],
 	assetsInclude: ['**/*.md'],
+	css: {
+		// Tailwind corre como plugin de Vite y no hay PostCSS propio. Declararlo vacío evita
+		// que Vite herede un `postcss.config.*` de una carpeta superior, como el checkout
+		// principal cuando se trabaja en un worktree de `.claude/worktrees`.
+		postcss: {},
+	},
 	resolve: {
 		alias: {
 			'@': path.join(import.meta.dirname, 'src'),
