@@ -10,6 +10,7 @@ import dayGridPlugin from '@fullcalendar/react/daygrid';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
 import listPlugin from '@fullcalendar/react/list';
 import interactionPlugin from '@fullcalendar/react/interaction';
+import esLocale from '@fullcalendar/react/locales/es';
 import trLocale from '@fullcalendar/react/locales/tr';
 import arLocale from '@fullcalendar/react/locales/ar';
 import '@fullcalendar/react/skeleton.css';
@@ -71,7 +72,7 @@ const Calendar = (props: ICalendarProps) => {
 			`}</style>
 			<FullCalendar
 				locale={locale || i18n.language}
-				locales={[trLocale, arLocale, ...(locales ?? [])]}
+				locales={[esLocale, trLocale, arLocale, ...(locales ?? [])]}
 				plugins={[
 					themePlugin,
 					dayGridPlugin,
