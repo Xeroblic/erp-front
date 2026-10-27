@@ -1,12 +1,12 @@
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import type { DesktopFormData } from '../../validation/desktop.schema';
 import type { NotebookFormData } from '../../validation/notebook.schema';
 import DesktopAestheticsSection from '../desktop/sections/DesktopAestheticsSection';
 import InputSection from '../notebook/sections/InputSection';
+import { ReviewFormHarness, type ReviewFormHandle } from './reviewFormHarness';
 
 vi.mock('@/components/icon/Icon', () => ({ default: () => <span /> }));
 
@@ -88,75 +88,46 @@ const isMarkedRequired = (fieldLabel: RegExp): boolean => {
 
 describe('ZF-48 schema fields', () => {
 	it('derives the keyboard checkbox from the persisted count', () => {
-		let getValues: (() => NotebookFormData) | undefined;
+		const handle: { current?: ReviewFormHandle<NotebookFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<NotebookFormData>({
-				defaultValues: { non_functional_keys_count: 0 },
-			});
-			getValues = form.getValues;
-			return (
-				<InputSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-					schemaFields={NOTEBOOK_SCHEMA}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<NotebookFormData>
+				section={InputSection}
+				initialValues={{ non_functional_keys_count: 0 }}
+				schemaFields={NOTEBOOK_SCHEMA}
+				handle={handle}
+			/>,
+		);
+		const getValues = () => handle.current?.getValues();
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Teclas que no funcionan' }));
-		expect(getValues?.().non_functional_keys_count).toBe(1);
+		expect(getValues()?.non_functional_keys_count).toBe(1);
 		expect(screen.getByText('1')).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Teclas que no funcionan' }));
-		expect(getValues?.().non_functional_keys_count).toBe(0);
+		expect(getValues()?.non_functional_keys_count).toBe(0);
 	});
 
 	it('stores false as a valid desktop power response', () => {
-		let getValues: (() => DesktopFormData) | undefined;
+		const handle: { current?: ReviewFormHandle<DesktopFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<DesktopFormData>();
-			getValues = form.getValues;
-			return (
-				<DesktopAestheticsSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-					schemaFields={DESKTOP_SCHEMA}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<DesktopFormData>
+				section={DesktopAestheticsSection}
+				schemaFields={DESKTOP_SCHEMA}
+				handle={handle}
+			/>,
+		);
+		const getValues = () => handle.current?.getValues();
 		fireEvent.click(screen.getByRole('button', { name: 'No' }));
-		expect(getValues?.().powers_on).toBe(false);
+		expect(getValues()?.powers_on).toBe(false);
 	});
 
 	// B1: sin schema remoto los tres campos que ZF-48 volvió dinámicos quedaban sin
 	// opciones y sin título, con la revisión imposible de completar. En `develop`
 	// funcionan con las constantes locales.
 	it('falls back to the local options when the remote schema is unavailable', () => {
-		const Harness = () => {
-			const form = useForm<NotebookFormData>();
-			return (
-				<InputSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-					schemaFields={undefined}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<NotebookFormData> section={InputSection} schemaFields={undefined} />,
+		);
 
 		// Títulos locales, no encabezados en blanco.
 		expect(screen.getAllByText('Teclado').length).toBeGreaterThan(0);
@@ -177,21 +148,12 @@ describe('ZF-48 schema fields', () => {
 	});
 
 	it('marks the required fields from the published schema', () => {
-		const Harness = () => {
-			const form = useForm<NotebookFormData>();
-			return (
-				<InputSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-					schemaFields={NOTEBOOK_SCHEMA}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<NotebookFormData>
+				section={InputSection}
+				schemaFields={NOTEBOOK_SCHEMA}
+			/>,
+		);
 
 		// `required` lo publica el backend; sin consumirlo el asterisco quedaba fijo en
 		// el teclado y nunca aparecía en bisagras, que también es obligatorio.
@@ -200,26 +162,18 @@ describe('ZF-48 schema fields', () => {
 	});
 
 	it('keeps the desktop power question visible without a remote schema', () => {
-		let getValues: (() => DesktopFormData) | undefined;
+		const handle: { current?: ReviewFormHandle<DesktopFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<DesktopFormData>();
-			getValues = form.getValues;
-			return (
-				<DesktopAestheticsSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-					schemaFields={undefined}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<DesktopFormData>
+				section={DesktopAestheticsSection}
+				schemaFields={undefined}
+				handle={handle}
+			/>,
+		);
+		const getValues = () => handle.current?.getValues();
 		expect(screen.getByText('¿El equipo enciende?')).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'No' }));
-		expect(getValues?.().powers_on).toBe(false);
+		expect(getValues()?.powers_on).toBe(false);
 	});
 });

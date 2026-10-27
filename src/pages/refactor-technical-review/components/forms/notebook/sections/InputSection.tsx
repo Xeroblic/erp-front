@@ -23,8 +23,8 @@ import {
 const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	errors,
 	readOnly,
-	watch,
-	setValue,
+	values,
+	setFieldValue,
 	schemaFields,
 }) => {
 	// Los tres campos que ZF-48 pasó a opciones dinámicas conservan su respaldo local:
@@ -64,7 +64,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	// rótulo y la validación no puedan contradecirse. Tras #189 el contenedor es `role='group'`
 	// y ya no expone `aria-required`, inválido en ese rol.
 	const speakersRequired = speakersField?.required === true;
-	const nonFunctionalKeysCount = watch('non_functional_keys_count') ?? 0;
+	const nonFunctionalKeysCount = values.non_functional_keys_count ?? 0;
 	return (
 		<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
 			{/* ─── ZONE 1: INPUT DEVICES (The "Control Center") ─── */}
@@ -105,9 +105,10 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 										key={opt.value}
 										label={opt.label}
 										value={opt.value}
-										isSelected={watch('keyboard_condition') === opt.value}
+										isSelected={values.keyboard_condition === opt.value}
 										onClick={() =>
-											!readOnly && setValue('keyboard_condition', opt.value)
+											!readOnly &&
+											setFieldValue('keyboard_condition', opt.value)
 										}
 										variant='compact'
 									/>
@@ -115,7 +116,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</div>
 							{errors.keyboard_condition && (
 								<p className='mt-2 text-xs text-red-500'>
-									{errors.keyboard_condition.message}
+									{errors.keyboard_condition}
 								</p>
 							)}
 							{keyboard.hint && (
@@ -125,24 +126,24 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 						{/* Layout */}
 						<div>
-							<label className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
+							<p className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
 								Distribución
-							</label>
+							</p>
 							<div className='space-y-2'>
 								{KEYBOARD_LAYOUT_OPTIONS.map((opt) => (
 									<button
 										key={opt.value}
 										type='button'
 										onClick={() =>
-											!readOnly && setValue('keyboard_layout', opt.value)
+											!readOnly && setFieldValue('keyboard_layout', opt.value)
 										}
 										className={`flex w-full items-center justify-between rounded-lg border px-4 py-2.5 text-sm transition-all ${
-											watch('keyboard_layout') === opt.value
+											values.keyboard_layout === opt.value
 												? 'border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/20 dark:text-blue-300'
 												: 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 dark:hover:bg-zinc-800'
 										}`}>
 										<span className='font-medium'>{opt.label}</span>
-										{watch('keyboard_layout') === opt.value && (
+										{values.keyboard_layout === opt.value && (
 											<Icon
 												icon='HeroCheckCircle'
 												className='h-4 w-4 text-blue-500'
@@ -162,7 +163,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									disabled={readOnly}
 									label={keysCountField.label}
 									onChange={(event) =>
-										setValue(
+										setFieldValue(
 											'non_functional_keys_count',
 											event.target.checked ? 1 : 0,
 										)
@@ -175,7 +176,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 											min={1}
 											onChange={(value) =>
 												!readOnly &&
-												setValue('non_functional_keys_count', value)
+												setFieldValue('non_functional_keys_count', value)
 											}
 										/>
 									)}
@@ -195,16 +196,16 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						type='button'
 						onClick={() =>
 							!readOnly &&
-							setValue('has_numeric_keypad', !watch('has_numeric_keypad'))
+							setFieldValue('has_numeric_keypad', !values.has_numeric_keypad)
 						}
 						className={`group relative flex items-center gap-4 rounded-2xl border p-4 transition-all ${
-							watch('has_numeric_keypad')
+							values.has_numeric_keypad
 								? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10'
 								: 'border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/50 dark:hover:bg-zinc-800/50'
 						}`}>
 						<div
 							className={`flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
-								watch('has_numeric_keypad')
+								values.has_numeric_keypad
 									? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
 									: 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'
 							}`}>
@@ -213,19 +214,19 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						<div className='text-left'>
 							<span
 								className={`block text-sm font-bold ${
-									watch('has_numeric_keypad')
+									values.has_numeric_keypad
 										? 'text-emerald-900 dark:text-emerald-100'
 										: 'text-zinc-700 dark:text-zinc-300'
 								}`}>
 								Teclado Numérico
 							</span>
 							<span className='text-xs text-zinc-500'>
-								{watch('has_numeric_keypad') ? 'Incluido' : 'No incluido'}
+								{values.has_numeric_keypad ? 'Incluido' : 'No incluido'}
 							</span>
 						</div>
 						<div
 							className={`absolute right-4 top-4 h-3 w-3 rounded-full ${
-								watch('has_numeric_keypad')
+								values.has_numeric_keypad
 									? 'bg-emerald-500'
 									: 'bg-zinc-200 dark:bg-zinc-700'
 							}`}
@@ -237,16 +238,16 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						type='button'
 						onClick={() =>
 							!readOnly &&
-							setValue('has_backlit_keyboard', !watch('has_backlit_keyboard'))
+							setFieldValue('has_backlit_keyboard', !values.has_backlit_keyboard)
 						}
 						className={`group relative flex items-center gap-4 rounded-2xl border p-4 transition-all ${
-							watch('has_backlit_keyboard')
+							values.has_backlit_keyboard
 								? 'border-indigo-200 bg-indigo-50/50 dark:border-indigo-800 dark:bg-indigo-900/10'
 								: 'border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/50 dark:hover:bg-zinc-800/50'
 						}`}>
 						<div
 							className={`flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
-								watch('has_backlit_keyboard')
+								values.has_backlit_keyboard
 									? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
 									: 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'
 							}`}>
@@ -255,19 +256,19 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						<div className='text-left'>
 							<span
 								className={`block text-sm font-bold ${
-									watch('has_backlit_keyboard')
+									values.has_backlit_keyboard
 										? 'text-indigo-900 dark:text-indigo-100'
 										: 'text-zinc-700 dark:text-zinc-300'
 								}`}>
 								Retroiluminación
 							</span>
 							<span className='text-xs text-zinc-500'>
-								{watch('has_backlit_keyboard') ? 'Sí' : 'No'}
+								{values.has_backlit_keyboard ? 'Sí' : 'No'}
 							</span>
 						</div>
 						<div
 							className={`absolute right-4 top-4 h-3 w-3 rounded-full ${
-								watch('has_backlit_keyboard')
+								values.has_backlit_keyboard
 									? 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]'
 									: 'bg-zinc-200 dark:bg-zinc-700'
 							}`}
@@ -300,9 +301,9 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								key={opt.value}
 								label={opt.label}
 								value={opt.value}
-								isSelected={watch('touchpad_condition') === opt.value}
+								isSelected={values.touchpad_condition === opt.value}
 								onClick={() =>
-									!readOnly && setValue('touchpad_condition', opt.value)
+									!readOnly && setFieldValue('touchpad_condition', opt.value)
 								}
 								variant='compact'
 							/>
@@ -335,18 +336,16 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									key={opt.value}
 									label={opt.label}
 									value={opt.value}
-									isSelected={watch('speakers_condition') === opt.value}
+									isSelected={values.speakers_condition === opt.value}
 									onClick={() =>
-										!readOnly && setValue('speakers_condition', opt.value)
+										!readOnly && setFieldValue('speakers_condition', opt.value)
 									}
 									variant='compact'
 								/>
 							))}
 						</div>
 						{errors.speakers_condition && (
-							<p className='mt-3 text-xs text-red-500'>
-								{errors.speakers_condition.message}
-							</p>
+							<p className='mt-3 text-xs text-red-500'>{errors.speakers_condition}</p>
 						)}
 						{(speakersField.hint ?? speakersField.warning) && (
 							<p className='mt-3 text-xs text-zinc-600 dark:text-zinc-400'>
@@ -369,9 +368,9 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						{/* Cover */}
 						<div>
 							<div className='mb-3 flex items-center justify-between'>
-								<label className='block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
+								<p className='block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
 									Tapa Superior <span className='text-red-500'>*</span>
-								</label>
+								</p>
 								{NOTEBOOK_WARNINGS.cover_condition && (
 									<div className='flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'>
 										<Icon
@@ -388,9 +387,9 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 										key={opt.value}
 										label={opt.label}
 										value={opt.value}
-										isSelected={watch('cover_condition') === opt.value}
+										isSelected={values.cover_condition === opt.value}
 										onClick={() =>
-											!readOnly && setValue('cover_condition', opt.value)
+											!readOnly && setFieldValue('cover_condition', opt.value)
 										}
 										variant='compact'
 									/>
@@ -398,7 +397,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</div>
 							{errors.cover_condition && (
 								<p className='mt-2 text-xs text-red-500'>
-									{errors.cover_condition.message}
+									{errors.cover_condition}
 								</p>
 							)}
 						</div>
@@ -420,9 +419,9 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 										key={opt.value}
 										label={opt.label}
 										value={opt.value}
-										isSelected={watch('hinge_condition') === opt.value}
+										isSelected={values.hinge_condition === opt.value}
 										onClick={() =>
-											!readOnly && setValue('hinge_condition', opt.value)
+											!readOnly && setFieldValue('hinge_condition', opt.value)
 										}
 										variant='compact'
 									/>
@@ -450,10 +449,10 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 										key={opt.value}
 										label={opt.label}
 										value={opt.value}
-										isSelected={watch('keyboard_cover_condition') === opt.value}
+										isSelected={values.keyboard_cover_condition === opt.value}
 										onClick={() =>
 											!readOnly &&
-											setValue('keyboard_cover_condition', opt.value)
+											setFieldValue('keyboard_cover_condition', opt.value)
 										}
 										variant='compact'
 									/>
@@ -461,7 +460,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</div>
 							{errors.keyboard_cover_condition && (
 								<p className='mt-2 text-xs text-red-500'>
-									{errors.keyboard_cover_condition.message}
+									{errors.keyboard_cover_condition}
 								</p>
 							)}
 							{keyboardCover.hint && (
@@ -480,9 +479,10 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 										key={opt.value}
 										label={opt.label}
 										value={opt.value}
-										isSelected={watch('bottom_condition') === opt.value}
+										isSelected={values.bottom_condition === opt.value}
 										onClick={() =>
-											!readOnly && setValue('bottom_condition', opt.value)
+											!readOnly &&
+											setFieldValue('bottom_condition', opt.value)
 										}
 										variant='compact'
 									/>

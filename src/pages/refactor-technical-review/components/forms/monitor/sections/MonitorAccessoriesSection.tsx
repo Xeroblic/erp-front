@@ -1,13 +1,13 @@
 import React from 'react';
-import { Controller } from 'react-hook-form';
+import Checkbox from '@/components/form/Checkbox';
+import Icon from '@/components/icon/Icon';
 import { FormSectionProps } from '../../shared/types';
 import { MonitorFormData } from '../../../validation/monitor.schema';
-import Checkbox from '@/components/form/Checkbox';
 import { getMonitorLabel } from '../../../translations/monitor.labels';
-import Icon from '@/components/icon/Icon';
 
 const MonitorAccessoriesSection: React.FC<FormSectionProps<MonitorFormData>> = ({
-	control,
+	values,
+	setFieldValue,
 	readOnly,
 }) => {
 	return (
@@ -19,18 +19,15 @@ const MonitorAccessoriesSection: React.FC<FormSectionProps<MonitorFormData>> = (
 							<Icon icon='HeroBolt' className='h-5 w-5' />
 							{getMonitorLabel('includes_power_cable')}
 						</h3>
-						<Controller
-							name='includes_power_cable'
-							control={control}
-							render={({ field }) => (
-								<Checkbox
-									variant='switch'
-									color='blue'
-									checked={Boolean(field.value)}
-									onChange={() => !readOnly && field.onChange(!field.value)}
-									disabled={readOnly}
-								/>
-							)}
+						<Checkbox
+							variant='switch'
+							color='blue'
+							checked={Boolean(values.includes_power_cable)}
+							onChange={() =>
+								!readOnly &&
+								setFieldValue('includes_power_cable', !values.includes_power_cable)
+							}
+							disabled={readOnly}
 						/>
 					</div>
 					<p className='mt-2 text-xs text-blue-700/80 dark:text-blue-300/80'>
@@ -44,18 +41,15 @@ const MonitorAccessoriesSection: React.FC<FormSectionProps<MonitorFormData>> = (
 							<Icon icon='HeroVideoCamera' className='h-5 w-5' />
 							{getMonitorLabel('includes_video_cable')}
 						</h3>
-						<Controller
-							name='includes_video_cable'
-							control={control}
-							render={({ field }) => (
-								<Checkbox
-									variant='switch'
-									color='teal'
-									checked={Boolean(field.value)}
-									onChange={() => !readOnly && field.onChange(!field.value)}
-									disabled={readOnly}
-								/>
-							)}
+						<Checkbox
+							variant='switch'
+							color='teal'
+							checked={Boolean(values.includes_video_cable)}
+							onChange={() =>
+								!readOnly &&
+								setFieldValue('includes_video_cable', !values.includes_video_cable)
+							}
+							disabled={readOnly}
 						/>
 					</div>
 					<p className='mt-2 text-xs text-teal-700/80 dark:text-teal-300/80'>
@@ -69,18 +63,14 @@ const MonitorAccessoriesSection: React.FC<FormSectionProps<MonitorFormData>> = (
 							<Icon icon='HeroBarsArrowUp' className='h-5 w-5' />
 							{getMonitorLabel('includes_stand')}
 						</h3>
-						<Controller
-							name='includes_stand'
-							control={control}
-							render={({ field }) => (
-								<Checkbox
-									variant='switch'
-									color='amber'
-									checked={Boolean(field.value)}
-									onChange={() => !readOnly && field.onChange(!field.value)}
-									disabled={readOnly}
-								/>
-							)}
+						<Checkbox
+							variant='switch'
+							color='amber'
+							checked={Boolean(values.includes_stand)}
+							onChange={() =>
+								!readOnly && setFieldValue('includes_stand', !values.includes_stand)
+							}
+							disabled={readOnly}
 						/>
 					</div>
 					<p className='mt-2 text-xs text-amber-700/80 dark:text-amber-300/80'>
@@ -94,18 +84,14 @@ const MonitorAccessoriesSection: React.FC<FormSectionProps<MonitorFormData>> = (
 							<Icon icon='DuoUsb' className='h-5 w-5' />
 							{getMonitorLabel('has_usb_hub')}
 						</h3>
-						<Controller
-							name='has_usb_hub'
-							control={control}
-							render={({ field }) => (
-								<Checkbox
-									variant='switch'
-									color='purple'
-									checked={Boolean(field.value)}
-									onChange={() => !readOnly && field.onChange(!field.value)}
-									disabled={readOnly}
-								/>
-							)}
+						<Checkbox
+							variant='switch'
+							color='purple'
+							checked={Boolean(values.has_usb_hub)}
+							onChange={() =>
+								!readOnly && setFieldValue('has_usb_hub', !values.has_usb_hub)
+							}
+							disabled={readOnly}
 						/>
 					</div>
 					<p className='mt-2 text-xs text-purple-700/80 dark:text-purple-300/80'>

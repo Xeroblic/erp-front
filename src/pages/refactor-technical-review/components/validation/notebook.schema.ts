@@ -287,7 +287,7 @@ export const notebookSchema = Yup.object({
 		.test(
 			'ports-conflict',
 			'No puede marcar todos los puertos como funcionales si hay puertos defectuosos',
-			function (value): boolean {
+			function portsConflict(value): boolean {
 				const parent = this.parent as { all_ports_functional?: boolean | null };
 				return !(parent.all_ports_functional === true && Number(value) > 0);
 			},
@@ -328,7 +328,9 @@ export const notebookSchema = Yup.object({
 	// ─── Notas ───────────────────────────────────────────────────────────────
 	observations: Yup.string()
 		.trim()
-		.transform((value, originalValue) => (originalValue === '' ? null : value))
+		.transform((value: string | null, originalValue: unknown) =>
+			originalValue === '' ? null : value,
+		)
 		.max(1000, 'Máximo 1000 caracteres para observaciones')
 		.nullable(),
 
@@ -394,29 +396,3 @@ export const notebookPartialSchema = notebookSchema.clone().shape({
 });
 
 export type NotebookPartialFormData = Yup.InferType<typeof notebookPartialSchema>;
-
-/**
- * Valida un formulario de notebook y retorna errores formateados por campo.
- * Compatible con react-hook-form y manejo manual de errores.
- */
-export const validateNotebookForm = async (
-	data: unknown,
-): Promise<
-	{ success: true; data: NotebookFormData } | { success: false; errors: Record<string, string> }
-> => {
-	try {
-		const validated = await notebookSchema.validate(data, { abortEarly: false });
-		return { success: true, data: validated };
-	} catch (err) {
-		if (err instanceof Yup.ValidationError) {
-			const errors: Record<string, string> = {};
-			for (const inner of err.inner) {
-				if (inner.path && !errors[inner.path]) {
-					errors[inner.path] = inner.message;
-				}
-			}
-			return { success: false, errors };
-		}
-		throw err;
-	}
-};

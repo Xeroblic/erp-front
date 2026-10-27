@@ -12,26 +12,26 @@ import {
 
 const DesktopPortsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	readOnly,
-	watch,
-	setValue,
+	values,
+	setFieldValue,
 	errors,
 	schemaFields,
 }) => {
-	const allPortsFunctional = watch('all_ports_functional');
-	const loosePortTypes = watch('loose_port_types');
-	const defectivePortTypes = watch('defective_port_types');
+	const allPortsFunctional = values.all_ports_functional;
+	const loosePortTypes = values.loose_port_types;
+	const defectivePortTypes = values.defective_port_types;
 	// El total persistido: es el único que existe mientras el desglose no se haya medido.
-	const defectivePortsCount = watch('defective_ports_count');
+	const defectivePortsCount = values.defective_ports_count;
 
 	const getNumericValue = (field: keyof DesktopFormData): number => {
-		const val = watch(field);
+		const val = values[field];
 		return typeof val === 'number' ? val : 0;
 	};
 
 	// Helper to update value with type safety
 	const handlePortChange = (field: keyof DesktopFormData, val: number) => {
 		if (readOnly) return;
-		setValue(field, val);
+		setFieldValue(field, val);
 	};
 
 	return (
@@ -71,20 +71,20 @@ const DesktopPortsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 				defectivePortTypes={defectivePortTypes}
 				loosePortTypes={loosePortTypes}
 				defectivePortsCount={defectivePortsCount}
-				onAllPortsFunctionalChange={(value) => setValue('all_ports_functional', value)}
+				onAllPortsFunctionalChange={(value) => setFieldValue('all_ports_functional', value)}
 				onDefectivePortTypesChange={(value) => {
-					setValue('defective_port_types', value);
+					setFieldValue('defective_port_types', value);
 					// El backend sigue esperando el total de defectuosos como campo propio
 					// (a diferencia del de sueltos, que deriva del desglose). Se calcula acá
 					// para que no pueda contradecir al detalle que el técnico acaba de marcar.
-					setValue('defective_ports_count', sumPortTypeCounts(value), {
-						shouldValidate: true,
+					setFieldValue('defective_ports_count', sumPortTypeCounts(value), {
+						touch: true,
 					});
 				}}
-				onLoosePortTypesChange={(value) => setValue('loose_port_types', value)}
+				onLoosePortTypesChange={(value) => setFieldValue('loose_port_types', value)}
 				defectiveWarningFallback={DESKTOP_WARNINGS.defective_ports_count}
-				allPortsFunctionalError={errors.all_ports_functional?.message}
-				defectiveCountError={errors.defective_ports_count?.message}
+				allPortsFunctionalError={errors.all_ports_functional}
+				defectiveCountError={errors.defective_ports_count}
 			/>
 		</div>
 	);

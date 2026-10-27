@@ -1,25 +1,24 @@
 import React from 'react';
-import { Controller } from 'react-hook-form';
+import Textarea from '@/components/form/Textarea';
+import Checkbox from '@/components/form/Checkbox';
+import Icon from '@/components/icon/Icon';
 import { FormSectionProps } from '../../shared/types';
 import { DockingFormData } from '../../../validation/docking.schema';
 import { SelectionCard } from '../../../ui/SelectionCard';
-import Textarea from '@/components/form/Textarea';
-import Checkbox from '@/components/form/Checkbox';
 import { DOCKING_HINTS, DOCKING_PLACEHOLDERS } from '../../../constants/docking/docking.hints';
 import { COVER_CONDITION_OPTIONS } from '../../../constants/docking/docking.options';
 import { getDockingLabel } from '../../../translations/docking.labels';
 import { getSchemaFieldOptions } from '../../../validation/technicalReviewSchema';
-import Icon from '@/components/icon/Icon';
 
 const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
-	control,
+	onFieldBlur,
 	errors,
 	readOnly,
-	watch,
-	setValue,
+	values,
+	setFieldValue,
 	schemaFields,
 }) => {
-	const currentCover = watch('cover_condition');
+	const currentCover = values.cover_condition;
 	// ZF-99. El sector del candado nace con esta card: no hay constante local con sus
 	// valores, e inventarlos produciría un 422. Se muestra sólo cuando el backend lo
 	// publica, que es el comportamiento de `develop`, donde el campo no existe.
@@ -35,18 +34,18 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 							<Icon icon='HeroBolt' className='h-5 w-5' />
 							{getDockingLabel('includes_power_adapter')}
 						</h3>
-						<Controller
-							name='includes_power_adapter'
-							control={control}
-							render={({ field }) => (
-								<Checkbox
-									variant='switch'
-									color='blue'
-									checked={Boolean(field.value)}
-									onChange={() => !readOnly && field.onChange(!field.value)}
-									disabled={readOnly}
-								/>
-							)}
+						<Checkbox
+							variant='switch'
+							color='blue'
+							checked={Boolean(values.includes_power_adapter)}
+							onChange={() =>
+								!readOnly &&
+								setFieldValue(
+									'includes_power_adapter',
+									!values.includes_power_adapter,
+								)
+							}
+							disabled={readOnly}
 						/>
 					</div>
 					<p className='mt-2 text-xs text-blue-700/80 dark:text-blue-300/80'>
@@ -60,18 +59,14 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 							<Icon icon='HeroWifi' className='h-5 w-5' />
 							{getDockingLabel('has_wifi')}
 						</h3>
-						<Controller
-							name='has_wifi'
-							control={control}
-							render={({ field }) => (
-								<Checkbox
-									variant='switch'
-									color='teal'
-									checked={Boolean(field.value)}
-									onChange={() => !readOnly && field.onChange(!field.value)}
-									disabled={readOnly}
-								/>
-							)}
+						<Checkbox
+							variant='switch'
+							color='teal'
+							checked={Boolean(values.has_wifi)}
+							onChange={() =>
+								!readOnly && setFieldValue('has_wifi', !values.has_wifi)
+							}
+							disabled={readOnly}
 						/>
 					</div>
 					<p className='mt-2 text-xs text-teal-700/80 dark:text-teal-300/80'>
@@ -91,13 +86,13 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 					{COVER_CONDITION_OPTIONS.map((opt) => (
 						<SelectionCard
 							key={opt.value}
-							label={opt.label as string}
-							value={opt.value as string}
+							label={opt.label}
+							value={opt.value}
 							isSelected={currentCover === opt.value}
 							color='orange'
 							onClick={() => {
 								if (readOnly) return;
-								setValue(
+								setFieldValue(
 									'cover_condition',
 									opt.value as
 										| 'ok'
@@ -105,14 +100,14 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 										| 'missing_pieces'
 										| 'scratched'
 										| 'broken',
-									{ shouldValidate: true },
+									{ touch: true },
 								);
 							}}
 						/>
 					))}
 				</div>
 				{errors.cover_condition && (
-					<p className='mt-3 text-xs text-red-500'>{errors.cover_condition.message}</p>
+					<p className='mt-3 text-xs text-red-500'>{errors.cover_condition}</p>
 				)}
 			</div>
 
@@ -148,22 +143,20 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 								key={opt.value}
 								label={opt.label}
 								value={opt.value}
-								isSelected={watch('lock_area_condition') === opt.value}
+								isSelected={values.lock_area_condition === opt.value}
 								color='yellow'
 								disabled={readOnly}
 								onClick={() => {
 									if (readOnly) return;
-									setValue('lock_area_condition', opt.value, {
-										shouldValidate: true,
+									setFieldValue('lock_area_condition', opt.value, {
+										touch: true,
 									});
 								}}
 							/>
 						))}
 					</div>
 					{errors.lock_area_condition && (
-						<p className='mt-3 text-xs text-red-500'>
-							{errors.lock_area_condition.message}
-						</p>
+						<p className='mt-3 text-xs text-red-500'>{errors.lock_area_condition}</p>
 					)}
 					{(lockAreaField.hint ?? lockAreaField.warning) && (
 						<p className='mt-3 text-xs text-amber-800/80 dark:text-amber-200/80'>
@@ -180,22 +173,18 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 					{getDockingLabel('observations')}
 				</label>
 				<p className='mb-4 text-xs text-zinc-500'>{DOCKING_HINTS.observations}</p>
-				<Controller
+				<Textarea
 					name='observations'
-					control={control}
-					render={({ field }) => (
-						<Textarea
-							{...field}
-							value={field.value ?? ''}
-							placeholder={DOCKING_PLACEHOLDERS.observations}
-							disabled={readOnly}
-							rows={4}
-							className={`w-full ${errors.observations ? 'border-red-500' : ''}`}
-						/>
-					)}
+					onChange={(event) => setFieldValue('observations', event.target.value)}
+					onBlur={() => onFieldBlur('observations')}
+					value={values.observations ?? ''}
+					placeholder={DOCKING_PLACEHOLDERS.observations}
+					disabled={readOnly}
+					rows={4}
+					className={`w-full ${errors.observations ? 'border-red-500' : ''}`}
 				/>
 				{errors.observations && (
-					<p className='mt-2 text-xs text-red-500'>{errors.observations.message}</p>
+					<p className='mt-2 text-xs text-red-500'>{errors.observations}</p>
 				)}
 			</div>
 		</div>

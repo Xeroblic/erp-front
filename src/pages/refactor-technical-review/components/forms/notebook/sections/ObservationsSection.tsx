@@ -1,13 +1,15 @@
 import React from 'react';
-import { Controller } from 'react-hook-form';
 import Textarea from '@/components/form/Textarea';
+import formatExtraAttributes from '../../shared/formatExtraAttributes';
 import type { FormSectionProps } from '../../shared/types';
 import type { NotebookFormData } from '../../../validation/notebook.schema';
 import { getNotebookLabel } from '../../../translations/notebook.labels';
 import { NOTEBOOK_HINTS, NOTEBOOK_PLACEHOLDERS } from '../../../constants/notebook/notebook.hints';
 
 const ObservationsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
-	control,
+	values,
+	setFieldValue,
+	onFieldBlur,
 	errors,
 	readOnly,
 }) => {
@@ -18,24 +20,18 @@ const ObservationsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				<label className='mb-3 block text-sm font-bold text-zinc-700 dark:text-zinc-200'>
 					{getNotebookLabel('observations')}
 				</label>
-				<Controller
+				<Textarea
 					name='observations'
-					control={control}
-					render={({ field }) => (
-						<Textarea
-							{...field}
-							value={field.value || ''}
-							placeholder={NOTEBOOK_PLACEHOLDERS.observations}
-							disabled={readOnly}
-							rows={6}
-							className={`w-full resize-none ${
-								errors.observations ? 'border-red-500' : ''
-							}`}
-						/>
-					)}
+					onChange={(event) => setFieldValue('observations', event.target.value)}
+					onBlur={() => onFieldBlur('observations')}
+					value={values.observations || ''}
+					placeholder={NOTEBOOK_PLACEHOLDERS.observations}
+					disabled={readOnly}
+					rows={6}
+					className={`w-full resize-none ${errors.observations ? 'border-red-500' : ''}`}
 				/>
 				{errors.observations && (
-					<p className='mt-1 text-xs text-red-500'>{errors.observations.message}</p>
+					<p className='mt-1 text-xs text-red-500'>{errors.observations}</p>
 				)}
 				<p className='mt-1 text-xs text-zinc-400'>{NOTEBOOK_HINTS.observations}</p>
 			</div>
@@ -45,26 +41,15 @@ const ObservationsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				<label className='mb-3 block text-sm font-bold text-zinc-700 dark:text-zinc-200'>
 					{getNotebookLabel('extra_attributes')}
 				</label>
-				<Controller
+				<Textarea
 					name='extra_attributes'
-					control={control}
-					render={({ field }) => (
-						<Textarea
-							{...field}
-							value={
-								typeof field.value === 'string'
-									? field.value
-									: field.value
-										? JSON.stringify(field.value, null, 2)
-										: ''
-							}
-							onChange={(e) => field.onChange(e.target.value)}
-							placeholder='Atributos adicionales (JSON u otro formato)'
-							disabled={readOnly}
-							rows={4}
-							className='w-full resize-none font-mono text-sm'
-						/>
-					)}
+					onBlur={() => onFieldBlur('extra_attributes')}
+					value={formatExtraAttributes(values.extra_attributes)}
+					onChange={(e) => setFieldValue('extra_attributes', e.target.value)}
+					placeholder='Atributos adicionales (JSON u otro formato)'
+					disabled={readOnly}
+					rows={4}
+					className='w-full resize-none font-mono text-sm'
 				/>
 				<p className='mt-1 text-xs text-zinc-400'>{NOTEBOOK_HINTS.extra_attributes}</p>
 			</div>

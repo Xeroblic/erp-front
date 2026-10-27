@@ -1,19 +1,18 @@
 import React, { useMemo } from 'react';
-import { Controller } from 'react-hook-form';
+import { LuLaptop, LuServer } from 'react-icons/lu';
 import type { FormSectionProps } from '../../shared/types';
 import type { DesktopFormData } from '../../../validation/desktop.schema';
 import { getDesktopLabel } from '../../../translations/desktop.labels';
 import { DESKTOP_HINTS } from '../../../constants/desktop/desktop.hints';
 // Fix: Named import for SoSelector
 import { SoSelector } from '../../../ui/selectors/SoSelector';
-import { LuLaptop, LuServer } from 'react-icons/lu';
 
 const DesktopSoftwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
-	control,
+	setFieldValue,
 	readOnly,
-	watch,
+	values,
 }) => {
-	const currentOS = watch('operating_system');
+	const currentOS = values.operating_system;
 
 	// Optional: derived state for UI feedback
 	const isWindows = currentOS?.toLowerCase().includes('windows');
@@ -53,16 +52,10 @@ const DesktopSoftwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 				</div>
 			</div>
 
-			<Controller
-				name='operating_system'
-				control={control}
-				render={({ field }) => (
-					<SoSelector
-						value={field.value || ''}
-						onChange={(val: string) => field.onChange(val)}
-						readOnly={readOnly}
-					/>
-				)}
+			<SoSelector
+				value={values.operating_system || ''}
+				onChange={(val: string) => setFieldValue('operating_system', val)}
+				readOnly={readOnly}
 			/>
 		</div>
 	);

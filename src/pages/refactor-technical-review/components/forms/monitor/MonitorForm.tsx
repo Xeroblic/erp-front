@@ -1,23 +1,16 @@
-import React, { useMemo, useEffect, useRef } from 'react';
-import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { monitorSchema, type MonitorFormData } from '../../validation/monitor.schema';
 import FormShell from '../shared/FormShell';
-import type { SectionConfig, FormSectionProps } from '../shared/types';
-import {
-	ALLOWED_GENERAL_CONDITIONS,
-	ALLOWED_SCREEN_CONDITIONS,
-	ALLOWED_STAND_CONDITIONS,
-	ALLOWED_FRAME_CONDITIONS,
-} from '../../constants/monitor/monitor.rules';
+import type { SectionConfig, FormSectionProps, ReviewFieldName } from '../shared/types';
+import { formatFinishErrors, useReviewForm } from '../shared/useReviewForm';
 
 // ─── Section Components ──────────────────────────────────────────────────────
 import MonitorBasicInfoSection from './sections/MonitorBasicInfoSection';
 import MonitorScreenSection from './sections/MonitorScreenSection';
-import MonitorPortsSection from './sections/MonitorPortsSection';
+import { MonitorPortsSection } from './sections/MonitorPortsSection';
 import MonitorAccessoriesSection from './sections/MonitorAccessoriesSection';
 import Observations from './sections/Observations';
 import GallerySection from '../shared/gallery/GallerySection';
@@ -71,7 +64,7 @@ const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
 	},
 ];
 
-const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
+const MONITOR_SECTION_FIELDS: Record<string, ReviewFieldName<MonitorFormData>[]> = {
 	'basic-info': ['brand', 'model', 'line', 'general_condition'],
 	screen: [
 		'screen_inches',
@@ -154,143 +147,81 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		return values as unknown as MonitorFormData;
 	}, [defaultValues]);
 
-	// ─── RHF Setup ─────────────────────────────────────────────────────────
 	const {
-		control,
-		handleSubmit,
-		formState: { errors },
+		formik: { setFieldTouched },
+		values,
+		setFieldValue,
+		sectionProps: baseSectionProps,
 		getValues,
-		reset,
-		watch,
-		setValue,
-		trigger,
-		getFieldState,
-	} = useForm<MonitorFormData>({
-		resolver: yupResolver(
-			monitorSchema,
-		) as unknown as import('react-hook-form').Resolver<MonitorFormData>,
-		defaultValues: normalizedDefaultValues,
-		mode: 'onChange',
+		validateStep,
+		validateAll,
+	} = useReviewForm<MonitorFormData>({
+		schema: monitorSchema,
+		initialValues: normalizedDefaultValues,
+		sectionFields: MONITOR_SECTION_FIELDS,
+		readOnly: !!readOnly,
+		schemaFields,
+		registerGetFormValues,
+		touchOnChange: true,
 	});
-
-	// Register getter for AutoSave integration
-	useEffect(() => {
-		if (registerGetFormValues) {
-			registerGetFormValues(getValues);
-		}
-	}, [registerGetFormValues, getValues]);
-
-	// Deep reset handling on external change
-	const prevDefaultValues = useRef<string | null>(null);
-	useEffect(() => {
-		if (Object.keys(normalizedDefaultValues).length > 0) {
-			const stringified = JSON.stringify(normalizedDefaultValues);
-			if (stringified !== prevDefaultValues.current) {
-				reset(normalizedDefaultValues);
-				prevDefaultValues.current = stringified;
-			}
-		}
-	}, [normalizedDefaultValues, reset]);
 
 	// Reconcilia los contadores con su condición. Corre en el montaje y en cada cambio
 	// de las tres variables observadas (no sólo al cargar): si la condición está
 	// inactiva limpia el contador, y si está activa conserva el valor recibido
 	// —incluido el 0 de un borrador— pero lo valida de inmediato para que el error se
-	// vea sin tener que intentar avanzar de paso. `mode: 'onChange'` no valida un campo
-	// que nadie tocó.
-	const screenCondition = watch('screen_condition');
-	const spotsCount = watch('spots_count');
-	const deadPixelsCount = watch('dead_pixels_count');
+	// vea sin tener que intentar avanzar de paso.
+	const screenCondition = values.screen_condition;
+	const spotsCount = values.spots_count;
+	const deadPixelsCount = values.dead_pixels_count;
 	useEffect(() => {
 		if (readOnly) return;
 
 		const isSpots = screenCondition === 'spots';
 		if (needsScreenCounterNormalization(isSpots, spotsCount)) {
-			setValue('spots_count', 0, {
-				shouldValidate: true,
-			});
+			setFieldValue('spots_count', 0, { touch: true });
 		} else if (isSpots && isScreenCounterBelowMinimum(spotsCount)) {
-			void trigger('spots_count');
+			void setFieldTouched('spots_count', true);
 		}
 
 		const isDeadPixels = screenCondition === 'dead_pixels';
 		if (needsScreenCounterNormalization(isDeadPixels, deadPixelsCount)) {
-			setValue('dead_pixels_count', 0, {
-				shouldValidate: true,
-			});
+			setFieldValue('dead_pixels_count', 0, { touch: true });
 		} else if (isDeadPixels && isScreenCounterBelowMinimum(deadPixelsCount)) {
-			void trigger('dead_pixels_count');
+			void setFieldTouched('dead_pixels_count', true);
 		}
-	}, [readOnly, screenCondition, spotsCount, deadPixelsCount, setValue, trigger]);
+	}, [readOnly, screenCondition, spotsCount, deadPixelsCount, setFieldValue, setFieldTouched]);
 
-	const sectionProps = {
-		control,
-		errors,
-		readOnly: !!readOnly,
-		watch,
-		setValue,
-		getValues,
-		schemaFields,
-		onDirectSubmit: (partialData: Partial<MonitorFormData>) => {
-			const currentData = getValues();
-			const payload = { ...currentData, ...partialData } as MonitorFormData;
-			onSubmit(payload as unknown as Record<string, unknown>);
-		},
-	};
+	const sectionProps: FormSectionProps<MonitorFormData> = useMemo(
+		() => ({
+			...baseSectionProps,
+			onDirectSubmit: (partialData: Partial<MonitorFormData>) => {
+				const payload = { ...getValues(), ...partialData } as MonitorFormData;
+				void onSubmit(payload as unknown as Record<string, unknown>);
+			},
+		}),
+		[baseSectionProps, getValues, onSubmit],
+	);
 
-	const validateStep = async (sectionKey: string) => {
-		const stepFields = MONITOR_SECTION_FIELDS[sectionKey] ?? [];
-		const isValid = await trigger(stepFields, { shouldFocus: true });
-
-		if (isValid) {
-			return { isValid: true };
+	const handleFinish = useCallback(async () => {
+		const result = await validateAll();
+		if (!result.isValid) {
+			toast.error(formatFinishErrors(result.messages));
+			return;
 		}
-
-		const firstError = stepFields
-			.map((field) => getFieldState(field).error?.message)
-			.find(Boolean);
-
-		return {
-			isValid: false,
-			message:
-				typeof firstError === 'string'
-					? firstError
-					: 'Debes completar los campos obligatorios antes de continuar.',
-		};
-	};
-
-	const handleFinish = () => {
-		handleSubmit(
-			async (data) => {
-				try {
-					const finalData = { ...data } as Record<string, unknown>;
-					if (
-						!finalData.extra_attributes ||
-						Object.keys(finalData.extra_attributes).length === 0
-					) {
-						finalData.extra_attributes = {};
-					}
-					await onSubmit(finalData as unknown as Record<string, unknown>);
-				} catch (error: unknown) {
-					const message =
-						error instanceof Error ? error.message : 'Error al guardar la revisión';
-					toast.error(message);
-				}
-			},
-			(validationErrors) => {
-				const messages = Object.values(validationErrors)
-					.map((e) => e?.message)
-					.filter(Boolean)
-					.slice(0, 5);
-
-				if (messages.length > 0) {
-					toast.error(`Corrige los errores antes de continuar:\n${messages.join('\n')}`);
-				} else {
-					toast.error('Hay campos con errores. Revisa el formulario.');
-				}
-			},
-		)();
-	};
+		try {
+			const finalData = { ...result.data } as Record<string, unknown>;
+			if (
+				!finalData.extra_attributes ||
+				Object.keys(finalData.extra_attributes).length === 0
+			) {
+				finalData.extra_attributes = {};
+			}
+			await onSubmit(finalData);
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : 'Error al guardar la revisión';
+			toast.error(message);
+		}
+	}, [validateAll, onSubmit]);
 
 	return (
 		<FormShell<MonitorFormData>

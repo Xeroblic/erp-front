@@ -1,11 +1,11 @@
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import type { NotebookFormData } from '../../validation/notebook.schema';
 import InputSection from '../notebook/sections/InputSection';
 import ScreenSection from '../notebook/sections/ScreenSection';
+import { ReviewFormHarness, type ReviewFormHandle } from './reviewFormHarness';
 
 vi.mock('@/components/icon/Icon', () => ({ default: () => <span /> }));
 
@@ -59,47 +59,29 @@ const SCREEN_SCHEMA: ITechnicalReviewSchema = {
 };
 
 const renderInputSection = (schemaFields?: ITechnicalReviewSchema) => {
-	let getValues: (() => NotebookFormData) | undefined;
+	const handle: { current?: ReviewFormHandle<NotebookFormData> } = {};
 
-	const Harness = () => {
-		const form = useForm<NotebookFormData>();
-		getValues = form.getValues;
-		return (
-			<InputSection
-				control={form.control}
-				errors={form.formState.errors}
-				readOnly={false}
-				watch={form.watch}
-				setValue={form.setValue}
-				schemaFields={schemaFields}
-			/>
-		);
-	};
-
-	render(<Harness />);
-	return () => getValues?.();
+	render(
+		<ReviewFormHarness<NotebookFormData>
+			section={InputSection}
+			schemaFields={schemaFields}
+			handle={handle}
+		/>,
+	);
+	return () => handle.current?.getValues();
 };
 
 const renderScreenSection = (schemaFields?: ITechnicalReviewSchema) => {
-	let getValues: (() => NotebookFormData) | undefined;
+	const handle: { current?: ReviewFormHandle<NotebookFormData> } = {};
 
-	const Harness = () => {
-		const form = useForm<NotebookFormData>();
-		getValues = form.getValues;
-		return (
-			<ScreenSection
-				control={form.control}
-				errors={form.formState.errors}
-				readOnly={false}
-				watch={form.watch}
-				setValue={form.setValue}
-				schemaFields={schemaFields}
-			/>
-		);
-	};
-
-	render(<Harness />);
-	return () => getValues?.();
+	render(
+		<ReviewFormHarness<NotebookFormData>
+			section={ScreenSection}
+			schemaFields={schemaFields}
+			handle={handle}
+		/>,
+	);
+	return () => handle.current?.getValues();
 };
 
 const optionsOf = (fieldLabel: RegExp): string[] =>

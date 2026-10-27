@@ -14,12 +14,12 @@ import { YesNoSelector } from '../../../ui/YesNoSelector';
 const DesktopAestheticsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	errors,
 	readOnly,
-	watch,
-	setValue,
+	values,
+	setFieldValue,
 	schemaFields,
 }) => {
-	const generalCondition = watch('general_condition');
-	const coverCondition = watch('cover_condition');
+	const generalCondition = values.general_condition;
+	const coverCondition = values.cover_condition;
 	const powersOnField = schemaFields?.powers_on;
 
 	return (
@@ -36,13 +36,15 @@ const DesktopAestheticsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 							label={opt.label}
 							value={opt.value}
 							isSelected={generalCondition === opt.value}
-							onClick={() => !readOnly && setValue('general_condition', opt.value)}
+							onClick={() =>
+								!readOnly && setFieldValue('general_condition', opt.value)
+							}
 						/>
 					))}
 				</div>
 				{errors.general_condition && (
 					<p className='mt-2 text-center text-xs text-red-500'>
-						{errors.general_condition.message}
+						{errors.general_condition}
 					</p>
 				)}
 				<p className='mt-2 text-center text-xs text-zinc-500'>
@@ -62,13 +64,13 @@ const DesktopAestheticsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 							label={opt.label}
 							value={opt.value}
 							isSelected={coverCondition === opt.value}
-							onClick={() => !readOnly && setValue('cover_condition', opt.value)}
+							onClick={() => !readOnly && setFieldValue('cover_condition', opt.value)}
 						/>
 					))}
 				</div>
 				{errors.cover_condition && (
 					<p className='mt-2 text-center text-xs text-red-500'>
-						{errors.cover_condition.message}
+						{errors.cover_condition}
 					</p>
 				)}
 				<p className='mt-2 text-center text-xs text-zinc-500'>
@@ -93,15 +95,13 @@ const DesktopAestheticsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					label={powersOnField?.label ?? '¿El equipo enciende?'}
 					required={powersOnField?.required ?? true}
 					disabled={readOnly}
-					value={watch('powers_on')}
+					value={values.powers_on}
 					onChange={(value) =>
-						!readOnly && setValue('powers_on', value, { shouldValidate: true })
+						!readOnly && setFieldValue('powers_on', value, { touch: true })
 					}
 				/>
 				{errors.powers_on && (
-					<p className='mt-2 text-center text-xs text-red-500'>
-						{errors.powers_on.message}
-					</p>
+					<p className='mt-2 text-center text-xs text-red-500'>{errors.powers_on}</p>
 				)}
 				{powersOnField?.hint && (
 					<p className='mt-2 text-center text-xs text-zinc-500'>{powersOnField.hint}</p>

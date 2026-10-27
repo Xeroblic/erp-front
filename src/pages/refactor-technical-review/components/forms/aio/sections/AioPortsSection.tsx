@@ -1,5 +1,4 @@
 import React from 'react';
-import { Controller } from 'react-hook-form';
 import Icon from '@/components/icon/Icon';
 import { FormSectionProps } from '../../shared/types';
 import { AioFormData } from '../../../validation/aio.schema';
@@ -15,21 +14,27 @@ import {
 import { PORT_COUNTER_VISUALS } from '../../../constants/ports.visuals';
 
 export const AioPortsSection: React.FC<FormSectionProps<AioFormData>> = ({
-	control,
 	errors,
 	readOnly,
-	watch,
-	setValue,
+	values,
+	setFieldValue,
 	schemaFields,
 }) => {
+	const getPortCount = (field: string): number => {
+		const value = values[field as keyof AioFormData];
+		return typeof value === 'number' ? value : 0;
+	};
+	const setPortCount = (field: string, value: number) =>
+		setFieldValue(field as keyof AioFormData, value as AioFormData[keyof AioFormData]);
+
 	// La respuesta y el contador ya no pueden contradecirse: responder «no hay puertos
 	// defectuosos» limpia el contador, y responder «sí» lo deja como mínimo en 1. El
 	// efecto que los sincronizaba a posteriori dejó de hacer falta.
-	const allFunctional = watch('all_ports_functional');
-	const loosePortTypes = watch('loose_port_types');
-	const defectivePortTypes = watch('defective_port_types');
+	const allFunctional = values.all_ports_functional;
+	const loosePortTypes = values.loose_port_types;
+	const defectivePortTypes = values.defective_port_types;
 	// El total persistido: es el único que existe mientras el desglose no se haya medido.
-	const defectivePortsCount = watch('defective_ports_count');
+	const defectivePortsCount = values.defective_ports_count;
 
 	return (
 		<div className='space-y-8'>
@@ -52,24 +57,14 @@ export const AioPortsSection: React.FC<FormSectionProps<AioFormData>> = ({
 									<Icon icon={icon} className='h-4 w-4' />
 									{getAioLabel(key)}
 								</label>
-								<Controller
-									name={key as keyof AioFormData}
-									control={control}
-									render={({ field }) => (
-										<div className='w-full'>
-											<StepperInput
-												label={getAioLabel(key)}
-												value={
-													typeof field.value === 'number'
-														? field.value
-														: 0
-												}
-												onChange={(val) => !readOnly && field.onChange(val)}
-												max={MAX_PORT_COUNT}
-											/>
-										</div>
-									)}
-								/>
+								<div className='w-full'>
+									<StepperInput
+										label={getAioLabel(key)}
+										value={getPortCount(key)}
+										onChange={(val) => !readOnly && setPortCount(key, val)}
+										max={MAX_PORT_COUNT}
+									/>
+								</div>
 							</div>
 						);
 					})}
@@ -84,21 +79,21 @@ export const AioPortsSection: React.FC<FormSectionProps<AioFormData>> = ({
 				loosePortTypes={loosePortTypes}
 				defectivePortsCount={defectivePortsCount}
 				onAllPortsFunctionalChange={(value) =>
-					setValue('all_ports_functional', value, { shouldValidate: true })
+					setFieldValue('all_ports_functional', value, { touch: true })
 				}
 				onDefectivePortTypesChange={(value) => {
-					setValue('defective_port_types', value);
+					setFieldValue('defective_port_types', value);
 					// El backend sigue esperando el total de defectuosos como campo propio
 					// (a diferencia del de sueltos, que deriva del desglose). Se calcula acá
 					// para que no pueda contradecir al detalle que el técnico acaba de marcar.
-					setValue('defective_ports_count', sumPortTypeCounts(value), {
-						shouldValidate: true,
+					setFieldValue('defective_ports_count', sumPortTypeCounts(value), {
+						touch: true,
 					});
 				}}
-				onLoosePortTypesChange={(value) => setValue('loose_port_types', value)}
+				onLoosePortTypesChange={(value) => setFieldValue('loose_port_types', value)}
 				defectiveWarningFallback={AIO_HINTS.defective_ports_count}
-				allPortsFunctionalError={errors.all_ports_functional?.message}
-				defectiveCountError={errors.defective_ports_count?.message}
+				allPortsFunctionalError={errors.all_ports_functional}
+				defectiveCountError={errors.defective_ports_count}
 			/>
 		</div>
 	);

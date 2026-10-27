@@ -2,7 +2,6 @@ import React from 'react';
 import { configureStore } from '@reduxjs/toolkit';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import {
@@ -11,6 +10,7 @@ import {
 } from '@/utils/technicalReviewHardware';
 import type { DockingFormData } from '../../validation/docking.schema';
 import DockingExtrasSection from '../docking/sections/DockingExtrasSection';
+import { ReviewFormHarness, type ReviewFormHandle } from './reviewFormHarness';
 import EquipmentFormRouter from '..';
 
 vi.mock('@/components/icon/Icon', () => ({ default: () => <span /> }));
@@ -56,25 +56,16 @@ const DOCKING_SCHEMA: ITechnicalReviewSchema = {
 };
 
 const renderExtras = (schemaFields?: ITechnicalReviewSchema) => {
-	const values: { current?: () => DockingFormData } = {};
+	const handle: { current?: ReviewFormHandle<DockingFormData> } = {};
 
-	const Harness = () => {
-		const form = useForm<DockingFormData>({ defaultValues: {} });
-		values.current = form.getValues;
-		return (
-			<DockingExtrasSection
-				control={form.control}
-				errors={form.formState.errors}
-				readOnly={false}
-				watch={form.watch}
-				setValue={form.setValue}
-				schemaFields={schemaFields}
-			/>
-		);
-	};
-
-	render(<Harness />);
-	return values;
+	render(
+		<ReviewFormHarness<DockingFormData>
+			section={DockingExtrasSection}
+			schemaFields={schemaFields}
+			handle={handle}
+		/>,
+	);
+	return { current: () => handle.current?.getValues() };
 };
 
 const lockAreaGroup = () => screen.getByRole('group', { name: /Estado del candado/ });
@@ -124,7 +115,7 @@ describe('ZF-99 — estado del candado en docking', () => {
 			}),
 		);
 
-		expect(values.current?.().lock_area_condition).toBe('locked');
+		expect(values.current()?.lock_area_condition).toBe('locked');
 	});
 
 	/**
@@ -152,9 +143,9 @@ describe('ZF-99 — estado del candado en docking', () => {
  *
  * Montar la sección e inyectarle `schemaFields` es justo lo que dejó pasar el defecto B2
  * del PR #184: AIO, docking y monitor pasaban verdes mientras sus formularios descartaban
- * la prop en el flujo real. Y el autoguardado no lee el resultado de Yup sino `watch()`
- * crudo, así que un valor escrito con `setValue` sobre un campo sin `register` tiene que
- * verificarse por esa vía, no por la del submit.
+ * la prop en el flujo real. Y el autoguardado no lee el resultado de Yup sino los valores
+ * crudos del formulario, así que un valor escrito desde la sección tiene que verificarse
+ * por esa vía, no por la del submit.
  */
 describe('ZF-99 — el candado en el flujo real del formulario de docking', () => {
 	interface TestState {

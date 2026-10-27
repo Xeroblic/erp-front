@@ -12,8 +12,8 @@ proyecto, sin reinventar layouts, autorización ni manejo de estado.
   persistencia. RTK Query existe (`RtkQueryService.ts`) pero es minoritario — el patrón
   dominante es slice + thunk + `ApiService`.
 - **Formularios:** **Formik + Yup**. Es el estándar de facto (Formik en ~81 archivos, Yup
-  en ~52). **NO se usa Zod** en el código (0 imports). Hay ~35 archivos legacy con
-  `react-hook-form`; **no lo propagues**, en código nuevo usa Formik + Yup.
+  en ~52). **NO se usa Zod** en el código (0 imports). `react-hook-form` ya no es
+  dependencia del proyecto; **no lo reintroduzcas**.
 - **HTTP:** Axios vía `BaseService` → envuelto por `ApiService`.
 - **Backend:** Laravel 12 + JWT. Multi-empresa / multi-subsidiaria / multi-sucursal.
 - **Alias de imports:** `@/*` → `./src/*` (tsconfig). Usa `@/...` siempre.

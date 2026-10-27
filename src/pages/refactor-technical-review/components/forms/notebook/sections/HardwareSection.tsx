@@ -1,6 +1,5 @@
 import React from 'react';
 import { toast } from 'react-toastify';
-import { Controller } from 'react-hook-form';
 import Input from '@/components/form/Input';
 import type { FormSectionProps } from '../../shared/types';
 import type { NotebookFormData } from '../../../validation/notebook.schema';
@@ -25,11 +24,11 @@ import { getSchemaFieldOptions } from '../../../validation/technicalReviewSchema
 const NON_FUNCTIONAL_SPEAKERS = 'broken';
 
 const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
-	control,
+	onFieldBlur,
 	errors,
 	readOnly,
-	watch,
-	setValue,
+	values,
+	setFieldValue,
 	onDirectSubmit,
 	schemaFields,
 }) => {
@@ -41,13 +40,13 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	const speakersBroken = getSchemaFieldOptions(schemaFields?.speakers_condition).some(
 		(option) => option.value === NON_FUNCTIONAL_SPEAKERS,
 	);
-	const ramType = watch('ram_type');
-	const storageTech = watch('storage_technology');
-	const noRam = watch('has_no_ram') === true;
-	const noStorage = watch('has_no_storage') === true;
+	const ramType = values.ram_type;
+	const storageTech = values.storage_technology;
+	const noRam = values.has_no_ram === true;
+	const noStorage = values.has_no_storage === true;
 	const { setRamAbsence, setStorageAbsence } = useHardwareAbsence<NotebookFormData>({
-		setHasNoRam: (value, options) => setValue('has_no_ram', value, options),
-		setHasNoStorage: (value, options) => setValue('has_no_storage', value, options),
+		setHasNoRam: (value, options) => setFieldValue('has_no_ram', value, options),
+		setHasNoStorage: (value, options) => setFieldValue('has_no_storage', value, options),
 	});
 
 	return (
@@ -57,11 +56,11 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				<div className='mb-6'>
 					<NoEnciendeButton
 						onValidate={() => {
-							const ramSize = watch('ram_size');
-							const ramSlots = watch('ram_slots');
-							const watchedRamType = watch('ram_type');
-							const storageSize = watch('storage_size');
-							const watchedStorageTech = watch('storage_technology');
+							const ramSize = values.ram_size;
+							const ramSlots = values.ram_slots;
+							const watchedRamType = values.ram_type;
+							const storageSize = values.storage_size;
+							const watchedStorageTech = values.storage_technology;
 
 							const missingRam = !noRam && (!ramSize || !ramSlots || !watchedRamType);
 							const missingStorage =
@@ -77,16 +76,16 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						}}
 						onConfirm={() => {
 							onDirectSubmit({
-								processor: watch('processor') || '0',
+								processor: values.processor || '0',
 								has_no_ram: noRam,
 								has_no_storage: noStorage,
-								ram_size: watch('ram_size') || undefined,
-								ram_slots: watch('ram_slots') || undefined,
-								ram_type: watch('ram_type') || undefined,
-								storage_size: watch('storage_size') || undefined,
-								storage_technology: watch('storage_technology') || undefined,
+								ram_size: values.ram_size || undefined,
+								ram_slots: values.ram_slots || undefined,
+								ram_type: values.ram_type || undefined,
+								storage_size: values.storage_size || undefined,
+								storage_technology: values.storage_technology || undefined,
 								powers_on: false,
-								non_functional_keys_count: watch('non_functional_keys_count') ?? 0,
+								non_functional_keys_count: values.non_functional_keys_count ?? 0,
 								...(speakersBroken
 									? { speakers_condition: NON_FUNCTIONAL_SPEAKERS }
 									: {}),
@@ -105,7 +104,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								has_wifi: false,
 								has_bluetooth: false,
 								is_touchscreen: false,
-								screen_inches: watch('screen_inches') || '0',
+								screen_inches: values.screen_inches || '0',
 								keyboard_layout: 'es',
 								has_numeric_keypad: false,
 								has_backlit_keyboard: false,
@@ -121,20 +120,14 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				<label className='mb-4 block text-sm font-bold text-green-800 dark:text-green-200'>
 					{getNotebookLabel('processor')} <span className='text-red-500'>*</span>
 				</label>
-				<Controller
-					name='processor'
-					control={control}
-					render={({ field }) => (
-						<ProcessorSelector
-							deviceType='Notebook'
-							value={field.value || ''}
-							onChange={field.onChange}
-							readOnly={readOnly}
-						/>
-					)}
+				<ProcessorSelector
+					deviceType='Notebook'
+					value={values.processor || ''}
+					onChange={(value) => setFieldValue('processor', value)}
+					readOnly={readOnly}
 				/>
 				{errors.processor && (
-					<p className='mt-2 text-xs text-red-500'>{errors.processor.message}</p>
+					<p className='mt-2 text-xs text-red-500'>{errors.processor}</p>
 				)}
 			</div>
 
@@ -149,7 +142,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					hardwareLabel='RAM'
 					readOnly={readOnly}>
 					{/* RAM Type Selection Cards */}
-					<label className='mb-2 block text-xs font-semibold text-zinc-500'>Tipo</label>
+					<p className='mb-2 block text-xs font-semibold text-zinc-500'>Tipo</p>
 					<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-5'>
 						{RAM_TYPE_OPTIONS.map((opt) => (
 							<SelectionCard
@@ -157,7 +150,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								label={opt.label}
 								value={opt.value}
 								isSelected={ramType === opt.value}
-								onClick={() => !readOnly && setValue('ram_type', opt.value)}
+								onClick={() => !readOnly && setFieldValue('ram_type', opt.value)}
 								disabled={readOnly}
 							/>
 						))}
@@ -168,21 +161,15 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						<label className='mb-1 block text-xs font-semibold text-zinc-500'>
 							{getNotebookLabel('ram_size')} <span className='text-red-500'>*</span>
 						</label>
-						<Controller
-							name='ram_size'
-							control={control}
-							render={({ field }) => (
-								<InputUnitSelector
-									value={field.value || ''}
-									onChange={field.onChange}
-									placeholder={NOTEBOOK_PLACEHOLDERS.ram_size}
-									disabled={readOnly}
-									isValid={!errors.ram_size}
-								/>
-							)}
+						<InputUnitSelector
+							value={values.ram_size || ''}
+							onChange={(value) => setFieldValue('ram_size', value)}
+							placeholder={NOTEBOOK_PLACEHOLDERS.ram_size}
+							disabled={readOnly}
+							isValid={!errors.ram_size}
 						/>
 						{errors.ram_size && (
-							<p className='mt-1 text-xs text-red-500'>{errors.ram_size.message}</p>
+							<p className='mt-1 text-xs text-red-500'>{errors.ram_size}</p>
 						)}
 					</div>
 
@@ -191,17 +178,13 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						<label className='mb-1 block text-xs font-semibold text-zinc-500'>
 							{getNotebookLabel('ram_slots')} <span className='text-red-500'>*</span>
 						</label>
-						<Controller
+						<Input
 							name='ram_slots'
-							control={control}
-							render={({ field }) => (
-								<Input
-									{...field}
-									value={field.value || ''}
-									placeholder={NOTEBOOK_PLACEHOLDERS.ram_slots}
-									disabled={readOnly}
-								/>
-							)}
+							onChange={(event) => setFieldValue('ram_slots', event.target.value)}
+							onBlur={() => onFieldBlur('ram_slots')}
+							value={values.ram_slots || ''}
+							placeholder={NOTEBOOK_PLACEHOLDERS.ram_slots}
+							disabled={readOnly}
 						/>
 						<p className='mt-1 text-xs text-zinc-400'>{NOTEBOOK_HINTS.ram_slots}</p>
 					</div>
@@ -216,10 +199,10 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					hardwareLabel='disco'
 					readOnly={readOnly}>
 					{/* Storage Technology Selection Cards */}
-					<label className='mb-2 block text-xs font-semibold text-zinc-500'>
+					<p className='mb-2 block text-xs font-semibold text-zinc-500'>
 						Tecnología
 						<span className='text-red-500'>*</span>
-					</label>
+					</p>
 					<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-3'>
 						{STORAGE_TECHNOLOGY_OPTIONS.map((opt) => (
 							<SelectionCard
@@ -228,37 +211,31 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								value={opt.value}
 								isSelected={storageTech === opt.value}
 								onClick={() =>
-									!readOnly && setValue('storage_technology', opt.value)
+									!readOnly && setFieldValue('storage_technology', opt.value)
 								}
 								disabled={readOnly}
 							/>
 						))}
 					</div>
 					{errors.storage_technology && (
-						<p className='mb-2 text-xs text-red-500'>
-							{errors.storage_technology.message}
-						</p>
+						<p className='mb-2 text-xs text-red-500'>{errors.storage_technology}</p>
 					)}
 
 					{/* Storage Size */}
 					<label className='mb-1 block text-xs font-semibold text-zinc-500'>
 						{getNotebookLabel('storage_size')} <span className='text-red-500'>*</span>
 					</label>
-					<Controller
+					<Input
 						name='storage_size'
-						control={control}
-						render={({ field }) => (
-							<Input
-								{...field}
-								value={field.value || ''}
-								placeholder={NOTEBOOK_PLACEHOLDERS.storage_size}
-								disabled={readOnly}
-								className={errors.storage_size ? 'border-red-500' : ''}
-							/>
-						)}
+						onChange={(event) => setFieldValue('storage_size', event.target.value)}
+						onBlur={() => onFieldBlur('storage_size')}
+						value={values.storage_size || ''}
+						placeholder={NOTEBOOK_PLACEHOLDERS.storage_size}
+						disabled={readOnly}
+						className={errors.storage_size ? 'border-red-500' : ''}
 					/>
 					{errors.storage_size && (
-						<p className='mt-1 text-xs text-red-500'>{errors.storage_size.message}</p>
+						<p className='mt-1 text-xs text-red-500'>{errors.storage_size}</p>
 					)}
 				</HardwareCard>
 			</div>

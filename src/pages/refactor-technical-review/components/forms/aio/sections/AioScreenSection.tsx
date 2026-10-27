@@ -1,10 +1,10 @@
 import React, { useId } from 'react';
-import { Controller } from 'react-hook-form';
+import Input from '@/components/form/Input';
+import Icon from '@/components/icon/Icon';
 import { FormSectionProps } from '../../shared/types';
 import { AioFormData } from '../../../validation/aio.schema';
 import { SelectionCard } from '../../../ui/SelectionCard';
 import { StepperInput } from '../../../ui/StepperInput';
-import Input from '@/components/form/Input';
 import { YesNoSelector } from '../../../ui/YesNoSelector';
 import { getAioLabel } from '../../../translations/aio.labels';
 import { AIO_HINTS, AIO_PLACEHOLDERS } from '../../../constants/aio/aio.hints';
@@ -18,20 +18,19 @@ import {
 	STAND_CONDITION_OPTIONS,
 	COVER_CONDITION_OPTIONS,
 } from '../../../constants/aio/aio.options';
-import Icon from '@/components/icon/Icon';
 
 export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
-	control,
+	onFieldBlur,
 	errors,
 	readOnly,
-	watch,
-	setValue,
+	values,
+	setFieldValue,
 }) => {
 	const deadPixelsLabelId = useId();
-	const screenCondition = watch('screen_condition');
-	const deadPixelsCount = watch('dead_pixels_count');
-	const standCondition = watch('stand_condition');
-	const coverCondition = watch('cover_condition');
+	const screenCondition = values.screen_condition;
+	const deadPixelsCount = values.dead_pixels_count;
+	const standCondition = values.stand_condition;
+	const coverCondition = values.cover_condition;
 
 	return (
 		<div className='space-y-8'>
@@ -46,17 +45,13 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 						<Icon icon='HeroComputerDesktop' className='h-5 w-5' />
 						{getAioLabel('screen_inches')}
 					</label>
-					<Controller
+					<Input
 						name='screen_inches'
-						control={control}
-						render={({ field }) => (
-							<Input
-								{...field}
-								value={field.value || ''}
-								placeholder={AIO_PLACEHOLDERS.screen_inches}
-								disabled={readOnly}
-							/>
-						)}
+						onChange={(event) => setFieldValue('screen_inches', event.target.value)}
+						onBlur={() => onFieldBlur('screen_inches')}
+						value={values.screen_inches || ''}
+						placeholder={AIO_PLACEHOLDERS.screen_inches}
+						disabled={readOnly}
 					/>
 					<p className='mt-2 text-xs text-emerald-700/70 dark:text-emerald-400/70'>
 						{AIO_HINTS.screen_inches}
@@ -73,22 +68,16 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 						<Icon icon='HeroHandRaised' className='h-5 w-5' />
 						¿La pantalla del AIO cuenta con digitalizador táctil nativo?
 					</p>
-					<Controller
-						name='is_touchscreen'
-						control={control}
-						render={({ field }) => (
-							<YesNoSelector
-								label={getAioLabel('is_touchscreen')}
-								required
-								disabled={readOnly}
-								value={field.value}
-								onChange={(value) => !readOnly && field.onChange(value)}
-							/>
-						)}
+					<YesNoSelector
+						label={getAioLabel('is_touchscreen')}
+						required
+						disabled={readOnly}
+						value={values.is_touchscreen}
+						onChange={(value) => !readOnly && setFieldValue('is_touchscreen', value)}
 					/>
 					{errors.is_touchscreen && (
 						<p className='mt-2 text-center text-xs text-red-500'>
-							{errors.is_touchscreen.message}
+							{errors.is_touchscreen}
 						</p>
 					)}
 				</div>
@@ -114,10 +103,10 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 									const nextScreenCondition =
 										opt.value as AioFormData['screen_condition'];
 
-									setValue('screen_condition', nextScreenCondition, {
-										shouldValidate: true,
+									setFieldValue('screen_condition', nextScreenCondition, {
+										touch: true,
 									});
-									setValue(
+									setFieldValue(
 										'dead_pixels_count',
 										resolveScreenCounterOnSelection(
 											screenCondition,
@@ -125,7 +114,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 											'dead_pixels',
 											deadPixelsCount,
 										),
-										{ shouldValidate: true },
+										{ touch: true },
 									);
 								}}
 							/>
@@ -133,7 +122,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 					</div>
 					{errors.screen_condition && (
 						<p className='mt-3 text-center text-xs text-red-500'>
-							{errors.screen_condition.message}
+							{errors.screen_condition}
 						</p>
 					)}
 					{screenCondition === 'dead_pixels' && (
@@ -150,7 +139,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 								value={getScreenCounterValue(deadPixelsCount)}
 								onChange={(value) => {
 									if (readOnly) return;
-									setValue('dead_pixels_count', value, { shouldValidate: true });
+									setFieldValue('dead_pixels_count', value, { touch: true });
 								}}
 								min={SCREEN_COUNTER_MIN}
 								max={50}
@@ -158,7 +147,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 							/>
 							{errors.dead_pixels_count && (
 								<p className='mt-2 text-xs text-red-500'>
-									{errors.dead_pixels_count.message}
+									{errors.dead_pixels_count}
 								</p>
 							)}
 						</div>
@@ -181,7 +170,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 									isSelected={standCondition === opt.value}
 									onClick={() =>
 										!readOnly &&
-										setValue(
+										setFieldValue(
 											'stand_condition',
 											opt.value as AioFormData['stand_condition'],
 										)
@@ -191,7 +180,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 						</div>
 						{errors.stand_condition && (
 							<p className='mt-3 text-center text-xs text-red-500'>
-								{errors.stand_condition.message}
+								{errors.stand_condition}
 							</p>
 						)}
 					</div>
@@ -211,7 +200,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 									isSelected={coverCondition === opt.value}
 									onClick={() =>
 										!readOnly &&
-										setValue(
+										setFieldValue(
 											'cover_condition',
 											opt.value as AioFormData['cover_condition'],
 										)
@@ -221,7 +210,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 						</div>
 						{errors.cover_condition && (
 							<p className='mt-3 text-center text-xs text-red-500'>
-								{errors.cover_condition.message}
+								{errors.cover_condition}
 							</p>
 						)}
 					</div>
