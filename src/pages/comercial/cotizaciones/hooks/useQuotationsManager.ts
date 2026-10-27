@@ -65,7 +65,6 @@ export interface UseQuotationsManagerReturn {
 	createQuotation: (quotation: Partial<IQuote>) => Promise<void>;
 	updateQuotation: (id: number, quotation: Partial<IQuote>) => Promise<void>;
 	deleteQuotation: (id: number) => Promise<void>;
-	duplicateQuotation: (id: number) => Promise<void>;
 	changeStatus: (id: number, status: QuoteStatus) => Promise<void>;
 	convertToSale: (id: number) => Promise<void>;
 	refreshData: () => void;
@@ -404,48 +403,6 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 		[dispatch, subsidiaryId, requestQuotes],
 	);
 
-	const duplicateQuotation = useCallback(
-		async (id: number) => {
-			if (!subsidiaryId) return;
-			try {
-				let baseQuote = quotations.find((q) => q.id === id);
-				if (!baseQuote) {
-					baseQuote = await dispatch(
-						fetchQuoteById({ subsidiaryId, quoteId: id }),
-					).unwrap();
-				}
-				let baseItems = baseQuote.items ?? [];
-				if (!baseItems.length) {
-					try {
-						baseItems = await dispatch(
-							fetchQuoteItems({ subsidiaryId, quoteId: id }),
-						).unwrap();
-					} catch (e) {
-						baseItems = [];
-					}
-				}
-				const payload = mapToCreateDTO({
-					...baseQuote,
-					quote_date: new Date().toISOString().split('T')[0],
-				});
-				payload.quote_number = undefined;
-				const createdQuote = await dispatch(
-					createQuote({ subsidiaryId, data: payload }),
-				).unwrap();
-				if (baseItems.length) {
-					await syncQuoteItems(createdQuote.id, baseItems);
-				}
-				toast.success('Cotización duplicada exitosamente');
-				await requestQuotes();
-			} catch (err: any) {
-				const message = err?.message || 'Error al duplicar la cotización';
-				setError(message);
-				toast.error(message);
-			}
-		},
-		[dispatch, subsidiaryId, quotations, requestQuotes, syncQuoteItems],
-	);
-
 	const convertToSale = useCallback(
 		async (id: number) => {
 			if (!subsidiaryId) return;
@@ -544,7 +501,6 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 		createQuotation,
 		updateQuotation: updateQuotationHandler,
 		deleteQuotation: deleteQuotationHandler,
-		duplicateQuotation,
 		changeStatus,
 		convertToSale,
 		refreshData,

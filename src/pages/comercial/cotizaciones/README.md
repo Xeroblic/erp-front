@@ -94,7 +94,6 @@ const {
 	createQuotation, // Crear nueva
 	updateQuotation, // Actualizar existente
 	deleteQuotation, // Eliminar
-	duplicateQuotation, // Duplicar
 	changeStatus, // Cambiar estado
 	convertToSale, // Convertir a venta
 	exportQuotations, // Exportar datos

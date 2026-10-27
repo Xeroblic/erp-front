@@ -59,7 +59,6 @@ vi.mock('../hooks/useQuotationsManager', () => ({
 		createQuotation: vi.fn(),
 		updateQuotation: vi.fn(),
 		deleteQuotation: vi.fn(),
-		duplicateQuotation: vi.fn(),
 		changeStatus: vi.fn(),
 		convertToSale: vi.fn(),
 		refreshData: vi.fn(),
