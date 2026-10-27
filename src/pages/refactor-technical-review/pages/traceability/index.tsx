@@ -134,7 +134,7 @@ const TraceabilityPage: React.FC = () => {
 					<Card className='mx-auto max-w-lg'>
 						<CardBody>
 							<div className='flex flex-col items-center justify-center gap-4 py-10'>
-								<div className='flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-red-200 text-red-500 dark:from-red-900/30 dark:to-red-800/30'>
+								<div className='flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-red-100 to-red-200 text-red-500 dark:from-red-900/30 dark:to-red-800/30'>
 									<Icon icon='HeroExclamationTriangle' className='h-10 w-10' />
 								</div>
 								<h3 className='text-xl font-semibold text-gray-900 dark:text-gray-100'>
@@ -178,7 +178,7 @@ const TraceabilityPage: React.FC = () => {
 			<Subheader className='mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
 				<SubheaderLeft>
 					<div className='mb-2 flex items-center gap-3'>
-						<div className='flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-lg'>
+						<div className='flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-purple-500 to-indigo-600 text-white shadow-lg'>
 							<Icon icon='HeroClock' className='h-6 w-6 text-white' />
 						</div>
 						<div>
@@ -202,10 +202,10 @@ const TraceabilityPage: React.FC = () => {
 					{/* Columna Izquierda */}
 					<div className='space-y-6 lg:col-span-1'>
 						{/* Hero Card - Número de Serie */}
-						<Card className='overflow-hidden border-0 bg-gradient-to-br from-slate-200 to-slate-500 text-slate-900 shadow-xl dark:from-slate-800 dark:to-slate-900 dark:text-white'>
+						<Card className='overflow-hidden border-0 bg-linear-to-br from-slate-200 to-slate-500 text-slate-900 shadow-xl dark:from-slate-800 dark:to-slate-900 dark:text-white'>
 							<CardBody className='p-6'>
 								<div className='mb-4 flex items-center justify-between'>
-									<span className='text-xs font-medium uppercase tracking-wider text-slate-400'>
+									<span className='text-xs font-medium tracking-wider text-slate-400 uppercase'>
 										Número de Serie
 									</span>
 									<Icon icon='HeroQrCode' className='h-5 w-5 text-slate-400' />
@@ -215,7 +215,7 @@ const TraceabilityPage: React.FC = () => {
 								</p>
 								<div className='flex flex-wrap gap-2'>
 									{item?.equipment_type && (
-										<Badge className='border-0 bg-white/10 px-2 text-white backdrop-blur'>
+										<Badge className='border-0 bg-white/10 px-2 text-white backdrop-blur-sm'>
 											{item.equipment_type as string}
 										</Badge>
 									)}
@@ -299,8 +299,8 @@ const TraceabilityPage: React.FC = () => {
 								{traceability ? (
 									<div className='space-y-4'>
 										{/* Estado Comercial Destacado */}
-										<div className='rounded-xl bg-gradient-to-r from-cyan-50 to-blue-50 p-4 dark:from-cyan-900/20 dark:to-blue-900/20'>
-											<span className='mb-2 block text-xs font-medium uppercase tracking-wider text-gray-500'>
+										<div className='rounded-xl bg-linear-to-r from-cyan-50 to-blue-50 p-4 dark:from-cyan-900/20 dark:to-blue-900/20'>
+											<span className='mb-2 block text-xs font-medium tracking-wider text-gray-500 uppercase'>
 												Estado Comercial
 											</span>
 											<Badge
@@ -454,7 +454,7 @@ const TraceabilityPage: React.FC = () => {
 								{movements.length > 0 ? (
 									<div className='relative'>
 										{/* Línea del timeline */}
-										<div className='absolute left-5 top-0 h-full w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 to-gray-200 dark:to-gray-700' />
+										<div className='absolute top-0 left-5 h-full w-0.5 bg-linear-to-b from-blue-500 via-purple-500 to-gray-200 dark:to-gray-700' />
 
 										<div className='space-y-6'>
 											{movements.map((movement: any, index: number) => (
@@ -535,7 +535,7 @@ const TraceabilityPage: React.FC = () => {
 
 														{/* Razón */}
 														{movement.reason && (
-															<p className='mb-3 text-sm italic text-gray-600 dark:text-gray-400'>
+															<p className='mb-3 text-sm text-gray-600 italic dark:text-gray-400'>
 																"{movement.reason}"
 															</p>
 														)}

@@ -126,7 +126,7 @@ const UnlinkAllProductsModal: React.FC<UnlinkAllProductsModalProps> = ({
 					</div>
 
 					<p className='flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400'>
-						<Icon icon='HeroInformationCircle' className='mt-0.5 flex-shrink-0' />
+						<Icon icon='HeroInformationCircle' className='mt-0.5 shrink-0' />
 						La operación es un <strong className='mx-1'>soft-delete reversible</strong>y
 						se ejecuta en segundo plano; los productos podrán re-vincularse después.
 					</p>

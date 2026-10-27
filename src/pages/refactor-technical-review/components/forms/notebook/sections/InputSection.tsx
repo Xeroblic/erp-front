@@ -70,7 +70,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			{/* ─── ZONE 1: INPUT DEVICES (The "Control Center") ─── */}
 			<div className='flex flex-col gap-6 lg:col-span-8'>
 				{/* Keyboard Main Widget */}
-				<div className='relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
+				<div className='relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-xs transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
 					<div className='mb-6 flex items-center justify-between'>
 						<div className='flex items-center gap-3'>
 							<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'>
@@ -225,7 +225,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</span>
 						</div>
 						<div
-							className={`absolute right-4 top-4 h-3 w-3 rounded-full ${
+							className={`absolute top-4 right-4 h-3 w-3 rounded-full ${
 								values.has_numeric_keypad
 									? 'bg-emerald-500'
 									: 'bg-zinc-200 dark:bg-zinc-700'
@@ -267,7 +267,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							</span>
 						</div>
 						<div
-							className={`absolute right-4 top-4 h-3 w-3 rounded-full ${
+							className={`absolute top-4 right-4 h-3 w-3 rounded-full ${
 								values.has_backlit_keyboard
 									? 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]'
 									: 'bg-zinc-200 dark:bg-zinc-700'
@@ -279,7 +279,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 			{/* ─── ZONE 1.5: TOUCHPAD (Side Widget) ─── */}
 			<div className='flex flex-col gap-6 lg:col-span-4 lg:h-full'>
-				<div className='flex flex-1 flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
+				<div className='flex flex-1 flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-xs transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
 					<div className='mb-4 flex items-center gap-3'>
 						<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'>
 							<Icon icon='HeroHandRaised' className='h-6 w-6' />
@@ -313,7 +313,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				</div>
 
 				{speakersField && (
-					<div className='flex flex-1 flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
+					<div className='flex flex-1 flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-xs transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50'>
 						<div className='mb-4 flex items-center gap-3'>
 							<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'>
 								<Icon icon='HeroSpeakerWave' className='h-6 w-6' />
@@ -359,7 +359,7 @@ const InputSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			{/* ─── ZONE 2: CHASSIS & STRUCTURE (The "Body") ─── */}
 			<div className='mt-2 lg:col-span-12'>
 				<div className='rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 dark:border-zinc-800 dark:bg-zinc-900/20'>
-					<h3 className='mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+					<h3 className='mb-6 flex items-center gap-2 text-sm font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 						<Icon icon='HeroCube' className='h-4 w-4' />
 						Estructura y Carcasa
 					</h3>

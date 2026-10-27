@@ -100,7 +100,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 	};
 
 	return (
-		<div className='pointer-events-none fixed inset-0 z-[100] flex justify-end overflow-hidden'>
+		<div className='pointer-events-none fixed inset-0 z-100 flex justify-end overflow-hidden'>
 			{/* Hover Trap */}
 			<div
 				className='pointer-events-auto relative flex h-full items-center'
@@ -116,7 +116,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 						ease: [0.33, 1, 0.68, 1],
 					}}
 					className={classNames(
-						'relative z-[110] flex translate-y-[-50px] transform items-center justify-center',
+						'relative z-110 flex translate-y-[-50px] transform items-center justify-center',
 						isMobile && 'h-20 w-8',
 					)}>
 					{/* El botón se muestra si no hay hover O si es mobile (para poder cerrar con click) */}
@@ -158,12 +158,12 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 					}}
 					style={{ width: isMobile ? '85vw' : styleWidth }}
 					className={classNames(
-						'absolute right-0 top-0 flex h-screen bg-zinc-300 shadow-[-20px_0_30px_rgba(0,0,0,0.1)] dark:bg-zinc-900',
+						'absolute top-0 right-0 flex h-screen bg-zinc-300 shadow-[-20px_0_30px_rgba(0,0,0,0.1)] dark:bg-zinc-900',
 						widthClass,
 					)}>
 					{/* 1. SVG WAVE CURVE */}
 					<svg
-						className='pointer-events-none absolute -left-[99px] top-0 h-full w-[100px]'
+						className='pointer-events-none absolute top-0 left-[-99px] h-full w-[100px]'
 						preserveAspectRatio='none'
 						viewBox='0 0 100 1000'>
 						<motion.path

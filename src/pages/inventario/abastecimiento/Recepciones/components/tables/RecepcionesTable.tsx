@@ -104,7 +104,7 @@ const RecepcionesTable: React.FC<IRecepcionesTableProps> = ({
 								<Tr key={`recepcion-skeleton-${rowIndex}`}>
 									{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
 										<Td key={`recepcion-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>

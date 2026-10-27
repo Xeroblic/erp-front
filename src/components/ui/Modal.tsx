@@ -62,7 +62,7 @@ export const ModalHeader: FC<IModalHeaderProps> = (props) => {
 	const { children, className, titleId, setIsOpen, ...rest } = props;
 
 	const classes = classNames(
-		'flex items-center justify-between px-4 pb-4 text-2xl font-semibold [&:first-child]:pt-4',
+		'flex items-center justify-between px-4 pb-4 text-2xl font-semibold first:pt-4',
 	);
 
 	return (
@@ -137,7 +137,7 @@ interface IModalFooterProps extends HTMLAttributes<HTMLDivElement> {
 export const ModalFooter: FC<IModalFooterProps> = (props) => {
 	const { children, className, ...rest } = props;
 
-	const classes = classNames('flex items-center justify-between px-4 pb-4 [&:first-child]:pt-4');
+	const classes = classNames('flex items-center justify-between px-4 pb-4 first:pt-4');
 
 	return (
 		<div
@@ -196,7 +196,7 @@ const BackDrop = ({ zIndex }: { zIndex: number }) => {
 			data-component-name='Modal/BackDrop'
 			{...animationProps}
 			style={{ zIndex }}
-			className='fixed left-0 top-0 h-screen w-screen bg-black/20 backdrop-blur-lg'
+			className='fixed top-0 left-0 h-screen w-screen bg-black/20 backdrop-blur-lg'
 		/>
 	);
 };
@@ -268,16 +268,16 @@ const Dialog = forwardRef<HTMLDivElement, IDialogProps>((props, ref) => {
 	} = props;
 
 	const classes = classNames(
-		'pointer-events-none relative mx-auto my-6 max-w-[var(--theme-modal-width)] w-full',
+		'pointer-events-none relative mx-auto my-6 max-w-(--theme-modal-width) w-full',
 		{
 			'h-[calc(100%-theme(margin.6)*2)]': isScrollable,
 			'flex min-h-[calc(100%-theme(margin.6)*2)] items-center': isCentered && !fullScreen,
-			'!m-0 !h-full !max-w-full': typeof fullScreen !== 'string' && fullScreen,
-			'max-2xl:m-0 max-2xl:h-full max-2xl:!max-w-full': fullScreen === '2xl',
-			'max-xl:m-0 max-xl:h-full max-xl:!max-w-full': fullScreen === 'xl',
-			'max-lg:m-0 max-lg:h-full max-lg:!max-w-full': fullScreen === 'lg',
-			'max-md:m-0 max-md:h-full max-md:!max-w-full': fullScreen === 'md',
-			'max-sm:m-0 max-sm:h-full max-sm:!max-w-full': fullScreen === 'sm',
+			'm-0! h-full! max-w-full!': typeof fullScreen !== 'string' && fullScreen,
+			'max-2xl:m-0 max-2xl:h-full max-2xl:max-w-full!': fullScreen === '2xl',
+			'max-xl:m-0 max-xl:h-full max-xl:max-w-full!': fullScreen === 'xl',
+			'max-lg:m-0 max-lg:h-full max-lg:max-w-full!': fullScreen === 'lg',
+			'max-md:m-0 max-md:h-full max-md:max-w-full!': fullScreen === 'md',
+			'max-sm:m-0 max-sm:h-full max-sm:max-w-full!': fullScreen === 'sm',
 		},
 		className,
 	);
@@ -445,8 +445,8 @@ const Modal: FC<IModalProps> = (props) => {
 	const modalStatic = (event: MouseEvent | TouchEvent) => {
 		if (!isStaticBackdrop || !getBackdropTarget(event)) return;
 		if (isStaticBackdropAnimation && refModal.current) {
-			refModal.current.classList.add('!scale-105');
-			setTimeout(() => refModal.current?.classList.remove('!scale-105'), 300);
+			refModal.current.classList.add('scale-105!');
+			setTimeout(() => refModal.current?.classList.remove('scale-105!'), 300);
 		}
 	};
 	useEventListener('mousedown', modalStatic);
@@ -512,7 +512,7 @@ const Modal: FC<IModalProps> = (props) => {
 							key='modal'
 							style={{ zIndex: modalZIndex }}
 							className={classNames(
-								'fixed left-0 top-0 block h-full w-full overflow-y-auto overflow-x-hidden',
+								'fixed top-0 left-0 block h-full w-full overflow-x-hidden overflow-y-auto',
 								{
 									[`${themeConfig.transition}`]: isStaticBackdrop,
 								},

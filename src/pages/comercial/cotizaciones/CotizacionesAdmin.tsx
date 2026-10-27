@@ -322,7 +322,7 @@ const CotizacionesAdmin: React.FC = () => {
 		<PageWrapper title='Cotizaciones' name='ERP'>
 			<Subheader className='p-2'>
 				<SubheaderLeft>
-					<div className='start-0'>
+					<div className='inset-s-0'>
 						<h1 className='text-3xl font-semibold'>Cotizaciones</h1>
 						<p className=''>Gestión completa de cotizaciones comerciales</p>
 					</div>
@@ -452,7 +452,7 @@ const CotizacionesAdmin: React.FC = () => {
 					isCentered>
 					<ModalHeader>
 						<div className='flex items-center space-x-3'>
-							<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950'>
+							<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950'>
 								<Icon
 									icon='HeroQuestionMarkCircle'
 									className='h-6 w-6 text-blue-600 dark:text-blue-400'

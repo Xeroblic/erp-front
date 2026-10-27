@@ -139,7 +139,7 @@ const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 								<Tr key={`inventario-skeleton-${rowIndex}`}>
 									{Array.from({ length: columnCount }, (_cell, cellIndex) => (
 										<Td key={`inventario-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>
@@ -216,7 +216,7 @@ const InventarioGeneralTable: React.FC<IInventarioGeneralTableProps> = ({
 															<p
 																className={
 																	critical.available_quantity <= 0
-																		? 'font-semibold tabular-nums text-red-700 dark:text-red-300'
+																		? 'font-semibold text-red-700 tabular-nums dark:text-red-300'
 																		: 'font-semibold tabular-nums'
 																}>
 																{critical.available_quantity}

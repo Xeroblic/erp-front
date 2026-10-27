@@ -75,10 +75,10 @@ const compareRows = (
 
 /** Un costo sin importe se dice desconocido, nunca `$0` (mismo criterio que `CostBlock`). */
 const LastCostCell: React.FC<{ cost: IProcurementCost | null }> = ({ cost }) => {
-	if (cost === null) return <span className='text-sm italic text-zinc-500'>Varias líneas</span>;
+	if (cost === null) return <span className='text-sm text-zinc-500 italic'>Varias líneas</span>;
 
 	const amount = formatDecimalAmount(cost.effective_unit_amount, cost.currency_code);
-	if (amount === null) return <span className='text-sm italic text-zinc-500'>Desconocido</span>;
+	if (amount === null) return <span className='text-sm text-zinc-500 italic'>Desconocido</span>;
 
 	return (
 		<div className='flex flex-col items-center'>
@@ -204,7 +204,7 @@ const SupplierSuppliedProductsTable: React.FC<ISupplierSuppliedProductsTableProp
 									{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
 										<Td
 											key={`supplied-product-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>

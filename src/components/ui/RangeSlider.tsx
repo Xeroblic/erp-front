@@ -114,10 +114,10 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
 
 	return (
 		<div
-			className={`w-full select-none space-y-3 ${className} ${disabled ? 'opacity-60' : ''}`}>
+			className={`w-full space-y-3 select-none ${className} ${disabled ? 'opacity-60' : ''}`}>
 			{label && (
 				<div className='flex items-center justify-between gap-3 text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-					<div className='flex items-center gap-2 text-xs uppercase tracking-wide'>
+					<div className='flex items-center gap-2 text-xs tracking-wide uppercase'>
 						{icon && (
 							<span className='inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900/10 text-rose-500 dark:bg-zinc-100/5 dark:text-rose-300'>
 								<Icon icon={icon} className='h-3.5 w-3.5' />

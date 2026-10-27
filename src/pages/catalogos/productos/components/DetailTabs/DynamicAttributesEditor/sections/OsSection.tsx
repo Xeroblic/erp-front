@@ -82,7 +82,7 @@ const OsSection: React.FC<SectionBaseProps> = ({ attributes, updateAttribute, is
 								onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
 									updateAttribute('os.license.activated', event.target.checked)
 								}
-								className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+								className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
 							/>
 							<span className='text-sm font-medium'>Licencia activada</span>
 						</label>
@@ -97,7 +97,7 @@ const OsSection: React.FC<SectionBaseProps> = ({ attributes, updateAttribute, is
 							onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
 								updateAttribute('os.can_upgrade_edition', event.target.checked)
 							}
-							className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+							className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
 						/>
 						<span className='text-sm font-medium'>Puede actualizar edición</span>
 					</label>

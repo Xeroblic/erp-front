@@ -151,7 +151,7 @@ export const runPageTransition = (
 				fontSize: '2.5rem',
 				fontWeight: 'bold',
 				fontFamily: 'system-ui, sans-serif',
-				// Text shadow is cheaper than SVG drop-shadow filter
+				// Text shadow is cheaper than SVG drop-shadow-sm filter
 				textShadow: '0 2px 4px rgba(0,0,0,0.2)',
 				textAlign: 'center',
 			},

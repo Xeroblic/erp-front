@@ -38,7 +38,7 @@ interface IDocumentosCompraFiltersProps {
 }
 
 const fieldLabelClass = 'block text-sm font-medium text-zinc-700 dark:text-zinc-300';
-const selectBackgroundClass = '!bg-zinc-50 dark:!bg-zinc-900';
+const selectBackgroundClass = 'bg-zinc-50! dark:bg-zinc-900!';
 
 const DocumentosCompraFilters: React.FC<IDocumentosCompraFiltersProps> = ({
 	search,
@@ -81,7 +81,7 @@ const DocumentosCompraFilters: React.FC<IDocumentosCompraFiltersProps> = ({
 				</Button>
 			</CardHeader>
 			<CardBody>
-				<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 dark:bg-zinc-900/30 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'>
+				<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 dark:bg-zinc-900/30'>
 					<div className='space-y-1 xl:col-span-2'>
 						<label htmlFor='documentos-compra-search' className={fieldLabelClass}>
 							Búsqueda

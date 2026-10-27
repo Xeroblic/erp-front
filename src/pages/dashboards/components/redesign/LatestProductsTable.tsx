@@ -16,7 +16,7 @@ const buildLatestProductColumns = (): ColumnDef<AppTableFeatures, IProduct>[] =>
 		header: 'Producto',
 		cell: ({ row }) => (
 			<div className='flex items-center gap-3'>
-				<div className='flex h-8 w-8 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800'>
+				<div className='flex h-8 w-8 items-center justify-center rounded-sm bg-zinc-100 dark:bg-zinc-800'>
 					<Icon icon='HeroTag' className='text-zinc-400' />
 				</div>
 				<div>
@@ -111,7 +111,7 @@ const LatestProductsTable: React.FC = () => {
 	const columns = useMemo(() => buildLatestProductColumns(), []);
 
 	return (
-		<Card className='border-zinc-100 shadow-sm dark:border-zinc-800'>
+		<Card className='border-zinc-100 shadow-xs dark:border-zinc-800'>
 			<CardHeader
 				id='products-table-header'
 				className='border-b border-zinc-100 px-6 py-4 dark:border-zinc-800'>

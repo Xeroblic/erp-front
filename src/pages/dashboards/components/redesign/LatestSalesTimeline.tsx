@@ -51,16 +51,16 @@ const LatestSalesTimeline: React.FC = () => {
 	};
 
 	return (
-		<Card className='h-full border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+		<Card className='h-full border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900'>
 			<CardHeader
 				id='timeline-sales-header'
-				className='flex flex-col items-start justify-between gap-3 border-b border-zinc-100 bg-zinc-50/50 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:flex-row sm:items-center sm:px-6'>
+				className='flex flex-col items-start justify-between gap-3 border-b border-zinc-100 bg-zinc-50/50 px-4 py-4 sm:flex-row sm:items-center sm:px-6 dark:border-zinc-800 dark:bg-zinc-900/50'>
 				<div className='flex items-center gap-3'>
 					<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'>
 						<Icon icon='HeroCurrencyDollar' className='text-xl' />
 					</div>
 					<div>
-						<h3 className='text-base font-bold leading-tight text-zinc-900 dark:text-zinc-100'>
+						<h3 className='text-base leading-tight font-bold text-zinc-900 dark:text-zinc-100'>
 							Últimas Ventas
 						</h3>
 						<p className='text-xs font-medium text-zinc-500'>Pedidos recientes</p>
@@ -83,18 +83,18 @@ const LatestSalesTimeline: React.FC = () => {
 							return (
 								<div key={sale.id} className='group relative flex gap-3 sm:gap-4'>
 									<div
-										className={`absolute left-4 w-px -translate-x-1/2 bg-zinc-300 dark:bg-zinc-700 sm:left-5 ${
+										className={`absolute left-4 w-px -translate-x-1/2 bg-zinc-300 sm:left-5 dark:bg-zinc-700 ${
 											isFirst
-												? 'bottom-0 top-6'
+												? 'top-6 bottom-0'
 												: isLast
 													? 'top-0 h-6'
-													: 'bottom-0 top-0'
+													: 'top-0 bottom-0'
 										} `}
 										style={{ zIndex: -1 }}></div>
 
 									{/* Icon Column */}
 									<div className='relative flex shrink-0 flex-col items-center'>
-										<div className='mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600 ring-4 ring-white dark:bg-blue-900/20 dark:text-blue-400 dark:ring-zinc-900 sm:h-10 sm:w-10'>
+										<div className='mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600 ring-4 ring-white sm:h-10 sm:w-10 dark:bg-blue-900/20 dark:text-blue-400 dark:ring-zinc-900'>
 											<Icon
 												icon='HeroShoppingBag'
 												className='h-4 w-4 sm:h-5 sm:w-5'
@@ -103,12 +103,12 @@ const LatestSalesTimeline: React.FC = () => {
 									</div>
 
 									{/* Content Column - Fully responsive */}
-									<div className='min-w-0 flex-1 pb-6 pt-1.5 group-last:pb-2 sm:pb-8'>
+									<div className='min-w-0 flex-1 pt-1.5 pb-6 group-last:pb-2 sm:pb-8'>
 										<div className='flex flex-col gap-2.5'>
 											{/* Customer name and status */}
 											<div className='flex flex-col gap-1.5'>
 												<span
-													className='cursor-pointer truncate text-sm font-bold leading-tight text-zinc-900 hover:underline dark:text-zinc-100'
+													className='cursor-pointer truncate text-sm leading-tight font-bold text-zinc-900 hover:underline dark:text-zinc-100'
 													onClick={() => handleViewSale(sale.id)}>
 													{sale.customer?.name || 'Cliente sin nombre'}
 												</span>

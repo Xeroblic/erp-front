@@ -250,7 +250,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 								<Tr key={`skeleton-${index}`}>
 									{Array.from({ length: 10 }, (__, cellIndex) => (
 										<Td key={`skeleton-${index}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>
@@ -286,7 +286,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 											onRowClick(row.id);
 										}
 									}}
-									className={`cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 ${
+									className={`cursor-pointer focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-solid ${
 										row.is_overdue ? 'border-l-4 border-red-500' : ''
 									}`}>
 									<Td>

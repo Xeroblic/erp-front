@@ -12,7 +12,7 @@ export const FooterLeft: FC<IFooterLeftProps> = (props) => {
 			data-component-name='Footer/FooterLeft'
 			className={classNames(
 				'flex items-center gap-4',
-				'ltr:md:mr-auto rtl:md:ml-auto',
+				'md:ltr:mr-auto md:rtl:ml-auto',
 				className,
 			)}
 			{...rest}>
@@ -33,7 +33,7 @@ export const FooterRight: FC<IFooterRightProps> = (props) => {
 			data-component-name='Footer/FooterRight'
 			className={classNames(
 				'flex items-center gap-4',
-				'ltr:md:ml-auto rtl:md:mr-auto',
+				'md:ltr:ml-auto md:rtl:mr-auto',
 				className,
 			)}
 			{...rest}>

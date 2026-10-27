@@ -326,7 +326,7 @@ const buildStockCatalogColumns = ({
 						onClick={() => openProductDetail(row.original.productId)}
 						title={row.original.name}
 						className='group inline-flex items-center gap-1 text-left font-semibold text-neutral-900 transition-colors hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400'>
-						<span className='line-clamp-2 break-words'>{row.original.name}</span>
+						<span className='line-clamp-2 wrap-break-word'>{row.original.name}</span>
 						<Icon
 							icon='HeroArrowTopRightOnSquare'
 							className='h-3.5 w-3.5 flex-none text-neutral-300 transition-colors group-hover:text-blue-500 dark:text-neutral-600'
@@ -334,7 +334,7 @@ const buildStockCatalogColumns = ({
 					</button>
 				) : (
 					<p
-						className='line-clamp-2 break-words font-semibold text-neutral-900 dark:text-neutral-100'
+						className='line-clamp-2 font-semibold wrap-break-word text-neutral-900 dark:text-neutral-100'
 						title={row.original.name}>
 						{row.original.name}
 					</p>
@@ -359,7 +359,7 @@ const buildStockCatalogColumns = ({
 		header: 'Disponible',
 		cell: ({ row }) => (
 			<div className='min-w-[64px]'>
-				<p className='text-lg font-semibold leading-none text-neutral-900 dark:text-neutral-100'>
+				<p className='text-lg leading-none font-semibold text-neutral-900 dark:text-neutral-100'>
 					{row.original.availableStock}
 				</p>
 			</div>

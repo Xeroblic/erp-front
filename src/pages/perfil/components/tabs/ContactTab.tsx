@@ -44,7 +44,7 @@ const ContactTab = ({ formik, regionOptions, provinceOptions, comunaOptions }: P
 		<div ref={containerRef} className='space-y-6'>
 			<div className='form-field'>
 				<div className='flex items-center gap-3'>
-					<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'>
+					<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'>
 						<Icon icon='HeroMapPin' className='h-5 w-5' />
 					</div>
 					<div>
@@ -167,10 +167,7 @@ const ContactTab = ({ formik, regionOptions, provinceOptions, comunaOptions }: P
 			{/* Info Card */}
 			<div className='form-field'>
 				<div className='flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10'>
-					<Icon
-						icon='HeroInformationCircle'
-						className='h-5 w-5 flex-shrink-0 text-blue-500'
-					/>
+					<Icon icon='HeroInformationCircle' className='h-5 w-5 shrink-0 text-blue-500' />
 					<p className='text-sm text-blue-700 dark:text-blue-300'>
 						Tu información de ubicación nos ayuda a brindarte un mejor servicio y
 						personalizar tu experiencia según tu zona geográfica.

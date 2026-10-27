@@ -29,7 +29,7 @@ const DesktopSoftwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 		<div className='space-y-6'>
 			<div className='flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/50'>
 				<div className='flex items-center gap-3'>
-					<div className='rounded-full bg-white p-2 shadow-sm dark:bg-zinc-800'>
+					<div className='rounded-full bg-white p-2 shadow-xs dark:bg-zinc-800'>
 						{headerIcon}
 					</div>
 					<div className='flex flex-col'>

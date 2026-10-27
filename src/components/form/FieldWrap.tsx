@@ -33,7 +33,7 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 	} = props;
 
 	const sharedClasses = classNames(
-		'absolute top-[2px] bottom-[2px] flex justify-center items-center px-1 rounded',
+		'absolute top-[2px] bottom-[2px] flex justify-center items-center px-1 rounded-sm',
 	);
 
 	const divFirstRef = useRef<HTMLDivElement>(null);
@@ -51,7 +51,7 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 			className={classNames('relative', className)}
 			{...domProps}>
 			{firstSuffix && (
-				<div ref={divFirstRef} className={classNames(sharedClasses, 'start-px')}>
+				<div ref={divFirstRef} className={classNames(sharedClasses, 'inset-s-px')}>
 					{firstSuffix}
 				</div>
 			)}
@@ -81,7 +81,7 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 				} as any);
 			})()}
 			{lastSuffix && (
-				<div ref={divLastRef} className={classNames(sharedClasses, 'end-px')}>
+				<div ref={divLastRef} className={classNames(sharedClasses, 'inset-e-px')}>
 					{lastSuffix}
 				</div>
 			)}

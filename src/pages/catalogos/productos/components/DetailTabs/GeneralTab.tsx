@@ -221,7 +221,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 								setShowConfirm(false);
 								setFieldValue('serial_tracking', next);
 							}}
-							className='rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+							className='rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
 						/>
 						<span className='text-sm font-medium'>Seguimiento por número de serie</span>
 					</Label>
@@ -311,7 +311,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 
 								setFieldValue('is_active', next);
 							}}
-							className='rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+							className='rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
 						/>
 						<span className='text-sm font-medium'>Producto activo</span>
 					</Label>

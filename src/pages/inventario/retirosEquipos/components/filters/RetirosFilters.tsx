@@ -41,7 +41,7 @@ const RetirosFilters: React.FC<RetirosFiltersProps> = ({
 				</Button>
 			</CardHeader>
 			<CardBody>
-				<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 dark:bg-zinc-900/30 md:grid-cols-2'>
+				<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 md:grid-cols-2 dark:bg-zinc-900/30'>
 					<div>
 						<label
 							htmlFor='withdrawals-search'

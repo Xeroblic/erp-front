@@ -35,8 +35,8 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 			<main className='relative flex min-h-screen flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-zinc-950'>
 				{/* Fondo Decorativo */}
 				<div className='pointer-events-none absolute inset-0 z-0'>
-					<div className='absolute -left-[10%] -top-[10%] h-[40%] w-[40%] rounded-full bg-blue-400/10 blur-[120px]' />
-					<div className='absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full bg-emerald-400/10 blur-[120px]' />
+					<div className='absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-blue-400/10 blur-[120px]' />
+					<div className='absolute right-[-10%] bottom-[-10%] h-[40%] w-[40%] rounded-full bg-emerald-400/10 blur-[120px]' />
 				</div>
 
 				{/* Header */}
@@ -44,7 +44,7 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 					<div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
 						<div className='flex h-16 items-center justify-between'>
 							<div className='flex items-center gap-3'>
-								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-500/20'>
+								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-500/20'>
 									<Icon
 										icon='HeroCubeTransparent'
 										className='h-6 w-6'
@@ -92,7 +92,7 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 										<div className='space-y-2'>
 											<Label
 												htmlFor='withdrawal_keyword'
-												className='ml-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-700'>
+												className='ml-1 text-[10px] font-semibold tracking-widest text-zinc-700 uppercase'>
 												Palabra Clave
 											</Label>
 											<FieldWrap
@@ -117,7 +117,7 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 													name='withdrawal_keyword'
 													placeholder='Palabra clave'
 													autoComplete='off'
-													className='border-none bg-zinc-50/50 py-4 text-center text-2xl font-bold uppercase tracking-[0.2em] transition-all focus:bg-white'
+													className='border-none bg-zinc-50/50 py-4 text-center text-2xl font-bold tracking-[0.2em] uppercase transition-all focus:bg-white'
 													onChange={(e) => {
 														e.target.value =
 															e.target.value.toUpperCase();
@@ -174,7 +174,7 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 						) : (
 							<div className='animate-scale-in relative overflow-hidden rounded-3xl border border-emerald-100 bg-white p-8 text-center shadow-2xl shadow-emerald-200/50 dark:border-emerald-900/20 dark:bg-zinc-900'>
 								{/* Decoración de éxito */}
-								<div className='absolute left-1/2 top-0 h-1 w-24 -translate-x-1/2 rounded-b-full bg-emerald-500' />
+								<div className='absolute top-0 left-1/2 h-1 w-24 -translate-x-1/2 rounded-b-full bg-emerald-500' />
 
 								<div className='mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-500 shadow-inner dark:bg-emerald-900/20'>
 									<Icon icon='HeroCheckCircle' className='h-12 w-12' />
@@ -193,9 +193,9 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 										(checkoutResult as any).locker?.number ||
 										(checkoutResult as any).number) && (
 										<div className='group relative'>
-											<div className='absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 opacity-20 blur transition duration-1000 group-hover:opacity-30'></div>
+											<div className='absolute -inset-1 rounded-2xl bg-linear-to-r from-emerald-500 to-teal-500 opacity-20 blur-sm transition duration-1000 group-hover:opacity-30'></div>
 											<div className='relative flex flex-col items-center justify-center rounded-2xl border border-zinc-100 bg-zinc-50 p-6 dark:border-zinc-700 dark:bg-zinc-800/50'>
-												<span className='mb-1 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400'>
+												<span className='mb-1 text-[10px] font-black tracking-[0.3em] text-zinc-400 uppercase'>
 													Casillero
 												</span>
 												<p className='text-5xl font-black tracking-tighter text-zinc-900 dark:text-white'>
@@ -217,9 +217,9 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 										(checkoutResult as any).data?.locker_pin ||
 										(checkoutResult as any).pin) && (
 										<div className='group relative'>
-											<div className='absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-500 opacity-20 blur transition duration-1000 group-hover:opacity-30'></div>
+											<div className='absolute -inset-1 rounded-2xl bg-linear-to-r from-blue-500 to-indigo-500 opacity-20 blur-sm transition duration-1000 group-hover:opacity-30'></div>
 											<div className='relative flex flex-col items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 p-8 dark:border-blue-900/20 dark:bg-blue-900/10'>
-												<span className='mb-1 text-[10px] font-black uppercase tracking-[0.3em] text-blue-400'>
+												<span className='mb-1 text-[10px] font-black tracking-[0.3em] text-blue-400 uppercase'>
 													PIN de Apertura
 												</span>
 												<p className='ml-4 font-mono text-6xl font-black tracking-[0.2em] text-blue-600 dark:text-blue-400'>
@@ -244,7 +244,7 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 												className='h-4 w-4'
 											/>
 										</div>
-										<p className='text-left text-xs font-medium leading-relaxed opacity-90'>
+										<p className='text-left text-xs leading-relaxed font-medium opacity-90'>
 											Ingresa el código{' '}
 											<strong>
 												{checkoutResult.locker_pin ||
@@ -270,7 +270,7 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 									<Button
 										variant='outline'
 										color='zinc'
-										className='rounded-full px-6 py-2 text-xs font-bold uppercase tracking-widest opacity-50 transition-opacity hover:opacity-100'
+										className='rounded-full px-6 py-2 text-xs font-bold tracking-widest uppercase opacity-50 transition-opacity hover:opacity-100'
 										onClick={() => (window.location.href = '/')}>
 										Finalizar
 									</Button>
@@ -282,7 +282,7 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 
 				{/* Footer */}
 				<footer className='relative z-10 w-full px-4 py-6 text-center'>
-					<p className='text-[10px] font-bold uppercase tracking-widest text-zinc-400'>
+					<p className='text-[10px] font-bold tracking-widest text-zinc-400 uppercase'>
 						&copy; {new Date().getFullYear()} Zentria ERP • Soporte Técnico de
 						Excelencia
 					</p>

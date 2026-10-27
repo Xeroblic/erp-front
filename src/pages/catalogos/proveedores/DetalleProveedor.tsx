@@ -306,9 +306,9 @@ const DetalleProveedorPage: React.FC = () => {
 				<div className='space-y-6'>
 					{/* Información del proveedor - SOLO DATOS REALES */}
 					<Card className='overflow-hidden shadow-lg'>
-						<CardHeader className='bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20'>
+						<CardHeader className='bg-linear-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20'>
 							<div className='flex items-center gap-4'>
-								<div className='flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-600 text-2xl font-bold text-white shadow-lg'>
+								<div className='flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-orange-500 to-amber-600 text-2xl font-bold text-white shadow-lg'>
 									{supplier.name?.[0]?.toUpperCase()}
 								</div>
 								<div className='flex-1'>
@@ -361,7 +361,7 @@ const DetalleProveedorPage: React.FC = () => {
 									</div>
 								</div>
 
-								<div className='rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-4 shadow-sm dark:border-blue-800 dark:from-blue-900/20 dark:to-cyan-900/20'>
+								<div className='rounded-lg border-2 border-blue-200 bg-linear-to-br from-blue-50 to-cyan-50 p-4 shadow-xs dark:border-blue-800 dark:from-blue-900/20 dark:to-cyan-900/20'>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600'>
 											<Icon icon='HeroUsers' className='h-6 w-6 text-white' />
@@ -382,7 +382,7 @@ const DetalleProveedorPage: React.FC = () => {
 
 					{/* TABLA 1: Clientes ASOCIADOS - DISEÑO MEJORADO */}
 					<Card className='shadow-md'>
-						<CardHeader className='bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20'>
+						<CardHeader className='bg-linear-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20'>
 							<div className='flex items-center justify-between'>
 								<div className='flex items-center gap-3'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 dark:bg-emerald-500'>
@@ -453,7 +453,7 @@ const DetalleProveedorPage: React.FC = () => {
 															{headerGroup.headers.map((header) => (
 																<th
 																	key={header.id}
-																	className='px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+																	className='px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase dark:text-gray-300'>
 																	{flexRender(
 																		header.column.columnDef
 																			.header,
@@ -472,7 +472,7 @@ const DetalleProveedorPage: React.FC = () => {
 														{row.getVisibleCells().map((cell) => (
 															<td
 																key={cell.id}
-																className='whitespace-nowrap px-6 py-4'>
+																className='px-6 py-4 whitespace-nowrap'>
 																{flexRender(
 																	cell.column.columnDef.cell,
 																	cell.getContext(),
@@ -491,7 +491,7 @@ const DetalleProveedorPage: React.FC = () => {
 					{/* TABLA 2: Clientes DISPONIBLES - DISEÑO MEJORADO */}
 					{isEditable && (
 						<Card className='border-2 border-dashed border-blue-300 shadow-md dark:border-blue-700'>
-							<CardHeader className='bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20'>
+							<CardHeader className='bg-linear-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20'>
 								<div className='flex items-center justify-between'>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-500'>
@@ -557,7 +557,7 @@ const DetalleProveedorPage: React.FC = () => {
 															{headerGroup.headers.map((header) => (
 																<th
 																	key={header.id}
-																	className='px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+																	className='px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase dark:text-gray-300'>
 																	{flexRender(
 																		header.column.columnDef
 																			.header,
@@ -576,7 +576,7 @@ const DetalleProveedorPage: React.FC = () => {
 														{row.getVisibleCells().map((cell) => (
 															<td
 																key={cell.id}
-																className='whitespace-nowrap px-6 py-4'>
+																className='px-6 py-4 whitespace-nowrap'>
 																{flexRender(
 																	cell.column.columnDef.cell,
 																	cell.getContext(),

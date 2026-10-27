@@ -134,7 +134,7 @@ const AttributesTabPanel: React.FC<AttributesTabPanelProps> = ({ product }) => {
 				<div className='min-w-0 flex-1'>
 					<label
 						htmlFor='review-select'
-						className='mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400'>
+						className='mb-1 flex items-center gap-1.5 text-xs font-bold tracking-wider text-violet-600 uppercase dark:text-violet-400'>
 						<Icon icon='HeroClipboardDocumentCheck' className='h-3.5 w-3.5' />
 						Importar desde revisión
 					</label>
@@ -143,7 +143,7 @@ const AttributesTabPanel: React.FC<AttributesTabPanelProps> = ({ product }) => {
 						value={selectedReviewId}
 						onChange={(e) => setSelectedReviewId(e.target.value)}
 						disabled={matchLoading || reviews.length === 0}
-						className='w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-violet-400'>
+						className='w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 focus:outline-hidden disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-violet-400'>
 						<option value=''>
 							{matchLoading
 								? 'Buscando revisiones…'
@@ -205,7 +205,7 @@ const AttributesTabPanel: React.FC<AttributesTabPanelProps> = ({ product }) => {
 								role='tab'
 								aria-selected={isActive}
 								onClick={() => setActiveSubTab(tab.id)}
-								className={`relative inline-flex flex-shrink-0 items-center gap-1.5 px-3.5 py-2.5 text-xs font-medium transition-colors ${
+								className={`relative inline-flex shrink-0 items-center gap-1.5 px-3.5 py-2.5 text-xs font-medium transition-colors ${
 									isActive
 										? 'text-blue-600 dark:text-blue-400'
 										: 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'

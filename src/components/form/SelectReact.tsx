@@ -210,7 +210,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 				themeConfig.transition,
 				[`${rounded}`],
 				{
-					'!bg-zinc-100 !text-zinc-600 dark:!bg-zinc-800/50 dark:!text-zinc-400 !border-zinc-200 dark:!border-zinc-700 cursor-not-allowed':
+					'bg-zinc-100! text-zinc-600! dark:bg-zinc-800/50! dark:text-zinc-400! border-zinc-200! dark:border-zinc-700! cursor-not-allowed':
 						disabled,
 				},
 				// Hover
@@ -219,16 +219,16 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 			),
 			controlFocus: classNames(
 				{
-					'!border-zinc-300 dark:!border-zinc-800': isValid,
+					'border-zinc-300! dark:border-zinc-800!': isValid,
 				},
-				'!bg-transparent dark:!bg-transparent',
+				'bg-transparent! dark:bg-transparent!',
 			),
 			validation: classNames({
-				'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-				'!border-green-500': !isValid && isTouched && !invalidFeedback,
+				'border-red-500! ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
+				'border-green-500!': !isValid && isTouched && !invalidFeedback,
 			}),
 			validationFocus: classNames({
-				'!ring-4 !ring-green-500/30': !isValid && isTouched && !invalidFeedback,
+				'ring-4! ring-green-500/30!': !isValid && isTouched && !invalidFeedback,
 			}),
 		},
 	};
@@ -240,10 +240,10 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 		selectVariant[variant as TSelectVariant].validationFocus;
 
 	const selectDimensions: { [key in TSelectDimension]: { control: string } } = {
-		sm: { control: classNames('!min-h-[2rem] text-sm') },
-		default: { control: classNames('!min-h-[2.5rem]') },
-		lg: { control: classNames('!min-h-[3rem] text-lg') },
-		xl: { control: classNames('!min-h-[3.25rem] text-xl') },
+		sm: { control: classNames('min-h-8! text-sm') },
+		default: { control: classNames('min-h-10!') },
+		lg: { control: classNames('min-h-12! text-lg') },
+		xl: { control: classNames('min-h-13! text-xl') },
 	};
 	const selectDimensionClasses = selectDimensions[dimension].control;
 
@@ -323,7 +323,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 			Menu: (menuProps: MenuProps<TSelectOption, boolean, GroupBase<TSelectOption>>) => (
 				<>
 					<div
-						className='fixed inset-0 z-[1999] bg-black/40'
+						className='fixed inset-0 z-1999 bg-black/40'
 						onMouseDown={(event) => {
 							event.preventDefault();
 							closeMobileMenu();
@@ -352,7 +352,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 								onTouchStart={(event) => event.stopPropagation()}
 								onTouchEnd={(event) => event.stopPropagation()}
 								placeholder='Buscar opción…'
-								className='w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 outline-none focus:border-zinc-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100'
+								className='w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 outline-hidden focus:border-zinc-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100'
 							/>
 						</div>
 						{menuProps.children}
@@ -484,13 +484,13 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 				classNames(
 					'bg-white dark:bg-zinc-900',
 					'border border-zinc-200 dark:border-zinc-700',
-					'overflow-hidden shadow-lg z-[1000]',
+					'overflow-hidden shadow-lg z-1000',
 					[`${rounded}`],
 				),
 			menuList: () => classNames('py-1 max-h-60 overflow-y-auto'),
 			noOptionsMessage: () =>
 				classNames('px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400'),
-			group: () => classNames('border-zinc-500/25', '[&:not(:last-child)]:border-b'),
+			group: () => classNames('border-zinc-500/25', 'not-last:border-b'),
 			groupHeading: () =>
 				classNames(
 					'font-semibold',
@@ -500,7 +500,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 					'text-zinc-700 dark:text-zinc-300',
 				),
 			placeholder: () => classNames('text-black/50', 'dark:text-white/50'),
-			indicatorSeparator: () => classNames('rounded', '!bg-zinc-500/50'),
+			indicatorSeparator: () => classNames('rounded-sm', 'bg-zinc-500/50!'),
 			multiValue: (state: MultiValuePropsExtends): string =>
 				classNames(
 					`bg-${color}-${colorIntensity}`,
@@ -514,7 +514,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 				),
 			multiValueRemove: (state: MultiValueRemovePropsExtend): string =>
 				classNames('hover:bg-red-500', [`${roundedCustom(-2)}`], themeConfig.transition, {
-					'!hidden': state?.data?.isFixed,
+					'hidden!': state?.data?.isFixed,
 					'opacity-50 pointer-events-none': state?.data?.isDisabled,
 				}),
 		} as ClassNamesConfig<TSelectOption, boolean, GroupBase<TSelectOption>>,

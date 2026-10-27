@@ -252,7 +252,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 			isOpen={isOpen}
 			setIsOpen={onClose}
 			position='right'
-			dialogClassName='md:!max-w-[65rem] w-full'
+			dialogClassName='md:max-w-260! w-full'
 			isStaticBackdrop>
 			<OffCanvasHeader>
 				<div className='flex items-center gap-3'>

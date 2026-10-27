@@ -39,7 +39,7 @@ const AtributosTab: React.FC<AtributosTabProps> = ({
 					onClick={() => switchTo('review')}
 					className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
 						view === 'review'
-							? 'bg-white text-blue-600 shadow-sm dark:bg-neutral-700 dark:text-blue-400'
+							? 'bg-white text-blue-600 shadow-xs dark:bg-neutral-700 dark:text-blue-400'
 							: 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
 					}`}>
 					<Icon icon='HeroClipboardDocumentCheck' className='h-4 w-4' />
@@ -50,7 +50,7 @@ const AtributosTab: React.FC<AtributosTabProps> = ({
 					onClick={() => switchTo('catalog')}
 					className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
 						view === 'catalog'
-							? 'bg-white text-blue-600 shadow-sm dark:bg-neutral-700 dark:text-blue-400'
+							? 'bg-white text-blue-600 shadow-xs dark:bg-neutral-700 dark:text-blue-400'
 							: 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
 					}`}>
 					<Icon icon='HeroCog6Tooth' className='h-4 w-4' />

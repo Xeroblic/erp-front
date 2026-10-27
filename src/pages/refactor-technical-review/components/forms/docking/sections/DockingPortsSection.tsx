@@ -41,8 +41,8 @@ export const DockingPortsSection: React.FC<FormSectionProps<DockingFormData>> = 
 
 	return (
 		<div className='space-y-8'>
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50'>
-				<h4 className='mb-4 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50'>
+				<h4 className='mb-4 text-sm font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 					Cantidad de Puertos
 				</h4>
 

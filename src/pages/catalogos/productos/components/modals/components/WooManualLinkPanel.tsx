@@ -232,7 +232,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	const comparisonData = comparisonRecord?.data ?? comparison;
 
 	return (
-		<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-800'>
+		<Card className='overflow-hidden border border-neutral-200 shadow-xs dark:border-neutral-800'>
 			<CardHeader className='border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-neutral-800/60 dark:bg-neutral-900/40'>
 				<div className='flex items-center justify-between gap-3'>
 					<div className='flex items-center gap-3'>
@@ -309,7 +309,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 						<div className='flex items-start gap-2.5 rounded-lg border border-dashed border-neutral-300 bg-white p-3.5 dark:border-neutral-600 dark:bg-neutral-800/50'>
 							<Icon
 								icon='HeroInformationCircle'
-								className='mt-0.5 h-5 w-5 flex-shrink-0 text-violet-400 dark:text-violet-500'
+								className='mt-0.5 h-5 w-5 shrink-0 text-violet-400 dark:text-violet-500'
 							/>
 							<div>
 								<p className='text-sm font-medium text-neutral-700 dark:text-neutral-200'>
@@ -575,13 +575,13 @@ const CandidatesList: React.FC<CandidatesListProps> = ({
 				</p>
 
 				{/* Desktop table */}
-				<div className='hidden overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700 md:block'>
+				<div className='hidden overflow-hidden rounded-lg border border-neutral-200 md:block dark:border-neutral-700'>
 					<table
 						className='w-full text-sm'
 						role='grid'
 						aria-label='Candidatos de WooCommerce'>
 						<thead className='bg-neutral-100 dark:bg-neutral-800'>
-							<tr className='text-left text-xs uppercase tracking-wider text-neutral-600 dark:text-neutral-300'>
+							<tr className='text-left text-xs tracking-wider text-neutral-600 uppercase dark:text-neutral-300'>
 								<th className='px-3 py-2.5'>Producto</th>
 								<th className='px-3 py-2.5'>SKU</th>
 								<th className='px-3 py-2.5 text-right'>Precio</th>
@@ -598,7 +598,7 @@ const CandidatesList: React.FC<CandidatesListProps> = ({
 									<td className='px-3 py-2.5 font-medium text-neutral-800 dark:text-neutral-100'>
 										{/* El tope va dentro de la celda: max-width sobre <td> no aplica en layout automático. */}
 										<div
-											className='line-clamp-2 max-w-[200px] break-words'
+											className='line-clamp-2 max-w-[200px] wrap-break-word'
 											title={c.name}>
 											{c.name}
 										</div>
@@ -793,7 +793,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 			<div className='rounded-lg border border-violet-300 bg-violet-50 p-4 dark:border-violet-500/30 dark:bg-violet-950/30'>
 				<div className='mb-1 flex items-center gap-2'>
 					<Icon icon='HeroShoppingBag' className='h-4 w-4 text-violet-500' />
-					<span className='text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400'>
+					<span className='text-xs font-bold tracking-wider text-violet-600 uppercase dark:text-violet-400'>
 						Producto seleccionado de WooCommerce
 					</span>
 				</div>
@@ -837,7 +837,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 				<>
 					{/* Comparison table */}
 					<div>
-						<p className='mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400'>
+						<p className='mb-2 flex items-center gap-1.5 text-xs font-bold tracking-wider text-neutral-500 uppercase dark:text-neutral-400'>
 							<Icon icon='HeroArrowsRightLeft' className='h-3.5 w-3.5' />
 							Comparación de datos
 						</p>
@@ -846,7 +846,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								className='w-full text-sm'
 								aria-label='Comparación ERP vs WooCommerce'>
 								<thead className='bg-neutral-100 dark:bg-neutral-800'>
-									<tr className='text-left text-xs uppercase tracking-wider text-neutral-600 dark:text-neutral-300'>
+									<tr className='text-left text-xs tracking-wider text-neutral-600 uppercase dark:text-neutral-300'>
 										<th className='px-3 py-2.5'>Campo</th>
 										<th className='px-3 py-2.5'>
 											<span className='inline-flex items-center gap-1'>
@@ -924,7 +924,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 							<div className='flex items-start gap-2'>
 								<Icon
 									icon='HeroExclamationTriangle'
-									className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400'
+									className='mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400'
 								/>
 								<p className='text-sm font-medium text-amber-800 dark:text-amber-200'>
 									Este producto de WooCommerce ya está vinculado a otro producto
@@ -940,7 +940,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 			{needsSkuDecision && (
 				<div className='rounded-lg border border-sky-300 bg-sky-50 p-4 dark:border-sky-500/30 dark:bg-sky-950/30'>
 					<div className='mb-3 flex items-start gap-2.5'>
-						<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/20 dark:bg-sky-500/25'>
+						<div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-500/20 dark:bg-sky-500/25'>
 							<Icon
 								icon='HeroTag'
 								className='h-4 w-4 text-sky-600 dark:text-sky-400'
@@ -1022,7 +1022,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 			{hasPriceConflict && (
 				<div className='rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/30'>
 					<div className='mb-3 flex items-start gap-2.5'>
-						<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/20 dark:bg-amber-500/25'>
+						<div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/20 dark:bg-amber-500/25'>
 							<Icon
 								icon='HeroExclamationTriangle'
 								className='h-4 w-4 text-amber-600 dark:text-amber-400'
@@ -1105,7 +1105,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 						</div>
 					</div>
 
-					<div className='mt-4 grid grid-cols-1 gap-3 border-t border-amber-200/60 pt-3 dark:border-amber-500/20 sm:grid-cols-2'>
+					<div className='mt-4 grid grid-cols-1 gap-3 border-t border-amber-200/60 pt-3 sm:grid-cols-2 dark:border-amber-500/20'>
 						<Tooltip text='Conserva el precio del ERP y actualiza WooCommerce'>
 							<Button
 								variant='solid'
@@ -1141,7 +1141,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 			{/* Link options & button (only when prices match) */}
 			{!hasPriceConflict && (
 				<div className='space-y-4 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800/50'>
-					<p className='text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400'>
+					<p className='text-xs font-bold tracking-wider text-neutral-500 uppercase dark:text-neutral-400'>
 						Opciones de vinculación
 					</p>
 

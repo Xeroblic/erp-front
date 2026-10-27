@@ -114,7 +114,7 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 
 	return (
 		<div ref={containerRef}>
-			<Card className='border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900/70'>
+			<Card className='border border-neutral-200 bg-white shadow-xs dark:border-neutral-800 dark:bg-neutral-900/70'>
 				<CardHeader>
 					<CardHeaderChild>
 						<CardTitle>Productos con stock crítico</CardTitle>
@@ -139,11 +139,11 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 									onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 										onCriticalSearchChange(e.target.value)
 									}
-									className='!py-2 !pl-9 !text-sm'
+									className='py-2! pl-9! text-sm!'
 								/>
 								<Icon
 									icon='HeroMagnifyingGlass'
-									className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400'
+									className='pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400'
 								/>
 							</div>
 							<button
@@ -164,9 +164,9 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 							{SKELETON_KEYS.map((key) => (
 								<div
 									key={key}
-									className='flex gap-3 rounded border border-dashed border-neutral-200 p-3 dark:border-neutral-700'>
-									<div className='h-12 flex-1 animate-pulse rounded bg-neutral-100 dark:bg-neutral-800' />
-									<div className='h-8 w-28 animate-pulse rounded bg-neutral-100 dark:bg-neutral-800' />
+									className='flex gap-3 rounded-sm border border-dashed border-neutral-200 p-3 dark:border-neutral-700'>
+									<div className='h-12 flex-1 animate-pulse rounded-sm bg-neutral-100 dark:bg-neutral-800' />
+									<div className='h-8 w-28 animate-pulse rounded-sm bg-neutral-100 dark:bg-neutral-800' />
 								</div>
 							))}
 						</div>
@@ -187,7 +187,7 @@ const InventoryCriticalSection: React.FC<InventoryCriticalSectionProps> = ({
 											{headerGroup.headers.map((header) => (
 												<th
 													key={header.id}
-													className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-400'>
+													className='px-4 py-3 text-left text-xs font-semibold tracking-wide text-neutral-600 uppercase dark:text-neutral-400'>
 													{header.isPlaceholder
 														? null
 														: flexRender(

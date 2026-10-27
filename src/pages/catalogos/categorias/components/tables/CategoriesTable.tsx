@@ -340,7 +340,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({ rows, onView, onEdit,
 			<Card>
 				<CardBody className='space-y-4 overflow-x-auto'>
 					{/* Barra de filtros */}
-					<div className='flex flex-col gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50 sm:flex-row sm:items-center'>
+					<div className='flex flex-col gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 sm:flex-row sm:items-center dark:border-zinc-700 dark:bg-zinc-800/50'>
 						<div className='flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
 							<Icon icon='HeroFunnel' className='h-4 w-4' />
 							<span className='hidden sm:inline'>Filtros</span>

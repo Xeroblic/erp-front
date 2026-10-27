@@ -46,7 +46,7 @@ const CloseSaleItemRow = React.memo(
 			<div
 				role='group'
 				aria-label={`${sku} — ${name}`}
-				className={`rounded-lg border bg-white/80 p-3 shadow-sm dark:bg-zinc-900/60 ${
+				className={`rounded-lg border bg-white/80 p-3 shadow-xs dark:bg-zinc-900/60 ${
 					hasIssue
 						? 'border-red-400 dark:border-red-700'
 						: 'border-zinc-200 dark:border-zinc-700'
@@ -81,7 +81,7 @@ const CloseSaleItemRow = React.memo(
 							<Badge
 								variant='solid'
 								color='red'
-								className='inline-flex items-center gap-1 whitespace-nowrap px-2 py-1 text-[11px] text-white'>
+								className='inline-flex items-center gap-1 px-2 py-1 text-[11px] whitespace-nowrap text-white'>
 								<Icon
 									icon='HeroExclamationTriangle'
 									color='white'
@@ -118,7 +118,7 @@ const CloseSaleItemRow = React.memo(
 										<input
 											id={inputId}
 											type='text'
-											className={`w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition-colors dark:bg-zinc-950 ${
+											className={`w-full rounded-md border bg-white px-3 py-2 text-sm outline-hidden transition-colors dark:bg-zinc-950 ${
 												errorMsg
 													? 'border-red-500 focus:border-red-500'
 													: 'border-zinc-300 focus:border-emerald-500 dark:border-zinc-700'
@@ -137,7 +137,7 @@ const CloseSaleItemRow = React.memo(
 									</div>
 								</div>
 								{errorMsg && (
-									<div className='ml-10 mt-1 text-xs text-red-500'>
+									<div className='mt-1 ml-10 text-xs text-red-500'>
 										{errorMsg}
 									</div>
 								)}

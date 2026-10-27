@@ -744,7 +744,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							</Alert>
 						)}
 
-						<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+						<Card className='border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900'>
 							<CardHeader className='pb-2'>
 								<CardTitle className='text-lg'>Datos del documento</CardTitle>
 							</CardHeader>
@@ -942,7 +942,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							</CardBody>
 						</Card>
 
-						<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+						<Card className='border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900'>
 							<CardBody>
 								<DeferredPaymentAttachmentsEditor
 									attachments={attachmentActions.attachments}
@@ -989,7 +989,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							</CardBody>
 						</Card>
 
-						<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+						<Card className='border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900'>
 							<CardHeader className='items-center pb-2'>
 								<CardTitle className='text-lg'>Información de crédito</CardTitle>
 								{hasSelectedCustomer &&
@@ -1023,7 +1023,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												key={metric.label}
 												className='flex min-w-0 items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950'>
 												<div
-													className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white shadow-sm ${metric.iconClassName}`}>
+													className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white shadow-xs ${metric.iconClassName}`}>
 													<Icon
 														icon={metric.icon}
 														size='text-xl'
@@ -1034,7 +1034,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 													<p className='text-xs font-medium text-zinc-500 dark:text-zinc-400'>
 														{metric.label}
 													</p>
-													<p className='truncate text-lg font-bold tabular-nums text-zinc-900 dark:text-white'>
+													<p className='truncate text-lg font-bold text-zinc-900 tabular-nums dark:text-white'>
 														{metric.value}
 													</p>
 												</div>
@@ -1083,7 +1083,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							</CardBody>
 						</Card>
 
-						<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+						<Card className='border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900'>
 							<CardHeader className='pb-2'>
 								<CardTitle className='text-lg'>Ítems del documento</CardTitle>
 							</CardHeader>
@@ -1094,7 +1094,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											{formik.values.items.map((item, index) => (
 												<div
 													key={item.client_key}
-													className='relative grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 pr-14 dark:border-zinc-700 dark:bg-zinc-900 md:grid-cols-12'>
+													className='relative grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 pr-14 md:grid-cols-12 dark:border-zinc-700 dark:bg-zinc-900'>
 													<DeferredPaymentField
 														name={`items.${index}.code`}
 														label='Código'
@@ -1230,7 +1230,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															</div>
 														)}
 													</DeferredPaymentField>
-													<div className='absolute right-4 top-4'>
+													<div className='absolute top-4 right-4'>
 														<Button
 															type='button'
 															variant='outline'
@@ -1283,7 +1283,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 									)}
 								</FieldArray>
 								{itemErrors && <p className='text-sm text-red-600'>{itemErrors}</p>}
-								<div className='grid gap-4 border-t border-zinc-200 pt-4 dark:border-zinc-700 md:grid-cols-2'>
+								<div className='grid gap-4 border-t border-zinc-200 pt-4 md:grid-cols-2 dark:border-zinc-700'>
 									<div>
 										<p className='text-sm text-zinc-500'>
 											Suma referencial de ítems
@@ -1322,7 +1322,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										)}
 									</DeferredPaymentField>
 									{vatBreakdown && (
-										<div className='rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950 md:col-span-2'>
+										<div className='rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm md:col-span-2 dark:border-zinc-700 dark:bg-zinc-950'>
 											<p className='font-medium text-zinc-700 dark:text-zinc-200'>
 												Si el total incluye IVA 19%:
 											</p>

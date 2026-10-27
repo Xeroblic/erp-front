@@ -194,7 +194,7 @@ const PermissionsAdmin = () => {
 							placeholder='Buscar por nombre, email...'
 							value={globalFilter}
 							onChange={(e) => setGlobalFilter(e.target.value)}
-							className='w-64 rounded border md:w-80'
+							className='w-64 rounded-sm border md:w-80'
 						/>
 					</div>
 				</SubheaderRight>
@@ -221,7 +221,7 @@ const PermissionsAdmin = () => {
 							</SubheaderLeft>
 							<SubheaderRight>
 								<div className='flex items-center gap-3'>
-									<div className='flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 shadow-sm'>
+									<div className='flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 shadow-xs'>
 										<div className='h-2 w-2 animate-pulse rounded-full bg-green-400' />
 										<span className='text-sm font-medium text-gray-700'>
 											{users?.length || 0} usuario

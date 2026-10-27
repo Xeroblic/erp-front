@@ -89,13 +89,13 @@ const Badge = forwardRef<HTMLSpanElement, IBadgeProps>((props, forwardedRef) => 
 	});
 
 	const badgeVariant: { [key in TBadgeVariants]: string } = {
-		solid: classNames([`${textColor}`], 'bg-[color:var(--badge-bg)]', 'border-transparent'),
+		solid: classNames([`${textColor}`], 'bg-(--badge-bg)', 'border-transparent'),
 		outline: classNames(
-			'border-[color:var(--badge-border)]',
-			'bg-[color:var(--badge-bg-soft)]',
-			'text-[color:var(--badge-text)]',
+			'border-(--badge-border)',
+			'bg-(--badge-bg-soft)',
+			'text-(--badge-text)',
 		),
-		default: classNames('text-[color:var(--badge-text)]', 'border-transparent'),
+		default: classNames('text-(--badge-text)', 'border-transparent'),
 	};
 	const badgeVariantClasses = badgeVariant[variant];
 

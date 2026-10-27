@@ -35,7 +35,7 @@ export const TimelineItem: FC<ITimelineItemProps> = (props) => {
 				</div>
 				<div
 					data-component-name='line'
-					className='relative top-2 h-[calc(100%-1rem)] min-h-[0.5rem] w-0.5 rounded-full bg-zinc-500/50'
+					className='relative top-2 h-[calc(100%-1rem)] min-h-2 w-0.5 rounded-full bg-zinc-500/50'
 				/>
 			</div>
 			<div data-component-name='content' className='space-y-2'>

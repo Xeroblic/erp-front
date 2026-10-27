@@ -203,7 +203,7 @@ export default function EmpresaDetalle() {
 						{loading && <Spinner nombre='Cargando empresa' />}
 						{error && (
 							<div className='flex h-64 flex-col items-center justify-center rounded-lg bg-red-50 shadow-inner'>
-								<span className='inline-flex items-center rounded border border-red-300 bg-red-100 px-8 py-4 text-lg font-semibold text-red-700 shadow-sm'>
+								<span className='inline-flex items-center rounded-sm border border-red-300 bg-red-100 px-8 py-4 text-lg font-semibold text-red-700 shadow-xs'>
 									<svg
 										className='mr-2 h-6 w-6 text-red-500'
 										fill='none'
@@ -222,7 +222,7 @@ export default function EmpresaDetalle() {
 						)}
 						{!loading && !error && !miEmpresa && (
 							<div className='flex h-64 flex-col items-center justify-center rounded-lg bg-gray-50 shadow-inner'>
-								<span className='inline-flex items-center rounded border border-gray-300 bg-gray-100 px-8 py-4 text-lg text-gray-600 shadow-sm'>
+								<span className='inline-flex items-center rounded-sm border border-gray-300 bg-gray-100 px-8 py-4 text-lg text-gray-600 shadow-xs'>
 									<svg
 										className='mr-2 h-6 w-6 text-gray-400'
 										fill='none'

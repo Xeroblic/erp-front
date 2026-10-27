@@ -146,7 +146,7 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 
 	return (
 		<>
-			<Card className='h-full border-none shadow-sm'>
+			<Card className='h-full border-none shadow-xs'>
 				<CardHeader className='flex flex-wrap items-center justify-between gap-4'>
 					<CardHeaderChild>
 						<div>
@@ -164,9 +164,9 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 								<button
 									type='button'
 									onClick={() => setDateRange('7d')}
-									className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+									className={`rounded-sm px-3 py-1 text-xs font-medium transition-colors ${
 										dateRange === '7d'
-											? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+											? 'bg-white text-gray-900 shadow-xs dark:bg-gray-700 dark:text-white'
 											: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
 									}`}>
 									7D
@@ -174,9 +174,9 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 								<button
 									type='button'
 									onClick={() => setDateRange('30d')}
-									className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+									className={`rounded-sm px-3 py-1 text-xs font-medium transition-colors ${
 										dateRange === '30d'
-											? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+											? 'bg-white text-gray-900 shadow-xs dark:bg-gray-700 dark:text-white'
 											: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
 									}`}>
 									30D
@@ -202,16 +202,16 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 					<Chart options={chartOptions} series={chartSeries} type='area' height={380} />
 				</CardBody>
 			</Card>
-			<div className='fixed bottom-[50vh] right-6 z-50'>
+			<div className='fixed right-6 bottom-[50vh] z-50'>
 				<button
 					type='button'
 					onClick={startTour}
-					className='group relative flex h-14 w-14 items-center justify-center rounded-full border-2 border-emerald-400/30 bg-emerald-500/15 text-emerald-400 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:border-emerald-400/60 hover:shadow-emerald-500/25'
+					className='group relative flex h-14 w-14 items-center justify-center rounded-full border-2 border-emerald-400/30 bg-emerald-500/15 text-emerald-400 shadow-lg backdrop-blur-xs transition-all duration-300 hover:scale-110 hover:border-emerald-400/60 hover:shadow-emerald-500/25'
 					title='Iniciar tour guiado'>
 					<div className='absolute inset-2 animate-ping rounded-full bg-emerald-500 opacity-20' />
 					<Icon icon='HeroQuestionMarkCircle' className='relative z-10 text-xl' />
 					<span
-						className='absolute -right-1 -top-1 flex h-5 w-5 animate-bounce items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-lg'
+						className='absolute -top-1 -right-1 flex h-5 w-5 animate-bounce items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-lg'
 						style={{ animationDuration: '2s' }}>
 						?
 					</span>

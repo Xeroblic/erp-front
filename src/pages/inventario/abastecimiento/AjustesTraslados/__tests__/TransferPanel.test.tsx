@@ -262,7 +262,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		await screen.findByLabelText('Producto de la línea 1');
 		expect(screen.queryByText('Selecciona un producto.')).not.toBeInTheDocument();
 		expect(screen.queryByText('Indica la cantidad.')).not.toBeInTheDocument();
-		expect(screen.getByLabelText('Cantidad de la línea 1')).not.toHaveClass('!border-red-500');
+		expect(screen.getByLabelText('Cantidad de la línea 1')).not.toHaveClass('border-red-500!');
 	});
 
 	it('no avanza sin destino', async () => {

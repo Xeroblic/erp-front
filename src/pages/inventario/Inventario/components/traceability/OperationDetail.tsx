@@ -60,7 +60,7 @@ const Efecto = ({
 	return (
 		<li className='flex flex-wrap items-center gap-x-3 gap-y-1'>
 			<WarehouseLabel warehouse={warehouseOf(effect, warehouses)} />
-			<span className='tabular-nums text-zinc-600 dark:text-zinc-300'>
+			<span className='text-zinc-600 tabular-nums dark:text-zinc-300'>
 				<Balance value={effect.physical_quantity_before} /> →{' '}
 				<span className='font-semibold text-zinc-900 dark:text-zinc-100'>
 					<Balance value={effect.physical_quantity_after} />

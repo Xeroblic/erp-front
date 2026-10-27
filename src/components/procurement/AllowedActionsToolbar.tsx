@@ -188,7 +188,7 @@ const AllowedActionsToolbar: FC<IAllowedActionsToolbarProps> = ({
 			<p
 				data-component-name='Procurement/AllowedActionsToolbar'
 				className={classNames(
-					'text-xs italic text-zinc-500 dark:text-zinc-400',
+					'text-xs text-zinc-500 italic dark:text-zinc-400',
 					className,
 				)}>
 				{emptyLabel}

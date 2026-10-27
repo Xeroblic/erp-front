@@ -436,9 +436,9 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 			className={`flex flex-col gap-6 rounded-xl border p-4 transition-all duration-300 ${colorClasses.border} ${colorClasses.bg}`}>
 			{/* 1. Result Preview Banner */}
 			<div
-				className={`flex items-center justify-between rounded-lg border p-4 shadow-sm ${colorClasses.border} bg-white dark:bg-zinc-900`}>
+				className={`flex items-center justify-between rounded-lg border p-4 shadow-xs ${colorClasses.border} bg-white dark:bg-zinc-900`}>
 				<div>
-					<span className='mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-400'>
+					<span className='mb-1 block text-xs font-medium tracking-wider text-zinc-400 uppercase'>
 						Procesador Seleccionado
 					</span>
 					<div className={`text-lg font-bold ${colorClasses.text}`}>
@@ -447,7 +447,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 				</div>
 				{value && (
 					<div
-						className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${colorClasses.badge}`}>
+						className={`rounded-full px-3 py-1 text-xs font-bold tracking-wide uppercase ${colorClasses.badge}`}>
 						{brandColor === 'gray' ? 'Genérico' : brandColor.toUpperCase()}
 					</div>
 				)}
@@ -487,11 +487,11 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 			<div className='relative'>
 				{/* Divider with Text */}
 				<div className='relative mb-6 flex items-center'>
-					<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
-					<span className='mx-4 flex-shrink-0 text-xs font-semibold text-zinc-400'>
+					<div className='grow border-t border-zinc-200 dark:border-zinc-700'></div>
+					<span className='mx-4 shrink-0 text-xs font-semibold text-zinc-400'>
 						O Configuración Detallada
 					</span>
-					<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
+					<div className='grow border-t border-zinc-200 dark:border-zinc-700'></div>
 				</div>
 
 				{/* Dropdowns Grid */}
@@ -547,7 +547,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 										setCustomFamily('');
 										setSelectedFamilyId(null);
 									}}
-									className='absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
+									className='absolute top-1/2 right-2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
 									title='Volver a lista'>
 									✕
 								</button>
@@ -593,7 +593,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 										setCustomGeneration('');
 										setSelectedGenerationId(null);
 									}}
-									className='absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
+									className='absolute top-1/2 right-2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
 									title='Volver a lista'>
 									✕
 								</button>
@@ -638,7 +638,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 											setCustomModel('');
 											setSelectedModelId(null);
 										}}
-										className='absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
+										className='absolute top-1/2 right-2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
 										title='Volver a lista'>
 										✕
 									</button>

@@ -38,7 +38,7 @@ const DashboardExportButton: React.FC<Props> = ({
 	return (
 		<Button
 			variant='solid'
-			className='gap-2 border-none bg-zinc-900 font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200'
+			className='gap-2 border-none bg-zinc-900 font-semibold text-white shadow-xs hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200'
 			icon='HeroDocumentArrowDown'
 			isDisable={loading || filteredResults.length === 0}
 			onClick={handleExport}>

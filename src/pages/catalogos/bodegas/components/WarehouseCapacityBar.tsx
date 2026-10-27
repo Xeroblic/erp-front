@@ -13,7 +13,7 @@ const WarehouseCapacityBar: React.FC<WarehouseCapacityBarProps> = ({ current, ma
 	if (!maximum) return <span className='text-sm text-zinc-500'>Sin definir</span>;
 	const percent = Math.min(100, Math.round((current / maximum) * 100));
 	return (
-		<div className='min-w-[8rem] space-y-1'>
+		<div className='min-w-32 space-y-1'>
 			<div
 				className='h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700'
 				role='progressbar'

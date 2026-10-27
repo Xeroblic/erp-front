@@ -18,7 +18,7 @@ const DeferredPaymentItemsSection: React.FC<DeferredPaymentItemsSectionProps> = 
 				</p>
 			</div>
 			<div className='overflow-x-auto'>
-				<Table className='min-w-[42rem] text-sm'>
+				<Table className='min-w-2xl text-sm'>
 					<THead>
 						<Tr>
 							<Th>Código y descripción</Th>

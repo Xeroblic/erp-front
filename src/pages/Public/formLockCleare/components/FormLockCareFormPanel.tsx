@@ -20,7 +20,7 @@ interface FormLockCareFormPanelProps {
 }
 
 const baseFieldClassName =
-	'rounded-xl border-zinc-300 bg-zinc-50 text-zinc-800 placeholder:text-zinc-400 focus:!border-emerald-500';
+	'rounded-xl border-zinc-300 bg-zinc-50 text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-500!';
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_SIZE_MB = 10;
 const MAX_ATTACHMENT_SIZE_BYTES = MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
@@ -122,13 +122,13 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 	}, [formik]);
 
 	return (
-		<div className='self-start rounded-3xl border border-zinc-200/80 bg-white/90 p-4 shadow-sm sm:p-5'>
+		<div className='self-start rounded-3xl border border-zinc-200/80 bg-white/90 p-4 shadow-xs sm:p-5'>
 			<form
 				onSubmit={formik.handleSubmit}
 				noValidate
 				className='grid grid-cols-1 gap-x-4 gap-y-2.5 md:grid-cols-2'>
 				<div className='md:col-span-2'>
-					<p className='text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700'>
+					<p className='text-xs font-semibold tracking-[0.14em] text-emerald-700 uppercase'>
 						Contacto del cliente
 					</p>
 				</div>
@@ -273,7 +273,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 				)}
 
 				<div className='mt-3 border-t border-zinc-200/80 pt-4 md:col-span-2'>
-					<p className='text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700'>
+					<p className='text-xs font-semibold tracking-[0.14em] text-emerald-700 uppercase'>
 						Datos del servicio
 					</p>
 				</div>
@@ -326,7 +326,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 				</div> */}
 
 				<div className='mt-3 border-t border-zinc-200/80 pt-4 md:col-span-2'>
-					<p className='text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700'>
+					<p className='text-xs font-semibold tracking-[0.14em] text-emerald-700 uppercase'>
 						Descripción y respaldo
 					</p>
 				</div>
@@ -355,7 +355,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 					<Label htmlFor='attachments'>Adjuntos</Label>
 					<label
 						htmlFor='attachments'
-						className='mt-1 flex min-h-14 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-emerald-200 bg-gradient-to-r from-emerald-50 to-white px-4 text-sm text-zinc-500 transition-colors hover:border-emerald-500 hover:text-emerald-700'>
+						className='mt-1 flex min-h-14 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-emerald-200 bg-linear-to-r from-emerald-50 to-white px-4 text-sm text-zinc-500 transition-colors hover:border-emerald-500 hover:text-emerald-700'>
 						<span className='inline-flex items-center gap-2'>
 							<Icon icon='HeroPaperClip' className='h-4 w-4' />
 							Agregar adjuntos
@@ -389,7 +389,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						onBlur={handleTermsAcceptedBlur}
 						className='py-0'
 						label={
-							<span className='inline-flex items-center gap-1 whitespace-nowrap text-sm'>
+							<span className='inline-flex items-center gap-1 text-sm whitespace-nowrap'>
 								Acepto los
 								<Button
 									color={lockCareTheme.color}
@@ -397,7 +397,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 									type='button'
 									variant='default'
 									size='xs'
-									className='!px-0 !py-0 font-medium text-emerald-600 hover:text-emerald-800'
+									className='px-0! py-0! font-medium text-emerald-600 hover:text-emerald-800'
 									onClick={onOpenTerms}>
 									Términos y Condiciones
 								</Button>

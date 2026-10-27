@@ -109,7 +109,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 			</div>
 
 			{/* General Condition */}
-			<div className='rounded-xl border border-emerald-200 bg-emerald-500/10 p-6 shadow-sm transition-colors duration-200 hover:bg-emerald-500/20 dark:border-emerald-800/50 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/20'>
+			<div className='rounded-xl border border-emerald-200 bg-emerald-500/10 p-6 shadow-xs transition-colors duration-200 hover:bg-emerald-500/20 dark:border-emerald-800/50 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/20'>
 				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-emerald-800 dark:text-emerald-200'>
 					<Icon icon='HeroSparkles' className='h-5 w-5' />
 					{getDockingLabel('general_condition')}

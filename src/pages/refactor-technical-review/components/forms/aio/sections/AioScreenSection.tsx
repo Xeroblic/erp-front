@@ -63,7 +63,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 				    apagado, igual que un «No», y el paso se trababa sin explicar por qué.
 				    El selector de tres estados deja el campo visiblemente vacío hasta que
 				    alguien contesta, y el error se muestra junto al control. */}
-				<div className='rounded-xl border border-blue-200 bg-blue-500/20 p-5 transition-colors duration-200 hover:bg-blue-500/30 dark:border-blue-800/50 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 md:col-span-1 lg:col-span-2'>
+				<div className='rounded-xl border border-blue-200 bg-blue-500/20 p-5 transition-colors duration-200 hover:bg-blue-500/30 md:col-span-1 lg:col-span-2 dark:border-blue-800/50 dark:bg-blue-900/20 dark:hover:bg-blue-900/30'>
 					<p className='mb-3 flex items-center justify-center gap-2 text-xs text-blue-800/70 dark:text-blue-200/70'>
 						<Icon icon='HeroHandRaised' className='h-5 w-5' />
 						¿La pantalla del AIO cuenta con digitalizador táctil nativo?

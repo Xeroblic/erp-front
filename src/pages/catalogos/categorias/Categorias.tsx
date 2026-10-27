@@ -253,7 +253,7 @@ const Categorias: React.FC = () => {
 
 			<Container>
 				{error && (
-					<div className='mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700'>
+					<div className='mb-4 rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-700'>
 						{error}
 					</div>
 				)}

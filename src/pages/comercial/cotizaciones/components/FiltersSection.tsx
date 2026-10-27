@@ -26,7 +26,7 @@ export const FiltersSection = ({
 			</CardHeader>
 			<CardBody>
 				<div className='mb-3'>
-					<p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
+					<p className='text-xs font-semibold tracking-wide text-gray-500 uppercase'>
 						Filtros de carga backend
 					</p>
 				</div>
@@ -95,8 +95,8 @@ export const FiltersSection = ({
 
 				{showFilters && (
 					<>
-						<div className='mb-3 mt-4'>
-							<p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
+						<div className='mt-4 mb-3'>
+							<p className='text-xs font-semibold tracking-wide text-gray-500 uppercase'>
 								Filtros locales sobre resultados cargados
 							</p>
 						</div>

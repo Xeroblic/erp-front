@@ -19,7 +19,7 @@ interface IWithdrawalStatusBadgeProps {
 
 const WithdrawalStatusBadge: React.FC<IWithdrawalStatusBadgeProps> = ({ status }) => (
 	<span
-		className={`inline-flex min-w-28 max-w-40 items-center justify-center whitespace-normal rounded-full px-3 py-1.5 text-center text-sm font-semibold shadow-sm ${statusClasses[status.value]}`}>
+		className={`inline-flex max-w-40 min-w-28 items-center justify-center rounded-full px-3 py-1.5 text-center text-sm font-semibold whitespace-normal shadow-xs ${statusClasses[status.value]}`}>
 		{status.label}
 	</span>
 );

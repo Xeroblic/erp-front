@@ -213,7 +213,7 @@ export const DropdownMenu: FC<IDropdownMenuProps> = (props) => {
 						className={classNames(
 							classNames(
 								'py-2',
-								'z-[9999]',
+								'z-9999',
 								'border-zinc-300/25 bg-white shadow-lg dark:border-zinc-800/50 dark:bg-zinc-900',
 								[`${borderWidth}`, `${rounded}`],
 							),

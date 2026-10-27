@@ -46,7 +46,7 @@ const Revisiones: React.FC = () => {
 	return (
 		<PageWrapper name='item-review' title={pageTitle} isProtectedRoute={true}>
 			{/* <div
-				className={`fixed left-[50%] top-0 z-[9] flex h-48 w-[400px] -translate-x-96 transform items-center justify-center rounded-b-full bg-zinc-900/60 shadow-2xl transition-all duration-500 ease-in-out dark:bg-zinc-800 md:left-[60%] md:h-40 md:w-[600px] ${
+				className={`fixed left-[50%] top-0 z-9 flex h-48 w-[400px] -translate-x-96 transform items-center justify-center rounded-b-full bg-zinc-900/60 shadow-2xl transition-all duration-500 ease-in-out dark:bg-zinc-800 md:left-[60%] md:h-40 md:w-[600px] ${
 					showFloatingSN ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
 				}`}>
 				<div className='flex flex-col place-items-center justify-center pt-28 text-white md:pt-24'>

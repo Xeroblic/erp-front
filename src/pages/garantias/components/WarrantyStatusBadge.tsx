@@ -14,7 +14,7 @@ const WarrantyStatusBadge: React.FC<WarrantyStatusBadgeProps> = ({ status }) => 
 			color={palette.color}
 			colorIntensity={palette.intensity}
 			variant='solid'
-			className='text-xs font-semibold uppercase tracking-wide text-white'>
+			className='text-xs font-semibold tracking-wide text-white uppercase'>
 			{status}
 		</Badge>
 	);

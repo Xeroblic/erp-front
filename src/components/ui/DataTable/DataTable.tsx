@@ -163,7 +163,7 @@ const DataTable = <TData extends RowData>({
 						<div className='relative w-full flex-1 sm:max-w-sm'>
 							<Icon
 								icon='HeroMagnifyingGlass'
-								className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400'
+								className='pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400'
 							/>
 							<Input
 								name='filtro'

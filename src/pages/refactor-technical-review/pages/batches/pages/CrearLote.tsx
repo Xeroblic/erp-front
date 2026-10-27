@@ -732,7 +732,7 @@ const CrearLote: React.FC = () => {
 					<div className='mt-6 grid gap-4 sm:grid-cols-2'>
 						<div className='rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/30'>
 							<div className='flex items-center gap-3'>
-								<div className='rounded-xl bg-white/70 p-2 text-emerald-600 shadow-sm dark:bg-emerald-900/40 dark:text-emerald-300'>
+								<div className='rounded-xl bg-white/70 p-2 text-emerald-600 shadow-xs dark:bg-emerald-900/40 dark:text-emerald-300'>
 									<Icon icon='DuoAddUser' className='h-6 w-6' />
 								</div>
 								<div>
@@ -748,7 +748,7 @@ const CrearLote: React.FC = () => {
 						</div>
 						<div className='rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-950/30'>
 							<div className='flex items-center gap-3'>
-								<div className='rounded-xl bg-white/70 p-2 text-indigo-600 shadow-sm dark:bg-indigo-900/40 dark:text-indigo-200'>
+								<div className='rounded-xl bg-white/70 p-2 text-indigo-600 shadow-xs dark:bg-indigo-900/40 dark:text-indigo-200'>
 									<Icon icon='HeroCalendarDays' className='h-6 w-6' />
 								</div>
 								<div>

@@ -23,7 +23,7 @@ const DetailLink: FC<IDetailLinkProps> = ({ link, srLabel, children }) => {
 	return (
 		<Link
 			to={link.to}
-			className='rounded-sm text-blue-600 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:text-blue-400'>
+			className='rounded-xs text-blue-600 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 focus-visible:outline-solid dark:text-blue-400'>
 			<span className='sr-only'>{srLabel}: </span>
 			{children}
 		</Link>

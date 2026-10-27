@@ -160,7 +160,7 @@ const SystemParameterDetailsModal: React.FC<SystemParameterDetailsModalProps> = 
 						Valor Actual
 					</label>
 					<div className='rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800'>
-						<pre className='whitespace-pre-wrap font-mono text-sm text-zinc-900 dark:text-zinc-100'>
+						<pre className='font-mono text-sm whitespace-pre-wrap text-zinc-900 dark:text-zinc-100'>
 							{formatValue(parameter)}
 						</pre>
 					</div>
@@ -173,7 +173,7 @@ const SystemParameterDetailsModal: React.FC<SystemParameterDetailsModalProps> = 
 							Valor por Defecto
 						</label>
 						<div className='rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50'>
-							<pre className='whitespace-pre-wrap font-mono text-sm text-zinc-600 dark:text-zinc-400'>
+							<pre className='font-mono text-sm whitespace-pre-wrap text-zinc-600 dark:text-zinc-400'>
 								{parameter.default_value}
 							</pre>
 						</div>

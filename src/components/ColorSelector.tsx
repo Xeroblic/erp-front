@@ -59,7 +59,7 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ onColorChange }) => {
 						<button
 							key={intensity}
 							onClick={() => handleColorSelect(currentColor, intensity)}
-							className={`h-6 w-6 rounded border transition-all ${
+							className={`h-6 w-6 rounded-sm border transition-all ${
 								currentIntensity === intensity
 									? 'scale-110 border-gray-800 dark:border-gray-200'
 									: 'border-gray-300 hover:scale-105'

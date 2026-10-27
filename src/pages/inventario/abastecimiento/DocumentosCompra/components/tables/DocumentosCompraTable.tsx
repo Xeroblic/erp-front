@@ -110,7 +110,7 @@ const DocumentosCompraTable: React.FC<IDocumentosCompraTableProps> = ({
 							<Tr key={`document-skeleton-${rowIndex}`}>
 								{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
 									<Td key={`document-skeleton-${rowIndex}-${cellIndex}`}>
-										<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+										<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 									</Td>
 								))}
 							</Tr>

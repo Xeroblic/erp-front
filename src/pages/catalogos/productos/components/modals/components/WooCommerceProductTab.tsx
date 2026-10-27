@@ -31,7 +31,7 @@ const FieldContainer: React.FC<{
 }> = ({ id, label, children, error }) => (
 	<div className='space-y-1.5'>
 		<label
-			className='text-xs font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'
+			className='text-xs font-semibold tracking-wider text-neutral-600 uppercase dark:text-neutral-400'
 			htmlFor={id}>
 			{label}
 		</label>
@@ -180,7 +180,7 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 
 	return (
 		<div className='mt-4 space-y-6'>
-			<Card className='border border-neutral-200 shadow-sm dark:border-neutral-800'>
+			<Card className='border border-neutral-200 shadow-xs dark:border-neutral-800'>
 				<CardHeader className='border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-neutral-800 dark:bg-neutral-900/30'>
 					<div className='flex items-center gap-3'>
 						<div className='rounded-lg bg-blue-50 p-2 text-blue-500 dark:bg-blue-950/40'>

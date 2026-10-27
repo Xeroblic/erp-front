@@ -91,7 +91,7 @@ const kpisProducto = (detail: IInventoryStockDetail): IInventarioKpi[] => {
 /** Campo de la ficha, con el mismo formato que el detalle de documento de compra. */
 const Campo = ({ label, children }: { label: string; children: React.ReactNode }) => (
 	<div>
-		<p className='text-xs uppercase text-zinc-500'>{label}</p>
+		<p className='text-xs text-zinc-500 uppercase'>{label}</p>
 		<p>{children}</p>
 	</div>
 );
@@ -257,7 +257,7 @@ const ProductoSession = ({
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-3'>
-						<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-sm'>
+						<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-xs'>
 							<Icon icon='HeroCube' size='text-2xl' color='white' />
 						</div>
 						<div>

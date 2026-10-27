@@ -64,12 +64,12 @@ const StyledButton: FC<IStyledButtonProps> = ({ text, icon, status }) => {
 					},
 					// Añadir separación al hacer hover cuando está colapsado
 					!asideStatus &&
-						'md:group-hover/aside:ltr:mr-1.5 md:group-hover/aside:rtl:ml-1.5',
+						'md:ltr:group-hover/aside:mr-1.5 md:rtl:group-hover/aside:ml-1.5',
 				)}
 			/>
 			<span
 				className={classNames(
-					'overflow-hidden truncate whitespace-nowrap',
+					'truncate overflow-hidden whitespace-nowrap',
 					asideStatus ? 'inline' : 'hidden md:group-hover/aside:inline',
 				)}>
 				{text}

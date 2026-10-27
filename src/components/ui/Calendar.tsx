@@ -31,8 +31,8 @@ export type TColors =
 	| 'primary';
 export type TRounded =
 	| 'rounded-none'
+	| 'rounded-xs'
 	| 'rounded-sm'
-	| 'rounded'
 	| 'rounded-md'
 	| 'rounded-lg'
 	| 'rounded-xl'
@@ -531,7 +531,7 @@ const Calendar: React.FC<CalendarProps> = ({
 			<div className='w-full min-w-[240px] flex-1' key={`grid-${m}-${y}`}>
 				{isPro && (
 					<div
-						className={`mb-4 text-center font-bold capitalize tracking-wide text-gray-800 dark:text-gray-100 ${s.text}`}>
+						className={`mb-4 text-center font-bold tracking-wide text-gray-800 capitalize dark:text-gray-100 ${s.text}`}>
 						{MONTH_NAMES_FULL[m]} {y}
 					</div>
 				)}
@@ -540,7 +540,7 @@ const Calendar: React.FC<CalendarProps> = ({
 					{DAY_NAMES.map((day, idx) => (
 						<span
 							key={day}
-							className={`text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500 ${idx === 5 || idx === 6 ? 'opacity-60' : ''}`}>
+							className={`text-[10px] font-bold tracking-wider text-gray-400 uppercase dark:text-zinc-500 ${idx === 5 || idx === 6 ? 'opacity-60' : ''}`}>
 							{day}
 						</span>
 					))}
@@ -668,7 +668,7 @@ const Calendar: React.FC<CalendarProps> = ({
 			style={{ WebkitUserSelect: 'none', userSelect: 'none' }}>
 			{/* Orbes decorativos */}
 			<div
-				className={`pointer-events-none absolute -right-20 -top-20 h-64 w-64 animate-pulse rounded-full bg-${themeColor}-${themeColorShade} opacity-10 blur-[60px]`}
+				className={`pointer-events-none absolute -top-20 -right-20 h-64 w-64 animate-pulse rounded-full bg-${themeColor}-${themeColorShade} opacity-10 blur-[60px]`}
 			/>
 			<div
 				className={`pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-${themeColor}-400 opacity-[0.06] blur-[50px]`}
@@ -679,8 +679,8 @@ const Calendar: React.FC<CalendarProps> = ({
 				<div className={`mx-auto w-max ${containerClasses}`}>
 					{/* BARRA LATERAL (SOLO PRO) */}
 					{isPro && (
-						<div className='relative z-10 flex w-full flex-shrink-0 flex-col gap-2 border-gray-100 dark:border-zinc-800/80 md:w-52 md:border-r md:pr-6'>
-							<div className='mb-3 flex items-center gap-2 pl-2 text-[10px] font-bold uppercase tracking-widest text-gray-400'>
+						<div className='relative z-10 flex w-full shrink-0 flex-col gap-2 border-gray-100 md:w-52 md:border-r md:pr-6 dark:border-zinc-800/80'>
+							<div className='mb-3 flex items-center gap-2 pl-2 text-[10px] font-bold tracking-widest text-gray-400 uppercase'>
 								<svg
 									className='h-3 w-3'
 									fill='none'
@@ -745,13 +745,13 @@ const Calendar: React.FC<CalendarProps> = ({
 						{isPro && selectionMode === 'range' && (
 							<div className='mb-8 flex flex-wrap gap-4'>
 								<div
-									className={`min-w-[140px] flex-1 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-5 py-3 shadow-sm backdrop-blur-sm transition-all focus-within:ring-2 focus-within:ring-${themeColor}-${themeColorShade}/40 dark:border-zinc-800 dark:bg-zinc-800/40`}>
-									<div className='mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400'>
+									className={`min-w-[140px] flex-1 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-5 py-3 shadow-xs backdrop-blur-xs transition-all focus-within:ring-2 focus-within:ring-${themeColor}-${themeColorShade}/40 dark:border-zinc-800 dark:bg-zinc-800/40`}>
+									<div className='mb-1 text-[11px] font-bold tracking-wider text-gray-400 uppercase'>
 										Inicio
 									</div>
 									<input
 										type='text'
-										className={`w-full bg-transparent font-bold text-gray-800 outline-none placeholder:font-normal placeholder:text-gray-400 dark:text-gray-100 dark:placeholder:text-zinc-500 ${s.text}`}
+										className={`w-full bg-transparent font-bold text-gray-800 outline-hidden placeholder:font-normal placeholder:text-gray-400 dark:text-gray-100 dark:placeholder:text-zinc-500 ${s.text}`}
 										placeholder='DD/MM/YYYY'
 										value={inputStart}
 										onChange={(e) => {
@@ -791,13 +791,13 @@ const Calendar: React.FC<CalendarProps> = ({
 									</svg>
 								</div>
 								<div
-									className={`min-w-[140px] flex-1 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-5 py-3 shadow-sm backdrop-blur-sm transition-all focus-within:ring-2 focus-within:ring-${themeColor}-${themeColorShade}/40 dark:border-zinc-800 dark:bg-zinc-800/40`}>
-									<div className='mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400'>
+									className={`min-w-[140px] flex-1 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-5 py-3 shadow-xs backdrop-blur-xs transition-all focus-within:ring-2 focus-within:ring-${themeColor}-${themeColorShade}/40 dark:border-zinc-800 dark:bg-zinc-800/40`}>
+									<div className='mb-1 text-[11px] font-bold tracking-wider text-gray-400 uppercase'>
 										Fin
 									</div>
 									<input
 										type='text'
-										className={`w-full bg-transparent font-bold text-gray-800 outline-none placeholder:font-normal placeholder:text-gray-400 dark:text-gray-100 dark:placeholder:text-zinc-500 ${s.text}`}
+										className={`w-full bg-transparent font-bold text-gray-800 outline-hidden placeholder:font-normal placeholder:text-gray-400 dark:text-gray-100 dark:placeholder:text-zinc-500 ${s.text}`}
 										placeholder='DD/MM/YYYY'
 										value={inputEnd}
 										onChange={(e) => {
@@ -833,7 +833,7 @@ const Calendar: React.FC<CalendarProps> = ({
 											)
 										}>
 										<span
-											className={`${s.header} font-black capitalize tracking-tight text-gray-800 transition-colors group-hover:text-${themeColor}-${themeColorShade} dark:text-gray-100`}>
+											className={`${s.header} font-black tracking-tight text-gray-800 capitalize transition-colors group-hover:text-${themeColor}-${themeColorShade} dark:text-gray-100`}>
 											{viewMode === 'years'
 												? `${decadeStart} - ${decadeStart + 9}`
 												: MONTH_NAMES_FULL[currentMonth]}
@@ -868,7 +868,7 @@ const Calendar: React.FC<CalendarProps> = ({
 
 								{!isPro && (
 									<span
-										className={`mt-1 text-[10px] font-bold uppercase tracking-widest text-${themeColor}-${themeColorShade}`}>
+										className={`mt-1 text-[10px] font-bold tracking-widest uppercase text-${themeColor}-${themeColorShade}`}>
 										{selectionMode === 'range'
 											? 'Selección Arrastrable'
 											: selectionMode === 'multiple'
@@ -878,10 +878,10 @@ const Calendar: React.FC<CalendarProps> = ({
 								)}
 							</div>
 
-							<div className='flex gap-1.5 rounded-full border border-white/20 bg-gray-100/80 p-1.5 shadow-sm backdrop-blur-md dark:bg-zinc-800/80'>
+							<div className='flex gap-1.5 rounded-full border border-white/20 bg-gray-100/80 p-1.5 shadow-xs backdrop-blur-md dark:bg-zinc-800/80'>
 								<button
 									onClick={handlePrev}
-									className='flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-all hover:bg-white hover:text-gray-900 hover:shadow-sm active:scale-90 dark:text-gray-400 dark:hover:bg-zinc-700 dark:hover:text-white'>
+									className='flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-all hover:bg-white hover:text-gray-900 hover:shadow-xs active:scale-90 dark:text-gray-400 dark:hover:bg-zinc-700 dark:hover:text-white'>
 									<svg
 										className='h-4 w-4'
 										fill='none'
@@ -897,7 +897,7 @@ const Calendar: React.FC<CalendarProps> = ({
 								</button>
 								<button
 									onClick={handleNext}
-									className='flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-all hover:bg-white hover:text-gray-900 hover:shadow-sm active:scale-90 dark:text-gray-400 dark:hover:bg-zinc-700 dark:hover:text-white'>
+									className='flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-all hover:bg-white hover:text-gray-900 hover:shadow-xs active:scale-90 dark:text-gray-400 dark:hover:bg-zinc-700 dark:hover:text-white'>
 									<svg
 										className='h-4 w-4'
 										fill='none'

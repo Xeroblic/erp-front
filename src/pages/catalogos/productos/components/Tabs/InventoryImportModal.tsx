@@ -409,7 +409,7 @@ const InventoryImportModal: React.FC<InventoryImportModalProps> = ({
 		<Modal isOpen={isOpen} setIsOpen={handleClose} isCentered size='2xl'>
 			<ModalHeader>Importar inventario</ModalHeader>
 			<ModalBody>
-				<div className='grid max-h-[75vh] gap-4 overflow-y-auto overflow-x-hidden pr-1'>
+				<div className='grid max-h-[75vh] gap-4 overflow-x-hidden overflow-y-auto pr-1'>
 					<div className='rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300'>
 						<p className='font-medium'>Carga flexible con previsualización</p>
 						<p className='mt-1'>
@@ -500,25 +500,25 @@ const InventoryImportModal: React.FC<InventoryImportModalProps> = ({
 									<table className='min-w-full divide-y divide-neutral-200 dark:divide-neutral-800'>
 										<thead className='bg-neutral-50 dark:bg-neutral-900/60'>
 											<tr>
-												<th className='px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500'>
+												<th className='px-3 py-2 text-left text-xs font-semibold tracking-wide text-neutral-500 uppercase'>
 													Fila
 												</th>
-												<th className='px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500'>
+												<th className='px-3 py-2 text-left text-xs font-semibold tracking-wide text-neutral-500 uppercase'>
 													product_id
 												</th>
-												<th className='px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500'>
+												<th className='px-3 py-2 text-left text-xs font-semibold tracking-wide text-neutral-500 uppercase'>
 													quantity_change
 												</th>
 												{showSourceColumns
 													? preview.headers.map((header, index) => (
 															<th
 																key={`${header}-${index}`}
-																className='px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500'>
+																className='px-3 py-2 text-left text-xs font-semibold tracking-wide text-neutral-500 uppercase'>
 																{header || `Columna ${index + 1}`}
 															</th>
 														))
 													: null}
-												<th className='px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500'>
+												<th className='px-3 py-2 text-left text-xs font-semibold tracking-wide text-neutral-500 uppercase'>
 													Estado
 												</th>
 											</tr>

@@ -54,7 +54,7 @@ export const OffCanvasHeader: FC<IOffCanvasHeaderProps> = (props) => {
 	const { children, className, titleId, setIsOpen, ...rest } = props;
 
 	const classes = classNames(
-		'flex items-center justify-between px-4 pb-4 text-2xl font-semibold [&:first-child]:pt-4',
+		'flex items-center justify-between px-4 pb-4 text-2xl font-semibold first:pt-4',
 	);
 
 	return (
@@ -80,7 +80,7 @@ interface IOffCanvasBodyProps extends HTMLAttributes<HTMLDivElement> {
 export const OffCanvasBody: FC<IOffCanvasBodyProps> = (props) => {
 	const { children, className, ...rest } = props;
 
-	const classes = classNames('grow px-4 pb-4 [&:first-child]:pt-4', 'overflow-y-auto');
+	const classes = classNames('grow px-4 pb-4 first:pt-4', 'overflow-y-auto');
 
 	return (
 		<div
@@ -120,7 +120,7 @@ interface IOffCanvasFooterProps extends HTMLAttributes<HTMLDivElement> {
 export const OffCanvasFooter: FC<IOffCanvasFooterProps> = (props) => {
 	const { children, className, ...rest } = props;
 
-	const classes = classNames('flex items-center justify-between px-4 pb-4 [&:first-child]:pt-4');
+	const classes = classNames('flex items-center justify-between px-4 pb-4 first:pt-4');
 
 	return (
 		<div
@@ -148,7 +148,7 @@ const BackDrop = () => {
 		<motion.div
 			data-component-name='OffCanvas/BackDrop'
 			{...animationProps}
-			className='fixed left-0 top-0 z-[1050] h-screen w-screen backdrop-blur-sm'
+			className='fixed top-0 left-0 z-1050 h-screen w-screen backdrop-blur-xs'
 		/>
 	);
 };
@@ -190,10 +190,10 @@ const Dialog = forwardRef<HTMLDivElement, IDialogProps>((props, ref) => {
 	const classes = classNames(
 		'pointer-events-none fixed w-full h-full shadow-2xl',
 		{
-			'max-w-[30rem]': ['right', 'left'].includes(position),
+			'max-w-120': ['right', 'left'].includes(position),
 			'left-0': position === 'left',
 			'right-0': position === 'right',
-			'max-h-[30rem]': ['top', 'bottom'].includes(position),
+			'max-h-120': ['top', 'bottom'].includes(position),
 			'top-0': position === 'top',
 			'bottom-0': position === 'bottom',
 		},
@@ -257,10 +257,10 @@ const OffCanvas: FC<IOffCanvasProps> = (props) => {
 		if (ref.current && !ref.current.contains(event.target) && isStaticBackdrop) {
 			// @ts-ignore
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-			refOffCanvas.current.classList.add('!scale-105');
+			refOffCanvas.current.classList.add('scale-105!');
 			// @ts-ignore
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-return
-			setTimeout(() => refOffCanvas.current.classList.remove('!scale-105'), 300);
+			setTimeout(() => refOffCanvas.current.classList.remove('scale-105!'), 300);
 		}
 	};
 	useEventListener('mousedown', offCanvasStatic);
@@ -303,7 +303,7 @@ const OffCanvas: FC<IOffCanvasProps> = (props) => {
 		: null;
 
 	const classes = classNames(
-		'fixed left-0 top-0 z-[1055] block h-full w-full overflow-y-auto overflow-x-hidden',
+		'fixed left-0 top-0 z-1055 block h-full w-full overflow-y-auto overflow-x-hidden',
 		{ [`${themeConfig.transition}`]: isStaticBackdrop },
 	);
 

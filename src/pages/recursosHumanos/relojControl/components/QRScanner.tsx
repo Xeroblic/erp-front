@@ -180,7 +180,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onCancel, isActive }) => 
 									value={manualCode}
 									onChange={(e) => setManualCode(e.target.value)}
 									placeholder='Pega el código QR aquí'
-									className='flex-1 rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:border-blue-500'
+									className='flex-1 rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 outline-hidden focus:border-blue-500'
 								/>
 								<Button
 									variant='solid'

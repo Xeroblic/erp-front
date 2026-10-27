@@ -17,11 +17,11 @@ export const EmptyCell = () => <span className='text-sm text-zinc-500'>—</span
  * de la tabla fija la columna al nombre completo y empuja las demás fuera.
  */
 export const ProductCell: React.FC<{ name: string; sku: string }> = ({ name, sku }) => (
-	<div className='min-w-0 max-w-[280px] py-1'>
-		<p className='line-clamp-2 break-words text-sm font-semibold' title={name}>
+	<div className='max-w-[280px] min-w-0 py-1'>
+		<p className='line-clamp-2 text-sm font-semibold wrap-break-word' title={name}>
 			{name}
 		</p>
-		<p className='mt-0.5 break-words font-mono text-xs text-zinc-500 dark:text-zinc-400'>
+		<p className='mt-0.5 font-mono text-xs wrap-break-word text-zinc-500 dark:text-zinc-400'>
 			{sku}
 		</p>
 	</div>
@@ -37,7 +37,7 @@ export const UnitsCell: React.FC<{ value: number; emphasis?: boolean }> = ({
 		<span
 			className={
 				value <= 0
-					? 'text-lg font-semibold tabular-nums text-red-700 dark:text-red-300'
+					? 'text-lg font-semibold text-red-700 tabular-nums dark:text-red-300'
 					: 'text-lg font-semibold tabular-nums'
 			}>
 			{formatUnits(value)}

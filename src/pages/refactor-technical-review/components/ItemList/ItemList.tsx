@@ -554,7 +554,7 @@ const ItemList: React.FC<ItemListProps> = ({
 					<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
 						<button
 							type='button'
-							className='flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white p-6 transition-all hover:bg-gray-50 hover:shadow-sm dark:border-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700'
+							className='flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white p-6 transition-all hover:bg-gray-50 hover:shadow-xs dark:border-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700'
 							onClick={goToReview}>
 							<div className='rounded-full bg-blue-100 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'>
 								<Icon icon='HeroEye' className='h-8 w-8' />
@@ -571,7 +571,7 @@ const ItemList: React.FC<ItemListProps> = ({
 
 						<button
 							type='button'
-							className='flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white p-6 transition-all hover:bg-gray-50 hover:shadow-sm dark:border-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700'
+							className='flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white p-6 transition-all hover:bg-gray-50 hover:shadow-xs dark:border-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700'
 							onClick={goToTraceability}>
 							<div className='rounded-full bg-purple-100 p-3 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'>
 								<Icon icon='HeroClock' className='h-8 w-8' />

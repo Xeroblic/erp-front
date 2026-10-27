@@ -179,13 +179,13 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 		// pregunta por los defectuosos, y se leía como si le perteneciera.
 		<div className='grid grid-cols-1 items-start gap-6 md:grid-cols-2'>
 			<div className='flex flex-col gap-4'>
-				<div className='rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-800/30'>
+				<div className='rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700/50 dark:bg-zinc-800/30'>
 					<YesNoSelector
 						label='¿Hay puertos defectuosos?'
 						value={defectiveAnswer}
 						onChange={answerDefective}
 					/>
-					<p className='mt-3 text-center text-[11px] italic text-zinc-500'>
+					<p className='mt-3 text-center text-[11px] text-zinc-500 italic'>
 						Un puerto defectuoso no funciona: pines doblados o sin respuesta.
 					</p>
 					{allPortsFunctionalError && (
@@ -224,7 +224,7 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 							<div className='flex items-start gap-2 rounded-lg border border-red-200 bg-red-100 p-2 text-xs text-red-800 dark:border-red-700 dark:bg-red-900/30 dark:text-red-200'>
 								<Icon
 									icon='HeroExclamationTriangle'
-									className='mt-0.5 h-4 w-4 flex-shrink-0'
+									className='mt-0.5 h-4 w-4 shrink-0'
 								/>
 								<span>{defectiveCountField.hint ?? defectiveWarningFallback}</span>
 							</div>
@@ -236,13 +236,13 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 			</div>
 
 			<div className='flex flex-col gap-4'>
-				<div className='rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-800/30'>
+				<div className='rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700/50 dark:bg-zinc-800/30'>
 					<YesNoSelector
 						label='¿Hay puertos sueltos?'
 						value={looseAnswer}
 						onChange={answerLoose}
 					/>
-					<p className='mt-3 text-center text-[11px] italic text-zinc-500'>
+					<p className='mt-3 text-center text-[11px] text-zinc-500 italic'>
 						{LOOSE_PORTS_FALLBACK_HINT}
 					</p>
 				</div>
@@ -267,7 +267,7 @@ export const PortConditionFields: React.FC<PortConditionFieldsProps> = ({
 							<div className='flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-100 p-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-100'>
 								<Icon
 									icon='HeroExclamationTriangle'
-									className='mt-0.5 h-4 w-4 flex-shrink-0'
+									className='mt-0.5 h-4 w-4 shrink-0'
 								/>
 								<span>{looseCountField.warning}</span>
 							</div>

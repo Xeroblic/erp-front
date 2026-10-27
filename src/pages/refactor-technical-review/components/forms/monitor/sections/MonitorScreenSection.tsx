@@ -89,8 +89,8 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 			)}
 
 			{/* Display Specs */}
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50'>
-				<h3 className='mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50'>
+				<h3 className='mb-4 flex items-center gap-2 text-sm font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 					<Icon icon='HeroTv' className='h-5 w-5' />
 					Especificaciones del Panel
 				</h3>
@@ -199,8 +199,8 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 			</div>
 
 			{/* Condición de Pantalla */}
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50'>
-				<label className='mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50'>
+				<label className='mb-4 flex items-center gap-2 text-sm font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 					<Icon icon='HeroStop' className='h-5 w-5' />
 					{getMonitorLabel('screen_condition')}
 				</label>
@@ -300,8 +300,8 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 			</div>
 
 			{/* Condición de Base (Stand) */}
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50'>
-				<label className='mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50'>
+				<label className='mb-4 flex items-center gap-2 text-sm font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 					<Icon icon='HeroBarsArrowDown' className='h-5 w-5' />
 					{getMonitorLabel('stand_condition')}
 				</label>
@@ -335,8 +335,8 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 			</div>
 
 			{/* Condición del Marco (Frame) */}
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50'>
-				<label className='mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50'>
+				<label className='mb-4 flex items-center gap-2 text-sm font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 					<Icon icon='HeroPhoto' className='h-5 w-5' />
 					{getMonitorLabel('frame_condition')}
 				</label>

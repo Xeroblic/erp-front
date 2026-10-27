@@ -162,7 +162,7 @@ const DashboardContainer: React.FC = () => {
 							icon='HeroUserCircle'
 							className='text-2xl text-gray-900 dark:text-white'
 						/>
-						<div className='min-w-[220px] flex-shrink-0'>
+						<div className='min-w-[220px] shrink-0'>
 							<Badge
 								typewriter
 								className='text-2xl font-semibold text-gray-900 dark:text-white'>
@@ -184,11 +184,11 @@ const DashboardContainer: React.FC = () => {
 				<div className='relative w-full'>
 					{/* Selector de columnas visible solo si la tab activa es 'quick-links' */}
 					{activeTab === 'quick-links' && (
-						<div className='absolute right-0 top-0 z-10 mr-4 flex h-14 items-center gap-3'>
-							<span className='hidden text-sm font-medium text-gray-500 dark:text-gray-400 sm:block'>
+						<div className='absolute top-0 right-0 z-10 mr-4 flex h-14 items-center gap-3'>
+							<span className='hidden text-sm font-medium text-gray-500 sm:block dark:text-gray-400'>
 								Diseño:
 							</span>
-							<div className='flex rounded-lg border border-gray-200 bg-white p-1 shadow-sm dark:border-gray-700 dark:bg-gray-800'>
+							<div className='flex rounded-lg border border-gray-200 bg-white p-1 shadow-xs dark:border-gray-700 dark:bg-gray-800'>
 								{[1, 2, 3, 4].map((num) => (
 									<button
 										key={num}
@@ -282,16 +282,16 @@ const DashboardContainer: React.FC = () => {
 				</div>
 			</Container>
 
-			<div className='fixed bottom-[50vh] right-6 z-50'>
+			<div className='fixed right-6 bottom-[50vh] z-50'>
 				<button
 					type='button'
 					onClick={startTour}
-					className='group relative flex h-14 w-14 items-center justify-center rounded-full border-2 border-emerald-400/30 bg-emerald-500/15 text-emerald-400 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:border-emerald-400/60 hover:shadow-emerald-500/25'
+					className='group relative flex h-14 w-14 items-center justify-center rounded-full border-2 border-emerald-400/30 bg-emerald-500/15 text-emerald-400 shadow-lg backdrop-blur-xs transition-all duration-300 hover:scale-110 hover:border-emerald-400/60 hover:shadow-emerald-500/25'
 					title='Iniciar tour guiado'>
 					<div className='absolute inset-2 animate-ping rounded-full bg-emerald-500 opacity-20' />
 					<Icon icon='HeroQuestionMarkCircle' className='relative z-10 text-xl' />
 					<span
-						className='absolute -right-1 -top-1 flex h-5 w-5 animate-bounce items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-lg'
+						className='absolute -top-1 -right-1 flex h-5 w-5 animate-bounce items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-lg'
 						style={{ animationDuration: '2s' }}>
 						?
 					</span>

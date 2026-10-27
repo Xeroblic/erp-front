@@ -101,7 +101,7 @@ const InventarioSession = ({ branchId, owner, trazabilidad }: IInventarioSession
 					if (isInventarioVista(tabId)) setVista(tabId);
 				}}
 				variant='pills'
-				contentClassName='!mt-4'>
+				contentClassName='mt-4!'>
 				<Tab id='general' text='Por producto' icon='HeroListBullet'>
 					{filtros.vista === 'general' && (
 						<div className='space-y-4'>

@@ -9,7 +9,7 @@ import { Component, ErrorInfo, ReactNode } from 'react';
  * pantalla quedaría en blanco en vez de mostrar el mensaje de error.
  */
 const FALLBACK_BUTTON_BASE =
-	'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40';
+	'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-hidden focus:ring-2 focus:ring-blue-500/40';
 
 interface Props {
 	children: ReactNode;

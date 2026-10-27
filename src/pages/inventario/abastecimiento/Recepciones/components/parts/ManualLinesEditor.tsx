@@ -201,7 +201,7 @@ const ManualLinesEditor: React.FC<IManualLinesEditorProps> = ({
 							</div>
 							<CostInput
 								// Mismo fondo blanco que el resto de los campos del modal.
-								className='mt-3 [&_input]:!bg-white dark:[&_input]:!bg-zinc-900 [&_select]:!bg-white dark:[&_select]:!bg-zinc-900'
+								className='mt-3 [&_input]:bg-white! dark:[&_input]:bg-zinc-900! [&_select]:bg-white! dark:[&_select]:bg-zinc-900!'
 								label={
 									isCostRequired
 										? 'Costo unitario (obligatorio con proveedor)'

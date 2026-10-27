@@ -91,7 +91,7 @@ const DeferredPaymentSerialsInput: React.FC<DeferredPaymentSerialsInputProps> = 
 					{value.map((serial) => (
 						<span
 							key={serial}
-							className='inline-flex items-center gap-1 rounded-full border border-zinc-300 bg-white py-1 pl-3 pr-1 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200'>
+							className='inline-flex items-center gap-1 rounded-full border border-zinc-300 bg-white py-1 pr-1 pl-3 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200'>
 							{serial}
 							<Button
 								type='button'

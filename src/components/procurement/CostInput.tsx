@@ -68,7 +68,7 @@ const CostInput: FC<ICostInputProps> = ({
 			<legend className='sr-only'>{label}</legend>
 
 			<div className='flex flex-wrap items-end gap-3'>
-				<div className='min-w-[10rem] grow'>
+				<div className='min-w-40 grow'>
 					<Label htmlFor={amountId}>{label}</Label>
 					<Input
 						id={amountId}

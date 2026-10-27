@@ -51,7 +51,7 @@ const SortableSectionCard = ({
 
 	return (
 		<div ref={setNodeRef} style={style} className={`h-full ${isDragging ? 'relative' : ''}`}>
-			<Card className='flex h-full flex-col overflow-hidden border border-gray-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-gray-700/60 dark:bg-gray-800/80'>
+			<Card className='flex h-full flex-col overflow-hidden border border-gray-200/80 bg-white shadow-xs transition-shadow hover:shadow-md dark:border-gray-700/60 dark:bg-gray-800/80'>
 				<div
 					{...attributes}
 					{...listeners}
@@ -85,7 +85,7 @@ const SortableSectionCard = ({
 					</div>
 				</div>
 
-				<div className='flex-grow p-5'>
+				<div className='grow p-5'>
 					<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
 						{subPagesToShow.map((subPage) => (
 							<PermissionGuard
@@ -93,9 +93,9 @@ const SortableSectionCard = ({
 								permission={subPage.authority}
 								role={subPage.roles}>
 								<Link to={subPage.to} className='group block h-full'>
-									<div className='flex h-full items-center justify-between rounded-xl border border-gray-100 bg-gray-50/80 p-3 transition-all duration-300 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-sm dark:border-gray-700/50 dark:bg-gray-900/40 dark:hover:border-blue-500/40 dark:hover:bg-gray-800'>
+									<div className='flex h-full items-center justify-between rounded-xl border border-gray-100 bg-gray-50/80 p-3 transition-all duration-300 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-xs dark:border-gray-700/50 dark:bg-gray-900/40 dark:hover:border-blue-500/40 dark:hover:bg-gray-800'>
 										<div className='flex items-center gap-3'>
-											<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white shadow-sm transition-transform duration-300 group-hover:scale-105 dark:bg-gray-800'>
+											<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-xs transition-transform duration-300 group-hover:scale-105 dark:bg-gray-800'>
 												<Icon
 													color={themeColor}
 													icon={subPage.icon}
@@ -106,7 +106,7 @@ const SortableSectionCard = ({
 												{subPage.text}
 											</span>
 										</div>
-										<div className='flex h-6 w-6 flex-shrink-0 items-center justify-center text-gray-400 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:text-blue-600 group-hover:opacity-100 dark:group-hover:text-blue-400'>
+										<div className='flex h-6 w-6 shrink-0 items-center justify-center text-gray-400 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:text-blue-600 group-hover:opacity-100 dark:group-hover:text-blue-400'>
 											<svg
 												xmlns='http://www.w3.org/2000/svg'
 												width='16'

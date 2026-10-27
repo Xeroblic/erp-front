@@ -45,7 +45,7 @@ export const CardHeader: FC<ICardHeaderProps> = (props) => {
 	const { children, className, ...rest } = props;
 
 	const classes = classNames(
-		'flex flex-wrap items-center justify-between gap-4 px-4 pb-4 [&:first-child]:pt-4',
+		'flex flex-wrap items-center justify-between gap-4 px-4 pb-4 first:pt-4',
 		className,
 	);
 
@@ -63,7 +63,7 @@ interface ICardBodyProps extends HTMLAttributes<HTMLDivElement> {
 export const CardBody: FC<ICardBodyProps> = (props) => {
 	const { children, className, ...rest } = props;
 
-	const classes = classNames('grow px-4 pb-4 [&:first-child]:pt-4', className);
+	const classes = classNames('grow px-4 pb-4 first:pt-4', className);
 
 	return (
 		<div data-component-name='Card/CardBody' className={classes} {...rest}>
@@ -80,7 +80,7 @@ interface ICardBodyCollapseProps {
 export const CardBodyCollapse: FC<ICardBodyCollapseProps> = (props) => {
 	const { children, className, isOpen, ...rest } = props;
 
-	const classes = classNames('px-4 grow overflow-hidden [&:first-child]:pt-4 pb-4', className);
+	const classes = classNames('px-4 grow overflow-hidden first:pt-4 pb-4', className);
 
 	return (
 		<AnimatePresence initial={false}>
@@ -132,7 +132,7 @@ export const CardFooter: FC<ICardFooterProps> = (props) => {
 	const { children, className, ...rest } = props;
 
 	const classes = classNames(
-		'flex flex-wrap items-center justify-between gap-4 px-4 pb-4 [&:first-child]:pt-4',
+		'flex flex-wrap items-center justify-between gap-4 px-4 pb-4 first:pt-4',
 		className,
 	);
 

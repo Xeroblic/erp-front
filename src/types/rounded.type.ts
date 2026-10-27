@@ -1,7 +1,7 @@
 export type TRounded =
 	| 'rounded-none'
+	| 'rounded-xs'
 	| 'rounded-sm'
-	| 'rounded'
 	| 'rounded-md'
 	| 'rounded-lg'
 	| 'rounded-xl'
@@ -11,8 +11,8 @@ export type TRounded =
 
 export const arrRounded: TRounded[] = [
 	'rounded-none',
+	'rounded-xs',
 	'rounded-sm',
-	'rounded',
 	'rounded-md',
 	'rounded-lg',
 	'rounded-xl',

@@ -48,9 +48,9 @@ const emptyFormValues = {
 
 const Skeleton = () => (
 	<div className='animate-pulse space-y-4' aria-label='Cargando condiciones de crédito'>
-		<div className='h-5 w-2/5 rounded bg-zinc-200 dark:bg-zinc-700' />
-		<div className='h-10 rounded bg-zinc-200 dark:bg-zinc-700' />
-		<div className='h-10 rounded bg-zinc-200 dark:bg-zinc-700' />
+		<div className='h-5 w-2/5 rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+		<div className='h-10 rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+		<div className='h-10 rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 	</div>
 );
 

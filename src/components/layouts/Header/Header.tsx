@@ -18,7 +18,7 @@ export const HeaderLeft: FC<IHeaderLeftProps> = (props) => {
 			data-component-name='Header/HeaderLeft'
 			className={classNames(
 				'flex items-center gap-4',
-				'ltr:md:mr-auto rtl:md:ml-auto',
+				'md:ltr:mr-auto md:rtl:ml-auto',
 				className,
 			)}
 			{...rest}>
@@ -50,7 +50,7 @@ export const HeaderRight: FC<IHeaderRightProps> = (props) => {
 			data-component-name='Header/HeaderRight'
 			className={classNames(
 				'flex items-center gap-4',
-				'ltr:md:ml-auto rtl:md:mr-auto',
+				'md:ltr:ml-auto md:rtl:mr-auto',
 				className,
 			)}
 			{...rest}>

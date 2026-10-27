@@ -285,7 +285,7 @@ const SucursalesLista = () => {
 							placeholder='Buscar sucursales...'
 							value={globalFilter}
 							onChange={(e) => setGlobalFilter(e.target.value)}
-							className='w-48 rounded border'
+							className='w-48 rounded-sm border'
 						/>
 						<Tooltip
 							text='Crear nueva SUCURSAL'

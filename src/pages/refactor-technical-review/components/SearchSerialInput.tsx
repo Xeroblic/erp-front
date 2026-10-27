@@ -62,7 +62,7 @@ const SearchSerialInput: React.FC<SearchSerialInputProps> = ({
 					onChange={(e) => setQuery(e.target.value)}
 					placeholder={placeholder}
 					disabled={disabled}
-					className='pl-10 pr-10'
+					className='pr-10 pl-10'
 				/>
 				{query && (
 					<button

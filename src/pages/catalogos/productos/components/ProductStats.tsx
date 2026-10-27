@@ -68,7 +68,7 @@ const StatCard: React.FC<IStatCardProps> = ({ card, index, value, loading }) => 
 	const variant = STYLE_VARIANTS[selectedColor] || STYLE_VARIANTS.default;
 
 	return (
-		<Card className={`h-full w-full border ${variant.border} shadow-sm`}>
+		<Card className={`h-full w-full border ${variant.border} shadow-xs`}>
 			<CardBody className='flex flex-col gap-4'>
 				<div className='flex items-center gap-4'>
 					<div
@@ -80,7 +80,7 @@ const StatCard: React.FC<IStatCardProps> = ({ card, index, value, loading }) => 
 
 				<div>
 					{loading ? (
-						<div className='h-8 w-24 animate-pulse rounded bg-gray-400' />
+						<div className='h-8 w-24 animate-pulse rounded-sm bg-gray-400' />
 					) : (
 						<div className='text-2xl font-bold'>
 							{Number(value ?? 0).toLocaleString('es-CO')}
@@ -103,9 +103,9 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 					spaceBetween={16}
 					slidesPerView='auto'
 					freeMode
-					className='!overflow-visible'>
+					className='overflow-visible!'>
 					{cards.map((card, index) => (
-						<SwiperSlide key={card.key} className='!w-[260px] sm:!w-[280px]'>
+						<SwiperSlide key={card.key} className='w-[260px]! sm:w-[280px]!'>
 							<StatCard
 								card={card}
 								index={index}

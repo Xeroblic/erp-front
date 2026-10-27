@@ -33,8 +33,8 @@ const TableSkeleton: React.FC = () => (
 					<div className='flex items-center gap-3'>
 						<div className='h-12 w-12 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-700' />
 						<div className='flex-1 space-y-2'>
-							<div className='h-4 w-2/5 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
-							<div className='h-3 w-1/4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+							<div className='h-4 w-2/5 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+							<div className='h-3 w-1/4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 						</div>
 					</div>
 				</td>
@@ -152,7 +152,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 									{headerGroup.headers.map((header) => (
 										<th
 											key={header.id}
-											className='px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300'>
+											className='px-6 py-3 text-left text-xs font-semibold tracking-wider text-zinc-700 uppercase dark:text-zinc-300'>
 											{header.isPlaceholder
 												? null
 												: flexRender(

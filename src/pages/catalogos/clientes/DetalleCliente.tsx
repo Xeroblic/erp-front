@@ -234,11 +234,11 @@ const DetalleClientePage: React.FC = () => {
 				<div className='space-y-6'>
 					{/* Información del cliente - DATOS REALES DE BD */}
 					<Card className='overflow-hidden shadow-lg'>
-						<CardHeader className='bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20'>
+						<CardHeader className='bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20'>
 							<div className='flex items-center justify-between'>
 								<div className='flex items-center gap-4'>
 									{/* Avatar con inicial */}
-									<div className='flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-2xl font-bold text-white shadow-lg'>
+									<div className='flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-600 text-2xl font-bold text-white shadow-lg'>
 										{customer.name.charAt(0).toUpperCase()}
 									</div>
 									<div>
@@ -256,7 +256,7 @@ const DetalleClientePage: React.FC = () => {
 						<CardBody className='p-6'>
 							{/* Stats Card */}
 							<div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
-								<div className='rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800'>
+								<div className='rounded-lg border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-700 dark:bg-gray-800'>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900'>
 											<Icon
@@ -282,7 +282,7 @@ const DetalleClientePage: React.FC = () => {
 									</div>
 								</div>
 
-								<div className='rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800'>
+								<div className='rounded-lg border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-700 dark:bg-gray-800'>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900'>
 											<Icon
@@ -308,7 +308,7 @@ const DetalleClientePage: React.FC = () => {
 									</div>
 								</div>
 
-								<div className='rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 shadow-sm dark:border-green-800 dark:from-green-900/20 dark:to-emerald-900/20'>
+								<div className='rounded-lg border-2 border-green-200 bg-linear-to-br from-green-50 to-emerald-50 p-4 shadow-xs dark:border-green-800 dark:from-green-900/20 dark:to-emerald-900/20'>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-green-600'>
 											<Icon icon='HeroUsers' className='h-6 w-6 text-white' />
@@ -329,7 +329,7 @@ const DetalleClientePage: React.FC = () => {
 
 					{/* TABLA 1: Proveedores ASOCIADOS - DISEÑO MEJORADO */}
 					<Card className='shadow-md'>
-						<CardHeader className='bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20'>
+						<CardHeader className='bg-linear-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20'>
 							<div className='flex items-center justify-between'>
 								<div className='flex items-center gap-3'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 dark:bg-emerald-500'>
@@ -412,7 +412,7 @@ const DetalleClientePage: React.FC = () => {
 															{headerGroup.headers.map((header) => (
 																<th
 																	key={header.id}
-																	className='px-6 py-3 text-left font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+																	className='px-6 py-3 text-left font-semibold tracking-wider text-gray-700 uppercase dark:text-gray-300'>
 																	{flexRender(
 																		header.column.columnDef
 																			.header,
@@ -431,7 +431,7 @@ const DetalleClientePage: React.FC = () => {
 														{row.getVisibleCells().map((cell) => (
 															<td
 																key={cell.id}
-																className='whitespace-nowrap px-6 py-4'>
+																className='px-6 py-4 whitespace-nowrap'>
 																{flexRender(
 																	cell.column.columnDef.cell,
 																	cell.getContext(),
@@ -450,7 +450,7 @@ const DetalleClientePage: React.FC = () => {
 					{/* TABLA 2: Proveedores DISPONIBLES - DISEÑO MEJORADO */}
 					{isEditable && (
 						<Card className='border-2 border-dashed border-blue-300 shadow-md dark:border-blue-700'>
-							<CardHeader className='bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20'>
+							<CardHeader className='bg-linear-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20'>
 								<div className='flex items-center justify-between'>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-500'>
@@ -516,7 +516,7 @@ const DetalleClientePage: React.FC = () => {
 															{headerGroup.headers.map((header) => (
 																<th
 																	key={header.id}
-																	className='px-6 py-3 text-left font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+																	className='px-6 py-3 text-left font-semibold tracking-wider text-gray-700 uppercase dark:text-gray-300'>
 																	{flexRender(
 																		header.column.columnDef
 																			.header,
@@ -535,7 +535,7 @@ const DetalleClientePage: React.FC = () => {
 														{row.getVisibleCells().map((cell) => (
 															<td
 																key={cell.id}
-																className='whitespace-nowrap px-6 py-4'>
+																className='px-6 py-4 whitespace-nowrap'>
 																{flexRender(
 																	cell.column.columnDef.cell,
 																	cell.getContext(),

@@ -435,7 +435,7 @@ export default function SucursalDetalle() {
 							{sucursal.manager ? (
 								<>
 									<div className='flex items-center gap-4'>
-										<div className='dark:bg-primary-900/20 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100'>
+										<div className='flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20'>
 											<Icon
 												icon='HeroUser'
 												className='text-2xl text-primary-600'

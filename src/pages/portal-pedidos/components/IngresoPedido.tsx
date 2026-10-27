@@ -24,7 +24,7 @@ const IngresoPedido = () => {
 
 	return (
 		<div className='w-full'>
-			<Card className='w-full border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+			<Card className='w-full border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900'>
 				<CardHeader className='border-b border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50'>
 					<div className='flex items-center gap-3'>
 						<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'>
@@ -121,7 +121,7 @@ const IngresoPedido = () => {
 							<div className='mb-4 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/50 dark:bg-yellow-900/20'>
 								<Icon
 									icon='HeroInformationCircle'
-									className='mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-600 dark:text-yellow-500'
+									className='mt-0.5 h-5 w-5 shrink-0 text-yellow-600 dark:text-yellow-500'
 								/>
 								<p className='text-sm text-yellow-800 dark:text-yellow-200'>
 									Es obligatorio adjuntar <strong>al menos un documento</strong>{' '}

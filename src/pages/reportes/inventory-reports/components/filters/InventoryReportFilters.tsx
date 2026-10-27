@@ -11,7 +11,7 @@ import { singleSelectValue } from '@/utils/selectFilter.util';
 
 /** Ningún select es `isMulti`, pero `SelectReact` tipa el `onChange` genérico. */
 const fieldLabelClass = 'block text-sm font-medium text-zinc-700 dark:text-zinc-300';
-const selectBackgroundClass = '!bg-zinc-50 dark:!bg-zinc-900';
+const selectBackgroundClass = 'bg-zinc-50! dark:bg-zinc-900!';
 
 const estadoSelectOptions: TSelectOption[] = ESTADO_OPTIONS.map(({ value, label }) => ({
 	value,
