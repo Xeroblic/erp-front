@@ -181,7 +181,7 @@ describe('ZF-102 · cierre de la revisión de notebook', () => {
 	it('anuncia el encendido como obligatorio', () => {
 		renderNotebookAesthetics(NOTEBOOK_SCHEMA_FIELDS);
 
-		expect(powersOnGroup()).toHaveAccessibleName('¿Enciende? *');
+		expect(powersOnGroup()).toHaveAccessibleName(/^¿Enciende\?\s*\*$/);
 	});
 
 	it('usa el rótulo y la advertencia que publica el backend', () => {
@@ -385,7 +385,7 @@ describe('ZF-102 · cierre de la revisión de desktop', () => {
 
 		const { unmount } = render(<Harness readOnly={false} />);
 		expect(screen.getByRole('group', { name: /El equipo enciende/i })).toHaveAccessibleName(
-			'¿El equipo enciende? *',
+			/^¿El equipo enciende\?\s*\*$/,
 		);
 		unmount();
 

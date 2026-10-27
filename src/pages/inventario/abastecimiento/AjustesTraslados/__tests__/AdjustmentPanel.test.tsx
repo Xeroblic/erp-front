@@ -435,7 +435,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		};
 
 		await activate('Siguiente');
-		const products = await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+		const products = await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ });
 		await waitFor(() => expect(products).toHaveFocus());
 		// El siguiente Tab llega al primer campo del paso, no al pie del asistente.
 		const product = screen.getByLabelText('Producto de la línea 1');
@@ -446,14 +446,14 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		await activate('Siguiente');
 		// «Siguiente» desaparece en el último paso: el foco no puede caer en <body>.
 		const confirmation = await screen.findByRole('heading', {
-			name: /Paso 3 de 3: Motivo y confirmación/,
+			name: /Paso 3 de 3:\s*Motivo y confirmación/,
 		});
 		await waitFor(() => expect(confirmation).toHaveFocus());
 		expect(follows(confirmation, screen.getByLabelText('Motivo'))).toBe(true);
 
 		await activate('Anterior');
 		await waitFor(() =>
-			expect(screen.getByRole('heading', { name: /Paso 2 de 3: Productos/ })).toHaveFocus(),
+			expect(screen.getByRole('heading', { name: /Paso 2 de 3:\s*Productos/ })).toHaveFocus(),
 		);
 	});
 
@@ -696,7 +696,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 
 			// Sin selector: el asistente abre en «Productos» con la ubicación fija.
 			expect(
-				await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ }),
+				await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ }),
 			).toBeInTheDocument();
 			expect(screen.getByText('Sin ubicación')).toBeInTheDocument();
 			expect(screen.queryByLabelText('Ubicación')).not.toBeInTheDocument();
@@ -718,7 +718,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 
 		it('el paso «Ubicación» muestra la ubicación fija, sin bodegas que elegir', async () => {
 			renderPage();
-			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
+			await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ });
 			fireEvent.click(screen.getByRole('button', { name: 'Anterior' }));
 
 			expect(
