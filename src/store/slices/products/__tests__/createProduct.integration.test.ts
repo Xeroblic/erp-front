@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw/http';
 import ApiService from '@/services/ApiService';
 import { makeIntegrationStore } from '@/test-utils/integrationStore';
 import productsReducer, { createProduct } from '../productsSlice';
@@ -46,7 +46,7 @@ const makeStore = () => makeIntegrationStore({ products: productsReducer });
 const PRODUCT_DATA = { name: 'Notebook', sku: 'NB-01', brand_id: 2, price: 1000, stock: 5 };
 
 describe('createProduct (integración)', () => {
-	beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+	beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 	beforeEach(() => ApiService.clearCache());
 	afterEach(() => {
 		server.resetHandlers();

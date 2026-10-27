@@ -5,7 +5,8 @@
  */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
-import { http, HttpResponse, delay } from 'msw';
+import { http, HttpResponse } from 'msw/http';
+import { delay } from 'msw/utils/delay';
 
 vi.mock('@/store', () => ({
 	default: {
@@ -29,7 +30,7 @@ const server = setupServer(
 );
 
 describe('ApiService (integración caché/dedupe)', () => {
-	beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+	beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 	beforeEach(() => {
 		ApiService.clearCache();
 		hits = 0;

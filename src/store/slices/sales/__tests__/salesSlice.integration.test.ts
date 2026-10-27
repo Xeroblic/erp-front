@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw/http';
 
 const { toastSuccess, toastError } = vi.hoisted(() => ({
 	toastSuccess: vi.fn(),
@@ -80,7 +80,7 @@ const makeStore = () => makeIntegrationStore({ ventas: salesReducer });
 const asRoot = (s: { ventas: ReturnType<typeof salesReducer> }) => s as unknown as RootState;
 
 describe('salesSlice (integración)', () => {
-	beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+	beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 	beforeEach(() => {
 		ApiService.clearCache();
 		lastListUrl = null;

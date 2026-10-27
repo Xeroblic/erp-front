@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw/http';
 
 vi.mock('react-toastify', () => ({
 	toast: { success: vi.fn(), error: vi.fn() },
@@ -89,7 +89,7 @@ const loadList = async (store: ReturnType<typeof makeStore>) => {
 };
 
 describe('productsSlice (integración)', () => {
-	beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+	beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 	beforeEach(() => ApiService.clearCache());
 	afterEach(() => {
 		server.resetHandlers();

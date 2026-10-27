@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw/http';
 
 const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
 
@@ -84,7 +84,7 @@ const dispatchOf = (store: ReturnType<typeof makeStore>) =>
 	store.dispatch as ThunkDispatch<RootState, unknown, UnknownAction>;
 
 describe('authSlice (integración)', () => {
-	beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+	beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 	beforeEach(() => {
 		ApiService.clearCache();
 		tokenManager.clearTokens();
