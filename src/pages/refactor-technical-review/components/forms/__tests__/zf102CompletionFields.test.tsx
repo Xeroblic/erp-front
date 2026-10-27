@@ -1,7 +1,5 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
 import { describe, expect, it, vi } from 'vitest';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { resolveNotebookSchema, type NotebookFormData } from '../../validation/notebook.schema';
@@ -13,6 +11,7 @@ import { AioScreenSection } from '../aio/sections/AioScreenSection';
 import AioBasicInfoSection from '../aio/sections/AioBasicInfoSection';
 import NotebookForm from '../notebook/NotebookForm';
 import DesktopAestheticsSection from '../desktop/sections/DesktopAestheticsSection';
+import { ReviewFormHarness, type ReviewFormHandle } from './reviewFormHarness';
 
 vi.mock('@/components/icon/Icon', () => ({ default: () => <span /> }));
 
@@ -144,25 +143,16 @@ const COMPLETE_DESKTOP: Partial<DesktopFormData> = {
 };
 
 const renderNotebookAesthetics = (schemaFields?: ITechnicalReviewSchema) => {
-	let getValues: (() => NotebookFormData) | undefined;
+	const handle: { current?: ReviewFormHandle<NotebookFormData> } = {};
 
-	const Harness = () => {
-		const form = useForm<NotebookFormData>();
-		getValues = form.getValues;
-		return (
-			<AestheticsSection
-				control={form.control}
-				errors={form.formState.errors}
-				readOnly={false}
-				watch={form.watch}
-				setValue={form.setValue}
-				schemaFields={schemaFields}
-			/>
-		);
-	};
-
-	render(<Harness />);
-	return () => getValues?.();
+	render(
+		<ReviewFormHarness<NotebookFormData>
+			section={AestheticsSection}
+			schemaFields={schemaFields}
+			handle={handle}
+		/>,
+	);
+	return () => handle.current?.getValues();
 };
 
 const powersOnGroup = () => screen.getByRole('group', { name: /Enciende/i });
@@ -211,49 +201,45 @@ describe('ZF-102 · cierre de la revisión de notebook', () => {
 	 * Sin `powers_on` el backend respondía 422 y la revisión quedaba atascada.
 	 */
 	it('no cierra un notebook completo al que le falta el encendido', async () => {
-		const onValid = vi.fn();
-		let submit: (() => Promise<void>) | undefined;
+		const handle: { current?: ReviewFormHandle<NotebookFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<NotebookFormData>({
-				resolver: yupResolver(resolveNotebookSchema(true)) as never,
-				defaultValues: COMPLETE_NOTEBOOK as NotebookFormData,
-			});
-			submit = form.handleSubmit(onValid) as unknown as () => Promise<void>;
-			return <p>{form.formState.errors.powers_on?.message ?? ''}</p>;
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<NotebookFormData>
+				section={AestheticsSection}
+				schema={resolveNotebookSchema(true)}
+				initialValues={COMPLETE_NOTEBOOK}
+				schemaFields={NOTEBOOK_SCHEMA_FIELDS}
+				handle={handle}
+			/>,
+		);
+		let result: Awaited<ReturnType<ReviewFormHandle<NotebookFormData>['finish']>> | undefined;
 		await act(async () => {
-			await submit?.();
+			result = await handle.current?.finish();
 		});
 
-		expect(onValid).not.toHaveBeenCalled();
+		expect(result?.isValid).toBe(false);
 		await waitFor(() =>
 			expect(screen.getByText('Debes indicar si el equipo enciende')).toBeInTheDocument(),
 		);
 	});
 
 	it('cierra el notebook cuando el encendido se respondió con «no»', async () => {
-		const onValid = vi.fn();
-		let submit: (() => Promise<void>) | undefined;
+		const handle: { current?: ReviewFormHandle<NotebookFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<NotebookFormData>({
-				resolver: yupResolver(resolveNotebookSchema(true)) as never,
-				defaultValues: { ...COMPLETE_NOTEBOOK, powers_on: false } as NotebookFormData,
-			});
-			submit = form.handleSubmit(onValid) as unknown as () => Promise<void>;
-			return null;
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<NotebookFormData>
+				section={() => null}
+				schema={resolveNotebookSchema(true)}
+				initialValues={{ ...COMPLETE_NOTEBOOK, powers_on: false } as NotebookFormData}
+				handle={handle}
+			/>,
+		);
+		let result: Awaited<ReturnType<ReviewFormHandle<NotebookFormData>['finish']>> | undefined;
 		await act(async () => {
-			await submit?.();
+			result = await handle.current?.finish();
 		});
 
-		expect(onValid).toHaveBeenCalledTimes(1);
-		expect(onValid.mock.calls[0][0]).toMatchObject({ powers_on: false });
+		expect(result).toMatchObject({ isValid: true, data: { powers_on: false } });
 	});
 });
 
@@ -299,29 +285,19 @@ describe('ZF-102 · atajo «Equipo NO ENCIENDE»', () => {
 	const renderShortcut = (schemaFields?: ITechnicalReviewSchema) => {
 		const onDirectSubmit = vi.fn();
 
-		const Harness = () => {
-			const form = useForm<NotebookFormData>({
-				defaultValues: {
+		render(
+			<ReviewFormHarness<NotebookFormData>
+				section={HardwareSection}
+				initialValues={{
 					processor: 'i5',
 					has_no_ram: true,
 					has_no_storage: true,
 					non_functional_keys_count: 0,
-				},
-			});
-			return (
-				<HardwareSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-					onDirectSubmit={onDirectSubmit}
-					schemaFields={schemaFields}
-				/>
-			);
-		};
-
-		render(<Harness />);
+				}}
+				onDirectSubmit={onDirectSubmit}
+				schemaFields={schemaFields}
+			/>,
+		);
 		act(() => {
 			fireEvent.click(screen.getByRole('button', { name: /Equipo NO ENCIENDE/i }));
 		});
@@ -358,32 +334,22 @@ describe('ZF-102 · cierre de la revisión de desktop', () => {
 	 * pasaba y el 422 aparecía recién en el backend, sin campo señalado.
 	 */
 	it('no cierra un desktop completo al que le falta el encendido', async () => {
-		const onValid = vi.fn();
-		let submit: (() => Promise<void>) | undefined;
+		const handle: { current?: ReviewFormHandle<DesktopFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<DesktopFormData>({
-				resolver: yupResolver(desktopSchema) as never,
-				defaultValues: COMPLETE_DESKTOP as DesktopFormData,
-			});
-			submit = form.handleSubmit(onValid) as unknown as () => Promise<void>;
-			return (
-				<DesktopAestheticsSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<DesktopFormData>
+				section={DesktopAestheticsSection}
+				schema={desktopSchema}
+				initialValues={COMPLETE_DESKTOP}
+				handle={handle}
+			/>,
+		);
+		let result: Awaited<ReturnType<ReviewFormHandle<DesktopFormData>['finish']>> | undefined;
 		await act(async () => {
-			await submit?.();
+			result = await handle.current?.finish();
 		});
 
-		expect(onValid).not.toHaveBeenCalled();
+		expect(result?.isValid).toBe(false);
 		// El error se ve junto al control, no sólo en el toast.
 		await waitFor(() =>
 			expect(screen.getByText('Debes indicar si el equipo enciende')).toBeInTheDocument(),
@@ -391,40 +357,31 @@ describe('ZF-102 · cierre de la revisión de desktop', () => {
 	});
 
 	it('cierra el desktop cuando el encendido se respondió con «no»', async () => {
-		const onValid = vi.fn();
-		let submit: (() => Promise<void>) | undefined;
+		const handle: { current?: ReviewFormHandle<DesktopFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<DesktopFormData>({
-				resolver: yupResolver(desktopSchema) as never,
-				defaultValues: { ...COMPLETE_DESKTOP, powers_on: false } as DesktopFormData,
-			});
-			submit = form.handleSubmit(onValid) as unknown as () => Promise<void>;
-			return null;
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<DesktopFormData>
+				section={() => null}
+				schema={desktopSchema}
+				initialValues={{ ...COMPLETE_DESKTOP, powers_on: false } as DesktopFormData}
+				handle={handle}
+			/>,
+		);
+		let result: Awaited<ReturnType<ReviewFormHandle<DesktopFormData>['finish']>> | undefined;
 		await act(async () => {
-			await submit?.();
+			result = await handle.current?.finish();
 		});
 
-		expect(onValid).toHaveBeenCalledTimes(1);
-		expect(onValid.mock.calls[0][0]).toMatchObject({ powers_on: false });
+		expect(result).toMatchObject({ isValid: true, data: { powers_on: false } });
 	});
 
 	it('anuncia el encendido como obligatorio y lo bloquea en modo lectura', () => {
-		const Harness = ({ readOnly }: { readOnly: boolean }) => {
-			const form = useForm<DesktopFormData>();
-			return (
-				<DesktopAestheticsSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={readOnly}
-					watch={form.watch}
-					setValue={form.setValue}
-				/>
-			);
-		};
+		const Harness = ({ readOnly }: { readOnly: boolean }) => (
+			<ReviewFormHarness<DesktopFormData>
+				section={DesktopAestheticsSection}
+				readOnly={readOnly}
+			/>
+		);
 
 		const { unmount } = render(<Harness readOnly={false} />);
 		expect(screen.getByRole('group', { name: /El equipo enciende/i })).toHaveAccessibleName(
@@ -440,34 +397,23 @@ describe('ZF-102 · cierre de la revisión de desktop', () => {
 
 describe('ZF-102 · AIO', () => {
 	const renderAioScreen = (defaultValues: Partial<AioFormData> = {}) => {
-		let getValues: (() => AioFormData) | undefined;
-		let trigger: ((name: 'is_touchscreen') => Promise<boolean>) | undefined;
+		const handle: { current?: ReviewFormHandle<AioFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<AioFormData>({
-				resolver: yupResolver(aioSchema) as never,
-				defaultValues: defaultValues as AioFormData,
-			});
-			getValues = form.getValues;
-			trigger = form.trigger as unknown as (name: 'is_touchscreen') => Promise<boolean>;
-			return (
-				<AioScreenSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<AioFormData>
+				section={AioScreenSection}
+				schema={aioSchema}
+				initialValues={defaultValues}
+				handle={handle}
+			/>,
+		);
 		return {
-			getValues: () => getValues?.(),
+			getValues: () => handle.current?.getValues(),
 			validateTouchscreen: async () => {
 				let isValid = true;
 				await act(async () => {
-					isValid = (await trigger?.('is_touchscreen')) ?? false;
+					isValid =
+						(await handle.current?.validate(['is_touchscreen']))?.isValid ?? false;
 				});
 				return isValid;
 			},
@@ -512,34 +458,22 @@ describe('ZF-102 · AIO', () => {
 	});
 
 	const renderAioBasicInfo = (defaultValues: Partial<AioFormData> = {}) => {
-		let getValues: (() => AioFormData) | undefined;
-		let trigger: ((name: 'line') => Promise<boolean>) | undefined;
+		const handle: { current?: ReviewFormHandle<AioFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<AioFormData>({
-				resolver: yupResolver(aioSchema) as never,
-				defaultValues: defaultValues as AioFormData,
-			});
-			getValues = form.getValues;
-			trigger = form.trigger as unknown as (name: 'line') => Promise<boolean>;
-			return (
-				<AioBasicInfoSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<AioFormData>
+				section={AioBasicInfoSection}
+				schema={aioSchema}
+				initialValues={defaultValues}
+				handle={handle}
+			/>,
+		);
 		return {
-			getValues: () => getValues?.(),
+			getValues: () => handle.current?.getValues(),
 			validateLine: async () => {
 				let isValid = true;
 				await act(async () => {
-					isValid = (await trigger?.('line')) ?? false;
+					isValid = (await handle.current?.validate(['line']))?.isValid ?? false;
 				});
 				return isValid;
 			},
@@ -548,29 +482,18 @@ describe('ZF-102 · AIO', () => {
 
 	/** El switch anterior sí se deshabilitaba en modo lectura; el selector debe hacerlo igual. */
 	it('no deja responder la pantalla táctil en modo lectura', () => {
-		let getValues: (() => AioFormData) | undefined;
+		const handle: { current?: ReviewFormHandle<AioFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<AioFormData>();
-			getValues = form.getValues;
-			return (
-				<AioScreenSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly
-					watch={form.watch}
-					setValue={form.setValue}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<AioFormData> section={AioScreenSection} readOnly handle={handle} />,
+		);
+		const getValues = () => handle.current?.getValues();
 		const group = screen.getByRole('group', { name: /Pantalla táctil/i });
 		const no = within(group).getByRole('button', { name: 'No' });
 
 		expect(no).toBeDisabled();
 		fireEvent.click(no);
-		expect(getValues?.().is_touchscreen).toBeUndefined();
+		expect(getValues()?.is_touchscreen).toBeUndefined();
 	});
 
 	it('captura la línea del equipo', () => {
@@ -600,33 +523,23 @@ describe('ZF-102 · AIO', () => {
 
 describe('ZF-102 · el error del encendido se borra al responderlo', () => {
 	/**
-	 * `setValue` sin `shouldValidate` no revalida: el mensaje rojo seguía en pantalla
+	 * Un cambio que no revalida dejaba el mensaje rojo en pantalla
 	 * después de responder, hasta que el técnico volvía a pulsar Finalizar.
 	 */
 	it('limpia el mensaje del notebook en cuanto se responde', async () => {
-		let submit: (() => Promise<void>) | undefined;
+		const handle: { current?: ReviewFormHandle<NotebookFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<NotebookFormData>({
-				resolver: yupResolver(resolveNotebookSchema(true)) as never,
-				defaultValues: COMPLETE_NOTEBOOK as NotebookFormData,
-			});
-			submit = form.handleSubmit(vi.fn()) as unknown as () => Promise<void>;
-			return (
-				<AestheticsSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-					schemaFields={NOTEBOOK_SCHEMA_FIELDS}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<NotebookFormData>
+				section={AestheticsSection}
+				schema={resolveNotebookSchema(true)}
+				initialValues={COMPLETE_NOTEBOOK}
+				schemaFields={NOTEBOOK_SCHEMA_FIELDS}
+				handle={handle}
+			/>,
+		);
 		await act(async () => {
-			await submit?.();
+			await handle.current?.finish();
 		});
 		await waitFor(() =>
 			expect(screen.getByText('Debes indicar si el equipo enciende')).toBeInTheDocument(),
@@ -642,28 +555,18 @@ describe('ZF-102 · el error del encendido se borra al responderlo', () => {
 	});
 
 	it('limpia el mensaje del desktop en cuanto se responde', async () => {
-		let submit: (() => Promise<void>) | undefined;
+		const handle: { current?: ReviewFormHandle<DesktopFormData> } = {};
 
-		const Harness = () => {
-			const form = useForm<DesktopFormData>({
-				resolver: yupResolver(desktopSchema) as never,
-				defaultValues: COMPLETE_DESKTOP as DesktopFormData,
-			});
-			submit = form.handleSubmit(vi.fn()) as unknown as () => Promise<void>;
-			return (
-				<DesktopAestheticsSection
-					control={form.control}
-					errors={form.formState.errors}
-					readOnly={false}
-					watch={form.watch}
-					setValue={form.setValue}
-				/>
-			);
-		};
-
-		render(<Harness />);
+		render(
+			<ReviewFormHarness<DesktopFormData>
+				section={DesktopAestheticsSection}
+				schema={desktopSchema}
+				initialValues={COMPLETE_DESKTOP}
+				handle={handle}
+			/>,
+		);
 		await act(async () => {
-			await submit?.();
+			await handle.current?.finish();
 		});
 		await waitFor(() =>
 			expect(screen.getByText('Debes indicar si el equipo enciende')).toBeInTheDocument(),

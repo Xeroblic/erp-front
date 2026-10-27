@@ -1,11 +1,11 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 import MonitorScreenSection from '../monitor/sections/MonitorScreenSection';
 import AioHardwareSection from '../aio/sections/AioHardwareSection';
 import { type MonitorFormData } from '../../validation/monitor.schema';
 import { type AioFormData } from '../../validation/aio.schema';
+import { ReviewFormHarness } from './reviewFormHarness';
 
 vi.mock('@/components/icon/Icon', () => ({
 	default: () => <span data-testid='icon' />,
@@ -74,27 +74,15 @@ const MonitorBypassHarness = ({
 }: {
 	onDirectSubmit: (payload: Partial<MonitorFormData>) => void;
 }) => {
-	const {
-		control,
-		formState: { errors },
-		watch,
-		setValue,
-	} = useForm<MonitorFormData>({
-		defaultValues: {
-			screen_inches: '24',
-			screen_resolution: '1920x1080',
-			screen_condition: 'dead_pixels',
-			dead_pixels_count: 7,
-		},
-	});
-
 	return (
-		<MonitorScreenSection
-			control={control}
-			errors={errors}
-			readOnly={false}
-			watch={watch}
-			setValue={setValue}
+		<ReviewFormHarness<MonitorFormData>
+			section={MonitorScreenSection}
+			initialValues={{
+				screen_inches: '24',
+				screen_resolution: '1920x1080',
+				screen_condition: 'dead_pixels',
+				dead_pixels_count: 7,
+			}}
 			onDirectSubmit={onDirectSubmit}
 		/>
 	);
@@ -105,29 +93,17 @@ const AioBypassHarness = ({
 }: {
 	onDirectSubmit: (payload: Partial<AioFormData>) => void;
 }) => {
-	const {
-		control,
-		formState: { errors },
-		watch,
-		setValue,
-	} = useForm<AioFormData>({
-		defaultValues: {
-			processor: 'i5',
-			has_no_ram: true,
-			has_no_storage: true,
-			screen_inches: '24',
-			screen_condition: 'dead_pixels',
-			dead_pixels_count: 7,
-		},
-	});
-
 	return (
-		<AioHardwareSection
-			control={control}
-			errors={errors}
-			readOnly={false}
-			watch={watch}
-			setValue={setValue}
+		<ReviewFormHarness<AioFormData>
+			section={AioHardwareSection}
+			initialValues={{
+				processor: 'i5',
+				has_no_ram: true,
+				has_no_storage: true,
+				screen_inches: '24',
+				screen_condition: 'dead_pixels',
+				dead_pixels_count: 7,
+			}}
 			onDirectSubmit={onDirectSubmit}
 		/>
 	);

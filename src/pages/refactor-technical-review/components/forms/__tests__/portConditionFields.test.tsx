@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { useForm, type FieldValues, type UseFormReturn } from 'react-hook-form';
+import type { FormikValues } from 'formik';
 import { describe, expect, it, vi } from 'vitest';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import type { FormSectionProps } from '../shared/types';
@@ -9,6 +9,7 @@ import DesktopPortsSection from '../desktop/sections/DesktopPortsSection';
 import { DockingPortsSection } from '../docking/sections/DockingPortsSection';
 import { MonitorPortsSection } from '../monitor/sections/MonitorPortsSection';
 import PortsSection from '../notebook/sections/PortsSection';
+import { ReviewFormHarness, type ReviewFormHandle } from './reviewFormHarness';
 
 vi.mock('@/components/icon/Icon', () => ({ default: () => <span /> }));
 
@@ -70,36 +71,31 @@ const MONITOR_SCHEMA: ITechnicalReviewSchema = {
 	},
 };
 
-type AnySection = React.ComponentType<FormSectionProps<FieldValues>>;
+type AnySection = React.ComponentType<FormSectionProps<FormikValues>>;
 
 const asSection = (section: unknown): AnySection => section as AnySection;
 
 interface RenderOptions {
 	schemaFields?: ITechnicalReviewSchema;
 	readOnly?: boolean;
-	defaultValues?: FieldValues;
+	defaultValues?: FormikValues;
 }
 
 const renderSection = (Section: AnySection, options: RenderOptions = {}) => {
-	let form: UseFormReturn<FieldValues> | undefined;
+	const handle: { current?: ReviewFormHandle<FormikValues> } = {};
 
-	const Harness = () => {
-		const hookForm = useForm<FieldValues>({ defaultValues: options.defaultValues ?? {} });
-		form = hookForm;
-		return (
-			<Section
-				control={hookForm.control}
-				errors={hookForm.formState.errors}
-				readOnly={options.readOnly ?? false}
-				watch={hookForm.watch}
-				setValue={hookForm.setValue}
-				schemaFields={'schemaFields' in options ? options.schemaFields : REMOTE_SCHEMA}
-			/>
-		);
-	};
-
-	render(<Harness />);
-	return () => form as UseFormReturn<FieldValues>;
+	render(
+		<ReviewFormHarness<FormikValues>
+			section={Section}
+			initialValues={options.defaultValues ?? {}}
+			readOnly={options.readOnly ?? false}
+			schemaFields={'schemaFields' in options ? options.schemaFields : REMOTE_SCHEMA}
+			handle={handle}
+		/>,
+	);
+	return () => ({
+		getValues: (field: string): unknown => handle.current?.getValues()[field],
+	});
 };
 
 const question = (name: RegExp) => screen.getByText(name).parentElement as HTMLElement;
