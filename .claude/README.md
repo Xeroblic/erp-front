@@ -83,7 +83,7 @@ Seis decisiones de esta configuración existen para no desperdiciar tokens.
 | En vez de    | Usá                                | Por qué                                                     |
 | ------------ | ---------------------------------- | ----------------------------------------------------------- |
 | `pnpm test`  | `pnpm run test:related <archivos>` | `test` es `vitest` sin `run`: modo watch, no termina nunca. |
-| `pnpm lint`  | `pnpm run lint:changed`            | El completo son **9.033 líneas y 7.553 problemas**.         |
+| `pnpm lint`  | `pnpm run lint:changed`            | El completo son **~7.100 líneas y 5.877 problemas**.        |
 | `tsc` suelto | `pnpm run typecheck`               | Un solo comando, ya en el `allow`.                          |
 
 ```bash
@@ -96,10 +96,10 @@ pnpm run typecheck
 **1. `pnpm test` cuelga la sesión.** Es `vitest` sin `run`, o sea modo watch: la llamada no
 termina, se agota en el timeout y devuelve la UI de watch en vez de resultados.
 
-**1-bis. `pnpm lint` completo es inservible como señal.** Devuelve 7.553 problemas preexistentes
-en 9.033 líneas — más de 100k tokens si se vuelca a contexto — y no dice nada sobre si _tu_
+**1-bis. `pnpm lint` completo es inservible como señal.** Devuelve 5.877 problemas preexistentes
+en ~7.100 líneas — más de 100k tokens si se vuelca a contexto — y no dice nada sobre si _tu_
 cambio introdujo algo nuevo. Medido sobre un rango de 283 archivos, `lint:changed` reporta 96
-problemas en vez de 7.553. El script (`scripts/lintChanged.mjs`) invoca eslint **por lotes**,
+problemas en vez de los miles del lint completo. El script (`scripts/lintChanged.mjs`) invoca eslint **por lotes**,
 porque Windows corta la línea de comandos alrededor de los 8191 caracteres y con ~280 archivos
 falla en vez de lintear.
 

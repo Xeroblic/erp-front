@@ -224,11 +224,11 @@ instrucción aplicable lo autoriza, y sólo para subtareas independientes.
 
 **Verificación acotada, siempre:**
 
-| En vez de    | Usá                                | Por qué                                                       |
-| ------------ | ---------------------------------- | ------------------------------------------------------------- |
-| `pnpm test`  | `pnpm run test:related <archivos>` | `test` es `vitest` sin `run`: modo watch, no termina nunca.   |
-| `pnpm lint`  | `pnpm run lint:changed`            | El completo son 9.033 líneas y 7.553 hallazgos preexistentes. |
-| `tsc` suelto | `pnpm run typecheck`               | Comando único y ya autorizado.                                |
+| En vez de    | Usá                                | Por qué                                                        |
+| ------------ | ---------------------------------- | -------------------------------------------------------------- |
+| `pnpm test`  | `pnpm run test:related <archivos>` | `test` es `vitest` sin `run`: modo watch, no termina nunca.    |
+| `pnpm lint`  | `pnpm run lint:changed`            | El completo son ~7.100 líneas y 5.877 hallazgos preexistentes. |
+| `tsc` suelto | `pnpm run typecheck`               | Comando único y ya autorizado.                                 |
 
 Usá `test:run` o `lint` completos sólo cuando el alcance realmente lo justifique, y reportá
 por separado los hallazgos nuevos de la deuda preexistente.
