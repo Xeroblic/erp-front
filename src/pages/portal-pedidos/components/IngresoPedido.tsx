@@ -1,102 +1,26 @@
-import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
+import React from 'react';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
-import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import SelectReact from '@/components/form/SelectReact';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { toast } from 'react-toastify';
-import { validateRut, formatRut } from '@/utils/validateRut';
+import useIngresoPedido from '../hooks/useIngresoPedido';
+import { PEDIDO_CHANNELS } from '../types';
 
-interface PedidoFormData {
-	rutCliente: string;
-	nombreCliente: string;
-	canalCompra: string;
-	cotizacion?: FileList | null;
-	link?: string;
-}
-
-const channels: TSelectOption[] = [
-	{ value: 'WhatsApp', label: 'WhatsApp' },
-	{ value: 'Correo', label: 'Correo Electrónico' },
-	{ value: 'Presencial', label: 'Presencial' },
-];
-
-const schema = yup
-	.object()
-	.shape({
-		rutCliente: yup
-			.string()
-			.required('El RUT del cliente es obligatorio')
-			.test('is-valid-rut', 'RUT no válido', (value) => {
-				return validateRut(value || '');
-			}),
-		nombreCliente: yup.string().required('El nombre del cliente es obligatorio'),
-		canalCompra: yup.string().required('Debe seleccionar un canal de compra'),
-		cotizacion: yup.mixed<FileList>().nullable(),
-		link: yup.string().optional(),
-	})
-	.test(
-		'at-least-one-file-or-link',
-		'Debe adjuntar una Cotización o ingresar un Link',
-		function (value) {
-			const hasCotizacion = value.cotizacion && value.cotizacion.length > 0;
-			const hasLink = value.link && value.link.trim().length > 0;
-
-			if (!hasCotizacion && !hasLink) {
-				return this.createError({
-					path: 'link',
-					message: 'Debe adjuntar una Cotización o ingresar un Link válido',
-				});
-			}
-
-			return true;
-		},
-	);
-
-export default function IngresoPedido() {
-	const [isSubmitting, setIsSubmitting] = useState(false);
-
+const IngresoPedido = () => {
 	const {
-		register,
-		control,
-		handleSubmit,
-		formState: { errors, isValid, isDirty },
-		reset,
-	} = useForm<PedidoFormData>({
-		resolver: yupResolver(schema as yup.ObjectSchema<PedidoFormData>),
-		mode: 'onChange',
-		defaultValues: {
-			rutCliente: '',
-			nombreCliente: '',
-			canalCompra: '',
-			cotizacion: null,
-			link: '',
-		},
-	});
+		formik,
+		fileInputRef,
+		handleRutChange,
+		handleNombreChange,
+		handleCanalChange,
+		handleCotizacionChange,
+		handleLinkChange,
+		handleReset,
+	} = useIngresoPedido();
 
-	const onSubmit = async (data: PedidoFormData) => {
-		try {
-			setIsSubmitting(true);
-
-			// Aquí iría la lógica para enviar al backend usando FormData
-			console.log('Datos del formulario listos para enviar:', data);
-
-			// Simular envío
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-
-			toast.success('Pedido ingresado con éxito');
-			reset();
-		} catch (error) {
-			console.error('Error al enviar pedido:', error);
-			toast.error('Ocurrió un error al ingresar el pedido');
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
+	const { values, errors, touched, isValid, isSubmitting, handleBlur, handleSubmit } = formik;
 
 	return (
 		<div className='w-full'>
@@ -117,34 +41,26 @@ export default function IngresoPedido() {
 					</div>
 				</CardHeader>
 				<CardBody className='p-6'>
-					<form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+					<form onSubmit={handleSubmit} className='space-y-6'>
 						{/* Fila 1: RUT, Cliente y Canal */}
 						<div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
 							<div>
 								<Label htmlFor='rutCliente' className='required'>
 									RUT del Cliente
 								</Label>
-								<Controller
+								<Input
+									id='rutCliente'
 									name='rutCliente'
-									control={control}
-									render={({ field }) => (
-										<Input
-											{...field}
-											id='rutCliente'
-											placeholder='12345678-9'
-											isValid={!errors.rutCliente}
-											invalidFeedback={errors.rutCliente?.message}
-											isTouched={isDirty}
-											onChange={(e) => {
-												field.onChange(formatRut(e.target.value));
-											}}
-										/>
-									)}
+									placeholder='12345678-9'
+									value={values.rutCliente}
+									onChange={handleRutChange}
+									onBlur={handleBlur}
+									isValid={isValid}
+									isTouched={touched.rutCliente}
+									invalidFeedback={errors.rutCliente}
 								/>
-								{errors.rutCliente && (
-									<p className='mt-1 text-xs text-red-500'>
-										{errors.rutCliente.message}
-									</p>
+								{touched.rutCliente && errors.rutCliente && (
+									<p className='mt-1 text-xs text-red-500'>{errors.rutCliente}</p>
 								)}
 							</div>
 
@@ -152,29 +68,20 @@ export default function IngresoPedido() {
 								<Label htmlFor='nombreCliente' className='required'>
 									Nombre del Cliente
 								</Label>
-								<Controller
+								<Input
+									id='nombreCliente'
 									name='nombreCliente'
-									control={control}
-									render={({ field }) => (
-										<Input
-											{...field}
-											id='nombreCliente'
-											placeholder='Ej. Juan Pérez o Empresa SpA'
-											isValid={!errors.nombreCliente}
-											invalidFeedback={errors.nombreCliente?.message}
-											isTouched={isDirty}
-											onChange={(e) => {
-												const val = e.target.value;
-												const capitalized =
-													val.charAt(0).toUpperCase() + val.slice(1);
-												field.onChange(capitalized);
-											}}
-										/>
-									)}
+									placeholder='Ej. Juan Pérez o Empresa SpA'
+									value={values.nombreCliente}
+									onChange={handleNombreChange}
+									onBlur={handleBlur}
+									isValid={isValid}
+									isTouched={touched.nombreCliente}
+									invalidFeedback={errors.nombreCliente}
 								/>
-								{errors.nombreCliente && (
+								{touched.nombreCliente && errors.nombreCliente && (
 									<p className='mt-1 text-xs text-red-500'>
-										{errors.nombreCliente.message}
+										{errors.nombreCliente}
 									</p>
 								)}
 							</div>
@@ -183,37 +90,31 @@ export default function IngresoPedido() {
 								<Label htmlFor='canalCompra' className='required'>
 									Canal de Compra
 								</Label>
-								<Controller
+								<SelectReact
+									id='canalCompra'
 									name='canalCompra'
-									control={control}
-									render={({ field }) => (
-										<SelectReact
-											{...field}
-											id='canalCompra'
-											options={channels}
-											value={
-												channels.find((c) => c.value === field.value) ||
-												null
-											}
-											onChange={(selected) =>
-												field.onChange((selected as TSelectOption)?.value)
-											}
-											placeholder='Selecciona un canal...'
-											isValid={!errors.canalCompra}
-											invalidFeedback={errors.canalCompra?.message}
-											isTouched={isDirty}
-										/>
-									)}
+									options={PEDIDO_CHANNELS}
+									value={
+										PEDIDO_CHANNELS.find(
+											(c) => c.value === values.canalCompra,
+										) ?? null
+									}
+									onChange={handleCanalChange}
+									onBlur={handleBlur}
+									placeholder='Selecciona un canal...'
+									isValid={isValid}
+									isTouched={touched.canalCompra}
+									invalidFeedback={errors.canalCompra}
 								/>
-								{errors.canalCompra && (
+								{touched.canalCompra && errors.canalCompra && (
 									<p className='mt-1 text-xs text-red-500'>
-										{errors.canalCompra.message}
+										{errors.canalCompra}
 									</p>
 								)}
 							</div>
 						</div>
 
-						<div className='my-6 border-t border-zinc-200 dark:border-zinc-700'></div>
+						<div className='my-6 border-t border-zinc-200 dark:border-zinc-700' />
 
 						{/* Fila 2: Archivos adjuntos y Link */}
 						<div className='space-y-4'>
@@ -235,11 +136,13 @@ export default function IngresoPedido() {
 										Cotización (Opcional si hay Link)
 									</Label>
 									<Input
+										ref={fileInputRef}
 										id='cotizacion'
+										name='cotizacion'
 										type='file'
-										{...register('cotizacion')}
 										accept='.pdf,.jpg,.jpeg,.png'
 										className='mt-2'
+										onChange={handleCotizacionChange}
 									/>
 									<p className='mt-2 text-xs text-zinc-500'>
 										Formatos permitidos: PDF, JPG, PNG
@@ -252,13 +155,16 @@ export default function IngresoPedido() {
 									</Label>
 									<Input
 										id='link'
+										name='link'
 										type='text'
-										{...register('link')}
 										placeholder='https://...'
 										className='mt-2'
-										isValid={!errors.link}
-										invalidFeedback={errors.link?.message}
-										isTouched={isDirty}
+										value={values.link}
+										onChange={handleLinkChange}
+										onBlur={handleBlur}
+										isValid={isValid}
+										isTouched={touched.link}
+										invalidFeedback={errors.link}
 									/>
 									<p className='mt-2 text-xs text-zinc-500'>
 										Pega el enlace al documento externo.
@@ -266,14 +172,14 @@ export default function IngresoPedido() {
 								</div>
 							</div>
 
-							{/* Mostrar error general de archivos/link si existe */}
-							{errors.link && errors.link.type === 'at-least-one-file-or-link' && (
+							{/* El link sólo se valida con la regla «cotización o link» */}
+							{touched.link && errors.link && (
 								<p className='mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-center text-sm font-medium text-red-500 dark:border-red-900/50 dark:bg-red-900/20'>
 									<Icon
 										icon='HeroExclamationTriangle'
 										className='mr-2 inline-block h-4 w-4'
 									/>
-									{errors.link.message}
+									{errors.link}
 								</p>
 							)}
 						</div>
@@ -284,7 +190,7 @@ export default function IngresoPedido() {
 								type='button'
 								variant='outline'
 								color='zinc'
-								onClick={() => reset()}
+								onClick={handleReset}
 								disabled={isSubmitting}>
 								Limpiar Formulario
 							</Button>
@@ -303,4 +209,6 @@ export default function IngresoPedido() {
 			</Card>
 		</div>
 	);
-}
+};
+
+export default IngresoPedido;
