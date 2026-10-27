@@ -315,7 +315,7 @@ const GallerySection = <T extends FormikValues>({ readOnly }: FormSectionProps<T
 				<div
 					role='dialog'
 					aria-modal='true'
-					className='fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm'>
+					className='fixed inset-0 z-[1060] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm'>
 					{/* Fondo: un clic fuera de la foto cierra; el teclado usa Esc o «Cerrar». */}
 					<button
 						type='button'
@@ -329,13 +329,13 @@ const GallerySection = <T extends FormikValues>({ readOnly }: FormSectionProps<T
 						type='button'
 						onClick={closeLightbox}
 						title='Cerrar (Esc)'
-						className='absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
+						className='absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
 						<Icon icon='HeroXMark' className='h-6 w-6' />
 					</button>
 
 					{/* Contador */}
 					{photos.length > 1 && (
-						<span className='absolute left-1/2 top-4 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white'>
+						<span className='absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white'>
 							{(lightboxIndex ?? 0) + 1} / {photos.length}
 						</span>
 					)}
@@ -349,7 +349,7 @@ const GallerySection = <T extends FormikValues>({ readOnly }: FormSectionProps<T
 								showPrev();
 							}}
 							title='Anterior (←)'
-							className='absolute left-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
+							className='absolute left-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
 							<Icon icon='HeroChevronLeft' className='h-6 w-6' />
 						</button>
 					)}
@@ -363,11 +363,12 @@ const GallerySection = <T extends FormikValues>({ readOnly }: FormSectionProps<T
 								showNext();
 							}}
 							title='Siguiente (→)'
-							className='absolute right-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
+							className='absolute right-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
 							<Icon icon='HeroChevronRight' className='h-6 w-6' />
 						</button>
 					)}
 
+					{/* `relative` la sube sobre el fondo; los controles van con `z-10` para quedar encima. */}
 					<img
 						src={lightboxPhoto.url}
 						alt={lightboxPhoto.alt ?? 'Foto de revisión'}
