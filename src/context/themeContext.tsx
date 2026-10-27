@@ -36,6 +36,10 @@ import useDeviceScreen from '../hooks/useDeviceScreen';
 import { TLang } from '../types/lang.type';
 import { useAppDispatch, useAppSelector } from '../store/hook';
 
+// Tailwind 4 expresa los breakpoints en rem; las media queries resuelven rem contra el tamaño
+// de fuente inicial del navegador (16 px), no contra el `font-size` que la app pone en <html>.
+const MD_BREAKPOINT_PX = parseFloat(theme.screens.md) * 16;
+
 // Interface simplificada - ahora solo para compatibilidad
 export interface IThemeContextProps {
 	isDarkTheme: boolean;
@@ -96,12 +100,12 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 			: true,
 	);
 	useLayoutEffect(() => {
-		if (Number(theme.screens.md.replace('px', '')) <= Number(width))
+		if (MD_BREAKPOINT_PX <= Number(width))
 			localStorage.setItem('zentria_asideStatus', asideStatus?.toString());
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [asideStatus]);
 	useEffect(() => {
-		if (Number(theme.screens.md.replace('px', '')) > Number(width)) setAsideStatus(false);
+		if (MD_BREAKPOINT_PX > Number(width)) setAsideStatus(false);
 		return () => {
 			setAsideStatus(
 				localStorage.getItem('zentria_asideStatus')
