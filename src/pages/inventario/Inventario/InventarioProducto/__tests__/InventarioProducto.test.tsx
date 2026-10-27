@@ -428,7 +428,7 @@ describe('Ficha de inventario', () => {
 
 			expect(
 				await within(region).findByRole('link', {
-					name: 'Ficha de la recepción: Recepción #80',
+					name: /^Ficha de la recepción:\s*Recepción #80$/,
 				}),
 			).toHaveAttribute('href', '/inventario/abastecimiento/recepciones/80');
 			// Proveedor y documento salen de la semilla de prueba mientras
