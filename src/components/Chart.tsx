@@ -201,7 +201,6 @@ const Chart: FC<IChartProps> = (props) => {
 				chartInstanceRef.current = null;
 			}
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // mount only
 
 	useEffect(() => {

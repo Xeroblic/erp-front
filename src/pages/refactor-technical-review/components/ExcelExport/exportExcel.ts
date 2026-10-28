@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import JsBarcode from 'jsbarcode';
 import { toast } from 'react-toastify';
+import toText from '@/utils/toText.util';
 import { ANTENNA_CONDITION_OPTIONS } from '@/pages/refactor-technical-review/components/constants/desktop/desktop.options';
 import {
 	CONDITION_VALUES_ES,
@@ -70,7 +71,7 @@ export const normalizeDetailValue = (value: unknown): string => {
 		if (value && 'label' in value) return String((value as any).label);
 		return JSON.stringify(value);
 	}
-	return String(value);
+	return toText(value);
 };
 
 export const resolveColumnValue = (item: IItem, key: string): string => {
@@ -210,7 +211,7 @@ export const applyHeader = (
 
 	const cellI2 = sheet.getCell('I2');
 	cellI2.value = 'Fecha Recepción:';
-	cellI2.font = dateLabelStyle.font as Partial<ExcelJS.Font>;
+	cellI2.font = dateLabelStyle.font;
 	cellI2.alignment = dateLabelStyle.alignment as Partial<ExcelJS.Alignment>;
 
 	const formatDateToDDMMYYYY = (d: Date) => {
@@ -225,17 +226,17 @@ export const applyHeader = (
 
 	const cellJ2 = sheet.getCell('J2');
 	cellJ2.value = receptionDateStr;
-	cellJ2.font = dateValueStyle.font as Partial<ExcelJS.Font>;
+	cellJ2.font = dateValueStyle.font;
 	cellJ2.alignment = dateValueStyle.alignment as Partial<ExcelJS.Alignment>;
 
 	const cellI3 = sheet.getCell('I3');
 	cellI3.value = 'Fecha Revisión:';
-	cellI3.font = dateLabelStyle.font as Partial<ExcelJS.Font>;
+	cellI3.font = dateLabelStyle.font;
 	cellI3.alignment = dateLabelStyle.alignment as Partial<ExcelJS.Alignment>;
 
 	const cellJ3 = sheet.getCell('J3');
 	cellJ3.value = finalReviewDateStr;
-	cellJ3.font = dateValueStyle.font as Partial<ExcelJS.Font>;
+	cellJ3.font = dateValueStyle.font;
 	cellJ3.alignment = dateValueStyle.alignment as Partial<ExcelJS.Alignment>;
 
 	sheet.addRow([]);
@@ -246,13 +247,13 @@ export const applyHeader = (
 	if (trimmedNotes) {
 		const noteLabelCell = sheet.getCell('L2');
 		noteLabelCell.value = 'Nota:';
-		noteLabelCell.font = dateLabelStyle.font as Partial<ExcelJS.Font>;
+		noteLabelCell.font = dateLabelStyle.font;
 		noteLabelCell.alignment = { horizontal: 'left', vertical: 'top' };
 
 		sheet.mergeCells(BATCH_NOTE_RANGE);
 		const noteValueCell = sheet.getCell(BATCH_NOTE_CELL);
 		noteValueCell.value = trimmedNotes;
-		noteValueCell.font = dateValueStyle.font as Partial<ExcelJS.Font>;
+		noteValueCell.font = dateValueStyle.font;
 		noteValueCell.alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
 	}
 
@@ -315,11 +316,7 @@ export const setColumnWidths = (sheet: ExcelJS.Worksheet, headers: string[]) => 
 			if (cell.address === BATCH_NOTE_CELL) return;
 			const cellValue = cell.value;
 			const len =
-				cellValue == null
-					? 0
-					: typeof cellValue === 'string'
-						? cellValue.length
-						: cellValue.toString().length;
+				cellValue instanceof Date ? cellValue.toString().length : toText(cellValue).length;
 			if (len + 2 > maxLength) maxLength = len + 2;
 		});
 		column.width = Math.min(maxLength, 30);
@@ -427,7 +424,7 @@ export const exportItemsToExcel = async (
 			const finalEntries: Array<[string, { label: string; list: IItem[] }]> = [];
 			typeOrder.forEach((typeKey) => {
 				if ((groups as any)[typeKey]) {
-					finalEntries.push([typeKey, groups[typeKey]!]);
+					finalEntries.push([typeKey, groups[typeKey]]);
 					delete groups[typeKey];
 				}
 			});

@@ -56,7 +56,6 @@ export const ReviewFormHarness = <T extends FormikValues>({
 	});
 
 	if (handle) {
-		// eslint-disable-next-line no-param-reassign
 		handle.current = { getValues, finish: validateAll, validate: validateFields };
 	}
 

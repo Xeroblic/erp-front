@@ -129,7 +129,6 @@ const ImageZoomComponent = ({
 	// Re-clampear offset cuando cambie el zoom
 	useEffect(() => {
 		setOffset((prev) => clampOffset(prev.x, prev.y, scale));
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [scale]);
 
 	// Manejo de tecla Space para pan

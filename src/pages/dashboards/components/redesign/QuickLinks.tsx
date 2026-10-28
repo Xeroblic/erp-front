@@ -216,7 +216,7 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ columnCount }) => {
 												(sp) => sp.id === key,
 											),
 									)
-									.filter(Boolean) as PageConfig[];
+									.filter((sp): sp is PageConfig => Boolean(sp));
 							} else {
 								subPagesToShow = Object.values(section.subPages);
 							}

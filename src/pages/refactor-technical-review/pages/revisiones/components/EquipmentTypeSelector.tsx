@@ -43,7 +43,7 @@ const EquipmentTypeSelector: React.FC<EquipmentTypeSelectorProps> = ({
 								: 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800'
 						} ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
 						<Icon
-							icon={option.icon as any}
+							icon={option.icon}
 							className={`h-8 w-8 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500 dark:text-zinc-400'}`}
 						/>
 						<span className='text-xs font-semibold'>{option.label}</span>

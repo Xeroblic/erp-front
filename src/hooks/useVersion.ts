@@ -23,7 +23,7 @@ const resolveVersion = async (versionEndpoint: string): Promise<string> => {
 		});
 
 		const record: Record<string, unknown> =
-			typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {};
+			typeof data === 'object' && data !== null ? data : {};
 		const next: unknown = record.version ?? record.data ?? record.versionSDE ?? data;
 
 		const resolved =

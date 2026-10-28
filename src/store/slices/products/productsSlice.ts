@@ -330,7 +330,7 @@ export const fetchProductById = createAsyncThunk<
 			});
 
 			const raw = response.data?.data ?? response.data;
-			return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
+			return normalizeProduct(raw ?? { id: productId, branch_id: entityId });
 		} catch (error: unknown) {
 			if (getErrorStatus(error) === 404) {
 				const backendMessage = getResponseMessage(error);
@@ -471,7 +471,7 @@ export const createProduct = createAsyncThunk<
 			});
 
 			const raw = response.data?.data ?? response.data;
-			return normalizeProduct((raw as IProduct) ?? body);
+			return normalizeProduct(raw ?? body);
 		} catch (error: unknown) {
 			return rejectWithValue(getErrorPayload(error, 'No se pudo crear el producto'));
 		}
@@ -501,7 +501,7 @@ export const updateProduct = createAsyncThunk<
 			});
 
 			const raw = response.data?.data ?? response.data;
-			return normalizeProduct((raw as IProduct) ?? { ...data, id: productId });
+			return normalizeProduct(raw ?? { ...data, id: productId });
 		} catch (error: unknown) {
 			return rejectWithValue(getErrorPayload(error, 'No se pudo actualizar el producto'));
 		}
@@ -538,7 +538,7 @@ export const toggleProductStatus = createAsyncThunk<
 				method: 'patch',
 			});
 			const raw = response.data?.data ?? response.data;
-			return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
+			return normalizeProduct(raw ?? { id: productId, branch_id: entityId });
 		} catch (error: unknown) {
 			return rejectWithValue(
 				getErrorMessage(error, 'No se pudo cambiar el estado del producto'),
@@ -757,7 +757,7 @@ export const setProductMainImage = createAsyncThunk<
 					method: 'get',
 					responseType: 'blob',
 				});
-				imageBlob = imageResponse.data as unknown as Blob;
+				imageBlob = imageResponse.data;
 			}
 
 			const fileName =

@@ -58,7 +58,6 @@ const useAttachmentDropZone = ({
 			if (!hasFiles(event)) return;
 			// Sin preventDefault el navegador abre el archivo en vez de soltarlo acá.
 			event.preventDefault();
-			// eslint-disable-next-line no-param-reassign -- `dropEffect` sólo se lee vía el propio evento nativo.
 			event.dataTransfer.dropEffect = canDrop ? 'copy' : 'none';
 		},
 		[canDrop],

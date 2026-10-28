@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchItems } from '@/store/slices/technicalReviews/thunks/itemsThunks';
+import toText from '@/utils/toText.util';
 const PrintLabel = React.lazy(
 	() => import('@/pages/refactor-technical-review/components/PrintLabel'),
 );
@@ -15,9 +16,7 @@ import Spinner from '@/components/ui/Spinner';
 
 type FilterType = 'all' | 'pending' | 'approved';
 
-interface Props {}
-
-const LatestApprovedReviewsTimeline: React.FC<Props> = () => {
+const LatestApprovedReviewsTimeline: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const { branchId } = useCurrentBranch();
@@ -186,9 +185,8 @@ const LatestApprovedReviewsTimeline: React.FC<Props> = () => {
 											<div className='flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between'>
 												<div className='flex min-w-0 flex-1 flex-col'>
 													<span className='truncate text-sm font-bold leading-snug text-zinc-900 dark:text-zinc-100'>
-														{String(item.details?.brand ?? '') ||
-															'Sin Marca'}{' '}
-														{String(item.details?.model ?? '') ||
+														{toText(item.details?.brand) || 'Sin Marca'}{' '}
+														{toText(item.details?.model) ||
 															item.product?.name ||
 															'Sin Modelo'}
 													</span>

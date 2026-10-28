@@ -15,7 +15,7 @@ import * as service from '@/services/procurement/inventoryStock.service';
 import type { IInventoryStockRow } from '@/interface/procurement.interface';
 
 const context = vi.hoisted(() => ({
-	branchId: 4 as number | null,
+	branchId: 4,
 	subsidiaryId: 2,
 	enabled: true,
 }));

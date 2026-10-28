@@ -31,7 +31,7 @@ const runThunk = async () => {
 		equipmentType: 'notebook',
 	});
 
-	return thunk(vi.fn(), (() => ({}) as RootState) as () => RootState, undefined);
+	return thunk(vi.fn(), () => ({}) as RootState, undefined);
 };
 
 describe('updateItemDetails', () => {

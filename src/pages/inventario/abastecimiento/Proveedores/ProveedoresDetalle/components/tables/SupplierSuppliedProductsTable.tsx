@@ -5,7 +5,6 @@ import PermissionGuard from '@/components/authorization/PermissionGuard';
 import ProductCard from '@/components/procurement/ProductCard';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import {

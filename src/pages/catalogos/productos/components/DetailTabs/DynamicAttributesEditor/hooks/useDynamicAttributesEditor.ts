@@ -147,9 +147,9 @@ export const useDynamicAttributesEditor = () => {
 			return;
 		}
 
-		const currentProductKind = attributes.product_kind;
+		const storedProductKind = attributes.product_kind;
 
-		if (currentProductKind !== productType) {
+		if (storedProductKind !== productType) {
 			setAttributes((prev) => ({
 				...prev,
 				product_kind: productType,

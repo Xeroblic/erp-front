@@ -277,8 +277,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 									variant='solid'
 									color='red'
 									onClick={() => {
-										const errors = confirmFormik.validateForm();
-										errors.then((errs) => {
+										const validation = confirmFormik.validateForm();
+										validation.then((errs) => {
 											if (!errs || Object.keys(errs).length === 0) {
 												setFieldValue('serial_tracking', false);
 												void submitForm();
@@ -365,8 +365,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 									variant='solid'
 									color='red'
 									onClick={() => {
-										const errors = confirmFormik.validateForm();
-										errors.then((errs) => {
+										const validation = confirmFormik.validateForm();
+										validation.then((errs) => {
 											if (!errs || Object.keys(errs).length === 0) {
 												setFieldValue('is_active', false);
 												void submitForm();

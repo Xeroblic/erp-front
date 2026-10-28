@@ -31,37 +31,37 @@ const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 		key: 'basic-info',
 		label: 'Info Básica',
 		icon: 'HeroInformationCircle',
-		component: AioBasicInfoSection as unknown as React.FC<FormSectionProps<AioFormData>>,
+		component: AioBasicInfoSection,
 	},
 	{
 		key: 'hardware',
 		label: 'Hardware',
 		icon: 'HeroCpuChip',
-		component: AioHardwareSection as unknown as React.FC<FormSectionProps<AioFormData>>,
+		component: AioHardwareSection,
 	},
 	{
 		key: 'screen',
 		label: 'Pantalla & Base',
 		icon: 'HeroComputerDesktop',
-		component: AioScreenSection as unknown as React.FC<FormSectionProps<AioFormData>>,
+		component: AioScreenSection,
 	},
 	{
 		key: 'ports',
 		label: 'Puertos',
 		icon: 'HeroServerStack',
-		component: AioPortsSection as unknown as React.FC<FormSectionProps<AioFormData>>,
+		component: AioPortsSection,
 	},
 	{
 		key: 'accessories',
 		label: 'Accesorios',
 		icon: 'HeroBolt',
-		component: AioAccessoriesSection as unknown as React.FC<FormSectionProps<AioFormData>>,
+		component: AioAccessoriesSection,
 	},
 	{
 		key: 'observations',
 		label: 'SO & Obs.',
 		icon: 'HeroDocumentText',
-		component: AioObservationsSection as unknown as React.FC<FormSectionProps<AioFormData>>,
+		component: AioObservationsSection,
 	},
 	{
 		key: 'gallery',
@@ -203,8 +203,8 @@ const AioForm: React.FC<AioFormProps> = ({
 		() => ({
 			...baseSectionProps,
 			onDirectSubmit: (partialData: Partial<AioFormData>) => {
-				const payload = { ...getValues(), ...partialData } as AioFormData;
-				void onSubmit(payload as unknown as Record<string, unknown>);
+				const payload = { ...getValues(), ...partialData };
+				void onSubmit(payload);
 			},
 		}),
 		[baseSectionProps, getValues, onSubmit],
@@ -217,7 +217,7 @@ const AioForm: React.FC<AioFormProps> = ({
 			return;
 		}
 		try {
-			await onSubmit(result.data as unknown as Record<string, unknown>);
+			await onSubmit(result.data);
 		} catch (error: unknown) {
 			const message =
 				error instanceof Error ? error.message : 'Error al guardar la revisión AIO';

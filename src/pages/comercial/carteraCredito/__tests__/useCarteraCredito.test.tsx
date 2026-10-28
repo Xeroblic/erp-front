@@ -1,11 +1,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DeferredPaymentCreditProfilesListResponse } from '@/interface/deferredPayments.interface';
-// eslint-disable-next-line import/extensions
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import useCarteraCredito from '../hooks/useCarteraCredito';
 
-const branchContext = vi.hoisted(() => ({ subsidiaryId: 10 as number | null }));
+const branchContext = vi.hoisted(() => ({ subsidiaryId: 10 }));
 
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ branchId: 1, subsidiaryId: branchContext.subsidiaryId }),

@@ -71,7 +71,7 @@ const buildBatchColumns = ({
 		accessorKey: 'status',
 		header: 'Estado',
 		cell: (info) => {
-			const statusValue = String(info.getValue() || '').toUpperCase();
+			const statusValue = (info.row.original.status || '').toUpperCase();
 			let color: TColors = 'zinc';
 
 			switch (statusValue) {

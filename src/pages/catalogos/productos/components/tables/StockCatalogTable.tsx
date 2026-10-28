@@ -49,7 +49,7 @@ const toNumber = (...values: unknown[]): number => {
 /** Primer string no vacío (o número finito convertido); '' si ninguno lo es. */
 const toString = (...values: unknown[]): string => {
 	const found = values.find(
-		(value) =>
+		(value): value is string | number =>
 			(typeof value === 'string' && value.trim().length > 0) ||
 			(typeof value === 'number' && Number.isFinite(value)),
 	);

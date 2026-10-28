@@ -7,6 +7,7 @@ import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import gsap from 'gsap';
 import { serialNumbers } from '@/pages/refactor-technical-review/ESPECIA_CANAL13/list_serialNumber';
+import toText from '@/utils/toText.util';
 import { useParams } from 'react-router-dom';
 
 /* ═══════════════════════════ Types ═══════════════════════════ */
@@ -122,7 +123,7 @@ const formatBreakdownValue = (value: unknown): string => {
 		if (typeof obj.value === 'string') return obj.value;
 		return JSON.stringify(value);
 	}
-	return String(value ?? '-');
+	return toText(value, '-');
 };
 
 /** Extrae un string seguro de un valor que puede ser string, objeto {value,label}, u otro */

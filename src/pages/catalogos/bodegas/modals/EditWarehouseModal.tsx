@@ -188,7 +188,7 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 									onBlur={form.handleBlur}
 									isValid={form.isValid}
 									isTouched={!!form.touched.maximum_capacity}
-									invalidFeedback={form.errors.maximum_capacity as string}
+									invalidFeedback={form.errors.maximum_capacity}
 								/>
 								<div className='mt-1 text-sm text-gray-500'>
 									Dejar vacío para capacidad ilimitada

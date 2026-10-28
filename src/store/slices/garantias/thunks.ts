@@ -109,7 +109,7 @@ export const updateWarranty = createAsyncThunk<
 		const response = await ApiService.fetchData<{ data: Warranty }, Record<string, unknown>>({
 			url: buildUrl(subsidiaryId, `/${warrantyId}`),
 			method: 'patch',
-			data: payload as Record<string, unknown>,
+			data: payload,
 		});
 		return response.data.data;
 	} catch (error: unknown) {

@@ -58,7 +58,7 @@ export interface ICreateWarehouseRequest {
 	requires_serial_tracking?: boolean;
 }
 
-export interface IUpdateWarehouseRequest extends Partial<ICreateWarehouseRequest> {}
+export type IUpdateWarehouseRequest = Partial<ICreateWarehouseRequest>;
 
 export interface IAttachProductRequest {
 	product_id: number | number[];

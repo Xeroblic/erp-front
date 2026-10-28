@@ -194,11 +194,11 @@ export default function SucursalModal({
 	});
 
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
-		formik as any,
+		formik,
 		{
-			regiones: listaRegiones as any,
-			provincias: listaProvincias as any,
-			comunas: listaComunas as any,
+			regiones: listaRegiones,
+			provincias: listaProvincias,
+			comunas: listaComunas,
 		},
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);
@@ -237,9 +237,9 @@ export default function SucursalModal({
 								name='subsidiary_id'
 								placeholder='Seleccione una subsidiaria...'
 								value={
-									(subsidiaryOptions.find(
+									subsidiaryOptions.find(
 										(opt) => opt.value === formik.values.subsidiary_id,
-									) as TSelectOption | undefined) || null
+									) || null
 								}
 								onChange={(selectedOption) => {
 									const option = selectedOption as TSelectOption | null;
@@ -247,7 +247,7 @@ export default function SucursalModal({
 								}}
 								onBlur={() => formik.setFieldTouched('subsidiary_id', true)}
 								isDisabled={formik.isSubmitting}
-								options={subsidiaryOptions as TSelectOption[]}
+								options={subsidiaryOptions}
 							/>
 							{formik.touched.subsidiary_id && formik.errors.subsidiary_id && (
 								<p className='mt-1 text-sm text-red-600'>

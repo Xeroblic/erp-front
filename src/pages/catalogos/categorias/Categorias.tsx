@@ -12,6 +12,7 @@ import ProtectedButton from '@/components/ui/ProtectedButton';
 import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { buildCategoryTableRows } from '@/components/helper/category.helper';
+import getFormDataText from '@/utils/formData.util';
 import CategoryStats from './components/CategoryStats';
 import CategoriesTable from './components/tables/CategoriesTable';
 import CrearCategoria from './components/modals/CrearCategoria';
@@ -89,8 +90,8 @@ const Categorias: React.FC = () => {
 				.getAll('gallery')
 				.filter((entry): entry is File => entry instanceof File);
 			const created = await createCategory({
-				name: String(formData.get('name') ?? '').trim(),
-				description: formData.get('description')?.toString().trim() || undefined,
+				name: getFormDataText(formData, 'name').trim(),
+				description: getFormDataText(formData, 'description').trim() || undefined,
 				parent_id: (() => {
 					const parent = formData.get('parent_id');
 					if (!parent) return undefined;
@@ -126,8 +127,8 @@ const Categorias: React.FC = () => {
 				.filter((entry): entry is File => entry instanceof File);
 			const updated = await updateCategory({
 				id: selected.id,
-				name: String(formData.get('name') ?? '').trim(),
-				description: formData.get('description')?.toString().trim() || undefined,
+				name: getFormDataText(formData, 'name').trim(),
+				description: getFormDataText(formData, 'description').trim() || undefined,
 				parent_id: (() => {
 					const parent = formData.get('parent_id');
 					if (!parent) return undefined;

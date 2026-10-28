@@ -87,14 +87,14 @@ const SettingsPartial = () => {
 			const next = clamp(newSize);
 			if (next === fontSize) return;
 			try {
-				setIsUpdatingFont(true as boolean);
+				setIsUpdatingFont(true);
 				setFontSize(next);
 				await dispatch(actualizarPersonalizacionThunk({ font_size: next })).unwrap();
 			} catch (error: any) {
 				toast.error(error || 'No se pudo actualizar el tamaño de fuente');
 				setFontSize(fontSize);
 			} finally {
-				setIsUpdatingFont(false as boolean);
+				setIsUpdatingFont(false);
 			}
 		},
 		[dispatch, fontSize, setFontSize],

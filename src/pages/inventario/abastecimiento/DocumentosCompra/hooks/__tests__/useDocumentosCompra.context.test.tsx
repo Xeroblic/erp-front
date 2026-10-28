@@ -24,9 +24,9 @@ vi.mock('../useSupplierFilterOptions', () => ({
 	default: () => ({ options: [], loading: false, canList: true }),
 }));
 
-const branchContext = vi.hoisted(() => ({
-	branchId: 4 as number | null,
-	subsidiaryId: 4 as number | null,
+const branchContext = vi.hoisted((): { branchId: number | null; subsidiaryId: number | null } => ({
+	branchId: 4,
+	subsidiaryId: 4,
 }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ ...branchContext }),

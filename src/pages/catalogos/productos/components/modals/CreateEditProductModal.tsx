@@ -1,13 +1,5 @@
 import React, { useMemo, useEffect, useRef, useState } from 'react';
-import {
-	Formik,
-	Form,
-	Field,
-	ErrorMessage,
-	FormikHelpers,
-	FieldProps,
-	type FormikErrors,
-} from 'formik';
+import { Formik, Form, Field, ErrorMessage, FormikHelpers, FieldProps } from 'formik';
 import { toast } from 'react-toastify';
 import OffCanvas, {
 	OffCanvasBody,
@@ -67,8 +59,6 @@ interface CreateEditProductModalProps {
 	/** Alta en la vista por filial: el stock no se registra acá sino en la sucursal. */
 	isSubsidiaryProduct?: boolean;
 }
-
-type ProductToggleKey = Extract<(typeof PRODUCT_TOGGLES)[number]['key'], keyof ProductFormValues>;
 
 const FieldContainer: React.FC<{
 	id: string;
@@ -234,7 +224,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 				}
 
 				if (Object.keys(serverErrors).length) {
-					setErrors(serverErrors as FormikErrors<ProductFormValues>);
+					setErrors(serverErrors);
 				}
 
 				const message =
@@ -438,7 +428,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															label='SKU'
 															error={
 																meta.touched
-																	? (meta.error as string)
+																	? meta.error
 																	: undefined
 															}>
 															<div className='flex gap-2'>
@@ -610,7 +600,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															label='Nombre'
 															error={
 																meta.touched
-																	? (meta.error as string)
+																	? meta.error
 																	: undefined
 															}>
 															<Input
@@ -808,7 +798,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 													</p>
 												</div>
 												<Checkbox
-													checked={values[toggle.key as ProductToggleKey]}
+													checked={values[toggle.key]}
 													onChange={(event) =>
 														setFieldValue(
 															toggle.key,

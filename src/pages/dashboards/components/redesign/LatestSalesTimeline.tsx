@@ -14,9 +14,7 @@ import {
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Spinner from '@/components/ui/Spinner';
 
-interface Props {}
-
-const LatestSalesTimeline: React.FC<Props> = () => {
+const LatestSalesTimeline: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const { branchId } = useCurrentBranch();

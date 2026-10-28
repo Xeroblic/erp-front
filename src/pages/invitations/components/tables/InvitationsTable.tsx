@@ -113,7 +113,7 @@ const buildInvitationColumns = ({
 				const normalizedStatus = normalizeInvitationStatus(rawStatus);
 				const config = INVITATION_STATUS_MAP[normalizedStatus] || {
 					label: rawStatus,
-					color: 'zinc' as TColors,
+					color: 'zinc',
 					icon: 'HeroQuestionMarkCircle',
 				};
 

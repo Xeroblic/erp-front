@@ -261,7 +261,7 @@ export const unackNotification = createAsyncThunk<
 		await ApiService.fetchData<{ ok: boolean }>({
 			url: `/notifications/${id}/ack`,
 			method: 'post',
-			params: { action: 'unack' } as any,
+			params: { action: 'unack' },
 		});
 		return { id };
 	} catch (e: any) {

@@ -93,7 +93,7 @@ export const fetchWithdrawals = createAsyncThunk<
 			const response = await ApiService.fetchData<IWithdrawalsListResponse>({
 				url: buildWithdrawalsEndpoint(context, ''),
 				method: 'get',
-				params: params as Record<string, unknown>,
+				params,
 			});
 			return {
 				items: response.data.data ?? [],

@@ -59,11 +59,11 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 				const isDomElement = typeof children.type === 'string';
 				const style = {
 					paddingLeft:
-						(firstSuffix && isLTR && (domFirstRect?.width as number)) ||
-						(lastSuffix && !isLTR && (domLastRect?.width as number)),
+						(firstSuffix && isLTR && domFirstRect?.width) ||
+						(lastSuffix && !isLTR && domLastRect?.width),
 					paddingRight:
-						(firstSuffix && !isLTR && (domFirstRect?.width as number)) ||
-						(lastSuffix && isLTR && (domLastRect?.width as number)),
+						(firstSuffix && !isLTR && domFirstRect?.width) ||
+						(lastSuffix && isLTR && domLastRect?.width),
 				} as React.CSSProperties;
 				// Evitar pasar props desconocidos a elementos DOM nativos
 				const childEl = children;

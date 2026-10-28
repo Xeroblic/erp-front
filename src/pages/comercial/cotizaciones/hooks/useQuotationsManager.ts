@@ -370,7 +370,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 				const createdQuote = await dispatch(
 					createQuote({ subsidiaryId, data: payload }),
 				).unwrap();
-				await syncQuoteItems(createdQuote.id, quotationData.items as IQuoteItem[]);
+				await syncQuoteItems(createdQuote.id, quotationData.items);
 				await requestQuotes();
 			} catch (err: unknown) {
 				const message = getErrorMessage(err, 'Error al crear la cotización');

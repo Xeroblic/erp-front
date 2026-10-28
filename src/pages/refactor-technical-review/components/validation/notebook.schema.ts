@@ -364,9 +364,7 @@ const notebookSchemaWithSpeakers = notebookSchema.shape({
  * formulario sigue tipado con `NotebookFormData`.
  */
 export const resolveNotebookSchema = (requiresSpeakers: boolean): typeof notebookSchema =>
-	requiresSpeakers
-		? (notebookSchemaWithSpeakers as unknown as typeof notebookSchema)
-		: notebookSchema;
+	requiresSpeakers ? notebookSchemaWithSpeakers : notebookSchema;
 
 /**
  * Schema parcial para validación de campos individuales (útil para validación en tiempo real).

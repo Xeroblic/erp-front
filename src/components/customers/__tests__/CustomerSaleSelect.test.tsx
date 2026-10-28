@@ -98,7 +98,6 @@ const renderSelect = (
 				{...props}
 				onChange={onChange}
 			/>
-			{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
 			<label htmlFor='customer_sale_id'>Cliente</label>
 		</Provider>,
 	);
@@ -165,7 +164,6 @@ describe('CustomerSaleSelect', () => {
 					inputId='customer_sale_id'
 					onChange={onChange}
 				/>
-				{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
 				<label htmlFor='customer_sale_id'>Cliente</label>
 			</Provider>,
 		);
@@ -264,7 +262,6 @@ describe('CustomerSaleSelect', () => {
 					releasesOnSubsidiaryChange
 					onChange={onChange}
 				/>
-				{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
 				<label htmlFor='customer_sale_id'>Cliente</label>
 			</Provider>,
 		);
@@ -281,7 +278,6 @@ describe('CustomerSaleSelect', () => {
 					releasesOnSubsidiaryChange
 					onChange={onChange}
 				/>
-				{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
 				<label htmlFor='customer_sale_id'>Cliente</label>
 			</Provider>,
 		);
@@ -306,7 +302,6 @@ describe('CustomerSaleSelect', () => {
 					inputId='customer_sale_id'
 					onChange={onChange}
 				/>
-				{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
 				<label htmlFor='customer_sale_id'>Cliente</label>
 			</Provider>,
 		);
@@ -337,7 +332,6 @@ describe('CustomerSaleSelect', () => {
 					inputId='customer_sale_id'
 					onChange={onChange}
 				/>
-				{/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
 				<label htmlFor='customer_sale_id'>Cliente</label>
 			</Provider>,
 		);

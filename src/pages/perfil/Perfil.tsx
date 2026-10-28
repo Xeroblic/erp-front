@@ -256,7 +256,7 @@ const Perfil = () => {
 		};
 	}, [userData, formik.values.comuna]);
 
-	useProfileTheme(formik as any, darkMode, setDarkModeStatus);
+	useProfileTheme(formik, darkMode, setDarkModeStatus);
 
 	const { saveBtnText, saveBtnColor, saveBtnDisable } = useSaveBtn({
 		isNewItem: false,

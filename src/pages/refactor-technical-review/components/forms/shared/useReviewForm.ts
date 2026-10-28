@@ -138,7 +138,7 @@ export const useReviewForm = <T extends FormikValues>({
 	const getValues = useCallback(() => valuesRef.current, []);
 
 	useEffect(() => {
-		registerGetFormValues?.(() => valuesRef.current as Record<string, unknown>);
+		registerGetFormValues?.(() => valuesRef.current);
 	}, [registerGetFormValues]);
 
 	// Reinicia el formulario cuando cambian de verdad los valores iniciales.

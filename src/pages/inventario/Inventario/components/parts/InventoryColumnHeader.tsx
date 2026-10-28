@@ -1,6 +1,5 @@
 import React from 'react';
 import { Th } from '@/components/ui/Table';
-// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import type { TInventoryStockSortField } from '@/interface/inventoryOverview.interface';

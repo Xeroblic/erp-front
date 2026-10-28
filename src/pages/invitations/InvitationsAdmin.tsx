@@ -1,4 +1,3 @@
-/* eslint-disable import/extensions */
 import React, { useEffect, useMemo, useRef } from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';

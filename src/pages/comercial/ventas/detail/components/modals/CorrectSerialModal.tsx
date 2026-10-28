@@ -33,9 +33,7 @@ interface CorrectSerialFormValues {
 
 /** Series conocidas del ítem (vendidas y/o devueltas) desde meta_json. */
 const getItemSerials = (item: ISaleItem): string[] => {
-	const reservation = (item.meta_json as Record<string, unknown> | undefined)?.reservation as
-		| Record<string, unknown>
-		| undefined;
+	const reservation = item.meta_json?.reservation as Record<string, unknown> | undefined;
 	const sold = (reservation?.sold_serials as string[] | undefined) ?? [];
 	const returned = (reservation?.returned_serials as string[] | undefined) ?? [];
 	return Array.from(

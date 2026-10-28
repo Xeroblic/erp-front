@@ -510,7 +510,7 @@ const cotizacionesSlice = createSlice({
 					...quote,
 					status: 'converted',
 					is_converted_to_sale: true,
-					sale_id: (sale?.id as number | undefined) ?? quote.sale_id ?? null,
+					sale_id: sale?.id ?? quote.sale_id ?? null,
 					sale: sale && Object.keys(sale).length ? sale : (quote.sale ?? null),
 				});
 				state.list = sortQuotesByIdDesc(

@@ -1,7 +1,5 @@
 import React from 'react';
-// eslint-disable-next-line import/extensions
 import Dropdown, { DropdownItem, DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown';
-// eslint-disable-next-line import/extensions
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 

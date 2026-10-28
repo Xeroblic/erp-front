@@ -68,7 +68,7 @@ const documentsService = {
 		const response = await ApiService.fetchData<{ data?: IDocument }>({
 			url: buildUrl(subsidiaryId, `/${documentId}`),
 			method: 'patch',
-			data: payload as unknown as Record<string, unknown>,
+			data: payload,
 		});
 		return (response.data?.data || response.data) as IDocument;
 	},

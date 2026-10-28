@@ -531,9 +531,7 @@ const SalesListPage: React.FC = () => {
 	const handleDetailModalState = useCallback(
 		(nextOpen: boolean | ((prev: boolean) => boolean)) => {
 			const resolved =
-				typeof nextOpen === 'function'
-					? (nextOpen as (value: boolean) => boolean)(detailSelection.isOpen)
-					: nextOpen;
+				typeof nextOpen === 'function' ? nextOpen(detailSelection.isOpen) : nextOpen;
 			if (!resolved) {
 				detailSelection.clear();
 				dispatch(clearDetail());

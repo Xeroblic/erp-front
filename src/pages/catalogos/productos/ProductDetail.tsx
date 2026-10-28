@@ -108,7 +108,7 @@ const ProductDetail: React.FC = () => {
 		typeof locationState?.branchId === 'number' ? locationState.branchId : null;
 	const viewModeFromState: ProductsViewMode | null =
 		locationState?.viewMode === 'subsidiaries' || locationState?.viewMode === 'branches'
-			? (locationState.viewMode as ProductsViewMode)
+			? locationState.viewMode
 			: null;
 	const subsidiaryIdFromState =
 		typeof locationState?.subsidiaryId === 'number' ? locationState.subsidiaryId : null;

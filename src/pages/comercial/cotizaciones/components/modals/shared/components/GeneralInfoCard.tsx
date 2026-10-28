@@ -9,7 +9,6 @@ import CustomerSaleSelect, {
 import { useAppDispatch } from '@/store';
 import { fetchCustomerDetailThunk } from '@/store/slices/customerSales/customerSalesSlice';
 import type { ICustomerSale } from '@/interface/customerSales.interface';
-import { QuoteStatus } from '@/interface';
 import { FormQuotationValues } from '../types';
 import {
 	QUOTATION_CARD_CLASSNAME,
@@ -420,10 +419,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 									onChange={(option) => {
 										const selectedOption = option as TSelectOption;
 										if (selectedOption && !Array.isArray(selectedOption)) {
-											setFieldValue(
-												'status',
-												selectedOption.value as QuoteStatus,
-											);
+											setFieldValue('status', selectedOption.value);
 										}
 									}}
 									isValid={isValid}

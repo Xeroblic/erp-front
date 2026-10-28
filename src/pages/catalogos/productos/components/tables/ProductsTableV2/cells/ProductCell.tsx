@@ -7,7 +7,6 @@ import {
 	getEffectiveAvailableStock,
 } from '@/components/helper/product.helper';
 import { PRODUCT_TYPE_META } from '@/pages/catalogos/productos/constants/products.constant';
-import type { TColors } from '@/types/colors.type';
 import type { IProduct } from '@/interface/product.interface';
 import { DEFAULT_TYPE_META } from '../productTable.utils';
 
@@ -50,7 +49,7 @@ const ProductCell: React.FC<{ product: IProduct }> = ({ product }) => {
 				<div className='mt-1 flex flex-wrap items-start gap-2'>
 					<Badge
 						variant='outline'
-						color={typeMeta.badgeColor as TColors}
+						color={typeMeta.badgeColor}
 						className='flex flex-shrink-0 items-center gap-1 px-2'>
 						<Icon icon={typeMeta.icon} className='h-3 w-3' />
 						{typeMeta.label}

@@ -21,7 +21,7 @@ import {
 } from '@/mocks/services/inventoryOverview.mock';
 
 const context = vi.hoisted(() => ({
-	branchId: 4 as number | null,
+	branchId: 4,
 	subsidiaryId: 2,
 	visibleBranches: [] as { id: number; name: string }[],
 	enabled: true,

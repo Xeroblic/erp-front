@@ -139,7 +139,7 @@ const DetalleClientePage: React.FC = () => {
 		if (customerSupplierId && allCustomers && allCustomers.length > 0) {
 			const found = allCustomers.find((c) => c.id === customerSupplierId);
 			if (found) {
-				setCustomer(found as ICustomerSupplierExtended);
+				setCustomer(found);
 			}
 		}
 	}, [customerSupplierId, allCustomers]);

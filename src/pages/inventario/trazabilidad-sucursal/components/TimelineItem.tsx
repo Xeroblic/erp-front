@@ -221,7 +221,7 @@ const formatMetadataValue = (key: string, value: unknown): string => {
 		}
 	}
 
-	return String(value);
+	return 'Valor no disponible';
 };
 
 const getMetadataCardSpanClass = (index: number, totalEntries: number, isWide: boolean): string => {

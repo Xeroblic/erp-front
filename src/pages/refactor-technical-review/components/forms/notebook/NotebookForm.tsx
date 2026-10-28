@@ -258,7 +258,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		() => ({
 			...baseSectionProps,
 			onDirectSubmit: (partialData) => {
-				const payload = { ...getValues(), ...partialData } as NotebookFormData;
+				const payload = { ...getValues(), ...partialData };
 				void onSubmit(payload);
 			},
 		}),

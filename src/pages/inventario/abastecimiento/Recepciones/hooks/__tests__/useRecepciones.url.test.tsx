@@ -45,13 +45,17 @@ vi.mock('@/services/procurement/stockReceipts.service', async (importOriginal) =
 	};
 });
 
-const branch = vi.hoisted(() => ({
-	current: {
-		branchId: 4 as number | null,
-		subsidiaryId: 4 as number | null,
-		visibleBranches: [] as { id: number; name: string }[],
-	},
-}));
+const branch = vi.hoisted(
+	(): {
+		current: {
+			branchId: number | null;
+			subsidiaryId: number | null;
+			visibleBranches: { id: number; name: string }[];
+		};
+	} => ({
+		current: { branchId: 4, subsidiaryId: 4, visibleBranches: [] },
+	}),
+);
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => branch.current,
 }));

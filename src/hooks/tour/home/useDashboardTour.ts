@@ -254,7 +254,7 @@ const useDashboardTour = () => {
 				disableActiveInteraction: true,
 				steps: finalSteps,
 				onPopoverRender: (popover) => {
-					const wrapper = popover.wrapper as HTMLElement;
+					const { wrapper } = popover;
 					if (wrapper) {
 						wrapper.style.setProperty('--driver-theme-primary', primary);
 						wrapper.style.setProperty('--driver-theme-light', primaryLight);

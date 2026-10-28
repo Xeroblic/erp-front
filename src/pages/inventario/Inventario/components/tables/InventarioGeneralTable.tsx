@@ -3,7 +3,6 @@ import { ProductCard, UNLOCATED_WAREHOUSE_LABEL } from '@/components/procurement
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-// eslint-disable-next-line import/extensions
 import type { TableSortState } from '@/components/ui/SortableTableHeader';
 import type {
 	IInventoryOverviewResponse,

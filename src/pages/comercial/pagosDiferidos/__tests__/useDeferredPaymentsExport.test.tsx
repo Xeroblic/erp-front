@@ -113,7 +113,7 @@ describe('useDeferredPaymentsExport', () => {
 		const { result, rerender } = renderHook(
 			({ ownerContext }) =>
 				useDeferredPaymentsExport({ disabled: false, ownerContext, download }),
-			{ initialProps: { ownerContext: 4 as number | null } },
+			{ initialProps: { ownerContext: 4 } },
 		);
 
 		act(() => {

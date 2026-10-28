@@ -118,14 +118,13 @@ export const DropdownToggle: FC<IDropdownToggleProps> = (props) => {
 			{({ ref }) =>
 				cloneElement(children, {
 					// @ts-ignore
-					// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 					'data-component-name': `Dropdown/DropdownToggle [${childDisplayName}]`,
 					// @ts-ignore
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 					ref: (node: null) => setButtonRef(node, ref),
 					onClick: () => {
 						// @ts-ignore
-						// eslint-disable-next-line no-unused-expressions,@typescript-eslint/no-unused-expressions,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
+						// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 						children?.props?.onClick ? children.props.onClick() : null;
 						if (setIsOpen) {
 							setIsOpen(!isOpen);
@@ -143,7 +142,6 @@ export const DropdownToggle: FC<IDropdownToggleProps> = (props) => {
 							show: isOpen,
 						},
 						// @ts-ignore
-						// eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
 						children?.props?.className,
 					),
 					'aria-expanded': isOpen,

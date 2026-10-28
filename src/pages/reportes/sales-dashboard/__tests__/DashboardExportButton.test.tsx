@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { toast } from 'react-toastify';
-import type { ReportFiltersState, SaleRecord, SalesDashboardStats } from '@/pages/reportes/types';
+import type { SaleRecord, SalesDashboardStats } from '@/pages/reportes/types';
 import { generateExecutiveReport } from '../utils/pdf/generateExecutiveReport';
 import DashboardExportButton from '../components/DashboardExportButton';
 
@@ -38,7 +38,7 @@ describe('DashboardExportButton', () => {
 				stats={{} as SalesDashboardStats}
 				filteredResults={[{} as SaleRecord]}
 				topCustomers={[]}
-				filters={{} as ReportFiltersState}
+				filters={{}}
 			/>,
 		);
 
