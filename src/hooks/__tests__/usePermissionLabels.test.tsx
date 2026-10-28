@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw/http';
 import { Provider } from 'react-redux';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
-import { usePermissionLabels } from '../usePermissionLabels';
 import ApiService from '@/services/ApiService';
 import permissionsReducer from '@/store/slices/permissions/permissionsSlice';
 import { makeIntegrationStore } from '@/test-utils/integrationStore';
+import { usePermissionLabels } from '../usePermissionLabels';
 
 let rolesCalls = 0;
 let permissionsCalls = 0;
@@ -33,7 +33,7 @@ const renderPermissionLabels = (store: ReturnType<typeof makeStore>) => {
 };
 
 describe('usePermissionLabels', () => {
-	beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+	beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 	beforeEach(() => {
 		rolesCalls = 0;
 		permissionsCalls = 0;
