@@ -435,6 +435,9 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																<Input
 																	id='sku'
 																	{...field}
+																	isValid={!meta.error}
+																	isTouched={meta.touched}
+																	invalidFeedback={meta.error}
 																	onChange={(
 																		e: React.ChangeEvent<HTMLInputElement>,
 																	) => {
@@ -606,6 +609,9 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															<Input
 																id='name'
 																{...field}
+																isValid={!meta.error}
+																isTouched={meta.touched}
+																invalidFeedback={meta.error}
 																required
 																disabled={isBusy}
 															/>
