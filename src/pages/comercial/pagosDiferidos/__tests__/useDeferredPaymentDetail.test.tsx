@@ -10,7 +10,7 @@ import deferredPaymentsService from '@/services/deferredPaymentsService';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import useDeferredPaymentDetail from '../hooks/useDeferredPaymentDetail';
 
-const branchContext = vi.hoisted(() => ({ subsidiaryId: 10 as number | null }));
+const branchContext = vi.hoisted((): { subsidiaryId: number | null } => ({ subsidiaryId: 10 }));
 vi.mock('@/services/deferredPaymentsService', () => ({ default: { getDocument: vi.fn() } }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({

@@ -248,14 +248,14 @@ const TraceabilityPage: React.FC = () => {
 										<div className='flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-zinc-800/50'>
 											<span className='text-sm text-gray-500'>Producto</span>
 											<span className='text-right text-sm font-medium text-gray-900 dark:text-gray-100'>
-												{(item.product as any)?.name || 'No identificado'}
+												{item.product?.name || 'No identificado'}
 											</span>
 										</div>
-										{Boolean((item.product as any)?.sku) && (
+										{Boolean(item.product?.sku) && (
 											<div className='flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-zinc-800/50'>
 												<span className='text-sm text-gray-500'>SKU</span>
 												<span className='font-mono text-sm font-medium text-gray-900 dark:text-gray-100'>
-													{(item.product as any)?.sku}
+													{item.product?.sku}
 												</span>
 											</div>
 										)}
@@ -304,7 +304,7 @@ const TraceabilityPage: React.FC = () => {
 												Estado Comercial
 											</span>
 											<Badge
-												color={traceability.status?.color as any}
+												color={traceability.status?.color}
 												className='px-2 py-2 text-base font-semibold'>
 												{traceability.status?.label || 'Desconocido'}
 											</Badge>
@@ -405,7 +405,7 @@ const TraceabilityPage: React.FC = () => {
 										<div className='flex justify-between'>
 											<span className='text-gray-500'>Cliente:</span>
 											<span className='font-medium'>
-												{(traceability.customer as any)?.name}
+												{traceability.customer?.name}
 											</span>
 										</div>
 										{Boolean(traceability.sale_id) && (

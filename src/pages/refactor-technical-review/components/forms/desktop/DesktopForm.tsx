@@ -224,7 +224,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 					showAntennaError();
 					return;
 				}
-				const payload = { ...getValues(), ...partialData } as DesktopFormData;
+				const payload = { ...getValues(), ...partialData };
 				await submitReview(payload);
 			},
 		}),

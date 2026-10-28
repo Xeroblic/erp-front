@@ -17,6 +17,7 @@ import {
 } from '@/store/slices/core/coreSlice';
 import { useGeoSelector } from '@/hooks/useGeoSelector';
 import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
+import toText from '@/utils/toText.util';
 
 import { subsidiaryValidationSchema } from '../../helpers/subsidiaryValidation';
 import { handleSubsidiaryError } from '../../helpers/subsidiaryErrorHandler';
@@ -140,11 +141,11 @@ export default function CreateSubsidiaryModal({
 	}, [isOpen, adminUsers.length, users.length]);
 
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
-		formik as any,
+		formik,
 		{
-			regiones: listaRegiones as any,
-			provincias: listaProvincias as any,
-			comunas: listaComunas as any,
+			regiones: listaRegiones,
+			provincias: listaProvincias,
+			comunas: listaComunas,
 		},
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);
@@ -170,7 +171,7 @@ export default function CreateSubsidiaryModal({
 					comuna: 'Comuna',
 				};
 				const fieldLabel = fieldLabels[field] || field;
-				toast.error(`${fieldLabel}: ${message}`);
+				toast.error(`${fieldLabel}: ${toText(message, 'valor inválido')}`);
 			}
 		} else if (!formik.dirty) {
 			toast.info('No hay cambios para guardar');

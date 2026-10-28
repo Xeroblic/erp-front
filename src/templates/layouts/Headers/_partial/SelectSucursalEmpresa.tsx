@@ -106,7 +106,7 @@ const SelectSucursalEmpresa = () => {
 			.map(([label, options]) => ({
 				label,
 				options: options.sort((a, b) => a.label.localeCompare(b.label)),
-			})) as TSelectGroups;
+			}));
 	}, [filteredBranches, preferredBranchId]);
 
 	useEffect(() => {
@@ -127,9 +127,7 @@ const SelectSucursalEmpresa = () => {
 
 		const match = groupedOptions
 			.flatMap((g) => g.options)
-			.find((opt) => Number(opt.value) === Number(preferredBranchId)) as
-			| BranchOption
-			| undefined;
+			.find((opt) => Number(opt.value) === Number(preferredBranchId));
 
 		if (!match && groupedOptions.length > 0) {
 			const first = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
@@ -284,9 +282,9 @@ const SelectSucursalEmpresa = () => {
 			isDisabled: branchesLoading || !!branchesError,
 			isClearable: false,
 			isSearchable: true,
-			value: selectedSucursal as TSelectOption | null,
+			value: selectedSucursal,
 			options: groupedOptions,
-			formatOptionLabel: (option: TSelectOption) => formatOptionLabel(option as BranchOption),
+			formatOptionLabel: (option: TSelectOption) => formatOptionLabel(option),
 			formatGroupLabel,
 			onChange: handleSelectChange,
 			menuPortalTarget: selectPortalTarget,

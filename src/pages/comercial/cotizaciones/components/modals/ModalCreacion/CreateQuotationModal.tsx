@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Formik, Form } from 'formik';
-import { IQuote, QuoteStatus } from '@/interface';
+import { IQuote } from '@/interface';
 import { toast } from 'react-toastify';
 import Modal, {
 	ModalHeader,
@@ -150,7 +150,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 			quote_date: today,
 			expiry_date: expiryDate,
 			tax_rate: 0,
-			status: 'draft' as QuoteStatus,
+			status: 'draft',
 			// `efectivo` está en `EXEMPT_METHODS`, así que el default no genera recargo.
 			payment_method: DEFAULT_PAYMENT_METHOD,
 			document_type: 'boleta',

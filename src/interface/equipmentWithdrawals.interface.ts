@@ -40,7 +40,7 @@ export interface IEntityRef {
 	name: string;
 }
 
-export interface IUserRef extends IEntityRef {}
+export type IUserRef = IEntityRef;
 
 /** Producto hijo por grado expuesto por series e ítems del retiro. */
 export interface IWithdrawalProductRef extends IEntityRef {

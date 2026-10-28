@@ -3,11 +3,11 @@ import loadPdfMake from '../pdfMake.util';
 
 /** Desde la 0.3 el build no trae fuentes: si no se registran, ningún PDF se puede generar. */
 
-const pdfMakeModule = vi.hoisted(() => ({
+const pdfMakeModule = vi.hoisted((): { default: unknown } => ({
 	default: {
 		createPdf: vi.fn(),
 		addVirtualFileSystem: vi.fn(),
-	} as unknown,
+	},
 }));
 const FONTS_VFS = vi.hoisted(() => ({ 'Roboto-Regular.ttf': 'AAEAAA==' }));
 

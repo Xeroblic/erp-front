@@ -225,10 +225,15 @@ export const setStockReceiptForcedOutcomeForTests = (
 
 const pendingWorkerTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-const apiError = (status: number, data: Record<string, unknown>) => ({
-	isAxiosError: true as const,
-	response: { status, data },
-});
+const apiError = (status: number, data: Record<string, unknown>): Error =>
+	Object.assign(
+		new Error(
+			typeof data.message === 'string'
+				? data.message
+				: `Request failed with status code ${status}`,
+		),
+		{ isAxiosError: true as const, response: { status, data } },
+	);
 
 const fail = (status: number, data: Record<string, unknown>): Promise<never> =>
 	Promise.reject(apiError(status, data));

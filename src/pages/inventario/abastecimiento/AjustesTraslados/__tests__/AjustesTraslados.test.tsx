@@ -68,7 +68,7 @@ vi.mock('@/services/procurement/inventoryStock.service', async (importOriginal) 
 // Inventario y traslados con mock, el ajuste con backend: cada flujo con su bandera.
 // Etapa del despliegue de la filial 2: encendida salvo en los casos de una sola
 // ubicación; `null` es «todavía cargando». La lee el hook real desde el store.
-const multiLocation = vi.hoisted(() => ({ enabled: true as boolean | null }));
+const multiLocation = vi.hoisted((): { enabled: boolean | null } => ({ enabled: true }));
 const branchContext = vi.hoisted(() => ({ subsidiaryId: 2 }));
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
 vi.mock('@/config/inventoryAdjustments.config', () => ({ default: false }));

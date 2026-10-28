@@ -94,7 +94,7 @@ type TestState = Record<string, never>;
 
 const createTestStore = () =>
 	configureStore<TestState>({
-		reducer: (state: TestState = {} as TestState): TestState => state,
+		reducer: (state: TestState = {}): TestState => state,
 	});
 
 describe('PortsSection', () => {

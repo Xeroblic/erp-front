@@ -718,7 +718,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 		],
 		content: lastSerializedRef.current,
 		editable: !disabled,
-		onUpdate: ({ editor }) => {
+		onUpdate: ({ editor: updatedEditor }) => {
 			if (showCodeViewRef.current) {
 				return;
 			}
@@ -727,7 +727,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 				return;
 			}
 
-			const html = sanitizeHtmlOutput(editor.getHTML());
+			const html = sanitizeHtmlOutput(updatedEditor.getHTML());
 			if (html !== lastSerializedRef.current) {
 				lastSerializedRef.current = html;
 				setCodeViewValue(html);

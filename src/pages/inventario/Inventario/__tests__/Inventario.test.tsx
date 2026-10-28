@@ -12,7 +12,7 @@ import { resetStockReceiptsStoreForTests } from '@/mocks/services/stockReceipts.
 import type { IInventoryOverviewResponse } from '@/interface/inventoryOverview.interface';
 
 const context = vi.hoisted(() => ({
-	branchId: 4 as number | null,
+	branchId: 4,
 	subsidiaryId: 2,
 	visibleBranches: [] as { id: number; name: string }[],
 	enabled: true,

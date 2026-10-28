@@ -82,7 +82,7 @@ const normalizeBranchRef = (value: unknown): AuthorizationBranchRef | null => {
 	const isPrimary = typeof record.is_primary === 'boolean' ? record.is_primary : undefined;
 	const position =
 		typeof record.position === 'string' || record.position === null
-			? (record.position as string | null)
+			? record.position
 			: undefined;
 
 	return {

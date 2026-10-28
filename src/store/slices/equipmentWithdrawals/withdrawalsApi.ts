@@ -1,6 +1,6 @@
 import type { RootState } from '@/store/rootReducer';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
-import { resolveSubsidiaryFromBranch, type ContextUser } from '@/utils/orgContext.util';
+import { resolveSubsidiaryFromBranch } from '@/utils/orgContext.util';
 
 import type {
 	IFetchWithdrawalsParams,
@@ -89,7 +89,7 @@ export const resolveWithdrawalsContext = (
 	const subsidiaryId =
 		toValidNumber(input.subsidiaryId) ??
 		toValidNumber(effectiveSubsidiaryId) ??
-		resolveSubsidiaryFromBranch(branchId, state.auth.user as ContextUser | null | undefined);
+		resolveSubsidiaryFromBranch(branchId, state.auth.user);
 
 	// Priorizamos el modo 'branches': evita 403 en usuarios que pertenecen a una
 	// subsidiaria pero no tienen acceso global a ella.

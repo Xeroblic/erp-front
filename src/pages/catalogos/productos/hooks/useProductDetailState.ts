@@ -12,7 +12,7 @@ export const useProductDetailState = (
 	useEffect(() => {
 		if (!Number.isFinite(initialBranchId ?? NaN)) return;
 		if (branchId !== initialBranchId) {
-			setBranchId(initialBranchId as number);
+			setBranchId(initialBranchId);
 		}
 	}, [branchId, initialBranchId]);
 

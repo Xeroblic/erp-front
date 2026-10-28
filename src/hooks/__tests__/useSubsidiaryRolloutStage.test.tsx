@@ -6,17 +6,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import subEmpresa, { fetchSubsidiariaDetail } from '@/store/slices/subempresa/subEmpresaSlice';
 import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 
-const context = vi.hoisted(() => ({ subsidiaryId: 2 as number | null }));
+const context = vi.hoisted((): { subsidiaryId: number | null } => ({ subsidiaryId: 2 }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ branchId: 4, subsidiaryId: context.subsidiaryId }),
 }));
 
 /** Backend falso de `GET /subsidiaries/{id}`: etapa por filial, o una respuesta propia. */
-const api = vi.hoisted(() => ({
-	stages: {} as Record<number, boolean | undefined>,
-	respond: null as ((id: number) => Promise<unknown>) | null,
-	calls: [] as string[],
-}));
+const api = vi.hoisted(
+	(): {
+		stages: Record<number, boolean | undefined>;
+		respond: ((id: number) => Promise<unknown>) | null;
+		calls: string[];
+	} => ({ stages: {}, respond: null, calls: [] }),
+);
 vi.mock('@/services/ApiService', () => ({
 	default: {
 		fetchData: ({ url }: { url: string }) => {

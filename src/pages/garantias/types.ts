@@ -9,7 +9,7 @@ export type WarrantyFilters = {
 };
 
 export type WarrantyListItem = Warranty;
-export type WarrantyEntity = WarrantyDetail | Warranty;
+export type WarrantyEntity = WarrantyDetail;
 
 export type WarrantyFormValues = {
 	product_id: number | null;

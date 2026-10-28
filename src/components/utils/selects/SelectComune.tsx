@@ -112,7 +112,7 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 				<SelectReact
 					name={name}
 					inputId={inputId}
-					options={options as TSelectOption[]}
+					options={options}
 					value={selectedOption as TSelectOption}
 					placeholder={dynamicPlaceholder}
 					isClearable

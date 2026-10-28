@@ -39,6 +39,7 @@ import {
 } from '@/pages/refactor-technical-review/components/translations/docking.labels';
 import { EQUIPMENT_TYPE_OPTIONS } from '@/pages/refactor-technical-review/components/constants/technicalReview.constants';
 import { COMMERCIAL_STATUS_CONFIG } from '@/pages/refactor-technical-review/components/constants/statuses.constant';
+import toText from '@/utils/toText.util';
 import {
 	ALLOWED_PORT_TYPES,
 	PORT_COUNTER_FIELDS,
@@ -228,8 +229,8 @@ export const translateValue = (value: unknown, field?: string): string => {
 		return '-';
 	}
 
-	const strValue = String(value).toLowerCase();
-	return translate(strValue) || String(value);
+	const strValue = toText(value).toLowerCase();
+	return translate(strValue) || toText(value);
 };
 
 /** Extrae el valor primitivo de un campo que puede ser un objeto */
@@ -239,7 +240,7 @@ export const extractValue = (field: unknown): string => {
 		const obj = field as Record<string, unknown>;
 		return (obj.value as string) || (obj.label as string) || JSON.stringify(field);
 	}
-	return String(field);
+	return toText(field);
 };
 
 /** Calcula la duración de la revisión a partir del item */

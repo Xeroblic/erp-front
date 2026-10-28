@@ -8,7 +8,6 @@ import Validation from '@/components/form/Validation';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { useWarrantyForm } from '../hooks/useWarrantyForm';
 import type { WarrantyEntity, WarrantyFormMode } from '../types';
-import type { WarrantyStatus } from '@/interface/warranties.interface';
 import { warrantyStatusOptions } from '../hooks/useWarranties';
 import { formatProductDisplay } from '../utils/warranty.utils';
 
@@ -143,7 +142,7 @@ const WarrantyFormModal: React.FC<WarrantyFormModalProps> = ({
 								options={warrantyStatusOptions}
 								onChange={(option) => {
 									const value = option ? (option as TSelectOption).value : '';
-									formik.setFieldValue('status', value as WarrantyStatus | '');
+									formik.setFieldValue('status', value);
 								}}
 								onBlur={() => formik.setFieldTouched('status', true)}
 							/>

@@ -6,7 +6,7 @@ import {
 } from '@/pages/catalogos/productos/constants/product-attributes.constants';
 import type { SectionBaseProps } from '../types';
 
-interface BasicConfigurationSectionProps extends SectionBaseProps {}
+type BasicConfigurationSectionProps = SectionBaseProps;
 
 const BasicConfigurationSection: React.FC<BasicConfigurationSectionProps> = ({
 	attributes,

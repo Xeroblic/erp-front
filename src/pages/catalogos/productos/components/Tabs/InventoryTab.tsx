@@ -247,13 +247,6 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				lowStockItems: [],
 				outOfStockItems: [],
 				averageStock: 0,
-			} as {
-				totalStock: number;
-				productCount: number;
-				serialTracked: number;
-				lowStockItems: typeof products;
-				outOfStockItems: typeof products;
-				averageStock: number;
 			};
 		}
 
@@ -705,7 +698,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 											<div
 												className={`flex h-10 w-10 items-center justify-center rounded-xl ${style.iconBg}`}>
 												<Icon
-													icon={card.icon as string}
+													icon={card.icon}
 													className={`h-5 w-5 ${style.iconColor}`}
 												/>
 											</div>

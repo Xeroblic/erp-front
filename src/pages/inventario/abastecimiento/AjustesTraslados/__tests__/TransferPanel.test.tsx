@@ -8,11 +8,13 @@ import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
 import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 
-const context = vi.hoisted(() => ({
-	branchId: 4 as number | null,
-	subsidiaryId: 2,
-	enabled: true,
-}));
+const context = vi.hoisted(
+	(): { branchId: number | null; subsidiaryId: number; enabled: boolean } => ({
+		branchId: 4,
+		subsidiaryId: 2,
+		enabled: true,
+	}),
+);
 vi.mock('@/hooks/useSubsidiaryRolloutStage', () => ({
 	useSubsidiaryRolloutStage: () => ({
 		multiLocationEnabled: true,

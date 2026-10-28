@@ -18,7 +18,7 @@ import {
 	normalizeCategoryTree,
 } from '@/components/helper/category.helper';
 
-export interface CategoryStatsState extends CategoryStatsShape {}
+export type CategoryStatsState = CategoryStatsShape;
 
 export interface CategoriesState {
 	items: ICategory[];

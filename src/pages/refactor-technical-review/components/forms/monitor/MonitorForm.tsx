@@ -25,36 +25,32 @@ const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
 		key: 'basic-info',
 		label: 'Info Básica',
 		icon: 'HeroInformationCircle',
-		component: MonitorBasicInfoSection as unknown as React.FC<
-			FormSectionProps<MonitorFormData>
-		>,
+		component: MonitorBasicInfoSection,
 	},
 	{
 		key: 'screen',
 		label: 'Pantalla & Físico',
 		icon: 'HeroTv',
-		component: MonitorScreenSection as unknown as React.FC<FormSectionProps<MonitorFormData>>,
+		component: MonitorScreenSection,
 	},
 	{
 		key: 'ports',
 		label: 'Puertos & Conectividad',
 		icon: 'HeroServerStack',
-		component: MonitorPortsSection as unknown as React.FC<FormSectionProps<MonitorFormData>>,
+		component: MonitorPortsSection,
 	},
 
 	{
 		key: 'accessories',
 		label: 'Accesorios',
 		icon: 'HeroSparkles',
-		component: MonitorAccessoriesSection as unknown as React.FC<
-			FormSectionProps<MonitorFormData>
-		>,
+		component: MonitorAccessoriesSection,
 	},
 	{
 		key: 'observations',
 		label: 'Obs.',
 		icon: 'HeroDocumentText',
-		component: Observations as unknown as React.FC<FormSectionProps<MonitorFormData>>,
+		component: Observations,
 	},
 	{
 		key: 'gallery',
@@ -195,8 +191,8 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		() => ({
 			...baseSectionProps,
 			onDirectSubmit: (partialData: Partial<MonitorFormData>) => {
-				const payload = { ...getValues(), ...partialData } as MonitorFormData;
-				void onSubmit(payload as unknown as Record<string, unknown>);
+				const payload = { ...getValues(), ...partialData };
+				void onSubmit(payload);
 			},
 		}),
 		[baseSectionProps, getValues, onSubmit],

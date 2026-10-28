@@ -56,7 +56,7 @@ const DEFAULT_WEBHOOK_EVENT = WEBHOOK_EVENTS[0].value;
 const getWebhookEventMeta = (event?: string | null) =>
 	WEBHOOK_EVENTS.find((entry) => entry.value === event) ?? WEBHOOK_EVENTS[0];
 
-const ModalDelete = memo(function ModalDelete({
+const ModalDelete = memo(function ModalDeleteContent({
 	isOpen,
 	onClose,
 	onConfirm,
@@ -108,7 +108,7 @@ const ModalDelete = memo(function ModalDelete({
 	);
 });
 
-const ModalRotateKey = memo(function ModalRotateKey({
+const ModalRotateKey = memo(function ModalRotateKeyContent({
 	isOpen,
 	onClose,
 	onConfirm,

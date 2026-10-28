@@ -7,12 +7,8 @@ import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Label from '@/components/form/Label';
 import Icon from '@/components/icon/Icon';
-import type {
-	IDocument,
-	IDocumentPayload,
-	TDocumentModule,
-	TDocumentOutputFormat,
-} from '../../types/documentos.types';
+import getFormDataText from '@/utils/formData.util';
+import type { IDocument, IDocumentPayload, TDocumentModule } from '../../types/documentos.types';
 import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
 
 type EditDocumentModalProps = {
@@ -74,12 +70,11 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({
 		}
 		const formData = new FormData(event.currentTarget);
 		const payload: Partial<IDocumentPayload> = {
-			name: String(formData.get('name') || '').trim(),
+			name: getFormDataText(formData, 'name').trim(),
 			document_type_id: Number(selectedDocumentType.value),
-			output_format:
-				(selectedOutputFormat.value as TDocumentOutputFormat) || document.output_format,
+			output_format: selectedOutputFormat.value || document.output_format,
 			related_module: (selectedModule.value as TDocumentModule) || document.related_module,
-			description: String(formData.get('description') || '') || undefined,
+			description: getFormDataText(formData, 'description') || undefined,
 			is_active: formData.get('is_active') === 'on',
 		};
 

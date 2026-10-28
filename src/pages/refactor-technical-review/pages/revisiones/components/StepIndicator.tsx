@@ -46,7 +46,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
 								{isCompleted ? (
 									<Icon icon='HeroCheck' className='h-5 w-5' />
 								) : (
-									<Icon icon={step.icon as any} className='h-5 w-5' />
+									<Icon icon={step.icon} className='h-5 w-5' />
 								)}
 							</div>
 

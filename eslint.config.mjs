@@ -281,9 +281,29 @@ export default defineConfig(
 					},
 				},
 			],
+			// Reemplaza a la regla base de Airbnb, de la que hereda `allowEmptyReject`. Un `catch`
+			// tipa el error como `unknown` y reenviarlo con `Promise.reject` equivale a relanzarlo,
+			// lo que `only-throw-error` ya admite por defecto.
+			'@typescript-eslint/prefer-promise-reject-errors': [
+				'error',
+				{
+					...airbnbBestPractices.rules['prefer-promise-reject-errors'][1],
+					allowThrowingAny: true,
+					allowThrowingUnknown: true,
+				},
+			],
 			'@typescript-eslint/no-redundant-type-constituents': 'off',
 			'@typescript-eslint/no-unsafe-assignment': 'off',
 			'react/require-default-props': ['off'],
+		},
+	},
+	{
+		name: 'zentria/pruebas',
+		files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],
+		rules: {
+			// Los dobles reproducen el contrato real del rechazo: `unwrap()` de Redux Toolkit
+			// rechaza con el payload de `rejectWithValue`, que es un objeto plano.
+			'@typescript-eslint/prefer-promise-reject-errors': 'off',
 		},
 	},
 );

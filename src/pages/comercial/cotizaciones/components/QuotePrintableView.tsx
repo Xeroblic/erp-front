@@ -297,7 +297,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 								const sku = getProductSku(item);
 								const name = getProductName(item);
 								const detail = getProductDetail(item);
-								const quantity = Number((item as any).quantity || 0);
+								const quantity = Number(item.quantity || 0);
 								const unitPrice = resolveUnitPrice(item, taxRate);
 								const lineTotal = resolveLineTotal(item, taxRate);
 								const itemDiscount = Number(item.discount_amount || 0);

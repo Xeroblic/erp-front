@@ -273,10 +273,10 @@ const Productos: React.FC = () => {
 		setPage(1);
 	};
 
-	const getErrorMessage = (error: unknown, fallback: string): string => {
-		if (typeof error === 'string' && error.trim().length > 0) return error;
-		if (error && typeof error === 'object') {
-			const maybeMessage = (error as { message?: unknown }).message;
+	const getErrorMessage = (reason: unknown, fallback: string): string => {
+		if (typeof reason === 'string' && reason.trim().length > 0) return reason;
+		if (reason && typeof reason === 'object') {
+			const maybeMessage = (reason as { message?: unknown }).message;
 			if (typeof maybeMessage === 'string' && maybeMessage.trim().length > 0) {
 				return maybeMessage;
 			}

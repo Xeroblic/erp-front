@@ -44,11 +44,11 @@ export const FiltersSection = ({
 						options={statusSelectOptions}
 						value={
 							filters.status
-								? ((statusSelectOptions.find(
+								? (statusSelectOptions.find(
 										(option) =>
 											option.value ===
 											normalizeQuoteStatusValue(filters.status),
-									) as TSelectOption | undefined) ?? null)
+									) ?? null)
 								: null
 						}
 						isClearable

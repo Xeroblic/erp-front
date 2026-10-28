@@ -20,9 +20,9 @@ export const ConfirmSaleModal = ({ open, onClose, onConfirm, quotationId, quotat
 
 	if (!quotation) return null;
 
-	const customerInfo = getCustomerInfo((quotation as any)?.customer, {
-		billingSnapshot: (quotation as any)?.billing_snapshot,
-		shippingSnapshot: (quotation as any)?.shipping_snapshot,
+	const customerInfo = getCustomerInfo(quotation?.customer, {
+		billingSnapshot: quotation?.billing_snapshot,
+		shippingSnapshot: quotation?.shipping_snapshot,
 	});
 
 	const missingFields = [];

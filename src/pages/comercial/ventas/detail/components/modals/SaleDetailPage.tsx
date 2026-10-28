@@ -355,8 +355,9 @@ const SaleDetailPage: React.FC<Props> = ({
 	const hasSerialItems = useMemo(
 		() =>
 			items.some((it) => {
-				const reservation = (it.meta_json as Record<string, unknown> | undefined)
-					?.reservation as Record<string, unknown> | undefined;
+				const reservation = it.meta_json?.reservation as
+					| Record<string, unknown>
+					| undefined;
 				const sold = (reservation?.sold_serials as string[] | undefined) ?? [];
 				const returned = (reservation?.returned_serials as string[] | undefined) ?? [];
 				return [...sold, ...returned].some((s) => typeof s === 'string' && s.trim() !== '');

@@ -310,12 +310,8 @@ const RefactorSeries: React.FC = () => {
 
 		dispatch(
 			fetchItems({
-				branchId:
-					endpointEntityType === 'branches' ? (endpointEntityId as number) : undefined,
-				subsidiaryId:
-					endpointEntityType === 'subsidiaries'
-						? (endpointEntityId as number)
-						: undefined,
+				branchId: endpointEntityType === 'branches' ? endpointEntityId : undefined,
+				subsidiaryId: endpointEntityType === 'subsidiaries' ? endpointEntityId : undefined,
 				params: queryParams,
 			}),
 		);

@@ -8,6 +8,7 @@ import Checkbox from '@/components/form/Checkbox';
 import Label from '@/components/form/Label';
 import Icon from '@/components/icon/Icon';
 import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
+import getFormDataText from '@/utils/formData.util';
 import type {
 	IDocumentPayload,
 	TDocumentModule,
@@ -61,11 +62,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 		const relatedModule = selectedModule.value as TDocumentModule;
 
 		const payload: IDocumentPayload = {
-			name: String(formData.get('name') || '').trim(),
+			name: getFormDataText(formData, 'name').trim(),
 			document_type_id: documentTypeId,
 			output_format: outputFormat,
 			related_module: relatedModule,
-			description: String(formData.get('description') || '') || undefined,
+			description: getFormDataText(formData, 'description') || undefined,
 			is_active: formData.get('is_active') === '1',
 		};
 

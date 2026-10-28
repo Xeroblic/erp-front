@@ -19,7 +19,7 @@ const createMutationSpy = vi.hoisted(() => vi.fn());
 const mutationFailure = vi.hoisted<{ error: Error | null }>(() => ({ error: null }));
 const mutationGate = vi.hoisted(() => ({ wait: null as Promise<void> | null }));
 const toastSpies = vi.hoisted(() => ({ success: vi.fn(), warn: vi.fn(), error: vi.fn() }));
-const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 as number | null }));
+const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 }));
 
 vi.mock('react-toastify', () => ({ toast: toastSpies }));
 

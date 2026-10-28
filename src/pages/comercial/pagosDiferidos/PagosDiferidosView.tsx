@@ -28,7 +28,7 @@ import usePagosDiferidos from './hooks/usePagosDiferidos';
 
 const getCustomerNameFromNavigationState = (state: unknown): string | undefined => {
 	if (state === null || typeof state !== 'object' || !('customerName' in state)) return undefined;
-	const { customerName } = state as { customerName: unknown };
+	const { customerName } = state;
 	return typeof customerName === 'string' ? customerName : undefined;
 };
 

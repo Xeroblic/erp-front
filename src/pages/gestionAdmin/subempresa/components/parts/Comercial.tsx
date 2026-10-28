@@ -229,7 +229,7 @@ const ComercialParts = ({
 						) : (
 							<div className='flex flex-wrap gap-2'>
 								{(commercialView.allowedPaymentMethods || []).length ? (
-									(commercialView.allowedPaymentMethods as string[]).map((m) => (
+									commercialView.allowedPaymentMethods.map((m) => (
 										<Badge
 											key={m}
 											variant='outline'
@@ -277,7 +277,7 @@ const ComercialParts = ({
 						{formik.touched.defaultPaymentMethod &&
 							formik.errors.defaultPaymentMethod && (
 								<p className='mt-1 text-sm text-red-600'>
-									{formik.errors.defaultPaymentMethod as string}
+									{formik.errors.defaultPaymentMethod}
 								</p>
 							)}
 					</div>

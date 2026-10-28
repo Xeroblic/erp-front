@@ -137,10 +137,10 @@ const DetalleProveedorPage: React.FC = () => {
 			return branchToSubsidiary.get(preferredBranchId) ?? null;
 		}
 
+		const branchWithSubsidiaryId: BranchWithSubsidiaryId | null | undefined =
+			currentUser?.branch;
 		const branchSubsidiaryId =
-			currentUser?.branch?.subsidiary?.id ??
-			(currentUser?.branch as BranchWithSubsidiaryId | null | undefined)?.subsidiary_id ??
-			null;
+			currentUser?.branch?.subsidiary?.id ?? branchWithSubsidiaryId?.subsidiary_id ?? null;
 		if (branchSubsidiaryId) return branchSubsidiaryId;
 
 		// El backend ha enviado tanto referencias `{ id, name }` como ids sueltos.

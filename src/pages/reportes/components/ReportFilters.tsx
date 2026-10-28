@@ -352,7 +352,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 					)}
 					<Button
 						variant='outline'
-						color={themeColor as 'violet'}
+						color={themeColor}
 						rightIcon='HeroArrowPath'
 						onClick={handleReset}>
 						Limpiar

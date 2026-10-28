@@ -249,8 +249,8 @@ const GarantiasPage: React.FC = () => {
 											option ? Number((option as TSelectOption).value) : null,
 										)
 									}
-									onInputChange={(term, meta) => {
-										if (meta?.action === 'input-change') {
+									onInputChange={(term, inputMeta) => {
+										if (inputMeta?.action === 'input-change') {
 											void searchSales(term || '');
 										}
 									}}

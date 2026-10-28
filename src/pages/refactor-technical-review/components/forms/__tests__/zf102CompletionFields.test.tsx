@@ -230,7 +230,7 @@ describe('ZF-102 · cierre de la revisión de notebook', () => {
 			<ReviewFormHarness<NotebookFormData>
 				section={() => null}
 				schema={resolveNotebookSchema(true)}
-				initialValues={{ ...COMPLETE_NOTEBOOK, powers_on: false } as NotebookFormData}
+				initialValues={{ ...COMPLETE_NOTEBOOK, powers_on: false }}
 				handle={handle}
 			/>,
 		);
@@ -363,7 +363,7 @@ describe('ZF-102 · cierre de la revisión de desktop', () => {
 			<ReviewFormHarness<DesktopFormData>
 				section={() => null}
 				schema={desktopSchema}
-				initialValues={{ ...COMPLETE_DESKTOP, powers_on: false } as DesktopFormData}
+				initialValues={{ ...COMPLETE_DESKTOP, powers_on: false }}
 				handle={handle}
 			/>,
 		);

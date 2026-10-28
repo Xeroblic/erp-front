@@ -5,7 +5,7 @@ import type { DeferredPaymentCreditProfilesListResponse } from '@/interface/defe
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import useCarteraCredito from '../hooks/useCarteraCredito';
 
-const branchContext = vi.hoisted(() => ({ subsidiaryId: 10 as number | null }));
+const branchContext = vi.hoisted(() => ({ subsidiaryId: 10 }));
 
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ branchId: 1, subsidiaryId: branchContext.subsidiaryId }),

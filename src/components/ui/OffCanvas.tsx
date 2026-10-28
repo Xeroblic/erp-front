@@ -190,10 +190,10 @@ const Dialog = forwardRef<HTMLDivElement, IDialogProps>((props, ref) => {
 	const classes = classNames(
 		'pointer-events-none fixed w-full h-full shadow-2xl',
 		{
-			'max-w-[30rem]': ['right', 'left'].includes(position as TOffCanvasPositionHorizontal),
+			'max-w-[30rem]': ['right', 'left'].includes(position),
 			'left-0': position === 'left',
 			'right-0': position === 'right',
-			'max-h-[30rem]': ['top', 'bottom'].includes(position as TOffCanvasPositionVertical),
+			'max-h-[30rem]': ['top', 'bottom'].includes(position),
 			'top-0': position === 'top',
 			'bottom-0': position === 'bottom',
 		},

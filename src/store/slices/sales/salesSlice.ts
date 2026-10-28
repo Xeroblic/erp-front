@@ -174,7 +174,7 @@ export const updateSale = createAsyncThunk(
 			const response = await ApiService.fetchData<ISaleResponse>({
 				url: `/subsidiaries/${subsidiaryId}/sales/${id}`,
 				method: 'put',
-				data: data as unknown as Record<string, unknown>,
+				data,
 			});
 			toast.success('Venta actualizada exitosamente');
 			return response.data;

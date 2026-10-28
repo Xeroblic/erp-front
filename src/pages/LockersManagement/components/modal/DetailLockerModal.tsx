@@ -48,7 +48,7 @@ const DetailLockerModal: React.FC<IDetailLockerModalProps> = ({
 	const StatusBadge = ({ status }: { status: string }) => {
 		const config = getStatusConfig(status);
 		return (
-			<Badge color={config.color as any} variant='solid' className='text-xs'>
+			<Badge color={config.color} variant='solid' className='text-xs'>
 				<span className='flex items-center gap-1'>
 					<Icon icon={config.icon} className='h-3 w-3' />
 					{config.label}

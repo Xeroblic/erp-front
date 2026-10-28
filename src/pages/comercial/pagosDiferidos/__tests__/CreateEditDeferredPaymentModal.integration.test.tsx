@@ -14,7 +14,7 @@ import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';
 
 const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn(), invalidateCache: vi.fn() }));
-const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 as number | null }));
+const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 }));
 const customerSalesSpies = vi.hoisted(() => ({
 	overviewThunk: vi.fn(),
 	overviewThunkImplementation: null as null | ((...args: unknown[]) => unknown),

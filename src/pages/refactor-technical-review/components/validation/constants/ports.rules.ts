@@ -41,7 +41,7 @@ export const PORT_TYPE_LABELS: Record<PortTypeValue, string> = {
 };
 
 export const PORT_TYPE_OPTIONS: Array<{ value: string; label: string }> = ALLOWED_PORT_TYPES.map(
-	(value) => ({ value: value as string, label: PORT_TYPE_LABELS[value] }),
+	(value) => ({ value, label: PORT_TYPE_LABELS[value] }),
 );
 
 /**

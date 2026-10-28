@@ -12,7 +12,7 @@ import {
 	formatCustomerLabel,
 	type CustomerSaleOption,
 } from '@/components/customers/CustomerSaleSelect';
-import { IQuote, QuoteStatus } from '../../../../../../interface';
+import { IQuote } from '../../../../../../interface';
 import Modal, {
 	ModalHeader,
 	ModalBody,
@@ -52,8 +52,7 @@ const asCustomerRecord = (value: unknown): Record<string, unknown> | undefined =
 const readCustomerString = (
 	customer: Record<string, unknown> | undefined,
 	key: string,
-): string | undefined =>
-	typeof customer?.[key] === 'string' ? (customer[key] as string) : undefined;
+): string | undefined => (typeof customer?.[key] === 'string' ? customer[key] : undefined);
 
 interface EditQuotationModalProps {
 	isOpen: boolean;
@@ -283,7 +282,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 			customer_email: readCustomerString(savedCustomer, 'email') ?? '',
 			quote_date: quotation.quote_date ?? today,
 			expiry_date: quotation.expiry_date ?? quotation.valid_until ?? expiryDate,
-			status: normalizeQuoteStatusValue(quotation.status) as QuoteStatus,
+			status: normalizeQuoteStatusValue(quotation.status),
 			subtotal: Number(quotation.subtotal ?? 0),
 			tax_rate: Number(quotation.tax_rate ?? numericTaxPct ?? 0),
 			tax_amount: Number(quotation.tax_amount ?? 0),

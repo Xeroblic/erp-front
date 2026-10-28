@@ -109,7 +109,7 @@ export const buildHeader = (dateFrom?: string, dateTo?: string): PdfContent => {
 				margin: [0, -110, 0, 60], // Pulls the text over the canvas background safely and creates bottom spacing
 			},
 		],
-	} as PdfContent;
+	};
 };
 
 export const buildExecutiveSummary = (insights: string[]): PdfContent => {
@@ -149,7 +149,7 @@ export const buildExecutiveSummary = (insights: string[]): PdfContent => {
 			paddingBottom: () => 0,
 		},
 		margin: [0, 0, 0, 30],
-	} as PdfContent;
+	};
 };
 
 /** Ancho en em de Roboto Medium (la negrita de pdfmake): dígitos y `$` 0,568; `.` 0,278. */
@@ -234,7 +234,7 @@ export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 				},
 			],
 			width: cardW,
-		} as PdfContent;
+		};
 	};
 
 	return {
@@ -258,13 +258,13 @@ export const buildSmartKPIs = (stats: SalesDashboardStats): PdfContent => {
 			), // Sky Blue
 		],
 		margin: [0, 0, 0, 30],
-	} as PdfContent;
+	};
 };
 
 export const buildTopPerformersTable = (
 	customerData: { name: string; total: number }[],
 ): PdfContent => {
-	if (customerData.length === 0) return { text: '' } as PdfContent;
+	if (customerData.length === 0) return { text: '' };
 
 	return {
 		stack: [
@@ -353,7 +353,7 @@ export const buildTopPerformersTable = (
 				margin: [0, 0, 0, 20],
 			},
 		],
-	} as PdfContent;
+	};
 };
 
 // --- MULTIPAGE FEATURES ---
@@ -433,7 +433,7 @@ export const buildCoverPage = (dateFrom?: string, dateTo?: string): PdfContent =
 			},
 		],
 		pageBreak: 'after', // Forces the next section into page 2
-	} as PdfContent;
+	};
 };
 
 const extractCustomerName = (r: SaleRecord): string => {
@@ -457,7 +457,7 @@ const extractAmount = (r: SaleRecord): number => {
 };
 
 export const buildYearlyAnalytics = (filteredResults: SaleRecord[]): PdfContent => {
-	if (filteredResults.length === 0) return { text: '', pageBreak: 'before' } as PdfContent;
+	if (filteredResults.length === 0) return { text: '', pageBreak: 'before' };
 
 	const years: Record<number, { total: number; count: number }> = {};
 
@@ -635,7 +635,7 @@ export const buildYearlyAnalytics = (filteredResults: SaleRecord[]): PdfContent 
 			{ stack: chartStack },
 		],
 		pageBreak: 'before',
-	} as PdfContent;
+	};
 };
 
 export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent[] => {
@@ -1114,7 +1114,7 @@ export const buildSemesterDeepDive = (filteredResults: SaleRecord[]): PdfContent
 				},
 			],
 			pageBreak: 'before',
-		} as PdfContent;
+		};
 	});
 };
 
@@ -1203,7 +1203,7 @@ export const buildRiskAnalytics = (filteredResults: SaleRecord[]): PdfContent =>
 				},
 			],
 			pageBreak: 'before',
-		} as PdfContent;
+		};
 	}
 
 	const totalVolume = totalSales + totalRefunded;
@@ -1388,7 +1388,7 @@ export const buildRiskAnalytics = (filteredResults: SaleRecord[]): PdfContent =>
 			},
 		],
 		pageBreak: 'before',
-	} as PdfContent;
+	};
 };
 
 export const buildMethodology = (): PdfContent => {
@@ -1437,5 +1437,5 @@ export const buildMethodology = (): PdfContent => {
 			},
 		],
 		pageBreak: 'before', // Forces vocabulary to its own concluding page
-	} as PdfContent;
+	};
 };

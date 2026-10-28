@@ -26,7 +26,6 @@ import {
 	selectDarkMode,
 	selectIsDarkTheme,
 	setLanguage,
-	setAsideStatus,
 	setFontSize,
 	setThemeColor,
 	setThemeColorShade,
@@ -160,14 +159,14 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 		() => ({
 			setLanguage: (value: React.SetStateAction<TLang>) => {
 				if (typeof value === 'function') {
-					dispatch(setLanguage((value as (prev: TLang) => TLang)(language)));
+					dispatch(setLanguage(value(language)));
 				} else {
 					dispatch(setLanguage(value));
 				}
 			},
 			setDarkModeStatus: (value: React.SetStateAction<TDarkMode>) => {
 				if (typeof value === 'function') {
-					const newValue = (value as (prev: TDarkMode) => TDarkMode)(darkModeStatus);
+					const newValue = value(darkModeStatus);
 					setDarkModeStatus(newValue);
 				} else {
 					setDarkModeStatus(value);
@@ -182,25 +181,21 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 			// },
 			setFontSize: (value: React.SetStateAction<number>) => {
 				if (typeof value === 'function') {
-					dispatch(setFontSize((value as (prev: number) => number)(fontSize)));
+					dispatch(setFontSize(value(fontSize)));
 				} else {
 					dispatch(setFontSize(value));
 				}
 			},
 			setThemeColor: (value: React.SetStateAction<TColors>) => {
 				if (typeof value === 'function') {
-					dispatch(setThemeColor((value as (prev: TColors) => TColors)(themeColor)));
+					dispatch(setThemeColor(value(themeColor)));
 				} else {
 					dispatch(setThemeColor(value));
 				}
 			},
 			setThemeColorShade: (value: React.SetStateAction<TColorIntensity>) => {
 				if (typeof value === 'function') {
-					dispatch(
-						setThemeColorShade(
-							(value as (prev: TColorIntensity) => TColorIntensity)(themeColorShade),
-						),
-					);
+					dispatch(setThemeColorShade(value(themeColorShade)));
 				} else {
 					dispatch(setThemeColorShade(value));
 				}
