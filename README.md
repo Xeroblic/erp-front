@@ -67,8 +67,8 @@ Todo bajo un mismo ecosistema visual y operativo.
 
 ### **Framework Principal**
 
-- **React 18 + TypeScript 5**
-- Bundler: **Vite 5** (ultra-fast, devServer instantáneo)
+- **React 19 + TypeScript 7** (compilador nativo; el tooling, como typescript-eslint, usa la API de TypeScript 6)
+- Bundler: **Vite 8** (ultra-fast, devServer instantáneo)
 - Estilos: **Tailwind CSS 3** (tema corporativo y dark mode nativo)
 
 ### **Estado Global**
