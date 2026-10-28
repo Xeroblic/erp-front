@@ -57,11 +57,32 @@ const LockersDashboardTab: React.FC<ILockersDashboardTabProps> = ({
 		label: loc.name || `Ubicación ${loc.id}`,
 	}));
 
+	// Clases completas y no `bg-${color}-100`: Tailwind sólo genera las que ve escritas.
 	const summaryCards = [
-		{ label: 'Disponible', color: 'emerald', icon: 'HeroCheck' },
-		{ label: 'Ocupado', color: 'amber', icon: 'HeroLockClosed' },
-		{ label: 'Esperando Retiro', color: 'blue', icon: 'HeroBell' },
-		{ label: 'En Cuarentena', color: 'violet', icon: 'HeroClock' },
+		{
+			label: 'Disponible',
+			icon: 'HeroCheck',
+			boxClass: 'bg-emerald-100 dark:bg-emerald-900/30',
+			iconClass: 'text-emerald-600',
+		},
+		{
+			label: 'Ocupado',
+			icon: 'HeroLockClosed',
+			boxClass: 'bg-amber-100 dark:bg-amber-900/30',
+			iconClass: 'text-amber-600',
+		},
+		{
+			label: 'Esperando Retiro',
+			icon: 'HeroBell',
+			boxClass: 'bg-blue-100 dark:bg-blue-900/30',
+			iconClass: 'text-blue-600',
+		},
+		{
+			label: 'En Cuarentena',
+			icon: 'HeroClock',
+			boxClass: 'bg-violet-100 dark:bg-violet-900/30',
+			iconClass: 'text-violet-600',
+		},
 	];
 
 	return (
@@ -111,13 +132,13 @@ const LockersDashboardTab: React.FC<ILockersDashboardTabProps> = ({
 
 			{/* Resumen de estados */}
 			<div className='grid grid-cols-2 gap-4 sm:grid-cols-4'>
-				{summaryCards.map(({ label, color, icon }) => (
+				{summaryCards.map(({ label, icon, boxClass, iconClass }) => (
 					<Card key={label}>
 						<CardBody className='p-4'>
 							<div className='flex items-center gap-3'>
 								<div
-									className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-${color}-100 dark:bg-${color}-900/30`}>
-									<Icon icon={icon} className={`h-5 w-5 text-${color}-600`} />
+									className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${boxClass}`}>
+									<Icon icon={icon} className={`h-5 w-5 ${iconClass}`} />
 								</div>
 								<div>
 									<p className='text-xs font-medium text-zinc-500'>{label}</p>

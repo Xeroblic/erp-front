@@ -8,6 +8,7 @@ interface CheckInSuccessStepsProps {
 }
 
 const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber, pin }) => {
+	// Clases completas y no `bg-${color}-100`: Tailwind sólo genera las que ve escritas.
 	const steps = [
 		{
 			id: 1,
@@ -20,7 +21,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 				</>
 			),
 			icon: 'HeroMapPin',
-			color: 'blue',
+			badgeClass: 'bg-blue-100 text-blue-600',
 		},
 		{
 			id: 2,
@@ -38,7 +39,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 				</>
 			),
 			icon: 'HeroKey',
-			color: 'emerald',
+			badgeClass: 'bg-emerald-100 text-emerald-600',
 		},
 		{
 			id: 3,
@@ -46,7 +47,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 			description:
 				'Coloca tu equipo dentro del casillero y cierra la puerta firmemente hasta escuchar el clic de bloqueo.',
 			icon: 'HeroArchiveBoxArrowDown',
-			color: 'indigo',
+			badgeClass: 'bg-indigo-100 text-indigo-600',
 		},
 		{
 			id: 4,
@@ -54,7 +55,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 			description:
 				'Recibirás una notificación automática en tu correo una vez que nuestro servicio técnico retire y procese tu equipo.',
 			icon: 'HeroBellAlert',
-			color: 'rose',
+			badgeClass: 'bg-rose-100 text-rose-600',
 		},
 	];
 
@@ -82,7 +83,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 							{steps.map((step) => (
 								<div key={step.id} className='flex gap-5'>
 									<div
-										className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-${step.color}-100 text-${step.color}-600 shadow-xs`}>
+										className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-xs ${step.badgeClass}`}>
 										<Icon icon={step.icon} className='h-6 w-6' />
 									</div>
 									<div className='space-y-1'>
