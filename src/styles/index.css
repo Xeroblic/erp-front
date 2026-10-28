@@ -30,21 +30,28 @@
 /*
  * Clases que se arman en tiempo de ejecución (`bg-${color}-${shade}` y similares) y que
  * el escáner no puede ver en el código. Reemplazan el `safelist` de la configuración JS.
+ * Sólo llevan las variantes que el código arma con color dinámico: cada combinación con
+ * opacidad genera además un respaldo `color-mix()`, y el safelist completo de la 3 duplicaba
+ * el CSS. Si un componente nuevo arma `active:bg-${color}-…` o similar, agrégalo aquí.
  */
 @source inline(
-	'{,hover:,active:,checked:,indeterminate:}bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}'
+	'{,hover:}bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}'
 );
 @source inline(
-	'{,hover:,dark:hover:}bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}/{10,15,20}'
+	'bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}/{10,15,20}'
+);
+/* Puertos de la revisión técnica */
+@source inline(
+	'{hover:bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-500,dark:hover:bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-900}/20'
 );
 @source inline(
-	'{,hover:,active:,dark:hover:,peer-checked:}border-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}'
+	'{,hover:,dark:hover:}border-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}'
 );
 @source inline(
-	'{,hover:,active:,dark:hover:}border-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}/{30,50}'
+	'border-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}/{30,50}'
 );
 @source inline(
-	'{,hover:,active:,dark:hover:}text-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}'
+	'{,hover:,dark:hover:}text-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}'
 );
 /* Calendar y TutorialModal */
 @source inline(
