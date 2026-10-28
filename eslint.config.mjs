@@ -2,26 +2,81 @@
  * Configuración plana de ESLint (ESLint 10 ya no lee `.eslintrc*` ni `.eslintignore`).
  *
  * Reproduce la configuración anterior: Airbnb + reglas de TypeScript + Prettier, con las
- * mismas reglas propias del proyecto. Airbnb no publica configuración plana, así que se
- * carga con `FlatCompat`, y sus plugins se envuelven con `fixupConfigRules` porque usan
- * métodos de `context` que ESLint 10 eliminó.
+ * mismas reglas propias del proyecto. Airbnb no publica configuración plana: se arma acá
+ * con sus propios archivos de reglas y los plugins registrados en formato plano.
  */
 
-import { fixupConfigRules } from '@eslint/compat';
-import { FlatCompat } from '@eslint/eslintrc';
+import { fixupPluginRules } from '@eslint/compat';
 import stylistic from '@stylistic/eslint-plugin';
 import { defineConfig, globalIgnores } from 'eslint/config';
+import airbnbReact from 'eslint-config-airbnb/rules/react';
+import airbnbReactA11y from 'eslint-config-airbnb/rules/react-a11y';
 import airbnbBestPractices from 'eslint-config-airbnb-base/rules/best-practices';
-import airbnbVariables from 'eslint-config-airbnb-base/rules/variables';
+import airbnbErrors from 'eslint-config-airbnb-base/rules/errors';
 import airbnbES6 from 'eslint-config-airbnb-base/rules/es6';
 import airbnbImports from 'eslint-config-airbnb-base/rules/imports';
+import airbnbNode from 'eslint-config-airbnb-base/rules/node';
+import airbnbStrict from 'eslint-config-airbnb-base/rules/strict';
 import airbnbStyle from 'eslint-config-airbnb-base/rules/style';
+import airbnbVariables from 'eslint-config-airbnb-base/rules/variables';
 import prettierConfig from 'eslint-config-prettier/flat';
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
+import importX, { createNodeResolver } from 'eslint-plugin-import-x';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettierPlugin from 'eslint-plugin-prettier';
+import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-const compat = new FlatCompat({ baseDirectory: import.meta.dirname });
+/** import-x sólo lee los `settings` con su prefijo: los `import/*` de Airbnb se renombran. */
+const conPrefijoImportX = (settings) =>
+	Object.fromEntries(
+		Object.entries(settings).map(([clave, valor]) => [
+			clave.startsWith('import/') ? `import-x/${clave.slice('import/'.length)}` : clave,
+			valor,
+		]),
+	);
+
+/**
+ * `eslint-config-airbnb` 19 en formato plano, en el mismo orden de su `extends`.
+ * - `import` es `eslint-plugin-import-x`, registrado con el prefijo `import` para que las
+ *   reglas y las directivas `import/...` sigan valiendo: `eslint-plugin-import` 2.32 se cae
+ *   en ESLint 10 (`import/order` usa `sourceCode.getTokenOrCommentBefore`).
+ * - `react` va con `fixupPluginRules`: `eslint-plugin-react` 7.37.5, su última versión, detecta
+ *   la versión de React con `context.getFilename()`, que ESLint 10 eliminó.
+ * - Los resolvers de Airbnb (`import/resolver`) se reemplazan por `import-x/resolver-next`.
+ */
+const airbnbBases = [
+	airbnbBestPractices,
+	airbnbErrors,
+	airbnbNode,
+	airbnbStyle,
+	airbnbVariables,
+	airbnbES6,
+	airbnbImports,
+	airbnbStrict,
+	airbnbReact,
+	airbnbReactA11y,
+];
+const settingsAirbnb = Object.fromEntries(
+	Object.entries({ ...airbnbImports.settings, ...airbnbReact.settings }).filter(
+		([clave]) => clave !== 'import/resolver',
+	),
+);
+
+const airbnb = {
+	name: 'zentria/airbnb',
+	languageOptions: {
+		ecmaVersion: 2018,
+		sourceType: 'module',
+		globals: { ...globals.es2015, ...globals.node },
+		parserOptions: { ecmaFeatures: { jsx: true } },
+	},
+	plugins: { import: importX, react: fixupPluginRules(react), 'jsx-a11y': jsxA11y },
+	settings: conPrefijoImportX(settingsAirbnb),
+	rules: Object.assign({}, ...airbnbBases.map((base) => base.rules)),
+};
 
 // Patrones de devDependencies de Airbnb, duplicados con extensión TypeScript.
 const devDependenciesTs = airbnbImports.rules[
@@ -42,12 +97,9 @@ const airbnbTypescript = {
 	name: 'zentria/airbnb-typescript',
 	plugins: { '@stylistic': stylistic },
 	settings: {
-		'import/parsers': { '@typescript-eslint/parser': ['.ts', '.tsx', '.d.ts'] },
-		'import/resolver': {
-			node: { extensions: ['.mjs', '.js', '.jsx', '.json', '.ts', '.tsx', '.d.ts'] },
-		},
-		'import/extensions': ['.js', '.mjs', '.jsx', '.ts', '.tsx', '.d.ts'],
-		'import/external-module-folders': ['node_modules', 'node_modules/@types'],
+		'import-x/parsers': { '@typescript-eslint/parser': ['.ts', '.tsx', '.d.ts'] },
+		'import-x/extensions': ['.js', '.mjs', '.jsx', '.ts', '.tsx', '.d.ts'],
+		'import-x/external-module-folders': ['node_modules', 'node_modules/@types'],
 	},
 	rules: {
 		camelcase: 'off',
@@ -170,7 +222,7 @@ export const archivosIgnorados = globalIgnores(
 
 export default defineConfig(
 	archivosIgnorados,
-	...fixupConfigRules(compat.extends('airbnb')),
+	airbnb,
 	airbnbTypescript,
 	airbnbTypescriptOverrides,
 	tseslint.configs.recommended,
@@ -193,11 +245,12 @@ export default defineConfig(
 			'react-hooks': reactHooks,
 		},
 		settings: {
-			'import/resolver': {
-				typescript: {
-					project: './tsconfig.eslint.json',
-				},
-			},
+			'import-x/resolver-next': [
+				createTypeScriptImportResolver({ project: './tsconfig.eslint.json' }),
+				createNodeResolver({
+					extensions: ['.mjs', '.js', '.jsx', '.json', '.ts', '.tsx', '.d.ts'],
+				}),
+			],
 		},
 		rules: {
 			'no-use-before-define': 'off',

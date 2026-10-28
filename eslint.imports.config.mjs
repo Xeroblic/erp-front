@@ -3,9 +3,9 @@
  * imports. Es la que corre en el workflow «Calidad de PR».
  */
 
-import { fixupPluginRules } from '@eslint/compat';
 import { defineConfig } from 'eslint/config';
-import importPlugin from 'eslint-plugin-import';
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
+import importX from 'eslint-plugin-import-x';
 import tseslint from 'typescript-eslint';
 
 import { archivosIgnorados } from './eslint.config.mjs';
@@ -21,13 +21,12 @@ export default defineConfig(archivosIgnorados, {
 			ecmaFeatures: { jsx: true },
 		},
 	},
-	plugins: { import: fixupPluginRules(importPlugin) },
+	// El mismo prefijo `import` que en `eslint.config.mjs`.
+	plugins: { import: importX },
 	settings: {
-		'import/resolver': {
-			typescript: {
-				project: './tsconfig.eslint.json',
-			},
-		},
+		'import-x/resolver-next': [
+			createTypeScriptImportResolver({ project: './tsconfig.eslint.json' }),
+		],
 	},
 	rules: {
 		'import/extensions': [
