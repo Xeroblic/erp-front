@@ -227,7 +227,7 @@ instrucción aplicable lo autoriza, y sólo para subtareas independientes.
 | En vez de    | Usá                                | Por qué                                                        |
 | ------------ | ---------------------------------- | -------------------------------------------------------------- |
 | `pnpm test`  | `pnpm run test:related <archivos>` | `test` es `vitest` sin `run`: modo watch, no termina nunca.    |
-| `pnpm lint`  | `pnpm run lint:changed`            | El completo son ~7.100 líneas y 5.877 hallazgos preexistentes. |
+| `pnpm lint`  | `pnpm run lint:changed`            | El completo son ~6.600 líneas y 5.470 hallazgos preexistentes. |
 | `tsc` suelto | `pnpm run typecheck`               | Comando único y ya autorizado.                                 |
 
 Usá `test:run` o `lint` completos sólo cuando el alcance realmente lo justifique, y reportá
