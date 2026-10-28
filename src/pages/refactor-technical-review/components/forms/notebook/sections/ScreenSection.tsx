@@ -118,7 +118,7 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								disabled={readOnly}
 								className={
 									errors.dead_pixels_count
-										? 'border-red-500 text-center'
+										? 'border-red-500! text-center'
 										: 'text-center'
 								}
 							/>
@@ -157,7 +157,7 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								disabled={readOnly}
 								className={
 									errors.spots_count
-										? 'border-red-500 text-center'
+										? 'border-red-500! text-center'
 										: 'text-center'
 								}
 							/>

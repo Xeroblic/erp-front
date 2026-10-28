@@ -94,7 +94,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 						value={serialNumber}
 						onChange={handleSerialChange}
 						placeholder='Ej: SDFSDFSD'
-						className={`font-mono uppercase ${serialError ? 'border-red-500' : ''}`}
+						className={`font-mono uppercase ${serialError ? 'border-red-500!' : ''}`}
 						autoFocus={!readOnly}
 						disabled={readOnly}
 					/>

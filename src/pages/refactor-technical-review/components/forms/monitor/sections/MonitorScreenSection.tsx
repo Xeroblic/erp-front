@@ -106,7 +106,7 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (secti
 							value={values.screen_inches ?? ''}
 							placeholder={MONITOR_PLACEHOLDERS.screen_inches}
 							disabled={readOnly}
-							className={errors.screen_inches ? 'border-red-500' : ''}
+							className={errors.screen_inches ? 'border-red-500!' : ''}
 						/>
 						{errors.screen_inches && (
 							<p className='mt-1 text-xs text-red-500'>{errors.screen_inches}</p>

@@ -89,7 +89,7 @@ export const AioObservationsSection: React.FC<FormSectionProps<AioFormData>> = (
 					placeholder={AIO_PLACEHOLDERS.observations}
 					disabled={readOnly}
 					rows={4}
-					className={errors.observations ? 'border-red-500' : ''}
+					className={errors.observations ? 'border-red-500!' : ''}
 				/>
 				{errors.observations && (
 					<p className='mt-2 text-sm text-red-500'>{errors.observations}</p>

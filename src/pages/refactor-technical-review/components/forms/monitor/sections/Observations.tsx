@@ -28,7 +28,7 @@ const Observations: React.FC<FormSectionProps<MonitorFormData>> = ({
 				placeholder={MONITOR_PLACEHOLDERS.observations}
 				disabled={readOnly}
 				rows={4}
-				className={`w-full ${errors.observations ? 'border-red-500' : ''}`}
+				className={`w-full ${errors.observations ? 'border-red-500!' : ''}`}
 			/>
 			{errors.observations && (
 				<p className='mt-2 text-xs font-semibold text-red-500'>{errors.observations}</p>

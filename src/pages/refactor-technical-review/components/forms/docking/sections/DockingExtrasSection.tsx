@@ -181,7 +181,7 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 					placeholder={DOCKING_PLACEHOLDERS.observations}
 					disabled={readOnly}
 					rows={4}
-					className={`w-full ${errors.observations ? 'border-red-500' : ''}`}
+					className={`w-full ${errors.observations ? 'border-red-500!' : ''}`}
 				/>
 				{errors.observations && (
 					<p className='mt-2 text-xs text-red-500'>{errors.observations}</p>

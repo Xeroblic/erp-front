@@ -80,7 +80,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 						value={values.model ?? ''}
 						placeholder={DOCKING_PLACEHOLDERS.model}
 						disabled={readOnly}
-						className={errors.model ? 'border-red-500' : ''}
+						className={errors.model ? 'border-red-500!' : ''}
 					/>
 					{errors.model && <p className='mt-1 text-xs text-red-500'>{errors.model}</p>}
 					<p className='mt-1 text-xs text-zinc-500'>{DOCKING_HINTS.model}</p>
@@ -101,7 +101,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 						value={values.line ?? ''}
 						placeholder={DOCKING_PLACEHOLDERS.line}
 						disabled={readOnly}
-						className={errors.line ? 'border-red-500' : ''}
+						className={errors.line ? 'border-red-500!' : ''}
 					/>
 					{errors.line && <p className='mt-1 text-xs text-red-500'>{errors.line}</p>}
 					<p className='mt-1 text-xs text-zinc-500'>{DOCKING_HINTS.line}</p>

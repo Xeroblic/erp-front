@@ -661,7 +661,7 @@ const CrearLote: React.FC = () => {
 										onBlur={formik.handleBlur}
 										className={
 											formik.touched.entry_date && formik.errors.entry_date
-												? 'border-red-500'
+												? 'border-red-500!'
 												: ''
 										}
 									/>
@@ -689,7 +689,7 @@ const CrearLote: React.FC = () => {
 										className={
 											formik.touched.expected_quantity &&
 											formik.errors.expected_quantity
-												? 'border-red-500'
+												? 'border-red-500!'
 												: ''
 										}
 										placeholder='Ej: 50'
