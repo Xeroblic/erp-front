@@ -40,9 +40,9 @@
 @source inline(
 	'bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}/{10,15,20}'
 );
-/* Puertos de la revisión técnica */
+/* Tarjetas de puertos de la revisión técnica (aio, docking y monitor) */
 @source inline(
-	'{hover:bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-500,dark:hover:bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-900}/20'
+	'{hover:bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-500/20,dark:hover:bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-900/20,dark:bg-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-900/10,dark:border-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-800/50,dark:text-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-200}'
 );
 @source inline(
 	'{,hover:,dark:hover:}border-{slate,gray,zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,primary}-{50,{100..900..100},950}'
