@@ -1,4 +1,3 @@
-/* eslint-disable import/extensions */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';

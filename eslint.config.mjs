@@ -179,9 +179,9 @@ export default defineConfig(
 	{
 		name: 'zentria/proyecto',
 		files: ['**/*.{js,jsx,ts,tsx}'],
-		// ESLint 9 empezó a avisar por defecto de los `eslint-disable` que ya no hacen falta; se
-		// mantiene apagado como en ESLint 8 para que la actualización no cambie el conteo.
-		linterOptions: { reportUnusedDisableDirectives: 'off' },
+		// Una directiva sin uso no protege nada y se corrige sola (`--fix`): como error, no se
+		// acumulan las que quedan obsoletas cuando se arregla el código que silenciaban.
+		linterOptions: { reportUnusedDisableDirectives: 'error' },
 		languageOptions: {
 			parserOptions: {
 				project: './tsconfig.eslint.json',

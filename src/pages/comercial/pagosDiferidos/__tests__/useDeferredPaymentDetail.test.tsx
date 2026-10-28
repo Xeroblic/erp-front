@@ -4,9 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
-// eslint-disable-next-line import/extensions
 import deferredPaymentsService from '@/services/deferredPaymentsService';
-// eslint-disable-next-line import/extensions
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import useDeferredPaymentDetail from '../hooks/useDeferredPaymentDetail';
 

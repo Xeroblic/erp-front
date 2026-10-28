@@ -5,7 +5,6 @@ import type {
 	IDeferredPaymentCreditProfile,
 	IDeferredPaymentCreditProfileListItem,
 } from '@/interface/deferredPayments.interface';
-// eslint-disable-next-line import/extensions
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import CreditProfileEditModal from '../components/CreditProfileEditModal';
 

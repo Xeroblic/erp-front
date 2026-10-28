@@ -1,7 +1,5 @@
 import React from 'react';
-// eslint-disable-next-line import/extensions
 import Icon from '@/components/icon/Icon';
-// eslint-disable-next-line import/extensions
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 
 interface ReminderMilestone {

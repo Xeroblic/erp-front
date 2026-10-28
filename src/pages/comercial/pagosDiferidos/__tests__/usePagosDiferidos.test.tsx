@@ -8,9 +8,7 @@ import type {
 	DeferredPaymentsListResponse,
 	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
-// eslint-disable-next-line import/extensions
 import deferredPaymentsService from '@/services/deferredPaymentsService';
-// eslint-disable-next-line import/extensions
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usePagosDiferidos from '../hooks/usePagosDiferidos';
 

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { StatusPill } from '@/components/procurement';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import ProtectedButton from '@/components/ui/ProtectedButton';
-// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import type { IWarehouse } from '@/interface/warehouse.interface';

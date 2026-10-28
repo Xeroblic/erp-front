@@ -4,7 +4,6 @@ import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-// eslint-disable-next-line import/extensions
 import type { TableSortState } from '@/components/ui/SortableTableHeader';
 import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import type {
@@ -275,7 +274,6 @@ const WarehouseProductsTable: React.FC<IWarehouseProductsTableProps> = ({
 									<Fragment key={row.product.id}>
 										{/* La fila entera despliega el detalle con el mouse; el
 										    botón de la flecha es el control accesible por teclado. */}
-										{/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
 										<Tr
 											className='cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/60'
 											onClick={() => toggle(row.product.id)}>

@@ -4,7 +4,6 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
