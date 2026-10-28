@@ -75,11 +75,16 @@ const SearchPartial = () => {
 			item.category.toLowerCase().includes(formik.values.searchField.toLowerCase()),
 	);
 
+	const [modalStatus, setModalStatus] = useState<boolean>(false);
+
 	const inputRef = useRef<HTMLInputElement>(null);
 	const focusInput = () => {
-		if (inputRef.current) {
+		// En anchos chicos el input está oculto y la búsqueda vive en el modal.
+		if (inputRef.current?.offsetParent) {
 			inputRef.current.focus();
+			return;
 		}
+		setModalStatus(true);
 	};
 	useEffect(() => {
 		const handleKeyPress = (event: KeyboardEvent) => {
@@ -100,15 +105,13 @@ const SearchPartial = () => {
 		};
 	}, []);
 
-	const [modalStatus, setModalStatus] = useState<boolean>(false);
-
 	return (
 		<div className='relative'>
 			<FieldWrap
 				ref={ref}
 				firstSuffix={leftContent}
 				lastSuffix={rightContent}
-				className='z-20 rounded-xl bg-white max-sm:hidden dark:bg-zinc-900'>
+				className='z-20 rounded-xl bg-white @max-5xl:hidden dark:bg-zinc-900'>
 				<Input
 					ref={inputRef}
 					name='searchField'
@@ -122,9 +125,9 @@ const SearchPartial = () => {
 			</FieldWrap>
 			{formik.values.searchField && (
 				<div
-					className='absolute top-0 z-10 h-auto w-full rounded-lg bg-white shadow-2xl ring-2 ring-gray-100 ring-offset-8 outline-8 outline-white outline-solid max-sm:hidden dark:bg-zinc-950 dark:ring-zinc-800/50 dark:outline-zinc-950'
+					className='absolute top-0 z-10 h-auto w-full rounded-lg bg-white shadow-2xl ring-2 ring-gray-100 ring-offset-8 outline-8 outline-white outline-solid @max-5xl:hidden dark:bg-zinc-950 dark:ring-zinc-800/50 dark:outline-zinc-950'
 					style={{ paddingTop: domRect?.height }}>
-					<div className='rounded-smmax-h-96 divide-y divide-dashed divide-zinc-500/50 overflow-auto bg-white px-4 *:py-4 dark:bg-zinc-950'>
+					<div className='max-h-96 divide-y divide-dashed divide-zinc-500/50 overflow-auto rounded-xs bg-white px-4 *:py-4 dark:bg-zinc-950'>
 						{result.length ? (
 							result.map((i) => (
 								<Link
@@ -175,7 +178,7 @@ const SearchPartial = () => {
 
 			<Button
 				icon='HeroMagnifyingGlass'
-				className='flex h-10 w-10 items-center justify-center rounded-full! border border-white/60 bg-white p-0! text-sky-500 shadow-md shadow-sky-200/50 sm:hidden dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
+				className='flex h-10 w-10 items-center justify-center rounded-full! border border-white/60 bg-white p-0! text-sky-500 shadow-md shadow-sky-200/50 @5xl:hidden dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
 				onClick={() => setModalStatus(true)}
 			/>
 			<Modal isOpen={modalStatus} setIsOpen={setModalStatus}>
@@ -192,7 +195,7 @@ const SearchPartial = () => {
 						/>
 					</FieldWrap>
 					{formik.values.searchField && (
-						<div className='z-10 h-auto w-full bg-white sm:hidden dark:bg-zinc-950 dark:ring-zinc-800/50 dark:outline-zinc-950'>
+						<div className='z-10 h-auto w-full bg-white dark:bg-zinc-950 dark:ring-zinc-800/50 dark:outline-zinc-950'>
 							<div className='max-h-96 divide-y divide-dashed divide-zinc-500/50 overflow-auto bg-white *:py-4 dark:bg-zinc-950'>
 								{result.length ? (
 									result.map((i) => (

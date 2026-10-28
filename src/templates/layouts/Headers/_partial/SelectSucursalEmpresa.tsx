@@ -306,14 +306,14 @@ const SelectSucursalEmpresa = () => {
 	return (
 		<>
 			{/* DESKTOP */}
-			<div className='hidden w-full sm:block sm:max-w-xs sm:min-w-[260px]'>
+			<div className='hidden w-full @3xl:block @3xl:max-w-xs @3xl:min-w-[260px]'>
 				<SelectReact {...selectProps} />
 			</div>
 
 			{/* MOBILE BUTTON */}
 			<Button
 				onClick={() => setModalOpen(true)}
-				className='flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 sm:hidden dark:bg-zinc-600/90'>
+				className='flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 @3xl:hidden dark:bg-zinc-600/90'>
 				<span className='flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 shadow-xs'>
 					<Icon icon='HeroBuildingOffice2' className='h-4 w-4' />
 				</span>

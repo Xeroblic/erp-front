@@ -78,7 +78,9 @@ const Header: FC<IHeaderProps> = (props) => {
 				data-component-name='Header'
 				className={classNames(
 					'sticky top-0 z-40',
-					'flex justify-between gap-4',
+					// Contenedor de consulta: el grupo derecho se compacta según el ancho real del
+					// header, que con el aside abierto es bastante menor que el viewport.
+					'@container flex flex-wrap justify-between gap-4',
 					'border-b border-zinc-300/25 bg-[#ffffffa3] dark:bg-[#18181b]',
 					'p-6',
 					'backdrop-blur-md',
