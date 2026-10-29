@@ -12,8 +12,8 @@ proyecto, sin reinventar layouts, autorización ni manejo de estado.
   persistencia. RTK Query existe (`RtkQueryService.ts`) pero es minoritario — el patrón
   dominante es slice + thunk + `ApiService`.
 - **Formularios:** **Formik + Yup**. Es el estándar de facto (Formik en ~81 archivos, Yup
-  en ~52). **NO se usa Zod** en el código (0 imports). `react-hook-form` ya no es
-  dependencia del proyecto; **no lo reintroduzcas**.
+  en ~52). **NO se usa Zod** en el código (0 imports). Hay ~35 archivos legacy con
+  `react-hook-form`; **no lo propagues**, en código nuevo usa Formik + Yup.
 - **HTTP:** Axios vía `BaseService` → envuelto por `ApiService`.
 - **Backend:** Laravel 12 + JWT. Multi-empresa / multi-subsidiaria / multi-sucursal.
 - **Alias de imports:** `@/*` → `./src/*` (tsconfig). Usa `@/...` siempre.
@@ -224,11 +224,11 @@ instrucción aplicable lo autoriza, y sólo para subtareas independientes.
 
 **Verificación acotada, siempre:**
 
-| En vez de    | Usá                                | Por qué                                                        |
-| ------------ | ---------------------------------- | -------------------------------------------------------------- |
-| `pnpm test`  | `pnpm run test:related <archivos>` | `test` es `vitest` sin `run`: modo watch, no termina nunca.    |
-| `pnpm lint`  | `pnpm run lint:changed`            | El completo son ~6.600 líneas y 5.470 hallazgos preexistentes. |
-| `tsc` suelto | `pnpm run typecheck`               | Comando único y ya autorizado.                                 |
+| En vez de    | Usá                                | Por qué                                                       |
+| ------------ | ---------------------------------- | ------------------------------------------------------------- |
+| `pnpm test`  | `pnpm run test:related <archivos>` | `test` es `vitest` sin `run`: modo watch, no termina nunca.   |
+| `pnpm lint`  | `pnpm run lint:changed`            | El completo son 9.033 líneas y 7.553 hallazgos preexistentes. |
+| `tsc` suelto | `pnpm run typecheck`               | Comando único y ya autorizado.                                |
 
 Usá `test:run` o `lint` completos sólo cuando el alcance realmente lo justifique, y reportá
 por separado los hallazgos nuevos de la deuda preexistente.

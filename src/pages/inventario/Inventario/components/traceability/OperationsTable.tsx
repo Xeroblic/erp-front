@@ -117,7 +117,7 @@ const OperationsTable: React.FC<IOperationsTableProps> = ({
 			<Tr key={`operaciones-skeleton-${rowIndex}`}>
 				{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
 					<Td key={`operaciones-skeleton-${rowIndex}-${cellIndex}`}>
-						<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+						<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 					</Td>
 				))}
 			</Tr>
@@ -144,7 +144,7 @@ const OperationsTable: React.FC<IOperationsTableProps> = ({
 							{momento ? (
 								<>
 									<p className='font-medium tabular-nums'>{momento.fecha}</p>
-									<p className='text-sm text-zinc-500 tabular-nums'>
+									<p className='text-sm tabular-nums text-zinc-500'>
 										{momento.hora}
 									</p>
 								</>

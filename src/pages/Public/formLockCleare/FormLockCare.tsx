@@ -170,7 +170,7 @@ const FormLockCare: React.FC = () => {
 	}, [formik]);
 
 	return (
-		<main className='relative min-h-full overflow-hidden bg-linear-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
+		<main className='relative min-h-full overflow-hidden bg-gradient-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
 			<FormLockCareDecorations
 				ornaments={floatingOrnaments}
 				showEnhancedEffects={shouldRenderHeavyDecorations && decorationsReady}
@@ -181,7 +181,7 @@ const FormLockCare: React.FC = () => {
 					<CardHeader className='border-b border-zinc-200/70 px-6 py-5 sm:px-8'>
 						<div className='flex w-full items-start justify-between gap-4'>
 							<div className='space-y-2'>
-								<div className='inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-emerald-50 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-emerald-700 uppercase'>
+								<div className='inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700'>
 									<Icon icon='HeroSparkles' className='h-4 w-4' />
 									Ingreso de ticket
 								</div>
@@ -189,13 +189,13 @@ const FormLockCare: React.FC = () => {
 									Ingrese un Ticket
 								</CardTitle>
 							</div>
-							<div className='flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-400'>
+							<div className='flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-400'>
 								<Icon icon='HeroTicket' className='h-7 w-7 text-white' />
 							</div>
 						</div>
 					</CardHeader>
 
-					<CardBody className='px-5 pt-5 pb-6 sm:px-7 sm:pt-6 sm:pb-7'>
+					<CardBody className='px-5 pb-6 pt-5 sm:px-7 sm:pb-7 sm:pt-6'>
 						<div className='grid grid-cols-1 items-start gap-4 lg:grid-cols-[0.9fr_1.1fr]'>
 							<FormLockCareGuidePanel
 								showSteps={showStepsMobile}

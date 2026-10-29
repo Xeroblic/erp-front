@@ -108,7 +108,7 @@ export const ProductDetailHeader: React.FC<ProductDetailHeaderProps> = ({
 								className='h-4 w-4 text-neutral-400'
 							/>
 							<select
-								className='min-w-[180px] rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-100 dark:border-neutral-700 dark:bg-neutral-900'
+								className='min-w-[180px] rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-neutral-700 dark:bg-neutral-900'
 								value={branchId ?? effectiveBranchId ?? ''}
 								onChange={(event) => {
 									const nextValue = event.target.value

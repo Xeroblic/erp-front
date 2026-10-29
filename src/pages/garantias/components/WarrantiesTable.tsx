@@ -1,13 +1,17 @@
 import React, { useMemo } from 'react';
-import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	useReactTable,
+} from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Table, TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
+import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
-import type { Warranty } from '@/interface/warranties.interface';
-import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import WarrantyStatusBadge from './WarrantyStatusBadge';
+import type { Warranty } from '@/interface/warranties.interface';
 import { formatProductDisplay } from '../utils/warranty.utils';
 
 type DecoratedWarranty = Warranty & {
@@ -16,7 +20,7 @@ type DecoratedWarranty = Warranty & {
 	daysRemaining?: { label: string; isExpired: boolean };
 };
 
-const columnHelper = createColumnHelper<AppTableFeatures, DecoratedWarranty>();
+const columnHelper = createColumnHelper<DecoratedWarranty>();
 
 interface WarrantiesTableProps {
 	warranties: DecoratedWarranty[];
@@ -30,108 +34,6 @@ interface WarrantiesTableProps {
 	onEdit: (warranty: DecoratedWarranty) => void;
 	onDelete: (warranty: DecoratedWarranty) => void;
 }
-
-const buildWarrantyColumns = ({
-	onView,
-	onEdit,
-	onDelete,
-}: {
-	onView: WarrantiesTableProps['onView'];
-	onEdit: WarrantiesTableProps['onEdit'];
-	onDelete: WarrantiesTableProps['onDelete'];
-}) =>
-	columnHelper.columns([
-		columnHelper.accessor('status', {
-			header: 'Estado',
-			cell: (info) => <WarrantyStatusBadge status={info.getValue()} />,
-		}),
-		columnHelper.accessor((row) => row.product, {
-			id: 'product',
-			header: 'Producto',
-			cell: (info) => {
-				const product = info.getValue();
-				return (
-					<div className='flex flex-col'>
-						<span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-							{formatProductDisplay(product)}
-						</span>
-						{info.row.original.serial_number && (
-							<span className='text-xs text-zinc-500'>
-								Serie: {info.row.original.serial_number}
-							</span>
-						)}
-					</div>
-				);
-			},
-		}),
-		columnHelper.accessor((row) => row.warrantyTypeLabel, {
-			id: 'type',
-			header: 'Tipo de garantía',
-			cell: (info) => (
-				<span className='text-sm text-zinc-700 dark:text-zinc-200'>
-					{info.getValue() ?? '—'}
-				</span>
-			),
-		}),
-		columnHelper.accessor((row) => row.periodLabel, {
-			id: 'period',
-			header: 'Período',
-			cell: (info) => (
-				<div className='flex flex-col text-sm text-zinc-700 dark:text-zinc-200'>
-					{info.getValue() ?? '—'}
-				</div>
-			),
-		}),
-		columnHelper.accessor((row) => row.daysRemaining, {
-			id: 'daysRemaining',
-			header: 'Días restantes',
-			cell: (info) => {
-				const value = info.getValue();
-				if (!value) return <span className='text-sm text-zinc-400'>—</span>;
-				return (
-					<span
-						className={`text-sm font-medium ${
-							value.isExpired ? 'text-red-600' : 'text-emerald-600'
-						}`}>
-						{value.label}
-					</span>
-				);
-			},
-		}),
-		columnHelper.display({
-			id: 'actions',
-			header: 'Acciones',
-			cell: (info) => {
-				const warranty = info.row.original;
-				return (
-					<div className='flex items-center space-x-2'>
-						<Button
-							size='sm'
-							variant='outline'
-							icon='HeroEye'
-							onClick={() => onView(warranty)}
-							aria-label='Ver garantía'
-						/>
-						<Button
-							size='sm'
-							variant='outline'
-							icon='HeroPencil'
-							onClick={() => onEdit(warranty)}
-							aria-label='Editar garantía'
-						/>
-						<Button
-							size='sm'
-							variant='outline'
-							color='red'
-							icon='HeroTrash'
-							onClick={() => onDelete(warranty)}
-							aria-label='Eliminar garantía'
-						/>
-					</div>
-				);
-			},
-		}),
-	]);
 
 const WarrantiesTable: React.FC<WarrantiesTableProps> = ({
 	warranties,
@@ -148,14 +50,105 @@ const WarrantiesTable: React.FC<WarrantiesTableProps> = ({
 	const data = warranties ?? [];
 
 	const columns = useMemo(
-		() => buildWarrantyColumns({ onView, onEdit, onDelete }),
-		[onView, onEdit, onDelete],
+		() => [
+			columnHelper.accessor('status', {
+				header: 'Estado',
+				cell: (info) => <WarrantyStatusBadge status={info.getValue()} />,
+			}),
+			columnHelper.accessor((row) => row.product, {
+				id: 'product',
+				header: 'Producto',
+				cell: (info) => {
+					const product = info.getValue();
+					return (
+						<div className='flex flex-col'>
+							<span className='font-semibold text-zinc-900 dark:text-zinc-100'>
+								{formatProductDisplay(product)}
+							</span>
+							{info.row.original.serial_number && (
+								<span className='text-xs text-zinc-500'>
+									Serie: {info.row.original.serial_number}
+								</span>
+							)}
+						</div>
+					);
+				},
+			}),
+			columnHelper.accessor((row) => row.warrantyTypeLabel, {
+				id: 'type',
+				header: 'Tipo de garantía',
+				cell: (info) => (
+					<span className='text-sm text-zinc-700 dark:text-zinc-200'>
+						{info.getValue() ?? '—'}
+					</span>
+				),
+			}),
+			columnHelper.accessor((row) => row.periodLabel, {
+				id: 'period',
+				header: 'Período',
+				cell: (info) => (
+					<div className='flex flex-col text-sm text-zinc-700 dark:text-zinc-200'>
+						{info.getValue() ?? '—'}
+					</div>
+				),
+			}),
+			columnHelper.accessor((row) => row.daysRemaining, {
+				id: 'daysRemaining',
+				header: 'Días restantes',
+				cell: (info) => {
+					const value = info.getValue();
+					if (!value) return <span className='text-sm text-zinc-400'>—</span>;
+					return (
+						<span
+							className={`text-sm font-medium ${
+								value.isExpired ? 'text-red-600' : 'text-emerald-600'
+							}`}>
+							{value.label}
+						</span>
+					);
+				},
+			}),
+			columnHelper.display({
+				id: 'actions',
+				header: 'Acciones',
+				cell: (info) => {
+					const warranty = info.row.original;
+					return (
+						<div className='flex items-center space-x-2'>
+							<Button
+								size='sm'
+								variant='outline'
+								icon='HeroEye'
+								onClick={() => onView(warranty)}
+								aria-label='Ver garantía'
+							/>
+							<Button
+								size='sm'
+								variant='outline'
+								icon='HeroPencil'
+								onClick={() => onEdit(warranty)}
+								aria-label='Editar garantía'
+							/>
+							<Button
+								size='sm'
+								variant='outline'
+								color='red'
+								icon='HeroTrash'
+								onClick={() => onDelete(warranty)}
+								aria-label='Eliminar garantía'
+							/>
+						</div>
+					);
+				},
+			}),
+		],
+		[onDelete, onEdit, onView],
 	);
 
-	const table = useTable({
-		features: appTableFeatures,
+	const table = useReactTable({
 		data,
 		columns,
+		getCoreRowModel: getCoreRowModel(),
 		manualPagination: true,
 		onPaginationChange: (updater) => {
 			const next =
@@ -246,7 +239,7 @@ const WarrantiesTable: React.FC<WarrantiesTableProps> = ({
 					</TBody>
 				</Table>
 			</CardBody>
-			{data.length > 0 && <TableCardFooterTemplateV2 table={table} />}
+			{data.length > 0 && <TableCardFooterTemplateV2 table={table as any} />}
 		</Card>
 	);
 };

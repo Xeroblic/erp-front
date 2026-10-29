@@ -1,21 +1,29 @@
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
-import { createColumnHelper, flexRender, SortingState, useTable } from '@tanstack/react-table';
-import type { MultiValue, SingleValue } from 'react-select';
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	SortingState,
+	useReactTable,
+} from '@tanstack/react-table';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMisSubsidiarias } from '@/store/slices/subempresa/subEmpresaSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
-import { Table, Th, THead, Tr, TBody, Td } from '@/components/ui/Table';
+import Table, { Th, THead, Tr, TBody, Td } from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import Modal, {
 	ModalHeader,
 	ModalBody,
@@ -24,21 +32,7 @@ import Modal, {
 } from '@/components/ui/Modal';
 import { ISubempresa } from '@/interface/empresas.interface';
 import Label from '@/components/form/Label';
-import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
-import { AppTableFeatures, clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
-
-type FiltroEstado = 'todos' | 'con_personalizacion' | 'sin_personalizacion';
-
-const FILTRO_ESTADO_OPTIONS: { value: FiltroEstado; label: string }[] = [
-	{ value: 'todos', label: 'Todas' },
-	{ value: 'con_personalizacion', label: 'Con personalización' },
-	{ value: 'sin_personalizacion', label: 'Sin personalización' },
-];
-
-/** Valor de una opción simple de `SelectReact`; `undefined` si se limpió. */
-const getSingleOptionValue = (
-	option: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
-): string | undefined => (option && 'value' in option ? option.value : undefined);
+import SelectReact from '@/components/form/SelectReact';
 
 // CU017 - Interfaces y tipos
 interface ISubempresaPersonalizacion {
@@ -101,147 +95,18 @@ interface ISubempresaConPersonalizacion extends ISubempresa {
 	tienePersonalizacion: boolean;
 }
 
-const columnHelper = createColumnHelper<AppTableFeatures, ISubempresaConPersonalizacion>();
+const columnHelper = createColumnHelper<ISubempresaConPersonalizacion>();
 
-const buildPersonalizationColumns = ({
-	onCreate,
-	onEdit,
-	onDelete,
-}: {
-	onCreate: (subempresa: ISubempresa) => void;
-	onEdit: (subempresa: ISubempresa) => void;
-	onDelete: (subempresa: ISubempresa) => void;
-}) =>
-	columnHelper.columns([
-		columnHelper.accessor('subsidiary_name', {
-			header: 'Subempresa',
-			cell: (info) => {
-				const { personalizacion } = info.row.original;
-				return (
-					<div className='flex items-center'>
-						<div
-							className='mr-3 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600'
-							style={{
-								backgroundColor: personalizacion?.color_principal || 'transparent',
-							}}>
-							<Icon
-								icon='HeroBuildingStorefront'
-								className={`h-5 w-5 ${
-									personalizacion?.color_principal
-										? 'text-white'
-										: 'text-gray-600 dark:text-gray-400'
-								}`}
-							/>
-						</div>
-						<div>
-							<div className='text-sm font-medium text-gray-900 dark:text-gray-100'>
-								{info.getValue()}
-							</div>
-							<div className='text-sm text-gray-500 dark:text-gray-400'>
-								ID: {info.row.original.id}
-							</div>
-						</div>
-					</div>
-				);
-			},
-		}),
-		columnHelper.accessor('tienePersonalizacion', {
-			header: 'Estado',
-			cell: (info) => {
-				const tienePersonalizacion = info.getValue();
-				return tienePersonalizacion ? (
-					<Badge color='emerald' className='flex items-center gap-1'>
-						<Icon icon='HeroCheckCircle' className='h-3 w-3' />
-						Personalizada
-					</Badge>
-				) : (
-					<Badge color='gray' className='flex items-center gap-1'>
-						<Icon icon='HeroXCircle' className='h-3 w-3' />
-						Por defecto
-					</Badge>
-				);
-			},
-		}),
-		columnHelper.display({
-			id: 'configuracion',
-			header: 'Configuración',
-			cell: (info) => {
-				const { personalizacion } = info.row.original;
-				return personalizacion ? (
-					<div className='space-y-1 text-xs text-gray-600 dark:text-gray-400'>
-						<div className='flex items-center gap-2'>
-							<div
-								className='h-3 w-3 rounded-full border border-gray-300 dark:border-gray-600'
-								style={{
-									backgroundColor: personalizacion.color_principal,
-								}}
-							/>
-							<span className='font-mono'>{personalizacion.color_principal}</span>
-						</div>
-						<div>
-							Idioma:{' '}
-							{
-								IDIOMAS_OPTIONS.find(
-									(i) => i.value === personalizacion.idioma_predeterminado,
-								)?.label
-							}
-						</div>
-						<div>Moneda: {personalizacion.moneda_local}</div>
-					</div>
-				) : (
-					<span className='text-xs text-gray-400 dark:text-gray-500'>Sin configurar</span>
-				);
-			},
-		}),
-		columnHelper.display({
-			id: 'acciones',
-			header: 'Acciones',
-			cell: (info) => {
-				const subempresa = info.row.original;
-				const { personalizacion } = subempresa;
-				return (
-					<div className='flex justify-end gap-2'>
-						{personalizacion ? (
-							<>
-								<Button
-									variant='outline'
-									size='sm'
-									onClick={() => onEdit(subempresa)}
-									title='Editar personalización'>
-									<Icon icon='HeroPencil' className='h-4 w-4' />
-								</Button>
-								<Button
-									variant='outline'
-									size='sm'
-									color='amber'
-									onClick={() => onDelete(subempresa)}
-									title='Restablecer a valores por defecto'>
-									<Icon icon='HeroArrowPath' className='h-4 w-4' />
-								</Button>
-							</>
-						) : (
-							<Button
-								variant='outline'
-								size='sm'
-								color='blue'
-								onClick={() => onCreate(subempresa)}
-								title='Crear personalización'>
-								<Icon icon='HeroPaintBrush' className='h-4 w-4' />
-							</Button>
-						)}
-					</div>
-				);
-			},
-		}),
-	]);
-
-const SubEmpresaPersonalizacion = () => {
+export default function SubEmpresaPersonalizacion() {
 	const dispatch = useAppDispatch();
 	const user = useAppSelector((s) => s.auth.user);
 	const { lista: subempresas = [], loading } = useAppSelector((s) => s.subEmpresa);
 
 	// Estados principales
-	const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
+	const [filtroEstado, setFiltroEstado] = useState<
+		'todos' | 'con_personalizacion' | 'sin_personalizacion'
+	>('todos');
+	const [filtroTexto, setFiltroTexto] = useState('');
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState('');
 
@@ -283,7 +148,7 @@ const SubEmpresaPersonalizacion = () => {
 	// Cargar datos iniciales
 	useEffect(() => {
 		if (user) {
-			void dispatch(fetchMisSubsidiarias());
+			dispatch(fetchMisSubsidiarias());
 		}
 	}, [dispatch, user]);
 
@@ -324,9 +189,7 @@ const SubEmpresaPersonalizacion = () => {
 
 			try {
 				// Simular llamada a API
-				await new Promise<void>((resolve) => {
-					setTimeout(resolve, 1500);
-				});
+				await new Promise((resolve) => setTimeout(resolve, 1500));
 
 				const personalizacionExistente = personalizaciones.find(
 					(p) => p.subempresa_id === selectedSubempresa.id,
@@ -366,79 +229,61 @@ const SubEmpresaPersonalizacion = () => {
 			}
 		},
 	});
-	const { resetForm, setValues } = formik;
 
 	// CU017.1 - Crear personalización
-	const handleCrearPersonalizacion = useCallback(
-		(subempresa: ISubempresa) => {
-			const existe = personalizaciones.find((p) => p.subempresa_id === subempresa.id);
-			if (existe) {
-				toast.error(
-					'Esta subempresa ya tiene una personalización. Use la opción de editar.',
-				);
-				return;
-			}
+	const handleCrearPersonalizacion = (subempresa: ISubempresa) => {
+		const existe = personalizaciones.find((p) => p.subempresa_id === subempresa.id);
+		if (existe) {
+			toast.error('Esta subempresa ya tiene una personalización. Use la opción de editar.');
+			return;
+		}
 
-			setSelectedSubempresa(subempresa);
-			setModoEdicion(false);
-			resetForm();
-			setModalPersonalizar(true);
-		},
-		[personalizaciones, resetForm],
-	);
+		setSelectedSubempresa(subempresa);
+		setModoEdicion(false);
+		formik.resetForm();
+		setModalPersonalizar(true);
+	};
 
 	// CU017.2 - Editar personalización
-	const handleEditarPersonalizacion = useCallback(
-		(subempresa: ISubempresa) => {
-			const personalizacion = personalizaciones.find(
-				(p) => p.subempresa_id === subempresa.id,
-			);
-			if (!personalizacion) {
-				toast.error('No existe personalización para esta subempresa');
-				return;
-			}
+	const handleEditarPersonalizacion = (subempresa: ISubempresa) => {
+		const personalizacion = personalizaciones.find((p) => p.subempresa_id === subempresa.id);
+		if (!personalizacion) {
+			toast.error('No existe personalización para esta subempresa');
+			return;
+		}
 
-			setSelectedSubempresa(subempresa);
-			setModoEdicion(true);
-			void setValues({
-				color_principal: personalizacion.color_principal,
-				color_secundario: personalizacion.color_secundario || '#1E40AF',
-				texto_encabezado: personalizacion.texto_encabezado || '',
-				texto_pie_pagina: personalizacion.texto_pie_pagina || '',
-				idioma_predeterminado: personalizacion.idioma_predeterminado,
-				zona_horaria: personalizacion.zona_horaria,
-				moneda_local: personalizacion.moneda_local,
-				separador_decimal: personalizacion.separador_decimal,
-				formato_fecha: personalizacion.formato_fecha,
-			});
-			setModalPersonalizar(true);
-		},
-		[personalizaciones, setValues],
-	);
+		setSelectedSubempresa(subempresa);
+		setModoEdicion(true);
+		formik.setValues({
+			color_principal: personalizacion.color_principal,
+			color_secundario: personalizacion.color_secundario || '#1E40AF',
+			texto_encabezado: personalizacion.texto_encabezado || '',
+			texto_pie_pagina: personalizacion.texto_pie_pagina || '',
+			idioma_predeterminado: personalizacion.idioma_predeterminado,
+			zona_horaria: personalizacion.zona_horaria,
+			moneda_local: personalizacion.moneda_local,
+			separador_decimal: personalizacion.separador_decimal,
+			formato_fecha: personalizacion.formato_fecha,
+		});
+		setModalPersonalizar(true);
+	};
 
 	// CU017.3 - Eliminar/Restablecer personalización
-	const handleEliminarPersonalizacion = useCallback(
-		(subempresa: ISubempresa) => {
-			const personalizacion = personalizaciones.find(
-				(p) => p.subempresa_id === subempresa.id,
-			);
-			if (!personalizacion) {
-				toast.error('No hay personalización que restablecer para esta subempresa');
-				return;
-			}
-			setSelectedSubempresa(subempresa);
-			setModalEliminar(true);
-		},
-		[personalizaciones],
-	);
+	const handleEliminarPersonalizacion = (subempresa: ISubempresa) => {
+		const personalizacion = personalizaciones.find((p) => p.subempresa_id === subempresa.id);
+		if (!personalizacion) {
+			toast.error('No hay personalización que restablecer para esta subempresa');
+			return;
+		}
+		setSelectedSubempresa(subempresa);
+		setModalEliminar(true);
+	};
 
 	const confirmarEliminacion = async () => {
 		if (!selectedSubempresa) return;
 
 		try {
-			await new Promise<void>((resolve) => {
-				setTimeout(resolve, 1000);
-			});
+			await new Promise((resolve) => setTimeout(resolve, 1000));
 
 			const updatedPersonalizaciones = personalizaciones.filter(
 				(p) => p.subempresa_id !== selectedSubempresa.id,
@@ -454,13 +299,132 @@ const SubEmpresaPersonalizacion = () => {
 
 	// Definición de columnas
 	const columns = useMemo(
-		() =>
-			buildPersonalizationColumns({
-				onCreate: handleCrearPersonalizacion,
-				onEdit: handleEditarPersonalizacion,
-				onDelete: handleEliminarPersonalizacion,
+		() => [
+			columnHelper.accessor('subsidiary_name', {
+				header: 'Subempresa',
+				cell: (info) => {
+					const { personalizacion } = info.row.original;
+					return (
+						<div className='flex items-center'>
+							<div
+								className='mr-3 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600'
+								style={{
+									backgroundColor:
+										personalizacion?.color_principal || 'transparent',
+								}}>
+								<Icon
+									icon='HeroBuildingStorefront'
+									className={`h-5 w-5 ${
+										personalizacion?.color_principal
+											? 'text-white'
+											: 'text-gray-600 dark:text-gray-400'
+									}`}
+								/>
+							</div>
+							<div>
+								<div className='text-sm font-medium text-gray-900 dark:text-gray-100'>
+									{info.getValue()}
+								</div>
+								<div className='text-sm text-gray-500 dark:text-gray-400'>
+									ID: {info.row.original.id}
+								</div>
+							</div>
+						</div>
+					);
+				},
 			}),
-		[handleCrearPersonalizacion, handleEditarPersonalizacion, handleEliminarPersonalizacion],
+			columnHelper.accessor('tienePersonalizacion', {
+				header: 'Estado',
+				cell: (info) => {
+					const tienePersonalizacion = info.getValue();
+					return tienePersonalizacion ? (
+						<Badge color='emerald' className='flex items-center gap-1'>
+							<Icon icon='HeroCheckCircle' className='h-3 w-3' />
+							Personalizada
+						</Badge>
+					) : (
+						<Badge color='gray' className='flex items-center gap-1'>
+							<Icon icon='HeroXCircle' className='h-3 w-3' />
+							Por defecto
+						</Badge>
+					);
+				},
+			}),
+			columnHelper.display({
+				id: 'configuracion',
+				header: 'Configuración',
+				cell: (info) => {
+					const { personalizacion } = info.row.original;
+					return personalizacion ? (
+						<div className='space-y-1 text-xs text-gray-600 dark:text-gray-400'>
+							<div className='flex items-center gap-2'>
+								<div
+									className='h-3 w-3 rounded-full border border-gray-300 dark:border-gray-600'
+									style={{
+										backgroundColor: personalizacion.color_principal,
+									}}
+								/>
+								<span className='font-mono'>{personalizacion.color_principal}</span>
+							</div>
+							<div>
+								Idioma:{' '}
+								{
+									IDIOMAS_OPTIONS.find(
+										(i) => i.value === personalizacion.idioma_predeterminado,
+									)?.label
+								}
+							</div>
+							<div>Moneda: {personalizacion.moneda_local}</div>
+						</div>
+					) : (
+						<span className='text-xs text-gray-400 dark:text-gray-500'>
+							Sin configurar
+						</span>
+					);
+				},
+			}),
+			columnHelper.display({
+				id: 'acciones',
+				header: 'Acciones',
+				cell: (info) => {
+					const subempresa = info.row.original;
+					const { personalizacion } = subempresa;
+					return (
+						<div className='flex justify-end gap-2'>
+							{personalizacion ? (
+								<>
+									<Button
+										variant='outline'
+										size='sm'
+										onClick={() => handleEditarPersonalizacion(subempresa)}
+										title='Editar personalización'>
+										<Icon icon='HeroPencil' className='h-4 w-4' />
+									</Button>
+									<Button
+										variant='outline'
+										size='sm'
+										color='amber'
+										onClick={() => handleEliminarPersonalizacion(subempresa)}
+										title='Restablecer a valores por defecto'>
+										<Icon icon='HeroArrowPath' className='h-4 w-4' />
+									</Button>
+								</>
+							) : (
+								<Button
+									variant='outline'
+									size='sm'
+									color='blue'
+									onClick={() => handleCrearPersonalizacion(subempresa)}
+									title='Crear personalización'>
+									<Icon icon='HeroPaintBrush' className='h-4 w-4' />
+								</Button>
+							)}
+						</div>
+					);
+				},
+			}),
+		],
+		[personalizaciones],
 	);
 
 	// CU017.4 - Filtrar subempresas y preparar datos para la tabla
@@ -479,23 +443,33 @@ const SubEmpresaPersonalizacion = () => {
 
 	const subempresasFiltradas = useMemo(() => {
 		return subempresasConPersonalizacion.filter((subempresa) => {
+			// Filtro por texto
+			if (filtroTexto) {
+				const nombre = subempresa.subsidiary_name ?? '';
+				const coincideTexto = nombre.toLowerCase().includes(filtroTexto.toLowerCase());
+				if (!coincideTexto) return false;
+			}
+
 			// Filtro por estado de personalización
 			if (filtroEstado === 'con_personalizacion') return subempresa.tienePersonalizacion;
 			if (filtroEstado === 'sin_personalizacion') return !subempresa.tienePersonalizacion;
 			return true;
 		});
-	}, [subempresasConPersonalizacion, filtroEstado]);
+	}, [subempresasConPersonalizacion, filtroTexto, filtroEstado]);
 
 	// Configuración de la tabla
-	const table = useTable({
-		features: clientTableFeatures,
+	const table = useReactTable({
 		data: subempresasFiltradas,
 		columns,
 		state: { sorting, globalFilter },
 		onSortingChange: setSorting,
 		enableGlobalFilter: true,
 		onGlobalFilterChange: setGlobalFilter,
-		initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+		getCoreRowModel: getCoreRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+		initialState: { pagination: { pageSize: 10 } },
 	});
 
 	return (
@@ -520,7 +494,7 @@ const SubEmpresaPersonalizacion = () => {
 
 			<Container>
 				<div className='mb-6 grid grid-cols-1 gap-4 md:grid-cols-3'>
-					<Card className='border-gray-200 bg-white shadow-xs dark:border-gray-700 dark:bg-gray-800'>
+					<Card className='border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800'>
 						<CardBody className='p-6'>
 							<div className='flex items-center justify-between'>
 								<div>
@@ -541,7 +515,7 @@ const SubEmpresaPersonalizacion = () => {
 						</CardBody>
 					</Card>
 
-					<Card className='border-emerald-200 bg-emerald-50 shadow-xs dark:border-emerald-800 dark:bg-emerald-900/20'>
+					<Card className='border-emerald-200 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/20'>
 						<CardBody className='p-6'>
 							<div className='flex items-center justify-between'>
 								<div>
@@ -562,7 +536,7 @@ const SubEmpresaPersonalizacion = () => {
 						</CardBody>
 					</Card>
 
-					<Card className='border-amber-200 bg-amber-50 shadow-xs dark:border-amber-800 dark:bg-amber-900/20'>
+					<Card className='border-amber-200 bg-amber-50 shadow-sm dark:border-amber-800 dark:bg-amber-900/20'>
 						<CardBody className='p-6'>
 							<div className='flex items-center justify-between'>
 								<div>
@@ -608,17 +582,29 @@ const SubEmpresaPersonalizacion = () => {
 
 								<SelectReact
 									name='filtroEstado'
-									options={FILTRO_ESTADO_OPTIONS}
-									value={FILTRO_ESTADO_OPTIONS.find(
-										(o) => o.value === filtroEstado,
-									)}
-									onChange={(option) => {
-										const value = getSingleOptionValue(option);
-										setFiltroEstado(
-											FILTRO_ESTADO_OPTIONS.find((o) => o.value === value)
-												?.value ?? 'todos',
-										);
+									options={[
+										{ value: 'todos', label: 'Todas' },
+										{
+											value: 'con_personalizacion',
+											label: 'Con personalización',
+										},
+										{
+											value: 'sin_personalizacion',
+											label: 'Sin personalización',
+										},
+									]}
+									value={{
+										value: filtroEstado,
+										label:
+											filtroEstado === 'todos'
+												? 'Todas'
+												: filtroEstado === 'con_personalizacion'
+													? 'Con personalización'
+													: 'Sin personalización',
 									}}
+									onChange={(option: any) =>
+										setFiltroEstado(option?.value || 'todos')
+									}
 									placeholder='Filtrar por estado...'
 									className='w-full md:w-48'
 								/>
@@ -628,7 +614,7 @@ const SubEmpresaPersonalizacion = () => {
 
 					<CardBody>
 						{/* Tabla de subempresas con TanStack */}
-						{loading && (
+						{loading ? (
 							<div className='py-12 text-center'>
 								<div className='flex items-center justify-center gap-3'>
 									<div className='h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent' />
@@ -637,8 +623,7 @@ const SubEmpresaPersonalizacion = () => {
 									</span>
 								</div>
 							</div>
-						)}
-						{!loading && subempresasFiltradas.length === 0 && (
+						) : subempresasFiltradas.length === 0 ? (
 							<div className='py-12 text-center'>
 								<Icon
 									icon='HeroMagnifyingGlass'
@@ -651,8 +636,7 @@ const SubEmpresaPersonalizacion = () => {
 									Ajusta los filtros de búsqueda para ver más resultados.
 								</p>
 							</div>
-						)}
-						{!loading && subempresasFiltradas.length > 0 && (
+						) : (
 							<>
 								<Table className='w-full'>
 									<THead>
@@ -749,7 +733,7 @@ const SubEmpresaPersonalizacion = () => {
 											'Texto de encabezado personalizado'}
 									</p>
 									<div
-										className='mt-2 inline-block rounded-sm px-3 py-1 text-sm'
+										className='mt-2 inline-block rounded px-3 py-1 text-sm'
 										style={{ backgroundColor: formik.values.color_secundario }}>
 										Color secundario
 									</div>
@@ -896,10 +880,10 @@ const SubEmpresaPersonalizacion = () => {
 										value={IDIOMAS_OPTIONS.find(
 											(i) => i.value === formik.values.idioma_predeterminado,
 										)}
-										onChange={(option) =>
+										onChange={(option: any) =>
 											formik.setFieldValue(
 												'idioma_predeterminado',
-												getSingleOptionValue(option),
+												option?.value,
 											)
 										}
 										placeholder='Seleccionar idioma...'
@@ -920,11 +904,8 @@ const SubEmpresaPersonalizacion = () => {
 										value={ZONAS_HORARIAS_OPTIONS.find(
 											(z) => z.value === formik.values.zona_horaria,
 										)}
-										onChange={(option) =>
-											formik.setFieldValue(
-												'zona_horaria',
-												getSingleOptionValue(option),
-											)
+										onChange={(option: any) =>
+											formik.setFieldValue('zona_horaria', option?.value)
 										}
 										placeholder='Seleccionar zona horaria...'
 									/>
@@ -943,11 +924,8 @@ const SubEmpresaPersonalizacion = () => {
 										value={MONEDAS_OPTIONS.find(
 											(m) => m.value === formik.values.moneda_local,
 										)}
-										onChange={(option) =>
-											formik.setFieldValue(
-												'moneda_local',
-												getSingleOptionValue(option),
-											)
+										onChange={(option: any) =>
+											formik.setFieldValue('moneda_local', option?.value)
 										}
 										placeholder='Seleccionar moneda...'
 									/>
@@ -966,11 +944,8 @@ const SubEmpresaPersonalizacion = () => {
 										value={SEPARADORES_DECIMALES_OPTIONS.find(
 											(s) => s.value === formik.values.separador_decimal,
 										)}
-										onChange={(option) =>
-											formik.setFieldValue(
-												'separador_decimal',
-												getSingleOptionValue(option),
-											)
+										onChange={(option: any) =>
+											formik.setFieldValue('separador_decimal', option?.value)
 										}
 										placeholder='Seleccionar separador...'
 									/>
@@ -990,11 +965,8 @@ const SubEmpresaPersonalizacion = () => {
 										value={FORMATOS_FECHA_OPTIONS.find(
 											(f) => f.value === formik.values.formato_fecha,
 										)}
-										onChange={(option) =>
-											formik.setFieldValue(
-												'formato_fecha',
-												getSingleOptionValue(option),
-											)
+										onChange={(option: any) =>
+											formik.setFieldValue('formato_fecha', option?.value)
 										}
 										placeholder='Seleccionar formato de fecha...'
 									/>
@@ -1102,6 +1074,4 @@ const SubEmpresaPersonalizacion = () => {
 			</Modal>
 		</PageWrapper>
 	);
-};
-
-export default SubEmpresaPersonalizacion;
+}

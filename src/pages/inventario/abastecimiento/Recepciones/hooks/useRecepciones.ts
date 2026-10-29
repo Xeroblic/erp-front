@@ -88,7 +88,7 @@ const useRecepciones = () => {
 	 * Otra filial es otro listado: la página puede no existir y la bodega es de
 	 * la anterior. Se descartan en el mismo render —la petición nunca sale con
 	 * ellos— y siguen descartados hasta que la URL los refleje: el router
-	 * aplica `setSearchParams` en una transición (por defecto en React Router 7), después
+	 * aplica `setSearchParams` en una transición (`v7_startTransition`), después
 	 * del estado de este hook. Pasar de `null` a una filial no es un cambio: es
 	 * el perfil que terminó de cargar, y un enlace con `?warehouse_id=` debe
 	 * sobrevivirlo.

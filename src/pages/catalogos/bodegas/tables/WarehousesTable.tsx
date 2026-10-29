@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { StatusPill } from '@/components/procurement';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import ProtectedButton from '@/components/ui/ProtectedButton';
+// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import type { IWarehouse } from '@/interface/warehouse.interface';
@@ -134,7 +135,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 								<Tr key={`warehouses-skeleton-${rowIndex}`}>
 									{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
 										<Td key={`warehouses-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>

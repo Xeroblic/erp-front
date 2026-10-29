@@ -68,7 +68,7 @@ vi.mock('@/services/procurement/inventoryStock.service', async (importOriginal) 
 // Inventario y traslados con mock, el ajuste con backend: cada flujo con su bandera.
 // Etapa del despliegue de la filial 2: encendida salvo en los casos de una sola
 // ubicación; `null` es «todavía cargando». La lee el hook real desde el store.
-const multiLocation = vi.hoisted((): { enabled: boolean | null } => ({ enabled: true }));
+const multiLocation = vi.hoisted(() => ({ enabled: true as boolean | null }));
 const branchContext = vi.hoisted(() => ({ subsidiaryId: 2 }));
 vi.mock('@/config/inventoryStock.config', () => ({ default: true }));
 vi.mock('@/config/inventoryAdjustments.config', () => ({ default: false }));
@@ -239,7 +239,7 @@ describe('Ajustes y traslados — una sola ubicación (etapa 1)', () => {
 			'aria-selected',
 			'true',
 		);
-		await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ });
+		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
 		expect(screen.queryByLabelText('Origen')).not.toBeInTheDocument();
 		// El producto era el de un traslado: el ajuste abre vacío.
 		expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue('');
@@ -252,14 +252,14 @@ describe('Ajustes y traslados — una sola ubicación (etapa 1)', () => {
 		const { unmount } = renderPage(
 			`/?tab=ajuste&warehouse_id=${FAKE_SHELF.id}&product_id=${FAKE_ALFA.id}`,
 		);
-		await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ });
+		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
 		expect(screen.getByText('Sin ubicación')).toBeInTheDocument();
 		expect(screen.queryByText(FAKE_SHELF.name)).not.toBeInTheDocument();
 		expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue('');
 		unmount();
 
 		renderPage(`/?tab=ajuste&warehouse_id=unlocated&product_id=${FAKE_BETA.id}`);
-		await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ });
+		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
 		expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(FAKE_BETA.id));
 	});
 });
@@ -271,7 +271,7 @@ describe('Ajustes y traslados — etapa leída de la filial', () => {
 
 		expect(screen.queryByRole('tab', { name: 'Traslados internos' })).not.toBeInTheDocument();
 		expect(screen.getByText('La sucursal opera con una sola ubicación')).toBeInTheDocument();
-		await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ });
+		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
 		expect(screen.getByText('Sin ubicación')).toBeInTheDocument();
 		expect(screen.queryByLabelText('Ubicación')).not.toBeInTheDocument();
 	});
@@ -279,7 +279,7 @@ describe('Ajustes y traslados — etapa leída de la filial', () => {
 	it('si la etapa 2 se confirma después, rehace el ajuste con bodegas y abre el traslado pedido', async () => {
 		multiLocation.enabled = null;
 		const { store } = renderPage('/?tab=ajuste');
-		await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ });
+		await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
 
 		act(() => {
 			seedStage(store, 2, true);
@@ -287,9 +287,7 @@ describe('Ajustes y traslados — etapa leída de la filial', () => {
 
 		// El asistente vuelve al primer paso, ahora con la ubicación por elegir.
 		expect(await screen.findByLabelText('Ubicación')).toBeInTheDocument();
-		expect(
-			screen.getByRole('heading', { name: /Paso 1 de 3:\s*Ubicación/ }),
-		).toBeInTheDocument();
+		expect(screen.getByRole('heading', { name: /Paso 1 de 3: Ubicación/ })).toBeInTheDocument();
 		expect(screen.getByRole('tab', { name: 'Traslados internos' })).toBeInTheDocument();
 		expect(
 			screen.queryByText('La sucursal opera con una sola ubicación'),
@@ -375,7 +373,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		expect(sections[0]).toContainElement(document.getElementById(titleId));
 		expect(screen.getByRole('region', { name: /Origen y destino/ })).toBeInTheDocument();
 		expect(
-			screen.queryByRole('region', { name: /Paso 1 de 3:\s*Ubicación/ }),
+			screen.queryByRole('region', { name: /Paso 1 de 3: Ubicación/ }),
 		).not.toBeInTheDocument();
 	});
 	describe('preselección por URL', () => {
@@ -394,7 +392,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			renderPage(`/?tab=ajuste&warehouse_id=${ADJUSTMENT_SHELF_ID}&product_id=${ALFA_ID}`);
 
 			expect(
-				await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ }),
+				await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ }),
 			).toBeInTheDocument();
 			expect(screen.getByText(FAKE_SHELF.name)).toBeInTheDocument();
 			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(ALFA_ID));
@@ -403,7 +401,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		it('«Sin ubicación» viaja como `warehouse_id=unlocated`', async () => {
 			renderPage(`/?tab=ajuste&warehouse_id=unlocated&product_id=${BETA_ID}`);
 
-			await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ });
+			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
 			expect(screen.getByText('Sin ubicación')).toBeInTheDocument();
 			expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(String(BETA_ID));
 		});
@@ -420,7 +418,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			renderPage(`/?tab=ajuste&${query}`);
 
 			expect(
-				await screen.findByRole('heading', { name: /Paso 1 de 3:\s*Ubicación/ }),
+				await screen.findByRole('heading', { name: /Paso 1 de 3: Ubicación/ }),
 			).toBeInTheDocument();
 			expect(screen.getByLabelText('Ubicación')).toHaveValue('');
 		});
@@ -428,7 +426,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 		it('conserva la ubicación válida e ignora un producto que no está en el catálogo', async () => {
 			renderPage(`/?tab=ajuste&warehouse_id=${ADJUSTMENT_SHELF_ID}&product_id=999999`);
 
-			await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ });
+			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
 			// La elegibilidad se confirma al montar: el producto inexistente se descarta.
 			await waitFor(() =>
 				expect(screen.getByLabelText('Producto de la línea 1')).toHaveValue(''),
@@ -440,7 +438,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			// para registrar unidades encontradas, así que el producto se mantiene.
 			renderPage(`/?tab=ajuste&warehouse_id=unlocated&product_id=${ALFA_ID}`);
 
-			await screen.findByRole('heading', { name: /Paso 2 de 3:\s*Productos/ });
+			await screen.findByRole('heading', { name: /Paso 2 de 3: Productos/ });
 			const product = screen.getByLabelText('Producto de la línea 1');
 			await waitFor(() =>
 				expect(
@@ -496,7 +494,7 @@ describe('Ajustes y traslados — una página con dos pestañas', () => {
 			await waitFor(() => expect(next).toBeEnabled());
 
 			expect(
-				screen.getByRole('heading', { name: /Paso 1 de 3:\s*Origen y destino/ }),
+				screen.getByRole('heading', { name: /Paso 1 de 3: Origen y destino/ }),
 			).toBeInTheDocument();
 			expect(screen.getByLabelText('Origen')).toHaveValue('');
 		});

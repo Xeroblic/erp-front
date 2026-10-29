@@ -430,7 +430,7 @@ export const fetchPendingSerialAssignment = async (
 		data: d?.data ?? [],
 		meta: d?.meta,
 		links: d?.links,
-	};
+	} as PaginatedResponse<PendingSerialSale>;
 };
 
 /**

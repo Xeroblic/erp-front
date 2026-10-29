@@ -6,7 +6,6 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchItems } from '@/store/slices/technicalReviews/thunks/itemsThunks';
-import toText from '@/utils/toText.util';
 const PrintLabel = React.lazy(
 	() => import('@/pages/refactor-technical-review/components/PrintLabel'),
 );
@@ -16,7 +15,9 @@ import Spinner from '@/components/ui/Spinner';
 
 type FilterType = 'all' | 'pending' | 'approved';
 
-const LatestApprovedReviewsTimeline: React.FC = () => {
+interface Props {}
+
+const LatestApprovedReviewsTimeline: React.FC<Props> = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const { branchId } = useCurrentBranch();
@@ -86,7 +87,7 @@ const LatestApprovedReviewsTimeline: React.FC = () => {
 			<Button
 				size='sm'
 				variant='solid'
-				className='h-7 shrink-0 bg-blue-600 px-2.5 text-[10px] font-medium text-white shadow-xs shadow-blue-200 hover:bg-blue-700 dark:shadow-none'
+				className='h-7 shrink-0 bg-blue-600 px-2.5 text-[10px] font-medium text-white shadow-sm shadow-blue-200 hover:bg-blue-700 dark:shadow-none'
 				onClick={() => handleReview(item)}>
 				<Icon icon='HeroEye' className='h-3.5 w-3.5 sm:mr-1.5' />
 				<span className='hidden sm:inline'>Revisar</span>
@@ -95,15 +96,15 @@ const LatestApprovedReviewsTimeline: React.FC = () => {
 	};
 
 	return (
-		<Card className='h-full border-zinc-100 shadow-xs dark:border-zinc-800'>
-			<CardHeader className='flex flex-col items-start gap-3 border-b border-zinc-100 px-4 py-4 sm:px-6 dark:border-zinc-800'>
+		<Card className='h-full border-zinc-100 shadow-sm dark:border-zinc-800'>
+			<CardHeader className='flex flex-col items-start gap-3 border-b border-zinc-100 px-4 py-4 dark:border-zinc-800 sm:px-6'>
 				<div className='flex self-start'>
 					<div className='flex gap-3'>
 						<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'>
 							<Icon icon='HeroClipboardDocumentCheck' className='text-xl' />
 						</div>
 						<div>
-							<h3 className='text-base leading-tight font-bold text-zinc-900 dark:text-zinc-100'>
+							<h3 className='text-base font-bold leading-tight text-zinc-900 dark:text-zinc-100'>
 								Últimos Ítems
 							</h3>
 							<p className='text-xs font-medium text-zinc-500'>
@@ -120,9 +121,9 @@ const LatestApprovedReviewsTimeline: React.FC = () => {
 						<button
 							key={f}
 							onClick={() => setFilter(f)}
-							className={`rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-200 ${
+							className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
 								filter === f
-									? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-zinc-100'
+									? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100'
 									: 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
 							}`}>
 							{f === 'all' ? 'Todos' : f === 'pending' ? 'Pendientes' : 'Aprobados'}
@@ -146,19 +147,19 @@ const LatestApprovedReviewsTimeline: React.FC = () => {
 							return (
 								<div key={item.id} className='group relative flex gap-3 sm:gap-4'>
 									<div
-										className={`absolute left-4 w-px -translate-x-1/2 bg-zinc-300 sm:left-5 dark:bg-zinc-700 ${
+										className={`absolute left-4 w-px -translate-x-1/2 bg-zinc-300 dark:bg-zinc-700 sm:left-5 ${
 											isFirst
-												? 'top-6 bottom-0'
+												? 'bottom-0 top-6'
 												: isLast
 													? 'top-0 h-6'
-													: 'top-0 bottom-0'
+													: 'bottom-0 top-0'
 										} `}
 										style={{ zIndex: -1 }}></div>
 
 									{/* Icon Column */}
 									<div className='relative flex shrink-0 flex-col items-center'>
 										<div
-											className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full ring-4 ring-white sm:h-10 sm:w-10 dark:ring-zinc-950 ${
+											className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full ring-4 ring-white dark:ring-zinc-950 sm:h-10 sm:w-10 ${
 												(typeof item.review_status === 'object'
 													? (item.review_status as any).value
 													: item.review_status) === 'approved'
@@ -179,14 +180,15 @@ const LatestApprovedReviewsTimeline: React.FC = () => {
 									</div>
 
 									{/* Content Column - Fully responsive */}
-									<div className='min-w-0 flex-1 pt-1.5 pb-6 group-last:pb-2 sm:pb-8'>
+									<div className='min-w-0 flex-1 pb-6 pt-1.5 group-last:pb-2 sm:pb-8'>
 										<div className='flex flex-col gap-2.5'>
 											{/* Product info and date */}
 											<div className='flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between'>
 												<div className='flex min-w-0 flex-1 flex-col'>
-													<span className='truncate text-sm leading-snug font-bold text-zinc-900 dark:text-zinc-100'>
-														{toText(item.details?.brand) || 'Sin Marca'}{' '}
-														{toText(item.details?.model) ||
+													<span className='truncate text-sm font-bold leading-snug text-zinc-900 dark:text-zinc-100'>
+														{String(item.details?.brand ?? '') ||
+															'Sin Marca'}{' '}
+														{String(item.details?.model ?? '') ||
 															item.product?.name ||
 															'Sin Modelo'}
 													</span>
@@ -194,7 +196,7 @@ const LatestApprovedReviewsTimeline: React.FC = () => {
 														S/N: {item.serial_number}
 													</span>
 												</div>
-												<span className='shrink-0 self-start rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-400 sm:self-auto dark:bg-zinc-800'>
+												<span className='shrink-0 self-start rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-400 dark:bg-zinc-800 sm:self-auto'>
 													{new Date(
 														item.updated_at ||
 															item.created_at ||

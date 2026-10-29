@@ -182,7 +182,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 											<Label htmlFor='producto-compra-name'>Nombre</Label>
 											<Input
 												id='producto-compra-name'
-												className='bg-white! dark:bg-zinc-900!'
+												className='!bg-white dark:!bg-zinc-900'
 												name='name'
 												value={formik.values.name}
 												onChange={formik.handleChange}
@@ -244,7 +244,7 @@ const ProcurementProductFormModal: React.FC<IProcurementProductFormModalProps> =
 												// `Select` pinta el borde con el color del tema aunque no tenga
 												// foco y parece seleccionado: acá el borde en reposo es gris,
 												// como el de `Input`, y el fondo blanco. Hover y foco no cambian.
-												className='bg-white! dark:bg-zinc-900!'
+												className='!bg-white dark:!bg-zinc-900'
 												style={
 													{
 														'--select-border': '#d4d4d8',

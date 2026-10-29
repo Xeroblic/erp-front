@@ -153,7 +153,7 @@ const TransferItemsEditor: FC<ITransferItemsEditorProps> = ({
 									<Td className='tabular-nums'>
 										{/* Misma altura que un campo: el texto queda a la altura
 									    de los controles de la fila. */}
-										<div className='flex min-h-9 items-center'>
+										<div className='flex min-h-[2.25rem] items-center'>
 											{balance === null ? (
 												<span className='text-zinc-500'>—</span>
 											) : (
@@ -185,7 +185,7 @@ const TransferItemsEditor: FC<ITransferItemsEditorProps> = ({
 										</Validation>
 									</Td>
 									<Td>
-										<div className='flex min-h-9 items-center'>
+										<div className='flex min-h-[2.25rem] items-center'>
 											<Button
 												type='button'
 												variant='outline'

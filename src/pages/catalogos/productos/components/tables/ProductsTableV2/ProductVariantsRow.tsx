@@ -118,8 +118,8 @@ const ProductVariantsRow: React.FC<ProductVariantsRowProps> = ({
 	onView,
 }) => (
 	<tr className='bg-zinc-50/40 hover:bg-zinc-50 dark:bg-zinc-900/40 dark:hover:bg-zinc-900'>
-		<td colSpan={colSpan} className='px-6 pt-0 pb-6'>
-			<div className='mt-2 rounded-xl border border-dashed border-zinc-200 bg-white/80 p-4 shadow-xs dark:border-zinc-700 dark:bg-zinc-900/70'>
+		<td colSpan={colSpan} className='px-6 pb-6 pt-0'>
+			<div className='mt-2 rounded-xl border border-dashed border-zinc-200 bg-white/80 p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/70'>
 				<div>
 					<p className='text-sm font-semibold text-zinc-800 dark:text-zinc-100'>
 						Variantes por grado
@@ -135,7 +135,7 @@ const ProductVariantsRow: React.FC<ProductVariantsRowProps> = ({
 					<div className='mt-4 overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700'>
 						<table className='w-full text-xs'>
 							<thead className='bg-zinc-50 dark:bg-zinc-900/40'>
-								<tr className='text-left text-xs font-semibold tracking-wide text-zinc-500 uppercase'>
+								<tr className='text-left text-xs font-semibold uppercase tracking-wide text-zinc-500'>
 									<th className='px-3 py-2'>Grado</th>
 									<th className='px-3 py-2'>Producto</th>
 									<th className='px-3 py-2'>Precio</th>

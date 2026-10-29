@@ -1,6 +1,7 @@
 // src/store/slices/sucursales/sucursalesSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
+import { normalizeCommunePayload } from '@/utils/apiHelpers';
 import { ISucursal } from '@/interface/empresas.interface';
 
 export interface SucursalesState {

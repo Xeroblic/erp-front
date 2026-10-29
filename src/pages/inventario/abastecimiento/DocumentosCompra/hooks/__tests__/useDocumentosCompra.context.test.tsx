@@ -24,9 +24,9 @@ vi.mock('../useSupplierFilterOptions', () => ({
 	default: () => ({ options: [], loading: false, canList: true }),
 }));
 
-const branchContext = vi.hoisted((): { branchId: number | null; subsidiaryId: number | null } => ({
-	branchId: 4,
-	subsidiaryId: 4,
+const branchContext = vi.hoisted(() => ({
+	branchId: 4 as number | null,
+	subsidiaryId: 4 as number | null,
 }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ ...branchContext }),
@@ -52,7 +52,7 @@ const createWrapper = (initialEntry = '/inventario/abastecimiento/documentos-com
 	const store = configureStore({ reducer: { purchaseDocuments: purchaseDocumentsReducer } });
 	const Wrapper = ({ children }: PropsWithChildren) => (
 		// Misma bandera que la app: `setSearchParams` se aplica en una transición.
-		<MemoryRouter initialEntries={[initialEntry]}>
+		<MemoryRouter initialEntries={[initialEntry]} future={{ v7_startTransition: true }}>
 			<Provider store={store}>
 				{children}
 				<UrlProbe />

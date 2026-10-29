@@ -11,7 +11,7 @@ import type { IFichaBodegaResumen } from '../../types';
 
 const Campo = ({ label, children }: { label: string; children: React.ReactNode }) => (
 	<div>
-		<p className='text-xs text-zinc-500 uppercase'>{label}</p>
+		<p className='text-xs uppercase text-zinc-500'>{label}</p>
 		<p>{children}</p>
 	</div>
 );
@@ -45,7 +45,7 @@ const WarehouseInfoCard: React.FC<WarehouseInfoCardProps> = ({ warehouse, summar
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-3'>
-						<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-xs'>
+						<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-sm'>
 							<Icon icon='HeroBuildingStorefront' size='text-2xl' color='white' />
 						</div>
 						<div>
@@ -86,7 +86,7 @@ const WarehouseInfoCard: React.FC<WarehouseInfoCardProps> = ({ warehouse, summar
 								: 'No exige número de serie'}
 						</Campo>
 						<div>
-							<p className='mb-1 text-xs text-zinc-500 uppercase'>Capacidad</p>
+							<p className='mb-1 text-xs uppercase text-zinc-500'>Capacidad</p>
 							<WarehouseCapacityBar
 								current={warehouse.current_capacity ?? 0}
 								maximum={warehouse.maximum_capacity}

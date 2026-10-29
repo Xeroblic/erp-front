@@ -106,7 +106,7 @@ const IntegrationsHubPage: React.FC = () => {
 		<PageWrapper name='Integraciones'>
 			{/* Barra de navegación de secciones (no-sticky para no chocar con el
 			    Subheader sticky propio de cada sección). */}
-			<div className='border-b border-zinc-200 bg-white/60 px-4 pt-3 backdrop-blur-xs sm:px-6 dark:border-zinc-800/60 dark:bg-zinc-900/40'>
+			<div className='border-b border-zinc-200 bg-white/60 px-4 pt-3 backdrop-blur-sm dark:border-zinc-800/60 dark:bg-zinc-900/40 sm:px-6'>
 				<div
 					className='w-full overflow-x-auto pb-1'
 					style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
@@ -124,7 +124,7 @@ const IntegrationsHubPage: React.FC = () => {
 									aria-selected={isActive}
 									onClick={() => handleTabChange(tab.id)}
 									className={classNames(
-										'group inline-flex min-w-max flex-none items-center justify-center gap-2 border-b-2 px-3 pt-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors duration-200',
+										'group inline-flex min-w-max flex-none items-center justify-center gap-2 whitespace-nowrap border-b-2 px-3 pb-3 pt-2 text-sm font-medium transition-colors duration-200',
 										isActive
 											? 'border-blue-500 text-blue-600 dark:text-blue-400'
 											: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',

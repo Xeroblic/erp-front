@@ -12,7 +12,7 @@ declare module '*.xlsx?url' {
 // Declaración global para el store de Redux
 declare global {
 	interface Window {
-		__REDUX_STORE__?: unknown;
+		__REDUX_STORE__?: any;
 		lastDarkModeLog?: string; // Para controlar logs de dark mode
 	}
 }
@@ -32,14 +32,6 @@ declare module 'pdfmake/interfaces' {
 	}
 }
 
-// Build del navegador sin tipos: `loadPdfMake` valida su forma antes de usarlo.
-declare module 'pdfmake/build/pdfmake' {
-	const pdfMake: unknown;
-	export default pdfMake;
-}
-
-// CJS: `module.exports` es el mapa archivo → contenido en base64.
 declare module 'pdfmake/build/vfs_fonts' {
-	const vfs: Record<string, string>;
-	export default vfs;
+	export const vfs: Record<string, string>;
 }

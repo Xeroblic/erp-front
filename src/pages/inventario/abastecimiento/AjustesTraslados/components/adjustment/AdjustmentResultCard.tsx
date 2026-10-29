@@ -153,7 +153,7 @@ const AdjustmentResultCard: FC<IAdjustmentResultCardProps> = ({ result, onDismis
 													? `+${item.quantity_delta}`
 													: item.quantity_delta}
 											</Td>
-											<Td className='text-zinc-500 tabular-nums'>{before}</Td>
+											<Td className='tabular-nums text-zinc-500'>{before}</Td>
 											<Td className='font-semibold tabular-nums'>{after}</Td>
 											<Td className='tabular-nums'>
 												<span className='text-zinc-500'>

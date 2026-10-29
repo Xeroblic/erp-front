@@ -335,7 +335,7 @@ const MenuBar: React.FC<MenuBarProps> = ({
 			type='button'
 			onClick={onClick}
 			title={title}
-			className={`flex h-8 w-8 items-center justify-center rounded-sm text-sm font-medium transition-colors ${
+			className={`flex h-8 w-8 items-center justify-center rounded text-sm font-medium transition-colors ${
 				isActive
 					? 'bg-blue-500 text-white'
 					: 'border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
@@ -422,7 +422,7 @@ const MenuBar: React.FC<MenuBarProps> = ({
 		<div className='flex flex-col border-b border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800'>
 			{!compact && (
 				<div className='flex items-center justify-start border-b border-zinc-200 p-2 dark:border-zinc-700'>
-					<div className='inline-flex overflow-hidden rounded-sm border border-zinc-300 dark:border-zinc-600'>
+					<div className='inline-flex overflow-hidden rounded border border-zinc-300 dark:border-zinc-600'>
 						<button
 							type='button'
 							onClick={() => onSelectView(false)}
@@ -572,7 +572,7 @@ const MenuBar: React.FC<MenuBarProps> = ({
 							key={color}
 							type='button'
 							onClick={() => applyColor(color)}
-							className={`h-6 w-6 rounded-sm border border-zinc-300 transition focus:ring-2 focus:ring-blue-500 focus:outline-hidden dark:border-zinc-600 ${
+							className={`h-6 w-6 rounded border border-zinc-300 transition focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 ${
 								currentColor === color ? 'ring-2 ring-blue-500 ring-offset-1' : ''
 							}`}
 							style={{ backgroundColor: color }}
@@ -582,7 +582,7 @@ const MenuBar: React.FC<MenuBarProps> = ({
 					<button
 						type='button'
 						onClick={clearColor}
-						className='flex h-6 w-6 items-center justify-center rounded-sm border border-zinc-300 bg-white text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
+						className='flex h-6 w-6 items-center justify-center rounded border border-zinc-300 bg-white text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
 						title='Restablecer color'>
 						X
 					</button>
@@ -590,7 +590,7 @@ const MenuBar: React.FC<MenuBarProps> = ({
 						type='color'
 						value={currentColor}
 						onChange={(event) => applyColor(event.target.value)}
-						className='h-6 w-12 cursor-pointer rounded-sm border border-zinc-300 bg-white p-0 dark:border-zinc-600 dark:bg-zinc-800'
+						className='h-6 w-12 cursor-pointer rounded border border-zinc-300 bg-white p-0 dark:border-zinc-600 dark:bg-zinc-800'
 						title='Seleccionar color personalizado'
 					/>
 				</div>
@@ -718,7 +718,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 		],
 		content: lastSerializedRef.current,
 		editable: !disabled,
-		onUpdate: ({ editor: updatedEditor }) => {
+		onUpdate: ({ editor }) => {
 			if (showCodeViewRef.current) {
 				return;
 			}
@@ -727,7 +727,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 				return;
 			}
 
-			const html = sanitizeHtmlOutput(updatedEditor.getHTML());
+			const html = sanitizeHtmlOutput(editor.getHTML());
 			if (html !== lastSerializedRef.current) {
 				lastSerializedRef.current = html;
 				setCodeViewValue(html);
@@ -736,7 +736,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 		},
 		editorProps: {
 			attributes: {
-				class: `prose prose-sm dark:prose-invert max-w-none focus:outline-hidden`,
+				class: `prose prose-sm dark:prose-invert max-w-none focus:outline-none`,
 			},
 		},
 	});
@@ -838,10 +838,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 					...(resizable ? {} : { maxHeight }),
 				}}>
 				{showCodeView ? (
-					<div className='relative h-full min-h-[200px] rounded-sm border border-zinc-700 bg-[#0f172a] shadow-inner'>
+					<div className='relative h-full min-h-[200px] rounded border border-zinc-700 bg-[#0f172a] shadow-inner'>
 						<pre
 							ref={highlightPreRef}
-							className='pointer-events-none absolute inset-0 min-h-full px-4 py-3 font-mono text-xs leading-5 wrap-break-word whitespace-pre-wrap text-sky-100'
+							className='pointer-events-none absolute inset-0 min-h-full whitespace-pre-wrap break-words px-4 py-3 font-mono text-xs leading-5 text-sky-100'
 							style={{ transform: 'translate(0px, 0px)' }}
 							dangerouslySetInnerHTML={{ __html: highlightedCode }}
 						/>
@@ -852,7 +852,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 							onChange={handleCodeEditorChange}
 							onScroll={handleCodeEditorScroll}
 							onKeyDown={handleCodeEditorKeyDown}
-							className='absolute inset-0 h-full w-full resize-none border-none bg-transparent px-4 py-3 font-mono text-xs leading-5 text-transparent caret-cyan-400 outline-hidden selection:bg-cyan-500/30'
+							className='absolute inset-0 h-full w-full resize-none border-none bg-transparent px-4 py-3 font-mono text-xs leading-5 text-transparent caret-cyan-400 outline-none selection:bg-cyan-500/30'
 							style={{ color: 'transparent', WebkitTextFillColor: 'transparent' }}
 						/>
 					</div>

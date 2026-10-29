@@ -125,7 +125,7 @@ const InventoryReportsSession = ({
 				if (isInventoryReportView(tabId)) setVista(tabId);
 			}}
 			variant='pills'
-			contentClassName='mt-4!'>
+			contentClassName='!mt-4'>
 			{views.map((view) => (
 				<Tab key={view.id} id={view.id} text={view.label} icon={view.icon}>
 					{activeView === view.id && renderView(view.id)}

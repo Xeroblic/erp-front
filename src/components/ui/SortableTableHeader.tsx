@@ -1,4 +1,5 @@
 import type { AriaAttributes, FC } from 'react';
+// eslint-disable-next-line import/extensions
 import { Th } from '@/components/ui/Table';
 
 export type TableSortDirection = 'asc' | 'desc';

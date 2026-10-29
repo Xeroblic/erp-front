@@ -7,14 +7,14 @@ import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Alert from '@/components/ui/Alert';
 import Badge from '@/components/ui/Badge';
-import type { ApexOptions } from 'apexcharts';
-import gsap from 'gsap';
-import useDarkMode from '@/hooks/useDarkMode';
 import SalesAnalytics from '../components/SalesAnalytics';
 import { useSalesDashboard } from './hooks/useSalesDashboard';
+import type { ApexOptions } from 'apexcharts';
 import ReportExportButton from '../components/ReportExportButton';
 import DashboardExportButton from './components/DashboardExportButton';
 import ReportFilters from '../components/ReportFilters';
+import gsap from 'gsap';
+import useDarkMode from '@/hooks/useDarkMode';
 
 const AnimatedNumber = ({ value }: { value: number }) => {
 	const spanRef = useRef<HTMLSpanElement>(null);
@@ -27,7 +27,7 @@ const AnimatedNumber = ({ value }: { value: number }) => {
 		// Get current value from text if possible, to animate from current -> new
 		const currentText = spanRef.current.innerText.replace(/\./g, '');
 		const currentVal = parseInt(currentText, 10);
-		if (!Number.isNaN(currentVal)) {
+		if (!isNaN(currentVal)) {
 			obj.val = currentVal;
 		}
 
@@ -177,7 +177,7 @@ const SalesDashboard: React.FC = () => {
 				style: { fontSize: '13px' },
 				x: { format: 'dd MMM yyyy' },
 				y: {
-					formatter: (val: number | null) => {
+					formatter: (val?: number) => {
 						if (typeof val !== 'number') return '$0';
 						return `$${val.toLocaleString('es-CL')}`;
 					},
@@ -220,7 +220,7 @@ const SalesDashboard: React.FC = () => {
 		<PageWrapper title='Reporte de Ventas'>
 			<style>{apexToolbarMenuStyles}</style>
 
-			<Subheader className='relative mb-4 border-b border-zinc-200 bg-zinc-50/95 py-4 backdrop-blur-md sm:px-6 dark:border-zinc-800 dark:bg-[#121214]/95'>
+			<Subheader className='relative mb-4 border-b border-zinc-200 bg-zinc-50/95 py-4 backdrop-blur-md dark:border-zinc-800 dark:bg-[#121214]/95 sm:px-6'>
 				<SubheaderLeft>
 					<div className='flex items-center gap-4'>
 						<div className='flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 shadow-inner dark:bg-indigo-500/10 dark:text-indigo-400'>
@@ -241,7 +241,7 @@ const SalesDashboard: React.FC = () => {
 			<Container className='pb-10'>
 				<div className='flex flex-col gap-8'>
 					{/* Controles de Filtrado */}
-					<div className='order-1 rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-[#121214]'>
+					<div className='order-1 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-[#121214]'>
 						<ReportFilters
 							initial={filters}
 							onApply={(f) => setFilters(f)}
@@ -266,7 +266,7 @@ const SalesDashboard: React.FC = () => {
 						ref={kpiContainerRef}
 						className='order-3 grid grid-cols-1 gap-4 md:order-2 md:grid-cols-3 xl:grid-cols-5'>
 						{/* KPI: Ventas Totales */}
-						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 p-5 text-white shadow-lg shadow-emerald-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-emerald-500/40 dark:from-emerald-600 dark:to-teal-700'>
+						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-white shadow-lg shadow-emerald-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-emerald-500/40 dark:from-emerald-600 dark:to-teal-700'>
 							<div className='relative flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/20'>
 									<Icon
@@ -275,13 +275,13 @@ const SalesDashboard: React.FC = () => {
 										color='white'
 									/>
 								</div>
-								<p className='text-xs font-bold tracking-wider text-emerald-50 uppercase'>
+								<p className='text-xs font-bold uppercase tracking-wider text-emerald-50'>
 									Ventas Totales
 								</p>
 							</div>
 							<div className='relative mt-4'>
-								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-xs'>
-									$
+								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
+									{'$'}
 									<AnimatedNumber value={stats.total} />
 								</h3>
 								<p className='mt-1 text-xs font-medium text-emerald-100'>
@@ -291,7 +291,7 @@ const SalesDashboard: React.FC = () => {
 						</div>
 
 						{/* KPI: Ticket Promedio */}
-						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-br from-indigo-500 to-violet-600 p-5 text-white shadow-lg shadow-indigo-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-indigo-500/40 dark:from-indigo-600 dark:to-violet-700'>
+						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 p-5 text-white shadow-lg shadow-indigo-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-indigo-500/40 dark:from-indigo-600 dark:to-violet-700'>
 							<div className='relative flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/20'>
 									<Icon
@@ -300,13 +300,13 @@ const SalesDashboard: React.FC = () => {
 										color='white'
 									/>
 								</div>
-								<p className='text-xs font-bold tracking-wider text-indigo-50 uppercase'>
+								<p className='text-xs font-bold uppercase tracking-wider text-indigo-50'>
 									Ticket Promedio
 								</p>
 							</div>
 							<div className='relative mt-4'>
-								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-xs'>
-									$
+								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
+									{'$'}
 									<AnimatedNumber value={stats.avg} />
 								</h3>
 								<p className='mt-1 text-xs font-medium text-indigo-100'>
@@ -316,7 +316,7 @@ const SalesDashboard: React.FC = () => {
 						</div>
 
 						{/* KPI: Reembolsado */}
-						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-br from-orange-500 to-amber-600 p-5 text-white shadow-lg shadow-orange-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-orange-500/40 dark:from-orange-600 dark:to-amber-700'>
+						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 p-5 text-white shadow-lg shadow-orange-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-orange-500/40 dark:from-orange-600 dark:to-amber-700'>
 							<div className='relative flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/20'>
 									<Icon
@@ -325,13 +325,13 @@ const SalesDashboard: React.FC = () => {
 										color='white'
 									/>
 								</div>
-								<p className='text-xs font-bold tracking-wider text-orange-50 uppercase'>
+								<p className='text-xs font-bold uppercase tracking-wider text-orange-50'>
 									Reembolsado
 								</p>
 							</div>
 							<div className='relative mt-4'>
-								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-xs'>
-									$
+								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
+									{'$'}
 									<AnimatedNumber value={stats.refundedTotal} />
 								</h3>
 								<p className='mt-1 text-xs font-medium text-orange-100'>
@@ -341,7 +341,7 @@ const SalesDashboard: React.FC = () => {
 						</div>
 
 						{/* KPI: Promedio Mensual */}
-						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-br from-pink-500 to-rose-600 p-5 text-white shadow-lg shadow-pink-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-pink-500/40 dark:from-pink-600 dark:to-rose-700'>
+						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 p-5 text-white shadow-lg shadow-pink-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-pink-500/40 dark:from-pink-600 dark:to-rose-700'>
 							<div className='relative flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/20'>
 									<Icon
@@ -350,13 +350,13 @@ const SalesDashboard: React.FC = () => {
 										color='white'
 									/>
 								</div>
-								<p className='text-xs font-bold tracking-wider text-pink-50 uppercase'>
+								<p className='text-xs font-bold uppercase tracking-wider text-pink-50'>
 									Promedio Mes
 								</p>
 							</div>
 							<div className='relative mt-4'>
-								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-xs'>
-									$
+								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
+									{'$'}
 									<AnimatedNumber value={stats.monthlyAvg} />
 								</h3>
 								<p className='mt-1 text-xs font-medium text-pink-100'>
@@ -366,7 +366,7 @@ const SalesDashboard: React.FC = () => {
 						</div>
 
 						{/* KPI: Proyección a 30 Días */}
-						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-br from-blue-500 to-cyan-600 p-5 text-white shadow-lg shadow-blue-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-blue-500/40 dark:from-blue-600 dark:to-cyan-700'>
+						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 p-5 text-white shadow-lg shadow-blue-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-blue-500/40 dark:from-blue-600 dark:to-cyan-700'>
 							<div className='relative flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/20'>
 									<Icon
@@ -375,13 +375,13 @@ const SalesDashboard: React.FC = () => {
 										color='white'
 									/>
 								</div>
-								<p className='text-xs font-bold tracking-wider text-blue-50 uppercase'>
+								<p className='text-xs font-bold uppercase tracking-wider text-blue-50'>
 									Proyección
 								</p>
 							</div>
 							<div className='relative mt-4'>
-								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-xs'>
-									$
+								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
+									{'$'}
 									<AnimatedNumber value={stats.projectedTotal} />
 								</h3>
 								<p className='mt-1 text-xs font-medium text-blue-100'>
@@ -392,8 +392,8 @@ const SalesDashboard: React.FC = () => {
 					</div>
 
 					{/* Sección Principal del Gráfico */}
-					<Card className='relative order-2 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs md:order-3 dark:border-zinc-800 dark:bg-[#121214]'>
-						<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-6 sm:px-8 dark:border-zinc-800'>
+					<Card className='relative order-2 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214] md:order-3'>
+						<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-6 dark:border-zinc-800 sm:px-8'>
 							<div className='flex flex-wrap items-center justify-between gap-6'>
 								<div className='flex flex-col gap-1'>
 									<h2 className='text-xl font-bold tracking-tight text-zinc-900 dark:text-white'>
@@ -401,8 +401,8 @@ const SalesDashboard: React.FC = () => {
 									</h2>
 									<div className='flex items-center gap-2'>
 										<span className='relative flex h-2 w-2'>
-											<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75' />
-											<span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500' />
+											<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75'></span>
+											<span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500'></span>
 										</span>
 										<p className='text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
 											{filters.dateFrom || filters.dateTo
@@ -440,7 +440,7 @@ const SalesDashboard: React.FC = () => {
 									/>
 								) : (
 									<div className='flex h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50 text-zinc-400 dark:border-zinc-800 dark:bg-[#18181b]'>
-										<div className='mb-4 rounded-full bg-white p-4 shadow-xs dark:bg-zinc-900'>
+										<div className='mb-4 rounded-full bg-white p-4 shadow-sm dark:bg-zinc-900'>
 											<Icon
 												icon='HeroChartBar'
 												className='h-8 w-8 text-zinc-400 dark:text-zinc-500'

@@ -36,7 +36,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
 							} ${canNavigate ? 'cursor-pointer hover:scale-105' : 'cursor-not-allowed opacity-50'}`}>
 							{/* Circle */}
 							<div
-								className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all ${
+								className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-all ${
 									isCompleted
 										? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
 										: isActive
@@ -46,7 +46,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
 								{isCompleted ? (
 									<Icon icon='HeroCheck' className='h-5 w-5' />
 								) : (
-									<Icon icon={step.icon} className='h-5 w-5' />
+									<Icon icon={step.icon as any} className='h-5 w-5' />
 								)}
 							</div>
 

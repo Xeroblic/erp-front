@@ -1,15 +1,13 @@
 import React from 'react';
+import { Controller } from 'react-hook-form';
 import Textarea from '@/components/form/Textarea';
-import formatExtraAttributes from '../../shared/formatExtraAttributes';
 import type { FormSectionProps } from '../../shared/types';
 import type { DesktopFormData } from '../../../validation/desktop.schema';
 import { getDesktopLabel } from '../../../translations/desktop.labels';
 import { DESKTOP_HINTS, DESKTOP_PLACEHOLDERS } from '../../../constants/desktop/desktop.hints';
 
 const DesktopObservationsSection: React.FC<FormSectionProps<DesktopFormData>> = ({
-	values,
-	setFieldValue,
-	onFieldBlur,
+	control,
 	errors,
 	readOnly,
 }) => {
@@ -20,18 +18,24 @@ const DesktopObservationsSection: React.FC<FormSectionProps<DesktopFormData>> = 
 				<label className='mb-3 block text-sm font-bold text-zinc-700 dark:text-zinc-200'>
 					{getDesktopLabel('observations')}
 				</label>
-				<Textarea
+				<Controller
 					name='observations'
-					onChange={(event) => setFieldValue('observations', event.target.value)}
-					onBlur={() => onFieldBlur('observations')}
-					value={values.observations || ''}
-					placeholder={DESKTOP_PLACEHOLDERS.observations}
-					disabled={readOnly}
-					rows={6}
-					className={`w-full resize-none ${errors.observations ? 'border-red-500!' : ''}`}
+					control={control}
+					render={({ field }) => (
+						<Textarea
+							{...field}
+							value={field.value || ''}
+							placeholder={DESKTOP_PLACEHOLDERS.observations}
+							disabled={readOnly}
+							rows={6}
+							className={`w-full resize-none ${
+								errors.observations ? 'border-red-500' : ''
+							}`}
+						/>
+					)}
 				/>
 				{errors.observations && (
-					<p className='mt-1 text-xs text-red-500'>{errors.observations}</p>
+					<p className='mt-1 text-xs text-red-500'>{errors.observations.message}</p>
 				)}
 				<p className='mt-1 text-xs text-zinc-400'>{DESKTOP_HINTS.observations}</p>
 			</div>
@@ -41,15 +45,26 @@ const DesktopObservationsSection: React.FC<FormSectionProps<DesktopFormData>> = 
 				<label className='mb-3 block text-sm font-bold text-zinc-700 dark:text-zinc-200'>
 					{getDesktopLabel('extra_attributes')}
 				</label>
-				<Textarea
+				<Controller
 					name='extra_attributes'
-					onBlur={() => onFieldBlur('extra_attributes')}
-					value={formatExtraAttributes(values.extra_attributes)}
-					onChange={(e) => setFieldValue('extra_attributes', e.target.value)}
-					placeholder='Atributos adicionales (JSON u otro formato)'
-					disabled={readOnly}
-					rows={4}
-					className='w-full resize-none font-mono text-sm'
+					control={control}
+					render={({ field }) => (
+						<Textarea
+							{...field}
+							value={
+								typeof field.value === 'string'
+									? field.value
+									: field.value
+										? JSON.stringify(field.value, null, 2)
+										: ''
+							}
+							onChange={(e) => field.onChange(e.target.value)}
+							placeholder='Atributos adicionales (JSON u otro formato)'
+							disabled={readOnly}
+							rows={4}
+							className='w-full resize-none font-mono text-sm'
+						/>
+					)}
 				/>
 				<p className='mt-1 text-xs text-zinc-400'>{DESKTOP_HINTS.extra_attributes}</p>
 			</div>

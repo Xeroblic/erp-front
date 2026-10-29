@@ -108,7 +108,7 @@ export default function SubEmpresaLista() {
 							placeholder='Buscar subempresas...'
 							value={globalFilter}
 							onChange={(e) => setGlobalFilter(e.target.value)}
-							className='w-48 rounded-sm border'
+							className='w-48 rounded border'
 						/>
 						<Tooltip text='Crear nueva subempresa' placement='top-start' color='blue'>
 							<Button variant='solid' icon='HeroPlus' onClick={handleCreate} />

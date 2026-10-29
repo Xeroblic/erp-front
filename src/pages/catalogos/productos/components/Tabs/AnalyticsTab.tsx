@@ -1,13 +1,13 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import { ColumnDef, PaginationState } from '@tanstack/react-table';
-import type { IProduct, ProductListMeta } from '@/interface/product.interface';
-import DataTable from '@/components/ui/DataTable';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import type { IProduct } from '@/interface/product.interface';
+import type { ProductListMeta } from '@/interface/product.interface';
 import StockSeriesModal from '../modals/StockSeriesModal';
+import DataTable from '@/components/ui/DataTable';
 
 interface StockAdminTabProps {
 	subsidiaryId: number;
@@ -16,102 +16,6 @@ interface StockAdminTabProps {
 	meta: ProductListMeta;
 	refresh: () => void;
 }
-
-const buildStockAdminColumns = ({
-	isSelectionMode,
-	selectedProductId,
-	onSelect,
-}: {
-	isSelectionMode: boolean;
-	selectedProductId: number | null;
-	onSelect: (product: IProduct) => void;
-}): ColumnDef<AppTableFeatures, IProduct>[] => {
-	const baseColumns: ColumnDef<AppTableFeatures, IProduct>[] = [
-		{
-			accessorKey: 'id',
-			header: 'ID.',
-			cell: ({ row }) => <span className='font-mono text-xs'>{row.original.id}</span>,
-		},
-		{
-			accessorKey: 'sku',
-			header: 'SKU',
-			cell: ({ row }) => <span className='font-mono text-xs'>{row.original.sku}</span>,
-		},
-		{
-			accessorKey: 'name',
-			header: 'Producto',
-			cell: ({ row }) => (
-				<div>
-					<p className='font-medium text-neutral-800 dark:text-neutral-100'>
-						{row.original.name}
-					</p>
-					{row.original.serial_tracking && (
-						<Badge
-							variant='outline'
-							color='emerald'
-							className='mt-1 px-1.5 py-0 text-[10px]'>
-							Serializado
-						</Badge>
-					)}
-				</div>
-			),
-		},
-		{
-			accessorKey: 'stock',
-			header: 'Stock Total',
-			cell: ({ row }) => <span className='font-semibold'>{row.original.stock}</span>,
-		},
-		{
-			id: 'grades',
-			header: 'Stock por Grado',
-			cell: ({ row }) => {
-				const children = row.original.children || [];
-				if (children.length === 0)
-					return <span className='text-sm text-gray-400'>Sin desglose</span>;
-
-				return (
-					<div className='flex flex-wrap gap-1'>
-						{/* FIX 2: Validación ?? 0 para evitar el error de c.stock nulo/indefinido */}
-						{children
-							.filter((c) => (c.stock ?? 0) > 0)
-							.map((child) => (
-								<Badge
-									key={child.id}
-									variant='outline'
-									color='blue'
-									className='px-1.5'>
-									{child.grade}: {child.stock}
-								</Badge>
-							))}
-					</div>
-				);
-			},
-		},
-	];
-
-	if (isSelectionMode) {
-		baseColumns.unshift({
-			id: 'selection',
-			header: 'Sel.',
-			cell: ({ row }) => {
-				const canSelect = row.original.serial_tracking;
-
-				return canSelect ? (
-					<input
-						type='checkbox'
-						className='h-4 w-4 cursor-pointer rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
-						checked={selectedProductId === row.original.id}
-						onChange={() => onSelect(row.original)}
-					/>
-				) : (
-					<span className='text-gray-300'>-</span>
-				);
-			},
-		});
-	}
-
-	return baseColumns;
-};
 
 const StockAdminTab: React.FC<StockAdminTabProps> = ({
 	subsidiaryId,
@@ -130,26 +34,104 @@ const StockAdminTab: React.FC<StockAdminTabProps> = ({
 		pageSize: 100,
 	});
 
-	const handleOpenModal = useCallback((product: IProduct) => {
+	const handleOpenModal = (product: IProduct) => {
 		setSelectedProduct(product);
 		setIsModalOpen(true);
-	}, []);
+	};
 
 	const handleCloseModal = () => {
 		setIsModalOpen(false);
 		setSelectedProduct(null);
 	};
 
-	const selectedProductId = selectedProduct?.id ?? null;
-	const columns = useMemo(
-		() =>
-			buildStockAdminColumns({
-				isSelectionMode,
-				selectedProductId,
-				onSelect: handleOpenModal,
-			}),
-		[isSelectionMode, selectedProductId, handleOpenModal],
-	);
+	const columns = useMemo<ColumnDef<IProduct>[]>(() => {
+		const baseColumns: ColumnDef<IProduct>[] = [
+			{
+				accessorKey: 'id',
+				header: 'ID.',
+				cell: ({ row }) => <span className='font-mono text-xs'>{row.original.id}</span>,
+			},
+			{
+				accessorKey: 'sku',
+				header: 'SKU',
+				cell: ({ row }) => <span className='font-mono text-xs'>{row.original.sku}</span>,
+			},
+			{
+				accessorKey: 'name',
+				header: 'Producto',
+				cell: ({ row }) => (
+					<div>
+						<p className='font-medium text-neutral-800 dark:text-neutral-100'>
+							{row.original.name}
+						</p>
+						{row.original.serial_tracking && (
+							<Badge
+								variant='outline'
+								color='emerald'
+								className='mt-1 px-1.5 py-0 text-[10px]'>
+								Serializado
+							</Badge>
+						)}
+					</div>
+				),
+			},
+			{
+				accessorKey: 'stock',
+				header: 'Stock Total',
+				cell: ({ row }) => <span className='font-semibold'>{row.original.stock}</span>,
+			},
+			{
+				id: 'grades',
+				header: 'Stock por Grado',
+				cell: ({ row }) => {
+					const children = row.original.children || [];
+					if (children.length === 0)
+						return <span className='text-sm text-gray-400'>Sin desglose</span>;
+
+					return (
+						<div className='flex flex-wrap gap-1'>
+							{/* FIX 2: Validación ?? 0 para evitar el error de c.stock nulo/indefinido */}
+							{children
+								.filter((c) => (c.stock ?? 0) > 0)
+								.map((child) => (
+									<Badge
+										key={child.id}
+										variant='outline'
+										color='blue'
+										className='px-1.5'>
+										{child.grade}: {child.stock}
+									</Badge>
+								))}
+						</div>
+					);
+				},
+			},
+		];
+
+		if (isSelectionMode) {
+			baseColumns.unshift({
+				id: 'selection',
+				header: 'Sel.',
+				size: 50,
+				cell: ({ row }) => {
+					const canSelect = row.original.serial_tracking;
+
+					return canSelect ? (
+						<input
+							type='checkbox'
+							className='h-4 w-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+							checked={selectedProduct?.id === row.original.id}
+							onChange={() => handleOpenModal(row.original)}
+						/>
+					) : (
+						<span className='text-gray-300'>-</span>
+					);
+				},
+			});
+		}
+
+		return baseColumns;
+	}, [isSelectionMode, selectedProduct]);
 
 	return (
 		<div className='space-y-6'>
@@ -180,7 +162,7 @@ const StockAdminTab: React.FC<StockAdminTabProps> = ({
 						loading={loading}
 						searchValue={globalFilter}
 						onSearchChange={setGlobalFilter}
-						manualPagination
+						manualPagination={true}
 						pageCount={meta.last_page}
 						paginationState={pagination}
 						onPaginationChange={setPagination}

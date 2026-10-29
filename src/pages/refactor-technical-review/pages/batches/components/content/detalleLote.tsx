@@ -152,14 +152,14 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 						{/* Esperada (editable) */}
 						<div className='rounded-xl bg-blue-500/30 p-5 hover:cursor-pointer hover:bg-blue-500/50 dark:bg-blue-950/40 dark:hover:bg-blue-700/50'>
 							<div className='mb-2 flex items-center justify-between'>
-								<span className='text-xs font-semibold tracking-wider text-blue-600 uppercase dark:text-blue-300'>
+								<span className='text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-300'>
 									Esperada
 								</span>
 								{!isEditingExpectedQty && (
 									<button
 										type='button'
 										onClick={handleStartEditingExpectedQty}
-										className='rounded-full p-1 text-blue-500 transition hover:bg-blue-100 focus:outline-hidden dark:hover:bg-blue-900/40'
+										className='rounded-full p-1 text-blue-500 transition hover:bg-blue-100 focus:outline-none dark:hover:bg-blue-900/40'
 										disabled={updatingBatch}>
 										<Icon icon='HeroPencilSquare' className='h-4 w-4' />
 									</button>
@@ -210,7 +210,7 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 
 						{/* Recibida */}
 						<div className='rounded-xl bg-indigo-500/30 p-5 hover:cursor-pointer hover:bg-indigo-500/50 dark:bg-indigo-950/40 dark:hover:bg-indigo-700/50'>
-							<span className='text-xs font-semibold tracking-wider text-indigo-600 uppercase dark:text-indigo-300'>
+							<span className='text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-300'>
 								Recibida
 							</span>
 							<div className='mt-2 text-3xl font-bold text-indigo-600 dark:text-indigo-400'>
@@ -220,7 +220,7 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 
 						{/* Completada */}
 						<div className='rounded-xl bg-emerald-500/30 p-5 hover:cursor-pointer hover:bg-emerald-500/50 dark:bg-emerald-950/40 dark:hover:bg-emerald-700/50'>
-							<span className='text-xs font-semibold tracking-wider text-emerald-600 uppercase dark:text-emerald-300'>
+							<span className='text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-300'>
 								Completada
 							</span>
 							<div className='mt-2 text-3xl font-bold text-emerald-600 dark:text-emerald-400'>
@@ -230,7 +230,7 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 
 						{/* Pendiente */}
 						<div className='rounded-xl bg-amber-500/30 p-5 hover:cursor-pointer hover:bg-amber-500/50 dark:bg-amber-950/40 dark:hover:bg-amber-700/50'>
-							<span className='text-xs font-semibold tracking-wider text-amber-600 uppercase dark:text-amber-300'>
+							<span className='text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-300'>
 								Pendiente
 							</span>
 							<div className='mt-2 text-3xl font-bold text-amber-600 dark:text-amber-400'>
@@ -254,7 +254,7 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 					</div>
 					<div className='h-4 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700'>
 						<div
-							className='h-full rounded-full bg-linear-to-r from-emerald-500 to-emerald-400 transition-all duration-500 ease-out'
+							className='h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500 ease-out'
 							style={{ width: `${Math.min(progressPercentage, 100)}%` }}
 						/>
 					</div>
@@ -294,7 +294,7 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 										className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 text-left transition ${
 											activeTab === type
 												? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:border-blue-400 dark:bg-blue-900/20'
-												: 'border-zinc-200 hover:border-zinc-300 hover:shadow-xs dark:border-zinc-700 dark:hover:border-zinc-600'
+												: 'border-zinc-200 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-700 dark:hover:border-zinc-600'
 										}`}>
 										<span
 											className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
@@ -313,7 +313,7 @@ const DetalleLoteVisual: React.FC<DetalleLoteProps> = ({
 											<span className='block text-xl font-bold text-zinc-900 dark:text-zinc-100'>
 												{getTypeCount(count)}
 											</span>
-											<span className='block text-xs text-zinc-500 capitalize'>
+											<span className='block text-xs capitalize text-zinc-500'>
 												{type}
 											</span>
 										</span>

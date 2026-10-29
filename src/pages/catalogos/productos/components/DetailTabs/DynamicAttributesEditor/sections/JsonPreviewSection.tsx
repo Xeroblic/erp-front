@@ -15,7 +15,7 @@ const JsonPreviewSection: React.FC = () => {
 				<h4 className='text-sm font-medium'>Vista previa del JSON</h4>
 				<span className='text-xs text-neutral-500'>Solo lectura</span>
 			</div>
-			<pre className='max-h-60 overflow-auto rounded-sm border p-3 text-xs'>
+			<pre className='max-h-60 overflow-auto rounded border p-3 text-xs'>
 				{hasContent ? preview : 'Sin atributos cargados'}
 			</pre>
 		</div>

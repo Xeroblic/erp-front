@@ -212,7 +212,7 @@ const DateInput: React.FC<Props> = ({
 						<div className='flex items-center gap-1'>
 							<button
 								type='button'
-								className='rounded-sm p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+								className='rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800'
 								title='Anterior'
 								onClick={() =>
 									mode === 'days'
@@ -225,7 +225,7 @@ const DateInput: React.FC<Props> = ({
 							</button>
 							<button
 								type='button'
-								className='rounded-sm p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+								className='rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800'
 								title='Anterior rápido'
 								onClick={() =>
 									mode === 'days'
@@ -240,13 +240,13 @@ const DateInput: React.FC<Props> = ({
 						<div className='flex items-center gap-2'>
 							<button
 								type='button'
-								className='rounded-sm px-2 py-1 text-sm capitalize hover:bg-zinc-100 dark:hover:bg-zinc-800'
+								className='rounded px-2 py-1 text-sm capitalize hover:bg-zinc-100 dark:hover:bg-zinc-800'
 								onClick={() => setMode(mode === 'months' ? 'days' : 'months')}>
 								{monthLabel()}
 							</button>
 							<button
 								type='button'
-								className='rounded-sm px-2 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800'
+								className='rounded px-2 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800'
 								onClick={() => setMode(mode === 'years' ? 'days' : 'years')}>
 								{currentYear}
 							</button>
@@ -254,7 +254,7 @@ const DateInput: React.FC<Props> = ({
 						<div className='flex items-center gap-1'>
 							<button
 								type='button'
-								className='rounded-sm p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+								className='rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800'
 								title='Siguiente rápido'
 								onClick={() =>
 									mode === 'days'
@@ -267,7 +267,7 @@ const DateInput: React.FC<Props> = ({
 							</button>
 							<button
 								type='button'
-								className='rounded-sm p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+								className='rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800'
 								title='Siguiente'
 								onClick={() =>
 									mode === 'days'
@@ -305,7 +305,7 @@ const DateInput: React.FC<Props> = ({
 											key={idx}
 											type='button'
 											onClick={() => !disabledCell && onPick(d)}
-											className={`rounded-sm py-1 text-sm transition-colors ${
+											className={`rounded py-1 text-sm transition-colors ${
 												inMonth
 													? 'font-medium text-zinc-900 dark:text-white'
 													: 'text-zinc-400 dark:text-zinc-500'
@@ -352,7 +352,7 @@ const DateInput: React.FC<Props> = ({
 									<button
 										key={m}
 										type='button'
-										className={`rounded-sm px-2 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
+										className={`rounded px-2 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
 											disabledMonth
 												? 'cursor-not-allowed opacity-40 hover:bg-transparent'
 												: ''
@@ -382,7 +382,7 @@ const DateInput: React.FC<Props> = ({
 									<button
 										key={y}
 										type='button'
-										className={`rounded-sm px-2 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
+										className={`rounded px-2 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
 											y === currentYear ? 'font-medium' : ''
 										}${
 											disabledYear
@@ -405,13 +405,13 @@ const DateInput: React.FC<Props> = ({
 					<div className='mt-2 flex justify-between text-xs'>
 						<button
 							type='button'
-							className='rounded-sm px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+							className='rounded px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-800'
 							onClick={() => onPick(new Date())}>
 							Hoy
 						</button>
 						<button
 							type='button'
-							className='rounded-sm px-2 py-1 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+							className='rounded px-2 py-1 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
 							onClick={() => setOpen(false)}>
 							Cerrar
 						</button>

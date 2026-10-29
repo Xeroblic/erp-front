@@ -88,7 +88,7 @@ const ProveedoresDetalleView = () => {
 							{Array.from({ length: 4 }, (_, index) => (
 								<div
 									key={`supplier-detail-skeleton-${index}`}
-									className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700'
+									className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700'
 								/>
 							))}
 						</CardBody>
@@ -158,45 +158,45 @@ const ProveedoresDetalleView = () => {
 						<Card>
 							<CardBody className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
 								<div>
-									<p className='text-xs text-zinc-500 uppercase'>Razón social</p>
+									<p className='text-xs uppercase text-zinc-500'>Razón social</p>
 									<p>{supplier.company_name ?? '—'}</p>
 								</div>
 								<div>
-									<p className='text-xs text-zinc-500 uppercase'>
+									<p className='text-xs uppercase text-zinc-500'>
 										Nombre de contacto
 									</p>
 									<p>{supplier.contact_name ?? '—'}</p>
 								</div>
 								<div>
-									<p className='text-xs text-zinc-500 uppercase'>
+									<p className='text-xs uppercase text-zinc-500'>
 										Dirección de facturación
 									</p>
 									<p>{supplier.billing_address ?? '—'}</p>
 								</div>
 								<div>
-									<p className='text-xs text-zinc-500 uppercase'>
+									<p className='text-xs uppercase text-zinc-500'>
 										Comuna de facturación
 									</p>
 									<p>{billingCommuneName ?? '—'}</p>
 								</div>
 								<div>
-									<p className='text-xs text-zinc-500 uppercase'>
+									<p className='text-xs uppercase text-zinc-500'>
 										Dirección de despacho
 									</p>
 									<p>{supplier.shipping_address ?? '—'}</p>
 								</div>
 								<div>
-									<p className='text-xs text-zinc-500 uppercase'>
+									<p className='text-xs uppercase text-zinc-500'>
 										Comuna de despacho
 									</p>
 									<p>{shippingCommuneName ?? '—'}</p>
 								</div>
 								<div>
-									<p className='text-xs text-zinc-500 uppercase'>Creado</p>
+									<p className='text-xs uppercase text-zinc-500'>Creado</p>
 									<p>{formatDate(supplier.created_at)}</p>
 								</div>
 								<div>
-									<p className='text-xs text-zinc-500 uppercase'>
+									<p className='text-xs uppercase text-zinc-500'>
 										Última actualización
 									</p>
 									<p>{formatDate(supplier.updated_at)}</p>

@@ -117,7 +117,7 @@ export function TrazabilidadFilters({
 	const hasActiveFilters = Object.values(localFilters).some((v) => v !== undefined && v !== '');
 
 	return (
-		<div className='mb-6 rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-700 dark:bg-zinc-900'>
+		<div className='mb-6 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
 			<button
 				type='button'
 				onClick={() => setIsExpanded(!isExpanded)}
@@ -197,7 +197,7 @@ export function TrazabilidadFilters({
 								className='w-full pr-8'
 							/>
 							{isSearching && localFilters.q && (
-								<div className='absolute top-1/2 right-3 -translate-y-1/2'>
+								<div className='absolute right-3 top-1/2 -translate-y-1/2'>
 									<div className='h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent' />
 								</div>
 							)}
@@ -216,7 +216,7 @@ export function TrazabilidadFilters({
 							id='trazabilidad-movement-type'
 							value={localFilters.movement_type || ''}
 							onChange={(e) => handleChange('movement_type', e.target.value)}
-							className='w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden dark:border-zinc-600 dark:bg-zinc-800 dark:text-white'>
+							className='w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white'>
 							{MOVEMENT_TYPES.map((type) => (
 								<option key={type.value} value={type.value}>
 									{type.label}

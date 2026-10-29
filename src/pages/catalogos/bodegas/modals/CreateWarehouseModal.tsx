@@ -203,7 +203,7 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 									onBlur={form.handleBlur}
 									isValid={form.isValid}
 									isTouched={!!form.touched.maximum_capacity}
-									invalidFeedback={form.errors.maximum_capacity}
+									invalidFeedback={form.errors.maximum_capacity as string}
 								/>
 								<p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
 									Si no se especifica, la capacidad será ilimitada

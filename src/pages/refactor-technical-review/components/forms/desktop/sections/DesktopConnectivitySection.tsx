@@ -7,8 +7,8 @@ import { YesNoSelector } from '../../../ui/YesNoSelector';
 
 const DesktopConnectivitySection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	readOnly,
-	values,
-	setFieldValue,
+	watch,
+	setValue,
 }) => {
 	return (
 		<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
@@ -16,8 +16,8 @@ const DesktopConnectivitySection: React.FC<FormSectionProps<DesktopFormData>> = 
 			<div className='flex flex-col gap-2'>
 				<YesNoSelector
 					label={getDesktopLabel('has_wifi')}
-					value={values.has_wifi}
-					onChange={(val) => !readOnly && setFieldValue('has_wifi', val)}
+					value={watch('has_wifi')}
+					onChange={(val) => !readOnly && setValue('has_wifi', val)}
 				/>
 				<p className='text-center text-xs text-zinc-400'>{DESKTOP_HINTS.has_wifi}</p>
 			</div>
@@ -26,8 +26,8 @@ const DesktopConnectivitySection: React.FC<FormSectionProps<DesktopFormData>> = 
 			<div className='flex flex-col gap-2'>
 				<YesNoSelector
 					label={getDesktopLabel('has_bluetooth')}
-					value={values.has_bluetooth}
-					onChange={(val) => !readOnly && setFieldValue('has_bluetooth', val)}
+					value={watch('has_bluetooth')}
+					onChange={(val) => !readOnly && setValue('has_bluetooth', val)}
 				/>
 				<p className='text-center text-xs text-zinc-400'>{DESKTOP_HINTS.has_bluetooth}</p>
 			</div>
@@ -36,8 +36,8 @@ const DesktopConnectivitySection: React.FC<FormSectionProps<DesktopFormData>> = 
 			<div className='flex flex-col gap-2'>
 				<YesNoSelector
 					label={getDesktopLabel('has_cd_drive')}
-					value={values.has_cd_drive}
-					onChange={(val) => !readOnly && setFieldValue('has_cd_drive', val)}
+					value={watch('has_cd_drive')}
+					onChange={(val) => !readOnly && setValue('has_cd_drive', val)}
 				/>
 				<p className='text-center text-xs text-zinc-400'>{DESKTOP_HINTS.has_cd_drive}</p>
 			</div>

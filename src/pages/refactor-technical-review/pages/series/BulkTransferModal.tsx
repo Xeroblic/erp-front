@@ -92,7 +92,7 @@ const BulkTransferModal: React.FC<BulkTransferModalProps> = ({
 				<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 					{/* Lado Izquierdo: Input de Series */}
 					<div className='flex h-full flex-col'>
-						<label className='mb-2 block text-sm font-semibold text-gray-500 uppercase'>
+						<label className='mb-2 block text-sm font-semibold uppercase text-gray-500'>
 							Números de Serie (uno por línea)
 						</label>
 						<Textarea
@@ -100,7 +100,7 @@ const BulkTransferModal: React.FC<BulkTransferModalProps> = ({
 							onChange={(e) => setSerialsInput(e.target.value)}
 							rows={12}
 							placeholder='SN-123456789&#10;SN-987654321'
-							className='w-full grow resize-none font-mono text-sm'
+							className='w-full flex-grow resize-none font-mono text-sm'
 						/>
 						<div className='mt-2 flex items-center justify-between text-sm'>
 							<span className='text-gray-500'>Equipos detectados:</span>
@@ -114,7 +114,7 @@ const BulkTransferModal: React.FC<BulkTransferModalProps> = ({
 					{/* Lado Derecho: Destino y Resumen */}
 					<div className='flex flex-col gap-6'>
 						<div>
-							<label className='mb-2 block text-sm font-semibold text-gray-500 uppercase'>
+							<label className='mb-2 block text-sm font-semibold uppercase text-gray-500'>
 								Sucursal de Destino
 							</label>
 							<SelectReact

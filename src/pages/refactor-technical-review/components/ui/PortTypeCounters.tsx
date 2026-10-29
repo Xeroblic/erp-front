@@ -51,7 +51,7 @@ export const PortTypeCounters: React.FC<PortTypeCountersProps> = ({
 				className='grid grid-cols-2 gap-4 sm:grid-cols-3'>
 				{options.map((option) => (
 					<div key={option.value} className='flex flex-col items-center gap-2'>
-						<span className='text-[10px] font-bold tracking-widest text-zinc-500 uppercase'>
+						<span className='text-[10px] font-bold uppercase tracking-widest text-zinc-500'>
 							{option.label}
 						</span>
 						<div className='w-full max-w-[140px]'>

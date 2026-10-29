@@ -8,27 +8,18 @@ import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Spinner from '@/components/ui/Spinner';
-import ProtectedButton from '@/components/ui/ProtectedButton';
-import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
-import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import { buildCategoryTableRows } from '@/components/helper/category.helper';
-import getFormDataText from '@/utils/formData.util';
 import CategoryStats from './components/CategoryStats';
 import CategoriesTable from './components/tables/CategoriesTable';
 import CrearCategoria from './components/modals/CrearCategoria';
 import EditarCategoria from './components/modals/EditarCategoria';
 import EliminarCategoria from './components/modals/EliminarCategoria';
 import DetalleCategoria from './components/modals/DetalleCategoria';
+import ProtectedButton from '@/components/ui/ProtectedButton';
+import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useCategorias } from './hooks/useCategorias';
 import type { ICategory, ICategoryFilters } from './types';
-
-/** Mensaje del error lanzado por el hook; `fallback` si no trae uno. */
-const getErrorMessage = (err: unknown, fallback: string): string => {
-	if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
-		return err.message;
-	}
-	return fallback;
-};
+import { buildCategoryTableRows } from '@/components/helper/category.helper';
 
 const Categorias: React.FC = () => {
 	const [filters, setFilters] = useState<ICategoryFilters>({ search: '' });
@@ -54,6 +45,7 @@ const Categorias: React.FC = () => {
 		deleting,
 		createCategory,
 		updateCategory,
+		toggleCategoryStatus,
 		deleteCategory,
 		uploadCategoryGallery,
 		tree,
@@ -86,12 +78,12 @@ const Categorias: React.FC = () => {
 
 		try {
 			const image = (formData.get('image') as File | null) || null;
-			const galleryFiles = formData
-				.getAll('gallery')
-				.filter((entry): entry is File => entry instanceof File);
+			const galleryFiles = (formData.getAll('gallery') as File[]).filter(
+				(f) => f && typeof (f as any).size === 'number',
+			);
 			const created = await createCategory({
-				name: getFormDataText(formData, 'name').trim(),
-				description: getFormDataText(formData, 'description').trim() || undefined,
+				name: String(formData.get('name') ?? '').trim(),
+				description: formData.get('description')?.toString().trim() || undefined,
 				parent_id: (() => {
 					const parent = formData.get('parent_id');
 					if (!parent) return undefined;
@@ -109,8 +101,8 @@ const Categorias: React.FC = () => {
 
 			toast.success('Categoria creada correctamente');
 			setCreateOpen(false);
-		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'No se pudo crear la categoria'));
+		} catch (err: any) {
+			toast.error(err?.message ?? 'No se pudo crear la categoria');
 		}
 	};
 
@@ -122,13 +114,13 @@ const Categorias: React.FC = () => {
 
 		try {
 			const image = (formData.get('image') as File | null) || null;
-			const galleryFiles = formData
-				.getAll('gallery')
-				.filter((entry): entry is File => entry instanceof File);
+			const galleryFiles = (formData.getAll('gallery') as File[]).filter(
+				(f) => f && typeof (f as any).size === 'number',
+			);
 			const updated = await updateCategory({
 				id: selected.id,
-				name: getFormDataText(formData, 'name').trim(),
-				description: getFormDataText(formData, 'description').trim() || undefined,
+				name: String(formData.get('name') ?? '').trim(),
+				description: formData.get('description')?.toString().trim() || undefined,
 				parent_id: (() => {
 					const parent = formData.get('parent_id');
 					if (!parent) return undefined;
@@ -147,8 +139,8 @@ const Categorias: React.FC = () => {
 			toast.success('Categoria actualizada');
 			setEditOpen(false);
 			setSelected(null);
-		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'No se pudo actualizar la categoria'));
+		} catch (err: any) {
+			toast.error(err?.message ?? 'No se pudo actualizar la categoria');
 		}
 	};
 
@@ -160,8 +152,17 @@ const Categorias: React.FC = () => {
 			toast.success('Categoria eliminada');
 			setDeleteOpen(false);
 			setSelected(null);
-		} catch (err: unknown) {
-			toast.error(getErrorMessage(err, 'No se pudo eliminar la categoria'));
+		} catch (err: any) {
+			toast.error(err?.message ?? 'No se pudo eliminar la categoria');
+		}
+	};
+
+	const handleToggleStatus = async (category: ICategory) => {
+		try {
+			await toggleCategoryStatus(category);
+			toast.info(`Categoria ${category.is_active ? 'desactivada' : 'activada'}`);
+		} catch (err: any) {
+			toast.error(err?.message ?? 'No se pudo cambiar el estado');
 		}
 	};
 
@@ -178,8 +179,6 @@ const Categorias: React.FC = () => {
 		setSelected(category);
 		setDeleteOpen(true);
 	};
-
-	const selectedBranchId = filters.branch_id || activeBranchId;
 
 	return (
 		<PageWrapper name='categorias-admin'>
@@ -210,7 +209,13 @@ const Categorias: React.FC = () => {
 						/>
 						<Select
 							name='branch_id'
-							value={selectedBranchId ? String(selectedBranchId) : ''}
+							value={
+								filters.branch_id
+									? String(filters.branch_id)
+									: activeBranchId
+										? String(activeBranchId)
+										: ''
+							}
 							onChange={handleBranchChange}
 							className='w-full sm:w-60'>
 							<option value=''>Todas las sucursales</option>
@@ -233,7 +238,7 @@ const Categorias: React.FC = () => {
 							className='group'>
 							<Icon
 								icon='HeroArrowDownTray'
-								color='indigo'
+								color={'indigo'}
 								colorIntensity='500'
 								className='mr-2 h-6 w-6 font-bold group-hover:text-indigo-400'
 							/>
@@ -253,7 +258,7 @@ const Categorias: React.FC = () => {
 
 			<Container>
 				{error && (
-					<div className='mb-4 rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-700'>
+					<div className='mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700'>
 						{error}
 					</div>
 				)}
@@ -270,6 +275,7 @@ const Categorias: React.FC = () => {
 						onView={handleView}
 						onEdit={handleEdit}
 						onDelete={handleDelete}
+						onToggleStatus={handleToggleStatus}
 					/>
 				)}
 			</Container>

@@ -1,23 +1,23 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { Controller } from 'react-hook-form';
+import { FormSectionProps } from '../../shared/types';
+import { AioFormData } from '../../../validation/aio.schema';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
-import Validation from '@/components/form/Validation';
 import { useMarcas } from '@/pages/catalogos/marcas/components/hooks/useMarcas';
-import { AioFormData } from '../../../validation/aio.schema';
-import { FormSectionProps } from '../../shared/types';
 import { AIO_HINTS, AIO_PLACEHOLDERS } from '../../../constants/aio/aio.hints';
 import { getAioLabel } from '../../../translations/aio.labels';
 import { GENERAL_CONDITION_OPTIONS } from '../../../constants/aio/aio.options';
 import { SelectionCard } from '../../../ui/SelectionCard';
 
 const AioBasicInfoSection: React.FC<FormSectionProps<AioFormData>> = ({
-	onFieldBlur,
+	control,
 	errors,
 	readOnly,
-	values,
-	setFieldValue,
+	watch,
+	setValue,
 }) => {
-	const generalCondition = values.general_condition;
+	const generalCondition = watch('general_condition');
 	const { brands, loading: loadingBrands } = useMarcas({ search: '', is_active: true });
 
 	const brandOptions: TSelectOption[] = useMemo(() => {
@@ -44,23 +44,27 @@ const AioBasicInfoSection: React.FC<FormSectionProps<AioFormData>> = ({
 						</span>
 						{getAioLabel('brand')} <span className='text-red-500'>*</span>
 					</label>
-					<Validation
-						isValid={!errors.brand}
-						isTouched={Boolean(errors.brand)}
-						invalidFeedback={errors.brand}>
-						<SelectReact
-							name='brand'
-							options={brandOptions}
-							value={brandOptions.find((opt) => opt.value === values.brand) || null}
-							onChange={(option) => {
-								setFieldValue('brand', (option as TSelectOption)?.value);
-							}}
-							isLoading={loadingBrands}
-							placeholder={AIO_PLACEHOLDERS.brand}
-							onBlur={() => onFieldBlur('brand')}
-							isDisabled={readOnly}
-						/>
-					</Validation>
+					<Controller
+						name='brand'
+						control={control}
+						render={({ field }) => (
+							<SelectReact
+								name={field.name}
+								options={brandOptions}
+								value={
+									brandOptions.find((opt) => opt.value === field.value) || null
+								}
+								onChange={(option) => {
+									field.onChange((option as TSelectOption)?.value);
+								}}
+								isLoading={loadingBrands}
+								placeholder={AIO_PLACEHOLDERS.brand}
+								isDisabled={readOnly}
+								isValid={!errors.brand}
+								invalidFeedback={errors.brand?.message}
+							/>
+						)}
+					/>
 					<p className='mt-1 text-xs text-zinc-500'>{AIO_HINTS.brand}</p>
 				</div>
 
@@ -72,42 +76,55 @@ const AioBasicInfoSection: React.FC<FormSectionProps<AioFormData>> = ({
 						</span>
 						{getAioLabel('model')} <span className='text-red-500'>*</span>
 					</label>
-					<Input
+					<Controller
 						name='model'
-						onChange={(event) => setFieldValue('model', event.target.value)}
-						onBlur={() => onFieldBlur('model')}
-						value={values.model || ''}
-						placeholder={AIO_PLACEHOLDERS.model}
-						disabled={readOnly}
-						className={errors.model ? 'border-red-500!' : ''}
+						control={control}
+						render={({ field }) => (
+							<Input
+								{...field}
+								value={field.value || ''}
+								placeholder={AIO_PLACEHOLDERS.model}
+								disabled={readOnly}
+								className={errors.model ? 'border-red-500' : ''}
+							/>
+						)}
 					/>
-					{errors.model && <p className='mt-1 text-xs text-red-500'>{errors.model}</p>}
+					{errors.model && (
+						<p className='mt-1 text-xs text-red-500'>{errors.model.message}</p>
+					)}
 					<p className='mt-1 text-xs text-zinc-500'>{AIO_HINTS.model}</p>
 				</div>
 
 				{/* Line (ZF-102) */}
-				<div className='rounded-xl border border-teal-200 bg-teal-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-teal-500/30 md:col-span-2 dark:border-teal-800 dark:bg-teal-900/10 dark:hover:bg-teal-900/30'>
+				<div className='rounded-xl border border-teal-200 bg-teal-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-teal-500/30 dark:border-teal-800 dark:bg-teal-900/10 dark:hover:bg-teal-900/30 md:col-span-2'>
 					<label className='mb-3 flex items-center gap-2 text-sm font-bold text-teal-800 dark:text-teal-200'>
 						<span className='flex h-6 w-6 items-center justify-center rounded-md bg-teal-100 text-teal-600 dark:bg-teal-800 dark:text-teal-300'>
 							📋
 						</span>
 						{getAioLabel('line')} <span className='text-red-500'>*</span>
 					</label>
-					<Input
-						onChange={(event) => setFieldValue('line', event.target.value)}
-						onBlur={() => onFieldBlur('line')}
+					<Controller
 						name='line'
-						value={values.line || ''}
-						placeholder={AIO_PLACEHOLDERS.line}
-						disabled={readOnly}
-						className={errors.line ? 'border-red-500!' : ''}
+						control={control}
+						render={({ field }) => (
+							<Input
+								{...field}
+								name='line'
+								value={field.value || ''}
+								placeholder={AIO_PLACEHOLDERS.line}
+								disabled={readOnly}
+								className={errors.line ? 'border-red-500' : ''}
+							/>
+						)}
 					/>
-					{errors.line && <p className='mt-1 text-xs text-red-500'>{errors.line}</p>}
+					{errors.line && (
+						<p className='mt-1 text-xs text-red-500'>{errors.line.message}</p>
+					)}
 					<p className='mt-1 text-xs text-zinc-500'>{AIO_HINTS.line}</p>
 				</div>
 
 				{/* General Condition */}
-				<div className='rounded-xl border border-emerald-200 bg-emerald-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-emerald-500/30 md:col-span-2 dark:border-emerald-800 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/30'>
+				<div className='rounded-xl border border-emerald-200 bg-emerald-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-emerald-500/30 dark:border-emerald-800 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/30 md:col-span-2'>
 					<label className='mb-3 flex items-center gap-2 text-sm font-bold text-emerald-800 dark:text-emerald-200'>
 						{getAioLabel('general_condition')} <span className='text-red-500'>*</span>
 					</label>
@@ -121,7 +138,7 @@ const AioBasicInfoSection: React.FC<FormSectionProps<AioFormData>> = ({
 								isSelected={generalCondition === opt.value}
 								onClick={() =>
 									!readOnly &&
-									setFieldValue(
+									setValue(
 										'general_condition',
 										opt.value as AioFormData['general_condition'],
 									)
@@ -131,7 +148,9 @@ const AioBasicInfoSection: React.FC<FormSectionProps<AioFormData>> = ({
 					</div>
 
 					{errors.general_condition && (
-						<p className='mt-2 text-xs text-red-500'>{errors.general_condition}</p>
+						<p className='mt-2 text-xs text-red-500'>
+							{errors.general_condition.message}
+						</p>
 					)}
 					<p className='mt-2 text-xs text-zinc-500'>{AIO_HINTS.general_condition}</p>
 				</div>

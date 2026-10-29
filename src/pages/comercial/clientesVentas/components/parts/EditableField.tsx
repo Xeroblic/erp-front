@@ -39,7 +39,7 @@ const EditableField = <FormValues extends Record<string, any>>({
 				<p
 					id={inputId}
 					className={`mt-1 font-semibold text-zinc-800 dark:text-zinc-200 ${
-						textarea ? 'font-normal whitespace-pre-wrap' : ''
+						textarea ? 'whitespace-pre-wrap font-normal' : ''
 					}`}>
 					{hasValue ? String(value) : 'Sin información registrada.'}
 				</p>

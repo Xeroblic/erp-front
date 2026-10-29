@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { FormikValues } from 'formik';
+import type { FieldValues } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 import AioForm from '../../aio/AioForm';
 import DesktopForm from '../../desktop/DesktopForm';
@@ -53,19 +53,19 @@ vi.mock('@/pages/refactor-technical-review/components/forms/shared/FormShell', (
 	}: {
 		sections: Array<{
 			key: string;
-			component: React.ComponentType<FormSectionProps<FormikValues>>;
+			component: React.ComponentType<FormSectionProps<FieldValues>>;
 		}>;
-		sectionProps: FormSectionProps<FormikValues>;
+		sectionProps: FormSectionProps<FieldValues>;
 	}) => {
 		const HardwareSection = sections.find(({ key }) => key === 'hardware')?.component;
 
 		return HardwareSection ? (
 			<HardwareSection
-				values={sectionProps.values}
+				control={sectionProps.control}
 				errors={sectionProps.errors}
 				readOnly={sectionProps.readOnly}
-				setFieldValue={sectionProps.setFieldValue}
-				onFieldBlur={sectionProps.onFieldBlur}
+				watch={sectionProps.watch}
+				setValue={sectionProps.setValue}
 				onDirectSubmit={sectionProps.onDirectSubmit}
 			/>
 		) : null;

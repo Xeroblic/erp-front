@@ -126,7 +126,7 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 	const activeTabConfig = visibleTabs.find((t) => t.id === effectiveActiveTab);
 
 	return (
-		<Card className='overflow-hidden border border-neutral-200 shadow-xs dark:border-neutral-700/80'>
+		<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-700/80'>
 			{/* Tab bar */}
 			<div className='border-b border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900/50'>
 				<div
@@ -149,7 +149,7 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 									role='tab'
 									aria-selected={isActive}
 									onClick={() => onTabChange(tab.id)}
-									className={`relative inline-flex shrink-0 items-center gap-2 px-5 py-3.5 text-sm font-medium transition-colors duration-150 ${
+									className={`relative inline-flex flex-shrink-0 items-center gap-2 px-5 py-3.5 text-sm font-medium transition-colors duration-150 ${
 										isActive
 											? 'text-blue-600 dark:text-blue-400'
 											: 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
@@ -157,7 +157,7 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 									style={{ minWidth: 'max-content', whiteSpace: 'nowrap' }}>
 									<Icon
 										icon={tab.icon}
-										className={`h-4 w-4 shrink-0 ${
+										className={`h-4 w-4 flex-shrink-0 ${
 											isActive
 												? 'text-blue-500 dark:text-blue-400'
 												: 'text-neutral-400 dark:text-neutral-500'

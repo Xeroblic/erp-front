@@ -1,14 +1,13 @@
 import React from 'react';
 import { flexRender, Table as TableInstance } from '@tanstack/react-table';
-import { Table, TBody, THead, Tr, Th, Td } from '@/components/ui/Table';
+import Table, { TBody, THead, Tr, Th, Td } from '@/components/ui/Table';
 import { ISubempresa } from '@/interface/empresas.interface';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface SubsidiariesTableContentProps {
-	table: TableInstance<AppTableFeatures, ISubempresa>;
+	table: TableInstance<ISubempresa>;
 }
 
-const SubsidiariesTableContent = ({ table }: SubsidiariesTableContentProps) => {
+export default function SubsidiariesTableContent({ table }: SubsidiariesTableContentProps) {
 	return (
 		<div className='overflow-x-auto'>
 			<Table>
@@ -42,6 +41,4 @@ const SubsidiariesTableContent = ({ table }: SubsidiariesTableContentProps) => {
 			</Table>
 		</div>
 	);
-};
-
-export default SubsidiariesTableContent;
+}

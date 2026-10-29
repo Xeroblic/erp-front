@@ -73,10 +73,5 @@ export const resolveTailwindColorAlpha = (
 
 	if (baseColor.startsWith('rgba(')) return baseColor;
 
-	// La paleta de Tailwind 4 viene en `oklch(L C H)`: el alfa va tras una barra.
-	if (baseColor.startsWith('oklch(') && !baseColor.includes('/')) {
-		return `${baseColor.slice(0, -1)} / ${clampAlpha(alpha)})`;
-	}
-
 	return baseColor;
 };

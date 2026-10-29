@@ -2,7 +2,7 @@ import React, { type PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resetPurchaseDocumentsStoreForTests } from '@/mocks/services/purchaseDocuments.mock';
 import purchaseDocumentsReducer from '@/store/slices/procurement/purchaseDocumentsSlice';
 import useDocumentoCompraDetalle from '../useDocumentoCompraDetalle';
@@ -32,10 +32,7 @@ vi.mock('@/hooks/useCurrentBranch', () => ({
 }));
 
 const routeParams = vi.hoisted(() => ({ documentoId: '42' }));
-const router = vi.hoisted((): { navigate: Mock; state: unknown } => ({
-	navigate: vi.fn(),
-	state: null,
-}));
+const router = vi.hoisted(() => ({ navigate: vi.fn(), state: null as unknown }));
 vi.mock('react-router-dom', () => ({
 	useParams: () => ({ ...routeParams }),
 	useNavigate: () => router.navigate,

@@ -44,16 +44,16 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 	};
 
 	const buttonColorClasses = {
-		blue: 'bg-linear-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-blue-500/50',
-		red: 'bg-linear-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/50',
-		green: 'bg-linear-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-green-500/50',
-		purple: 'bg-linear-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-purple-500/50',
-		amber: 'bg-linear-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/50',
-		zinc: 'bg-linear-to-br from-zinc-500 to-zinc-600 hover:from-zinc-600 hover:to-zinc-700 shadow-zinc-500/50',
+		blue: 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-blue-500/50',
+		red: 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/50',
+		green: 'bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-green-500/50',
+		purple: 'bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-purple-500/50',
+		amber: 'bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/50',
+		zinc: 'bg-gradient-to-br from-zinc-500 to-zinc-600 hover:from-zinc-600 hover:to-zinc-700 shadow-zinc-500/50',
 	};
 
 	return (
-		<div className='fixed top-0 right-0 z-50 flex h-screen items-center'>
+		<div className='fixed right-0 top-0 z-50 flex h-screen items-center'>
 			{/* Trigger Button */}
 			<div
 				className='relative'
@@ -75,7 +75,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 						icon={buttonIcon}
 						className={classNames(
 							'text-white transition-all duration-300',
-							isHovered ? 'scale-110 rotate-180' : '',
+							isHovered ? 'rotate-180 scale-110' : '',
 						)}
 						size='text-2xl'
 					/>
@@ -93,16 +93,16 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 				{/* Aside Panel */}
 				<aside
 					className={classNames(
-						'fixed top-0 right-0 h-screen transition-all duration-500 ease-out',
+						'fixed right-0 top-0 h-screen transition-all duration-500 ease-out',
 						asideWidth,
 						isHovered ? 'translate-x-0' : 'translate-x-full',
-						'bg-linear-to-br backdrop-blur-2xl',
+						'bg-gradient-to-br backdrop-blur-2xl',
 						colorClasses[color],
 						'border-y border-l shadow-2xl',
 						'overflow-hidden',
 					)}>
 					{/* Decorative gradient overlay */}
-					<div className='pointer-events-none absolute inset-0 bg-linear-to-br from-white/5 to-transparent' />
+					<div className='pointer-events-none absolute inset-0 bg-gradient-to-br from-white/5 to-transparent' />
 
 					{/* Animated border glow */}
 					<div
@@ -110,13 +110,13 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 							'absolute inset-0 opacity-0 transition-opacity duration-500',
 							isHovered ? 'opacity-100' : '',
 						)}>
-						<div className='absolute top-0 left-0 h-px w-full animate-pulse bg-linear-to-r from-transparent via-white/50 to-transparent' />
+						<div className='absolute left-0 top-0 h-px w-full animate-pulse bg-gradient-to-r from-transparent via-white/50 to-transparent' />
 					</div>
 
 					{/* Content Container */}
 					<div
 						className={classNames(
-							'relative h-full scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent overflow-y-auto p-6',
+							'scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent relative h-full overflow-y-auto p-6',
 							className,
 						)}>
 						{/* Fade-in animation for content */}

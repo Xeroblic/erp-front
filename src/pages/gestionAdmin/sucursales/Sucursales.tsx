@@ -1,42 +1,78 @@
-import React, { useCallback, useEffect, useState, useRef, useMemo } from 'react';
-import { type NavigateFunction, useNavigate } from 'react-router-dom';
-import { createColumnHelper, flexRender, SortingState, useTable } from '@tanstack/react-table';
+import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	SortingState,
+	useReactTable,
+} from '@tanstack/react-table';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchMisSucursales, deleteSucursal } from '@/store/slices/sucursales/sucursalesSlice';
+import {
+	fetchMisSucursales,
+	createSucursal,
+	deleteSucursal,
+} from '@/store/slices/sucursales/sucursalesSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody } from '@/components/ui/Card';
-import { Table, Th, THead, Tr, TBody, Td } from '@/components/ui/Table';
+import Table, { Th, THead, Tr, TBody, Td } from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import Modal, {
 	ModalHeader,
 	ModalBody,
 	ModalFooter,
 	ModalFooterChild,
 } from '@/components/ui/Modal';
+import SucursalModal from './components/SucursalModal';
 import { ISucursal } from '@/interface/empresas.interface';
 import Tooltip from '@/components/ui/Tooltip';
-import { AppTableFeatures, clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
-import SucursalModal from './components/SucursalModal';
 
-const columnHelper = createColumnHelper<AppTableFeatures, ISucursal>();
+const columnHelper = createColumnHelper<ISucursal>();
 
-const buildBranchColumns = ({
-	navigate,
-	onEdit,
-	onAskDelete,
-}: {
-	navigate: NavigateFunction;
-	onEdit: (sucursal: ISucursal) => void;
-	onAskDelete: (id: number) => void;
-}) =>
-	columnHelper.columns([
+export default function SucursalesLista() {
+	const dispatch = useAppDispatch();
+	const navigate = useNavigate();
+	const user = useAppSelector((s) => s.auth.user);
+
+	interface SucursalesState {
+		lista: ISucursal[];
+		loading: boolean;
+		createLoading: boolean;
+	}
+
+	const {
+		lista: sucursales = [],
+		loading,
+		createLoading,
+	}: SucursalesState = useAppSelector((s: { sucursales: SucursalesState }) => s.sucursales);
+	const [sorting, setSorting] = useState<SortingState>([]);
+	const [globalFilter, setGlobalFilter] = useState('');
+	const [openCreate, setOpenCreate] = useState(false);
+	const [openDelete, setOpenDelete] = useState(false);
+	const [toDeleteId, setToDeleteId] = useState<number | null>(null);
+	const [editingSucursal, setEditingSucursal] = useState<ISucursal | null>(null);
+	const hasLoadedSucursales = useRef(false);
+
+	useEffect(() => {
+		if (!user) return;
+		if (hasLoadedSucursales.current) return;
+
+		hasLoadedSucursales.current = true;
+		dispatch(fetchMisSucursales());
+	}, [dispatch, user]);
+
+	// columnas de la tabla
+	const columns = [
 		columnHelper.accessor('branch_name', {
 			header: 'Sucursal',
 			cell: (info) => (
@@ -153,7 +189,7 @@ const buildBranchColumns = ({
 						variant='outline'
 						size='sm'
 						icon='HeroPencil'
-						onClick={() => onEdit(info.row.original)}
+						onClick={() => handleEdit(info.row.original)}
 						className='p-1'
 					/>
 					<Button
@@ -168,70 +204,35 @@ const buildBranchColumns = ({
 						size='sm'
 						icon='HeroTrash'
 						color='red'
-						onClick={() => onAskDelete(info.row.original.id)}
+						onClick={() => {
+							setToDeleteId(info.row.original.id);
+							setOpenDelete(true);
+						}}
 						className='p-1'
 					/>
 				</div>
 			),
 		}),
-	]);
+	];
 
-const SucursalesLista = () => {
-	const dispatch = useAppDispatch();
-	const navigate = useNavigate();
-	const user = useAppSelector((s) => s.auth.user);
-
-	interface SucursalesState {
-		lista: ISucursal[];
-		loading: boolean;
-		createLoading: boolean;
-	}
-
-	const { lista: sucursales = [], loading }: SucursalesState = useAppSelector(
-		(s: { sucursales: SucursalesState }) => s.sucursales,
-	);
-	const [sorting, setSorting] = useState<SortingState>([]);
-	const [globalFilter, setGlobalFilter] = useState('');
-	const [openCreate, setOpenCreate] = useState(false);
-	const [openDelete, setOpenDelete] = useState(false);
-	const [toDeleteId, setToDeleteId] = useState<number | null>(null);
-	const [editingSucursal, setEditingSucursal] = useState<ISucursal | null>(null);
-	const hasLoadedSucursales = useRef(false);
-
-	useEffect(() => {
-		if (!user) return;
-		if (hasLoadedSucursales.current) return;
-
-		hasLoadedSucursales.current = true;
-		void dispatch(fetchMisSucursales());
-	}, [dispatch, user]);
-
-	// columnas de la tabla
-	const handleEdit = useCallback((sucursal: ISucursal) => {
-		setEditingSucursal(sucursal);
-		setOpenCreate(true);
-	}, []);
-
-	const handleAskDelete = useCallback((id: number) => {
-		setToDeleteId(id);
-		setOpenDelete(true);
-	}, []);
-
-	const columns = useMemo(
-		() => buildBranchColumns({ navigate, onEdit: handleEdit, onAskDelete: handleAskDelete }),
-		[navigate, handleEdit, handleAskDelete],
-	);
-
-	const table = useTable({
-		features: clientTableFeatures,
+	const table = useReactTable({
 		data: sucursales,
 		columns,
 		state: { sorting, globalFilter },
 		onSortingChange: setSorting,
 		enableGlobalFilter: true,
 		onGlobalFilterChange: setGlobalFilter,
-		initialState: { pagination: { pageIndex: 0, pageSize: 5 } },
+		getCoreRowModel: getCoreRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+		initialState: { pagination: { pageSize: 5 } },
 	});
+
+	const handleEdit = (sucursal: ISucursal) => {
+		setEditingSucursal(sucursal);
+		setOpenCreate(true);
+	};
 
 	const handleCreate = () => {
 		setEditingSucursal(null);
@@ -245,7 +246,7 @@ const SucursalesLista = () => {
 
 	const handleSuccess = () => {
 		handleCloseModal();
-		void dispatch(fetchMisSucursales({ force: true }));
+		dispatch(fetchMisSucursales({ force: true }));
 	};
 
 	const confirmDelete = async () => {
@@ -253,7 +254,7 @@ const SucursalesLista = () => {
 		try {
 			await dispatch(deleteSucursal(toDeleteId)).unwrap();
 			toast.success('Sucursal eliminada correctamente');
-			void dispatch(fetchMisSucursales({ force: true }));
+			dispatch(fetchMisSucursales({ force: true }));
 		} catch {
 			toast.error('Error al eliminar sucursal');
 		} finally {
@@ -285,7 +286,7 @@ const SucursalesLista = () => {
 							placeholder='Buscar sucursales...'
 							value={globalFilter}
 							onChange={(e) => setGlobalFilter(e.target.value)}
-							className='w-48 rounded-sm border'
+							className='w-48 rounded border'
 						/>
 						<Tooltip
 							text='Crear nueva SUCURSAL'
@@ -305,15 +306,14 @@ const SucursalesLista = () => {
 			<Container className='pt-4'>
 				<Card>
 					<CardBody className='overflow-x-auto'>
-						{loading && (
+						{loading ? (
 							<div className='p-8 text-center'>
 								<div className='flex items-center justify-center gap-3'>
 									<div className='h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent' />
 									<span className='text-zinc-600'>Cargando sucursales...</span>
 								</div>
 							</div>
-						)}
-						{!loading && sucursales.length === 0 && (
+						) : sucursales.length === 0 ? (
 							<div className='flex flex-col items-center justify-center py-12 text-center'>
 								<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800'>
 									<Icon
@@ -336,8 +336,7 @@ const SucursalesLista = () => {
 									Crear Primera Sucursal
 								</Button>
 							</div>
-						)}
-						{!loading && sucursales.length !== 0 && (
+						) : (
 							<>
 								<Table className='w-full'>
 									<THead>
@@ -428,6 +427,4 @@ const SucursalesLista = () => {
 			)}
 		</PageWrapper>
 	);
-};
-
-export default SucursalesLista;
+}

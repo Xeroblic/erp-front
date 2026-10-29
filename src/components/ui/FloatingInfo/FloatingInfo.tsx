@@ -154,7 +154,7 @@ const FloatingInfo: React.FC<EnhancedFloatingInfoProps> = ({
 			<div
 				ref={containerRef}
 				className={classNames(
-					'fixed right-6 bottom-[50vh] z-50 flex items-center justify-end',
+					'fixed bottom-[50vh] right-6 z-50 flex items-center justify-end',
 					className,
 					{
 						'cursor-not-allowed opacity-50': disabled,
@@ -165,7 +165,7 @@ const FloatingInfo: React.FC<EnhancedFloatingInfoProps> = ({
 				{/* Info Panel - appears on hover */}
 				<div
 					className={classNames(
-						'absolute whitespace-nowrap transition-all duration-400 ease-out',
+						'duration-400 absolute whitespace-nowrap transition-all ease-out',
 						positionClasses[position],
 						{
 							'invisible translate-x-4 scale-95 opacity-0':
@@ -259,14 +259,14 @@ const FloatingInfo: React.FC<EnhancedFloatingInfoProps> = ({
 						disabled={disabled}
 						onClick={handleClick}
 						className={classNames(
-							'relative flex items-center justify-center rounded-full backdrop-blur-xs',
+							'relative flex items-center justify-center rounded-full backdrop-blur-sm',
 							'border-2 shadow-lg transition-colors duration-300',
 							currentSize.container,
 							`bg-${themeColor}-${themeColorShade}/15`,
 							`border-${themeColor}-${themeColorShade}/30`,
 							`text-${themeColor}-${themeColorShade}`,
 							{
-								'cursor-pointer': !disabled && hasTutorial,
+								'cursor-pointer hover:border-opacity-100': !disabled && hasTutorial,
 								'cursor-default': !hasTutorial,
 							},
 						)}>
@@ -274,7 +274,7 @@ const FloatingInfo: React.FC<EnhancedFloatingInfoProps> = ({
 						{hasTutorial && (
 							<div
 								className={classNames(
-									'absolute inset-2 rounded-full opacity-30 blur-xs',
+									'absolute inset-2 rounded-full opacity-30 blur-sm',
 									`bg-${themeColor}-${themeColorShade}`,
 								)}
 							/>
@@ -312,7 +312,7 @@ const FloatingInfo: React.FC<EnhancedFloatingInfoProps> = ({
 					{hasTutorial && !disabled && (
 						<div
 							className={classNames(
-								'absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full',
+								'absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full',
 								'animate-bounce text-xs font-bold text-white shadow-lg',
 								`bg-${themeColor}-${themeColorShade}`,
 							)}

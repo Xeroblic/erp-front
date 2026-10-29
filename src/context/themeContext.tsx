@@ -26,6 +26,7 @@ import {
 	selectDarkMode,
 	selectIsDarkTheme,
 	setLanguage,
+	setAsideStatus,
 	setFontSize,
 	setThemeColor,
 	setThemeColorShade,
@@ -35,10 +36,6 @@ import useDarkModeManager from '../hooks/useDarkModeManager';
 import useDeviceScreen from '../hooks/useDeviceScreen';
 import { TLang } from '../types/lang.type';
 import { useAppDispatch, useAppSelector } from '../store/hook';
-
-// Tailwind 4 expresa los breakpoints en rem; las media queries resuelven rem contra el tamaño
-// de fuente inicial del navegador (16 px), no contra el `font-size` que la app pone en <html>.
-const MD_BREAKPOINT_PX = parseFloat(theme.screens.md) * 16;
 
 // Interface simplificada - ahora solo para compatibilidad
 export interface IThemeContextProps {
@@ -100,12 +97,12 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 			: true,
 	);
 	useLayoutEffect(() => {
-		if (MD_BREAKPOINT_PX <= Number(width))
+		if (Number(theme.screens.md.replace('px', '')) <= Number(width))
 			localStorage.setItem('zentria_asideStatus', asideStatus?.toString());
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [asideStatus]);
 	useEffect(() => {
-		if (MD_BREAKPOINT_PX > Number(width)) setAsideStatus(false);
+		if (Number(theme.screens.md.replace('px', '')) > Number(width)) setAsideStatus(false);
 		return () => {
 			setAsideStatus(
 				localStorage.getItem('zentria_asideStatus')
@@ -163,14 +160,14 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 		() => ({
 			setLanguage: (value: React.SetStateAction<TLang>) => {
 				if (typeof value === 'function') {
-					dispatch(setLanguage(value(language)));
+					dispatch(setLanguage((value as (prev: TLang) => TLang)(language)));
 				} else {
 					dispatch(setLanguage(value));
 				}
 			},
 			setDarkModeStatus: (value: React.SetStateAction<TDarkMode>) => {
 				if (typeof value === 'function') {
-					const newValue = value(darkModeStatus);
+					const newValue = (value as (prev: TDarkMode) => TDarkMode)(darkModeStatus);
 					setDarkModeStatus(newValue);
 				} else {
 					setDarkModeStatus(value);
@@ -185,21 +182,25 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 			// },
 			setFontSize: (value: React.SetStateAction<number>) => {
 				if (typeof value === 'function') {
-					dispatch(setFontSize(value(fontSize)));
+					dispatch(setFontSize((value as (prev: number) => number)(fontSize)));
 				} else {
 					dispatch(setFontSize(value));
 				}
 			},
 			setThemeColor: (value: React.SetStateAction<TColors>) => {
 				if (typeof value === 'function') {
-					dispatch(setThemeColor(value(themeColor)));
+					dispatch(setThemeColor((value as (prev: TColors) => TColors)(themeColor)));
 				} else {
 					dispatch(setThemeColor(value));
 				}
 			},
 			setThemeColorShade: (value: React.SetStateAction<TColorIntensity>) => {
 				if (typeof value === 'function') {
-					dispatch(setThemeColorShade(value(themeColorShade)));
+					dispatch(
+						setThemeColorShade(
+							(value as (prev: TColorIntensity) => TColorIntensity)(themeColorShade),
+						),
+					);
 				} else {
 					dispatch(setThemeColorShade(value));
 				}

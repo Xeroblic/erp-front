@@ -105,7 +105,7 @@ const mergeBrandWithLogo = (brand: IBrand, url: string | null): IBrand => {
 		...brand,
 		logo_url: url,
 		photo_url: url,
-		image: ensureImageObject(url, brand.image, brand.name),
+		image: ensureImageObject(url, brand.image as unknown, brand.name),
 	};
 };
 

@@ -6,7 +6,11 @@ import { useMemo } from 'react';
 import { useAppSelector } from '../store';
 import { selectPersonalizacionUsuario } from '../store/slices/personalizacion/personalizacionSlice';
 import { selectEffectiveSubsidiaryId } from '../store/selectors/subsidiarySelectors';
-import { resolveSubsidiaryFromBranch, type BranchLike } from '@/utils/orgContext.util';
+import {
+	resolveSubsidiaryFromBranch,
+	type BranchLike,
+	type ContextUser,
+} from '@/utils/orgContext.util';
 import type { IUserMe } from '@/interface/user.interface';
 
 interface VisibleBranch {
@@ -80,7 +84,7 @@ export const useCurrentBranch = (): UseCurrentBranchResult => {
 			return effectiveSubsidiaryId;
 		}
 
-		return resolveSubsidiaryFromBranch(branchId, user);
+		return resolveSubsidiaryFromBranch(branchId, user as ContextUser | undefined);
 	}, [branchId, effectiveSubsidiaryId, user]);
 
 	const visibleBranches = useMemo<VisibleBranch[]>(() => {

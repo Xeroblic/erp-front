@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
-import type { FormikValues } from 'formik';
-import type { SetReviewFieldOptions } from './types';
+import type { FieldValues, SetValueConfig } from 'react-hook-form';
 
-export interface HardwareAbsenceFields extends FormikValues {
+export interface HardwareAbsenceFields extends FieldValues {
 	has_no_ram?: boolean;
 	has_no_storage?: boolean;
 	ram_size?: string;
@@ -15,11 +14,11 @@ export interface HardwareAbsenceFields extends FormikValues {
 export interface HardwareAbsenceSetters<TFieldValues extends HardwareAbsenceFields> {
 	setHasNoRam: (
 		value: boolean & NonNullable<TFieldValues['has_no_ram']>,
-		options: SetReviewFieldOptions,
+		options: SetValueConfig,
 	) => void;
 	setHasNoStorage: (
 		value: boolean & NonNullable<TFieldValues['has_no_storage']>,
-		options: SetReviewFieldOptions,
+		options: SetValueConfig,
 	) => void;
 }
 
@@ -46,14 +45,20 @@ export const useHardwareAbsence = <TFieldValues extends HardwareAbsenceFields>({
 }: HardwareAbsenceSetters<TFieldValues>) => {
 	const setRamAbsence = useCallback(
 		(active: boolean) => {
-			setHasNoRam(active, { touch: true });
+			setHasNoRam(active, {
+				shouldDirty: true,
+				shouldValidate: true,
+			});
 		},
 		[setHasNoRam],
 	);
 
 	const setStorageAbsence = useCallback(
 		(active: boolean) => {
-			setHasNoStorage(active, { touch: true });
+			setHasNoStorage(active, {
+				shouldDirty: true,
+				shouldValidate: true,
+			});
 		},
 		[setHasNoStorage],
 	);

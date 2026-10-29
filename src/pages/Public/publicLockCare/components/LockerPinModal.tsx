@@ -49,10 +49,10 @@ const LockerPinModal: React.FC<ILockerPinModalProps> = ({ isOpen, pin, lockerNum
 	const hasPIN = !!pin;
 
 	return (
-		<div className='fixed inset-0 z-9999 flex items-center justify-center p-4'>
+		<div className='fixed inset-0 z-[9999] flex items-center justify-center p-4'>
 			{/* Overlay oscuro con blur */}
 			<div
-				className='absolute inset-0 bg-black/60 backdrop-blur-xs'
+				className='absolute inset-0 bg-black/60 backdrop-blur-sm'
 				onClick={onClose}
 				aria-hidden='true'
 			/>
@@ -64,17 +64,17 @@ const LockerPinModal: React.FC<ILockerPinModalProps> = ({ isOpen, pin, lockerNum
 				aria-modal='true'
 				aria-label='PIN de acceso al casillero'>
 				{/* Header con gradiente */}
-				<div className='relative overflow-hidden bg-linear-to-br from-emerald-600 via-emerald-500 to-teal-500 px-6 pt-6 pb-8'>
+				<div className='relative overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 px-6 pb-8 pt-6'>
 					{/* Decoraciones de fondo */}
-					<div className='absolute -top-6 -right-6 h-24 w-24 rounded-full bg-white/10' />
+					<div className='absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10' />
 					<div className='absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-white/10' />
-					<div className='absolute right-12 bottom-2 h-8 w-8 rounded-full bg-white/15' />
+					<div className='absolute bottom-2 right-12 h-8 w-8 rounded-full bg-white/15' />
 
 					{/* Botón cerrar */}
 					<button
 						type='button'
 						onClick={onClose}
-						className='absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white/80 transition-all hover:bg-white/30 hover:text-white'
+						className='absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white/80 transition-all hover:bg-white/30 hover:text-white'
 						aria-label='Cerrar modal'>
 						<Icon icon='HeroXMark' className='h-5 w-5' />
 					</button>
@@ -85,7 +85,7 @@ const LockerPinModal: React.FC<ILockerPinModalProps> = ({ isOpen, pin, lockerNum
 							<Icon icon='HeroCheckCircle' className='h-7 w-7 text-white' />
 						</div>
 						<div>
-							<p className='text-xs font-semibold tracking-wider text-emerald-100 uppercase'>
+							<p className='text-xs font-semibold uppercase tracking-wider text-emerald-100'>
 								Registro Completado
 							</p>
 							<h2 className='text-xl font-bold text-white'>
@@ -96,10 +96,10 @@ const LockerPinModal: React.FC<ILockerPinModalProps> = ({ isOpen, pin, lockerNum
 				</div>
 
 				{/* Cuerpo del modal */}
-				<div className='px-6 pt-5 pb-6'>
+				<div className='px-6 pb-6 pt-5'>
 					{/* Bloque del PIN */}
-					<div className='mb-5 rounded-2xl border-2 border-dashed border-emerald-200 bg-linear-to-br from-emerald-50 to-white p-5 text-center'>
-						<p className='mb-2 text-xs font-semibold tracking-widest text-zinc-500 uppercase'>
+					<div className='mb-5 rounded-2xl border-2 border-dashed border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 text-center'>
+						<p className='mb-2 text-xs font-semibold uppercase tracking-widest text-zinc-500'>
 							Tu PIN de Acceso
 						</p>
 						<div className='flex items-center justify-center gap-3'>
@@ -161,7 +161,7 @@ const LockerPinModal: React.FC<ILockerPinModalProps> = ({ isOpen, pin, lockerNum
 
 					{/* Pasos rápidos */}
 					<div className='space-y-3'>
-						<p className='text-xs font-semibold tracking-wider text-zinc-400 uppercase'>
+						<p className='text-xs font-semibold uppercase tracking-wider text-zinc-400'>
 							¿Qué hacer ahora?
 						</p>
 

@@ -106,22 +106,22 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 		default: {
 			general: classNames(
 				// Border
-				'border-(--checkbox-border)',
+				'border-[color:var(--checkbox-border)]',
 				// Hover border
-				'hover:border-(--checkbox-border-hover)',
-				'disabled:border-zinc-500!',
+				'hover:border-[color:var(--checkbox-border-hover)]',
+				'disabled:!border-zinc-500',
 				// Background
 				'bg-center bg-no-repeat',
 				// Checked background
 				"checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMCAwaDI0djI0SDB6Ii8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTE3LjczOCA2LjM1MmExIDEgMCAxIDEgMS41MjQgMS4yOTZsLTguNSAxMGExIDEgMCAwIDEtMS40MjYuMWwtNC41LTRhMSAxIDAgMSAxIDEuMzI4LTEuNDk1bDMuNzM2IDMuMzIgNy44MzgtOS4yMnoiLz48L2c+PC9zdmc+')]",
 				"indeterminate:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iI2ZmZmZmZiIgY2xhc3M9InctNiBoLTYiPgogIDxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5LjUgMTJoLTE1IiAvPgo8L3N2Zz4K')]",
-				'checked:bg-(--checkbox-bg)',
-				'indeterminate:bg-(--checkbox-bg)',
+				'checked:bg-[color:var(--checkbox-bg)]',
+				'indeterminate:bg-[color:var(--checkbox-bg)]',
 				rounded,
 			),
 			validation: classNames({
-				'border-red-500! ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-				'border-green-500! focus:ring-4 focus:ring-green-500/30':
+				'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
+				'!border-green-500 focus:ring-4 focus:ring-green-500/30':
 					isValid && isTouched && !invalidFeedback,
 			}),
 		},
@@ -129,17 +129,17 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 			general: classNames(
 				'rounded-full',
 				// Border
-				'border-(--checkbox-border)',
+				'border-[color:var(--checkbox-border)]',
 				// Hover border
-				'hover:border-(--checkbox-border-hover)',
-				'disabled:border-zinc-500!',
+				'hover:border-[color:var(--checkbox-border-hover)]',
+				'disabled:!border-zinc-500',
 				// Background
 				'bg-left bg-no-repeat',
 				'bg-[url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCA4IDgiPjxjaXJjbGUgY3g9IjQiIGN5PSI0IiByPSIzIiBvcGFjaXR5PSIuMjUiLz48L3N2Zz4=")]',
 				// Checked background
-				'checked:bg-(--checkbox-bg)',
+				'checked:bg-[color:var(--checkbox-bg)]',
 				'checked:bg-right',
-				'checked:bg-[url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCA4IDgiPjxjaXJjbGUgY3g9IjQiIGN5PSI0IiByPSIzIiBmaWxsPSIjZmZmIi8+PC9zdmc+")]!',
+				'checked:!bg-[url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCA4IDgiPjxjaXJjbGUgY3g9IjQiIGN5PSI0IiByPSIzIiBmaWxsPSIjZmZmIi8+PC9zdmc+")]',
 			),
 			validation: classNames(),
 		},
@@ -166,7 +166,7 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 			label: classNames('text-lg'),
 		},
 		xl: {
-			general: classNames({ 'w-10': !isSwitch, 'w-18': isSwitch }, 'h-10', 'me-2.5'),
+			general: classNames({ 'w-10': !isSwitch, 'w-[4.5rem]': isSwitch }, 'h-10', 'me-2.5'),
 			label: classNames('text-xl'),
 		},
 	};
@@ -175,7 +175,7 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 
 	const checkboxClasses = classNames(
 		'cursor-pointer appearance-none',
-		'disabled:opacity-25!',
+		'disabled:!opacity-25',
 		themeConfig.borderWidth,
 		themeConfig.transition,
 		checkboxVariantClasses,
@@ -219,7 +219,7 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 					htmlFor={id || inputHintId}
 					className={classNames(
 						'cursor-pointer text-base',
-						{ 'pointer-events-none!': rest?.disabled },
+						{ '!pointer-events-none': rest?.disabled },
 						labelDimensionClasses,
 					)}>
 					{label}

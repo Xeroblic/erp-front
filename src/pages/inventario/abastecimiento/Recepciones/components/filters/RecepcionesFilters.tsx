@@ -27,7 +27,7 @@ interface IRecepcionesFiltersProps {
 }
 
 const fieldLabelClass = 'block text-sm font-medium text-zinc-700 dark:text-zinc-300';
-const selectBackgroundClass = 'bg-zinc-50! dark:bg-zinc-900!';
+const selectBackgroundClass = '!bg-zinc-50 dark:!bg-zinc-900';
 
 const RecepcionesFilters: React.FC<IRecepcionesFiltersProps> = ({
 	search,
@@ -71,7 +71,7 @@ const RecepcionesFilters: React.FC<IRecepcionesFiltersProps> = ({
 				</Button>
 			</CardHeader>
 			<CardBody>
-				<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 dark:bg-zinc-900/30'>
+				<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 dark:bg-zinc-900/30 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'>
 					<div className='space-y-1 xl:col-span-2'>
 						<label htmlFor='recepciones-search' className={fieldLabelClass}>
 							Búsqueda

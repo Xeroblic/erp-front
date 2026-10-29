@@ -72,7 +72,7 @@ const PurchaseDocumentLineRow: React.FC<IPurchaseDocumentLineRowProps> = ({
 	return (
 		<div className={DOCUMENTO_ITEM_CLASSNAME}>
 			<div className='mb-2 flex flex-wrap items-center justify-between gap-2'>
-				<span className='rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-blue-200 ring-inset dark:bg-blue-500/15 dark:text-blue-200 dark:ring-blue-500/30'>
+				<span className='rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:ring-blue-500/30'>
 					Línea {index + 1}
 				</span>
 				<Button
@@ -93,7 +93,7 @@ const PurchaseDocumentLineRow: React.FC<IPurchaseDocumentLineRowProps> = ({
 					</Label>
 					<Input
 						id={`items.${index}.quantity`}
-						className='bg-white! dark:bg-zinc-900!'
+						className='!bg-white dark:!bg-zinc-900'
 						name={`items.${index}.quantity`}
 						type='number'
 						min={1}
@@ -171,7 +171,7 @@ const PurchaseDocumentLineRow: React.FC<IPurchaseDocumentLineRowProps> = ({
 					<Input
 						id={`items.${index}.unit_cost`}
 						name={`items.${index}.unit_cost`}
-						className='bg-white! dark:bg-zinc-900!'
+						className='!bg-white dark:!bg-zinc-900'
 						type='text'
 						inputMode='decimal'
 						placeholder='$0'

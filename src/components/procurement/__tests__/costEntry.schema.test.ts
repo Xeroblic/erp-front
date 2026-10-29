@@ -78,7 +78,7 @@ describe('optionalCostEntrySchema con Formik', () => {
 
 		let errors: Record<string, string> = {};
 		await act(async () => {
-			errors = await result.current.validateForm();
+			errors = (await result.current.validateForm()) as Record<string, string>;
 		});
 
 		expect(errors.unit_cost_basis).toBe('Indica si el monto es neto o bruto.');
@@ -90,7 +90,7 @@ describe('optionalCostEntrySchema con Formik', () => {
 
 		let errors: Record<string, string> = {};
 		await act(async () => {
-			errors = await result.current.validateForm();
+			errors = (await result.current.validateForm()) as Record<string, string>;
 		});
 
 		expect(errors.unit_cost).toBe('Indica el costo unitario o deja ambos campos vacíos.');
@@ -102,7 +102,7 @@ describe('optionalCostEntrySchema con Formik', () => {
 
 		let errors: Record<string, string> = {};
 		await act(async () => {
-			errors = await result.current.validateForm();
+			errors = (await result.current.validateForm()) as Record<string, string>;
 		});
 
 		expect(errors.unit_cost).toBe('Usa un monto con hasta dos decimales.');
@@ -115,7 +115,7 @@ describe('costEntrySchema con Formik', () => {
 
 		let errors: Record<string, string> = {};
 		await act(async () => {
-			errors = await result.current.validateForm();
+			errors = (await result.current.validateForm()) as Record<string, string>;
 		});
 
 		expect(errors.unit_cost).toBe('Indica el costo unitario.');

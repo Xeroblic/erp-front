@@ -5,7 +5,6 @@ import {
 	toStockRequestError,
 	type IStockRequestError,
 } from '@/utils/stockMovementErrors.util';
-import toText from '@/utils/toText.util';
 import type {
 	IAssignProductPayload,
 	IAssignStockPayload,
@@ -83,9 +82,12 @@ const toAllocation = (raw: unknown): IBranchAllocation | null => {
 	const branch_id = Number(rawBranchId ?? 0);
 	if (!branch_id) return null;
 
-	const branch_name = toText(
-		record.branch_name ?? record.branchName ?? record.name ?? branchObj?.name,
-		`Sucursal ${branch_id}`,
+	const branch_name = String(
+		record.branch_name ??
+			record.branchName ??
+			record.name ??
+			branchObj?.name ??
+			`Sucursal ${branch_id}`,
 	);
 
 	const stock = Number(

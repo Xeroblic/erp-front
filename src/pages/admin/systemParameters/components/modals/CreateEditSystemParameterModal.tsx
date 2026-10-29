@@ -238,7 +238,7 @@ const CreateEditSystemParameterModal: React.FC<CreateEditSystemParameterModalPro
 											onChange={(e) =>
 												setFieldValue('is_editable', e.target.checked)
 											}
-											className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
+											className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
 										/>
 										<Label htmlFor='is_editable'>Es Editable</Label>
 									</div>
@@ -257,7 +257,7 @@ const CreateEditSystemParameterModal: React.FC<CreateEditSystemParameterModalPro
 											onChange={(e) =>
 												setFieldValue('is_visible', e.target.checked)
 											}
-											className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
+											className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
 										/>
 										<Label htmlFor='is_visible'>Es Visible</Label>
 									</div>

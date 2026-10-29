@@ -1,6 +1,4 @@
-import { format } from 'date-fns';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
-import loadPdfMake from '@/utils/pdfMake.util';
 import type { SalesDashboardStats, SaleRecord, ReportFiltersState } from '../../../types';
 import { generateSmartInsights } from '../smartInsights';
 import {
@@ -14,6 +12,7 @@ import {
 	buildMethodology,
 	type PdfContent,
 } from './reportBuilder';
+import { format } from 'date-fns';
 
 export interface ExecutiveReportData {
 	stats: SalesDashboardStats;
@@ -24,8 +23,14 @@ export interface ExecutiveReportData {
 }
 
 export const generateExecutiveReport = async (data: ExecutiveReportData): Promise<void> => {
-	// pdfmake y sus fuentes se cargan bajo demanda, sólo al exportar.
-	const pdfMake = await loadPdfMake();
+	// @ts-expect-error El paquete no expone tipos para la ruta de build
+	const pdfMakeModule = await import('pdfmake/build/pdfmake');
+	const pdfMake = pdfMakeModule.default || pdfMakeModule;
+
+	// Las fuentes también se cargan bajo demanda, junto con pdfmake.
+	const { loadPdfFonts } = await import('../../../../comercial/cotizaciones/utils/pdf/fonts');
+	loadPdfFonts(pdfMake);
+
 	const insights = generateSmartInsights(data.stats, data.previousStats);
 
 	// Orden de las páginas: portada, dashboard, analítica y metodología.
@@ -35,7 +40,7 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 		buildSmartKPIs(data.stats),
 		buildTopPerformersTable(data.topCustomers),
 		buildYearlyAnalytics(data.filteredResults),
-		...buildSemesterDeepDive(data.filteredResults),
+		...(buildSemesterDeepDive(data.filteredResults) as PdfContent[]),
 		buildRiskAnalytics(data.filteredResults),
 		buildMethodology(),
 	];
@@ -49,7 +54,7 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 			subject: 'Estadísticas de Ventas',
 			creator: 'Módulo Reportables',
 		},
-		content,
+		content: content,
 		defaultStyle: {
 			font: 'Roboto', // Fuente que viene en vfs_fonts
 			fontSize: 10,
@@ -77,6 +82,5 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 	};
 
 	const fileName = `Reporte_Ejecutivo_Ventas_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
-	// Desde la 0.3 `download` devuelve una promesa: esperarla hace que un error llegue al botón.
-	await pdfMake.createPdf(docDefinition).download(fileName);
+	pdfMake.createPdf(docDefinition).download(fileName);
 };

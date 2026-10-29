@@ -30,7 +30,7 @@ const useClientPagination = <T>(rows: T[]) => {
 		setPagination({ ...current, pageIndex: Math.min(Math.max(0, pageIndex), pageCount - 1) });
 
 	const table: TablePaginationController = {
-		state: { pagination: current },
+		getState: () => ({ pagination: current }),
 		setPageSize: (updater: Updater<number>) => {
 			const pageSize = typeof updater === 'function' ? updater(current.pageSize) : updater;
 			setPagination({ pageIndex: 0, pageSize });

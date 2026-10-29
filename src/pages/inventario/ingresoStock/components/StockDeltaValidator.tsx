@@ -40,7 +40,10 @@ export const StockDeltaValidator: React.FC<StockDeltaValidatorProps> = ({
 	return (
 		<Card className={`border border-transparent ${bgColor} shadow-none`}>
 			<CardBody className='flex items-start gap-3 p-4'>
-				<Icon icon={iconName} className={`mt-0.5 h-6 w-6 shrink-0 ${iconColor}`} />
+				<Icon
+					icon={iconName as any}
+					className={`mt-0.5 h-6 w-6 flex-shrink-0 ${iconColor}`}
+				/>
 				<div className='flex-1'>
 					<h4 className={`text-sm font-bold ${textColor}`}>
 						Balance de Stock Inter-Sucursal

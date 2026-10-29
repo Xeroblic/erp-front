@@ -65,7 +65,7 @@ const DeleteProductModal: React.FC<DeleteProductModalProps> = ({
 								<div className='mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-100 p-3 dark:border-amber-400/40 dark:bg-amber-500/10'>
 									<Icon
 										icon='HeroExclamationTriangle'
-										className='mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300'
+										className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-300'
 									/>
 									<div>
 										<p className='text-sm font-semibold text-amber-900 dark:text-amber-200'>

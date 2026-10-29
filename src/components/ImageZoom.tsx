@@ -129,6 +129,7 @@ const ImageZoomComponent = ({
 	// Re-clampear offset cuando cambie el zoom
 	useEffect(() => {
 		setOffset((prev) => clampOffset(prev.x, prev.y, scale));
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [scale]);
 
 	// Manejo de tecla Space para pan
@@ -194,7 +195,7 @@ const ImageZoomComponent = ({
 	const viewer = (
 		<div className='relative'>
 			{/* Toolbar mejorado */}
-			{/* <div className='absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-zinc-700/50 bg-linear-to-b from-zinc-800/95 to-zinc-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl'>
+			{/* <div className='absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-zinc-700/50 bg-gradient-to-b from-zinc-800/95 to-zinc-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl'>
 				<Button
 					variant='outline'
 					size='sm'
@@ -258,7 +259,7 @@ const ImageZoomComponent = ({
 			{/* Indicador de ayuda flotante cuando no hay zoom */}
 			{!isZoomed && (
 				<div className='pointer-events-none absolute inset-x-0 bottom-8 z-10 flex justify-center'>
-					<div className='flex flex-col items-center gap-3 rounded-2xl border border-blue-500/40 bg-linear-to-br from-emerald-800/60 to-emerald-600/60 px-6 py-4 backdrop-blur-xs'>
+					<div className='flex flex-col items-center gap-3 rounded-2xl border border-blue-500/40 bg-gradient-to-br from-emerald-800/60 to-emerald-600/60 px-6 py-4 backdrop-blur-sm'>
 						<div className='flex items-center gap-4 text-sm font-medium text-white'>
 							<div className='flex items-center gap-2'>
 								<kbd className='rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-bold shadow-lg'>
@@ -280,7 +281,7 @@ const ImageZoomComponent = ({
 
 			{/* Indicador de pan cuando está ampliado */}
 			{isZoomed && (
-				<div className='pointer-events-none absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-linear-to-br from-emerald-600/40 to-teal-600/40 px-4 py-2.5 backdrop-blur-xs'>
+				<div className='pointer-events-none absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-600/40 to-teal-600/40 px-4 py-2.5 backdrop-blur-sm'>
 					<div
 						className={mergeClasses(
 							'flex items-center gap-2 text-sm font-semibold transition-all',
@@ -304,9 +305,9 @@ const ImageZoomComponent = ({
 					'relative flex h-[70vh] min-h-[420px] w-full overflow-hidden rounded-2xl border px-0 shadow-2xl',
 					isZoomed
 						? isPanning
-							? 'cursor-grabbing border-emerald-500/50 bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900'
-							: 'cursor-grab border-blue-500/30 bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900'
-						: 'cursor-zoom-in border-zinc-700/50 bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900',
+							? 'cursor-grabbing border-emerald-500/50 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900'
+							: 'cursor-grab border-blue-500/30 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900'
+						: 'cursor-zoom-in border-zinc-700/50 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900',
 					viewerClassName,
 				)}
 				onContextMenu={onContextMenu}
@@ -335,10 +336,10 @@ const ImageZoomComponent = ({
 
 				{/* Overlay sutil en las esquinas para indicar que es interactivo */}
 				<div className='pointer-events-none absolute inset-0'>
-					<div className='absolute top-0 left-0 h-32 w-32 bg-linear-to-br from-blue-500/5 to-transparent' />
-					<div className='absolute top-0 right-0 h-32 w-32 bg-linear-to-bl from-purple-500/5 to-transparent' />
-					<div className='absolute bottom-0 left-0 h-32 w-32 bg-linear-to-tr from-blue-500/5 to-transparent' />
-					<div className='absolute right-0 bottom-0 h-32 w-32 bg-linear-to-tl from-purple-500/5 to-transparent' />
+					<div className='absolute left-0 top-0 h-32 w-32 bg-gradient-to-br from-blue-500/5 to-transparent' />
+					<div className='absolute right-0 top-0 h-32 w-32 bg-gradient-to-bl from-purple-500/5 to-transparent' />
+					<div className='absolute bottom-0 left-0 h-32 w-32 bg-gradient-to-tr from-blue-500/5 to-transparent' />
+					<div className='absolute bottom-0 right-0 h-32 w-32 bg-gradient-to-tl from-purple-500/5 to-transparent' />
 				</div>
 			</div>
 		</div>
@@ -361,7 +362,7 @@ const ImageZoomComponent = ({
 				alt={thumbnailAlt ?? alt}
 				className='h-full w-full object-cover'
 			/>
-			<span className='pointer-events-none absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-center text-xs font-medium tracking-wide text-white uppercase transition group-hover:bg-black/80'>
+			<span className='pointer-events-none absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-center text-xs font-medium uppercase tracking-wide text-white transition group-hover:bg-black/80'>
 				{previewLabel}
 			</span>
 		</Button>
@@ -379,10 +380,10 @@ const ImageZoomComponent = ({
 					</div>
 				</ModalHeader>
 
-				{/* sin padding para maximizar viewport: `p-0!` fuerza incluso el `pt-4`
+				{/* sin padding para maximizar viewport: `!p-0` fuerza incluso el `pt-4`
 				    fijo del componente (antes alcanzaba con `p-0` porque ese `pt-4`
 				    sólo se aplicaba a `ModalBody` como primer hijo, y acá no lo es). */}
-				<ModalBody className='bg-transparent p-0!'>{viewer}</ModalBody>
+				<ModalBody className='bg-transparent !p-0'>{viewer}</ModalBody>
 			</Modal>
 		</div>
 	);

@@ -79,8 +79,8 @@ const ConfirmarNuevaPass = () => {
 	) : (
 		<PageWrapper isProtectedRoute={false} className='min-h-screen' name='Confirmar Contraseña'>
 			<div className='fixed inset-0 -z-10'>
-				<div className='absolute inset-0 bg-linear-to-br from-emerald-200 via-emerald-300 to-emerald-500' />
-				<div className='absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,#000_1px,transparent_1px)] opacity-[0.06]' />
+				<div className='absolute inset-0 bg-gradient-to-br from-emerald-200 via-emerald-300 to-emerald-500' />
+				<div className='absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_#000_1px,_transparent_1px)] opacity-[0.06]' />
 			</div>
 
 			<div className='relative flex min-h-screen items-center justify-center p-4'>

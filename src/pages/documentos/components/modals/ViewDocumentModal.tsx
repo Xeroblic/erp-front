@@ -6,7 +6,6 @@ import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import DataTable from '@/components/ui/DataTable';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { IDocument, IDocumentAttachment } from '../../types/documentos.types';
 import {
 	formatDateTime,
@@ -28,74 +27,6 @@ type ViewDocumentModalProps = {
 	uploading?: boolean;
 	loading?: boolean;
 };
-
-const buildAttachmentColumns = ({
-	onDeleteAttachment,
-}: {
-	onDeleteAttachment: ViewDocumentModalProps['onDeleteAttachment'];
-}): ColumnDef<AppTableFeatures, IDocumentAttachment>[] => [
-	{
-		accessorKey: 'file_name',
-		header: 'Archivo',
-		cell: ({ row }) => {
-			const att = row.original;
-			return (
-				<div className='flex items-center space-x-2'>
-					<Icon icon={getFileIcon(att.mime_type || '')} className='h-4 w-4' />
-					<a
-						href={att.url}
-						target='_blank'
-						rel='noopener noreferrer'
-						className='font-medium text-primary-700 hover:underline'>
-						{att.original_name || att.file_name || `Adjunto #${att.id}`}
-					</a>
-				</div>
-			);
-		},
-	},
-	{
-		accessorKey: 'size',
-		header: 'Tamaño',
-		cell: ({ row }) => formatFileSize(row.original.size || 0),
-	},
-	{
-		accessorKey: 'uploaded_at',
-		header: 'Subido',
-		cell: ({ row }) =>
-			row.original.uploaded_at ? formatDateTime(row.original.uploaded_at) : '—',
-	},
-	{
-		id: 'actions',
-		header: 'Acciones',
-		cell: ({ row }) => {
-			const att = row.original;
-			return (
-				<div className='flex items-center space-x-2'>
-					<Button
-						size='xs'
-						variant='outline'
-						color='emerald'
-						className='px-2'
-						onClick={() => window.open(att.url, '_blank', 'noopener')}>
-						<Icon icon='HeroArrowDownTray' color='emerald' className='h-4 w-4' />
-						Descargar
-					</Button>
-					{onDeleteAttachment && (
-						<Button
-							size='xs'
-							variant='outline'
-							className='px-2'
-							color='red'
-							onClick={() => onDeleteAttachment(att.id)}>
-							<Icon icon='HeroTrash' color='red' className='ml-1 h-4 w-4' />
-							Eliminar
-						</Button>
-					)}
-				</div>
-			);
-		},
-	},
-];
 
 const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 	isOpen,
@@ -122,8 +53,74 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 		event.target.value = '';
 	};
 
-	const attachmentColumns = useMemo(
-		() => buildAttachmentColumns({ onDeleteAttachment }),
+	const attachmentColumns = useMemo<ColumnDef<IDocumentAttachment>[]>(
+		() => [
+			{
+				accessorKey: 'file_name',
+				header: 'Archivo',
+				cell: ({ row }) => {
+					const att = row.original;
+					return (
+						<div className='flex items-center space-x-2'>
+							<Icon icon={getFileIcon(att.mime_type || '')} className='h-4 w-4' />
+							<a
+								href={att.url}
+								target='_blank'
+								rel='noopener noreferrer'
+								className='font-medium text-primary-700 hover:underline'>
+								{att.original_name || att.file_name || `Adjunto #${att.id}`}
+							</a>
+						</div>
+					);
+				},
+			},
+			{
+				accessorKey: 'size',
+				header: 'Tamaño',
+				cell: ({ row }) => formatFileSize(row.original.size || 0),
+			},
+			{
+				accessorKey: 'uploaded_at',
+				header: 'Subido',
+				cell: ({ row }) =>
+					row.original.uploaded_at ? formatDateTime(row.original.uploaded_at) : '—',
+			},
+			{
+				id: 'actions',
+				header: 'Acciones',
+				cell: ({ row }) => {
+					const att = row.original;
+					return (
+						<div className='flex items-center space-x-2'>
+							<Button
+								size='xs'
+								variant='outline'
+								color='emerald'
+								className='px-2'
+								onClick={() => window.open(att.url, '_blank', 'noopener')}>
+								<Icon
+									icon='HeroArrowDownTray'
+									color='emerald'
+									className='h-4 w-4'
+								/>
+								Descargar
+							</Button>
+							{onDeleteAttachment && (
+								<Button
+									size='xs'
+									variant='outline'
+									className='px-2'
+									color='red'
+									onClick={() => onDeleteAttachment(att.id)}>
+									<Icon icon='HeroTrash' color='red' className='ml-1 h-4 w-4' />
+									Eliminar
+								</Button>
+							)}
+						</div>
+					);
+				},
+			},
+		],
 		[onDeleteAttachment],
 	);
 
@@ -141,15 +138,14 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 				</div>
 			</ModalHeader>
 			<ModalBody>
-				{loading && (
+				{loading ? (
 					<div className='py-6 text-center text-sm'>
 						<div className='mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent' />
 						Cargando documento...
 					</div>
-				)}
-				{!loading && document && (
+				) : document ? (
 					<div className='space-y-5'>
-						<Card className='border border-dashed border-gray-200 bg-transparent shadow-xs'>
+						<Card className='border border-dashed border-gray-200 bg-transparent shadow-sm'>
 							<CardHeader className='pb-2'>
 								<CardTitle className='text-lg font-semibold'>
 									{document.name}
@@ -160,7 +156,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 								<div className='space-y-3 text-sm'>
 									<div className='flex items-center justify-between'>
 										<span className='font-medium'>Tipo de documento</span>
-										<Badge color={getDocumentTypeColor(document)}>
+										<Badge color={getDocumentTypeColor(document) as any}>
 											{getDocumentTypeLabel(document)}
 										</Badge>
 									</div>
@@ -216,7 +212,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 						</Card>
 
 						{document.description && (
-							<Card className='border border-dashed border-gray-200 bg-transparent shadow-xs'>
+							<Card className='border border-dashed border-gray-200 bg-transparent shadow-sm'>
 								<CardHeader className='pb-2'>
 									<CardTitle className='text-sm font-semibold'>
 										Descripción
@@ -226,7 +222,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 							</Card>
 						)}
 
-						<Card className='border border-dashed border-gray-200 bg-transparent shadow-xs'>
+						<Card className='border border-dashed border-gray-200 bg-transparent shadow-sm'>
 							<CardHeader className='flex items-center justify-between pb-2'>
 								<div>
 									<CardTitle className='text-sm font-semibold'>
@@ -267,8 +263,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 							</CardBody>
 						</Card>
 					</div>
-				)}
-				{!loading && !document && (
+				) : (
 					<div className='py-6 text-center text-sm'>
 						Selecciona un documento para ver sus detalles.
 					</div>

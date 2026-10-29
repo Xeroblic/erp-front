@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -17,7 +17,9 @@ const TOKEN = 'a26c5662-31f3-478e-aae2-42848fcce5d0';
 const renderActivationPage = () =>
 	render(
 		<Provider store={store}>
-			<MemoryRouter initialEntries={[`/usuarios/activar/${TOKEN}`]}>
+			<MemoryRouter
+				initialEntries={[`/usuarios/activar/${TOKEN}`]}
+				future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
 				<Routes>
 					<Route path='/usuarios/activar/:token' element={<AceptarInvitacionEmpresa />} />
 				</Routes>
@@ -26,7 +28,7 @@ const renderActivationPage = () =>
 	);
 
 describe('AceptarInvitacionEmpresa', () => {
-	let consoleErrorSpy: MockInstance<typeof console.error>;
+	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
 	beforeEach(() => {
 		consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

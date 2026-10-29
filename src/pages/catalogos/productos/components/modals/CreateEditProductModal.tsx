@@ -1,5 +1,13 @@
 import React, { useMemo, useEffect, useRef, useState } from 'react';
-import { Formik, Form, Field, ErrorMessage, FormikHelpers, FieldProps } from 'formik';
+import {
+	Formik,
+	Form,
+	Field,
+	ErrorMessage,
+	FormikHelpers,
+	FieldProps,
+	type FormikErrors,
+} from 'formik';
 import { toast } from 'react-toastify';
 import OffCanvas, {
 	OffCanvasBody,
@@ -59,6 +67,8 @@ interface CreateEditProductModalProps {
 	/** Alta en la vista por filial: el stock no se registra acá sino en la sucursal. */
 	isSubsidiaryProduct?: boolean;
 }
+
+type ProductToggleKey = Extract<(typeof PRODUCT_TOGGLES)[number]['key'], keyof ProductFormValues>;
 
 const FieldContainer: React.FC<{
 	id: string;
@@ -224,7 +234,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 				}
 
 				if (Object.keys(serverErrors).length) {
-					setErrors(serverErrors);
+					setErrors(serverErrors as FormikErrors<ProductFormValues>);
 				}
 
 				const message =
@@ -252,7 +262,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 			isOpen={isOpen}
 			setIsOpen={onClose}
 			position='right'
-			dialogClassName='md:max-w-260! w-full'
+			dialogClassName='md:!max-w-[65rem] w-full'
 			isStaticBackdrop>
 			<OffCanvasHeader>
 				<div className='flex items-center gap-3'>
@@ -428,16 +438,13 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															label='SKU'
 															error={
 																meta.touched
-																	? meta.error
+																	? (meta.error as string)
 																	: undefined
 															}>
 															<div className='flex gap-2'>
 																<Input
 																	id='sku'
 																	{...field}
-																	isValid={!meta.error}
-																	isTouched={meta.touched}
-																	invalidFeedback={meta.error}
 																	onChange={(
 																		e: React.ChangeEvent<HTMLInputElement>,
 																	) => {
@@ -603,15 +610,12 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															label='Nombre'
 															error={
 																meta.touched
-																	? meta.error
+																	? (meta.error as string)
 																	: undefined
 															}>
 															<Input
 																id='name'
 																{...field}
-																isValid={!meta.error}
-																isTouched={meta.touched}
-																invalidFeedback={meta.error}
 																required
 																disabled={isBusy}
 															/>
@@ -804,7 +808,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 													</p>
 												</div>
 												<Checkbox
-													checked={values[toggle.key]}
+													checked={values[toggle.key as ProductToggleKey]}
 													onChange={(event) =>
 														setFieldValue(
 															toggle.key,

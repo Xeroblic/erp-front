@@ -108,7 +108,7 @@ const ProductDetail: React.FC = () => {
 		typeof locationState?.branchId === 'number' ? locationState.branchId : null;
 	const viewModeFromState: ProductsViewMode | null =
 		locationState?.viewMode === 'subsidiaries' || locationState?.viewMode === 'branches'
-			? locationState.viewMode
+			? (locationState.viewMode as ProductsViewMode)
 			: null;
 	const subsidiaryIdFromState =
 		typeof locationState?.subsidiaryId === 'number' ? locationState.subsidiaryId : null;
@@ -371,7 +371,7 @@ const ProductDetail: React.FC = () => {
 
 								{/* Collapsible sidebar */}
 								<div
-									className={`order-2 flex xl:order-2 xl:shrink-0 ${sidebarOpen ? 'flex-col' : 'xl:flex-row'}`}>
+									className={`order-2 flex xl:order-2 xl:flex-shrink-0 ${sidebarOpen ? 'flex-col' : 'xl:flex-row'}`}>
 									{/* Toggle strip — visible only on xl */}
 									<div
 										className={`hidden xl:flex ${sidebarOpen ? 'mb-0 w-full justify-end pb-2' : 'sticky top-4 self-start'}`}>
@@ -390,7 +390,7 @@ const ProductDetail: React.FC = () => {
 														? 'Ocultar panel lateral'
 														: 'Mostrar panel lateral'
 												}
-												className={`flex items-center justify-center rounded-lg border border-neutral-200 bg-white shadow-xs transition-all hover:bg-neutral-50 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200 ${
+												className={`flex items-center justify-center rounded-lg border border-neutral-200 bg-white shadow-sm transition-all hover:bg-neutral-50 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200 ${
 													sidebarOpen
 														? 'h-7 w-7 text-neutral-400 dark:text-neutral-500'
 														: 'h-10 w-10 text-neutral-500 dark:text-neutral-400'

@@ -355,9 +355,8 @@ const SaleDetailPage: React.FC<Props> = ({
 	const hasSerialItems = useMemo(
 		() =>
 			items.some((it) => {
-				const reservation = it.meta_json?.reservation as
-					| Record<string, unknown>
-					| undefined;
+				const reservation = (it.meta_json as Record<string, unknown> | undefined)
+					?.reservation as Record<string, unknown> | undefined;
 				const sold = (reservation?.sold_serials as string[] | undefined) ?? [];
 				const returned = (reservation?.returned_serials as string[] | undefined) ?? [];
 				return [...sold, ...returned].some((s) => typeof s === 'string' && s.trim() !== '');
@@ -635,10 +634,10 @@ const SaleDetailPage: React.FC<Props> = ({
 			</ModalHeader>
 
 			<ModalBody className='space-y-4'>
-				<Card className='mb-2 bg-white/90 shadow-xs'>
+				<Card className='mb-2 bg-white/90 shadow-sm'>
 					<CardBody className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
 						<div className='flex flex-col gap-1'>
-							<span className='text-xs font-semibold tracking-wide text-zinc-500 uppercase'>
+							<span className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
 								Venta
 							</span>
 							<span className='text-xl font-bold text-zinc-900 dark:text-zinc-100'>
@@ -654,14 +653,14 @@ const SaleDetailPage: React.FC<Props> = ({
 						</div>
 						<div className='flex flex-col gap-2 md:flex-row md:items-center md:gap-4'>
 							<div className='flex flex-row items-center justify-center space-y-3'>
-								<p className='mr-4 font-medium tracking-wide uppercase'>
+								<p className='mr-4 font-medium uppercase tracking-wide'>
 									Detalle de Pago
 								</p>
 								<div className='flex flex-col items-center justify-center gap-2 space-y-2 rounded-md border-2 border-dashed border-yellow-500 p-2 px-4 dark:border-white'>
 									<Badge variant='solid' color='teal' className='w-fit px-2'>
 										{getFirstCapitalize(translateStatus(detail?.document_type))}
 									</Badge>
-									<p className='text-xs tracking-wide text-violet-500 uppercase'>
+									<p className='text-xs uppercase tracking-wide text-violet-500'>
 										{getFirstCapitalize(detail?.payment_method_title ?? '') ||
 											'-'}
 									</p>
@@ -702,7 +701,7 @@ const SaleDetailPage: React.FC<Props> = ({
 					</CardBody>
 				</Card>
 				<div className='grid gap-4 lg:grid-cols-3'>
-					<Card className='bg-white/90 shadow-xs'>
+					<Card className='bg-white/90 shadow-sm'>
 						<CardHeader>
 							<CardTitle>Totales</CardTitle>
 						</CardHeader>
@@ -724,13 +723,13 @@ const SaleDetailPage: React.FC<Props> = ({
 						</CardBody>
 					</Card>
 
-					<Card className='bg-white/90 shadow-xs'>
+					<Card className='bg-white/90 shadow-sm'>
 						<CardHeader>
 							<CardTitle>Cliente</CardTitle>
 						</CardHeader>
 						<CardBody className='space-y-3'>
 							<div>
-								<p className='text-xs font-semibold tracking-wide text-zinc-500 uppercase'>
+								<p className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
 									Nombre
 								</p>
 								<div className='rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'>
@@ -738,7 +737,7 @@ const SaleDetailPage: React.FC<Props> = ({
 								</div>
 							</div>
 							<div>
-								<p className='text-xs font-semibold tracking-wide text-zinc-500 uppercase'>
+								<p className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
 									RUT
 								</p>
 								<div className='rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'>
@@ -746,7 +745,7 @@ const SaleDetailPage: React.FC<Props> = ({
 								</div>
 							</div>
 							<div>
-								<p className='text-xs font-semibold tracking-wide text-zinc-500 uppercase'>
+								<p className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
 									Email
 								</p>
 								<div className='rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'>
@@ -756,13 +755,13 @@ const SaleDetailPage: React.FC<Props> = ({
 						</CardBody>
 					</Card>
 
-					<Card className='bg-white/90 shadow-xs'>
+					<Card className='bg-white/90 shadow-sm'>
 						<CardHeader>
 							<CardTitle>Direcciones</CardTitle>
 						</CardHeader>
 						<CardBody className='space-y-3'>
 							<div>
-								<p className='text-xs font-semibold tracking-wide text-zinc-500 uppercase'>
+								<p className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
 									Dirección de facturación
 								</p>
 								<div className='rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'>
@@ -770,7 +769,7 @@ const SaleDetailPage: React.FC<Props> = ({
 								</div>
 							</div>
 							<div>
-								<p className='text-xs font-semibold tracking-wide text-zinc-500 uppercase'>
+								<p className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
 									Dirección de envío
 								</p>
 								<div className='rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'>
@@ -782,7 +781,7 @@ const SaleDetailPage: React.FC<Props> = ({
 				</div>
 
 				{detail?.notes ? (
-					<Card className='bg-emerald-500/40 shadow-xs'>
+					<Card className='bg-emerald-500/40 shadow-sm'>
 						<CardHeader>
 							<CardTitle>Notas del Cliente</CardTitle>
 						</CardHeader>
@@ -791,7 +790,7 @@ const SaleDetailPage: React.FC<Props> = ({
 						</CardBody>
 					</Card>
 				) : (
-					<Card className='bg-red-500/40 shadow-xs'>
+					<Card className='bg-red-500/40 shadow-sm'>
 						<CardHeader>
 							<CardTitle>Notas del Cliente</CardTitle>
 						</CardHeader>
@@ -800,7 +799,7 @@ const SaleDetailPage: React.FC<Props> = ({
 						</CardBody>
 					</Card>
 				)}
-				<Card className='bg-white/90 shadow-xs'>
+				<Card className='bg-white/90 shadow-sm'>
 					<CardHeader className='flex items-center justify-between'>
 						<CardTitle>Ítems de la venta</CardTitle>
 						{(isSaleClosed || isSaleRefunded) &&

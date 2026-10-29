@@ -79,7 +79,7 @@ describe('ProtectedButton', () => {
 		expect(button).toBeDisabled();
 		expect(button).toHaveClass('accion-protegida');
 		expect(trigger).toHaveAttribute('tabindex', '0');
-		expect(trigger).toHaveClass('cursor-not-allowed!');
+		expect(trigger).toHaveClass('!cursor-not-allowed');
 
 		await act(async () => {
 			fireEvent.focus(trigger);

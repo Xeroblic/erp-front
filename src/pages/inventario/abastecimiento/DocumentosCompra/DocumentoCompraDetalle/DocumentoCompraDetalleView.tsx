@@ -103,7 +103,7 @@ const DocumentoCompraDetalleView = () => {
 							{Array.from({ length: 4 }, (_, index) => (
 								<div
 									key={`document-detail-skeleton-${index}`}
-									className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700'
+									className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700'
 								/>
 							))}
 						</CardBody>
@@ -157,7 +157,7 @@ const DocumentoCompraDetalleView = () => {
 						<Card>
 							<CardHeader>
 								<div className='flex items-center gap-3'>
-									<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-xs'>
+									<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-sm'>
 										<Icon
 											icon='HeroDocumentText'
 											size='text-2xl'
@@ -181,13 +181,13 @@ const DocumentoCompraDetalleView = () => {
 										supplierLink={supplierLink}
 									/>
 									<div>
-										<p className='text-xs text-zinc-500 uppercase'>
+										<p className='text-xs uppercase text-zinc-500'>
 											Fecha de emisión
 										</p>
 										<p>{formatDate(document.issue_date)}</p>
 									</div>
 									<div>
-										<p className='text-xs text-zinc-500 uppercase'>
+										<p className='text-xs uppercase text-zinc-500'>
 											Total informativo (con IVA)
 										</p>
 										<p>
@@ -198,7 +198,7 @@ const DocumentoCompraDetalleView = () => {
 										</p>
 									</div>
 									<div>
-										<p className='text-xs text-zinc-500 uppercase'>
+										<p className='text-xs uppercase text-zinc-500'>
 											Confirmado
 										</p>
 										<p>
@@ -208,7 +208,7 @@ const DocumentoCompraDetalleView = () => {
 										</p>
 									</div>
 									<div>
-										<p className='text-xs text-zinc-500 uppercase'>Anulado</p>
+										<p className='text-xs uppercase text-zinc-500'>Anulado</p>
 										<p>
 											{document.cancelled_at
 												? formatDate(document.cancelled_at)
@@ -216,12 +216,12 @@ const DocumentoCompraDetalleView = () => {
 										</p>
 									</div>
 									<div>
-										<p className='text-xs text-zinc-500 uppercase'>Creado</p>
+										<p className='text-xs uppercase text-zinc-500'>Creado</p>
 										<p>{formatDate(document.created_at)}</p>
 									</div>
 									{document.notes && (
 										<div className='sm:col-span-2 lg:col-span-3'>
-											<p className='text-xs text-zinc-500 uppercase'>Notas</p>
+											<p className='text-xs uppercase text-zinc-500'>Notas</p>
 											<p>{document.notes}</p>
 										</div>
 									)}
@@ -236,7 +236,7 @@ const DocumentoCompraDetalleView = () => {
 								 */}
 								{document.supplier_snapshot && (
 									<div className='rounded-lg border border-dashed border-zinc-300 p-3 dark:border-zinc-700'>
-										<p className='mb-2 text-xs text-zinc-500 uppercase'>
+										<p className='mb-2 text-xs uppercase text-zinc-500'>
 											Datos del proveedor registrados al confirmar
 										</p>
 										<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>

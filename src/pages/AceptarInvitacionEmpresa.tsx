@@ -40,10 +40,10 @@ const renderInvalidState = (
 	title: string,
 ) => (
 	<PageWrapper isProtectedRoute={false} title={title}>
-		<div className='relative min-h-screen overflow-hidden bg-linear-to-br from-red-50 via-white to-orange-50'>
+		<div className='relative min-h-screen overflow-hidden bg-gradient-to-br from-red-50 via-white to-orange-50'>
 			<div className='absolute inset-0 overflow-hidden'>
-				<div className='absolute -top-40 -left-40 h-80 w-80 animate-pulse rounded-full bg-linear-to-br from-red-400/20 to-orange-400/20 blur-3xl' />
-				<div className='absolute top-40 -right-40 h-96 w-96 animate-pulse rounded-full bg-linear-to-br from-orange-400/20 to-yellow-400/20 blur-3xl delay-700' />
+				<div className='absolute -left-40 -top-40 h-80 w-80 animate-pulse rounded-full bg-gradient-to-br from-red-400/20 to-orange-400/20 blur-3xl' />
+				<div className='absolute -right-40 top-40 h-96 w-96 animate-pulse rounded-full bg-gradient-to-br from-orange-400/20 to-yellow-400/20 blur-3xl delay-700' />
 			</div>
 
 			<div className='relative flex min-h-screen items-center justify-center px-4'>
@@ -61,12 +61,12 @@ const renderInvalidState = (
 						<p className='mb-6 text-gray-600'>{message}</p>
 						<button
 							onClick={() => navigate('/login')}
-							className='group relative w-full overflow-hidden rounded-xl bg-linear-to-r from-gray-600 to-gray-700 px-6 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl'>
+							className='group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 px-6 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl'>
 							<span className='relative z-10 flex items-center justify-center gap-2'>
 								<Icon icon='HeroArrowLeft' className='h-5 w-5' />
 								Ir al inicio de sesión
 							</span>
-							<div className='absolute inset-0 z-0 bg-linear-to-r from-gray-700 to-gray-800 opacity-0 transition-opacity duration-300 group-hover:opacity-100' />
+							<div className='absolute inset-0 -z-0 bg-gradient-to-r from-gray-700 to-gray-800 opacity-0 transition-opacity duration-300 group-hover:opacity-100' />
 						</button>
 					</div>
 				</div>
@@ -188,10 +188,10 @@ const AceptarInvitacionEmpresa = () => {
 	if (isLoadingInvitation) {
 		return (
 			<PageWrapper isProtectedRoute={false} title='Validando invitación'>
-				<div className='relative min-h-screen overflow-hidden bg-linear-to-br from-blue-50 via-white to-indigo-50'>
+				<div className='relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50'>
 					<div className='absolute inset-0 overflow-hidden'>
-						<div className='absolute -top-40 -left-40 h-80 w-80 animate-pulse rounded-full bg-linear-to-br from-blue-400/20 to-purple-400/20 blur-3xl' />
-						<div className='absolute top-40 -right-40 h-96 w-96 animate-pulse rounded-full bg-linear-to-br from-indigo-400/20 to-pink-400/20 blur-3xl delay-700' />
+						<div className='absolute -left-40 -top-40 h-80 w-80 animate-pulse rounded-full bg-gradient-to-br from-blue-400/20 to-purple-400/20 blur-3xl' />
+						<div className='absolute -right-40 top-40 h-96 w-96 animate-pulse rounded-full bg-gradient-to-br from-indigo-400/20 to-pink-400/20 blur-3xl delay-700' />
 					</div>{' '}
 					<div className='relative flex min-h-screen items-center justify-center px-4'>
 						<div className='w-full max-w-md text-center'>
@@ -223,7 +223,7 @@ const AceptarInvitacionEmpresa = () => {
 
 	return (
 		<PageWrapper isProtectedRoute={false} title='Aceptar invitación a empresa'>
-			<div className='relative min-h-screen bg-linear-to-br from-slate-50 via-blue-50/30 to-slate-50'>
+			<div className='relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50'>
 				<div
 					className='absolute inset-0 opacity-[0.03]'
 					style={{
@@ -234,7 +234,7 @@ const AceptarInvitacionEmpresa = () => {
 				/>
 
 				<div className='absolute inset-0 overflow-hidden'>
-					<div className='absolute top-0 -left-20 h-96 w-96 rounded-full bg-blue-400/5 blur-3xl' />
+					<div className='absolute -left-20 top-0 h-96 w-96 rounded-full bg-blue-400/5 blur-3xl' />
 					<div className='absolute -right-20 bottom-0 h-96 w-96 rounded-full bg-indigo-400/5 blur-3xl' />
 				</div>
 
@@ -258,7 +258,7 @@ const AceptarInvitacionEmpresa = () => {
 
 							{invitationInfo?.email && (
 								<div className='mb-8 rounded-lg bg-gray-50 px-4 py-3.5 text-center'>
-									<p className='text-xs font-medium tracking-wider text-gray-500 uppercase'>
+									<p className='text-xs font-medium uppercase tracking-wider text-gray-500'>
 										Cuenta
 									</p>
 									<p className='mt-1.5 text-sm font-semibold text-gray-900'>
@@ -292,7 +292,7 @@ const AceptarInvitacionEmpresa = () => {
 											onChange={formik.handleChange}
 											onBlur={formik.handleBlur}
 											autoComplete='new-password'
-											className='block w-full rounded-lg border border-gray-300 bg-white py-3 pr-11 pl-11 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden'
+											className='block w-full rounded-lg border border-gray-300 bg-white py-3 pl-11 pr-11 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
 										/>
 										<button
 											type='button'
@@ -336,7 +336,7 @@ const AceptarInvitacionEmpresa = () => {
 											onChange={formik.handleChange}
 											onBlur={formik.handleBlur}
 											autoComplete='new-password'
-											className='block w-full rounded-lg border border-gray-300 bg-white py-3 pr-11 pl-11 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden'
+											className='block w-full rounded-lg border border-gray-300 bg-white py-3 pl-11 pr-11 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
 										/>
 										<button
 											type='button'

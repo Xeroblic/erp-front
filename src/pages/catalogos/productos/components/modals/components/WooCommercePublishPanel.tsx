@@ -289,7 +289,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 
 				{/* Configuración de Sincronización / Publicación */}
 				{selectedIntegrationId && (
-					<Card className='overflow-hidden border border-neutral-200 shadow-xs dark:border-neutral-800'>
+					<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-800'>
 						<CardHeader className='border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-neutral-800/60 dark:bg-neutral-900/40'>
 							<div className='flex items-center gap-3'>
 								<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 ring-1 ring-violet-500/25 dark:bg-violet-500/20 dark:ring-violet-400/30'>
@@ -321,7 +321,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 								<div className='flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 p-3.5 dark:border-amber-500/30 dark:bg-amber-950/30'>
 									<Icon
 										icon='HeroExclamationTriangle'
-										className='mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400'
+										className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400'
 									/>
 									<p className='text-xs font-medium text-amber-800 dark:text-amber-200'>
 										Este producto ya está publicado en{' '}
@@ -414,7 +414,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 						/>
 
 						{/* Diagnóstico */}
-						<Card className='overflow-hidden border border-neutral-200 shadow-xs dark:border-neutral-800'>
+						<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-800'>
 							<CardHeader className='border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-neutral-800/60 dark:bg-neutral-900/40'>
 								<div className='flex items-center justify-between gap-3'>
 									<div className='flex items-center gap-3'>
@@ -449,7 +449,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 									<div className='flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 p-4 dark:border-neutral-700'>
 										<Icon
 											icon='HeroInformationCircle'
-											className='h-5 w-5 shrink-0 text-neutral-400 dark:text-neutral-500'
+											className='h-5 w-5 flex-shrink-0 text-neutral-400 dark:text-neutral-500'
 										/>
 										<p className='text-sm text-neutral-500 dark:text-neutral-400'>
 											Pulsa <strong>Consultar</strong> para comparar el
@@ -511,7 +511,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 											<div className='overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700'>
 												<table className='w-full text-sm'>
 													<thead className='bg-neutral-100 dark:bg-neutral-800'>
-														<tr className='text-left text-xs tracking-wider text-neutral-600 uppercase dark:text-neutral-300'>
+														<tr className='text-left text-xs uppercase tracking-wider text-neutral-600 dark:text-neutral-300'>
 															<th className='px-3 py-2.5'>Campo</th>
 															<th className='px-3 py-2.5'>
 																ERP (local)
@@ -615,7 +615,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 						<div className='flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 p-4 dark:border-red-500/50 dark:bg-red-500/15'>
 							<Icon
 								icon='HeroExclamationTriangle'
-								className='mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400'
+								className='mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400'
 							/>
 							<div className='space-y-1'>
 								<p className='text-sm font-bold text-red-900 dark:text-red-200'>
@@ -632,7 +632,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 							<div className='flex items-start gap-2.5'>
 								<Icon
 									icon='HeroInformationCircle'
-									className='mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400'
+									className='mt-0.5 h-4 w-4 flex-shrink-0 text-sky-600 dark:text-sky-400'
 								/>
 								<p className='text-xs text-sky-800 dark:text-sky-200'>
 									¿Solo quieres desconectar la sincronización{' '}

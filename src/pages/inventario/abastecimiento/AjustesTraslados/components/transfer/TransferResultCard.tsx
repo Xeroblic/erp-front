@@ -58,7 +58,7 @@ const TransferResultCard: FC<ITransferResultCardProps> = ({ result, onDismiss })
 					</p>
 					<p
 						data-testid='traslado-neto'
-						className='rounded-sm bg-zinc-100 px-2 py-1 text-sm font-semibold tabular-nums dark:bg-zinc-800'>
+						className='rounded bg-zinc-100 px-2 py-1 text-sm font-semibold tabular-nums dark:bg-zinc-800'>
 						Efecto neto en la sucursal: 0 unidades
 					</p>
 				</div>

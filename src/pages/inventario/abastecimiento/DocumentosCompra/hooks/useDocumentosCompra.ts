@@ -90,7 +90,7 @@ const useDocumentosCompra = () => {
 	 * es de la anterior (el backend respondería 422). Se descartan en el mismo
 	 * render —la petición nunca sale con ellos— y siguen descartados hasta que
 	 * la URL los refleje: el router aplica `setSearchParams` en una transición
-	 * (por defecto en React Router 7), después del estado de este hook. Pasar de `null`
+	 * (`v7_startTransition`), después del estado de este hook. Pasar de `null`
 	 * a una filial no es un cambio: es el perfil que terminó de cargar, y un
 	 * enlace con `?supplier_id=` debe sobrevivirlo.
 	 */

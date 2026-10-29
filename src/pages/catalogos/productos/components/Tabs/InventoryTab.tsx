@@ -125,7 +125,7 @@ const CircularMetricChart: React.FC<{ segments: SerialSegment[]; total: number }
 			/>
 			<div className='absolute inset-[18px] rounded-full bg-white dark:bg-neutral-950' />
 			<div className='relative z-10 text-center'>
-				<p className='text-xs font-medium tracking-[0.2em] text-neutral-400 uppercase'>
+				<p className='text-xs font-medium uppercase tracking-[0.2em] text-neutral-400'>
 					Seriales
 				</p>
 				<p className='mt-1 text-3xl font-semibold text-neutral-900 dark:text-neutral-100'>
@@ -247,6 +247,13 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				lowStockItems: [],
 				outOfStockItems: [],
 				averageStock: 0,
+			} as {
+				totalStock: number;
+				productCount: number;
+				serialTracked: number;
+				lowStockItems: typeof products;
+				outOfStockItems: typeof products;
+				averageStock: number;
 			};
 		}
 
@@ -643,8 +650,8 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				serialTrackedProductIds={importSerialTrackedProductIds}
 			/>
 
-			<Card className='border border-neutral-200 bg-white shadow-xs dark:border-neutral-800 dark:bg-neutral-900/70'>
-				<CardHeader className='gap-3 px-4 pt-3 pb-2 sm:pt-3 sm:pb-1'>
+			<Card className='border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900/70'>
+				<CardHeader className='gap-3 px-4 pb-2 pt-3 sm:pb-1 sm:pt-3'>
 					<CardHeaderChild className='flex flex-col items-start justify-start gap-1'>
 						<CardTitle className='flex justify-start gap-2'>
 							<Icon
@@ -672,15 +679,15 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 							return (
 								<Card
 									key={card.id}
-									className={`h-full overflow-hidden rounded-xl border ${style.border} bg-white shadow-xs dark:bg-neutral-900/60`}>
-									<CardBody className='flex h-full flex-col justify-between gap-4 p-5!'>
+									className={`h-full overflow-hidden rounded-xl border ${style.border} bg-white shadow-sm dark:bg-neutral-900/60`}>
+									<CardBody className='flex h-full flex-col justify-between gap-4 !p-5'>
 										<div className='flex items-start justify-between gap-3'>
 											<div>
 												<p className='text-sm text-neutral-500'>
 													{card.label}
 												</p>
 												{loading ? (
-													<div className='mt-3 h-7 w-24 animate-pulse rounded-sm bg-neutral-200 dark:bg-neutral-800' />
+													<div className='mt-3 h-7 w-24 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800' />
 												) : (
 													<>
 														<p
@@ -698,7 +705,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 											<div
 												className={`flex h-10 w-10 items-center justify-center rounded-xl ${style.iconBg}`}>
 												<Icon
-													icon={card.icon}
+													icon={card.icon as string}
 													className={`h-5 w-5 ${style.iconColor}`}
 												/>
 											</div>
@@ -730,7 +737,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 													className={`rounded-2xl border border-neutral-200 p-4 dark:border-neutral-700 ${card.bg}`}>
 													<div className='flex items-start justify-between gap-3'>
 														<div>
-															<p className='text-xs font-semibold tracking-wide text-neutral-400 uppercase'>
+															<p className='text-xs font-semibold uppercase tracking-wide text-neutral-400'>
 																{card.title}
 															</p>
 															<p
@@ -741,7 +748,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 																{card.detail}
 															</p>
 														</div>
-														<div className='flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-xs dark:bg-neutral-900'>
+														<div className='flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm dark:bg-neutral-900'>
 															<Icon
 																icon={card.icon}
 																className={`h-5 w-5 ${card.tone}`}
@@ -752,10 +759,10 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 											))}
 										</div>
 										<div className='grid gap-4'>
-											<div className='rounded-2xl border border-neutral-200 bg-white p-4 shadow-xs dark:border-neutral-700 dark:bg-neutral-900/60'>
+											<div className='rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/60'>
 												<div className='flex items-center justify-between gap-3'>
 													<div>
-														<p className='text-xs font-semibold tracking-wide text-neutral-400 uppercase'>
+														<p className='text-xs font-semibold uppercase tracking-wide text-neutral-400'>
 															Brand portfolio
 														</p>
 														<p className='mt-1 text-sm text-neutral-500'>
@@ -856,10 +863,10 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 								badge={hasSerialData ? formatNumber(serialsTotal) : undefined}
 								disabled={!hasSerialData}>
 								<div className='grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]'>
-									<div className='rounded-2xl border border-neutral-200 bg-white p-4 shadow-xs dark:border-neutral-700 dark:bg-neutral-900/60'>
+									<div className='rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/60'>
 										<div className='flex items-center justify-between gap-3'>
 											<div>
-												<p className='text-xs font-semibold tracking-wide text-neutral-400 uppercase'>
+												<p className='text-xs font-semibold uppercase tracking-wide text-neutral-400'>
 													Pie chart
 												</p>
 												<p className='mt-1 text-sm text-neutral-500'>
@@ -878,10 +885,10 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 										</div>
 									</div>
 									<div className='space-y-4'>
-										<div className='rounded-2xl border border-neutral-200 bg-white p-4 shadow-xs dark:border-neutral-700 dark:bg-neutral-900/60'>
+										<div className='rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/60'>
 											<div className='flex items-center justify-between gap-3'>
 												<div>
-													<p className='text-xs font-semibold tracking-wide text-neutral-400 uppercase'>
+													<p className='text-xs font-semibold uppercase tracking-wide text-neutral-400'>
 														Dashboard serializado
 													</p>
 													<p className='mt-1 text-sm text-neutral-500'>
@@ -941,7 +948,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 										</div>
 										<div className='grid gap-4 md:grid-cols-3'>
 											<div className='rounded-2xl border border-neutral-200 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-500/10'>
-												<p className='text-xs font-semibold tracking-wide text-emerald-600 uppercase dark:text-emerald-300'>
+												<p className='text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300'>
 													Disponibles
 												</p>
 												<p className='mt-2 text-3xl font-semibold text-emerald-700 dark:text-emerald-200'>
@@ -952,7 +959,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 												</p>
 											</div>
 											<div className='rounded-2xl border border-neutral-200 bg-violet-50 p-4 dark:border-violet-500/30 dark:bg-violet-500/10'>
-												<p className='text-xs font-semibold tracking-wide text-violet-600 uppercase dark:text-violet-300'>
+												<p className='text-xs font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-300'>
 													Vendidos
 												</p>
 												<p className='mt-2 text-3xl font-semibold text-violet-700 dark:text-violet-200'>
@@ -963,7 +970,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 												</p>
 											</div>
 											<div className='rounded-2xl border border-neutral-200 bg-sky-50 p-4 dark:border-sky-500/30 dark:bg-sky-500/10'>
-												<p className='text-xs font-semibold tracking-wide text-sky-600 uppercase dark:text-sky-300'>
+												<p className='text-xs font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-300'>
 													Tracking coverage
 												</p>
 												<p className='mt-2 text-3xl font-semibold text-sky-700 dark:text-sky-200'>
@@ -983,10 +990,10 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 								icon='HeroArchiveBox'
 								badge={formatNumber(summaryData.stockWithoutSerials)}>
 								<div className='grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]'>
-									<div className='rounded-2xl border border-neutral-200 bg-white p-4 shadow-xs dark:border-neutral-700 dark:bg-neutral-900/60'>
+									<div className='rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/60'>
 										<div className='flex items-start justify-between gap-3'>
 											<div>
-												<p className='text-xs font-semibold tracking-wide text-neutral-400 uppercase'>
+												<p className='text-xs font-semibold uppercase tracking-wide text-neutral-400'>
 													Stock no serializado
 												</p>
 												<p className='mt-1 text-sm text-neutral-500'>
@@ -1001,7 +1008,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 										</div>
 										<div className='mt-5 grid gap-4 sm:grid-cols-3'>
 											<div className='rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-950/50'>
-												<p className='text-xs tracking-wide text-neutral-400 uppercase'>
+												<p className='text-xs uppercase tracking-wide text-neutral-400'>
 													Stock sin serie
 												</p>
 												<p className='mt-2 text-3xl font-semibold text-neutral-900 dark:text-neutral-100'>
@@ -1009,7 +1016,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 												</p>
 											</div>
 											<div className='rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-950/50'>
-												<p className='text-xs tracking-wide text-neutral-400 uppercase'>
+												<p className='text-xs uppercase tracking-wide text-neutral-400'>
 													Productos sin tracking
 												</p>
 												<p className='mt-2 text-3xl font-semibold text-neutral-900 dark:text-neutral-100'>
@@ -1019,7 +1026,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 												</p>
 											</div>
 											<div className='rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-950/50'>
-												<p className='text-xs tracking-wide text-neutral-400 uppercase'>
+												<p className='text-xs uppercase tracking-wide text-neutral-400'>
 													Participación
 												</p>
 												<p className='mt-2 text-3xl font-semibold text-neutral-900 dark:text-neutral-100'>
@@ -1036,7 +1043,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 										</div>
 									</div>
 									<div className='rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10'>
-										<p className='text-xs font-semibold tracking-wide text-amber-600 uppercase dark:text-amber-300'>
+										<p className='text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300'>
 											Observación
 										</p>
 										<p className='mt-2 text-sm text-amber-700 dark:text-amber-100'>
@@ -1104,7 +1111,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				</CardBody>
 			</Card>
 
-			<Card className='border border-neutral-200 bg-white shadow-xs dark:border-neutral-800 dark:bg-neutral-900/70'>
+			<Card className='border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900/70'>
 				<CardHeader>
 					<CardHeaderChild>
 						<CardTitle className='flex items-center gap-2'>
@@ -1133,11 +1140,11 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 									setInventorySearch(e.target.value)
 								}
-								className='py-2! pl-9! text-sm!'
+								className='!py-2 !pl-9 !text-sm'
 							/>
 							<Icon
 								icon='HeroMagnifyingGlass'
-								className='pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400'
+								className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400'
 							/>
 						</div>
 						<button
@@ -1173,9 +1180,9 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 							{Array.from({ length: 4 }).map((_, index) => (
 								<div
 									key={index}
-									className='flex gap-3 rounded-sm border border-dashed border-neutral-200 p-3 dark:border-neutral-700'>
-									<div className='h-12 flex-1 animate-pulse rounded-sm bg-neutral-100 dark:bg-neutral-800' />
-									<div className='h-8 w-28 animate-pulse rounded-sm bg-neutral-100 dark:bg-neutral-800' />
+									className='flex gap-3 rounded border border-dashed border-neutral-200 p-3 dark:border-neutral-700'>
+									<div className='h-12 flex-1 animate-pulse rounded bg-neutral-100 dark:bg-neutral-800' />
+									<div className='h-8 w-28 animate-pulse rounded bg-neutral-100 dark:bg-neutral-800' />
 								</div>
 							))}
 						</div>
@@ -1188,19 +1195,19 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 							<table className='min-w-full divide-y divide-neutral-200 dark:divide-neutral-800'>
 								<thead className='bg-neutral-50 dark:bg-neutral-900/60'>
 									<tr>
-										<th className='px-4 py-3 text-left text-xs font-semibold tracking-wide text-neutral-600 uppercase dark:text-neutral-400'>
+										<th className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-400'>
 											Producto
 										</th>
-										<th className='px-4 py-3 text-left text-xs font-semibold tracking-wide text-neutral-600 uppercase dark:text-neutral-400'>
+										<th className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-400'>
 											Tipo
 										</th>
-										<th className='px-4 py-3 text-left text-xs font-semibold tracking-wide text-neutral-600 uppercase dark:text-neutral-400'>
+										<th className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-400'>
 											Stock
 										</th>
-										<th className='px-4 py-3 text-left text-xs font-semibold tracking-wide text-neutral-600 uppercase dark:text-neutral-400'>
+										<th className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-400'>
 											Detalle
 										</th>
-										<th className='px-4 py-3 text-left text-xs font-semibold tracking-wide text-neutral-600 uppercase dark:text-neutral-400'>
+										<th className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-400'>
 											Acciones
 										</th>
 									</tr>

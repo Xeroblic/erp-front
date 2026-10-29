@@ -301,7 +301,7 @@ export const ImportOrdersContent: React.FC = () => {
 											{bulkResult.imported.map((item: any, idx: number) => (
 												<div
 													key={idx}
-													className='flex items-center justify-between rounded-sm bg-emerald-50 p-2 dark:bg-emerald-950/20'>
+													className='flex items-center justify-between rounded bg-emerald-50 p-2 dark:bg-emerald-950/20'>
 													<span className='text-sm'>
 														WC Order #{item.woocommerce_order_id}
 													</span>
@@ -323,7 +323,7 @@ export const ImportOrdersContent: React.FC = () => {
 											{bulkResult.errors.map((item: any, idx: number) => (
 												<div
 													key={idx}
-													className='rounded-sm bg-rose-50 p-2 text-sm dark:bg-rose-950/20'>
+													className='rounded bg-rose-50 p-2 text-sm dark:bg-rose-950/20'>
 													<strong>Order #{item.order_id}</strong>:{' '}
 													{item.error}
 												</div>

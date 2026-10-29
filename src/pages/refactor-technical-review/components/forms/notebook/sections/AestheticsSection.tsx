@@ -10,8 +10,8 @@ import { GENERAL_CONDITION_OPTIONS } from '../../../constants/notebook/notebook.
 const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	errors,
 	readOnly,
-	values,
-	setFieldValue,
+	watch,
+	setValue,
 	schemaFields,
 }) => {
 	// ZF-102. `powers_on` es booleano: no depende de `allowed_values`, así que —como en
@@ -33,16 +33,14 @@ const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							key={opt.value}
 							label={opt.label}
 							value={opt.value}
-							isSelected={values.general_condition === opt.value}
-							onClick={() =>
-								!readOnly && setFieldValue('general_condition', opt.value)
-							}
+							isSelected={watch('general_condition') === opt.value}
+							onClick={() => !readOnly && setValue('general_condition', opt.value)}
 						/>
 					))}
 				</div>
 				{errors.general_condition && (
 					<p className='mt-2 text-center text-xs text-red-500'>
-						{errors.general_condition}
+						{errors.general_condition.message}
 					</p>
 				)}
 				<p className='mt-2 text-center text-xs text-zinc-500'>
@@ -56,13 +54,15 @@ const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					label={powersOnField?.label ?? '¿El equipo enciende?'}
 					required={powersOnField?.required ?? true}
 					disabled={readOnly}
-					value={values.powers_on}
+					value={watch('powers_on')}
 					onChange={(val) =>
-						!readOnly && setFieldValue('powers_on', val, { touch: true })
+						!readOnly && setValue('powers_on', val, { shouldValidate: true })
 					}
 				/>
 				{errors.powers_on && (
-					<p className='mt-2 text-center text-xs text-red-500'>{errors.powers_on}</p>
+					<p className='mt-2 text-center text-xs text-red-500'>
+						{errors.powers_on.message}
+					</p>
 				)}
 				{powersOnField?.hint && (
 					<p className='mt-2 text-center text-xs text-zinc-500'>{powersOnField.hint}</p>
@@ -78,18 +78,18 @@ const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			<div className='grid grid-cols-1 gap-4 hover:cursor-pointer md:grid-cols-3'>
 				<YesNoSelector
 					label='¿Tiene WiFi?'
-					value={values.has_wifi}
-					onChange={(val) => !readOnly && setFieldValue('has_wifi', val)}
+					value={watch('has_wifi')}
+					onChange={(val) => !readOnly && setValue('has_wifi', val)}
 				/>
 				<YesNoSelector
 					label='¿Tiene Bluetooth?'
-					value={values.has_bluetooth}
-					onChange={(val) => !readOnly && setFieldValue('has_bluetooth', val)}
+					value={watch('has_bluetooth')}
+					onChange={(val) => !readOnly && setValue('has_bluetooth', val)}
 				/>
 				<YesNoSelector
 					label='¿Tiene Biométrico?'
-					value={values.has_biometric}
-					onChange={(val) => !readOnly && setFieldValue('has_biometric', val)}
+					value={watch('has_biometric')}
+					onChange={(val) => !readOnly && setValue('has_biometric', val)}
 				/>
 			</div>
 		</div>

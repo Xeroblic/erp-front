@@ -10,7 +10,7 @@ import * as service from '@/services/procurement/inventoryOverview.service';
 import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 
 const context = vi.hoisted(() => ({
-	branchId: 4,
+	branchId: 4 as number | null,
 	subsidiaryId: 2,
 	enabled: true,
 }));

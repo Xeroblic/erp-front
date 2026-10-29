@@ -260,7 +260,7 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 			<ModalBody>
 				<div className='space-y-4 py-4'>
 					{/* Selector de Modo */}
-					<div className='flex rounded-md border border-gray-200 bg-gray-50 p-1 shadow-xs dark:border-gray-700 dark:bg-gray-800'>
+					<div className='flex rounded-md border border-gray-200 bg-gray-50 p-1 shadow-sm dark:border-gray-700 dark:bg-gray-800'>
 						<button
 							type='button'
 							onClick={() => {
@@ -270,7 +270,7 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 							}}
 							className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
 								activeTab === 'return'
-									? 'bg-white text-neutral-900 shadow-sm dark:bg-gray-700 dark:text-white'
+									? 'bg-white text-neutral-900 shadow dark:bg-gray-700 dark:text-white'
 									: 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
 							}`}>
 							Devolver a Bodega Central
@@ -284,7 +284,7 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 							}}
 							className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
 								activeTab === 'assign'
-									? 'bg-white text-neutral-900 shadow-sm dark:bg-gray-700 dark:text-white'
+									? 'bg-white text-neutral-900 shadow dark:bg-gray-700 dark:text-white'
 									: 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
 							}`}>
 							Asignar a Sucursal
@@ -292,14 +292,14 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 					</div>
 
 					{/* Selector de Sucursal */}
-					<div className='rounded-lg border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-700 dark:bg-gray-800/50'>
+					<div className='rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800/50'>
 						<label className='mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 							{activeTab === 'return'
 								? 'Seleccionar Sucursal de Origen (Dónde está ahora el stock)'
 								: 'Seleccionar Sucursal de Destino (A dónde enviarlo)'}
 						</label>
 						<select
-							className='block w-full rounded-md border-gray-300 text-neutral-800 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-neutral-100'
+							className='block w-full rounded-md border-gray-300 text-neutral-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-neutral-100 sm:text-sm'
 							value={selectedBranchId}
 							onChange={(e) => setSelectedBranchId(Number(e.target.value))}>
 							<option value=''>-- Seleccione una sucursal --</option>
@@ -396,7 +396,7 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 										<li
 											key={item.serial_number}
 											onClick={() => handleToggleSelect(item.serial_number)}
-											className={`flex cursor-pointer items-center justify-between rounded-md border px-3 py-2 text-sm shadow-xs transition hover:border-blue-300 ${
+											className={`flex cursor-pointer items-center justify-between rounded-md border px-3 py-2 text-sm shadow-sm transition hover:border-blue-300 ${
 												selectedSeries.includes(item.serial_number)
 													? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
 													: 'border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800'
@@ -408,7 +408,7 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 														item.serial_number,
 													)}
 													readOnly
-													className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
+													className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
 												/>
 												<span className='font-mono font-medium text-neutral-700 dark:text-neutral-200'>
 													{item.serial_number}

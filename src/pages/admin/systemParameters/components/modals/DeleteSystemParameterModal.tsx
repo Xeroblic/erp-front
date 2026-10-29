@@ -83,7 +83,7 @@ const DeleteSystemParameterModal: React.FC<DeleteSystemParameterModalProps> = ({
 				<div className='space-y-3 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800/50'>
 					<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
 						<div>
-							<label className='mb-1 block text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400'>
+							<label className='mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400'>
 								Clave
 							</label>
 							<div className='font-mono text-sm text-zinc-900 dark:text-zinc-100'>
@@ -91,7 +91,7 @@ const DeleteSystemParameterModal: React.FC<DeleteSystemParameterModalProps> = ({
 							</div>
 						</div>
 						<div>
-							<label className='mb-1 block text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400'>
+							<label className='mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400'>
 								Categoría
 							</label>
 							<Badge className='capitalize'>{parameter.category}</Badge>
@@ -99,7 +99,7 @@ const DeleteSystemParameterModal: React.FC<DeleteSystemParameterModalProps> = ({
 					</div>
 
 					<div>
-						<label className='mb-1 block text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400'>
+						<label className='mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400'>
 							Descripción
 						</label>
 						<div className='text-sm text-zinc-700 dark:text-zinc-300'>
@@ -108,10 +108,10 @@ const DeleteSystemParameterModal: React.FC<DeleteSystemParameterModalProps> = ({
 					</div>
 
 					<div>
-						<label className='mb-1 block text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400'>
+						<label className='mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400'>
 							Valor Actual
 						</label>
-						<div className='max-h-20 overflow-y-auto rounded-sm border bg-white px-2 py-1 font-mono text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'>
+						<div className='max-h-20 overflow-y-auto rounded border bg-white px-2 py-1 font-mono text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'>
 							{parameter.value}
 						</div>
 					</div>

@@ -6,14 +6,15 @@
  * ✏️ To reorder sections → just reorder NOTEBOOK_SECTIONS below.
  * ✏️ To add a section → create a new component in sections/ and add it here.
  */
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
+import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
-import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { resolveNotebookSchema, type NotebookFormData } from '../../validation/notebook.schema';
 import FormShell from '../shared/FormShell';
-import type { SectionConfig, FormSectionProps, ReviewFieldName } from '../shared/types';
-import { formatFinishErrors, useReviewForm } from '../shared/useReviewForm';
+import type { SectionConfig, FormSectionProps } from '../shared/types';
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 
 // ─── Section Components ──────────────────────────────────────────────────────
 import BasicInfoSection from './sections/BasicInfoSection';
@@ -97,12 +98,12 @@ const NOTEBOOK_SECTIONS: SectionConfig<NotebookFormData>[] = [
  * hay constante local que las reemplace. Validar por ellos sin schema dejaría al técnico
  * frente a un error sin campo en pantalla que corregir.
  */
-const NOTEBOOK_REMOTE_ONLY_FIELDS: ReviewFieldName<NotebookFormData>[] = [
+const NOTEBOOK_REMOTE_ONLY_FIELDS: FieldPath<NotebookFormData>[] = [
 	'non_functional_keys_count',
 	'speakers_condition',
 ];
 
-const NOTEBOOK_SECTION_FIELDS: Record<string, ReviewFieldName<NotebookFormData>[]> = {
+const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 	'basic-info': ['brand', 'model', 'line'],
 	hardware: [
 		'processor',
@@ -225,8 +226,64 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		[schemaFields],
 	);
 
+	const {
+		control,
+		handleSubmit,
+		watch,
+		setValue,
+		trigger,
+		getValues,
+		getFieldState,
+		reset,
+		formState: { errors },
+	} = useForm<NotebookFormData>({
+		// react-hook-form 7.62 relee `control._options` en cada render: pasar el resolver
+		// directo alcanza para que la validación de "Finalizar" recoja el schema vigente
+		// cuando el fetch remoto llega después del montaje (ZF-102).
+		resolver: yupResolver(effectiveSchema) as unknown as Resolver<NotebookFormData>,
+		defaultValues: normalizedDefaultValues,
+		mode: 'onBlur',
+	});
+
+	// Assemble props passed to every section
+	const sectionProps: FormSectionProps<NotebookFormData> = useMemo(
+		() => ({
+			control,
+			errors,
+			readOnly,
+			watch,
+			setValue,
+			schemaFields,
+			onDirectSubmit: (partialData) => {
+				const currentData = getValues();
+				const payload = { ...currentData, ...partialData } as NotebookFormData;
+				onSubmit(payload);
+			},
+		}),
+		[control, errors, readOnly, watch, setValue, getValues, onSubmit, schemaFields],
+	);
+
+	// Expose getFormValues to parent for auto-save
+	useEffect(() => {
+		if (registerGetFormValues) {
+			registerGetFormValues(() => watch() as unknown as Record<string, unknown>);
+		}
+	}, [registerGetFormValues, watch]);
+
+	// Reset form when defaultValues changes deeply
+	const prevDefaultValues = React.useRef<string | null>(null);
+	useEffect(() => {
+		if (normalizedDefaultValues) {
+			const stringified = JSON.stringify(normalizedDefaultValues);
+			if (stringified !== prevDefaultValues.current) {
+				reset(normalizedDefaultValues);
+				prevDefaultValues.current = stringified;
+			}
+		}
+	}, [normalizedDefaultValues, reset]);
+
 	// Los campos que dependen del schema remoto sólo se validan si están en pantalla.
-	const sectionFields = useMemo<Record<string, ReviewFieldName<NotebookFormData>[]>>(
+	const sectionFields = useMemo<Record<string, FieldPath<NotebookFormData>[]>>(
 		() => ({
 			...NOTEBOOK_SECTION_FIELDS,
 			input: NOTEBOOK_SECTION_FIELDS.input.filter(
@@ -237,47 +294,74 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		[schemaFields],
 	);
 
-	// El schema vigente se relee en cada validación: si el fetch remoto llega después del
-	// montaje, «Finalizar» ya valida con él (ZF-102).
-	const {
-		sectionProps: baseSectionProps,
-		getValues,
-		validateStep,
-		validateAll,
-	} = useReviewForm<NotebookFormData>({
-		schema: effectiveSchema,
-		initialValues: normalizedDefaultValues as NotebookFormData,
-		sectionFields,
-		readOnly,
-		schemaFields,
-		registerGetFormValues,
-	});
+	// Handle finish
+	const validateStep = async (sectionKey: string) => {
+		const stepFields = sectionFields[sectionKey] ?? [];
+		const currentValues = getValues();
 
-	// Assemble props passed to every section
-	const sectionProps: FormSectionProps<NotebookFormData> = useMemo(
-		() => ({
-			...baseSectionProps,
-			onDirectSubmit: (partialData) => {
-				const payload = { ...getValues(), ...partialData };
-				void onSubmit(payload);
+		for (const field of stepFields) {
+			try {
+				await effectiveSchema.validateAt(field, currentValues);
+			} catch (error) {
+				await trigger(stepFields, { shouldFocus: true });
+				if (error instanceof Error) {
+					return { isValid: false, message: error.message };
+				}
+				return {
+					isValid: false,
+					message: 'Debes completar los campos obligatorios antes de continuar.',
+				};
+			}
+		}
+
+		const isValid = await trigger(stepFields, { shouldFocus: true });
+
+		if (isValid) {
+			return { isValid: true };
+		}
+
+		const firstError = stepFields
+			.map((field) => getFieldState(field).error?.message)
+			.find(Boolean);
+
+		return {
+			isValid: false,
+			message:
+				typeof firstError === 'string'
+					? firstError
+					: 'Debes completar los campos obligatorios antes de continuar.',
+		};
+	};
+
+	const handleFinish = () => {
+		handleSubmit(
+			async (data) => {
+				try {
+					await onSubmit(data);
+				} catch (error: unknown) {
+					const message =
+						error instanceof Error ? error.message : 'Error al guardar la revisión';
+					console.error('NotebookForm submit error:', error);
+					toast.error(message);
+				}
 			},
-		}),
-		[baseSectionProps, getValues, onSubmit],
-	);
+			(validationErrors) => {
+				// Collect all validation error messages
+				const messages = Object.values(
+					validationErrors as Record<string, { message?: string }>,
+				)
+					.map((e) => e?.message)
+					.filter(Boolean)
+					.slice(0, 5);
 
-	const handleFinish = useCallback(async () => {
-		const result = await validateAll();
-		if (!result.isValid) {
-			toast.error(formatFinishErrors(result.messages));
-			return;
-		}
-		try {
-			await onSubmit(result.data);
-		} catch (error: unknown) {
-			const message = error instanceof Error ? error.message : 'Error al guardar la revisión';
-			toast.error(message);
-		}
-	}, [validateAll, onSubmit]);
+				if (messages.length > 0) {
+					toast.error(`Corrige los errores antes de continuar:\n${messages.join('\n')}`);
+				} else {
+					toast.error('Hay campos con errores. Revisa el formulario.');
+				}
+			},
+		)();
+	};
 
 	return (
 		<FormShell<NotebookFormData>

@@ -180,7 +180,7 @@ export interface ICreateProductRequest {
 	image_url?: string;
 }
 
-export type IUpdateProductRequest = Partial<ICreateProductRequest>;
+export interface IUpdateProductRequest extends Partial<ICreateProductRequest> {}
 
 export interface ICreateCategoryRequest {
 	name: string;
@@ -189,7 +189,7 @@ export interface ICreateCategoryRequest {
 	is_active?: boolean;
 }
 
-export type IUpdateCategoryRequest = Partial<ICreateCategoryRequest>;
+export interface IUpdateCategoryRequest extends Partial<ICreateCategoryRequest> {}
 
 export interface ICreateBrandRequest {
 	name: string;
@@ -199,7 +199,7 @@ export interface ICreateBrandRequest {
 	is_active?: boolean;
 }
 
-export type IUpdateBrandRequest = Partial<ICreateBrandRequest>;
+export interface IUpdateBrandRequest extends Partial<ICreateBrandRequest> {}
 
 export interface ICreateSupplierRequest {
 	name: string;
@@ -212,7 +212,7 @@ export interface ICreateSupplierRequest {
 	is_active?: boolean;
 }
 
-export type IUpdateSupplierRequest = Partial<ICreateSupplierRequest>;
+export interface IUpdateSupplierRequest extends Partial<ICreateSupplierRequest> {}
 
 export interface ICreateWarehouseRequest {
 	name: string;
@@ -223,4 +223,4 @@ export interface ICreateWarehouseRequest {
 	is_active?: boolean;
 }
 
-export type IUpdateWarehouseRequest = Partial<ICreateWarehouseRequest>;
+export interface IUpdateWarehouseRequest extends Partial<ICreateWarehouseRequest> {}

@@ -40,7 +40,7 @@ const AmountRow: FC<{ label: string; amount: string | null; emphasis?: boolean }
 			className={classNames(
 				'tabular-nums',
 				emphasis ? 'text-base font-semibold' : 'text-sm',
-				amount === null && 'text-zinc-500 italic dark:text-zinc-400',
+				amount === null && 'italic text-zinc-500 dark:text-zinc-400',
 			)}>
 			{amount ?? UNKNOWN_TEXT}
 		</span>

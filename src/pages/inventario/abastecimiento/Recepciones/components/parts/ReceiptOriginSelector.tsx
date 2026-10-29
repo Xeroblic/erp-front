@@ -70,7 +70,7 @@ const ReceiptOriginSelector: React.FC<IReceiptOriginSelectorProps> = ({
 							<span className='flex flex-wrap items-center gap-2 font-semibold text-zinc-900 dark:text-white'>
 								{option.title}
 								{option.isRecommended && (
-									<span className='rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200 ring-inset dark:bg-blue-500/15 dark:text-blue-200 dark:ring-blue-500/30'>
+									<span className='rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:ring-blue-500/30'>
 										Lo habitual
 									</span>
 								)}

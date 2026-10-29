@@ -159,14 +159,11 @@ vi.mock('../detail/components/modals/DeleteSaleModal', () => ({
 }));
 
 const setSubsidiary = createAction<number | null>('context/setSubsidiary');
-const contextReducer = createReducer<{ subsidiaryId: number | null }>(
-	{ subsidiaryId: 1 },
-	(builder) => {
-		builder.addCase(setSubsidiary, (state, action) => {
-			state.subsidiaryId = action.payload;
-		});
-	},
-);
+const contextReducer = createReducer({ subsidiaryId: 1 as number | null }, (builder) => {
+	builder.addCase(setSubsidiary, (state, action) => {
+		state.subsidiaryId = action.payload;
+	});
+});
 
 describe('SalesListPage con cambio de subsidiaria', () => {
 	beforeEach(() => {

@@ -230,7 +230,7 @@ export const createInvitation = createAsyncThunk<
 		const response = await ApiService.fetchData<Invitation | { invitation: Invitation }>({
 			url: '/user/invite',
 			method: 'post',
-			data: sanitizedPayload,
+			data: sanitizedPayload as Record<string, unknown>,
 		});
 
 		const payload = (response.data as any)?.invitation ?? response.data;

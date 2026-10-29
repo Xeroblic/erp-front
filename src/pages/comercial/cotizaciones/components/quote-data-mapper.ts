@@ -42,7 +42,10 @@ const roundCurrency = (value: number) => {
 const resolveItemTaxRate = (item: any, fallbackRate?: number) => {
 	if (typeof fallbackRate === 'number') return fallbackRate;
 	return normalizeTaxRateValue(
-		item?.tax_rate ?? item?.taxRate ?? item?.tax_percentage ?? item?.taxPercentage,
+		(item as any)?.tax_rate ??
+			(item as any)?.taxRate ??
+			(item as any)?.tax_percentage ??
+			(item as any)?.taxPercentage,
 	);
 };
 
@@ -245,13 +248,13 @@ export const resolveUnitPrice = (item: any, taxRateOverride?: number): number =>
 	const directValue =
 		item?.unit_price ??
 		item?.unit_price_net ??
-		item?.unitPrice ??
-		item?.unit_price_net ??
+		(item as any)?.unitPrice ??
+		(item as any)?.unit_price_net ??
 		item?.product?.unit_price;
 	const direct = safeNumber(directValue);
 	if (direct > 0) return direct;
 
-	const subtotal = safeNumber(item?.subtotal ?? item?.total_net);
+	const subtotal = safeNumber(item?.subtotal ?? (item as any)?.total_net);
 	const quantity = safeNumber(item?.quantity ?? 1);
 	if (subtotal > 0 && quantity > 0) {
 		return subtotal / quantity;
@@ -259,16 +262,16 @@ export const resolveUnitPrice = (item: any, taxRateOverride?: number): number =>
 
 	const grossUnit = safeNumber(
 		item?.unit_price_gross ??
-			item?.unit_price_gross ??
-			item?.unitPriceGross ??
-			item?.unit_price_bruto,
+			(item as any)?.unit_price_gross ??
+			(item as any)?.unitPriceGross ??
+			(item as any)?.unit_price_bruto,
 	);
 	if (grossUnit > 0) {
 		const rate = resolveItemTaxRate(item, taxRateOverride);
 		return rate > 0 ? grossUnit / (1 + rate) : grossUnit;
 	}
 
-	const grossTotal = safeNumber(item?.total ?? item?.total_amount);
+	const grossTotal = safeNumber(item?.total ?? (item as any)?.total_amount);
 	if (grossTotal > 0 && quantity > 0) {
 		const rate = resolveItemTaxRate(item, taxRateOverride);
 		const netTotal = rate > 0 ? grossTotal / (1 + rate) : grossTotal;
@@ -278,7 +281,11 @@ export const resolveUnitPrice = (item: any, taxRateOverride?: number): number =>
 	return 0;
 };
 export const resolveLineTotal = (item: any, taxRateOverride?: number): number => {
-	const subtotal = item?.subtotal ?? item?.total_net ?? item?.net_total ?? item?.subtotal_net;
+	const subtotal =
+		item?.subtotal ??
+		(item as any)?.total_net ??
+		(item as any)?.net_total ??
+		(item as any)?.subtotal_net;
 	const direct = safeNumber(subtotal);
 	if (direct > 0) return direct;
 
@@ -288,7 +295,7 @@ export const resolveLineTotal = (item: any, taxRateOverride?: number): number =>
 		return unit * quantity;
 	}
 
-	const grossLine = safeNumber(item?.total ?? item?.total_amount);
+	const grossLine = safeNumber(item?.total ?? (item as any)?.total_amount);
 	if (grossLine > 0) {
 		const rate = resolveItemTaxRate(item, taxRateOverride);
 		return rate > 0 ? grossLine / (1 + rate) : grossLine;
@@ -325,7 +332,7 @@ export const getPaymentMethodsLabel = (quote: IQuote): string => {
 	const paymentArray = Array.isArray((quote as any)?.payment_methods)
 		? (quote as any)?.payment_methods
 		: Array.isArray(quote.payment_method)
-			? quote.payment_method
+			? (quote.payment_method as unknown as string[])
 			: quote.payment_method
 				? [quote.payment_method]
 				: null;

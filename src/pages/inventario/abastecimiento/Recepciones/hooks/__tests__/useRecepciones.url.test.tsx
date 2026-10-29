@@ -45,17 +45,13 @@ vi.mock('@/services/procurement/stockReceipts.service', async (importOriginal) =
 	};
 });
 
-const branch = vi.hoisted(
-	(): {
-		current: {
-			branchId: number | null;
-			subsidiaryId: number | null;
-			visibleBranches: { id: number; name: string }[];
-		};
-	} => ({
-		current: { branchId: 4, subsidiaryId: 4, visibleBranches: [] },
-	}),
-);
+const branch = vi.hoisted(() => ({
+	current: {
+		branchId: 4 as number | null,
+		subsidiaryId: 4 as number | null,
+		visibleBranches: [] as { id: number; name: string }[],
+	},
+}));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => branch.current,
 }));
@@ -93,7 +89,7 @@ const createWrapper = (initialEntry: string) => {
 	const Wrapper = ({ children }: PropsWithChildren) => (
 		// Mismo flag que el `BrowserRouter` de la app: la URL se actualiza en
 		// una transición, después que el estado urgente del hook.
-		<MemoryRouter initialEntries={[initialEntry]}>
+		<MemoryRouter initialEntries={[initialEntry]} future={{ v7_startTransition: true }}>
 			<Provider store={store}>
 				{children}
 				<UrlProbe />

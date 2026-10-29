@@ -4,11 +4,10 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import { ISubempresa } from '@/interface/empresas.interface';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
-const columnHelper = createColumnHelper<AppTableFeatures, ISubempresa>();
+const columnHelper = createColumnHelper<ISubempresa>();
 
-const useSubsidiaryColumns = (
+export const useSubsidiaryColumns = (
 	handleEdit: (subsidiary: ISubempresa) => void,
 	navigate: (path: string) => void,
 ) => {
@@ -23,16 +22,14 @@ const useSubsidiaryColumns = (
 
 					return (
 						<div className='flex min-w-[200px] items-center gap-2'>
-							<div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100'>
+							<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-100'>
 								<Icon
 									icon='HeroBuildingStorefront'
 									className='text-sm text-primary-600'
 								/>
 							</div>
-							<div className='max-w-[280px] min-w-0'>
-								<div
-									className='line-clamp-2 font-medium wrap-break-word'
-									title={name}>
+							<div className='min-w-0 max-w-[280px]'>
+								<div className='line-clamp-2 break-words font-medium' title={name}>
 									{name}
 								</div>
 								<div className='text-xs text-zinc-500'>ID: {subsidiary.id}</div>
@@ -139,7 +136,7 @@ const useSubsidiaryColumns = (
 				header: 'Comuna',
 				cell: (info) => {
 					const subsidiary = info.row.original;
-					const communeName = subsidiary.commune?.name;
+					const communeName = (subsidiary as any)?.commune?.name;
 
 					return communeName ? (
 						<div className='flex items-center gap-1'>
@@ -185,5 +182,3 @@ const useSubsidiaryColumns = (
 		[handleEdit, navigate],
 	);
 };
-
-export default useSubsidiaryColumns;

@@ -4,13 +4,13 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
-import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import type { ICustomerSaleOverview } from '@/interface/customerSales.interface';
 import type { PaginationMeta } from '@/services/salesService';
-import {
-	TableCardFooterTemplateV2,
+import TableCardFooterTemplateV2, {
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
 
@@ -86,7 +86,7 @@ const ClientesVentasPagination: React.FC<ClientesVentasPaginationProps> = ({
 		pageSize: meta.per_page,
 	};
 	const table: TablePaginationController = {
-		state: { pagination },
+		getState: () => ({ pagination }),
 		setPageSize: (updater: Updater<number>) => {
 			const perPage = typeof updater === 'function' ? updater(pagination.pageSize) : updater;
 			onChange(1, perPage);
@@ -188,7 +188,7 @@ const ClienteVentasTable: React.FC<ClienteVentasTableProps> = ({
 								<Tr key={`customer-skeleton-${rowIndex}`}>
 									{Array.from({ length: 7 }, (_cell, cellIndex) => (
 										<Td key={`customer-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>

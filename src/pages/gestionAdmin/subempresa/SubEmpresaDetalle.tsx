@@ -346,13 +346,25 @@ export default function SubEmpresaDetalle() {
 	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector((s) => s.core);
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
 		{
-			values: formik.values,
+			values: formik.values as unknown as Record<string, unknown>,
 			setFieldValue: formik.setFieldValue,
 		},
 		{
-			regiones: listaRegiones,
-			provincias: listaProvincias,
-			comunas: listaComunas,
+			regiones: listaRegiones as unknown as {
+				codigo: string;
+				nombre: string;
+				codigo_padre?: string;
+			}[],
+			provincias: listaProvincias as unknown as {
+				codigo: string;
+				nombre: string;
+				codigo_padre?: string;
+			}[],
+			comunas: listaComunas as unknown as {
+				codigo: string;
+				nombre: string;
+				codigo_padre?: string;
+			}[],
 		},
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);

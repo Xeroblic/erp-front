@@ -9,9 +9,7 @@ import {
 	PURGE,
 	REGISTER,
 } from 'redux-persist';
-// Variante ESM: desde Vite 8, el default de un CommonJS con `__esModule` es `module.exports`
-// entero, y `lib/storage` dejaba al persistor sin `getItem`.
-import storage from 'redux-persist/es/storage';
+import storage from 'redux-persist/lib/storage';
 import { PERSIST_STORE_NAME } from '@/constants/app.constant';
 import RtkQueryService from '@/services/RtkQueryService';
 import { tokenManager } from '@/services/auth/tokenManager';

@@ -15,7 +15,7 @@ import type { IPurchaseDocument } from '@/interface/procurement.interface';
 
 /** Tarjeta de primer nivel dentro del cuerpo del modal (mismo estándar que el resto de abastecimiento). */
 const CONFIRM_DOCUMENTO_CARD_CLASSNAME =
-	'border border-zinc-200 bg-white shadow-xs dark:border-zinc-700 dark:bg-zinc-900';
+	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
 
 /**
  * Confirmación de `confirm` (sección 6): fija el snapshot de proveedor y

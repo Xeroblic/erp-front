@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	useReactTable,
+} from '@tanstack/react-table';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -12,9 +17,8 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import { fetchSuppliers } from '@/store/slices/suppliers/suppliersSlice';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
-import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
-import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { useCustomerSuppliers } from './components/hooks/useCustomerSuppliers';
+import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 
 // Tipo basado en la estructura real de la BD
 interface ICustomerSupplierExtended extends ICustomerSupplier {
@@ -28,73 +32,7 @@ type SupplierRow = {
 	// Campos reales de suppliers: id, name, subsidiary_id, created_at, updated_at
 };
 
-const columnHelper = createColumnHelper<AppTableFeatures, SupplierRow>();
-
-const buildAssociatedSupplierColumns = ({
-	detach,
-	isEditable,
-	detaching,
-}: {
-	detach: ReturnType<typeof useCustomerSuppliers>['detach'];
-	isEditable: boolean;
-	detaching: boolean;
-}) =>
-	columnHelper.columns([
-		columnHelper.accessor('name', {
-			header: 'Nombre del Proveedor',
-			cell: (info) => (
-				<span className='font-medium text-gray-900 dark:text-white'>{info.getValue()}</span>
-			),
-		}),
-		columnHelper.display({
-			id: 'actions',
-			header: 'Acciones',
-			cell: ({ row }) => (
-				<Button
-					color='red'
-					size='sm'
-					icon='HeroXMark'
-					onClick={() => detach([row.original.id])}
-					isDisable={!isEditable || detaching}
-					isLoading={detaching}>
-					{detaching ? 'Desasociando...' : 'Desasociar'}
-				</Button>
-			),
-		}),
-	]);
-
-const buildAvailableSupplierColumns = ({
-	attach,
-	isEditable,
-	attaching,
-}: {
-	attach: ReturnType<typeof useCustomerSuppliers>['attach'];
-	isEditable: boolean;
-	attaching: boolean;
-}) =>
-	columnHelper.columns([
-		columnHelper.accessor('name', {
-			header: 'Nombre del Proveedor',
-			cell: (info) => (
-				<span className='font-medium text-gray-900 dark:text-white'>{info.getValue()}</span>
-			),
-		}),
-		columnHelper.display({
-			id: 'actions',
-			header: 'Acciones',
-			cell: ({ row }) => (
-				<Button
-					color='blue'
-					size='sm'
-					icon='HeroPlus'
-					onClick={() => attach([row.original.id])}
-					isDisable={!isEditable || attaching}
-					isLoading={attaching}>
-					{attaching ? 'Asociando...' : 'Asociar'}
-				</Button>
-			),
-		}),
-	]);
+const columnHelper = createColumnHelper<SupplierRow>();
 
 const DetalleClientePage: React.FC = () => {
 	const { id } = useParams<{ id: string }>();
@@ -110,7 +48,9 @@ const DetalleClientePage: React.FC = () => {
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const subsidiaryId = personalizacionUsuario?.sucursal_principal ?? 0;
 
-	const { items: allCustomers } = useAppSelector((s) => s.customerSuppliers);
+	const { items: allCustomers, loading: loadingCustomers } = useAppSelector(
+		(s) => s.customerSuppliers,
+	);
 	const {
 		suppliers: associatedSuppliers,
 		detach,
@@ -137,12 +77,15 @@ const DetalleClientePage: React.FC = () => {
 	// 🔄 useEffect 2: Buscar y establecer el cliente específico
 	useEffect(() => {
 		if (customerSupplierId && allCustomers && allCustomers.length > 0) {
-			const found = allCustomers.find((c) => c.id === customerSupplierId);
+			const found = allCustomers.find((c: any) => c.id === customerSupplierId);
 			if (found) {
-				setCustomer(found);
+				setCustomer(found as ICustomerSupplierExtended);
+			} else if (!loadingCustomers) {
+				// Si no se encuentra y no está cargando, mostrar error
+				console.warn(`Cliente con ID ${customerSupplierId} no encontrado`);
 			}
 		}
-	}, [customerSupplierId, allCustomers]);
+	}, [customerSupplierId, allCustomers, loadingCustomers]);
 
 	// 🔄 useEffect 3: Cargar todos los proveedores de la subsidiaria
 	useEffect(() => {
@@ -160,33 +103,81 @@ const DetalleClientePage: React.FC = () => {
 	const availableSuppliers = useMemo(() => {
 		if (!allSuppliers || !associatedSuppliers) return [];
 
-		const associatedIds = new Set(associatedSuppliers.map((s) => s.id));
-		return allSuppliers.filter((s) => !associatedIds.has(s.id));
+		const associatedIds = new Set(associatedSuppliers.map((s: any) => s.id));
+		return allSuppliers.filter((s: any) => !associatedIds.has(s.id));
 	}, [allSuppliers, associatedSuppliers]);
 
 	// Columnas para proveedores ASOCIADOS
 	const associatedColumns = useMemo(
-		() => buildAssociatedSupplierColumns({ detach, isEditable, detaching }),
+		() => [
+			columnHelper.accessor('name', {
+				header: 'Nombre del Proveedor',
+				cell: (info) => (
+					<span className='font-medium text-gray-900 dark:text-white'>
+						{info.getValue()}
+					</span>
+				),
+			}),
+			columnHelper.display({
+				id: 'actions',
+				header: 'Acciones',
+				cell: ({ row }) => (
+					<Button
+						color='red'
+						size='sm'
+						icon='HeroXMark'
+						onClick={() => detach([row.original.id])}
+						isDisable={!isEditable || detaching}
+						isLoading={detaching}>
+						{detaching ? 'Desasociando...' : 'Desasociar'}
+					</Button>
+				),
+			}),
+		],
 		[detach, isEditable, detaching],
 	);
 
 	// Columnas para proveedores DISPONIBLES
 	const availableColumns = useMemo(
-		() => buildAvailableSupplierColumns({ attach, isEditable, attaching }),
+		() => [
+			columnHelper.accessor('name', {
+				header: 'Nombre del Proveedor',
+				cell: (info) => (
+					<span className='font-medium text-gray-900 dark:text-white'>
+						{info.getValue()}
+					</span>
+				),
+			}),
+			columnHelper.display({
+				id: 'actions',
+				header: 'Acciones',
+				cell: ({ row }) => (
+					<Button
+						color='blue'
+						size='sm'
+						icon='HeroPlus'
+						onClick={() => attach([row.original.id])}
+						isDisable={!isEditable || attaching}
+						isLoading={attaching}>
+						{attaching ? 'Asociando...' : 'Asociar'}
+					</Button>
+				),
+			}),
+		],
 		[attach, isEditable, attaching],
 	);
 
 	// Tablas
-	const associatedTable = useTable({
-		features: appTableFeatures,
+	const associatedTable = useReactTable({
 		data: associatedSuppliers || [],
 		columns: associatedColumns,
+		getCoreRowModel: getCoreRowModel(),
 	});
 
-	const availableTable = useTable({
-		features: appTableFeatures,
+	const availableTable = useReactTable({
 		data: availableSuppliers || [],
 		columns: availableColumns,
+		getCoreRowModel: getCoreRowModel(),
 	});
 
 	if (!customer) {
@@ -234,11 +225,11 @@ const DetalleClientePage: React.FC = () => {
 				<div className='space-y-6'>
 					{/* Información del cliente - DATOS REALES DE BD */}
 					<Card className='overflow-hidden shadow-lg'>
-						<CardHeader className='bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20'>
+						<CardHeader className='bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20'>
 							<div className='flex items-center justify-between'>
 								<div className='flex items-center gap-4'>
 									{/* Avatar con inicial */}
-									<div className='flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-600 text-2xl font-bold text-white shadow-lg'>
+									<div className='flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-2xl font-bold text-white shadow-lg'>
 										{customer.name.charAt(0).toUpperCase()}
 									</div>
 									<div>
@@ -256,7 +247,7 @@ const DetalleClientePage: React.FC = () => {
 						<CardBody className='p-6'>
 							{/* Stats Card */}
 							<div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
-								<div className='rounded-lg border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-700 dark:bg-gray-800'>
+								<div className='rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800'>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900'>
 											<Icon
@@ -282,7 +273,7 @@ const DetalleClientePage: React.FC = () => {
 									</div>
 								</div>
 
-								<div className='rounded-lg border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-700 dark:bg-gray-800'>
+								<div className='rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800'>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900'>
 											<Icon
@@ -308,7 +299,7 @@ const DetalleClientePage: React.FC = () => {
 									</div>
 								</div>
 
-								<div className='rounded-lg border-2 border-green-200 bg-linear-to-br from-green-50 to-emerald-50 p-4 shadow-xs dark:border-green-800 dark:from-green-900/20 dark:to-emerald-900/20'>
+								<div className='rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 shadow-sm dark:border-green-800 dark:from-green-900/20 dark:to-emerald-900/20'>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-green-600'>
 											<Icon icon='HeroUsers' className='h-6 w-6 text-white' />
@@ -329,7 +320,7 @@ const DetalleClientePage: React.FC = () => {
 
 					{/* TABLA 1: Proveedores ASOCIADOS - DISEÑO MEJORADO */}
 					<Card className='shadow-md'>
-						<CardHeader className='bg-linear-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20'>
+						<CardHeader className='bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20'>
 							<div className='flex items-center justify-between'>
 								<div className='flex items-center gap-3'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 dark:bg-emerald-500'>
@@ -356,7 +347,7 @@ const DetalleClientePage: React.FC = () => {
 							</div>
 						</CardHeader>
 						<CardBody className='p-0'>
-							{loadingAssociated && (
+							{loadingAssociated ? (
 								<div className='flex min-h-[200px] items-center justify-center'>
 									<div className='text-center'>
 										<Icon
@@ -368,89 +359,84 @@ const DetalleClientePage: React.FC = () => {
 										</p>
 									</div>
 								</div>
-							)}
-							{!loadingAssociated &&
-								associatedTable.getRowModel().rows.length === 0 && (
-									<div className='flex min-h-[200px] items-center justify-center'>
-										<div className='text-center'>
-											<div className='mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800'>
-												<Icon
-													icon='HeroInboxStack'
-													className='h-8 w-8 text-gray-400'
-												/>
-											</div>
-											<p className='mt-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
-												Sin proveedores asociados
-											</p>
-											<p className='mt-1 text-gray-500 dark:text-gray-400'>
-												Este cliente no tiene proveedores vinculados aún
-											</p>
-											{/* {isEditable && ( */}
-											<p className='mt-2 flex items-center gap-2 text-blue-600 dark:text-blue-400'>
-												<Icon
-													icon='DuoLamp2'
-													color='amber'
-													className='h-4 w-4'
-												/>
-												<span>
-													Activa el modo edición para asociar proveedores
-												</span>
-											</p>
-											{/* )} */}
+							) : associatedTable.getRowModel().rows.length === 0 ? (
+								<div className='flex min-h-[200px] items-center justify-center'>
+									<div className='text-center'>
+										<div className='mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800'>
+											<Icon
+												icon='HeroInboxStack'
+												className='h-8 w-8 text-gray-400'
+											/>
 										</div>
+										<p className='mt-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
+											Sin proveedores asociados
+										</p>
+										<p className='mt-1 text-gray-500 dark:text-gray-400'>
+											Este cliente no tiene proveedores vinculados aún
+										</p>
+										{/* {isEditable && ( */}
+										<p className='mt-2 flex items-center gap-2 text-blue-600 dark:text-blue-400'>
+											<Icon
+												icon='DuoLamp2'
+												color='amber'
+												className='h-4 w-4'
+											/>
+											<span>
+												Activa el modo edición para asociar proveedores
+											</span>
+										</p>
+										{/* )} */}
 									</div>
-								)}
-							{!loadingAssociated &&
-								associatedTable.getRowModel().rows.length !== 0 && (
-									<div className='overflow-x-auto'>
-										<table className='w-full'>
-											<thead className='bg-gray-50 dark:bg-gray-800'>
-												{associatedTable
-													.getHeaderGroups()
-													.map((headerGroup) => (
-														<tr key={headerGroup.id}>
-															{headerGroup.headers.map((header) => (
-																<th
-																	key={header.id}
-																	className='px-6 py-3 text-left font-semibold tracking-wider text-gray-700 uppercase dark:text-gray-300'>
-																	{flexRender(
-																		header.column.columnDef
-																			.header,
-																		header.getContext(),
-																	)}
-																</th>
-															))}
-														</tr>
-													))}
-											</thead>
-											<tbody className='divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900'>
-												{associatedTable.getRowModel().rows.map((row) => (
-													<tr
-														key={row.id}
-														className='transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-900/10'>
-														{row.getVisibleCells().map((cell) => (
-															<td
-																key={cell.id}
-																className='px-6 py-4 whitespace-nowrap'>
+								</div>
+							) : (
+								<div className='overflow-x-auto'>
+									<table className='w-full'>
+										<thead className='bg-gray-50 dark:bg-gray-800'>
+											{associatedTable
+												.getHeaderGroups()
+												.map((headerGroup) => (
+													<tr key={headerGroup.id}>
+														{headerGroup.headers.map((header) => (
+															<th
+																key={header.id}
+																className='px-6 py-3 text-left font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 																{flexRender(
-																	cell.column.columnDef.cell,
-																	cell.getContext(),
+																	header.column.columnDef.header,
+																	header.getContext(),
 																)}
-															</td>
+															</th>
 														))}
 													</tr>
 												))}
-											</tbody>
-										</table>
-									</div>
-								)}
+										</thead>
+										<tbody className='divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900'>
+											{associatedTable.getRowModel().rows.map((row) => (
+												<tr
+													key={row.id}
+													className='transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-900/10'>
+													{row.getVisibleCells().map((cell) => (
+														<td
+															key={cell.id}
+															className='whitespace-nowrap px-6 py-4'>
+															{flexRender(
+																cell.column.columnDef.cell,
+																cell.getContext(),
+															)}
+														</td>
+													))}
+												</tr>
+											))}
+										</tbody>
+									</table>
+								</div>
+							)}
 						</CardBody>
 					</Card>
 
 					{/* TABLA 2: Proveedores DISPONIBLES - DISEÑO MEJORADO */}
 					{isEditable && (
 						<Card className='border-2 border-dashed border-blue-300 shadow-md dark:border-blue-700'>
-							<CardHeader className='bg-linear-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20'>
+							<CardHeader className='bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20'>
 								<div className='flex items-center justify-between'>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-500'>
@@ -474,7 +460,7 @@ const DetalleClientePage: React.FC = () => {
 								</div>
 							</CardHeader>
 							<CardBody className='p-0'>
-								{loadingAll && (
+								{loadingAll ? (
 									<div className='flex min-h-[200px] items-center justify-center'>
 										<div className='text-center'>
 											<Icon
@@ -486,8 +472,7 @@ const DetalleClientePage: React.FC = () => {
 											</p>
 										</div>
 									</div>
-								)}
-								{!loadingAll && availableTable.getRowModel().rows.length === 0 && (
+								) : availableTable.getRowModel().rows.length === 0 ? (
 									<div className='flex min-h-[200px] items-center justify-center'>
 										<div className='text-center'>
 											<div className='mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800'>
@@ -504,8 +489,7 @@ const DetalleClientePage: React.FC = () => {
 											</p>
 										</div>
 									</div>
-								)}
-								{!loadingAll && availableTable.getRowModel().rows.length !== 0 && (
+								) : (
 									<div className='overflow-x-auto'>
 										<table className='w-full'>
 											<thead className='bg-gray-50 dark:bg-gray-800'>
@@ -516,7 +500,7 @@ const DetalleClientePage: React.FC = () => {
 															{headerGroup.headers.map((header) => (
 																<th
 																	key={header.id}
-																	className='px-6 py-3 text-left font-semibold tracking-wider text-gray-700 uppercase dark:text-gray-300'>
+																	className='px-6 py-3 text-left font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 																	{flexRender(
 																		header.column.columnDef
 																			.header,
@@ -535,7 +519,7 @@ const DetalleClientePage: React.FC = () => {
 														{row.getVisibleCells().map((cell) => (
 															<td
 																key={cell.id}
-																className='px-6 py-4 whitespace-nowrap'>
+																className='whitespace-nowrap px-6 py-4'>
 																{flexRender(
 																	cell.column.columnDef.cell,
 																	cell.getContext(),

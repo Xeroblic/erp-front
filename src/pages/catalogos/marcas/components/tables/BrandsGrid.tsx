@@ -43,7 +43,7 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({ brands, loading, onView, onEdit
 	}
 
 	return (
-		<div className='grid grid-cols-1 gap-4 rounded-xl bg-white p-4 sm:grid-cols-2 xl:grid-cols-3 dark:bg-zinc-800'>
+		<div className='grid grid-cols-1 gap-4 rounded-xl bg-white p-4 dark:bg-zinc-800 sm:grid-cols-2 xl:grid-cols-3'>
 			{brands.map((brand, index) => (
 				<RevealOnScroll key={brand.id} delay={Math.min(index, 8) * 30}>
 					<Card

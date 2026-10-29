@@ -4,10 +4,11 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IWarehouse } from '@/interface/warehouse.interface';
+// eslint-disable-next-line import/extensions
 import warehouseReducer from '@/store/slices/warehouses/warehouseSlice';
 import { useBodegas } from '../hooks/useBodegas';
 
-const branchContext = vi.hoisted(() => ({ branchId: 1 }));
+const branchContext = vi.hoisted(() => ({ branchId: 1 as number | null }));
 const fetchData = vi.hoisted(() => vi.fn());
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 // Sólo concede los permisos listados, y todos si la consulta pide `requireAll`.
@@ -92,7 +93,7 @@ describe('useBodegas con cambio de sucursal', () => {
 				data: [warehouse],
 				meta: { total: 1, current_page: 1, per_page: 15, last_page: 1 },
 			},
-		});
+		} as never);
 	});
 
 	it('cierra edición y descarta la bodega seleccionada antes de cargar la nueva sucursal', async () => {
@@ -168,7 +169,7 @@ describe('useBodegas filtros y resumen', () => {
 				data: [central, sala],
 				meta: { total: 2, current_page: 1, per_page: 15, last_page: 1 },
 			},
-		});
+		} as never);
 	});
 
 	it('filtra por búsqueda, tipo y estado sin alterar el resumen de la sucursal', async () => {

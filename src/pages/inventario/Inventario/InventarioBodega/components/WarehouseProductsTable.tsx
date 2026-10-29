@@ -4,6 +4,7 @@ import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+// eslint-disable-next-line import/extensions
 import type { TableSortState } from '@/components/ui/SortableTableHeader';
 import { INVENTORY_OVERVIEW_FEATURES } from '@/services/procurement/inventoryOverview.service';
 import type {
@@ -240,7 +241,7 @@ const WarehouseProductsTable: React.FC<IWarehouseProductsTableProps> = ({
 								<Tr key={`bodega-skeleton-${rowIndex}`}>
 									{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
 										<Td key={`bodega-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>
@@ -274,6 +275,7 @@ const WarehouseProductsTable: React.FC<IWarehouseProductsTableProps> = ({
 									<Fragment key={row.product.id}>
 										{/* La fila entera despliega el detalle con el mouse; el
 										    botón de la flecha es el control accesible por teclado. */}
+										{/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
 										<Tr
 											className='cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/60'
 											onClick={() => toggle(row.product.id)}>
@@ -287,7 +289,7 @@ const WarehouseProductsTable: React.FC<IWarehouseProductsTableProps> = ({
 														event.stopPropagation();
 														toggle(row.product.id);
 													}}
-													className='flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-solid dark:hover:bg-zinc-800'>
+													className='flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 dark:hover:bg-zinc-800'>
 													<Icon
 														icon={
 															isOpen

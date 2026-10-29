@@ -24,7 +24,7 @@ const PersonalizacionTest: React.FC = () => {
 	const { themeColor, setThemeColor, themeColorShade, setThemeColorShade } = useThemeColor();
 
 	return (
-		<div className='fixed top-4 left-4 z-50 max-w-md rounded-lg border border-zinc-300 bg-white p-4 shadow-lg dark:border-zinc-600 dark:bg-zinc-800'>
+		<div className='fixed left-4 top-4 z-50 max-w-md rounded-lg border border-zinc-300 bg-white p-4 shadow-lg dark:border-zinc-600 dark:bg-zinc-800'>
 			<h3 className='mb-3 text-lg font-bold text-gray-900 dark:text-white'>
 				🧪 Test Personalización
 			</h3>
@@ -92,7 +92,7 @@ const PersonalizacionTest: React.FC = () => {
 						{['red', 'amber', 'emerald', 'blue', 'violet'].map((color) => (
 							<button
 								key={color}
-								className={`h-6 w-6 rounded-sm border-2 ${
+								className={`h-6 w-6 rounded border-2 ${
 									themeColor === color
 										? 'border-gray-800 dark:border-gray-200'
 										: 'border-gray-300'
@@ -112,7 +112,7 @@ const PersonalizacionTest: React.FC = () => {
 					<h4 className='mb-2 font-semibold text-gray-700 dark:text-gray-300'>
 						HTML Classes:
 					</h4>
-					<div className='rounded-sm bg-gray-100 p-2 text-xs dark:bg-gray-700'>
+					<div className='rounded bg-gray-100 p-2 text-xs dark:bg-gray-700'>
 						{document.documentElement.className || 'ninguna'}
 					</div>
 				</div>

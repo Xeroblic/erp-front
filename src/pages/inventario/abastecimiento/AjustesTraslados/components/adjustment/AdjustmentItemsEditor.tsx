@@ -230,10 +230,10 @@ const AdjustmentItemsEditor: FC<IAdjustmentItemsEditorProps> = ({
 									<Td
 										className={
 											balance === null || loadingStock
-												? 'text-zinc-500 tabular-nums'
+												? 'tabular-nums text-zinc-500'
 												: 'tabular-nums'
 										}>
-										<div className='flex min-h-9 items-center'>
+										<div className='flex min-h-[2.25rem] items-center'>
 											{balanceLabel}
 										</div>
 									</Td>
@@ -269,13 +269,13 @@ const AdjustmentItemsEditor: FC<IAdjustmentItemsEditorProps> = ({
 												finalBalance !== null && finalBalance < 0,
 										})}>
 										<div
-											className='flex min-h-9 items-center'
+											className='flex min-h-[2.25rem] items-center'
 											data-testid={`ajuste-stock-resultante-${index}`}>
 											{finalBalance === null ? '—' : finalBalance}
 										</div>
 									</Td>
 									<Td>
-										<div className='flex min-h-9 items-center'>
+										<div className='flex min-h-[2.25rem] items-center'>
 											<Button
 												type='button'
 												variant='outline'

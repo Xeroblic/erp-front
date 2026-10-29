@@ -41,6 +41,7 @@ const Progress: FC<IProgressProps> = (props) => {
 				'h-5 w-full',
 				'bg-zinc-500/10',
 				'overflow-hidden',
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 				rounded,
 				className,
 			)}

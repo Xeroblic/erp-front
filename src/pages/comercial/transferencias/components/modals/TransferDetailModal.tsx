@@ -180,15 +180,15 @@ const TransferDetailModal: React.FC<TransferDetailModalProps> = ({
 					</CardHeader>
 					<CardBody className='grid grid-cols-1 gap-3 md:grid-cols-3'>
 						<div>
-							<p className='text-xs text-gray-500 uppercase'>Total de productos</p>
+							<p className='text-xs uppercase text-gray-500'>Total de productos</p>
 							<p className='text-2xl font-semibold'>{totals.items}</p>
 						</div>
 						<div>
-							<p className='text-xs text-gray-500 uppercase'>Unidades transferidas</p>
+							<p className='text-xs uppercase text-gray-500'>Unidades transferidas</p>
 							<p className='text-2xl font-semibold'>{totals.quantity}</p>
 						</div>
 						<div>
-							<p className='text-xs text-gray-500 uppercase'>Responsable</p>
+							<p className='text-xs uppercase text-gray-500'>Responsable</p>
 							<p className='text-base font-medium'>
 								{detail.responsible?.name || 'Sin asignar'}
 							</p>

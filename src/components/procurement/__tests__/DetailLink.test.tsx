@@ -24,10 +24,8 @@ describe('DetailLink', () => {
 			['view-procurement-supplier'],
 		);
 
-		// `\s*`: con jsdom 30 el span sr-only es inline y dom-accessibility-api recorta
-		// su espacio final; el navegador sí lo conserva («Ficha del proveedor: PCExpress»).
 		expect(
-			screen.getByRole('link', { name: /^Ficha del proveedor:\s*PCExpress$/ }),
+			screen.getByRole('link', { name: 'Ficha del proveedor: PCExpress' }),
 		).toHaveAttribute('href', '/inventario/abastecimiento/proveedores/7');
 	});
 

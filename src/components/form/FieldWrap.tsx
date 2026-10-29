@@ -33,7 +33,7 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 	} = props;
 
 	const sharedClasses = classNames(
-		'absolute top-[2px] bottom-[2px] flex justify-center items-center px-1 rounded-sm',
+		'absolute top-[2px] bottom-[2px] flex justify-center items-center px-1 rounded',
 	);
 
 	const divFirstRef = useRef<HTMLDivElement>(null);
@@ -51,7 +51,7 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 			className={classNames('relative', className)}
 			{...domProps}>
 			{firstSuffix && (
-				<div ref={divFirstRef} className={classNames(sharedClasses, 'inset-s-px')}>
+				<div ref={divFirstRef} className={classNames(sharedClasses, 'start-px')}>
 					{firstSuffix}
 				</div>
 			)}
@@ -59,11 +59,11 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 				const isDomElement = typeof children.type === 'string';
 				const style = {
 					paddingLeft:
-						(firstSuffix && isLTR && domFirstRect?.width) ||
-						(lastSuffix && !isLTR && domLastRect?.width),
+						(firstSuffix && isLTR && (domFirstRect?.width as number)) ||
+						(lastSuffix && !isLTR && (domLastRect?.width as number)),
 					paddingRight:
-						(firstSuffix && !isLTR && domFirstRect?.width) ||
-						(lastSuffix && isLTR && domLastRect?.width),
+						(firstSuffix && !isLTR && (domFirstRect?.width as number)) ||
+						(lastSuffix && isLTR && (domLastRect?.width as number)),
 				} as React.CSSProperties;
 				// Evitar pasar props desconocidos a elementos DOM nativos
 				const childEl = children;
@@ -81,7 +81,7 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 				} as any);
 			})()}
 			{lastSuffix && (
-				<div ref={divLastRef} className={classNames(sharedClasses, 'inset-e-px')}>
+				<div ref={divLastRef} className={classNames(sharedClasses, 'end-px')}>
 					{lastSuffix}
 				</div>
 			)}

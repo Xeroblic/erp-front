@@ -52,7 +52,7 @@ const WebhookEntryItem: React.FC<{ entry: WebhookCatalogEntry }> = ({ entry }) =
 						<div className='mt-2 space-y-1'>
 							{entry.topics.map((topic) => (
 								<div key={topic.topic}>
-									<code className='rounded-sm bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900/50 dark:text-blue-100'>
+									<code className='rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900/50 dark:text-blue-100'>
 										{topic.topic}
 									</code>
 									{topic.description && (

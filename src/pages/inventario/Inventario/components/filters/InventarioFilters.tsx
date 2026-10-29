@@ -42,7 +42,7 @@ const LG_COLUMNS: Record<number, string> = {
 };
 
 const fieldLabelClass = 'block text-sm font-medium text-zinc-700 dark:text-zinc-300';
-const selectBackgroundClass = 'bg-zinc-50! dark:bg-zinc-900!';
+const selectBackgroundClass = '!bg-zinc-50 dark:!bg-zinc-900';
 
 interface IInventarioFiltersProps {
 	filtros: IInventarioFilters;
@@ -96,7 +96,7 @@ const InventarioFilters: React.FC<IInventarioFiltersProps> = ({
 			</CardHeader>
 			<CardBody>
 				<div
-					className={`grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 sm:grid-cols-2 dark:bg-zinc-900/30 ${LG_COLUMNS[columns] ?? 'lg:grid-cols-4'}`}>
+					className={`grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 dark:bg-zinc-900/30 sm:grid-cols-2 ${LG_COLUMNS[columns] ?? 'lg:grid-cols-4'}`}>
 					<div className='space-y-1 lg:col-span-2'>
 						<label htmlFor='inventario-busqueda' className={fieldLabelClass}>
 							Búsqueda

@@ -21,17 +21,10 @@ import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/compon
 import Input from '@/components/form/Input';
 import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
-import Modal, {
-	ModalBody,
-	ModalFooter,
-	ModalFooterChild,
-	ModalHeader,
-} from '@/components/ui/Modal';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import WooIntegrationSelector from '@/pages/catalogos/productos/components/modals/components/WooIntegrationSelector';
 import useCan from '@/hooks/useCan';
 import type { WooProduct } from '@/types/integrations.types';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import UnlinkAllProductsModal from './components/UnlinkAllProductsModal';
 
 export const WooProductsContent: React.FC = () => {
@@ -52,8 +45,6 @@ export const WooProductsContent: React.FC = () => {
 
 	// Modal de desvinculación masiva (solo super-admin)
 	const [unlinkAllOpen, setUnlinkAllOpen] = useState(false);
-	const [productToUnpublish, setProductToUnpublish] = useState<WooProduct | null>(null);
-	const [showUnpublishModal, setShowUnpublishModal] = useState(false);
 
 	// Filtros locales
 	const [searchTerm, setSearchTerm] = useState('');
@@ -150,19 +141,11 @@ export const WooProductsContent: React.FC = () => {
 		[dispatch, subsidiaryId, selectedIntegrationId, loadProducts],
 	);
 
-	const handleAskUnpublish = useCallback((product: WooProduct) => {
-		setProductToUnpublish(product);
-		setShowUnpublishModal(true);
-	}, []);
-
-	const handleCloseUnpublishModal = () => {
-		setShowUnpublishModal(false);
-		setProductToUnpublish(null);
-	};
-
 	const handleUnpublish = useCallback(
 		async (product: WooProduct) => {
 			if (!subsidiaryId || !selectedIntegrationId) return;
+			if (!window.confirm(`¿Estás seguro de despublicar "${product.name}" de WooCommerce?`))
+				return;
 
 			try {
 				await dispatch(
@@ -183,7 +166,7 @@ export const WooProductsContent: React.FC = () => {
 		[dispatch, subsidiaryId, selectedIntegrationId, loadProducts],
 	);
 
-	const columns = useMemo<ColumnDef<AppTableFeatures, WooProduct>[]>(
+	const columns = useMemo<ColumnDef<WooProduct>[]>(
 		() => [
 			{
 				id: 'ids',
@@ -229,7 +212,7 @@ export const WooProductsContent: React.FC = () => {
 						<div className='flex max-w-xs flex-col gap-0.5'>
 							<div className='flex items-start gap-1'>
 								{namesDiffer && (
-									<span className='mt-1 shrink-0 rounded-sm bg-amber-100 px-1 py-0.5 text-[9px] leading-none font-extrabold text-amber-800 dark:bg-amber-950/40 dark:text-amber-400'>
+									<span className='mt-1 flex-shrink-0 rounded bg-amber-100 px-1 py-0.5 text-[9px] font-extrabold leading-none text-amber-800 dark:bg-amber-950/40 dark:text-amber-400'>
 										ERP
 									</span>
 								)}
@@ -241,11 +224,11 @@ export const WooProductsContent: React.FC = () => {
 							</div>
 							{wooName && namesDiffer && (
 								<div className='flex items-start gap-1'>
-									<span className='mt-1 shrink-0 rounded-sm bg-sky-100 px-1 py-0.5 text-[9px] leading-none font-extrabold text-sky-800 dark:bg-sky-950/40 dark:text-sky-400'>
+									<span className='mt-1 flex-shrink-0 rounded bg-sky-100 px-1 py-0.5 text-[9px] font-extrabold leading-none text-sky-800 dark:bg-sky-950/40 dark:text-sky-400'>
 										Woo
 									</span>
 									<p
-										className='truncate text-xs text-neutral-500 italic dark:text-neutral-400'
+										className='truncate text-xs italic text-neutral-500 dark:text-neutral-400'
 										title={wooName}>
 										{wooName}
 									</p>
@@ -260,7 +243,7 @@ export const WooProductsContent: React.FC = () => {
 								<div className='mt-1 flex items-center gap-1 text-xs font-medium text-rose-600 dark:text-rose-400'>
 									<Icon
 										icon='HeroExclamationTriangle'
-										className='h-3.5 w-3.5 shrink-0'
+										className='h-3.5 w-3.5 flex-shrink-0'
 									/>
 									<Tooltip text={lastError} placement='top'>
 										<span className='max-w-[200px] cursor-help truncate underline decoration-dotted'>
@@ -286,23 +269,23 @@ export const WooProductsContent: React.FC = () => {
 						<div className='flex flex-col gap-1 text-xs'>
 							<div className='flex items-center gap-1.5'>
 								{skusDiffer && (
-									<span className='w-8 shrink-0 rounded-sm bg-amber-100 px-1 py-0.5 text-center text-[9px] leading-none font-extrabold text-amber-800 dark:bg-amber-950/40 dark:text-amber-400'>
+									<span className='w-8 flex-shrink-0 rounded bg-amber-100 px-1 py-0.5 text-center text-[9px] font-extrabold leading-none text-amber-800 dark:bg-amber-950/40 dark:text-amber-400'>
 										ERP
 									</span>
 								)}
-								<code className='rounded-sm bg-neutral-100 px-2 py-0.5 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200'>
+								<code className='rounded bg-neutral-100 px-2 py-0.5 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200'>
 									{erpSku}
 								</code>
 							</div>
 							{wooSku && (
 								<div className='flex items-center gap-1.5'>
 									{skusDiffer && (
-										<span className='w-8 shrink-0 rounded-sm bg-sky-100 px-1 py-0.5 text-center text-[9px] leading-none font-extrabold text-sky-800 dark:bg-sky-950/40 dark:text-sky-400'>
+										<span className='w-8 flex-shrink-0 rounded bg-sky-100 px-1 py-0.5 text-center text-[9px] font-extrabold leading-none text-sky-800 dark:bg-sky-950/40 dark:text-sky-400'>
 											Woo
 										</span>
 									)}
 									<code
-										className={`rounded-sm px-2 py-0.5 font-mono text-xs ${
+										className={`rounded px-2 py-0.5 font-mono text-xs ${
 											skusDiffer
 												? 'border border-rose-300 bg-rose-100 text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-400'
 												: 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200'
@@ -544,7 +527,7 @@ export const WooProductsContent: React.FC = () => {
 									variant='outline'
 									color='red'
 									onClick={() => {
-										handleAskUnpublish(product);
+										handleUnpublish(product).catch(() => {});
 									}}
 									isDisable={loading || isRowBusy}
 									aria-label='Despublicar'>
@@ -563,14 +546,7 @@ export const WooProductsContent: React.FC = () => {
 				},
 			},
 		],
-		[
-			loading,
-			syncingId,
-			handleSyncPrice,
-			handleSyncStock,
-			handleSyncChildren,
-			handleAskUnpublish,
-		],
+		[loading, syncingId, handleSyncPrice, handleSyncStock, handleSyncChildren, handleUnpublish],
 	);
 
 	return (
@@ -609,7 +585,7 @@ export const WooProductsContent: React.FC = () => {
 			<Container>
 				<div className='grid grid-cols-1 gap-5'>
 					{/* Panel de configuración de integración */}
-					<Card className='overflow-visible border border-neutral-200 shadow-xs dark:border-neutral-700/80'>
+					<Card className='overflow-visible border border-neutral-200 shadow-sm dark:border-neutral-700/80'>
 						<CardHeader>
 							<CardHeaderChild>
 								<CardTitle>Tienda WooCommerce</CardTitle>
@@ -627,7 +603,7 @@ export const WooProductsContent: React.FC = () => {
 								<div className='mt-4 flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 p-3.5 dark:border-amber-500/30 dark:bg-amber-950/30'>
 									<Icon
 										icon='HeroExclamationTriangle'
-										className='mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400'
+										className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400'
 									/>
 									<p className='text-xs font-medium text-amber-800 dark:text-amber-200'>
 										Esta tienda está <strong>inactiva</strong>. Las acciones de
@@ -640,7 +616,7 @@ export const WooProductsContent: React.FC = () => {
 					</Card>
 
 					{selectedIntegrationId && (
-						<Card className='border border-neutral-200 shadow-xs dark:border-neutral-700/80'>
+						<Card className='border border-neutral-200 shadow-sm dark:border-neutral-700/80'>
 							<CardHeader className='pb-0'>
 								<CardHeaderChild className='w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
 									<CardTitle>Productos Vinculados</CardTitle>
@@ -705,34 +681,6 @@ export const WooProductsContent: React.FC = () => {
 				onSuccess={loadProducts}
 				subsidiaryId={subsidiaryId}
 			/>
-
-			<Modal isOpen={showUnpublishModal} setIsOpen={setShowUnpublishModal} size='sm'>
-				<ModalHeader>Despublicar producto</ModalHeader>
-				<ModalBody>
-					<p className='text-sm'>
-						¿Estás seguro de despublicar <strong>{productToUnpublish?.name}</strong> de
-						WooCommerce?
-					</p>
-				</ModalBody>
-				<ModalFooter>
-					<ModalFooterChild>
-						<Button variant='outline' color='zinc' onClick={handleCloseUnpublishModal}>
-							Cancelar
-						</Button>
-						<Button
-							variant='solid'
-							color='red'
-							isDisable={loading}
-							onClick={() => {
-								if (!productToUnpublish) return;
-								handleCloseUnpublishModal();
-								void handleUnpublish(productToUnpublish);
-							}}>
-							Despublicar
-						</Button>
-					</ModalFooterChild>
-				</ModalFooter>
-			</Modal>
 		</>
 	);
 };

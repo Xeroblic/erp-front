@@ -95,7 +95,7 @@ beforeEach(() => {
 describe('deferredPaymentsService', () => {
 	it('consulta la lista paginada con filtros y señal', async () => {
 		const controller = new AbortController();
-		apiSpies.fetchData.mockResolvedValue({ data: listResponse });
+		apiSpies.fetchData.mockResolvedValue({ data: listResponse } as never);
 
 		await expect(
 			deferredPaymentsService.getDocuments(
@@ -131,8 +131,8 @@ describe('deferredPaymentsService', () => {
 
 	it('normaliza recursos Laravel para summary y detalle', async () => {
 		apiSpies.fetchData
-			.mockResolvedValueOnce({ data: { data: summary } })
-			.mockResolvedValueOnce({ data: { data: document } });
+			.mockResolvedValueOnce({ data: { data: summary } } as never)
+			.mockResolvedValueOnce({ data: { data: document } } as never);
 
 		const filters = { status: 'overdue' as const, search: 'andina' };
 		await expect(deferredPaymentsService.getSummary(4, filters)).resolves.toEqual(summary);
@@ -165,7 +165,7 @@ describe('deferredPaymentsService', () => {
 		};
 		apiSpies.fetchData.mockResolvedValue({
 			data: { data: document, credit_limit_exceeded: false },
-		});
+		} as never);
 
 		await expect(deferredPaymentsService.createDocument(4, payload)).resolves.toEqual(created);
 		expect(apiSpies.fetchData).toHaveBeenCalledWith(
@@ -183,9 +183,11 @@ describe('deferredPaymentsService', () => {
 	});
 
 	it('tolera creación plana y conserva fechas ISO al actualizar', async () => {
-		apiSpies.fetchData.mockResolvedValueOnce({ data: document }).mockResolvedValueOnce({
-			data: { data: document, credit_limit_exceeded: false },
-		});
+		apiSpies.fetchData
+			.mockResolvedValueOnce({ data: document } as never)
+			.mockResolvedValueOnce({
+				data: { data: document, credit_limit_exceeded: false },
+			} as never);
 
 		await expect(
 			deferredPaymentsService.createDocument(4, {
@@ -222,9 +224,9 @@ describe('deferredPaymentsService', () => {
 	});
 	it('registra, anula y completa abonos usando las rutas documentadas', async () => {
 		apiSpies.fetchData
-			.mockResolvedValueOnce({ data: { data: payment } })
-			.mockResolvedValueOnce({ data: { message: 'Abono anulado correctamente.' } })
-			.mockResolvedValueOnce({ data: payment });
+			.mockResolvedValueOnce({ data: { data: payment } } as never)
+			.mockResolvedValueOnce({ data: { message: 'Abono anulado correctamente.' } } as never)
+			.mockResolvedValueOnce({ data: payment } as never);
 
 		const receipt = new File(['comprobante'], 'abono.pdf', {
 			type: 'application/pdf',
@@ -279,9 +281,9 @@ describe('deferredPaymentsService', () => {
 			notes: null,
 		};
 		apiSpies.fetchData
-			.mockResolvedValueOnce({ data: { data: profile } })
-			.mockResolvedValueOnce({ data: profile })
-			.mockResolvedValueOnce({ data: undefined });
+			.mockResolvedValueOnce({ data: { data: profile } } as never)
+			.mockResolvedValueOnce({ data: profile } as never)
+			.mockResolvedValueOnce({ data: undefined } as never);
 
 		await expect(deferredPaymentsService.getCreditProfile(4, 8)).resolves.toEqual(profile);
 		await expect(
@@ -318,7 +320,7 @@ describe('deferredPaymentsService', () => {
 
 	it('consulta la cartera de crédito paginada sin envolver la colección Laravel', async () => {
 		const controller = new AbortController();
-		apiSpies.fetchData.mockResolvedValue({ data: creditProfilesResponse });
+		apiSpies.fetchData.mockResolvedValue({ data: creditProfilesResponse } as never);
 
 		await expect(
 			deferredPaymentsService.getCreditProfiles(
@@ -346,11 +348,11 @@ describe('deferredPaymentsService', () => {
 				headers: {
 					'content-disposition': "attachment; filename*=UTF-8''perfiles%20credito.xlsx",
 				},
-			})
+			} as never)
 			.mockResolvedValueOnce({
 				data: documentsBlob,
 				headers: { 'content-disposition': 'attachment; filename="pagos.xlsx"' },
-			});
+			} as never);
 
 		await expect(
 			deferredPaymentsService.exportCreditProfiles(
@@ -385,7 +387,7 @@ describe('deferredPaymentsService', () => {
 
 	it('no inventa un nombre si Content-Disposition no está disponible', async () => {
 		const blob = new Blob(['pagos']);
-		apiSpies.fetchData.mockResolvedValue({ data: blob, headers: {} });
+		apiSpies.fetchData.mockResolvedValue({ data: blob, headers: {} } as never);
 
 		await expect(deferredPaymentsService.exportDocuments(4, {})).resolves.toEqual({
 			blob,

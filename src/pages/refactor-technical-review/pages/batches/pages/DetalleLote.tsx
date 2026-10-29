@@ -77,7 +77,7 @@ const DetalleLote: React.FC = () => {
 					/>
 					<div className='flex flex-col gap-2'>
 						<div className='flex flex-wrap items-center gap-3'>
-							<h1 className='text-xl leading-tight font-bold text-zinc-900 md:text-2xl dark:text-zinc-100'>
+							<h1 className='text-xl font-bold leading-tight text-zinc-900 dark:text-zinc-100 md:text-2xl'>
 								Lote {formattedBatchCode}
 							</h1>
 							<Badge

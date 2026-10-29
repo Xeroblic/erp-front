@@ -1,6 +1,10 @@
 import type { RootState } from '@/store/rootReducer';
 import type { IUserMe } from '@/interface/user.interface';
-import { resolveSubsidiaryFromBranch, toContextId } from '@/utils/orgContext.util';
+import {
+	resolveSubsidiaryFromBranch,
+	toContextId,
+	type ContextUser,
+} from '@/utils/orgContext.util';
 
 type UserWithAuthorizationBranches = IUserMe & {
 	subsidiary_id?: number | null;
@@ -41,7 +45,10 @@ export const selectEffectiveSubsidiaryId = (state: RootState): number | null => 
 		authUser?.branch_id ??
 		null;
 
-	const derivedFromBranch = resolveSubsidiaryFromBranch(preferredBranchId, user);
+	const derivedFromBranch = resolveSubsidiaryFromBranch(
+		preferredBranchId,
+		user as ContextUser | null | undefined,
+	);
 	if (derivedFromBranch !== null) return derivedFromBranch;
 
 	return null;

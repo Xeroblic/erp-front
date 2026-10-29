@@ -62,7 +62,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 					</div>
 					<div>
 						<h2 className='text-lg font-semibold'>Detalle de la marca</h2>
-						<p className='text-xs tracking-wide text-zinc-500 uppercase dark:text-zinc-400'>
+						<p className='text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400'>
 							Información esencial y actividad reciente
 						</p>
 					</div>
@@ -71,7 +71,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 			<ModalBody>
 				{brand ? (
 					<div className='space-y-5'>
-						<section className='rounded-2xl border border-zinc-100 bg-white/60 p-4 shadow-xs backdrop-blur-xs dark:border-white/10 dark:bg-zinc-900/60'>
+						<section className='rounded-2xl border border-zinc-100 bg-white/60 p-4 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-zinc-900/60'>
 							<div className='flex items-start gap-4'>
 								<BrandLogo
 									brand={brand}
@@ -93,7 +93,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 										</Badge>
 									</div>
 									{brand.code && (
-										<p className='text-xs tracking-wide text-zinc-500 uppercase'>
+										<p className='text-xs uppercase tracking-wide text-zinc-500'>
 											Código {brand.code}
 										</p>
 									)}
@@ -112,7 +112,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 									)}
 								</div>
 								<div className='text-right'>
-									<p className='text-xs tracking-wide text-zinc-400 uppercase'>
+									<p className='text-xs uppercase tracking-wide text-zinc-400'>
 										Productos
 									</p>
 									<p className='text-xl font-semibold text-zinc-900 dark:text-white'>
@@ -126,8 +126,8 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 							{stats.map((stat) => (
 								<div
 									key={stat.label}
-									className='rounded-xl border border-zinc-100 bg-white/40 p-3 text-left shadow-xs dark:border-white/10 dark:bg-zinc-900/40'>
-									<p className='text-[11px] tracking-wide text-zinc-500 uppercase'>
+									className='rounded-xl border border-zinc-100 bg-white/40 p-3 text-left shadow-sm dark:border-white/10 dark:bg-zinc-900/40'>
+									<p className='text-[11px] uppercase tracking-wide text-zinc-500'>
 										{stat.label}
 									</p>
 									<p
@@ -138,7 +138,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 							))}
 						</section>
 
-						<section className='rounded-2xl border border-zinc-100 bg-white/50 p-4 shadow-xs dark:border-white/10 dark:bg-zinc-900/50'>
+						<section className='rounded-2xl border border-zinc-100 bg-white/50 p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/50'>
 							<div className='flex items-center justify-between text-sm'>
 								<h4 className='font-semibold'>Galería</h4>
 								{galleryImages.length > 0 && (
@@ -170,7 +170,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 													<button
 														type='button'
 														onClick={open}
-														className='flex h-20 w-20 shrink-0 cursor-zoom-in overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-xs transition hover:-translate-y-0.5 hover:ring-2 hover:ring-emerald-200 dark:border-white/10 dark:bg-zinc-900'>
+														className='flex h-20 w-20 flex-shrink-0 cursor-zoom-in overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:ring-2 hover:ring-emerald-200 dark:border-white/10 dark:bg-zinc-900'>
 														<img
 															src={thumbUrl}
 															alt={
@@ -185,7 +185,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 										);
 									})}
 									{galleryOverflow > 0 && (
-										<div className='flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-dashed border-zinc-300 text-xs font-semibold text-zinc-500 dark:border-zinc-700'>
+										<div className='flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl border border-dashed border-zinc-300 text-xs font-semibold text-zinc-500 dark:border-zinc-700'>
 											+{galleryOverflow}
 										</div>
 									)}
@@ -198,7 +198,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 						</section>
 
 						{hasDetails && (
-							<section className='rounded-2xl border border-zinc-100 bg-white/60 p-4 text-sm shadow-xs dark:border-white/10 dark:bg-zinc-900/60'>
+							<section className='rounded-2xl border border-zinc-100 bg-white/60 p-4 text-sm shadow-sm dark:border-white/10 dark:bg-zinc-900/60'>
 								<h4 className='font-semibold'>Información adicional</h4>
 								<dl className='mt-3 space-y-2'>
 									{brand.origin_country && (
@@ -222,7 +222,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 						)}
 
 						{brand.description && (
-							<section className='rounded-2xl border border-zinc-100 bg-white/60 p-4 shadow-xs dark:border-white/10 dark:bg-zinc-900/60'>
+							<section className='rounded-2xl border border-zinc-100 bg-white/60 p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60'>
 								<h4 className='font-semibold'>Descripción</h4>
 								<p className='mt-2 text-sm text-zinc-600 dark:text-zinc-300'>
 									{brand.description}

@@ -13,13 +13,13 @@ import { YesNoSelector } from '../../../ui/YesNoSelector';
 const DesktopAccessoriesSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	errors,
 	readOnly,
-	values,
-	setFieldValue,
+	watch,
+	setValue,
 }) => {
-	const includesCharger = values.includes_charger;
-	const chargerStatus = values.charger_status;
-	const includesAntenna = values.includes_antenna;
-	const antennaCondition = values.antenna_condition;
+	const includesCharger = watch('includes_charger');
+	const chargerStatus = watch('charger_status');
+	const includesAntenna = watch('includes_antenna');
+	const antennaCondition = watch('antenna_condition');
 	const antennaLabelId = useId();
 	const antennaErrorId = useId();
 
@@ -35,11 +35,11 @@ const DesktopAccessoriesSection: React.FC<FormSectionProps<DesktopFormData>> = (
 					value={includesCharger}
 					onChange={(val) => {
 						if (readOnly) return;
-						setFieldValue('includes_charger', val);
+						setValue('includes_charger', val);
 						if (val === false) {
-							setFieldValue('charger_status', 'not_included');
+							setValue('charger_status', 'not_included');
 						} else {
-							setFieldValue('charger_status', null); // Reset to force selection if changing back to true
+							setValue('charger_status', null); // Reset to force selection if changing back to true
 						}
 					}}
 				/>
@@ -61,14 +61,14 @@ const DesktopAccessoriesSection: React.FC<FormSectionProps<DesktopFormData>> = (
 									value={opt.value}
 									isSelected={chargerStatus === opt.value}
 									onClick={() =>
-										!readOnly && setFieldValue('charger_status', opt.value)
+										!readOnly && setValue('charger_status', opt.value)
 									}
 								/>
 							),
 						)}
 					</div>
 					{errors.charger_status && (
-						<p className='mt-2 text-xs text-red-500'>{errors.charger_status}</p>
+						<p className='mt-2 text-xs text-red-500'>{errors.charger_status.message}</p>
 					)}
 					<p className='mt-2 text-xs text-zinc-500'>{DESKTOP_HINTS.charger_status}</p>
 				</div>
@@ -80,8 +80,11 @@ const DesktopAccessoriesSection: React.FC<FormSectionProps<DesktopFormData>> = (
 					disabled={readOnly}
 					onChange={(value) => {
 						if (readOnly || value === includesAntenna) return;
-						setFieldValue('includes_antenna', value);
-						setFieldValue('antenna_condition', null, { touch: true });
+						setValue('includes_antenna', value, { shouldDirty: true });
+						setValue('antenna_condition', null, {
+							shouldDirty: true,
+							shouldValidate: true,
+						});
 					}}
 				/>
 				<p className='mt-2 text-xs text-zinc-500'>
@@ -108,8 +111,9 @@ const DesktopAccessoriesSection: React.FC<FormSectionProps<DesktopFormData>> = (
 								disabled={readOnly}
 								onClick={() =>
 									!readOnly &&
-									setFieldValue('antenna_condition', option.value, {
-										touch: true,
+									setValue('antenna_condition', option.value, {
+										shouldDirty: true,
+										shouldValidate: true,
 									})
 								}
 							/>
@@ -117,7 +121,7 @@ const DesktopAccessoriesSection: React.FC<FormSectionProps<DesktopFormData>> = (
 					</div>
 					{errors.antenna_condition && (
 						<p id={antennaErrorId} role='alert' className='mt-2 text-xs text-red-500'>
-							{errors.antenna_condition}
+							{errors.antenna_condition.message}
 						</p>
 					)}
 				</div>

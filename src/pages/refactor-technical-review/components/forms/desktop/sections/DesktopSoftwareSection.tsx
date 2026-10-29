@@ -1,18 +1,19 @@
 import React, { useMemo } from 'react';
-import { LuLaptop, LuServer } from 'react-icons/lu';
+import { Controller } from 'react-hook-form';
 import type { FormSectionProps } from '../../shared/types';
 import type { DesktopFormData } from '../../../validation/desktop.schema';
 import { getDesktopLabel } from '../../../translations/desktop.labels';
 import { DESKTOP_HINTS } from '../../../constants/desktop/desktop.hints';
 // Fix: Named import for SoSelector
 import { SoSelector } from '../../../ui/selectors/SoSelector';
+import { LuLaptop, LuServer } from 'react-icons/lu';
 
 const DesktopSoftwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
-	setFieldValue,
+	control,
 	readOnly,
-	values,
+	watch,
 }) => {
-	const currentOS = values.operating_system;
+	const currentOS = watch('operating_system');
 
 	// Optional: derived state for UI feedback
 	const isWindows = currentOS?.toLowerCase().includes('windows');
@@ -29,7 +30,7 @@ const DesktopSoftwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 		<div className='space-y-6'>
 			<div className='flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/50'>
 				<div className='flex items-center gap-3'>
-					<div className='rounded-full bg-white p-2 shadow-xs dark:bg-zinc-800'>
+					<div className='rounded-full bg-white p-2 shadow-sm dark:bg-zinc-800'>
 						{headerIcon}
 					</div>
 					<div className='flex flex-col'>
@@ -52,10 +53,16 @@ const DesktopSoftwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 				</div>
 			</div>
 
-			<SoSelector
-				value={values.operating_system || ''}
-				onChange={(val: string) => setFieldValue('operating_system', val)}
-				readOnly={readOnly}
+			<Controller
+				name='operating_system'
+				control={control}
+				render={({ field }) => (
+					<SoSelector
+						value={field.value || ''}
+						onChange={(val: string) => field.onChange(val)}
+						readOnly={readOnly}
+					/>
+				)}
 			/>
 		</div>
 	);

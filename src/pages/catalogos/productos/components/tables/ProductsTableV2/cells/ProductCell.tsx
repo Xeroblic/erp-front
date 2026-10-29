@@ -7,6 +7,7 @@ import {
 	getEffectiveAvailableStock,
 } from '@/components/helper/product.helper';
 import { PRODUCT_TYPE_META } from '@/pages/catalogos/productos/constants/products.constant';
+import type { TColors } from '@/types/colors.type';
 import type { IProduct } from '@/interface/product.interface';
 import { DEFAULT_TYPE_META } from '../productTable.utils';
 
@@ -23,7 +24,7 @@ const ProductCell: React.FC<{ product: IProduct }> = ({ product }) => {
 
 	return (
 		<div className='flex items-start gap-3'>
-			<div className='h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800'>
+			<div className='h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800'>
 				{showImage ? (
 					<img
 						src={imageUrl}
@@ -39,9 +40,9 @@ const ProductCell: React.FC<{ product: IProduct }> = ({ product }) => {
 			</div>
 
 			{/* Info del producto */}
-			<div className='max-w-[280px] min-w-0 flex-1'>
+			<div className='min-w-0 max-w-[280px] flex-1'>
 				<div className='flex items-center gap-2'>
-					<span className='line-clamp-2 font-medium wrap-break-word' title={product.name}>
+					<span className='line-clamp-2 break-words font-medium' title={product.name}>
 						{product.name}
 					</span>
 				</div>
@@ -49,8 +50,8 @@ const ProductCell: React.FC<{ product: IProduct }> = ({ product }) => {
 				<div className='mt-1 flex flex-wrap items-start gap-2'>
 					<Badge
 						variant='outline'
-						color={typeMeta.badgeColor}
-						className='flex shrink-0 items-center gap-1 px-2'>
+						color={typeMeta.badgeColor as TColors}
+						className='flex flex-shrink-0 items-center gap-1 px-2'>
 						<Icon icon={typeMeta.icon} className='h-3 w-3' />
 						{typeMeta.label}
 					</Badge>

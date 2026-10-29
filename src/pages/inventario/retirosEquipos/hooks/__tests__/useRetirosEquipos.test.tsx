@@ -54,7 +54,9 @@ const createHook = (initialEntry: string) => {
 		reducer: { equipmentWithdrawals: withdrawalsTestReducer },
 	});
 	const Wrapper = ({ children }: PropsWithChildren) => (
-		<MemoryRouter initialEntries={[initialEntry]}>
+		<MemoryRouter
+			initialEntries={[initialEntry]}
+			future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
 			<Provider store={store}>{children}</Provider>
 		</MemoryRouter>
 	);
