@@ -26,9 +26,9 @@ validaciones o exista evidencia concreta de obsolescencia.
   contenido no cambió desde que se midió; si no se puede sostener, se declara no verificada en vez
   de estimarla. Un conteo de warnings o de pruebas que no coincide con la realidad cuesta una ronda
   completa de revisión, aunque el código esté bien.
-- El workflow `Calidad de PR` ya ejecuta `typecheck` y `test:run` en cada PR: citar la corrida
-  (`gh run view`) en lugar de repetir esas pasadas localmente, y no declarar el PR listo con esa
-  corrida en rojo o desconocida.
+- Los PR no tienen CI: `quality:style`, `typecheck` y `test:run` se corren en local antes de
+  publicar. Citar esas corridas en Verificación y no declarar el PR listo con alguna en rojo o sin
+  correr sobre el contenido actual.
 - En PowerShell, publicar el cuerpo como UTF-8 sin BOM y verificar el texto remoto mediante `gh api`.
 - Al crear o actualizar el PR, añadir `needs-review`, quitar `changes-requested` si existe y conservar los demás labels.
 - Verificar remotamente número/URL, base, `headRefOid`, cuerpo, labels, `mergeStateStatus` y `mergeable`. Si GitHub aún está calculando, reconsultar de forma acotada; no declarar éxito con estado desconocido.
