@@ -1,3 +1,9 @@
+import { AIO_LABELS } from '@/pages/refactor-technical-review/components/translations/aio.labels';
+import { DESKTOP_LABELS } from '@/pages/refactor-technical-review/components/translations/desktop.labels';
+import { DOCKING_LABELS } from '@/pages/refactor-technical-review/components/translations/docking.labels';
+import { MONITOR_LABELS } from '@/pages/refactor-technical-review/components/translations/monitor.labels';
+import { NOTEBOOK_LABELS } from '@/pages/refactor-technical-review/components/translations/notebook.labels';
+
 export const EQUIPMENT_TYPE_LABELS: Record<string, string> = {
 	notebook: 'Notebook',
 	desktop: 'Desktop',
@@ -96,12 +102,14 @@ export const CONDITION_VALUES_ES: Record<string, string> = {
 
 export type ExcelColDef = { header: string; key: string };
 
+export const SERIAL_NUMBER_HEADER = 'Número de Serie';
+
 export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 	notebook: [
 		{ header: 'Marca', key: 'brand' },
 		{ header: 'Modelo', key: 'model' },
 		{ header: 'Linea', key: 'line' },
-		{ header: 'Serial Number', key: '__serial' },
+		{ header: SERIAL_NUMBER_HEADER, key: '__serial' },
 		{ header: 'Procesador', key: 'processor' },
 		{ header: 'RAM', key: 'ram_size' },
 		{ header: 'Slot Ram', key: 'ram_slots' },
@@ -146,7 +154,7 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'Marca', key: 'brand' },
 		{ header: 'Modelo', key: 'model' },
 		{ header: 'Linea', key: 'line' },
-		{ header: 'Serial Number', key: '__serial' },
+		{ header: SERIAL_NUMBER_HEADER, key: '__serial' },
 		{ header: 'Procesador', key: 'processor' },
 		{ header: 'RAM', key: 'ram_size' },
 		{ header: 'Slot Ram', key: 'ram_slots' },
@@ -182,7 +190,7 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'Marca', key: 'brand' },
 		{ header: 'Modelo', key: 'model' },
 		{ header: 'Linea', key: 'line' },
-		{ header: 'Serial Number', key: '__serial' },
+		{ header: SERIAL_NUMBER_HEADER, key: '__serial' },
 		{ header: 'Procesador', key: 'processor' },
 		{ header: 'RAM', key: 'ram_size' },
 		{ header: 'Slot Ram', key: 'ram_slots' },
@@ -217,7 +225,7 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'Marca', key: 'brand' },
 		{ header: 'Modelo', key: 'model' },
 		{ header: 'Linea', key: 'line' },
-		{ header: 'Serial Number', key: '__serial' },
+		{ header: SERIAL_NUMBER_HEADER, key: '__serial' },
 		{ header: 'Condición General', key: 'general_condition' },
 		{ header: 'Adaptador Poder', key: 'includes_power_adapter' },
 		{ header: 'VGA', key: 'vga_ports' },
@@ -242,7 +250,7 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 	monitor: [
 		{ header: 'Marca', key: 'brand' },
 		{ header: 'Modelo', key: 'model' },
-		{ header: 'Serial Number', key: '__serial' },
+		{ header: SERIAL_NUMBER_HEADER, key: '__serial' },
 		{ header: 'Pulgadas Pant.', key: 'screen_inches' },
 		{ header: 'Estado Pantalla', key: 'screen_condition' },
 		{ header: 'VGA', key: 'vga_ports' },
@@ -259,6 +267,28 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'Creado por', key: '__created_by' },
 		{ header: 'Revisado por', key: '__reviewed_by' },
 	],
+};
+
+/**
+ * Encabezado en español de un atributo de detalle, para las hojas de tipos sin columnas
+ * definidas. Los rótulos de los formularios mandan sobre los de EXCEL_COLUMNS, que son
+ * cortos porque se leen bajo su grupo («Estado» bajo «Cargador»), y esas hojas no tienen
+ * fila de grupos. Notebook va último porque es el mapa más completo.
+ */
+export const EXCEL_ATTRIBUTE_HEADERS: Record<string, string> = {
+	...Object.fromEntries(
+		Object.values(EXCEL_COLUMNS)
+			.flat()
+			.filter((column) => !column.key.startsWith('__'))
+			.map((column) => [column.key, column.header]),
+	),
+	...MONITOR_LABELS,
+	...DOCKING_LABELS,
+	...AIO_LABELS,
+	...DESKTOP_LABELS,
+	...NOTEBOOK_LABELS,
+	// NOTEBOOK_LABELS lo rotula «Health Batería».
+	battery_health: 'Salud Batería',
 };
 
 export type ExcelGroupDef = { label: string; color: string; span: number };

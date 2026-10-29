@@ -7,6 +7,29 @@ import { exportItemsToExcel, resolveColumnValue } from '../exportExcel';
 
 vi.mock('file-saver', () => ({ default: { saveAs: vi.fn() } }));
 
+const loadExportedWorkbook = async (): Promise<ExcelJS.Workbook> => {
+	expect(FileSaver.saveAs).toHaveBeenCalledOnce();
+	const [blob] = vi.mocked(FileSaver.saveAs).mock.calls[0];
+	if (!(blob instanceof Blob)) throw new Error('Falta el archivo Excel');
+	const buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => {
+			if (reader.result instanceof ArrayBuffer) resolve(reader.result);
+			else reject(new Error('No se pudo leer el Excel'));
+		};
+		reader.onerror = () => reject(new Error('No se pudo leer el Excel'));
+		reader.readAsArrayBuffer(blob);
+	});
+	const workbook = new ExcelJS.Workbook();
+	await workbook.xlsx.load(buffer);
+	return workbook;
+};
+
+const readRowValues = (sheet: ExcelJS.Worksheet, rowNumber: number): unknown[] => {
+	const row = sheet.getRow(rowNumber);
+	return Array.from({ length: row.cellCount }, (_, index) => row.getCell(index + 1).value);
+};
+
 const buildItem = (overrides: Partial<IItem> = {}): IItem => ({
 	id: 1,
 	batch_id: 1,
@@ -90,21 +113,7 @@ describe('exportItemsToExcel: monitor', () => {
 				'monitor',
 			);
 
-			expect(FileSaver.saveAs).toHaveBeenCalledOnce();
-			const [blob] = vi.mocked(FileSaver.saveAs).mock.calls[0];
-			if (!(blob instanceof Blob)) throw new Error('Falta el archivo Excel');
-			const buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => {
-					if (reader.result instanceof ArrayBuffer) resolve(reader.result);
-					else reject(new Error('No se pudo leer el Excel'));
-				};
-				reader.onerror = () => reject(new Error('No se pudo leer el Excel'));
-				reader.readAsArrayBuffer(blob);
-			});
-			const workbook = new ExcelJS.Workbook();
-			await workbook.xlsx.load(buffer);
-			const [sheet] = workbook.worksheets;
+			const [sheet] = (await loadExportedWorkbook()).worksheets;
 			const header = sheet.getRow(6);
 			const cableColumn =
 				header.cellCount > 0
@@ -119,5 +128,64 @@ describe('exportItemsToExcel: monitor', () => {
 			vi.restoreAllMocks();
 			vi.unstubAllGlobals();
 		}
+	});
+});
+
+describe('exportItemsToExcel: encabezados en español', () => {
+	// El backend puede enviar tipos fuera de EquipmentType; caen al camino sin columnas.
+	const UNMAPPED_EQUIPMENT_TYPE = 'tablet' as unknown as IItem['equipment_type'];
+
+	it('rotula en español las columnas de un tipo sin columnas definidas', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+		vi.mocked(FileSaver.saveAs).mockClear();
+
+		try {
+			await exportItemsToExcel(
+				[
+					buildItem({ equipment_type: 'notebook', details: { brand: 'Dell' } }),
+					buildItem({
+						equipment_type: UNMAPPED_EQUIPMENT_TYPE,
+						details: {
+							screen_inches: 10,
+							battery_health: 90,
+							includes_power_cable: true,
+							observations: 'Sin detalles',
+						},
+						extra_attributes: { custom_flag: 'si' },
+					}),
+				],
+				'details',
+				'mixto',
+			);
+
+			const workbook = await loadExportedWorkbook();
+			const notebookSheet = workbook.getWorksheet('Notebook');
+			const tabletSheet = workbook.worksheets.find((sheet) => sheet !== notebookSheet);
+			if (!notebookSheet || !tabletSheet) throw new Error('Faltan hojas');
+
+			expect(readRowValues(notebookSheet, 6)).toContain('Número de Serie');
+			// Sin fila de grupos, los encabezados del tipo genérico quedan una fila más arriba.
+			expect(readRowValues(tabletSheet, 5)).toEqual([
+				'Nº',
+				'Número de Serie',
+				'Pulgadas Pantalla',
+				'Salud Batería',
+				'Incluye Cable de Poder',
+				'Custom Flag',
+				'Observaciones',
+				'Cliente',
+				'Proveedor',
+			]);
+		} finally {
+			vi.restoreAllMocks();
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it.each(Object.keys(EXCEL_COLUMNS))('la hoja %s no usa Serial Number', (type) => {
+		const headers = EXCEL_COLUMNS[type].map((column) => column.header);
+
+		expect(headers).toContain('Número de Serie');
+		expect(headers).not.toContain('Serial Number');
 	});
 });

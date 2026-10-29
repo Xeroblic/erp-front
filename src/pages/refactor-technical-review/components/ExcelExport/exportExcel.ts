@@ -5,9 +5,11 @@ import { ANTENNA_CONDITION_OPTIONS } from '@/pages/refactor-technical-review/com
 import {
 	CONDITION_VALUES_ES,
 	EQUIPMENT_TYPE_LABELS,
+	EXCEL_ATTRIBUTE_HEADERS,
 	EXCEL_COLUMNS,
 	EXCEL_GROUPS,
 	ExcelGroupDef,
+	SERIAL_NUMBER_HEADER,
 } from './excel.constants';
 import { IItem } from '@/interface/technicalReviews.interface';
 import { resolveEquipmentTypeMeta } from '@/pages/refactor-technical-review/components/utils/utilsItems';
@@ -45,6 +47,8 @@ const generateBarcodeBase64 = (text: string): string | null => {
 
 export const formatAttributeLabel = (key: string) => {
 	if (!key) return 'Atributo';
+	const header = EXCEL_ATTRIBUTE_HEADERS[key];
+	if (header) return header;
 	return key
 		.replace(/_/g, ' ')
 		.replace(/\s+/g, ' ')
@@ -545,7 +549,7 @@ export const exportItemsToExcel = async (
 
 					const headers = [
 						'Nº',
-						'Serial Number',
+						SERIAL_NUMBER_HEADER,
 						...orderedKeys.map((k) => formatAttributeLabel(k)),
 						'Cliente',
 						'Proveedor',
