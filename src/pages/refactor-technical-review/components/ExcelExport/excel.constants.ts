@@ -1,3 +1,9 @@
+import { AIO_LABELS } from '@/pages/refactor-technical-review/components/translations/aio.labels';
+import { DESKTOP_LABELS } from '@/pages/refactor-technical-review/components/translations/desktop.labels';
+import { DOCKING_LABELS } from '@/pages/refactor-technical-review/components/translations/docking.labels';
+import { MONITOR_LABELS } from '@/pages/refactor-technical-review/components/translations/monitor.labels';
+import { NOTEBOOK_LABELS } from '@/pages/refactor-technical-review/components/translations/notebook.labels';
+
 export const EQUIPMENT_TYPE_LABELS: Record<string, string> = {
 	notebook: 'Notebook',
 	desktop: 'Desktop',
@@ -96,12 +102,14 @@ export const CONDITION_VALUES_ES: Record<string, string> = {
 
 export type ExcelColDef = { header: string; key: string };
 
+export const SERIAL_NUMBER_HEADER = 'Número de Serie';
+
 export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 	notebook: [
 		{ header: 'Marca', key: 'brand' },
 		{ header: 'Modelo', key: 'model' },
-		{ header: 'Linea', key: 'line' },
-		{ header: 'Serial Number', key: '__serial' },
+		{ header: 'Línea', key: 'line' },
+		{ header: SERIAL_NUMBER_HEADER, key: '__serial' },
 		{ header: 'Procesador', key: 'processor' },
 		{ header: 'RAM', key: 'ram_size' },
 		{ header: 'Slot Ram', key: 'ram_slots' },
@@ -115,7 +123,7 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'Displayport', key: 'displayport_ports' },
 		{ header: 'USB', key: 'usb_a_ports' },
 		{ header: 'USB Tipo C', key: 'usb_c_ports' },
-		{ header: 'Biometrico', key: 'has_biometric' },
+		{ header: 'Biométrico', key: 'has_biometric' },
 		{ header: 'SD', key: 'sd_readers' },
 		{ header: 'WiFi', key: 'has_wifi' },
 		{ header: 'RJ-45', key: 'rj45_ports' },
@@ -123,21 +131,21 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'Puertos Defectuosos', key: 'defective_ports_count' },
 		{ header: 'Pulgadas Pant.', key: 'screen_inches' },
 		{ header: 'Estado Pantalla', key: 'screen_condition' },
-		{ header: 'Tactil', key: 'is_touchscreen' },
+		{ header: 'Táctil', key: 'is_touchscreen' },
 		{ header: 'Estado Teclado', key: 'keyboard_condition' },
 		{ header: 'ES/US', key: 'keyboard_layout' },
-		{ header: 'Numerico', key: 'has_numeric_keypad' },
-		{ header: 'Retroluminado', key: 'has_backlit_keyboard' },
+		{ header: 'Numérico', key: 'has_numeric_keypad' },
+		{ header: 'Retroiluminado', key: 'has_backlit_keyboard' },
 		{ header: 'Estado Padmouse', key: 'touchpad_condition' },
 		{ header: 'Estado Cubierta', key: 'cover_condition' },
 		{ header: 'Estado Bisagras', key: 'hinge_condition' },
 		{ header: 'Estado Inferior', key: 'bottom_condition' },
-		{ header: 'Estado Bateria', key: '__battery_status' },
+		{ header: 'Estado Batería', key: '__battery_status' },
 		{ header: 'Observaciones', key: 'observations' },
-		{ header: 'CATEGORIA', key: '__grade' },
+		{ header: 'CATEGORÍA', key: '__grade' },
 		{ header: 'S.O', key: 'operating_system' },
-		{ header: 'CLIENTE', key: '__customer' },
-		{ header: 'PROVEEDOR', key: '__supplier' },
+		{ header: 'Cliente', key: '__customer' },
+		{ header: 'Proveedor', key: '__supplier' },
 		// { header: 'Codigo de Barras', key: '__barcode' },
 		{ header: 'Creado por', key: '__created_by' },
 		{ header: 'Revisado por', key: '__reviewed_by' },
@@ -145,8 +153,8 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 	aio: [
 		{ header: 'Marca', key: 'brand' },
 		{ header: 'Modelo', key: 'model' },
-		{ header: 'Linea', key: 'line' },
-		{ header: 'Serial Number', key: '__serial' },
+		{ header: 'Línea', key: 'line' },
+		{ header: SERIAL_NUMBER_HEADER, key: '__serial' },
 		{ header: 'Procesador', key: 'processor' },
 		{ header: 'RAM', key: 'ram_size' },
 		{ header: 'Slot Ram', key: 'ram_slots' },
@@ -174,15 +182,15 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'Cliente', key: '__customer' },
 		{ header: 'Proveedor', key: '__supplier' },
 		// { header: 'Codigo de Barras', key: '__barcode' },
-		{ header: 'CATEGORIA', key: '__grade' },
+		{ header: 'CATEGORÍA', key: '__grade' },
 		{ header: 'Creado por', key: '__created_by' },
 		{ header: 'Revisado por', key: '__reviewed_by' },
 	],
 	desktop: [
 		{ header: 'Marca', key: 'brand' },
 		{ header: 'Modelo', key: 'model' },
-		{ header: 'Linea', key: 'line' },
-		{ header: 'Serial Number', key: '__serial' },
+		{ header: 'Línea', key: 'line' },
+		{ header: SERIAL_NUMBER_HEADER, key: '__serial' },
 		{ header: 'Procesador', key: 'processor' },
 		{ header: 'RAM', key: 'ram_size' },
 		{ header: 'Slot Ram', key: 'ram_slots' },
@@ -205,7 +213,7 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'Antena', key: 'includes_antenna' },
 		{ header: 'Estado antena', key: 'antenna_condition' },
 		{ header: 'S.O', key: 'operating_system' },
-		{ header: 'CATEGORIA', key: '__grade' },
+		{ header: 'CATEGORÍA', key: '__grade' },
 		{ header: 'Observaciones', key: 'observations' },
 		{ header: 'Cliente', key: '__customer' },
 		{ header: 'Proveedor', key: '__supplier' },
@@ -216,8 +224,8 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 	docking: [
 		{ header: 'Marca', key: 'brand' },
 		{ header: 'Modelo', key: 'model' },
-		{ header: 'Linea', key: 'line' },
-		{ header: 'Serial Number', key: '__serial' },
+		{ header: 'Línea', key: 'line' },
+		{ header: SERIAL_NUMBER_HEADER, key: '__serial' },
 		{ header: 'Condición General', key: 'general_condition' },
 		{ header: 'Adaptador Poder', key: 'includes_power_adapter' },
 		{ header: 'VGA', key: 'vga_ports' },
@@ -232,7 +240,7 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'WiFi', key: 'has_wifi' },
 		{ header: 'Condición Carcasa', key: 'cover_condition' },
 		{ header: 'Observaciones', key: 'observations' },
-		{ header: 'CATEGORIA', key: '__grade' },
+		{ header: 'CATEGORÍA', key: '__grade' },
 		{ header: 'Cliente', key: '__customer' },
 		{ header: 'Proveedor', key: '__supplier' },
 		// { header: 'Codigo de Barras', key: '__barcode' },
@@ -242,7 +250,7 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 	monitor: [
 		{ header: 'Marca', key: 'brand' },
 		{ header: 'Modelo', key: 'model' },
-		{ header: 'Serial Number', key: '__serial' },
+		{ header: SERIAL_NUMBER_HEADER, key: '__serial' },
 		{ header: 'Pulgadas Pant.', key: 'screen_inches' },
 		{ header: 'Estado Pantalla', key: 'screen_condition' },
 		{ header: 'VGA', key: 'vga_ports' },
@@ -252,13 +260,35 @@ export const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 		{ header: 'Alimentación', key: 'includes_power_cable' },
 		{ header: 'Estado del Cable', key: 'power_cable_status' },
 		{ header: 'Observaciones', key: 'observations' },
-		{ header: 'CATEGORIA', key: '__grade' },
+		{ header: 'CATEGORÍA', key: '__grade' },
 		{ header: 'Cliente', key: '__customer' },
 		{ header: 'Proveedor', key: '__supplier' },
 		// { header: 'Codigo de Barras', key: '__barcode' },
 		{ header: 'Creado por', key: '__created_by' },
 		{ header: 'Revisado por', key: '__reviewed_by' },
 	],
+};
+
+/**
+ * Encabezado en español de un atributo de detalle, para las hojas de tipos sin columnas
+ * definidas. Los rótulos de los formularios mandan sobre los de EXCEL_COLUMNS, que son
+ * cortos porque se leen bajo su grupo («Estado» bajo «Cargador»), y esas hojas no tienen
+ * fila de grupos. Notebook va último porque es el mapa más completo.
+ */
+export const EXCEL_ATTRIBUTE_HEADERS: Record<string, string> = {
+	...Object.fromEntries(
+		Object.values(EXCEL_COLUMNS)
+			.flat()
+			.filter((column) => !column.key.startsWith('__'))
+			.map((column) => [column.key, column.header]),
+	),
+	...MONITOR_LABELS,
+	...DOCKING_LABELS,
+	...AIO_LABELS,
+	...DESKTOP_LABELS,
+	...NOTEBOOK_LABELS,
+	// NOTEBOOK_LABELS lo rotula «Health Batería».
+	battery_health: 'Salud Batería',
 };
 
 export type ExcelGroupDef = { label: string; color: string; span: number };
