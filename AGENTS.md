@@ -75,11 +75,10 @@ El usuario conserva el control: la autorización de auditoría anterior no autor
 - Ejecuta primero las pruebas afectadas con `pnpm run test:related <archivos>` y el lint acotado con `pnpm run lint:changed`; amplía a `pnpm run test:run`, `pnpm run typecheck` y `pnpm build` según el riesgo y el alcance. **No uses `pnpm test`** (es `vitest` sin `run`: modo watch, no termina) **ni `pnpm lint` completo** (9.033 líneas y 7.553 hallazgos preexistentes, inservible como señal de un cambio).
 - Antes de entregar, revisa `git diff`, `git diff --check` y separa errores nuevos de deuda preexistente.
 - No crees ramas, commits ni PRs sin autorización explícita. Los PR apuntan a `develop`; por defecto su texto se entrega al usuario para revisión y sólo se publica si el usuario lo autoriza.
-- Al cerrar una tarea de implementación autorizada, actualiza la bitácora diaria según `CLAUDE.md` y `bitacora_trabajo/instrucciones.md`.
 
 ### Identidad de publicación
 
-Todo lo que llega a GitHub va bajo la cuenta del usuario, nunca bajo una identidad de agente, bot o GitHub App. Ver §14 de `CLAUDE.md`, que es la fuente de verdad. En resumen: la cuenta activa de `gh` debe venir de la credencial local del usuario y no de `GH_TOKEN`/`GITHUB_TOKEN` del entorno; la autoría del commit es la de `git config` y no se sustituye con `--author`, `--committer` ni `git -c user.email=...`; y ningún commit o cuerpo de PR lleva atribución de herramienta (`Co-Authored-By: Claude`, «Generated with…»). Los trailers `Co-authored-by` se reservan para personas reales del equipo.
+Todo lo que llega a GitHub va bajo la cuenta del usuario, nunca bajo una identidad de agente, bot o GitHub App. Ver §13 de `CLAUDE.md`, que es la fuente de verdad. En resumen: la cuenta activa de `gh` debe venir de la credencial local del usuario y no de `GH_TOKEN`/`GITHUB_TOKEN` del entorno; la autoría del commit es la de `git config` y no se sustituye con `--author`, `--committer` ni `git -c user.email=...`; y ningún commit o cuerpo de PR lleva atribución de herramienta (`Co-Authored-By: Claude`, «Generated with…»). Los trailers `Co-authored-by` se reservan para personas reales del equipo.
 
 ### Formato obligatorio del texto de PR
 
