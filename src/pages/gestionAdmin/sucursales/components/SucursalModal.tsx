@@ -194,11 +194,11 @@ export default function SucursalModal({
 	});
 
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
-		formik,
+		formik as any,
 		{
-			regiones: listaRegiones,
-			provincias: listaProvincias,
-			comunas: listaComunas,
+			regiones: listaRegiones as any,
+			provincias: listaProvincias as any,
+			comunas: listaComunas as any,
 		},
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);
@@ -237,9 +237,9 @@ export default function SucursalModal({
 								name='subsidiary_id'
 								placeholder='Seleccione una subsidiaria...'
 								value={
-									subsidiaryOptions.find(
+									(subsidiaryOptions.find(
 										(opt) => opt.value === formik.values.subsidiary_id,
-									) || null
+									) as TSelectOption | undefined) || null
 								}
 								onChange={(selectedOption) => {
 									const option = selectedOption as TSelectOption | null;
@@ -247,7 +247,7 @@ export default function SucursalModal({
 								}}
 								onBlur={() => formik.setFieldTouched('subsidiary_id', true)}
 								isDisabled={formik.isSubmitting}
-								options={subsidiaryOptions}
+								options={subsidiaryOptions as TSelectOption[]}
 							/>
 							{formik.touched.subsidiary_id && formik.errors.subsidiary_id && (
 								<p className='mt-1 text-sm text-red-600'>
@@ -432,7 +432,7 @@ export default function SucursalModal({
 							<div className='flex items-start gap-3'>
 								<Icon
 									icon='HeroInformationCircle'
-									className='mt-0.5 shrink-0 text-blue-600'
+									className='mt-0.5 flex-shrink-0 text-blue-600'
 								/>
 								<div className='text-sm text-blue-800 dark:text-blue-300'>
 									<p className='mb-1 font-medium'>

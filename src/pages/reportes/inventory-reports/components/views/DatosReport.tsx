@@ -1,5 +1,6 @@
 import React from 'react';
 import { Td, Tr } from '@/components/ui/Table';
+// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import type { TInventoryReportFiltersApi } from '@/pages/reportes/inventory-reports/hooks/useInventoryReportFilters';
 import useDatosReport from '@/pages/reportes/inventory-reports/hooks/useDatosReport';

@@ -75,7 +75,7 @@ const DeferredPaymentsFiltersBar: React.FC<DeferredPaymentsFiltersProps> = ({
 				</Button>
 			</CardHeader>
 			<CardBody>
-				<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 md:grid-cols-2 xl:grid-cols-5 dark:bg-zinc-900/30'>
+				<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 dark:bg-zinc-900/30 md:grid-cols-2 xl:grid-cols-5'>
 					<div className='xl:col-span-2'>
 						<label htmlFor='deferred-search' className={fieldLabelClass}>
 							Búsqueda

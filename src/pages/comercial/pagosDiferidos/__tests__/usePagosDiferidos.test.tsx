@@ -8,11 +8,13 @@ import type {
 	DeferredPaymentsListResponse,
 	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
+// eslint-disable-next-line import/extensions
 import deferredPaymentsService from '@/services/deferredPaymentsService';
+// eslint-disable-next-line import/extensions
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usePagosDiferidos from '../hooks/usePagosDiferidos';
 
-const branchContext = vi.hoisted((): { subsidiaryId: number | null } => ({ subsidiaryId: 10 }));
+const branchContext = vi.hoisted(() => ({ subsidiaryId: 10 as number | null }));
 vi.mock('@/services/deferredPaymentsService', () => ({
 	default: { getDocuments: vi.fn(), getSummary: vi.fn() },
 }));
@@ -72,7 +74,7 @@ describe('usePagosDiferidos con servicio', () => {
 	const createHook = (options?: Parameters<typeof usePagosDiferidos>[0]) => {
 		const store = configureStore({ reducer: { deferredPayments: deferredPaymentsReducer } });
 		const Wrapper = ({ children }: PropsWithChildren) => (
-			<MemoryRouter>
+			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
 				<Provider store={store}>{children}</Provider>
 			</MemoryRouter>
 		);

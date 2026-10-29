@@ -58,13 +58,13 @@ const SYNC_ROWS: SyncRow[] = [
 const DirectionBadge: React.FC<{ direction: Direction }> = ({ direction }) => {
 	if (direction === 'erp-to-woo') {
 		return (
-			<span className='inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300'>
+			<span className='inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300'>
 				ERP <Icon icon='HeroArrowRight' className='h-3 w-3' /> Woo
 			</span>
 		);
 	}
 	return (
-		<span className='inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-300'>
+		<span className='inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-300'>
 			ERP <Icon icon='HeroArrowsRightLeft' className='h-3 w-3' /> Woo
 		</span>
 	);
@@ -95,7 +95,7 @@ const WooSyncGuide: React.FC<WooSyncGuideProps> = ({ isOpen, onClose }) => {
 					<div className='flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-950/30'>
 						<Icon
 							icon='HeroCheckCircle'
-							className='mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400'
+							className='mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600 dark:text-emerald-400'
 						/>
 						<p className='text-sm text-emerald-900 dark:text-emerald-100'>
 							Al <strong>activar la sincronización</strong>, el producto se publica en
@@ -114,7 +114,7 @@ const WooSyncGuide: React.FC<WooSyncGuideProps> = ({ isOpen, onClose }) => {
 										? 'border-b border-neutral-100 dark:border-neutral-800'
 										: ''
 								}`}>
-								<span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'>
+								<span className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'>
 									<Icon icon={row.icon} className='h-4 w-4' />
 								</span>
 								<div className='min-w-0 flex-1'>
@@ -136,7 +136,7 @@ const WooSyncGuide: React.FC<WooSyncGuideProps> = ({ isOpen, onClose }) => {
 					<div className='flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-500/30 dark:bg-sky-950/30'>
 						<Icon
 							icon='HeroInformationCircle'
-							className='mt-0.5 h-5 w-5 shrink-0 text-sky-600 dark:text-sky-400'
+							className='mt-0.5 h-5 w-5 flex-shrink-0 text-sky-600 dark:text-sky-400'
 						/>
 						<div className='space-y-1'>
 							<p className='text-sm font-semibold text-sky-900 dark:text-sky-100'>
@@ -156,7 +156,7 @@ const WooSyncGuide: React.FC<WooSyncGuideProps> = ({ isOpen, onClose }) => {
 					<div className='flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/30'>
 						<Icon
 							icon='HeroExclamationTriangle'
-							className='mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400'
+							className='mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400'
 						/>
 						<p className='text-xs text-amber-900 dark:text-amber-100'>
 							<strong>El stock lo controla siempre el ERP.</strong> Si editas el stock

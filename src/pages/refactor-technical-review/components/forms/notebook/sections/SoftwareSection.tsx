@@ -1,3 +1,4 @@
+import { Controller } from 'react-hook-form';
 import { LuMonitor, LuInfo } from 'react-icons/lu';
 import React from 'react';
 import type { FormSectionProps } from '../../shared/types';
@@ -8,12 +9,12 @@ import { NOTEBOOK_HINTS } from '../../../constants/notebook/notebook.hints';
 import { SoSelector } from '../../../ui/selectors/SoSelector';
 
 const SoftwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
-	setFieldValue,
+	control,
 	readOnly,
-	values,
+	watch,
 }) => {
 	// Escuchamos el valor en tiempo real
-	const currentOS = values.operating_system;
+	const currentOS = watch('operating_system');
 
 	return (
 		<div className='space-y-6'>
@@ -38,10 +39,16 @@ const SoftwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					</div>
 				</div>
 
-				<SoSelector
-					value={values.operating_system || ''}
-					onChange={(value) => setFieldValue('operating_system', value)}
-					readOnly={readOnly}
+				<Controller
+					name='operating_system'
+					control={control}
+					render={({ field }) => (
+						<SoSelector
+							value={field.value || ''}
+							onChange={field.onChange}
+							readOnly={readOnly}
+						/>
+					)}
 				/>
 
 				<div className='mt-6 flex items-center justify-center gap-2 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-900/50'>

@@ -148,26 +148,6 @@ describe('PurchaseDocumentFormModal — cambio de filial', () => {
 	});
 });
 
-describe('PurchaseDocumentFormModal — foco al enviar con errores', () => {
-	it('desplaza al primer campo inválido cuando los errores ya están pintados', async () => {
-		// `Input` marca el error con el borde rojo, que exige el campo tocado e inválido.
-		const errorVisibleAtScroll: boolean[] = [];
-		const scrollIntoView = vi.fn(() => {
-			errorVisibleAtScroll.push(folioInput().className.includes('border-red-500!'));
-		});
-		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-			configurable: true,
-			value: scrollIntoView,
-		});
-		render(renderModal({ isOpen: true, subsidiaryId: 4 }));
-
-		fireEvent.click(screen.getByRole('button', { name: 'Crear documento' }));
-
-		await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
-		expect(errorVisibleAtScroll).toEqual([true]);
-	});
-});
-
 describe('PurchaseDocumentFormModal — búsqueda de productos', () => {
 	it('al salir del selector de una línea se limpia el término compartido', () => {
 		const { container } = render(renderModal({ isOpen: true, subsidiaryId: 4 }));

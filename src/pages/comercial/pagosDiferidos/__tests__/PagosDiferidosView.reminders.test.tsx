@@ -109,7 +109,7 @@ describe('PagosDiferidosView recordatorios', () => {
 
 	it('bloquea la exportación ordenada y permite restablecer el orden', () => {
 		render(
-			<MemoryRouter>
+			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
 				<PagosDiferidosView />
 			</MemoryRouter>,
 		);
@@ -129,7 +129,7 @@ describe('PagosDiferidosView recordatorios', () => {
 
 	it('restablece el orden local al cambiar de subsidiaria', () => {
 		const view = render(
-			<MemoryRouter>
+			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
 				<PagosDiferidosView />
 			</MemoryRouter>,
 		);
@@ -139,7 +139,7 @@ describe('PagosDiferidosView recordatorios', () => {
 
 		subsidiaryId = 2;
 		view.rerender(
-			<MemoryRouter>
+			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
 				<PagosDiferidosView />
 			</MemoryRouter>,
 		);
@@ -149,7 +149,7 @@ describe('PagosDiferidosView recordatorios', () => {
 
 	it('abre y cierra la consulta de recordatorios desde el encabezado', () => {
 		render(
-			<MemoryRouter>
+			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
 				<PagosDiferidosView />
 			</MemoryRouter>,
 		);

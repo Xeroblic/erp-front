@@ -33,7 +33,7 @@ const TextareaField: React.FC<TextareaFieldProps> = ({
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
 				rows={rows}
-				className='w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/20'
+				className='w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/20'
 			/>
 			{helpText && <p className='text-xs text-zinc-500 dark:text-zinc-400'>{helpText}</p>}
 		</div>
@@ -111,7 +111,7 @@ const NotesSection: React.FC<SectionBaseProps> = ({
 					<div className='mt-6 rounded-lg bg-blue-50 p-4 dark:bg-blue-950/30'>
 						<div className='flex items-start gap-3'>
 							<svg
-								className='mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400'
+								className='mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400'
 								fill='none'
 								stroke='currentColor'
 								viewBox='0 0 24 24'>

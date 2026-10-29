@@ -1,14 +1,19 @@
 import React, { Dispatch, SetStateAction, useMemo, useEffect } from 'react';
-import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	useReactTable,
+} from '@tanstack/react-table';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
+import { formatDate } from '../../../proveedores/components/utils';
+import { useCustomerSuppliers } from '../hooks/useCustomerSuppliers';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchSuppliers } from '@/store/slices/suppliers/suppliersSlice';
 import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
-import { AppTableFeatures, appTableFeatures } from '@/components/ui/DataTable/tableFeatures';
-import { useCustomerSuppliers } from '../hooks/useCustomerSuppliers';
-import { formatDate } from '../../../proveedores/components/utils';
 
 type DetalleClienteProps = {
 	isOpen: boolean;
@@ -22,61 +27,7 @@ type SupplierRow = {
 	name: string;
 };
 
-const columnHelper = createColumnHelper<AppTableFeatures, SupplierRow>();
-
-const buildAssociatedSupplierColumns = ({
-	detach,
-}: {
-	detach: ReturnType<typeof useCustomerSuppliers>['detach'];
-}) =>
-	columnHelper.columns([
-		columnHelper.accessor('name', {
-			header: 'Nombre',
-			cell: (info) => (
-				<span className='font-medium text-gray-900 dark:text-white'>{info.getValue()}</span>
-			),
-		}),
-		columnHelper.display({
-			id: 'actions',
-			header: 'Acciones',
-			cell: ({ row }) => (
-				<Button
-					color='red'
-					size='sm'
-					icon='HeroXMark'
-					onClick={() => detach([row.original.id])}>
-					Desasociar
-				</Button>
-			),
-		}),
-	]);
-
-const buildAvailableSupplierColumns = ({
-	attach,
-}: {
-	attach: ReturnType<typeof useCustomerSuppliers>['attach'];
-}) =>
-	columnHelper.columns([
-		columnHelper.accessor('name', {
-			header: 'Nombre',
-			cell: (info) => (
-				<span className='font-medium text-gray-900 dark:text-white'>{info.getValue()}</span>
-			),
-		}),
-		columnHelper.display({
-			id: 'actions',
-			header: 'Acciones',
-			cell: ({ row }) => (
-				<Button
-					color='blue'
-					size='sm'
-					icon='HeroPlus'
-					onClick={() => attach([row.original.id])}>
-					Asociar
-				</Button>
-			),
-		}),
-	]);
+const columnHelper = createColumnHelper<SupplierRow>();
 
 const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, customer, onEdit }) => {
 	const dispatch = useAppDispatch();
@@ -107,28 +58,78 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 	const availableSuppliers = useMemo(() => {
 		if (!allSuppliers || !associatedSuppliers) return [];
 
-		const associatedIds = new Set(associatedSuppliers.map((s) => s.id));
-		return allSuppliers.filter((s) => !associatedIds.has(s.id));
+		const associatedIds = new Set(associatedSuppliers.map((s: any) => s.id));
+		return allSuppliers.filter((s: any) => !associatedIds.has(s.id));
 	}, [allSuppliers, associatedSuppliers]);
 
 	// Columnas para proveedores ASOCIADOS
-	const associatedColumns = useMemo(() => buildAssociatedSupplierColumns({ detach }), [detach]);
+	const associatedColumns = useMemo(
+		() => [
+			columnHelper.accessor('name', {
+				header: 'Nombre',
+				cell: (info) => (
+					<span className='font-medium text-gray-900 dark:text-white'>
+						{info.getValue()}
+					</span>
+				),
+			}),
+			columnHelper.display({
+				id: 'actions',
+				header: 'Acciones',
+				cell: ({ row }) => (
+					<Button
+						color='red'
+						size='sm'
+						icon='HeroXMark'
+						onClick={() => detach([row.original.id])}>
+						Desasociar
+					</Button>
+				),
+			}),
+		],
+		[detach],
+	);
 
 	// Columnas para proveedores DISPONIBLES
-	const availableColumns = useMemo(() => buildAvailableSupplierColumns({ attach }), [attach]);
+	const availableColumns = useMemo(
+		() => [
+			columnHelper.accessor('name', {
+				header: 'Nombre',
+				cell: (info) => (
+					<span className='font-medium text-gray-900 dark:text-white'>
+						{info.getValue()}
+					</span>
+				),
+			}),
+			columnHelper.display({
+				id: 'actions',
+				header: 'Acciones',
+				cell: ({ row }) => (
+					<Button
+						color='blue'
+						size='sm'
+						icon='HeroPlus'
+						onClick={() => attach([row.original.id])}>
+						Asociar
+					</Button>
+				),
+			}),
+		],
+		[attach],
+	);
 
 	// Tabla para proveedores ASOCIADOS
-	const associatedTable = useTable({
-		features: appTableFeatures,
+	const associatedTable = useReactTable({
 		data: associatedSuppliers || [],
 		columns: associatedColumns,
+		getCoreRowModel: getCoreRowModel(),
 	});
 
 	// Tabla para proveedores DISPONIBLES
-	const availableTable = useTable({
-		features: appTableFeatures,
+	const availableTable = useReactTable({
 		data: availableSuppliers || [],
 		columns: availableColumns,
+		getCoreRowModel: getCoreRowModel(),
 	});
 
 	return (
@@ -155,7 +156,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 				{customer ? (
 					<div className='space-y-6'>
 						{/* Información del cliente - SOLO DATOS REALES */}
-						<div className='rounded-lg bg-linear-to-r from-blue-50 to-cyan-50 p-6 dark:from-blue-900/20 dark:to-cyan-900/20'>
+						<div className='rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 p-6 dark:from-blue-900/20 dark:to-cyan-900/20'>
 							<div className='space-y-4'>
 								<div>
 									<h3 className='text-2xl font-bold text-gray-900 dark:text-white'>
@@ -167,7 +168,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 								</div>
 
 								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div className='rounded-lg bg-white p-4 shadow-xs dark:bg-gray-800'>
+									<div className='rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800'>
 										<p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
 											Subsidiaria
 										</p>
@@ -176,7 +177,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 										</p>
 									</div>
 
-									<div className='rounded-lg bg-white p-4 shadow-xs dark:bg-gray-800'>
+									<div className='rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800'>
 										<p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
 											Proveedores Asociados
 										</p>
@@ -185,7 +186,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 										</p>
 									</div>
 
-									<div className='rounded-lg bg-white p-4 shadow-xs dark:bg-gray-800'>
+									<div className='rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800'>
 										<p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
 											Creado
 										</p>
@@ -194,7 +195,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 										</p>
 									</div>
 
-									<div className='rounded-lg bg-white p-4 shadow-xs dark:bg-gray-800'>
+									<div className='rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800'>
 										<p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
 											Actualizado
 										</p>
@@ -213,7 +214,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 									Proveedores Asociados ({associatedSuppliers?.length || 0})
 								</h4>
 							</div>
-							{loadingAssociated && (
+							{loadingAssociated ? (
 								<div className='flex items-center justify-center py-8'>
 									<Icon
 										icon='HeroArrowPath'
@@ -221,55 +222,50 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 									/>
 									<span className='ml-2 text-sm text-gray-600'>Cargando...</span>
 								</div>
-							)}
-							{!loadingAssociated &&
-								associatedTable.getRowModel().rows.length === 0 && (
-									<div className='py-8 text-center text-sm text-gray-500 dark:text-gray-400'>
-										Este cliente no tiene proveedores asociados.
-									</div>
-								)}
-							{!loadingAssociated &&
-								associatedTable.getRowModel().rows.length !== 0 && (
-									<div className='overflow-x-auto'>
-										<table className='w-full text-left text-sm'>
-											<thead className='border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'>
-												{associatedTable
-													.getHeaderGroups()
-													.map((headerGroup) => (
-														<tr key={headerGroup.id}>
-															{headerGroup.headers.map((header) => (
-																<th
-																	key={header.id}
-																	className='px-4 py-3 font-semibold text-gray-700 dark:text-gray-300'>
-																	{flexRender(
-																		header.column.columnDef
-																			.header,
-																		header.getContext(),
-																	)}
-																</th>
-															))}
-														</tr>
-													))}
-											</thead>
-											<tbody className='divide-y divide-gray-200 dark:divide-gray-700'>
-												{associatedTable.getRowModel().rows.map((row) => (
-													<tr
-														key={row.id}
-														className='hover:bg-gray-50 dark:hover:bg-gray-800'>
-														{row.getVisibleCells().map((cell) => (
-															<td key={cell.id} className='px-4 py-3'>
+							) : associatedTable.getRowModel().rows.length === 0 ? (
+								<div className='py-8 text-center text-sm text-gray-500 dark:text-gray-400'>
+									Este cliente no tiene proveedores asociados.
+								</div>
+							) : (
+								<div className='overflow-x-auto'>
+									<table className='w-full text-left text-sm'>
+										<thead className='border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'>
+											{associatedTable
+												.getHeaderGroups()
+												.map((headerGroup) => (
+													<tr key={headerGroup.id}>
+														{headerGroup.headers.map((header) => (
+															<th
+																key={header.id}
+																className='px-4 py-3 font-semibold text-gray-700 dark:text-gray-300'>
 																{flexRender(
-																	cell.column.columnDef.cell,
-																	cell.getContext(),
+																	header.column.columnDef.header,
+																	header.getContext(),
 																)}
-															</td>
+															</th>
 														))}
 													</tr>
 												))}
-											</tbody>
-										</table>
-									</div>
-								)}
+										</thead>
+										<tbody className='divide-y divide-gray-200 dark:divide-gray-700'>
+											{associatedTable.getRowModel().rows.map((row) => (
+												<tr
+													key={row.id}
+													className='hover:bg-gray-50 dark:hover:bg-gray-800'>
+													{row.getVisibleCells().map((cell) => (
+														<td key={cell.id} className='px-4 py-3'>
+															{flexRender(
+																cell.column.columnDef.cell,
+																cell.getContext(),
+															)}
+														</td>
+													))}
+												</tr>
+											))}
+										</tbody>
+									</table>
+								</div>
+							)}
 						</div>
 
 						{/* TABLA 2: Proveedores DISPONIBLES (NO asociados) */}
@@ -279,7 +275,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 									Proveedores Disponibles ({availableSuppliers?.length || 0})
 								</h4>
 							</div>
-							{loadingAll && (
+							{loadingAll ? (
 								<div className='flex items-center justify-center py-8'>
 									<Icon
 										icon='HeroArrowPath'
@@ -287,13 +283,11 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 									/>
 									<span className='ml-2 text-sm text-gray-600'>Cargando...</span>
 								</div>
-							)}
-							{!loadingAll && availableTable.getRowModel().rows.length === 0 && (
+							) : availableTable.getRowModel().rows.length === 0 ? (
 								<div className='py-8 text-center text-sm text-gray-500 dark:text-gray-400'>
 									No hay proveedores disponibles para asociar.
 								</div>
-							)}
-							{!loadingAll && availableTable.getRowModel().rows.length !== 0 && (
+							) : (
 								<div className='overflow-x-auto'>
 									<table className='w-full text-left text-sm'>
 										<thead className='border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'>

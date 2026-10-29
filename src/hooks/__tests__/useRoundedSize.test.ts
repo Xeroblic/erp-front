@@ -12,14 +12,14 @@ describe('useRoundedSize', () => {
 	it('roundedCustom desplaza el índice por el valor indicado', () => {
 		const { result } = renderHook(() => useRoundedSize('rounded-lg'));
 		expect(result.current.roundedCustom(2)).toBe('rounded-2xl');
-		expect(result.current.roundedCustom(-2)).toBe('rounded-sm');
+		expect(result.current.roundedCustom(-2)).toBe('rounded');
 		expect(result.current.roundedCustom(0)).toBe('rounded-lg');
 	});
 
 	it('devuelve undefined en el borde inferior (rounded-none no tiene interior)', () => {
 		const { result } = renderHook(() => useRoundedSize('rounded-none'));
 		expect(result.current.roundedInner).toBeUndefined();
-		expect(result.current.roundedOuter).toBe('rounded-xs');
+		expect(result.current.roundedOuter).toBe('rounded-sm');
 	});
 
 	it('devuelve undefined en el borde superior (rounded-full no tiene exterior)', () => {

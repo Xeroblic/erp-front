@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { PaginationState } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import { Table, TBody, Td, THead, Tr } from '@/components/ui/Table';
 import {
@@ -114,7 +115,7 @@ const DeferredPaymentsPagination: React.FC<DeferredPaymentsPaginationProps> = ({
 		pageSize: meta.per_page,
 	};
 	const table: TablePaginationController = {
-		state: { pagination },
+		getState: () => ({ pagination }),
 		setPageSize: (updater) => {
 			const pageSize = typeof updater === 'function' ? updater(pagination.pageSize) : updater;
 			onChange(1, pageSize);
@@ -250,7 +251,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 								<Tr key={`skeleton-${index}`}>
 									{Array.from({ length: 10 }, (__, cellIndex) => (
 										<Td key={`skeleton-${index}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>
@@ -286,7 +287,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 											onRowClick(row.id);
 										}
 									}}
-									className={`cursor-pointer focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-solid ${
+									className={`cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 ${
 										row.is_overdue ? 'border-l-4 border-red-500' : ''
 									}`}>
 									<Td>

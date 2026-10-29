@@ -181,7 +181,7 @@ const ProductListTab: React.FC<ProductListTabProps> = ({
 							onClick={() => setCalendarOpen((prev) => !prev)}>
 							<Icon
 								icon='HeroCalendarDays'
-								className='h-4 w-4 shrink-0 text-zinc-400'
+								className='h-4 w-4 flex-shrink-0 text-zinc-400'
 							/>
 							{hasDateRange ? (
 								<span className='flex-1 truncate text-zinc-800 dark:text-zinc-200'>
@@ -196,7 +196,7 @@ const ProductListTab: React.FC<ProductListTabProps> = ({
 							{hasDateRange && (
 								<button
 									type='button'
-									className='rounded-sm p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800'
+									className='rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800'
 									onClick={(event) => {
 										event.stopPropagation();
 										onDateFromChange?.('');
@@ -229,7 +229,7 @@ const ProductListTab: React.FC<ProductListTabProps> = ({
 							type='button'
 							onClick={onToggleWooOnly}
 							aria-pressed={wooOnly}
-							className={`inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+							className={`inline-flex flex-shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
 								wooOnly
 									? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-500/40 dark:bg-indigo-950/40 dark:text-indigo-300'
 									: 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'

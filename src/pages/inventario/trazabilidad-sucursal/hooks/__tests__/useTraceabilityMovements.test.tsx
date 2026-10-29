@@ -14,7 +14,7 @@ interface IPendingRequest {
 	reject: (reason: unknown) => void;
 }
 
-const branchContext = vi.hoisted(() => ({ branchId: 1 }));
+const branchContext = vi.hoisted(() => ({ branchId: 1 as number | null }));
 const requests = vi.hoisted((): IPendingRequest[] => []);
 const fetchData = vi.hoisted(() =>
 	vi.fn(

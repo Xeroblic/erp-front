@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterEach, afterAll, vi } from 'vitest';
 import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw/http';
+import { http, HttpResponse } from 'msw';
 import { isAxiosError } from 'axios';
 import BaseService from '../BaseService';
 import { tokenManager } from '../auth/tokenManager';
@@ -35,7 +35,7 @@ const server = setupServer(
 );
 
 describe('BaseService Integration', () => {
-	beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
+	beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 
 	afterEach(() => {
 		server.resetHandlers();

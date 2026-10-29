@@ -1,11 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { IQuote, QuoteStatus } from '../../../interface';
+import useQuotationsManager from './hooks/useQuotationsManager';
+import QuotationsTable from './components/tables/QuotationsTable';
+import CreateQuotationModal from './components/modals/ModalCreacion/CreateQuotationModal';
+import EditQuotationModal from './components/modals/ModalEditar/EditQuotationModal';
+import { QuotationDetailsModal } from './components/modals/QuotationDetailsModal';
+import DuplicateQuotationModal from './components/modals/DuplicateQuotationModal';
+import DeleteQuotationModal from './components/modals/DeleteQuotationModal';
+import { getQuoteStatusLabel, normalizeQuoteStatusValue } from './constants/quoteStatuses';
 import { useNavigate, useParams } from 'react-router-dom';
+
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import { FiltersSection } from './components/FiltersSection';
+import { StatsCards } from './components/StatsCards';
+import { ConfirmSaleModal } from './components/modals/ConfirmSale';
 import Modal, {
 	ModalHeader,
 	ModalBody,
@@ -13,32 +26,8 @@ import Modal, {
 	ModalFooterChild,
 } from '@/components/ui/Modal';
 import Icon from '@/components/icon/Icon';
-import { IQuote, QuoteStatus } from '../../../interface';
-import useQuotationsManager from './hooks/useQuotationsManager';
-import QuotationsTable from './components/tables/QuotationsTable';
-import CreateQuotationModal from './components/modals/ModalCreacion/CreateQuotationModal';
-import EditQuotationModal from './components/modals/ModalEditar/EditQuotationModal';
-import { QuotationDetailsModal } from './components/modals/QuotationDetailsModal';
-import DeleteQuotationModal from './components/modals/DeleteQuotationModal';
-import { getQuoteStatusLabel, normalizeQuoteStatusValue } from './constants/quoteStatuses';
-
-import { FiltersSection } from './components/FiltersSection';
-import { StatsCards } from './components/StatsCards';
-import { ConfirmSaleModal } from './components/modals/ConfirmSale';
 
 const QUOTES_BASE_PATH = '/comercial/cotizaciones';
-
-/** Mensaje del backend (Axios) o del error; texto genérico si no trae ninguno. */
-const getCreateErrorMessage = (error: unknown): string => {
-	const { response, message } = (error ?? {}) as {
-		response?: { data?: { message?: unknown } };
-		message?: unknown;
-	};
-	const backendMessage = response?.data?.message;
-	if (typeof backendMessage === 'string' && backendMessage) return backendMessage;
-	if (typeof message === 'string' && message) return message;
-	return 'Error desconocido al crear cotizacion';
-};
 
 const CotizacionesAdmin: React.FC = () => {
 	const navigate = useNavigate();
@@ -58,6 +47,8 @@ const CotizacionesAdmin: React.FC = () => {
 	const [detailsLoading, setDetailsLoading] = useState(false);
 
 	// Estados modales
+	const [duplicatingQuotation, setDuplicatingQuotation] = useState<IQuote | null>(null);
+	const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
 	const [deletingQuotation, setDeletingQuotation] = useState<IQuote | null>(null);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 	const [isActionLoading, setIsActionLoading] = useState(false);
@@ -68,14 +59,18 @@ const CotizacionesAdmin: React.FC = () => {
 		filteredQuotations,
 		loading,
 		// error, // Unused var warning
+		totalItems,
 		filters,
 		setFilters,
+		currentPage,
+		setCurrentPage,
 		itemsPerPage,
 		// setItemsPerPage, // Unused var warning
 		stats,
 		createQuotation,
 		updateQuotation,
 		deleteQuotation,
+		duplicateQuotation,
 		changeStatus,
 		convertToSale,
 		refreshData,
@@ -89,7 +84,7 @@ const CotizacionesAdmin: React.FC = () => {
 		if (!activeQuoteId) {
 			setIsDetailsModalOpen(false);
 			setViewingQuotation(null);
-			return undefined;
+			return;
 		}
 
 		let isCancelled = false;
@@ -103,11 +98,12 @@ const CotizacionesAdmin: React.FC = () => {
 				if (!isCancelled) {
 					setViewingQuotation(fullQuote);
 				}
-			} catch {
+			} catch (error) {
 				if (!isCancelled) {
 					toast.error('No se pudieron cargar los detalles de la cotización');
+					console.error('Error al cargar detalles:', error);
 					setIsDetailsModalOpen(false);
-					void navigate(QUOTES_BASE_PATH, { replace: true });
+					navigate(QUOTES_BASE_PATH, { replace: true });
 				}
 			} finally {
 				if (!isCancelled) {
@@ -116,7 +112,7 @@ const CotizacionesAdmin: React.FC = () => {
 			}
 		};
 
-		void fetchDetails();
+		fetchDetails();
 
 		return () => {
 			isCancelled = true;
@@ -135,8 +131,9 @@ const CotizacionesAdmin: React.FC = () => {
 			const detail = await loadQuotationDetails(quotation.id);
 			setEditingQuotation(detail);
 			setIsEditModalOpen(true);
-		} catch {
+		} catch (error) {
 			toast.error('No se pudo cargar la cotización para editar');
+			console.error('Error al editar cotización:', error);
 		} finally {
 			setIsActionLoading(false);
 		}
@@ -160,8 +157,11 @@ const CotizacionesAdmin: React.FC = () => {
 			await createQuotation(quotationData);
 			toast.success('Cotizacion creada correctamente');
 			setIsCreateModalOpen(false);
-		} catch (error: unknown) {
-			const errorMessage = getCreateErrorMessage(error);
+		} catch (error: any) {
+			const errorMessage =
+				error?.response?.data?.message ||
+				error?.message ||
+				'Error desconocido al crear cotizacion';
 
 			toast.error(`BACKEND ERROR: ${errorMessage}`);
 		}
@@ -171,10 +171,13 @@ const CotizacionesAdmin: React.FC = () => {
 		quotationData: Omit<IQuote, 'id' | 'created_at' | 'updated_at'>,
 	) => {
 		if (!editingQuotation) return;
-		// `updateQuotation` ya avisa el error y no lo relanza.
-		await updateQuotation(editingQuotation.id, quotationData);
-		setIsEditModalOpen(false);
-		setEditingQuotation(null);
+		try {
+			await updateQuotation(editingQuotation.id, quotationData);
+			setIsEditModalOpen(false);
+			setEditingQuotation(null);
+		} catch (error) {
+			console.error('Error al actualizar cotización:', error);
+		}
 	};
 
 	const [confirmStatusModalOpen, setConfirmStatusModalOpen] = useState(false);
@@ -196,8 +199,8 @@ const CotizacionesAdmin: React.FC = () => {
 			try {
 				await changeStatus(id, normalizedStatus);
 				toast.success(`Estado cambiado a "${getQuoteStatusLabel(normalizedStatus)}"`);
-			} catch {
-				toast.error('No se pudo cambiar el estado de la cotización');
+			} catch (error) {
+				console.error('Error al cambiar el estado:', error);
 			} finally {
 				setIsActionLoading(false);
 				setConfirmStatusModalOpen(false);
@@ -210,12 +213,12 @@ const CotizacionesAdmin: React.FC = () => {
 		setIsDetailsModalOpen(true);
 		setDetailsLoading(true);
 		setViewingQuotation(null);
-		void navigate(`${QUOTES_BASE_PATH}/${quotation.id}`);
+		navigate(`${QUOTES_BASE_PATH}/${quotation.id}`);
 	};
 
 	const [confirmSaleModalOpen, setConfirmSaleModalOpen] = useState(false);
 	const [confirmSaleQuotation, setConfirmSaleQuotation] = useState<IQuote | null>(null);
-	const handleConvertToSale = (id: number) => {
+	const handleConvertToSale = async (id: number) => {
 		const quotation = quotations.find((q) => q.id === id);
 		if (quotation) {
 			setConfirmSaleQuotation(quotation);
@@ -246,8 +249,9 @@ const CotizacionesAdmin: React.FC = () => {
 			// const filename = `cotizacion-${detail.quote_number ?? detail.id}.pdf`;
 			const filename = `cotizacion-${detail.id}.pdf`;
 			saveAs(blob, filename);
-		} catch {
+		} catch (error) {
 			toast.error('No se pudo generar el PDF');
+			console.error('Error al generar PDF:', error);
 		} finally {
 			setIsActionLoading(false);
 		}
@@ -266,8 +270,34 @@ const CotizacionesAdmin: React.FC = () => {
 			// 3. Generamos el Excel
 			const blob = await generateQuoteExcel(detail);
 			saveAs(blob, `cotizacion-${detail.id}.xlsx`);
-		} catch {
+		} catch (error) {
 			toast.error('No se pudo generar el Excel');
+			console.error('Error al generar Excel:', error);
+		} finally {
+			setIsActionLoading(false);
+		}
+	};
+
+	const handleDuplicateClick = (id: number) => {
+		const quotation = quotations.find((q) => q.id === id);
+		if (quotation) {
+			setDuplicatingQuotation(quotation);
+			setIsDuplicateModalOpen(true);
+		}
+	};
+
+	const handleDuplicateConfirm = async () => {
+		if (!duplicatingQuotation) return;
+
+		setIsActionLoading(true);
+		try {
+			await duplicateQuotation(duplicatingQuotation.id);
+			toast.success('Cotización duplicada exitosamente');
+			setIsDuplicateModalOpen(false);
+			setDuplicatingQuotation(null);
+		} catch (error) {
+			toast.error('Error al duplicar la cotización');
+			console.error('Error al duplicar:', error);
 		} finally {
 			setIsActionLoading(false);
 		}
@@ -290,15 +320,18 @@ const CotizacionesAdmin: React.FC = () => {
 			toast.success('Cotización eliminada exitosamente');
 			setIsDeleteModalOpen(false);
 			setDeletingQuotation(null);
-		} catch {
+		} catch (error) {
 			toast.error('Error al eliminar la cotización');
+			console.error('Error al eliminar:', error);
 		} finally {
 			setIsActionLoading(false);
 		}
 	};
 
 	const handleCloseModals = () => {
+		setIsDuplicateModalOpen(false);
 		setIsDeleteModalOpen(false);
+		setDuplicatingQuotation(null);
 		setDeletingQuotation(null);
 	};
 
@@ -306,7 +339,7 @@ const CotizacionesAdmin: React.FC = () => {
 		setIsDetailsModalOpen(false);
 		setViewingQuotation(null);
 		setDetailsLoading(false);
-		void navigate(QUOTES_BASE_PATH, { replace: true });
+		navigate(QUOTES_BASE_PATH, { replace: true });
 	};
 
 	// Aprueba la cotización abierta en el detalle (status → approved) y recarga el
@@ -322,7 +355,7 @@ const CotizacionesAdmin: React.FC = () => {
 		<PageWrapper title='Cotizaciones' name='ERP'>
 			<Subheader className='p-2'>
 				<SubheaderLeft>
-					<div className='inset-s-0'>
+					<div className='start-0'>
 						<h1 className='text-3xl font-semibold'>Cotizaciones</h1>
 						<p className=''>Gestión completa de cotizaciones comerciales</p>
 					</div>
@@ -385,6 +418,7 @@ const CotizacionesAdmin: React.FC = () => {
 							pageSize={itemsPerPage}
 							onEdit={handleEdit}
 							onDelete={handleDeleteClick}
+							onDuplicate={handleDuplicateClick}
 							onView={handleView}
 							onChangeStatus={handleChangeStatus}
 							onConvertToSale={handleConvertToSale}
@@ -423,6 +457,14 @@ const CotizacionesAdmin: React.FC = () => {
 					onApprove={handleApproveViewingQuotation}
 				/>
 
+				<DuplicateQuotationModal
+					isOpen={isDuplicateModalOpen}
+					onClose={handleCloseModals}
+					onConfirm={handleDuplicateConfirm}
+					quotation={duplicatingQuotation}
+					isLoading={isActionLoading}
+				/>
+
 				<DeleteQuotationModal
 					isOpen={isDeleteModalOpen}
 					onClose={handleCloseModals}
@@ -452,7 +494,7 @@ const CotizacionesAdmin: React.FC = () => {
 					isCentered>
 					<ModalHeader>
 						<div className='flex items-center space-x-3'>
-							<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950'>
+							<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950'>
 								<Icon
 									icon='HeroQuestionMarkCircle'
 									className='h-6 w-6 text-blue-600 dark:text-blue-400'
@@ -494,9 +536,7 @@ const CotizacionesAdmin: React.FC = () => {
 							</Button>
 							<Button
 								color='blue'
-								onClick={() => {
-									void handleConfirmStatusChange();
-								}}
+								onClick={() => void handleConfirmStatusChange()}
 								isDisable={isActionLoading}
 								isLoading={isActionLoading}>
 								Confirmar

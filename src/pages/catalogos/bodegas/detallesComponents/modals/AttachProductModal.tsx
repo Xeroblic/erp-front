@@ -69,7 +69,7 @@ const AttachProductModal: React.FC<AttachProductModalProps> = ({
 				</h2>
 			</ModalHeader>
 			<ModalBody>
-				<Card className='border border-zinc-200 bg-white shadow-xs dark:border-zinc-700 dark:bg-zinc-900'>
+				<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
 					<CardBody className='space-y-4'>
 						<div>
 							<p className='text-lg font-semibold'>{product.name}</p>

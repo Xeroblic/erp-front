@@ -28,10 +28,6 @@ import {
 export type TButtonVariants = 'solid' | 'outline' | 'default' | 'ghost';
 export type TButtonSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
 
-/** Color de texto o borde sin variante en el `className` del llamador (`text-red-500`, `border-white`, `text-(--x)`) */
-const CALLER_TEXT_COLOR = /(?:^|\s)text-(?:white|black|current|inherit|\(|[a-z]+-\d{2,3})/;
-const CALLER_BORDER_COLOR = /(?:^|\s)border-(?:white|black|current|inherit|\(|[a-z]+-\d{2,3})/;
-
 /** Tiempo mínimo de bloqueo anti-doble-click (ms) */
 const MIN_CLICK_GUARD_MS = 400;
 
@@ -231,71 +227,64 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		(isSolid
 			? 'text-white'
 			: resolvedTextColor
-				? 'text-(--btn-text)'
+				? 'text-[color:var(--btn-text)]'
 				: (accentTextColor ?? contrastTextColor));
 	const rightIconComputedColor =
 		rightIconColor ??
 		(isSolid
 			? 'text-white'
 			: resolvedTextColor
-				? 'text-(--btn-text)'
+				? 'text-[color:var(--btn-text)]'
 				: (accentTextColor ?? contrastTextColor));
-
-	// Tailwind 4 ordena las utilidades de una misma propiedad casi alfabéticamente, así que
-	// el `bg-transparent`, `text-zinc-600` o `border-transparent` de la variante le ganaban
-	// al color que pasa el llamador. El fondo transparente ya lo pone el preflight en
-	// <button>; el texto y el borde base se omiten cuando `className` trae su propio color.
-	const hasCallerTextColor = CALLER_TEXT_COLOR.test(className ?? '');
-	const hasCallerBorderColor = CALLER_BORDER_COLOR.test(className ?? '');
 
 	const btnVariants: { [key in TButtonVariants]: string } = {
 		solid: classNames(
-			{ 'bg-(--btn-bg)': !isActive },
+			{ 'bg-[var(--btn-bg)]': !isActive },
 			[effectiveTextColor],
-			[`${borderWidth} border-(--btn-border)`],
+			[`${borderWidth} border-[color:var(--btn-border)]`],
 			[`${contrastTextColor}`],
-			'hover:bg-(--btn-bg-hover)',
-			'hover:border-(--btn-border-hover)',
-			'active:bg-(--btn-bg-hover)',
-			'active:border-(--btn-border-hover)',
+			'hover:bg-[var(--btn-bg-hover)]',
+			'hover:border-[color:var(--btn-border-hover)]',
+			'active:bg-[var(--btn-bg-hover)]',
+			'active:border-[color:var(--btn-border-hover)]',
 			{
-				'bg-(--btn-bg-hover)': isActive,
-				'border-(--btn-border-hover)': isActive,
+				'bg-[var(--btn-bg-hover)]': isActive,
+				'border-[color:var(--btn-border-hover)]': isActive,
 			},
 		),
 		outline: classNames(
+			'bg-transparent',
 			[`${borderWidth}`],
 			{
-				'border-(--btn-border-50)': !isActive,
+				'border-[color:var(--btn-border-50)]': !isActive,
 			},
 			'text-black dark:text-white',
-			'hover:border-(--btn-border)',
-			'active:border-(--btn-border)',
+			'hover:border-[color:var(--btn-border)]',
+			'active:border-[color:var(--btn-border)]',
 			{
-				'border-(--btn-border)': isActive,
+				'border-[color:var(--btn-border)]': isActive,
 			},
 		),
 		default: classNames(
-			{ 'text-zinc-600': !isActive && !hasCallerTextColor, 'dark:text-zinc-400': !isActive },
+			'bg-transparent',
+			{ 'text-zinc-600 dark:text-zinc-400': !isActive },
 			[`${borderWidth}`],
-			{ 'border-transparent': !hasCallerBorderColor },
-			'hover:text-(--btn-text) dark:hover:text-(--btn-text)',
-			'active:text-(--btn-text)',
+			'border-transparent',
+			'hover:text-[color:var(--btn-text)] dark:hover:text-[color:var(--btn-text)]',
+			'active:text-[color:var(--btn-text)]',
 			{
-				'text-(--btn-text)': isActive,
+				'text-[color:var(--btn-text)]': isActive,
 			},
 		),
 		ghost: classNames(
+			'bg-transparent',
+			{ 'text-zinc-600 dark:text-zinc-400': color === 'zinc' && !isActive },
+			{ 'text-[color:var(--btn-text)]': color !== 'zinc' && !isActive },
+			'border-transparent',
+			'hover:bg-[var(--btn-bg-ghost-hover)] hover:text-[color:var(--btn-text)]',
+			'active:bg-[var(--btn-bg-ghost-active)]',
 			{
-				'text-zinc-600': color === 'zinc' && !isActive && !hasCallerTextColor,
-				'dark:text-zinc-400': color === 'zinc' && !isActive,
-			},
-			{ 'text-(--btn-text)': color !== 'zinc' && !isActive && !hasCallerTextColor },
-			{ 'border-transparent': !hasCallerBorderColor },
-			'hover:bg-(--btn-bg-ghost-hover) hover:text-(--btn-text)',
-			'active:bg-(--btn-bg-ghost-active)',
-			{
-				'bg-(--btn-bg-ghost-active) text-(--btn-text)': isActive,
+				'bg-[var(--btn-bg-ghost-active)] text-[color:var(--btn-text)]': isActive,
 			},
 		),
 	};

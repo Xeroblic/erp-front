@@ -1,20 +1,19 @@
 import React from 'react';
-import { flexRender, RowData, Table as ReactTable } from '@tanstack/react-table';
+import { flexRender, Table as ReactTable } from '@tanstack/react-table';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
-interface AssociationTableProps<T extends RowData> {
+interface AssociationTableProps<T> {
 	title: string;
 	count: number;
-	table: ReactTable<AppTableFeatures, T>;
+	table: ReactTable<T>;
 	loading?: boolean;
 	emptyMessage: string;
 	showOnlyInEditMode?: boolean;
 	isEditMode?: boolean;
 }
 
-const AssociationTable = <T extends RowData>({
+function AssociationTable<T>({
 	title,
 	count,
 	table,
@@ -22,7 +21,7 @@ const AssociationTable = <T extends RowData>({
 	emptyMessage,
 	showOnlyInEditMode = false,
 	isEditMode = false,
-}: AssociationTableProps<T>) => {
+}: AssociationTableProps<T>) {
 	// Si debe mostrarse solo en modo edición y no estamos en modo edición, no renderizar
 	if (showOnlyInEditMode && !isEditMode) {
 		return null;
@@ -36,18 +35,16 @@ const AssociationTable = <T extends RowData>({
 				</CardTitle>
 			</CardHeader>
 			<CardBody>
-				{loading && (
+				{loading ? (
 					<div className='flex items-center justify-center py-8'>
 						<Icon icon='HeroArrowPath' className='h-6 w-6 animate-spin text-blue-600' />
 						<span className='ml-2 text-sm text-gray-600'>Cargando...</span>
 					</div>
-				)}
-				{!loading && table.getRowModel().rows.length === 0 && (
+				) : table.getRowModel().rows.length === 0 ? (
 					<div className='py-8 text-center text-sm text-gray-500 dark:text-gray-400'>
 						{emptyMessage}
 					</div>
-				)}
-				{!loading && table.getRowModel().rows.length > 0 && (
+				) : (
 					<div className='overflow-x-auto'>
 						<table className='w-full text-left text-sm'>
 							<thead className='border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'>
@@ -88,6 +85,6 @@ const AssociationTable = <T extends RowData>({
 			</CardBody>
 		</Card>
 	);
-};
+}
 
 export default AssociationTable;

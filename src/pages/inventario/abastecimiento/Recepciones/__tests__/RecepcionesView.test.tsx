@@ -14,7 +14,7 @@ import RecepcionesView from '../RecepcionesView';
  */
 
 const authDouble = vi.hoisted(() => ({ canWrite: true }));
-const contextDouble = vi.hoisted((): { subsidiaryId: number | null } => ({ subsidiaryId: 2 }));
+const contextDouble = vi.hoisted(() => ({ subsidiaryId: 2 as number | null }));
 
 vi.mock('@/hooks/useAuthorization', () => ({
 	default: () => ({ authorize: () => authDouble.canWrite }),

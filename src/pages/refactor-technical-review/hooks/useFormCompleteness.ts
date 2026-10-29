@@ -52,7 +52,7 @@ export const useFormCompleteness = (
 				missing.push({
 					key,
 					label: meta.label,
-					group: meta.group || 'General',
+					group: (meta as any).group || 'General',
 				});
 			}
 		});

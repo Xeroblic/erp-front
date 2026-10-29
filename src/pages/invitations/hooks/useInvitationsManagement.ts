@@ -1,3 +1,4 @@
+/* eslint-disable import/extensions */
 /* eslint-disable no-console */
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'react-toastify';

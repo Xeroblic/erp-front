@@ -118,13 +118,14 @@ export const DropdownToggle: FC<IDropdownToggleProps> = (props) => {
 			{({ ref }) =>
 				cloneElement(children, {
 					// @ts-ignore
+					// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 					'data-component-name': `Dropdown/DropdownToggle [${childDisplayName}]`,
 					// @ts-ignore
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 					ref: (node: null) => setButtonRef(node, ref),
 					onClick: () => {
 						// @ts-ignore
-						// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+						// eslint-disable-next-line no-unused-expressions,@typescript-eslint/no-unused-expressions,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
 						children?.props?.onClick ? children.props.onClick() : null;
 						if (setIsOpen) {
 							setIsOpen(!isOpen);
@@ -142,6 +143,7 @@ export const DropdownToggle: FC<IDropdownToggleProps> = (props) => {
 							show: isOpen,
 						},
 						// @ts-ignore
+						// eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
 						children?.props?.className,
 					),
 					'aria-expanded': isOpen,
@@ -213,7 +215,7 @@ export const DropdownMenu: FC<IDropdownMenuProps> = (props) => {
 						className={classNames(
 							classNames(
 								'py-2',
-								'z-9999',
+								'z-[9999]',
 								'border-zinc-300/25 bg-white shadow-lg dark:border-zinc-800/50 dark:bg-zinc-900',
 								[`${borderWidth}`, `${rounded}`],
 							),

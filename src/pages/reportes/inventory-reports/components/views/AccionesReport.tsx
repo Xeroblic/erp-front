@@ -47,9 +47,9 @@ const SupplierCell: React.FC<{ recommendation: IReplenishmentReportRow['recommen
 	const { supplier, last_purchase: lastPurchase } = recommendation;
 	if (supplier)
 		return (
-			<div className='max-w-[240px] min-w-0'>
+			<div className='min-w-0 max-w-[240px]'>
 				<p
-					className='line-clamp-2 text-sm font-semibold wrap-break-word'
+					className='line-clamp-2 break-words text-sm font-semibold'
 					title={supplier.display_name}>
 					{supplier.display_name}
 				</p>
@@ -62,7 +62,7 @@ const SupplierCell: React.FC<{ recommendation: IReplenishmentReportRow['recommen
 			</div>
 		);
 	return (
-		<div className='max-w-[240px] min-w-0 text-sm text-zinc-600 dark:text-zinc-300'>
+		<div className='min-w-0 max-w-[240px] text-sm text-zinc-600 dark:text-zinc-300'>
 			<p>
 				{plural(
 					recommendation.historical_supplier_count,

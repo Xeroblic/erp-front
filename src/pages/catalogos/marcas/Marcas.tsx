@@ -6,7 +6,6 @@ import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
-import getFormDataText from '@/utils/formData.util';
 import { useMarcas } from './components/hooks/useMarcas';
 import BrandsGrid from './components/tables/BrandsGrid';
 import BrandMasterDetail from './components/BrandMasterDetail';
@@ -73,8 +72,8 @@ const Marcas: React.FC = () => {
 				branchIdValue && branchIdValue !== 'null' ? Number(branchIdValue) : undefined;
 
 			const created = await createBrand({
-				name: getFormDataText(formData, 'name').trim(),
-				code: getFormDataText(formData, 'code').trim() || undefined,
+				name: String(formData.get('name') ?? '').trim(),
+				code: formData.get('code')?.toString().trim() || undefined,
 				is_active: formData.get('is_active') === '1',
 				branch_id: branchIdForm ?? filters.branch_id ?? activeBranchId ?? undefined,
 				image: (() => {
@@ -110,8 +109,8 @@ const Marcas: React.FC = () => {
 			const updated = await updateBrand({
 				id: selected.id,
 				branch_id: selected.branch_id ?? activeBranchId ?? undefined,
-				name: getFormDataText(formData, 'name').trim(),
-				code: getFormDataText(formData, 'code').trim() || undefined,
+				name: String(formData.get('name') ?? '').trim(),
+				code: formData.get('code')?.toString().trim() || undefined,
 				is_active: formData.get('is_active') === '1',
 				image: (() => {
 					const file = formData.get('image');
@@ -265,7 +264,7 @@ const Marcas: React.FC = () => {
 
 			<Container>
 				{error && (
-					<div className='mb-4 rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-700'>
+					<div className='mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700'>
 						{error}
 					</div>
 				)}

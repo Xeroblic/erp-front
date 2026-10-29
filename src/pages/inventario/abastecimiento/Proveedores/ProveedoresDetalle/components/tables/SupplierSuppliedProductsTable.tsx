@@ -5,6 +5,7 @@ import PermissionGuard from '@/components/authorization/PermissionGuard';
 import ProductCard from '@/components/procurement/ProductCard';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import {
@@ -75,10 +76,10 @@ const compareRows = (
 
 /** Un costo sin importe se dice desconocido, nunca `$0` (mismo criterio que `CostBlock`). */
 const LastCostCell: React.FC<{ cost: IProcurementCost | null }> = ({ cost }) => {
-	if (cost === null) return <span className='text-sm text-zinc-500 italic'>Varias líneas</span>;
+	if (cost === null) return <span className='text-sm italic text-zinc-500'>Varias líneas</span>;
 
 	const amount = formatDecimalAmount(cost.effective_unit_amount, cost.currency_code);
-	if (amount === null) return <span className='text-sm text-zinc-500 italic'>Desconocido</span>;
+	if (amount === null) return <span className='text-sm italic text-zinc-500'>Desconocido</span>;
 
 	return (
 		<div className='flex flex-col items-center'>
@@ -125,7 +126,7 @@ const SupplierSuppliedProductsTable: React.FC<ISupplierSuppliedProductsTableProp
 		setPagination({ ...current, pageIndex: Math.min(Math.max(0, pageIndex), pageCount - 1) });
 
 	const table: TablePaginationController = {
-		state: { pagination: current },
+		getState: () => ({ pagination: current }),
 		setPageSize: (updater: Updater<number>) => {
 			const pageSize = typeof updater === 'function' ? updater(current.pageSize) : updater;
 			setPagination({ pageIndex: 0, pageSize });
@@ -204,7 +205,7 @@ const SupplierSuppliedProductsTable: React.FC<ISupplierSuppliedProductsTableProp
 									{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
 										<Td
 											key={`supplied-product-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>

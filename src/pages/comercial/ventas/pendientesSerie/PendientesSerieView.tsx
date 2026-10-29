@@ -16,7 +16,6 @@ import type { PendingSerialSale } from '@/services/salesService';
 import CloseSaleModal from '@/pages/comercial/ventas/detail/components/modals/CloseSaleModal';
 import SaleDetailPage from '@/pages/comercial/ventas/detail/components/modals/SaleDetailPage';
 import { useSaleReturnWrites } from '@/pages/comercial/ventas/detail/hooks/useSaleReturnWrites';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 import { pendingSerialToSaleItems } from '../utils';
 import { usePendientesSerie } from './hooks/usePendientesSerie';
 
@@ -29,7 +28,7 @@ const statusColor: Record<string, TColors> = {
 	completed: 'emerald',
 };
 
-type PendingSerialCell = CellContext<AppTableFeatures, PendingSerialSale, unknown>;
+type PendingSerialCell = CellContext<PendingSerialSale, unknown>;
 
 const renderSaleNumber = ({ row }: PendingSerialCell) => {
 	const sale = row.original;
@@ -83,7 +82,7 @@ const PendientesSerieView: React.FC = () => {
 		},
 	});
 
-	const columns = useMemo<ColumnDef<AppTableFeatures, PendingSerialSale>[]>(
+	const columns = useMemo<ColumnDef<PendingSerialSale>[]>(
 		() => [
 			{
 				accessorKey: 'sale_number',

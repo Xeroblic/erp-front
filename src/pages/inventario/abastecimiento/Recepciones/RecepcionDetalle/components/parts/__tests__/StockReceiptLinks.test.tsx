@@ -48,10 +48,10 @@ describe('StockReceiptSummaryCard', () => {
 		);
 
 		expect(
-			screen.getByRole('link', { name: /^Ficha del proveedor:\s*PCExpress$/ }),
+			screen.getByRole('link', { name: 'Ficha del proveedor: PCExpress' }),
 		).toHaveAttribute('href', '/inventario/abastecimiento/proveedores/7');
 		expect(
-			screen.getByRole('link', { name: /^Ficha del documento de compra:\s*1500$/ }),
+			screen.getByRole('link', { name: 'Ficha del documento de compra: 1500' }),
 		).toHaveAttribute('href', '/inventario/abastecimiento/documentos-compra/61');
 	});
 
@@ -83,7 +83,7 @@ describe('StockReceiptItemsTable', () => {
 		);
 
 		expect(
-			screen.getByRole('link', { name: /^Ficha del documento de compra:\s*Documento 1500$/ }),
+			screen.getByRole('link', { name: 'Ficha del documento de compra: Documento 1500' }),
 		).toHaveAttribute('href', '/inventario/abastecimiento/documentos-compra/61');
 	});
 

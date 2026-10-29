@@ -1,29 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import type { FormikValues } from 'formik';
+import { motion, AnimatePresence } from 'framer-motion';
+import type { FieldValues } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import type { SectionConfig, FormSectionProps } from './types';
 
-/**
- * Desplazamiento de la sección según la dirección de navegación (1 avanza, -1
- * retrocede). Son funciones porque la sección que sale ya no se vuelve a
- * renderizar: `AnimatePresence` le pasa por `custom` la dirección del cambio
- * actual. Con un `exit` fijo conservaría la dirección con que entró y saldría
- * hacia el lado contrario.
- */
-const sectionVariants: Variants = {
-	enter: (direction: number) => ({ opacity: 0, x: direction * 40 }),
-	center: { opacity: 1, x: 0 },
-	exit: (direction: number) => ({ opacity: 0, x: direction * -40 }),
-};
-
-interface FormShellProps<T extends FormikValues> {
+interface FormShellProps<T extends FieldValues> {
 	sections: SectionConfig<T>[];
 	sectionProps: FormSectionProps<T>;
 	onBack: () => void;
-	onFinish: () => void | Promise<void>;
+	onFinish: () => void;
 	isSubmitting?: boolean;
 	/** Called when user navigates between sections (before transition) */
 	onStepChange?: (direction: 'next' | 'prev') => void;
@@ -56,7 +43,7 @@ const stepTone = (isActive: boolean, isCompleted: boolean, classes: IStepToneCla
 	return classes.idle;
 };
 
-const FormShell = <T extends FormikValues>({
+const FormShell = <T extends FieldValues>({
 	sections,
 	sectionProps,
 	onBack,
@@ -165,7 +152,7 @@ const FormShell = <T extends FormikValues>({
 	return (
 		<div className='flex flex-col gap-0'>
 			{/* ─── Step Navigation Bar ─────────────────────────────────── */}
-			<div className='overflow-x-auto rounded-t-2xl border border-zinc-200 bg-linear-to-r from-blue-50/80 via-white to-blue-50/80 dark:border-zinc-700 dark:from-zinc-800/80 dark:via-zinc-900 dark:to-zinc-800/80'>
+			<div className='overflow-x-auto rounded-t-2xl border border-zinc-200 bg-gradient-to-r from-blue-50/80 via-white to-blue-50/80 dark:border-zinc-700 dark:from-zinc-800/80 dark:via-zinc-900 dark:to-zinc-800/80'>
 				<div className='flex items-center justify-between px-4 py-3'>
 					{isSaving && (
 						<div className='mr-2 flex animate-pulse items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'>
@@ -197,7 +184,7 @@ const FormShell = <T extends FormikValues>({
 											isActive,
 											isCompleted,
 											{
-												active: 'bg-blue-600 text-white shadow-lg ring-4 shadow-blue-500/30 ring-blue-100 dark:ring-blue-900/50',
+												active: 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-4 ring-blue-100 dark:ring-blue-900/50',
 												completed: 'bg-blue-500 text-white',
 												idle: 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500',
 											},
@@ -205,19 +192,19 @@ const FormShell = <T extends FormikValues>({
 										{isCompleted && !isActive ? (
 											<Icon
 												icon='HeroCheck'
-												className='h-6 w-6 text-white!'
+												className='h-6 w-6 !text-white'
 											/>
 										) : (
 											<Icon
 												icon={section.icon}
-												className={`h-6 w-6 ${isActive ? 'text-white!' : ''}`}
+												className={`h-6 w-6 ${isActive ? '!text-white' : ''}`}
 											/>
 										)}
 									</div>
 
 									{/* Label */}
 									<span
-										className={`text-[10px] font-semibold whitespace-nowrap transition-colors ${stepTone(
+										className={`whitespace-nowrap text-[10px] font-semibold transition-colors ${stepTone(
 											isActive,
 											isCompleted,
 											{
@@ -254,25 +241,16 @@ const FormShell = <T extends FormikValues>({
 					<motion.div
 						key={step}
 						custom={direction}
-						variants={sectionVariants}
-						initial='enter'
-						animate='center'
-						exit='exit'
+						initial={{ opacity: 0, x: direction * 40 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: direction * -40 }}
 						transition={{ duration: 0.25, ease: 'easeInOut' }}
 						className='p-6'>
 						<h3 className='mb-6 flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-zinc-100'>
 							<Icon icon={currentSection.icon} className='h-5 w-5 text-blue-600' />
 							{currentSection.label}
 						</h3>
-						<SectionComponent
-							values={sectionProps.values}
-							errors={sectionProps.errors}
-							readOnly={sectionProps.readOnly}
-							setFieldValue={sectionProps.setFieldValue}
-							onFieldBlur={sectionProps.onFieldBlur}
-							onDirectSubmit={sectionProps.onDirectSubmit}
-							schemaFields={sectionProps.schemaFields}
-						/>
+						<SectionComponent {...sectionProps} />
 					</motion.div>
 				</AnimatePresence>
 			</div>
@@ -310,9 +288,7 @@ const FormShell = <T extends FormikValues>({
 					<Button
 						variant='solid'
 						color='emerald'
-						onClick={() => {
-							void onFinish();
-						}}
+						onClick={onFinish}
 						isLoading={isSubmitting}
 						disabled={isSubmitting || sectionProps.readOnly}
 						className='gap-2'>

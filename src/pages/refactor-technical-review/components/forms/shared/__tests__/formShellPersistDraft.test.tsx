@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { FormikValues } from 'formik';
+import type { FieldValues } from 'react-hook-form';
 import FormShell from '../FormShell';
 import type { FormSectionProps, SectionConfig } from '../types';
 
@@ -23,7 +23,7 @@ vi.mock('@/components/ui/Button', () => ({
 
 vi.mock('react-toastify', () => ({ toast: { error: vi.fn() } }));
 
-const SECTIONS: SectionConfig<FormikValues>[] = [
+const SECTIONS: SectionConfig<FieldValues>[] = [
 	{
 		key: 'uno',
 		label: 'Sección uno',
@@ -43,9 +43,9 @@ const renderShell = (isValid: boolean) => {
 	const onStepChange = vi.fn();
 
 	render(
-		<FormShell<FormikValues>
+		<FormShell<FieldValues>
 			sections={SECTIONS}
-			sectionProps={{ readOnly: false } as unknown as FormSectionProps<FormikValues>}
+			sectionProps={{ readOnly: false } as unknown as FormSectionProps<FieldValues>}
 			onBack={vi.fn()}
 			onFinish={vi.fn()}
 			onStepChange={onStepChange}

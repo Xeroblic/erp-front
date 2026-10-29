@@ -36,7 +36,7 @@ export const SubheaderRight: FC<ISubheaderRightProps> = ({ children, className, 
 		<div
 			data-component-name='Subheader/SubheaderRight'
 			className={classNames(
-				'flex w-full flex-wrap items-center gap-3 sm:gap-4 md:ms-auto md:w-auto md:shrink-0',
+				'flex w-full flex-wrap items-center gap-3 sm:gap-4 md:ms-auto md:w-auto md:flex-shrink-0',
 				className,
 			)}
 			{...rest}>
@@ -97,7 +97,7 @@ const Subheader: FC<ISubheaderProps> = ({ children, className, ...rest }) => {
 				data-component-name='Subheader'
 				ref={divRef}
 				className={classNames(
-					'sticky top-(--header-height) z-9',
+					'sticky top-[var(--header-height)] z-[9]',
 					'flex flex-col gap-2',
 					'border-b border-zinc-300/25 bg-[#ffffffa3]',
 					'px-4 py-2 sm:px-6 sm:py-3',
@@ -109,7 +109,7 @@ const Subheader: FC<ISubheaderProps> = ({ children, className, ...rest }) => {
 				{!isMobile && (
 					<div className='flex w-full items-center justify-between gap-4'>
 						<div className='flex flex-1 flex-wrap items-center gap-3'>{firstChild}</div>
-						<div className='flex shrink-0 flex-wrap items-center gap-3'>
+						<div className='flex flex-shrink-0 flex-wrap items-center gap-3'>
 							{restChildren}
 						</div>
 					</div>

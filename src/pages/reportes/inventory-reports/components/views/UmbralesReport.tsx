@@ -2,6 +2,7 @@ import React from 'react';
 import { StatusPill } from '@/components/procurement';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import { Td, Th, Tr } from '@/components/ui/Table';
+// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import ThresholdModal from '@/pages/inventario/Inventario/InventarioProducto/components/ThresholdModal';
 import type { TInventoryReportFiltersApi } from '@/pages/reportes/inventory-reports/hooks/useInventoryReportFilters';

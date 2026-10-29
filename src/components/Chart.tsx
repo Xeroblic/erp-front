@@ -1,29 +1,17 @@
-import React, { FC, memo, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import ApexCharts, { type ApexOptions } from 'apexcharts';
+import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
+import ApexCharts from 'apexcharts';
 import colors from 'tailwindcss/colors';
 import _ from 'lodash';
-import oklchToHex from '@/utils/oklchToHex.util';
 
-// ApexCharts aclara, oscurece y concatena alfa sobre estos colores: necesita hex y la paleta
-// de Tailwind 4 viene en oklch.
-const chartColors = {
-	blue: oklchToHex(colors.blue['500']),
-	emerald: oklchToHex(colors.emerald['500']),
-	amber: oklchToHex(colors.amber['500']),
-	rose: oklchToHex(colors.rose['500']),
-	purple: oklchToHex(colors.purple['500']),
-	green: oklchToHex(colors.green['500']),
-	zinc: oklchToHex(colors.zinc['500']),
-};
+// Initialize ApexCharts with default locale to prevent localization errors
+if (typeof window !== 'undefined') {
+	ApexCharts.exec = ApexCharts.exec || (() => {});
+}
 
+// Derive the Apex types from the class definition (the bundled d.ts exports only the class)
+type ApexOptions = Parameters<ApexCharts['updateOptions']>[0];
 type ChartSeries = Parameters<ApexCharts['updateSeries']>[0];
 type ChartType = NonNullable<NonNullable<ApexOptions['chart']>['type']>;
-
-/** ApexCharts falla sin avisar en la UI: el error queda en consola para poder depurarlo. */
-const reportChartError = (message: string, error: unknown): void => {
-	// eslint-disable-next-line no-console
-	console.error(message, error);
-};
 
 export interface IChartProps {
 	options?: ApexOptions;
@@ -66,18 +54,18 @@ const Chart: FC<IChartProps> = (props) => {
 				},
 			},
 			colors: [
-				chartColors.blue,
-				chartColors.emerald,
-				chartColors.amber,
-				chartColors.rose,
-				chartColors.purple,
+				colors.blue['500'],
+				colors.emerald['500'],
+				colors.amber['500'],
+				colors.rose['500'],
+				colors.purple['500'],
 			],
 			dataLabels: {
 				enabled: false,
 			},
 			grid: {
 				show: true,
-				borderColor: `${chartColors.zinc}25`,
+				borderColor: `${colors.zinc['500']}25`,
 				strokeDashArray: 0,
 				xaxis: {
 					lines: {
@@ -98,7 +86,7 @@ const Chart: FC<IChartProps> = (props) => {
 			},
 			legend: {
 				labels: {
-					colors: chartColors.zinc,
+					colors: colors.zinc['500'],
 				},
 			},
 			plotOptions: {
@@ -107,14 +95,14 @@ const Chart: FC<IChartProps> = (props) => {
 				},
 				candlestick: {
 					colors: {
-						upward: `${chartColors.green}`,
-						downward: `${chartColors.rose}`,
+						upward: `${colors.green['500']}`,
+						downward: `${colors.rose['500']}`,
 					},
 				},
 				boxPlot: {
 					colors: {
-						upper: `${chartColors.green}`,
-						lower: `${chartColors.rose}`,
+						upper: `${colors.green['500']}`,
+						lower: `${colors.rose['500']}`,
 					},
 				},
 			},
@@ -129,26 +117,26 @@ const Chart: FC<IChartProps> = (props) => {
 			xaxis: {
 				axisBorder: {
 					show: true,
-					color: `${chartColors.zinc}50`,
+					color: `${colors.zinc['500']}50`,
 				},
 				axisTicks: {
 					show: false,
 				},
 				labels: {
 					style: {
-						colors: chartColors.zinc,
+						colors: colors.zinc['500'],
 					},
 				},
 			},
 			yaxis: {
 				labels: {
 					style: {
-						colors: chartColors.zinc,
+						colors: colors.zinc['500'],
 					},
 				},
 				title: {
 					style: {
-						color: chartColors.zinc,
+						color: colors.zinc['500'],
 					},
 				},
 			},
@@ -168,40 +156,34 @@ const Chart: FC<IChartProps> = (props) => {
 		});
 	}, [defaultOptions, options, type, sanitizedWidth, sanitizedHeight]);
 
-	// La instancia se crea en el próximo frame: si la serie llega antes, el efecto de
-	// actualización todavía no tiene instancia, así que la creación lee lo vigente.
-	const latestConfigRef = useRef({ buildOptions, series });
-	useLayoutEffect(() => {
-		latestConfigRef.current = { buildOptions, series };
-	}, [buildOptions, series]);
-
 	useEffect(() => {
+		let animationFrameId: number;
+
 		const initChart = () => {
 			if (!chartRef.current) return;
 			if (chartInstanceRef.current) {
 				try {
 					chartInstanceRef.current.destroy();
 				} catch (error) {
-					reportChartError('No se pudo limpiar el gráfico previo', error);
+					console.error('No se pudo limpiar el gráfico previo', error);
 				} finally {
 					chartInstanceRef.current = null;
 				}
 			}
 
-			const { buildOptions: currentOptions, series: currentSeries } = latestConfigRef.current;
 			const instance = new ApexCharts(chartRef.current, {
-				...currentOptions,
-				series: currentSeries,
+				...buildOptions,
+				series,
 			});
 
 			chartInstanceRef.current = instance;
-			instance.render().catch((error: unknown) => {
-				reportChartError('No se pudo renderizar el gráfico', error);
+			instance.render().catch((error) => {
+				console.error('No se pudo renderizar el gráfico', error);
 			});
 		};
 
 		// Usamos requestAnimationFrame para asegurar que el DOM esté listo y tenga dimensiones
-		const animationFrameId = requestAnimationFrame(initChart);
+		animationFrameId = requestAnimationFrame(initChart);
 
 		return () => {
 			cancelAnimationFrame(animationFrameId);
@@ -209,26 +191,23 @@ const Chart: FC<IChartProps> = (props) => {
 			try {
 				chartInstanceRef.current.destroy();
 			} catch (error) {
-				reportChartError('No se pudo destruir el gráfico', error);
+				console.error('No se pudo destruir el gráfico', error);
 			} finally {
 				chartInstanceRef.current = null;
 			}
 		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // mount only
 
 	useEffect(() => {
 		const instance = chartInstanceRef.current;
 		if (!instance) return;
-		// `el` sólo existe mientras la instancia está montada; los tipos de ApexCharts no lo declaran.
-		const isRendered = 'el' in instance && Boolean(instance.el);
-		if (!chartRef.current || !chartRef.current.isConnected || !isRendered) return;
-		const onUpdateError = (error: unknown) =>
-			reportChartError('No se pudo actualizar el gráfico', error);
+		if (!chartRef.current || !chartRef.current.isConnected || !(instance as any).el) return;
 		try {
-			instance.updateOptions(buildOptions, true, true).catch(onUpdateError);
-			instance.updateSeries(series, true).catch(onUpdateError);
+			instance.updateOptions(buildOptions, true, true);
+			instance.updateSeries(series, true);
 		} catch (error) {
-			onUpdateError(error);
+			console.error('No se pudo actualizar el gráfico', error);
 		}
 	}, [buildOptions, series]);
 

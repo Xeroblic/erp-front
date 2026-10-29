@@ -16,9 +16,9 @@ interface IMessageItemProps {
 const MessageItem: FC<IMessageItemProps> = ({ image, name, isOnline, text, isUnread, time }) => {
 	return (
 		<div className='flex min-w-[24rem] gap-2'>
-			<div className='relative shrink-0'>
+			<div className='relative flex-shrink-0'>
 				<Avatar src={image} name={name} />
-				<span className='absolute inset-e-0 bottom-0 flex h-3 w-3 rounded-full outline-white outline-solid dark:outline-zinc-900'>
+				<span className='absolute bottom-0 end-0 flex h-3 w-3 rounded-full outline outline-white dark:outline-zinc-900'>
 					<span
 						className={classNames('relative inline-flex h-3 w-3 rounded-full', {
 							'bg-red-500': !isOnline,
@@ -33,9 +33,9 @@ const MessageItem: FC<IMessageItemProps> = ({ image, name, isOnline, text, isUnr
 					<span className='truncate'>{text}</span>
 				</div>
 			</div>
-			<div className='relative flex shrink-0 items-center'>
+			<div className='relative flex flex-shrink-0 items-center'>
 				{isUnread && (
-					<span className='absolute inset-e-0 top-0 flex h-2 w-2'>
+					<span className='absolute end-0 top-0 flex h-2 w-2'>
 						<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75' />
 						<span className='relative inline-flex h-2 w-2 rounded-full bg-red-500' />
 					</span>
@@ -55,7 +55,7 @@ const MessagesPartial = () => {
 				</DropdownToggle>
 				{/* <DropdownMenu
 					placement='bottom-end'
-					className='flex flex-col flex-wrap divide-y divide-dashed divide-zinc-500/50 p-4 *:py-4'>
+					className='flex flex-col flex-wrap divide-y divide-dashed divide-zinc-500/50 p-4 [&>*]:py-4'>
 					<MessageItem
 						image={usersDb[0].image?.thumb}
 						name={`${usersDb[0].firstName} ${usersDb[0].lastName}`}
@@ -91,7 +91,7 @@ const MessagesPartial = () => {
 				</DropdownMenu> */}
 				<></>
 			</Dropdown>
-			<span className='absolute inset-e-0 top-0 flex h-3 w-3'>
+			<span className='absolute end-0 top-0 flex h-3 w-3'>
 				<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75' />
 				<span className='relative inline-flex h-3 w-3 rounded-full bg-red-500' />
 			</span>

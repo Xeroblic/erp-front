@@ -1,12 +1,12 @@
 import React, { FC, HTMLAttributes, ReactNode, useId, useMemo, useState } from 'react';
 import classNames from 'classnames';
-import { AnimatePresence, motion, type MotionProps } from 'framer-motion';
-import themeConfig from '@/config/theme.config';
-import useAsideStatus from '@/hooks/useAsideStatus';
+import { AnimatePresence, motion } from 'framer-motion';
+import useRoundedSize from '../../../hooks/useRoundedSize';
+import useAsideStatus from '../../../hooks/useAsideStatus';
+import themeConfig from '../../../config/theme.config';
+import { getFirstLetter } from '../../../utils/getFirstLetter';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 import useColorIntensity from '@/hooks/useColorIntensity';
-import { useReactiveThemeConfig } from '@/hooks/useReactiveThemeConfig';
-import useRoundedSize from '@/hooks/useRoundedSize';
-import { getFirstLetter } from '@/utils/getFirstLetter';
 
 interface IUserProps extends HTMLAttributes<HTMLDivElement> {
 	children: ReactNode;
@@ -45,7 +45,7 @@ const User: FC<IUserProps> = (props) => {
 
 	const { roundedCustom } = useRoundedSize('rounded-xl');
 
-	const avatarMotionProps = useMemo<MotionProps>(
+	const avatarMotionProps = useMemo(
 		() => ({
 			animate: {
 				scale: isOpen ? 1.05 : 1,
@@ -68,9 +68,9 @@ const User: FC<IUserProps> = (props) => {
 		<div data-component-name='User' className={classNames('relative', className)} {...rest}>
 			<motion.div
 				className={classNames(
-					'mb-2 min-w-18 overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-950',
+					'mb-2 min-w-[4.5rem] overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-950',
 					{
-						'ltr:-translate-x-2.5 rtl:translate-x-2.5': !asideStatus,
+						'ltr:translate-x-[-0.625rem] rtl:translate-x-[0.625rem]': !asideStatus,
 					},
 					themeConfig.transition,
 				)}
@@ -100,8 +100,8 @@ const User: FC<IUserProps> = (props) => {
 					) : (
 						<motion.div
 							className={classNames(
-								'flex aspect-square h-12 w-12 items-center justify-center',
-								[`bg-${reactiveThemeColor}-${reactiveThemeColorShade}/20`],
+								'flex aspect-square h-12 w-12 items-center justify-center bg-opacity-20',
+								[`bg-${reactiveThemeColor}-${reactiveThemeColorShade}`],
 								[`text-${reactiveThemeColor}-${reactiveThemeColorShade}`],
 								[`${roundedCustom(-2)}`],
 							)}
@@ -136,8 +136,8 @@ const User: FC<IUserProps> = (props) => {
 				</AnimatePresence>
 			</motion.div>
 			<span
-				className={classNames('absolute inset-e-0 top-0 -me-1 -mt-1 flex h-3 w-3', {
-					'ltr:translate-x-2.5 rtl:-translate-x-2.5': !asideStatus,
+				className={classNames('absolute end-0 top-0 -me-1 -mt-1 flex h-3 w-3', {
+					'ltr:translate-x-[0.625rem] rtl:translate-x-[-0.625rem]': !asideStatus,
 				})}>
 				<motion.span
 					className={classNames('absolute inline-flex h-full w-full rounded-full', [

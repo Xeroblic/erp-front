@@ -48,8 +48,8 @@ const RecuperarPassword = () => {
 		<PageWrapper isProtectedRoute={false} className='min-h-screen' name='Recuperar Contraseña'>
 			{/* Fondo clarito en verdes */}
 			<div className='fixed inset-0 -z-10'>
-				<div className='absolute inset-0 bg-linear-to-br from-emerald-200 via-emerald-300 to-emerald-500' />
-				<div className='absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,#000_1px,transparent_1px)] bg-size-[18px_18px] opacity-[0.06] mix-blend-overlay' />
+				<div className='absolute inset-0 bg-gradient-to-br from-emerald-200 via-emerald-300 to-emerald-500' />
+				<div className='absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_#000_1px,_transparent_1px)] opacity-[0.06] mix-blend-overlay [background-size:18px_18px]' />
 			</div>
 
 			<div className='relative z-0 flex min-h-screen items-center justify-center p-4 sm:p-6 lg:p-10'>
@@ -125,7 +125,7 @@ const RecuperarPassword = () => {
 
 										<Button
 											onClick={() => formik.handleSubmit()}
-											className='w-full transform rounded-xl bg-linear-to-r from-emerald-500 to-emerald-600 py-3.5 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.01] hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl'>
+											className='w-full transform rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3.5 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.01] hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl'>
 											Enviar enlace de restablecimiento
 										</Button>
 
@@ -142,7 +142,7 @@ const RecuperarPassword = () => {
 								// Estado de éxito (misma estética)
 								<div className='mx-auto max-w-md space-y-6 text-center'>
 									<div className='flex justify-center'>
-										<div className='flex h-16 w-16 items-center justify-center rounded-full border-2 border-emerald-400 bg-emerald-50 shadow-sm'>
+										<div className='flex h-16 w-16 items-center justify-center rounded-full border-2 border-emerald-400 bg-emerald-50 shadow'>
 											<Icon
 												icon='HeroCheckCircle'
 												className='h-8 w-8 text-emerald-600'
@@ -182,7 +182,7 @@ const RecuperarPassword = () => {
 				aria-hidden={!isNavOpen}
 				onClick={() => setIsNavOpen(false)}
 				className={classNames(
-					'fixed inset-0 z-60 bg-black/40 backdrop-blur-[2px] transition-opacity sm:hidden',
+					'fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px] transition-opacity sm:hidden',
 					isNavOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
 				)}
 			/>
@@ -190,7 +190,7 @@ const RecuperarPassword = () => {
 				role='dialog'
 				aria-label='Menú de navegación'
 				className={classNames(
-					'fixed top-0 right-0 z-61 h-full w-[86%] max-w-xs border-l border-emerald-900/10 bg-white shadow-2xl transition-transform duration-300 sm:hidden',
+					'fixed right-0 top-0 z-[61] h-full w-[86%] max-w-xs border-l border-emerald-900/10 bg-white shadow-2xl transition-transform duration-300 sm:hidden',
 					isNavOpen ? 'translate-x-0' : 'translate-x-full',
 				)}>
 				<div className='flex items-center justify-between border-b border-black/10 p-4'>

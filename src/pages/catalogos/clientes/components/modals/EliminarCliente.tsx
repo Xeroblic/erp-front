@@ -46,7 +46,7 @@ const EliminarCliente: React.FC<EliminarClienteProps> = ({
 								<div className='flex items-start'>
 									<Icon
 										icon='HeroExclamationTriangle'
-										className='mt-0.5 mr-2 h-5 w-5 text-red-400'
+										className='mr-2 mt-0.5 h-5 w-5 text-red-400'
 									/>
 									<div>
 										<h4 className='text-sm font-medium text-red-800'>
@@ -65,7 +65,7 @@ const EliminarCliente: React.FC<EliminarClienteProps> = ({
 								<div className='flex items-start'>
 									<Icon
 										icon='HeroExclamationTriangle'
-										className='mt-0.5 mr-2 h-5 w-5 text-yellow-400'
+										className='mr-2 mt-0.5 h-5 w-5 text-yellow-400'
 									/>
 									<div>
 										<h4 className='text-sm font-medium text-yellow-800'>

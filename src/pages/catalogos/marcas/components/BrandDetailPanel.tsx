@@ -102,7 +102,7 @@ const BrandDetailPanel: React.FC<BrandDetailPanelProps> = ({ brand, onSave, onDe
 						{editing ? (
 							<div className='space-y-2'>
 								<div>
-									<Label htmlFor='inline-brand-name' className='required mb-1!'>
+									<Label htmlFor='inline-brand-name' className='required !mb-1'>
 										Nombre
 									</Label>
 									<Input
@@ -116,7 +116,7 @@ const BrandDetailPanel: React.FC<BrandDetailPanelProps> = ({ brand, onSave, onDe
 									/>
 								</div>
 								<div>
-									<Label htmlFor='inline-brand-code' className='mb-1!'>
+									<Label htmlFor='inline-brand-code' className='!mb-1'>
 										Código interno
 									</Label>
 									<Input
@@ -204,7 +204,7 @@ const BrandDetailPanel: React.FC<BrandDetailPanelProps> = ({ brand, onSave, onDe
 			{editing && (
 				<Card>
 					<CardBody className='space-y-2'>
-						<Label htmlFor='inline-brand-image' className='mb-1!'>
+						<Label htmlFor='inline-brand-image' className='!mb-1'>
 							Reemplazar logo
 						</Label>
 						<Input
@@ -222,7 +222,7 @@ const BrandDetailPanel: React.FC<BrandDetailPanelProps> = ({ brand, onSave, onDe
 						</p>
 
 						<div className='pt-2'>
-							<Label htmlFor='inline-brand-gallery' className='mb-1!'>
+							<Label htmlFor='inline-brand-gallery' className='!mb-1'>
 								Agregar a la galería
 							</Label>
 							<Input

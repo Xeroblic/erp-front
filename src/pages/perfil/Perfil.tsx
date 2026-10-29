@@ -256,7 +256,7 @@ const Perfil = () => {
 		};
 	}, [userData, formik.values.comuna]);
 
-	useProfileTheme(formik, darkMode, setDarkModeStatus);
+	useProfileTheme(formik as any, darkMode, setDarkModeStatus);
 
 	const { saveBtnText, saveBtnColor, saveBtnDisable } = useSaveBtn({
 		isNewItem: false,
@@ -305,7 +305,7 @@ const Perfil = () => {
 						ref={containerRef}
 						className='group/hero relative mb-8 min-h-[220px] w-full overflow-hidden rounded-3xl bg-neutral-200 shadow-2xl dark:bg-neutral-800'>
 						<div className='z- absolute inset-0 overflow-hidden'>
-							<div className='absolute top-0 right-0 flex h-full w-[90%] items-center justify-center transition-transform duration-700 ease-out will-change-transform group-hover/hero:scale-105 md:w-[50%]'>
+							<div className='absolute right-0 top-0 flex h-full w-[90%] items-center justify-center transition-transform duration-700 ease-out will-change-transform group-hover/hero:scale-105 md:w-[50%]'>
 								{avatarUrl ? (
 									<img
 										src={avatarUrl}
@@ -313,7 +313,7 @@ const Perfil = () => {
 										className='h-full w-full object-cover object-center drop-shadow-2xl'
 									/>
 								) : (
-									<div className='flex h-full w-full items-center justify-center bg-linear-to-br from-emerald-400 via-teal-500 to-cyan-600'>
+									<div className='flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600'>
 										<span className='text-8xl font-bold text-white/20'>
 											{fullName
 												.split(' ')
@@ -329,7 +329,7 @@ const Perfil = () => {
 						</div>
 
 						<div
-							className='relative z-1 flex h-screen max-h-[30vh] min-h-[24vh] w-[75%] items-center bg-white md:h-[28vh] md:max-h-[24vh] md:w-[65%] dark:bg-neutral-900'
+							className='z-1 relative flex h-[100vh] max-h-[30vh] min-h-[24vh] w-[75%] items-center bg-white dark:bg-neutral-900 md:h-[28vh] md:max-h-[24vh] md:w-[65%]'
 							style={{
 								clipPath:
 									'polygon(0% 0%, 100% 0%, 82% 59.21%, 100% 50.25%, 82% 100%, 0% 100%)',
@@ -337,7 +337,7 @@ const Perfil = () => {
 									'polygon(0% 0%, 100% 0%, 88.67% 49.35%, 100% 49.35%, 88.67% 100%, 0% 100%)',
 							}}>
 							<div className='flex w-full items-center gap-6 p-6 pr-20 md:p-10 md:pr-24'>
-								<div ref={avatarRef} className='relative shrink-0'>
+								<div ref={avatarRef} className='relative flex-shrink-0'>
 									<ImageZoom
 										imageUrl={avatarUrl || ''}
 										alt={fullName}
@@ -347,7 +347,7 @@ const Perfil = () => {
 										renderTrigger={(open) => (
 											<div
 												onClick={avatarUrl ? open : undefined}
-												className={`relative h-20 w-20 overflow-hidden rounded-full border-4 border-white shadow-xl sm:h-28 sm:w-28 dark:border-neutral-800 ${
+												className={`relative h-20 w-20 overflow-hidden rounded-full border-4 border-white shadow-xl dark:border-neutral-800 sm:h-28 sm:w-28 ${
 													avatarUrl ? 'cursor-pointer' : ''
 												}`}>
 												{avatarUrl ? (
@@ -376,7 +376,7 @@ const Perfil = () => {
 
 								{/* Texto */}
 								<div ref={headerRef} className='flex-1'>
-									<h1 className='text-xl font-bold text-neutral-900 md:text-3xl dark:text-white'>
+									<h1 className='text-xl font-bold text-neutral-900 dark:text-white md:text-3xl'>
 										{fullName || 'Usuario'}
 									</h1>
 									<p className='mb-3 text-sm text-neutral-500 dark:text-neutral-400'>
@@ -399,13 +399,13 @@ const Perfil = () => {
 					{/* Tabs Navigation */}
 					<div
 						ref={tabsRef}
-						className='relative mt-4 mb-4'
+						className='relative mb-4 mt-4'
 						style={{ willChange: 'transform, opacity' }}>
-						<div className='relative flex gap-2 rounded-2xl bg-neutral-300/80 p-1.5 backdrop-blur-xs dark:bg-neutral-800/60'>
+						<div className='relative flex gap-2 rounded-2xl bg-neutral-300/80 p-1.5 backdrop-blur-sm dark:bg-neutral-800/60'>
 							{/* Sliding indicator */}
 							<div
 								ref={indicatorRef}
-								className='absolute top-1.5 left-1.5 h-[calc(100%-12px)] rounded-xl bg-white shadow-md transition-shadow dark:bg-neutral-700'
+								className='absolute left-1.5 top-1.5 h-[calc(100%-12px)] rounded-xl bg-white shadow-md transition-shadow dark:bg-neutral-700'
 								style={{ willChange: 'transform, width' }}
 							/>
 
@@ -432,7 +432,7 @@ const Perfil = () => {
 					{/* Tab Content */}
 					<div
 						ref={contentRef}
-						className='rounded-3xl border border-neutral-200/50 bg-white/80 p-6 shadow-xl shadow-neutral-900/5 backdrop-blur-xs sm:p-8 dark:border-white/5 dark:bg-neutral-900/60'
+						className='rounded-3xl border border-neutral-200/50 bg-white/80 p-6 shadow-xl shadow-neutral-900/5 backdrop-blur-sm dark:border-white/5 dark:bg-neutral-900/60 sm:p-8'
 						style={{ willChange: 'transform, opacity' }}>
 						{activeTab === 'EDIT' && (
 							<EditProfileTab

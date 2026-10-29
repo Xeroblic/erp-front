@@ -29,7 +29,7 @@ const WooProductStorefronts: React.FC<WooProductStorefrontsProps> = ({
 			<div className='flex items-start gap-2.5 rounded-lg border border-dashed border-neutral-300 bg-white p-3.5 dark:border-neutral-600 dark:bg-neutral-800/50'>
 				<Icon
 					icon='HeroBuildingStorefront'
-					className='mt-0.5 h-5 w-5 shrink-0 text-neutral-400 dark:text-neutral-500'
+					className='mt-0.5 h-5 w-5 flex-shrink-0 text-neutral-400 dark:text-neutral-500'
 				/>
 				<div>
 					<p className='text-sm font-medium text-neutral-700 dark:text-neutral-200'>
@@ -50,7 +50,7 @@ const WooProductStorefronts: React.FC<WooProductStorefrontsProps> = ({
 					icon='HeroBuildingStorefront'
 					className='h-4 w-4 text-emerald-600 dark:text-emerald-400'
 				/>
-				<span className='text-xs font-bold tracking-wider text-emerald-700 uppercase dark:text-emerald-300'>
+				<span className='text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300'>
 					Publicado en {links.length} tienda{links.length !== 1 ? 's' : ''}
 				</span>
 			</div>
@@ -76,7 +76,7 @@ const WooProductStorefronts: React.FC<WooProductStorefrontsProps> = ({
 									: 'border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800/50'
 							}`}>
 							<div
-								className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+								className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
 									hasError
 										? 'bg-rose-500/15 dark:bg-rose-500/20'
 										: 'bg-emerald-500/15 dark:bg-emerald-500/20'

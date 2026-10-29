@@ -12,7 +12,7 @@ interface FormLockCareServiceRepairProps {
 }
 
 const baseFieldClassName =
-	'rounded-xl border-zinc-300 bg-zinc-50 text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-500!';
+	'rounded-xl border-zinc-300 bg-zinc-50 text-zinc-800 placeholder:text-zinc-400 focus:!border-emerald-500';
 
 const FormLockCareServiceRepair: React.FC<FormLockCareServiceRepairProps> = ({ formik }) => {
 	const selectedChargerOption =

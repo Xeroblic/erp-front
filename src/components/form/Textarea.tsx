@@ -53,20 +53,20 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, ITextareaProps>((props, r
 		solid: {
 			general: classNames(
 				// Default
-				[`${borderWidth} border-(--textarea-border) dark:border-zinc-800`],
+				[`${borderWidth} border-[color:var(--textarea-border)] dark:border-zinc-800`],
 				'bg-zinc-50 dark:bg-zinc-800',
 				// Hover
-				'hover:border-(--textarea-border-hover)',
-				'dark:hover:border-(--textarea-border-hover)',
-				'disabled:border-zinc-500!',
+				'hover:border-[color:var(--textarea-border-hover)]',
+				'dark:hover:border-[color:var(--textarea-border-hover)]',
+				'disabled:!border-zinc-500',
 				// Focus
-				'focus:border-(--textarea-border-hover) dark:focus:border-(--textarea-border-hover)',
+				'focus:border-[color:var(--textarea-border-hover)] dark:focus:border-[color:var(--textarea-border-hover)]',
 				'focus:bg-white dark:focus:bg-zinc-800',
-				'focus:ring-1 focus:ring-(--textarea-border-hover)',
+				'focus:ring-1 focus:ring-[color:var(--textarea-border-hover)]',
 			),
 			validation: classNames({
-				'border-red-500! ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-				'border-green-500! focus:ring-4 focus:ring-green-500/30':
+				'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
+				'!border-green-500 focus:ring-4 focus:ring-green-500/30':
 					!isValid && isTouched && !invalidFeedback,
 			}),
 		},

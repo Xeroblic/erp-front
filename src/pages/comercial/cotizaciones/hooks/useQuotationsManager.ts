@@ -5,6 +5,16 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
+import {
+	IQuote,
+	type IQuoteItem,
+	QuoteStatus,
+	type QuoteCreateDTO,
+	type QuoteUpdateDTO,
+	type QuoteItemDTO,
+} from '../../../../interface';
+import { normalizeQuoteStatusValue } from '../constants/quoteStatuses';
+import { getCustomerDisplayName } from '../utils/customerDisplay';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import {
@@ -22,16 +32,6 @@ import {
 	selectQuotesLoading,
 	selectQuoteActionsLoading,
 } from '@/store/slices/quotes/quotesSlice';
-import {
-	IQuote,
-	type IQuoteItem,
-	QuoteStatus,
-	type QuoteCreateDTO,
-	type QuoteUpdateDTO,
-	type QuoteItemDTO,
-} from '../../../../interface';
-import { normalizeQuoteStatusValue } from '../constants/quoteStatuses';
-import { getCustomerDisplayName } from '../utils/customerDisplay';
 
 export interface QuotationsFilters {
 	status?: QuoteStatus;
@@ -65,6 +65,7 @@ export interface UseQuotationsManagerReturn {
 	createQuotation: (quotation: Partial<IQuote>) => Promise<void>;
 	updateQuotation: (id: number, quotation: Partial<IQuote>) => Promise<void>;
 	deleteQuotation: (id: number) => Promise<void>;
+	duplicateQuotation: (id: number) => Promise<void>;
 	changeStatus: (id: number, status: QuoteStatus) => Promise<void>;
 	convertToSale: (id: number) => Promise<void>;
 	refreshData: () => void;
@@ -85,101 +86,6 @@ const initialFilters: QuotationsFilters = {
 	maxAmount: undefined,
 };
 
-const API_FETCH_LIMIT = 500;
-
-type QuoteItemPayload = QuoteItemDTO & { id?: number };
-
-const asRecord = (value: unknown): Record<string, unknown> | undefined =>
-	typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined;
-
-/** Mensaje del error rechazado, o el genérico si no trae uno. */
-const getErrorMessage = (err: unknown, fallback: string): string => {
-	const message = asRecord(err)?.message;
-	return typeof message === 'string' && message ? message : fallback;
-};
-
-/** Precio neto del ítem: `unit_price` o los alias que trae el backend legacy. */
-const getRawUnitPrice = (item: IQuoteItem): number => {
-	const record = asRecord(item);
-	return Number(item.unit_price ?? record?.unit_net ?? record?.unitPrice ?? record?.unit ?? 0);
-};
-
-const normalizeQuoteItems = (items?: IQuoteItem[] | null): QuoteItemPayload[] => {
-	if (!items || items.length === 0) return [];
-	const mapped = items.map((item) => {
-		const hasProduct = Boolean(item.product_id);
-		const baseName = item.customer_name ?? item.product?.name ?? '';
-		const baseSku = item.customer_sku ?? item.product?.sku ?? '';
-		const quantity = Math.max(1, Number(item.quantity) || 1);
-		const rawUnitPrice = getRawUnitPrice(item);
-		const unitPrice = rawUnitPrice > 0 ? rawUnitPrice : undefined;
-		const discountAmount =
-			item.discount_amount !== undefined && item.discount_amount !== null
-				? Number(item.discount_amount)
-				: undefined;
-
-		if (!hasProduct && !baseName.trim()) {
-			return null;
-		}
-		if (!hasProduct && (!unitPrice || unitPrice <= 0)) {
-			throw new Error(
-				'Los ítems sin producto asociado deben incluir un nombre y un precio neto mayor a 0.',
-			);
-		}
-
-		return {
-			id: item.id && item.id > 0 ? item.id : undefined,
-			product_id: item.product_id ?? null,
-			customer_name: baseName.trim() || undefined,
-			customer_sku: baseSku.trim() || undefined,
-			description: item.description ?? undefined,
-			notes: item.notes ?? undefined,
-			quantity,
-			unit_price: unitPrice,
-			metadata: item.metadata ?? undefined,
-			discount_amount:
-				discountAmount && discountAmount > 0
-					? Number(discountAmount.toFixed(2))
-					: undefined,
-		};
-	});
-	return mapped.filter(Boolean) as QuoteItemPayload[];
-};
-
-// Ajusta los campos según la definición real de QuoteCreateDTO
-const mapToCreateDTO = (quotation: Partial<IQuote>): QuoteCreateDTO => {
-	const { customer_id: customerId, quote_date: quoteDate, status, notes, ...rest } = quotation;
-	return {
-		customer_id: customerId!,
-		quote_date: quoteDate!,
-		status: status!,
-		notes: notes ?? '',
-		...rest,
-	} as QuoteCreateDTO;
-};
-
-// Ajusta los campos según la definición real de QuoteUpdateDTO
-const mapToUpdateDTO = (quotation: Partial<IQuote>): QuoteUpdateDTO => {
-	const { customer_id: customerId, quote_date: quoteDate, status, notes, ...rest } = quotation;
-	return {
-		customer_id: customerId!,
-		quote_date: quoteDate!,
-		status: status!,
-		notes: notes ?? '',
-		...rest,
-	} as QuoteUpdateDTO;
-};
-
-/** Ejecuta las tareas una tras otra, en orden, como el `for … await` original. */
-const runSequentially = <T>(items: T[], task: (item: T) => Promise<unknown>): Promise<void> =>
-	items.reduce<Promise<void>>(
-		(previous, item) =>
-			previous.then(async () => {
-				await task(item);
-			}),
-		Promise.resolve(),
-	);
-
 const useQuotationsManager = (): UseQuotationsManagerReturn => {
 	const dispatch = useAppDispatch();
 	const quotations = useAppSelector(selectQuotes);
@@ -193,6 +99,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(5);
 	const [error, setError] = useState<string | null>(null);
+	const API_FETCH_LIMIT = 500;
 
 	const effectiveLoading =
 		listLoading ||
@@ -216,15 +123,15 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 				}),
 			).unwrap();
 			setError(null);
-		} catch (err: unknown) {
-			const message = getErrorMessage(err, 'No se pudieron obtener las cotizaciones');
+		} catch (err: any) {
+			const message = err?.message || 'No se pudieron obtener las cotizaciones';
 			setError(message);
 			toast.error(message);
 		}
-	}, [dispatch, subsidiaryId, filters.status, filters.search]);
+	}, [dispatch, subsidiaryId, filters.status, filters.search, API_FETCH_LIMIT]);
 
 	useEffect(() => {
-		void requestQuotes();
+		requestQuotes();
 	}, [requestQuotes]);
 
 	const filteredQuotations = useMemo(() => {
@@ -287,20 +194,102 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 		};
 	}, [quotations]);
 
+	const normalizeStatus = (status?: QuoteStatus): QuoteStatus | undefined => {
+		if (!status) return undefined;
+		return status.toString().toLowerCase() as QuoteStatus;
+	};
+
+	type QuoteItemPayload = QuoteItemDTO & { id?: number };
+
+	const normalizeQuoteItems = (items?: IQuoteItem[] | null): QuoteItemPayload[] => {
+		if (!items || items.length === 0) return [];
+		const mapped = items.map((item) => {
+			const hasProduct = Boolean(item.product_id);
+			const baseName = item.customer_name ?? item.product?.name ?? '';
+			const baseSku = item.customer_sku ?? item.product?.sku ?? '';
+			const quantity = Math.max(1, Number(item.quantity) || 1);
+			const rawUnitPrice = Number(
+				item.unit_price ??
+					(item as any).unit_net ??
+					(item as any).unitPrice ??
+					(item as any).unit ??
+					0,
+			);
+			const unitPrice =
+				hasProduct && rawUnitPrice <= 0
+					? undefined
+					: rawUnitPrice > 0
+						? rawUnitPrice
+						: undefined;
+			const discountAmount =
+				item.discount_amount !== undefined && item.discount_amount !== null
+					? Number(item.discount_amount)
+					: undefined;
+
+			if (!hasProduct && !baseName.trim()) {
+				return null;
+			}
+			if (!hasProduct && (!unitPrice || unitPrice <= 0)) {
+				throw new Error(
+					'Los ítems sin producto asociado deben incluir un nombre y un precio neto mayor a 0.',
+				);
+			}
+
+			return {
+				id: item.id && item.id > 0 ? item.id : undefined,
+				product_id: item.product_id ?? null,
+				customer_name: baseName.trim() || undefined,
+				customer_sku: baseSku.trim() || undefined,
+				description: item.description ?? undefined,
+				notes: item.notes ?? undefined,
+				quantity,
+				unit_price: unitPrice,
+				metadata: item.metadata ?? undefined,
+				discount_amount:
+					discountAmount && discountAmount > 0
+						? Number(discountAmount.toFixed(2))
+						: undefined,
+			};
+		});
+		return mapped.filter(Boolean) as QuoteItemPayload[];
+	};
+
+	// Helpers para mapToCreateDTO, mapToUpdateDTO y syncQuoteItems
+	function mapToCreateDTO(quotation: Partial<IQuote>): QuoteCreateDTO {
+		// Ajusta los campos según la definición real de QuoteCreateDTO
+		const { customer_id, quote_date, status, notes, ...rest } = quotation;
+		return {
+			customer_id: customer_id!,
+			quote_date: quote_date!,
+			status: status!,
+			notes: notes ?? '',
+			...rest,
+		} as QuoteCreateDTO;
+	}
+
+	function mapToUpdateDTO(quotation: Partial<IQuote>): QuoteUpdateDTO {
+		// Ajusta los campos según la definición real de QuoteUpdateDTO
+		const { customer_id, quote_date, status, notes, ...rest } = quotation;
+		return {
+			customer_id: customer_id!,
+			quote_date: quote_date!,
+			status: status!,
+			notes: notes ?? '',
+			...rest,
+		} as QuoteUpdateDTO;
+	}
+
 	const syncQuoteItems = useCallback(
 		async (quoteId: number, desiredItems?: IQuoteItem[]) => {
 			if (!subsidiaryId) throw new Error('No hay una filial seleccionada');
 			let desiredPayload: QuoteItemPayload[] = [];
 			try {
 				desiredPayload = normalizeQuoteItems(desiredItems);
-			} catch (err: unknown) {
-				toast.error(
-					getErrorMessage(
-						err,
-						'Uno de los ítems no tiene la información mínima requerida.',
-					),
-				);
-				throw err;
+			} catch (error: any) {
+				const message =
+					error?.message || 'Uno de los ítems no tiene la información mínima requerida.';
+				toast.error(message);
+				throw error;
 			}
 
 			const hasInputItems = Array.isArray(desiredItems) && desiredItems.length > 0;
@@ -325,36 +314,36 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 				return;
 			}
 
-			await runSequentially(toUpdate, (item) =>
-				dispatch(
+			for (const item of toUpdate) {
+				await dispatch(
 					updateQuoteItem({
 						subsidiaryId,
 						quoteId,
 						itemId: item.id!,
 						data: item,
 					}),
-				).unwrap(),
-			);
+				).unwrap();
+			}
 
-			await runSequentially(toCreate, (item) =>
-				dispatch(
+			for (const item of toCreate) {
+				await dispatch(
 					addQuoteItem({
 						subsidiaryId,
 						quoteId,
 						data: item,
 					}),
-				).unwrap(),
-			);
+				).unwrap();
+			}
 
-			await runSequentially(toDelete, (item) =>
-				dispatch(
+			for (const item of toDelete) {
+				await dispatch(
 					deleteQuoteItem({
 						subsidiaryId,
 						quoteId,
 						itemId: item.id,
 					}),
-				).unwrap(),
-			);
+				).unwrap();
+			}
 		},
 		[dispatch, subsidiaryId],
 	);
@@ -370,10 +359,10 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 				const createdQuote = await dispatch(
 					createQuote({ subsidiaryId, data: payload }),
 				).unwrap();
-				await syncQuoteItems(createdQuote.id, quotationData.items);
+				await syncQuoteItems(createdQuote.id, quotationData.items as IQuoteItem[]);
 				await requestQuotes();
-			} catch (err: unknown) {
-				const message = getErrorMessage(err, 'Error al crear la cotización');
+			} catch (err: any) {
+				const message = err?.message || 'Error al crear la cotización';
 				setError(message);
 				toast.error(message);
 			}
@@ -391,8 +380,8 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 					await syncQuoteItems(id, updates.items);
 				}
 				await requestQuotes();
-			} catch (err: unknown) {
-				const message = getErrorMessage(err, 'Error al actualizar la cotización');
+			} catch (err: any) {
+				const message = err?.message || 'Error al actualizar la cotización';
 				setError(message);
 				toast.error(message);
 			}
@@ -406,13 +395,55 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			try {
 				await dispatch(deleteQuote({ subsidiaryId, quoteId: id })).unwrap();
 				await requestQuotes();
-			} catch (err: unknown) {
-				const message = getErrorMessage(err, 'Error al eliminar la cotización');
+			} catch (err: any) {
+				const message = err?.message || 'Error al eliminar la cotización';
 				setError(message);
 				toast.error(message);
 			}
 		},
 		[dispatch, subsidiaryId, requestQuotes],
+	);
+
+	const duplicateQuotation = useCallback(
+		async (id: number) => {
+			if (!subsidiaryId) return;
+			try {
+				let baseQuote = quotations.find((q) => q.id === id);
+				if (!baseQuote) {
+					baseQuote = await dispatch(
+						fetchQuoteById({ subsidiaryId, quoteId: id }),
+					).unwrap();
+				}
+				let baseItems = baseQuote.items ?? [];
+				if (!baseItems.length) {
+					try {
+						baseItems = await dispatch(
+							fetchQuoteItems({ subsidiaryId, quoteId: id }),
+						).unwrap();
+					} catch (e) {
+						baseItems = [];
+					}
+				}
+				const payload = mapToCreateDTO({
+					...baseQuote,
+					quote_date: new Date().toISOString().split('T')[0],
+				});
+				payload.quote_number = undefined;
+				const createdQuote = await dispatch(
+					createQuote({ subsidiaryId, data: payload }),
+				).unwrap();
+				if (baseItems.length) {
+					await syncQuoteItems(createdQuote.id, baseItems);
+				}
+				toast.success('Cotización duplicada exitosamente');
+				await requestQuotes();
+			} catch (err: any) {
+				const message = err?.message || 'Error al duplicar la cotización';
+				setError(message);
+				toast.error(message);
+			}
+		},
+		[dispatch, subsidiaryId, quotations, requestQuotes, syncQuoteItems],
 	);
 
 	const convertToSale = useCallback(
@@ -421,8 +452,8 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			try {
 				await dispatch(convertQuoteToSaleThunk({ subsidiaryId, quoteId: id })).unwrap();
 				await requestQuotes();
-			} catch (err: unknown) {
-				const message = getErrorMessage(err, 'Error al convertir la cotización');
+			} catch (err: any) {
+				const message = err?.message || 'Error al convertir la cotización';
 				setError(message);
 				toast.error(message);
 			}
@@ -431,7 +462,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 	);
 
 	const refreshData = useCallback(() => {
-		void requestQuotes();
+		requestQuotes();
 	}, [requestQuotes]);
 
 	const loadQuotationDetails = useCallback(
@@ -446,7 +477,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 						fetchQuoteItems({ subsidiaryId, quoteId: id }),
 					).unwrap();
 					return { ...detail, items };
-				} catch {
+				} catch (error) {
 					return detail;
 				}
 			}
@@ -513,6 +544,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 		createQuotation,
 		updateQuotation: updateQuotationHandler,
 		deleteQuotation: deleteQuotationHandler,
+		duplicateQuotation,
 		changeStatus,
 		convertToSale,
 		refreshData,

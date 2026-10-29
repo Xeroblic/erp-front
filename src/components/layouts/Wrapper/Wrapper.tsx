@@ -16,13 +16,13 @@ const Wrapper: FC<IWrapperProps> = (props) => {
 		<section
 			data-component-name='Wrapper'
 			className={classNames(
-				'flex flex-auto flex-col md:peer-hover:ltr:pl-80 md:peer-hover:rtl:pr-80',
+				'flex flex-auto flex-col ltr:peer-hover:md:pl-[20rem] rtl:peer-hover:md:pr-[20rem]',
 				themeConfig.transition,
 				className,
 				{
-					'md:peer-[&]:ltr:pl-80 md:peer-[&]:rtl:pr-80': asideStatus,
+					'ltr:peer-[]:md:pl-[20rem] rtl:peer-[]:md:pr-[20rem]': asideStatus,
 					// Mobile Design
-					'md:peer-[&]:ltr:pl-[6.225em] md:peer-[&]:rtl:pr-[6.225em]': !asideStatus,
+					'ltr:peer-[]:md:pl-[6.225em] rtl:peer-[]:md:pr-[6.225em]': !asideStatus,
 				},
 			)}
 			{...rest}>

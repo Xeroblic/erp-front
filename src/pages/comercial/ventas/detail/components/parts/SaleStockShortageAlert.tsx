@@ -57,7 +57,7 @@ const SaleStockShortageAlert: React.FC<ISaleStockShortageAlertProps> = ({
 								key={shortage.sale_item_id}
 								className='rounded-md border border-red-200 bg-white/70 px-3 py-2 text-zinc-800 dark:border-red-900/60 dark:bg-zinc-900/60 dark:text-zinc-100'>
 								<div className='flex flex-wrap items-center justify-between gap-2'>
-									<span className='min-w-0 font-medium wrap-break-word'>
+									<span className='min-w-0 break-words font-medium'>
 										{describeItem(
 											itemsById.get(shortage.sale_item_id),
 											shortage,

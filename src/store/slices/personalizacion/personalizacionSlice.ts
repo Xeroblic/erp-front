@@ -349,7 +349,7 @@ const personalizacionSlice = createSlice({
 			})
 			.addCase(obtenerPersonalizacionThunk.rejected, (state, action) => {
 				state.loading = false;
-				state.error = action.payload;
+				state.error = action.payload as string | undefined;
 				// NO marcar como initialized cuando falla, para permitir reintentos
 				// state.isInitialized se mantiene en false
 			})

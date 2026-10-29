@@ -64,8 +64,8 @@ const LoginPage = () => {
 	return (
 		<PageWrapper isProtectedRoute={false} className='min-h-screen' name='Sign In'>
 			<div className='fixed inset-0 -z-10'>
-				<div className='absolute inset-0 bg-linear-to-br from-emerald-200 via-emerald-300 to-emerald-500' />
-				<div className='absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,#000_1px,transparent_1px)] bg-size-[18px_18px] opacity-[0.06] mix-blend-overlay' />
+				<div className='absolute inset-0 bg-gradient-to-br from-emerald-200 via-emerald-300 to-emerald-500' />
+				<div className='absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_#000_1px,_transparent_1px)] opacity-[0.06] mix-blend-overlay [background-size:18px_18px]' />
 			</div>
 
 			<div className='relative z-0 flex min-h-screen items-center justify-center p-4 sm:p-6 lg:p-10'>
@@ -118,7 +118,7 @@ const LoginPage = () => {
 							<div className='flex items-center justify-center p-6 sm:p-8 lg:p-12'>
 								<div className='w-full max-w-sm space-y-6'>
 									<div className='flex justify-center'>
-										<div className='flex h-16 w-16 items-center justify-center rounded-full border-2 border-emerald-400 bg-emerald-50 shadow-sm'>
+										<div className='flex h-16 w-16 items-center justify-center rounded-full border-2 border-emerald-400 bg-emerald-50 shadow'>
 											<Icon
 												icon='HeroUser'
 												className='h-6 w-6 text-emerald-600'
@@ -208,13 +208,13 @@ const LoginPage = () => {
 										</Validation>
 
 										<div className='flex items-center justify-between text-sm'>
-											<label className='flex items-center gap-2 select-none'>
+											<label className='flex select-none items-center gap-2'>
 												<input
 													type='checkbox'
 													name='rememberMe'
 													checked={formik.values.rememberMe}
 													onChange={formik.handleChange}
-													className='rounded-sm border-emerald-900/25 text-emerald-600 focus:ring-emerald-600'
+													className='rounded border-emerald-900/25 text-emerald-600 focus:ring-emerald-600'
 												/>
 												<span className='text-emerald-900/80'>
 													Recordar cuenta
@@ -276,7 +276,7 @@ const LoginPage = () => {
 											<img
 												src='/logo-ecotii.png'
 												alt='EcoTi'
-												className='h-16 w-16 object-contain drop-shadow-xs transition-transform group-hover:scale-110'
+												className='h-16 w-16 object-contain drop-shadow-sm transition-transform group-hover:scale-110'
 											/>
 										</a>
 										<a
@@ -287,7 +287,7 @@ const LoginPage = () => {
 											<img
 												src='/logo-ecopc.png'
 												alt='EcoPC'
-												className='h-16 w-16 object-contain drop-shadow-xs transition-transform group-hover:scale-110'
+												className='h-16 w-16 object-contain drop-shadow-sm transition-transform group-hover:scale-110'
 											/>
 										</a>
 									</div>
@@ -302,7 +302,7 @@ const LoginPage = () => {
 				aria-hidden={!isNavOpen}
 				onClick={() => setIsNavOpen(false)}
 				className={classNames(
-					'fixed inset-0 z-60 bg-black/40 backdrop-blur-[2px] transition-opacity lg:hidden',
+					'fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px] transition-opacity lg:hidden',
 					isNavOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
 				)}
 			/>
@@ -310,7 +310,7 @@ const LoginPage = () => {
 				role='dialog'
 				aria-label='Menú de navegación'
 				className={classNames(
-					'fixed top-0 right-0 z-61 h-full w-[86%] max-w-xs border-l border-emerald-900/10 bg-white shadow-2xl transition-transform duration-300 lg:hidden',
+					'fixed right-0 top-0 z-[61] h-full w-[86%] max-w-xs border-l border-emerald-900/10 bg-white shadow-2xl transition-transform duration-300 lg:hidden',
 					isNavOpen ? 'translate-x-0' : 'translate-x-full',
 				)}>
 				<div className='flex items-center justify-between border-b border-black/10 p-4'>

@@ -13,13 +13,13 @@ const FormLockCareDecorations: React.FC<FormLockCareDecorationsProps> = ({
 	return (
 		<>
 			{showEnhancedEffects && (
-				<div className='pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,#000_1px,transparent_1px)] bg-size-[18px_18px] opacity-[0.06] mix-blend-overlay' />
+				<div className='pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_#000_1px,_transparent_1px)] opacity-[0.06] mix-blend-overlay [background-size:18px_18px]' />
 			)}
-			<div className='pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-white/30 to-transparent' />
+			<div className='pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/30 to-transparent' />
 
 			{showEnhancedEffects && (
 				<>
-					<div className='pointer-events-none absolute top-1/2 left-[-120px] hidden -translate-y-1/2 lg:block'>
+					<div className='pointer-events-none absolute left-[-120px] top-1/2 hidden -translate-y-1/2 lg:block'>
 						<svg
 							viewBox='0 0 200 200'
 							className='h-[360px] w-[360px] animate-[bounce_10s_ease-in-out_infinite] opacity-40 blur-[1px]'>
@@ -32,7 +32,7 @@ const FormLockCareDecorations: React.FC<FormLockCareDecorationsProps> = ({
 						</svg>
 					</div>
 
-					<div className='pointer-events-none absolute top-1/2 right-[-120px] hidden -translate-y-1/2 lg:block'>
+					<div className='pointer-events-none absolute right-[-120px] top-1/2 hidden -translate-y-1/2 lg:block'>
 						<svg
 							viewBox='0 0 200 200'
 							className='h-[390px] w-[390px] animate-[bounce_12s_ease-in-out_infinite] opacity-35 blur-[1px] [animation-delay:1.2s]'>

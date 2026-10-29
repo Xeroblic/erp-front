@@ -8,7 +8,6 @@ interface CheckInSuccessStepsProps {
 }
 
 const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber, pin }) => {
-	// Clases completas y no `bg-${color}-100`: Tailwind sólo genera las que ve escritas.
 	const steps = [
 		{
 			id: 1,
@@ -21,7 +20,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 				</>
 			),
 			icon: 'HeroMapPin',
-			badgeClass: 'bg-blue-100 text-blue-600',
+			color: 'blue',
 		},
 		{
 			id: 2,
@@ -39,7 +38,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 				</>
 			),
 			icon: 'HeroKey',
-			badgeClass: 'bg-emerald-100 text-emerald-600',
+			color: 'emerald',
 		},
 		{
 			id: 3,
@@ -47,7 +46,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 			description:
 				'Coloca tu equipo dentro del casillero y cierra la puerta firmemente hasta escuchar el clic de bloqueo.',
 			icon: 'HeroArchiveBoxArrowDown',
-			badgeClass: 'bg-indigo-100 text-indigo-600',
+			color: 'indigo',
 		},
 		{
 			id: 4,
@@ -55,7 +54,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 			description:
 				'Recibirás una notificación automática en tu correo una vez que nuestro servicio técnico retire y procese tu equipo.',
 			icon: 'HeroBellAlert',
-			badgeClass: 'bg-rose-100 text-rose-600',
+			color: 'rose',
 		},
 	];
 
@@ -66,7 +65,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 					{/* Columna Izquierda: Instrucciones */}
 					<div className='flex-1 p-8 lg:p-10'>
 						<div className='mb-8'>
-							<div className='inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold tracking-wider text-emerald-700 uppercase'>
+							<div className='inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700'>
 								<Icon icon='HeroCheckCircle' className='h-4 w-4' />
 								Registro Completado
 							</div>
@@ -83,7 +82,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 							{steps.map((step) => (
 								<div key={step.id} className='flex gap-5'>
 									<div
-										className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-xs ${step.badgeClass}`}>
+										className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-${step.color}-100 text-${step.color}-600 shadow-sm`}>
 										<Icon icon={step.icon} className='h-6 w-6' />
 									</div>
 									<div className='space-y-1'>
@@ -100,10 +99,10 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 					</div>
 
 					{/* Columna Derecha: Área Visual (Espacio para SVGs) */}
-					<div className='relative hidden w-full shrink-0 items-center justify-center bg-linear-to-br from-zinc-900/5 to-zinc-900/10 p-12 lg:flex lg:w-[400px]'>
+					<div className='relative hidden w-full shrink-0 items-center justify-center bg-gradient-to-br from-zinc-900/5 to-zinc-900/10 p-12 lg:flex lg:w-[400px]'>
 						<div className='relative flex h-full w-full flex-col items-center justify-center gap-8 text-center'>
 							{/* Placeholder para el SVG visual */}
-							<div className='flex h-64 w-64 items-center justify-center rounded-full bg-white/50 shadow-inner outline-2 outline-zinc-300 outline-dashed'>
+							<div className='flex h-64 w-64 items-center justify-center rounded-full bg-white/50 shadow-inner outline-dashed outline-2 outline-zinc-300'>
 								<div className='flex flex-col items-center gap-2 text-zinc-400'>
 									<Icon icon='HeroPhoto' className='h-12 w-12' />
 									<span className='text-xs font-medium'>
@@ -123,8 +122,8 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 							</div>
 
 							{/* Decoración abstracta */}
-							<div className='absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl' />
-							<div className='absolute -top-10 -left-10 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl' />
+							<div className='absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl' />
+							<div className='absolute -left-10 -top-10 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl' />
 						</div>
 					</div>
 				</div>

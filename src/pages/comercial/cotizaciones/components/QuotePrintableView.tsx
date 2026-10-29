@@ -151,7 +151,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 										R.U.T.: {company.rut}
 									</p>
 									<div className='my-1 w-full bg-rose-50 py-0.5'>
-										<p className='text-xs font-bold text-rose-600 uppercase'>
+										<p className='text-xs font-bold uppercase text-rose-600'>
 											COTIZACIÓN
 										</p>
 									</div>
@@ -165,7 +165,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 							</div>
 						</div>
 
-						<div className='flex items-center justify-between bg-rose-50 px-3 py-2 text-[9px] text-zinc-900 uppercase'>
+						<div className='flex items-center justify-between bg-rose-50 px-3 py-2 text-[9px] uppercase text-zinc-900'>
 							<span className='flex flex-col gap-3 normal-case md:flex-row md:items-center md:gap-2'>
 								<span>
 									Fecha creación doc:{' '}
@@ -201,7 +201,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 						</div>
 						<div className='mb-4 border-2 border-rose-600'>
 							<div className='flex flex-col border-t border-rose-100 text-[8px] md:flex-row'>
-								<div className='w-full border-b border-rose-100 px-4 py-3 md:w-3/4 md:border-r md:border-b-0'>
+								<div className='w-full border-b border-rose-100 px-4 py-3 md:w-3/4 md:border-b-0 md:border-r'>
 									<div className='mb-1 flex gap-1'>
 										<span className='font-semibold'>Nombre Empresa:</span>
 										<span>{customer.name}</span>
@@ -297,7 +297,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 								const sku = getProductSku(item);
 								const name = getProductName(item);
 								const detail = getProductDetail(item);
-								const quantity = Number(item.quantity || 0);
+								const quantity = Number((item as any).quantity || 0);
 								const unitPrice = resolveUnitPrice(item, taxRate);
 								const lineTotal = resolveLineTotal(item, taxRate);
 								const itemDiscount = Number(item.discount_amount || 0);
@@ -335,7 +335,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 						<div className='border-t border-slate-200 pt-3'>
 							<div className='flex flex-col gap-4 md:flex-row'>
 								<div className='flex-1 text-[8px] text-slate-600'>
-									<h3 className='mb-1 text-[9px] font-bold text-slate-900 uppercase underline dark:text-slate-900'>
+									<h3 className='mb-1 text-[9px] font-bold uppercase text-slate-900 underline dark:text-slate-900'>
 										Condiciones Comerciales
 									</h3>
 									<p className='mb-0.5'>
@@ -355,7 +355,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 									) : null}
 									{quote.notes ? (
 										<div className='mt-2 text-slate-600'>
-											<h3 className='mb-1 text-[9px] font-bold text-slate-900 uppercase underline'>
+											<h3 className='mb-1 text-[9px] font-bold uppercase text-slate-900 underline'>
 												Observaciones
 											</h3>
 											<p>{quote.notes}</p>
@@ -365,7 +365,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 								<div className='flex-1 text-[8px] text-slate-600'>
 									{company.bankInfo.length > 0 ? (
 										<div>
-											<h3 className='mb-1 text-[9px] font-bold text-slate-900 uppercase underline dark:text-slate-900'>
+											<h3 className='mb-1 text-[9px] font-bold uppercase text-slate-900 underline dark:text-slate-900'>
 												Datos Bancarios
 											</h3>
 											{company.bankInfo.map((info: string, idx: number) => (

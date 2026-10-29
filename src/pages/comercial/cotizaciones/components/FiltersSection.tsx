@@ -26,7 +26,7 @@ export const FiltersSection = ({
 			</CardHeader>
 			<CardBody>
 				<div className='mb-3'>
-					<p className='text-xs font-semibold tracking-wide text-gray-500 uppercase'>
+					<p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
 						Filtros de carga backend
 					</p>
 				</div>
@@ -44,11 +44,11 @@ export const FiltersSection = ({
 						options={statusSelectOptions}
 						value={
 							filters.status
-								? (statusSelectOptions.find(
+								? ((statusSelectOptions.find(
 										(option) =>
 											option.value ===
 											normalizeQuoteStatusValue(filters.status),
-									) ?? null)
+									) as TSelectOption | undefined) ?? null)
 								: null
 						}
 						isClearable
@@ -95,8 +95,8 @@ export const FiltersSection = ({
 
 				{showFilters && (
 					<>
-						<div className='mt-4 mb-3'>
-							<p className='text-xs font-semibold tracking-wide text-gray-500 uppercase'>
+						<div className='mb-3 mt-4'>
+							<p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
 								Filtros locales sobre resultados cargados
 							</p>
 						</div>

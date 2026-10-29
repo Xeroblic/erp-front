@@ -1,5 +1,4 @@
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
-import toText from '@/utils/toText.util';
 
 type Nullable<T> = T | null | undefined;
 
@@ -152,7 +151,7 @@ export const buildPdfDefinition = (tpl: PdfTemplate): TDocumentDefinitions => ({
 								bold: true,
 								fillColor: '#f3f4f6',
 							},
-							{ text: toText(value, '—') },
+							{ text: String(value ?? '—') },
 						],
 					];
 				}),

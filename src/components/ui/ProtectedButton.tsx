@@ -57,7 +57,7 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 			<Tooltip id={disabledTooltipId} text={fallbackExplanation}>
 				<span
 					tabIndex={0}
-					className='inline-flex cursor-not-allowed!'
+					className='inline-flex !cursor-not-allowed'
 					aria-describedby={disabledTooltipId}>
 					{disabledButton}
 				</span>

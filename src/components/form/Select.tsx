@@ -66,20 +66,20 @@ const Select: FC<ISelectProps> = (props) => {
 		solid: {
 			general: classNames(
 				// Default
-				[`${borderWidth} border-(--select-border) dark:border-zinc-800`],
+				[`${borderWidth} border-[color:var(--select-border)] dark:border-zinc-800`],
 				'bg-zinc-50 dark:bg-zinc-800',
 				// Hover
-				'hover:border-(--select-border-hover)',
-				'dark:hover:border-(--select-border-hover)',
-				'disabled:border-zinc-500!',
+				'hover:border-[color:var(--select-border-hover)]',
+				'dark:hover:border-[color:var(--select-border-hover)]',
+				'disabled:!border-zinc-500',
 				// Focus
-				'focus:border-(--select-border-hover) dark:focus:border-(--select-border-hover)',
+				'focus:border-[color:var(--select-border-hover)] dark:focus:border-[color:var(--select-border-hover)]',
 				'focus:bg-white dark:focus:bg-zinc-800',
-				'focus:ring-1 focus:ring-(--select-border-hover)',
+				'focus:ring-1 focus:ring-[color:var(--select-border-hover)]',
 			),
 			validation: classNames({
-				'border-red-500! ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-				'border-green-500! focus:ring-4 focus:ring-green-500/30':
+				'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
+				'!border-green-500 focus:ring-4 focus:ring-green-500/30':
 					!isValid && isTouched && !invalidFeedback,
 			}),
 		},
@@ -116,11 +116,11 @@ const Select: FC<ISelectProps> = (props) => {
 		// opciones necesitan colores propios. En claro se dejan las del navegador
 		// para no romper el resaltado al pasar el mouse (`color-scheme` en index.css).
 		'dark:[&_option]:bg-zinc-900 dark:[&_option]:text-zinc-100',
-		'disabled:opacity-25!',
+		'disabled:!opacity-25',
 		themeConfig.transition,
 		selectVariantClasses,
 		selectDimensionClasses,
-		{ 'bg-size-[1rem] bg-position-[right_0.5rem_center] bg-no-repeat pr-8': showsChevron },
+		{ 'bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-8': showsChevron },
 		rounded,
 		selectValidationsClasses,
 		className,

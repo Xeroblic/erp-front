@@ -108,8 +108,8 @@
 // 				},
 // 			),
 // 			validation: classNames({
-// 				'border-red-500! ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-// 				'border-green-500! focus:ring-4 focus:ring-green-500/30':
+// 				'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
+// 				'!border-green-500 focus:ring-4 focus:ring-green-500/30':
 // 					!isValid && isTouched && !invalidFeedback,
 // 			}),
 // 		},

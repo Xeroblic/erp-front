@@ -5,6 +5,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import type { ICreateTransferRequest } from '@/interface/transfers.interface';
+import type { ISubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 import subEmpresa, { type SubempresaState } from '@/store/slices/subempresa/subEmpresaSlice';
 import {
 	FROM_LOCATION_REQUIRED_MESSAGE,
@@ -17,7 +18,7 @@ const { rolloutStage } = vi.hoisted(() => ({
 		multiLocationEnabled: false,
 		isMultiLocation: false,
 		isLoading: false,
-	},
+	} as ISubsidiaryRolloutStage,
 }));
 
 const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn() }));

@@ -4,6 +4,7 @@ import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import ProtectedButton from '@/components/ui/ProtectedButton';
+// eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';

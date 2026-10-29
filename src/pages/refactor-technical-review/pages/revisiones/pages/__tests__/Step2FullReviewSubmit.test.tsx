@@ -9,22 +9,17 @@ import Step2FullReview from '../Step2FullReview';
  * y sin sucursal activa guardaba borradores pero no podía cerrar la revisión.
  */
 const { dispatch, updateItemDetails, currentBranch, formRouterState, toastError } = vi.hoisted(
-	() => {
-		const branchDouble: { value: { branchId: number | null; subsidiaryId: number | null } } = {
-			value: { branchId: null, subsidiaryId: 42 },
-		};
-		return {
-			dispatch: vi.fn(),
-			updateItemDetails: vi.fn(),
-			currentBranch: branchDouble,
-			formRouterState: {
-				onSubmit: undefined as
-					| undefined
-					| ((data: Record<string, unknown>) => Promise<void>),
-			},
-			toastError: vi.fn(),
-		};
-	},
+	() => ({
+		dispatch: vi.fn(),
+		updateItemDetails: vi.fn(),
+		currentBranch: {
+			value: { branchId: null as number | null, subsidiaryId: 42 as number | null },
+		},
+		formRouterState: {
+			onSubmit: undefined as undefined | ((data: Record<string, unknown>) => Promise<void>),
+		},
+		toastError: vi.fn(),
+	}),
 );
 
 vi.mock('@/store', () => ({ useAppDispatch: () => dispatch }));

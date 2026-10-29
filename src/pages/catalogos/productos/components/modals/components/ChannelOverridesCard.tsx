@@ -204,7 +204,7 @@ const ChannelOverridesCard: React.FC<ChannelOverridesCardProps> = ({
 	};
 
 	return (
-		<Card className='overflow-hidden border border-neutral-200 shadow-xs dark:border-neutral-800'>
+		<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-800'>
 			<CardHeader className='border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-neutral-800/60 dark:bg-neutral-900/40'>
 				<div className='flex items-center gap-3'>
 					<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/25 dark:bg-emerald-500/20 dark:ring-emerald-400/30'>

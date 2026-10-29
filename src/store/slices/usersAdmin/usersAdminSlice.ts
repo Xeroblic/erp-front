@@ -265,7 +265,7 @@ export const updateUser = createAsyncThunk(
 			}>({
 				url: `/users/${id}`,
 				method: 'patch',
-				data: userData,
+				data: userData as unknown as Record<string, unknown>,
 			});
 			return (response.data as any)?.data ?? (response.data as any)?.user;
 		} catch (error: any) {
@@ -370,7 +370,7 @@ export const sendInvitation = createAsyncThunk(
 			const response = await ApiService.fetchData<{ invitation: UserInvitation }>({
 				url: '/invitations',
 				method: 'post',
-				data: invitationData,
+				data: invitationData as unknown as Record<string, unknown>,
 			});
 			return response.data.invitation;
 		} catch (error: any) {

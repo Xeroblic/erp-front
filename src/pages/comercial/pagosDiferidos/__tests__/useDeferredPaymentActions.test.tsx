@@ -34,7 +34,7 @@ const document = {
 const otherDocument = {
 	...document,
 	id: 8,
-};
+} as IDeferredPaymentDocument;
 const payment: IDeferredPaymentAbono = {
 	id: 31,
 	amount: '100000.00',

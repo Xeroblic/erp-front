@@ -374,7 +374,7 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 			{/* Drag Drop Overlay */}
 			{isDraggingFile && (
 				<div
-					className='fixed inset-0 z-1 flex items-center justify-center bg-black/40 backdrop-blur-xs'
+					className='z-1 fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm'
 					onDragEnter={(event) => event.preventDefault()}
 					onDragOver={(event) => {
 						event.preventDefault();

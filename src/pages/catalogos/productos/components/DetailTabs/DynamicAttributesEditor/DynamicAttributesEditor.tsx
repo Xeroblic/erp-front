@@ -42,10 +42,11 @@ const DynamicAttributesEditor: React.FC<{
 		ok: attributesComplete,
 		missingCount,
 		missingLabels,
-	} = useAttributesValidator(product?.product_type ?? currentProductKind, attributes, {
-		requiredPaths: requiredForType,
-		treatEmptyStringAsMissing: true,
-	});
+	} = useAttributesValidator(
+		(product?.product_type as string) ?? currentProductKind,
+		attributes,
+		{ requiredPaths: requiredForType, treatEmptyStringAsMissing: true },
+	);
 
 	// When attributes become complete, set product_status to 'pending' (persist via updateProduct if available)
 	useEffect(() => {

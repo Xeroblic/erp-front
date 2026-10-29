@@ -4,8 +4,8 @@ import themeConfig from '../config/theme.config';
 const useRoundedSize = (rounded: TRounded | undefined) => {
 	const roundedSizes: TRounded[] = [
 		'rounded-none',
-		'rounded-xs',
 		'rounded-sm',
+		'rounded',
 		'rounded-md',
 		'rounded-lg',
 		'rounded-xl',

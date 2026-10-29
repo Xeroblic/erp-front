@@ -5,13 +5,7 @@
  */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw/http';
-import ApiService from '@/services/ApiService';
-import { tokenManager } from '@/services/auth/tokenManager';
-import { makeIntegrationStore } from '@/test-utils/integrationStore';
-import type { ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
-import type { RootState } from '@/store/rootReducer';
-import authReducer, { loginThunk, logoutThunk, userMeThunk, type AuthState } from '../authSlice';
+import { http, HttpResponse } from 'msw';
 
 const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
 
@@ -29,6 +23,13 @@ vi.mock('@/store', () => ({
 	logout: vi.fn(() => ({ type: 'auth/logout' })),
 	setToken: vi.fn((payload: unknown) => ({ type: 'auth/setToken', payload })),
 }));
+
+import ApiService from '@/services/ApiService';
+import tokenManager from '@/services/auth/tokenManager';
+import authReducer, { loginThunk, logoutThunk, userMeThunk, type AuthState } from '../authSlice';
+import { makeIntegrationStore } from '@/test-utils/integrationStore';
+import type { ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
+import type { RootState } from '@/store/rootReducer';
 
 // JWT falso pero decodificable (tokenManager valida exp).
 const makeJwt = (expInSeconds = 3600) => {
@@ -83,7 +84,7 @@ const dispatchOf = (store: ReturnType<typeof makeStore>) =>
 	store.dispatch as ThunkDispatch<RootState, unknown, UnknownAction>;
 
 describe('authSlice (integración)', () => {
-	beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
+	beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 	beforeEach(() => {
 		ApiService.clearCache();
 		tokenManager.clearTokens();

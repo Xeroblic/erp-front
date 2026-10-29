@@ -5,7 +5,6 @@ import Badge from '@/components/ui/Badge';
 import Tooltip from '@/components/ui/Tooltip';
 import Icon from '@/components/icon/Icon';
 import DataTable from '@/components/ui/DataTable';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 interface StockCatalogTableProps {
 	items: Record<string, unknown>[];
@@ -34,46 +33,36 @@ interface StockCatalogRow {
 	statusPreview: string;
 }
 
-/** Primer valor numérico finito (acepta strings numéricos); 0 si ninguno lo es. */
 const toNumber = (...values: unknown[]): number => {
-	const parsed = values
-		.map((value) => {
-			if (typeof value === 'number') return value;
-			if (typeof value === 'string' && value.trim() !== '') return Number(value);
-			return Number.NaN;
-		})
-		.find((value) => Number.isFinite(value));
-	return parsed ?? 0;
+	for (const value of values) {
+		if (typeof value === 'number' && Number.isFinite(value)) return value;
+		if (typeof value === 'string' && value.trim() !== '') {
+			const parsed = Number(value);
+			if (Number.isFinite(parsed)) return parsed;
+		}
+	}
+	return 0;
 };
 
-/** Primer string no vacío (o número finito convertido); '' si ninguno lo es. */
 const toString = (...values: unknown[]): string => {
-	const found = values.find(
-		(value): value is string | number =>
-			(typeof value === 'string' && value.trim().length > 0) ||
-			(typeof value === 'number' && Number.isFinite(value)),
-	);
-	return found === undefined ? '' : String(found);
+	for (const value of values) {
+		if (typeof value === 'string' && value.trim().length > 0) return value;
+		if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+	}
+	return '';
 };
 
-const TRUTHY_STRINGS = ['true', '1', 'yes', 'si'];
-const FALSY_STRINGS = ['false', '0', 'no'];
-
-/** Primer valor interpretable como booleano; `false` si ninguno lo es. */
 const toBoolean = (...values: unknown[]): boolean => {
-	const parsed = values
-		.map((value): boolean | null => {
-			if (typeof value === 'boolean') return value;
-			if (typeof value === 'number') return value > 0;
-			if (typeof value === 'string') {
-				const normalized = value.trim().toLowerCase();
-				if (TRUTHY_STRINGS.includes(normalized)) return true;
-				if (FALSY_STRINGS.includes(normalized)) return false;
-			}
-			return null;
-		})
-		.find((value) => value !== null);
-	return parsed ?? false;
+	for (const value of values) {
+		if (typeof value === 'boolean') return value;
+		if (typeof value === 'number') return value > 0;
+		if (typeof value === 'string') {
+			const normalized = value.trim().toLowerCase();
+			if (['true', '1', 'yes', 'si'].includes(normalized)) return true;
+			if (['false', '0', 'no'].includes(normalized)) return false;
+		}
+	}
+	return false;
 };
 
 const toRecord = (value: unknown): Record<string, unknown> | null => {
@@ -100,6 +89,13 @@ const extractGrades = (value: unknown): Record<string, Record<string, unknown>> 
 		if (record) acc[gradeKey] = record;
 		return acc;
 	}, {});
+};
+
+const getQuantityTone = (quantity: number): 'emerald' | 'amber' | 'red' | 'blue' => {
+	if (quantity <= 0) return 'red';
+	if (quantity <= 3) return 'amber';
+	if (quantity >= 10) return 'blue';
+	return 'emerald';
 };
 
 /**
@@ -241,12 +237,13 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 		);
 	}, 0);
 	const branchMap = new Map<number, { name: string; quantity: number }>();
-	gradeEntries.forEach(([, grade]) => {
-		const branches: unknown[] = Array.isArray(grade.branches) ? grade.branches : [];
-		branches.forEach((branch) => {
+	for (const [, grade] of gradeEntries) {
+		const branches = Array.isArray(grade.branches) ? grade.branches : [];
+		for (const branch of branches) {
 			const record = toRecord(branch);
-			const branchId = record ? toNumber(record.branch_id) : 0;
-			if (!record || !branchId) return;
+			if (!record) continue;
+			const branchId = toNumber(record.branch_id);
+			if (!branchId) continue;
 			const current = branchMap.get(branchId);
 			branchMap.set(branchId, {
 				name: toString(record.branch_name, current?.name, `Sucursal ${branchId}`),
@@ -254,8 +251,8 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 					(current?.quantity ?? 0) +
 					toNumber(record.quantity, toRecord(record.stock_status)?.available),
 			});
-		});
-	});
+		}
+	}
 	const branchesCount = branchMap.size;
 	const totalStock = availableStock + reservedStock + onHoldStock + inQuotationStock + soldStock;
 	const gradeSummary = gradeEntries.map(([gradeKey, grade]) => {
@@ -270,11 +267,11 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 		.map((grade) => `${grade.label}:${grade.quantity}`)
 		.join(' · ');
 	const topBranch = branchSummary[0];
-	let distributionPreview = 'Sin sucursales';
-	if (topBranch) {
-		const extraBranches = branchSummary.length > 1 ? ` +${branchSummary.length - 1}` : '';
-		distributionPreview = `${topBranch.label}: ${topBranch.quantity}${extraBranches}`;
-	}
+	const distributionPreview = topBranch
+		? branchSummary.length > 1
+			? `${topBranch.label}: ${topBranch.quantity} +${branchSummary.length - 1}`
+			: `${topBranch.label}: ${topBranch.quantity}`
+		: 'Sin sucursales';
 	const statusPreview = [
 		reservedStock > 0 ? `R ${reservedStock}` : null,
 		onHoldStock > 0 ? `E ${onHoldStock}` : null,
@@ -307,131 +304,6 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 	};
 };
 
-const buildStockCatalogColumns = ({
-	openProductDetail,
-}: {
-	openProductDetail: (productId: number | null) => void;
-}): ColumnDef<AppTableFeatures, StockCatalogRow>[] => [
-	{
-		id: 'name',
-		// Incluye la SKU en el valor filtrable para que el buscador (includesString)
-		// también encuentre por SKU, no solo por nombre.
-		accessorFn: (catalogRow) => `${catalogRow.name} ${catalogRow.sku}`,
-		header: 'Producto',
-		cell: ({ row }) => (
-			<div className='max-w-[280px] space-y-1'>
-				{row.original.productId ? (
-					<button
-						type='button'
-						onClick={() => openProductDetail(row.original.productId)}
-						title={row.original.name}
-						className='group inline-flex items-center gap-1 text-left font-semibold text-neutral-900 transition-colors hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400'>
-						<span className='line-clamp-2 wrap-break-word'>{row.original.name}</span>
-						<Icon
-							icon='HeroArrowTopRightOnSquare'
-							className='h-3.5 w-3.5 flex-none text-neutral-300 transition-colors group-hover:text-blue-500 dark:text-neutral-600'
-						/>
-					</button>
-				) : (
-					<p
-						className='line-clamp-2 font-semibold wrap-break-word text-neutral-900 dark:text-neutral-100'
-						title={row.original.name}>
-						{row.original.name}
-					</p>
-				)}
-				<div className='flex flex-wrap items-center gap-2 text-[11px] text-neutral-500'>
-					<span className='break-all'>SKU: {row.original.sku}</span>
-					<span>ID: {row.original.productId ?? 'N/D'}</span>
-				</div>
-				<div>
-					<Badge
-						variant='outline'
-						color={row.original.serialTracking ? 'emerald' : 'zinc'}
-						className='w-fit'>
-						{row.original.serialTracking ? 'Serializado' : 'Estándar'}
-					</Badge>
-				</div>
-			</div>
-		),
-	},
-	{
-		accessorKey: 'availableStock',
-		header: 'Disponible',
-		cell: ({ row }) => (
-			<div className='min-w-[64px]'>
-				<p className='text-lg leading-none font-semibold text-neutral-900 dark:text-neutral-100'>
-					{row.original.availableStock}
-				</p>
-			</div>
-		),
-	},
-	{
-		accessorKey: 'distributedStock',
-		header: 'Distribuido',
-		cell: ({ row }) => (
-			<div className='min-w-[78px]'>
-				<p className='text-base font-semibold text-neutral-900 dark:text-neutral-100'>
-					{row.original.distributedStock}
-				</p>
-				<p className='text-[11px] text-neutral-400'>
-					Sucursales: {row.original.branchesCount}
-				</p>
-			</div>
-		),
-	},
-	{
-		id: 'grades',
-		header: 'Grados',
-		cell: ({ row }) => (
-			<div className='max-w-[180px]'>
-				<p className='text-xs font-medium text-neutral-700 dark:text-neutral-200'>
-					{row.original.gradesCount} grados
-				</p>
-				<p className='mt-1 truncate text-[11px] text-neutral-500'>
-					{row.original.gradesPreview || 'Sin grados'}
-				</p>
-			</div>
-		),
-	},
-	{
-		accessorKey: 'totalStock',
-		header: 'Stock total',
-		cell: ({ row }) => (
-			<div className='min-w-[78px]'>
-				<Tooltip text='Stock total = disponible + reservado + en espera + en cotización + vendido. Ver el desglose en la columna Estados.'>
-					<p className='inline-block cursor-help text-base font-semibold text-neutral-900 underline decoration-dotted underline-offset-4 dark:text-neutral-100'>
-						{row.original.totalStock}
-					</p>
-				</Tooltip>
-				<p className='text-[11px] text-neutral-400'>
-					{row.original.availableStock} disponibles
-				</p>
-			</div>
-		),
-	},
-	{
-		id: 'distribution',
-		header: 'Distribución',
-		cell: ({ row }) => (
-			<div className='max-w-[160px]'>
-				<p className='truncate text-[11px] text-neutral-500'>
-					{row.original.distributionPreview}
-				</p>
-			</div>
-		),
-	},
-	{
-		id: 'statusBreakdown',
-		header: 'Estados',
-		cell: ({ row }) => (
-			<StockStatusBreakdown
-				row={row.original}
-				onOpenDetail={() => openProductDetail(row.original.productId)}
-			/>
-		),
-	},
-];
-
 const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) => {
 	const navigate = useNavigate();
 
@@ -442,13 +314,134 @@ const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) =
 
 	const openProductDetail = useCallback(
 		(productId: number | null) => {
-			if (productId) void navigate(`/catalogos/productos/${productId}`);
+			if (productId) navigate(`/catalogos/productos/${productId}`);
 		},
 		[navigate],
 	);
 
-	const columns = useMemo(
-		() => buildStockCatalogColumns({ openProductDetail }),
+	const columns = useMemo<ColumnDef<StockCatalogRow>[]>(
+		() => [
+			{
+				id: 'name',
+				// Incluye la SKU en el valor filtrable para que el buscador (includesString)
+				// también encuentre por SKU, no solo por nombre.
+				accessorFn: (catalogRow) => `${catalogRow.name} ${catalogRow.sku}`,
+				header: 'Producto',
+				cell: ({ row }) => (
+					<div className='max-w-[280px] space-y-1'>
+						{row.original.productId ? (
+							<button
+								type='button'
+								onClick={() => openProductDetail(row.original.productId)}
+								title={row.original.name}
+								className='group inline-flex items-center gap-1 text-left font-semibold text-neutral-900 transition-colors hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400'>
+								<span className='line-clamp-2 break-words'>
+									{row.original.name}
+								</span>
+								<Icon
+									icon='HeroArrowTopRightOnSquare'
+									className='h-3.5 w-3.5 flex-none text-neutral-300 transition-colors group-hover:text-blue-500 dark:text-neutral-600'
+								/>
+							</button>
+						) : (
+							<p
+								className='line-clamp-2 break-words font-semibold text-neutral-900 dark:text-neutral-100'
+								title={row.original.name}>
+								{row.original.name}
+							</p>
+						)}
+						<div className='flex flex-wrap items-center gap-2 text-[11px] text-neutral-500'>
+							<span className='break-all'>SKU: {row.original.sku}</span>
+							<span>ID: {row.original.productId ?? 'N/D'}</span>
+						</div>
+						<div>
+							<Badge
+								variant='outline'
+								color={row.original.serialTracking ? 'emerald' : 'zinc'}
+								className='w-fit'>
+								{row.original.serialTracking ? 'Serializado' : 'Estándar'}
+							</Badge>
+						</div>
+					</div>
+				),
+			},
+			{
+				accessorKey: 'availableStock',
+				header: 'Disponible',
+				cell: ({ row }) => (
+					<div className='min-w-[64px]'>
+						<p className='text-lg font-semibold leading-none text-neutral-900 dark:text-neutral-100'>
+							{row.original.availableStock}
+						</p>
+					</div>
+				),
+			},
+			{
+				accessorKey: 'distributedStock',
+				header: 'Distribuido',
+				cell: ({ row }) => (
+					<div className='min-w-[78px]'>
+						<p className='text-base font-semibold text-neutral-900 dark:text-neutral-100'>
+							{row.original.distributedStock}
+						</p>
+						<p className='text-[11px] text-neutral-400'>
+							Sucursales: {row.original.branchesCount}
+						</p>
+					</div>
+				),
+			},
+			{
+				id: 'grades',
+				header: 'Grados',
+				cell: ({ row }) => (
+					<div className='max-w-[180px]'>
+						<p className='text-xs font-medium text-neutral-700 dark:text-neutral-200'>
+							{row.original.gradesCount} grados
+						</p>
+						<p className='mt-1 truncate text-[11px] text-neutral-500'>
+							{row.original.gradesPreview || 'Sin grados'}
+						</p>
+					</div>
+				),
+			},
+			{
+				accessorKey: 'totalStock',
+				header: 'Stock total',
+				cell: ({ row }) => (
+					<div className='min-w-[78px]'>
+						<Tooltip text='Stock total = disponible + reservado + en espera + en cotización + vendido. Ver el desglose en la columna Estados.'>
+							<p className='inline-block cursor-help text-base font-semibold text-neutral-900 underline decoration-dotted underline-offset-4 dark:text-neutral-100'>
+								{row.original.totalStock}
+							</p>
+						</Tooltip>
+						<p className='text-[11px] text-neutral-400'>
+							{row.original.availableStock} disponibles
+						</p>
+					</div>
+				),
+			},
+			{
+				id: 'distribution',
+				header: 'Distribución',
+				cell: ({ row }) => (
+					<div className='max-w-[160px]'>
+						<p className='truncate text-[11px] text-neutral-500'>
+							{row.original.distributionPreview}
+						</p>
+					</div>
+				),
+			},
+			{
+				id: 'statusBreakdown',
+				header: 'Estados',
+				cell: ({ row }) => (
+					<StockStatusBreakdown
+						row={row.original}
+						onOpenDetail={() => openProductDetail(row.original.productId)}
+					/>
+				),
+			},
+		],
 		[openProductDetail],
 	);
 

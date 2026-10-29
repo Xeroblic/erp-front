@@ -108,7 +108,7 @@ const OrdersTechnicianTab: React.FC<IOrdersTechnicianTabProps> = ({
 												Casillero Nº{' '}
 												{locker.locker_number || locker.number || locker.id}
 											</Badge>
-											<h3 className='text-lg font-bold text-zinc-800 uppercase dark:text-zinc-100'>
+											<h3 className='text-lg font-bold uppercase text-zinc-800 dark:text-zinc-100'>
 												{order?.customer_name ||
 													locker.customer_name ||
 													'Cliente sin registrar'}
@@ -143,7 +143,7 @@ const OrdersTechnicianTab: React.FC<IOrdersTechnicianTabProps> = ({
 									<Button
 										color='blue'
 										variant='solid'
-										className='h-12 w-full text-sm font-bold tracking-wide uppercase'
+										className='h-12 w-full text-sm font-bold uppercase tracking-wide'
 										icon='HeroArrowDownTray'
 										onClick={() => openAction(locker, 'withdraw', order?.id)}>
 										Iniciar Retiro
@@ -195,7 +195,7 @@ const OrdersTechnicianTab: React.FC<IOrdersTechnicianTabProps> = ({
 											className='mb-2 text-xs font-bold'>
 											Orden #{order.id}
 										</Badge>
-										<h3 className='text-lg font-bold text-zinc-800 uppercase dark:text-zinc-100'>
+										<h3 className='text-lg font-bold uppercase text-zinc-800 dark:text-zinc-100'>
 											{order.customer_name || 'Sin Cliente'}
 										</h3>
 									</div>
@@ -229,7 +229,7 @@ const OrdersTechnicianTab: React.FC<IOrdersTechnicianTabProps> = ({
 								<Button
 									color='emerald'
 									variant='solid'
-									className='h-12 w-full text-sm font-bold tracking-wide uppercase'
+									className='h-12 w-full text-sm font-bold uppercase tracking-wide'
 									icon='HeroArrowUpTray'
 									onClick={() => handleOpenDropoff(order)}>
 									Iniciar Depósito

@@ -80,7 +80,7 @@ const pruneAttributes = (attributes: AttributesData): AttributesData => {
 		return {};
 	}
 
-	return pruned;
+	return pruned as AttributesData;
 };
 
 export const prepareAttributesForSubmit = (

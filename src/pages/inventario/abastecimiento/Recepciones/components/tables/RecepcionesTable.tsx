@@ -2,9 +2,8 @@ import React from 'react';
 import type { PaginationState, Updater } from '@tanstack/react-table';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Table, TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-import {
-	TableCardFooterTemplateV2,
+import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import TableCardFooterTemplateV2, {
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
 import { WarehouseLabel } from '@/components/procurement';
@@ -48,7 +47,7 @@ const RecepcionesPagination: React.FC<{
 		pageSize: meta.per_page,
 	};
 	const table: TablePaginationController = {
-		state: { pagination },
+		getState: () => ({ pagination }),
 		setPageSize: (updater: Updater<number>) => {
 			const perPage = typeof updater === 'function' ? updater(pagination.pageSize) : updater;
 			onChange(1, perPage);
@@ -104,7 +103,7 @@ const RecepcionesTable: React.FC<IRecepcionesTableProps> = ({
 								<Tr key={`recepcion-skeleton-${rowIndex}`}>
 									{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
 										<Td key={`recepcion-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>

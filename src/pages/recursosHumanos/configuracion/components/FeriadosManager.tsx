@@ -166,7 +166,7 @@ const FeriadosManager: React.FC = () => {
 								id='holiday-recurring'
 								checked={recurring}
 								onChange={(e) => setRecurring(e.target.checked)}
-								className='h-4 w-4 rounded-sm border-zinc-600 bg-zinc-700 text-blue-500'
+								className='h-4 w-4 rounded border-zinc-600 bg-zinc-700 text-blue-500'
 							/>
 							<label htmlFor='holiday-recurring' className='text-sm text-zinc-400'>
 								Cada año
@@ -230,11 +230,11 @@ const FeriadosManager: React.FC = () => {
 														</td>
 														<td className='px-4 py-2'>
 															{h.recurring ? (
-																<span className='rounded-sm bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400'>
+																<span className='rounded bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400'>
 																	Sí
 																</span>
 															) : (
-																<span className='rounded-sm bg-zinc-600/30 px-2 py-0.5 text-xs text-zinc-400'>
+																<span className='rounded bg-zinc-600/30 px-2 py-0.5 text-xs text-zinc-400'>
 																	No
 																</span>
 															)}

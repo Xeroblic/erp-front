@@ -72,7 +72,7 @@ El usuario conserva el control: la autorización de auditoría anterior no autor
 
 ## Verificación y entrega
 
-- Ejecuta primero las pruebas afectadas con `pnpm run test:related <archivos>` y el lint acotado con `pnpm run lint:changed`; amplía a `pnpm run test:run`, `pnpm run typecheck` y `pnpm build` según el riesgo y el alcance. **No uses `pnpm test`** (es `vitest` sin `run`: modo watch, no termina) **ni `pnpm lint` completo** (~6.600 líneas y 5.470 hallazgos preexistentes, inservible como señal de un cambio).
+- Ejecuta primero las pruebas afectadas con `pnpm run test:related <archivos>` y el lint acotado con `pnpm run lint:changed`; amplía a `pnpm run test:run`, `pnpm run typecheck` y `pnpm build` según el riesgo y el alcance. **No uses `pnpm test`** (es `vitest` sin `run`: modo watch, no termina) **ni `pnpm lint` completo** (9.033 líneas y 7.553 hallazgos preexistentes, inservible como señal de un cambio).
 - Antes de entregar, revisa `git diff`, `git diff --check` y separa errores nuevos de deuda preexistente.
 - No crees ramas, commits ni PRs sin autorización explícita. Los PR apuntan a `develop`; por defecto su texto se entrega al usuario para revisión y sólo se publica si el usuario lo autoriza.
 - Al cerrar una tarea de implementación autorizada, actualiza la bitácora diaria según `CLAUDE.md` y `bitacora_trabajo/instrucciones.md`.

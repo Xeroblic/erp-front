@@ -1,6 +1,6 @@
 import React, { FC, ReactNode, useCallback, useId, useLayoutEffect, useRef } from 'react';
 import classNames from 'classnames';
-import { AnimatePresence, motion, type Variants } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import type { TIcons } from '@/types/icons.type';
@@ -24,19 +24,6 @@ export interface IStepWizardProps {
 	finishActions: ReactNode;
 	children: ReactNode;
 }
-
-/**
- * Desplazamiento del paso según la dirección de navegación (1 avanza, -1
- * retrocede). Son funciones porque el paso que sale ya no se vuelve a
- * renderizar: `AnimatePresence` le pasa por `custom` la dirección del cambio
- * actual. Con un `exit` fijo conservaría la dirección con que entró y, tras
- * retroceder y avanzar, saldría hacia el lado contrario.
- */
-const stepVariants: Variants = {
-	enter: (direction: number) => ({ opacity: 0, x: direction * 40 }),
-	center: { opacity: 1, x: 0 },
-	exit: (direction: number) => ({ opacity: 0, x: direction * -40 }),
-};
 
 /**
  * Asistente con el formato de `FormShell` de revisiones técnicas: barra de
@@ -98,7 +85,7 @@ const StepWizard: FC<IStepWizardProps> = ({
 		<div className='flex flex-col'>
 			<nav
 				aria-label='Pasos'
-				className='overflow-x-auto rounded-t-2xl border border-zinc-200 bg-linear-to-r from-blue-50/80 via-white to-blue-50/80 dark:border-zinc-700 dark:from-zinc-800/80 dark:via-zinc-900 dark:to-zinc-800/80'>
+				className='overflow-x-auto rounded-t-2xl border border-zinc-200 bg-gradient-to-r from-blue-50/80 via-white to-blue-50/80 dark:border-zinc-700 dark:from-zinc-800/80 dark:via-zinc-900 dark:to-zinc-800/80'>
 				<ol className='flex items-center justify-between px-4 py-3'>
 					{steps.map((item, index) => {
 						const isActive = index === step;
@@ -123,7 +110,7 @@ const StepWizard: FC<IStepWizardProps> = ({
 											className={classNames(
 												'flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300',
 												{
-													'bg-blue-600 text-white shadow-lg ring-4 shadow-blue-500/30 ring-blue-100 dark:ring-blue-900/50':
+													'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-4 ring-blue-100 dark:ring-blue-900/50':
 														isActive,
 													'bg-blue-500 text-white': isCompleted,
 													'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500':
@@ -133,13 +120,13 @@ const StepWizard: FC<IStepWizardProps> = ({
 											<Icon
 												icon={isCompleted ? 'HeroCheck' : item.icon}
 												className={classNames('h-5 w-5', {
-													'text-white!': isActive || isCompleted,
+													'!text-white': isActive || isCompleted,
 												})}
 											/>
 										</span>
 										<span
 											className={classNames(
-												'text-xs font-semibold whitespace-nowrap transition-colors',
+												'whitespace-nowrap text-xs font-semibold transition-colors',
 												{
 													'text-blue-700 dark:text-blue-300': isActive,
 													'text-blue-500 dark:text-blue-400': isCompleted,
@@ -174,10 +161,9 @@ const StepWizard: FC<IStepWizardProps> = ({
 					<motion.section
 						key={step}
 						custom={direction}
-						variants={stepVariants}
-						initial='enter'
-						animate='center'
-						exit='exit'
+						initial={{ opacity: 0, x: direction * 40 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: direction * -40 }}
 						transition={{ duration: 0.25, ease: 'easeInOut' }}
 						aria-labelledby={titleId}
 						className='p-6'>
@@ -187,7 +173,7 @@ const StepWizard: FC<IStepWizardProps> = ({
 								ref={setHeading}
 								data-step={step}
 								tabIndex={-1}
-								className='flex items-center gap-2 text-lg font-bold text-zinc-900 outline-hidden dark:text-zinc-100'>
+								className='flex items-center gap-2 text-lg font-bold text-zinc-900 outline-none dark:text-zinc-100'>
 								<Icon icon={current.icon} className='h-5 w-5 text-blue-600' />
 								<span className='sr-only'>
 									Paso {step + 1} de {steps.length}:{' '}

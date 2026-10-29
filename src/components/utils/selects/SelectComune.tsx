@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useFormContext, Controller } from 'react-hook-form';
 import { useSelector } from 'react-redux';
 import { RootState, useAppDispatch } from '@/store';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
@@ -24,6 +25,10 @@ interface SelectComuneProps {
 	name?: string;
 	label?: string;
 	placeholder?: string;
+	populateSiblings?: {
+		provincia?: string;
+		region?: string;
+	};
 	isRequired?: boolean;
 	value?: string | number | null;
 	onChange?: (value: string | null, data?: IComunaOptionData) => void;
@@ -43,6 +48,7 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 	name = 'comuna_id',
 	label = 'Dirección (Comuna)',
 	placeholder = 'Escriba una comuna (Ej. Puente Alto)...',
+	populateSiblings,
 	isRequired = false,
 	value: manualValue,
 	onChange: manualOnChange,
@@ -51,23 +57,29 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 	hideLabel = false,
 	inputId,
 }) => {
+	// Si no está dentro de FormProvider, useFormContext() retorna null pero NO debemos hacer throw error manualmente.
+	const methods = useFormContext();
 	const dispatch = useAppDispatch();
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	const { listaComunas, loading } = useSelector((state: RootState) => state.core);
+	const { listaRegiones, listaProvincias, listaComunas, loading } = useSelector(
+		(state: RootState) => state.core,
+	);
 	const options = useSelector(selectComunasSearchOptions);
 
-	// Cada montaje (cada vez que se abre el modal) vuelve a pedir las listas actualizadas.
+	// 🚀 MEJORA 1: Quitamos el "if (.length === 0)".
+	// Ahora CADA VEZ que abras el modal (se monta el componente), despachará por los datos actualizados.
 	useEffect(() => {
-		void dispatch(listaRegionesThunk());
-		void dispatch(listaProvinciasThunk());
-		void dispatch(listaComunasThunk());
-	}, [dispatch]);
+		dispatch(listaRegionesThunk());
+		dispatch(listaProvinciasThunk());
+		dispatch(listaComunasThunk());
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	useEffect(() => {
-		if (!containerRef.current) return undefined;
+		if (!containerRef.current) return;
 		if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-			return undefined;
+			return;
 
 		const ctx = gsap.context(() => {
 			gsap.fromTo(
@@ -112,7 +124,7 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 				<SelectReact
 					name={name}
 					inputId={inputId}
-					options={options}
+					options={options as TSelectOption[]}
 					value={selectedOption as TSelectOption}
 					placeholder={dynamicPlaceholder}
 					isClearable
@@ -144,7 +156,49 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 				</div>
 			)}
 			<FieldWrap>
-				{renderSelect(manualValue, manualOnChange ?? (() => undefined), manualError)}
+				{methods && methods.control ? (
+					<Controller
+						name={name}
+						control={methods.control}
+						render={({ field: { onChange, value }, fieldState: { error } }) => {
+							const internalOnChange = (
+								val: string | null,
+								data?: IComunaOptionData,
+							) => {
+								onChange(val);
+								if (populateSiblings && data) {
+									if (populateSiblings.provincia)
+										methods.setValue(
+											populateSiblings.provincia,
+											data.province_id,
+											{ shouldDirty: true, shouldValidate: true },
+										);
+									if (populateSiblings.region)
+										methods.setValue(populateSiblings.region, data.region_id, {
+											shouldDirty: true,
+											shouldValidate: true,
+										});
+								} else if (populateSiblings && !data) {
+									if (populateSiblings.provincia)
+										methods.setValue(populateSiblings.provincia, null);
+									if (populateSiblings.region)
+										methods.setValue(populateSiblings.region, null);
+								}
+							};
+							return renderSelect(value, internalOnChange, error?.message);
+						}}
+					/>
+				) : (
+					renderSelect(
+						manualValue as string | number | null | undefined,
+						(val: string | null, data?: IComunaOptionData) => {
+							if (manualOnChange) {
+								manualOnChange(val, data);
+							}
+						},
+						manualError,
+					)
+				)}
 			</FieldWrap>
 		</div>
 	);

@@ -8,13 +8,11 @@ import inventoryStock from '@/store/slices/procurement/inventoryStockSlice';
 import AjustesTrasladosView from '@/pages/inventario/abastecimiento/AjustesTraslados/AjustesTrasladosView';
 import { resetInventoryStockStoreForTests } from '@/mocks/services/inventoryStock.mock';
 
-const context = vi.hoisted(
-	(): { branchId: number | null; subsidiaryId: number; enabled: boolean } => ({
-		branchId: 4,
-		subsidiaryId: 2,
-		enabled: true,
-	}),
-);
+const context = vi.hoisted(() => ({
+	branchId: 4 as number | null,
+	subsidiaryId: 2,
+	enabled: true,
+}));
 vi.mock('@/hooks/useSubsidiaryRolloutStage', () => ({
 	useSubsidiaryRolloutStage: () => ({
 		multiLocationEnabled: true,
@@ -262,7 +260,7 @@ describe('Traslados internos — integración de vista, hook, slice y servicio',
 		await screen.findByLabelText('Producto de la línea 1');
 		expect(screen.queryByText('Selecciona un producto.')).not.toBeInTheDocument();
 		expect(screen.queryByText('Indica la cantidad.')).not.toBeInTheDocument();
-		expect(screen.getByLabelText('Cantidad de la línea 1')).not.toHaveClass('border-red-500!');
+		expect(screen.getByLabelText('Cantidad de la línea 1')).not.toHaveClass('!border-red-500');
 	});
 
 	it('no avanza sin destino', async () => {

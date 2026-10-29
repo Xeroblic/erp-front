@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import type { FormikValues } from 'formik';
+import { useForm, type FieldValues, type UseFormReturn } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import type { FormSectionProps } from '../shared/types';
@@ -9,7 +9,6 @@ import DesktopPortsSection from '../desktop/sections/DesktopPortsSection';
 import { DockingPortsSection } from '../docking/sections/DockingPortsSection';
 import { MonitorPortsSection } from '../monitor/sections/MonitorPortsSection';
 import PortsSection from '../notebook/sections/PortsSection';
-import { ReviewFormHarness, type ReviewFormHandle } from './reviewFormHarness';
 
 vi.mock('@/components/icon/Icon', () => ({ default: () => <span /> }));
 
@@ -71,31 +70,36 @@ const MONITOR_SCHEMA: ITechnicalReviewSchema = {
 	},
 };
 
-type AnySection = React.ComponentType<FormSectionProps<FormikValues>>;
+type AnySection = React.ComponentType<FormSectionProps<FieldValues>>;
 
 const asSection = (section: unknown): AnySection => section as AnySection;
 
 interface RenderOptions {
 	schemaFields?: ITechnicalReviewSchema;
 	readOnly?: boolean;
-	defaultValues?: FormikValues;
+	defaultValues?: FieldValues;
 }
 
 const renderSection = (Section: AnySection, options: RenderOptions = {}) => {
-	const handle: { current?: ReviewFormHandle<FormikValues> } = {};
+	let form: UseFormReturn<FieldValues> | undefined;
 
-	render(
-		<ReviewFormHarness<FormikValues>
-			section={Section}
-			initialValues={options.defaultValues ?? {}}
-			readOnly={options.readOnly ?? false}
-			schemaFields={'schemaFields' in options ? options.schemaFields : REMOTE_SCHEMA}
-			handle={handle}
-		/>,
-	);
-	return () => ({
-		getValues: (field: string): unknown => handle.current?.getValues()[field],
-	});
+	const Harness = () => {
+		const hookForm = useForm<FieldValues>({ defaultValues: options.defaultValues ?? {} });
+		form = hookForm;
+		return (
+			<Section
+				control={hookForm.control}
+				errors={hookForm.formState.errors}
+				readOnly={options.readOnly ?? false}
+				watch={hookForm.watch}
+				setValue={hookForm.setValue}
+				schemaFields={'schemaFields' in options ? options.schemaFields : REMOTE_SCHEMA}
+			/>
+		);
+	};
+
+	render(<Harness />);
+	return () => form as UseFormReturn<FieldValues>;
 };
 
 const question = (name: RegExp) => screen.getByText(name).parentElement as HTMLElement;

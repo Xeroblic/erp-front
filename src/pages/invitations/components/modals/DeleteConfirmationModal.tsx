@@ -63,7 +63,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 				{/* Información de la invitación a eliminar */}
 				<div className='rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20'>
 					<div className='flex items-start space-x-3'>
-						<div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-800'>
+						<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-800'>
 							<Icon
 								icon='HeroEnvelope'
 								className='h-4 w-4 text-red-600 dark:text-red-400'

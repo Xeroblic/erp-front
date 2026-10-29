@@ -233,7 +233,7 @@ describe('LinkPurchaseDocumentModal', () => {
 		picker.selected = {
 			...DOCUMENT,
 			items: [{ ...DOCUMENT.items[0], remaining_quantity: 5 }],
-		};
+		} as IPurchaseDocument;
 		renderModal();
 
 		// Ninguna de las dos cabe junto a la otra: se marcan ambas.

@@ -5,6 +5,7 @@ import type {
 	IDeferredPaymentCreditProfile,
 	IDeferredPaymentCreditProfileListItem,
 } from '@/interface/deferredPayments.interface';
+// eslint-disable-next-line import/extensions
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import CreditProfileEditModal from '../components/CreditProfileEditModal';
 
@@ -505,9 +506,8 @@ describe('CreditProfileEditModal', () => {
 		);
 
 		await screen.findByText(/¿Quieres eliminar este perfil de crédito/i);
-		// El motivo depende del perfil cargado, que llega cuando Formik se reinicializa.
 		expect(
-			await screen.findByText(
+			screen.getByText(
 				'No puedes eliminar el perfil mientras el cliente tenga saldo pendiente.',
 			),
 		).toBeInTheDocument();

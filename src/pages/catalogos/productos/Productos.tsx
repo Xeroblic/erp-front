@@ -273,10 +273,10 @@ const Productos: React.FC = () => {
 		setPage(1);
 	};
 
-	const getErrorMessage = (reason: unknown, fallback: string): string => {
-		if (typeof reason === 'string' && reason.trim().length > 0) return reason;
-		if (reason && typeof reason === 'object') {
-			const maybeMessage = (reason as { message?: unknown }).message;
+	const getErrorMessage = (error: unknown, fallback: string): string => {
+		if (typeof error === 'string' && error.trim().length > 0) return error;
+		if (error && typeof error === 'object') {
+			const maybeMessage = (error as { message?: unknown }).message;
 			if (typeof maybeMessage === 'string' && maybeMessage.trim().length > 0) {
 				return maybeMessage;
 			}
@@ -343,10 +343,10 @@ const Productos: React.FC = () => {
 			/>
 
 			<Container>
-				<Card className='mb-6 border border-sky-100 bg-linear-to-r from-sky-50 via-white to-emerald-50 shadow-xs dark:border-zinc-700 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800'>
+				<Card className='mb-6 border border-sky-100 bg-gradient-to-r from-sky-50 via-white to-emerald-50 shadow-sm dark:border-zinc-700 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800'>
 					<CardBody className='flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between'>
 						<div className='flex items-start gap-3'>
-							<span className='mt-0.5 flex size-10 items-center justify-center rounded-xl bg-white text-sky-500 shadow-xs dark:bg-zinc-800'>
+							<span className='mt-0.5 flex size-10 items-center justify-center rounded-xl bg-white text-sky-500 shadow-sm dark:bg-zinc-800'>
 								<Icon
 									icon={
 										viewMode === 'subsidiaries'
@@ -415,7 +415,7 @@ const Productos: React.FC = () => {
 				<Tabs
 					activeTab={activeTab}
 					onTabChange={setActiveTab}
-					className='mt-6 rounded-2xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-700 dark:bg-zinc-900'
+					className='mt-6 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'
 					variant='pills'>
 					<Tab
 						id='products'

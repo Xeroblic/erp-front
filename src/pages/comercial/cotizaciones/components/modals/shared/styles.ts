@@ -10,7 +10,7 @@
 
 /** Tarjeta de primer nivel dentro del cuerpo del modal. */
 export const QUOTATION_CARD_CLASSNAME =
-	'border border-zinc-200 bg-white shadow-xs dark:border-zinc-700 dark:bg-zinc-900';
+	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
 
 /** Texto de apoyo bajo el título de una tarjeta. */
 export const QUOTATION_SUBTITLE_CLASSNAME = 'text-sm font-normal text-zinc-600 dark:text-zinc-400';

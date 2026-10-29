@@ -3,22 +3,22 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Button from '@/components/ui/Button';
 import { useNavigate } from 'react-router-dom';
+import { ListaLotes } from './components/tables/ListaLotes';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
-import ListaLotes from './components/tables/ListaLotes';
 
-const BatchesListPage = () => {
+function BatchesListPage() {
 	const navigate = useNavigate();
 
 	return (
-		<PageWrapper isProtectedRoute name='Lotes' title='Lotes'>
+		<PageWrapper isProtectedRoute={true} name='Lotes' title='Lotes'>
 			<Subheader>
 				<SubheaderLeft>
 					<Button
 						variant='outline'
 						color='red'
 						onClick={() => navigate('/technical-reviews/refactor')}>
-						<Icon icon='HeroArrowLeft' size='text-2xl' color='red' />
+						<Icon icon='HeroArrowLeft' size={'text-2xl'} color='red' />
 					</Button>
 					<div className='flex flex-col items-center justify-center gap-2'>
 						<Icon icon='DuoAlignJustify' className='font-bold' />
@@ -49,6 +49,6 @@ const BatchesListPage = () => {
 			</Container>
 		</PageWrapper>
 	);
-};
+}
 
 export default BatchesListPage;

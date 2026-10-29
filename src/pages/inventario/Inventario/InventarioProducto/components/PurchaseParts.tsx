@@ -47,7 +47,7 @@ export const EffectiveCost = ({ cost }: { cost: IProcurementCost }) => {
 	const amount = isUnknownCost(cost)
 		? null
 		: formatDecimalAmount(cost.effective_unit_amount, cost.currency_code);
-	if (amount === null) return <span className='text-zinc-500 italic'>Desconocido</span>;
+	if (amount === null) return <span className='italic text-zinc-500'>Desconocido</span>;
 	return (
 		<>
 			<p className='font-semibold tabular-nums'>{amount}</p>
@@ -85,7 +85,7 @@ export const PurchaseReferences = ({ purchase }: { purchase: IProductPurchase })
 					Recepción #{purchase.stock_receipt_id}
 				</DetailLink>
 			</p>
-			<p className='text-sm whitespace-nowrap'>
+			<p className='whitespace-nowrap text-sm'>
 				{document && purchase.purchase_document ? (
 					<DetailLink
 						link={purchaseDocumentDetailLink(purchase.purchase_document.id)}

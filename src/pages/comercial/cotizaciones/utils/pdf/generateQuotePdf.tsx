@@ -40,7 +40,7 @@ const blobToPngDataURLViaCanvas = (blob: Blob): Promise<string> =>
 			}
 		};
 
-		img.onerror = () => reject(new Error('No se pudo cargar el logo para convertirlo a PNG.'));
+		img.onerror = (e) => reject(e);
 		img.src = URL.createObjectURL(blob);
 	});
 

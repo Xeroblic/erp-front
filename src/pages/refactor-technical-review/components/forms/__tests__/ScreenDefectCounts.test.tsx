@@ -1,5 +1,6 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 import { AioScreenSection } from '../aio/sections/AioScreenSection';
 import MonitorScreenSection from '../monitor/sections/MonitorScreenSection';
@@ -7,14 +8,13 @@ import AioForm from '../aio/AioForm';
 import MonitorForm from '../monitor/MonitorForm';
 import { aioSchema, type AioFormData } from '../../validation/aio.schema';
 import { monitorSchema, type MonitorFormData } from '../../validation/monitor.schema';
-import { ReviewFormHarness } from './reviewFormHarness';
 
 const formShellState = vi.hoisted(() => ({
 	onValidateStep: undefined as
 		| undefined
 		| ((sectionKey: string) => Promise<{ isValid: boolean; message?: string }>),
 	getValues: undefined as undefined | (() => Record<string, unknown>),
-	errors: undefined as undefined | Record<string, string | undefined>,
+	errors: undefined as undefined | Record<string, { message?: string } | undefined>,
 }));
 
 vi.mock('@/components/icon/Icon', () => ({
@@ -44,12 +44,12 @@ vi.mock('@/pages/refactor-technical-review/components/forms/shared/FormShell', (
 	}: {
 		onValidateStep?: (sectionKey: string) => Promise<{ isValid: boolean; message?: string }>;
 		sectionProps?: {
-			values?: Record<string, unknown>;
-			errors?: Record<string, string | undefined>;
+			getValues?: () => Record<string, unknown>;
+			errors?: Record<string, { message?: string } | undefined>;
 		};
 	}) => {
 		formShellState.onValidateStep = onValidateStep;
-		formShellState.getValues = sectionProps ? () => sectionProps.values ?? {} : undefined;
+		formShellState.getValues = sectionProps?.getValues;
 		formShellState.errors = sectionProps?.errors;
 		return null;
 	},
@@ -71,20 +71,31 @@ const AioScreenHarness = ({
 	initialScreenCondition = 'ok',
 	initialDeadPixelsCount,
 }: ScreenHarnessProps) => {
+	const {
+		control,
+		formState: { errors },
+		watch,
+		setValue,
+	} = useForm<AioFormData>({
+		defaultValues: {
+			screen_condition: initialScreenCondition,
+			dead_pixels_count: initialDeadPixelsCount,
+		},
+	});
+
 	return (
-		<ReviewFormHarness<AioFormData>
-			section={AioScreenSection}
-			readOnly={readOnly}
-			initialValues={{
-				screen_condition: initialScreenCondition,
-				dead_pixels_count: initialDeadPixelsCount,
-			}}>
-			{(values) => (
-				<output data-testid='dead-pixels-count'>
-					{String(values.dead_pixels_count ?? '')}
-				</output>
-			)}
-		</ReviewFormHarness>
+		<>
+			<AioScreenSection
+				control={control}
+				errors={errors}
+				readOnly={readOnly}
+				watch={watch}
+				setValue={setValue}
+			/>
+			<output data-testid='dead-pixels-count'>
+				{String(watch('dead_pixels_count') ?? '')}
+			</output>
+		</>
 	);
 };
 
@@ -94,24 +105,33 @@ const MonitorScreenHarness = ({
 	initialDeadPixelsCount,
 	initialSpotsCount,
 }: MonitorScreenHarnessProps) => {
+	const {
+		control,
+		formState: { errors },
+		watch,
+		setValue,
+	} = useForm<MonitorFormData>({
+		defaultValues: {
+			screen_condition: initialScreenCondition,
+			dead_pixels_count: initialDeadPixelsCount,
+			spots_count: initialSpotsCount,
+		},
+	});
+
 	return (
-		<ReviewFormHarness<MonitorFormData>
-			section={MonitorScreenSection}
-			readOnly={readOnly}
-			initialValues={{
-				screen_condition: initialScreenCondition,
-				dead_pixels_count: initialDeadPixelsCount,
-				spots_count: initialSpotsCount,
-			}}>
-			{(values) => (
-				<>
-					<output data-testid='dead-pixels-count'>
-						{String(values.dead_pixels_count ?? '')}
-					</output>
-					<output data-testid='spots-count'>{String(values.spots_count ?? '')}</output>
-				</>
-			)}
-		</ReviewFormHarness>
+		<>
+			<MonitorScreenSection
+				control={control}
+				errors={errors}
+				readOnly={readOnly}
+				watch={watch}
+				setValue={setValue}
+			/>
+			<output data-testid='dead-pixels-count'>
+				{String(watch('dead_pixels_count') ?? '')}
+			</output>
+			<output data-testid='spots-count'>{String(watch('spots_count') ?? '')}</output>
+		</>
 	);
 };
 
@@ -371,8 +391,8 @@ describe.each([
 });
 
 // ─── Validación del contador activo al cargar ─────────────────────────────────
-// El 0 conservado debe mostrar su error en el primer render: un error sólo se ve en un
-// campo tocado, así que sin marcarlo el técnico lo descubriría recién al pulsar
+// El 0 conservado debe mostrar su error en el primer render: `mode: 'onChange'` no
+// valida un campo que nadie tocó, así que el técnico sólo lo descubriría al pulsar
 // «Siguiente».
 describe.each([
 	['AIO', AioForm],
@@ -397,7 +417,7 @@ describe.each([
 	it('surfaces the minimum error for a preserved zero without a step advance', async () => {
 		await renderForm({ screen_condition: 'dead_pixels', dead_pixels_count: 0 });
 
-		expect(formShellState.errors?.dead_pixels_count).toBe('Debe ser al menos 1');
+		expect(formShellState.errors?.dead_pixels_count?.message).toBe('Debe ser al menos 1');
 	});
 
 	it('leaves a valid counter without error', async () => {
@@ -427,7 +447,7 @@ describe('monitor form spots validation on load', () => {
 	it('surfaces the minimum error for a preserved zero without a step advance', async () => {
 		await renderMonitor({ screen_condition: 'spots', spots_count: 0 });
 
-		expect(formShellState.errors?.spots_count).toBe('Debe ser al menos 1');
+		expect(formShellState.errors?.spots_count?.message).toBe('Debe ser al menos 1');
 	});
 });
 

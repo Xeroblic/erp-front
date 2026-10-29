@@ -178,20 +178,20 @@ const ClientesVentasDetalleView = () => {
 			/>
 
 			<Container
-				className='pt-8 pb-20'
+				className='pb-20 pt-8'
 				ref={containerRef}
 				onKeyDown={handleCustomerFormKeyDown}>
 				<div className='space-y-6'>
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
 						{/* Identidad y contacto: información primaria para reconocer al cliente. */}
 						<div className='space-y-6 lg:col-span-8' ref={addToRefs}>
-							<Card className='h-full overflow-hidden border-zinc-200/50 shadow-xs transition-all dark:border-zinc-700/50'>
+							<Card className='h-full overflow-hidden border-zinc-200/50 shadow-sm transition-all dark:border-zinc-700/50'>
 								<CardBody>
 									<DetailSection
 										title='Identidad y contacto'
 										description='Datos para identificar y contactar al cliente.'
 										icon='HeroUser'
-										contentClassName='grid-cols-1! md:grid-cols-1!'
+										contentClassName='!grid-cols-1 md:!grid-cols-1'
 										contenRight={
 											isEditable ? (
 												<Checkbox
@@ -274,13 +274,13 @@ const ClientesVentasDetalleView = () => {
 
 						{/* Preferencias comerciales: configuración para la operación. */}
 						<div className='lg:col-span-4' ref={addToRefs}>
-							<Card className='h-full overflow-hidden border-zinc-200/50 shadow-xs transition-all dark:border-zinc-700/50'>
+							<Card className='h-full overflow-hidden border-zinc-200/50 shadow-sm transition-all dark:border-zinc-700/50'>
 								<CardBody>
 									<DetailSection
 										title='Comercial'
 										description='Preferencias de facturación'
 										icon='HeroBriefcase'
-										contentClassName='grid grid-cols-1 gap-4 md:grid-cols-1!'>
+										contentClassName='grid grid-cols-1 gap-4 md:!grid-cols-1'>
 										<div className='detail-content-item'>
 											<EditableSelect
 												formik={formik}
@@ -306,13 +306,13 @@ const ClientesVentasDetalleView = () => {
 
 						{/* Logística: facturación y despacho se leen como una misma decisión operativa. */}
 						<div className='lg:col-span-12' ref={addToRefs}>
-							<Card className='overflow-hidden border border-zinc-200 bg-zinc-50 shadow-xs transition-all dark:border-zinc-700 dark:bg-zinc-800/60'>
+							<Card className='overflow-hidden border border-zinc-200 bg-zinc-50 shadow-sm transition-all dark:border-zinc-700 dark:bg-zinc-800/60'>
 								<CardBody className='p-5'>
 									<DetailSection
 										title='Logística'
 										description='Direcciones para facturación y despacho.'
 										icon='HeroTruck'
-										contentClassName='grid-cols-1! items-start gap-4 md:grid-cols-2!'>
+										contentClassName='!grid-cols-1 items-start gap-4 md:!grid-cols-2'>
 										<div className='self-start border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 											<p className='mb-4 text-sm font-semibold text-zinc-700 dark:text-zinc-200'>
 												Facturación
@@ -382,7 +382,7 @@ const ClientesVentasDetalleView = () => {
 
 						{/* Notas quedan separadas de las condiciones financieras. */}
 						<div className='h-full lg:col-span-12' ref={addToRefs}>
-							<Card className='h-full overflow-hidden border border-zinc-200 bg-zinc-50 shadow-xs transition-all dark:border-zinc-700 dark:bg-zinc-800/60'>
+							<Card className='h-full overflow-hidden border border-zinc-200 bg-zinc-50 shadow-sm transition-all dark:border-zinc-700 dark:bg-zinc-800/60'>
 								<CardBody className='p-5'>
 									<DetailSection
 										title='Notas internas'

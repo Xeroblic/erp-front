@@ -99,11 +99,11 @@ const StepCircle: React.FC<{ state: TStepState; index: number; isSpinning: boole
 	isSpinning,
 }) => {
 	let content: React.ReactNode = index + 1;
-	if (state === 'done') content = <Icon icon='HeroCheck' className='h-4 w-4 text-white!' />;
+	if (state === 'done') content = <Icon icon='HeroCheck' className='h-4 w-4 !text-white' />;
 	if (state === 'error')
-		content = <Icon icon='HeroExclamationTriangle' className='h-4 w-4 text-white!' />;
+		content = <Icon icon='HeroExclamationTriangle' className='h-4 w-4 !text-white' />;
 	if (isSpinning)
-		content = <Icon icon='HeroArrowPath' className='h-4 w-4 animate-spin text-white!' />;
+		content = <Icon icon='HeroArrowPath' className='h-4 w-4 animate-spin !text-white' />;
 	return (
 		<span
 			aria-hidden='true'
@@ -147,7 +147,7 @@ const StockReceiptProgressCard: React.FC<IStockReceiptProgressCardProps> = ({
 				icon='HeroXCircle'
 				title='Recepción anulada'
 				// El gris 500 por defecto casi no se lee sobre fondo oscuro.
-				className='text-zinc-700! dark:text-zinc-200!'>
+				className='!text-zinc-700 dark:!text-zinc-200'>
 				Se anuló antes de ingresar al stock: nunca movió unidades.
 			</Alert>
 		);

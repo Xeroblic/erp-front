@@ -288,23 +288,23 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 			</div>
 
 			<div className='relative flex items-center py-2'>
-				<div className='grow border-t border-zinc-200 dark:border-zinc-800'></div>
-				<span className='mx-4 shrink-0 bg-white px-2 text-[10px] font-bold tracking-widest text-zinc-400 uppercase dark:bg-[#09090b]'>
+				<div className='flex-grow border-t border-zinc-200 dark:border-zinc-800'></div>
+				<span className='mx-4 flex-shrink-0 bg-white px-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:bg-[#09090b]'>
 					O Configuración Manual
 				</span>
-				<div className='grow border-t border-zinc-200 dark:border-zinc-800'></div>
+				<div className='flex-grow border-t border-zinc-200 dark:border-zinc-800'></div>
 			</div>
 
 			<div className={`rounded-2xl border p-5 transition-all duration-300 ${brandStyles}`}>
 				<div className='mb-5 flex items-center gap-3 border-b border-zinc-200/50 pb-4 dark:border-zinc-700/50'>
-					<div className='rounded-lg bg-white p-2 shadow-xs dark:bg-zinc-800'>
+					<div className='rounded-lg bg-white p-2 shadow-sm dark:bg-zinc-800'>
 						{getBrandIcon()}
 					</div>
 					<div>
 						<h4 className='text-sm font-bold text-zinc-800 dark:text-zinc-100'>
 							Detalles del Sistema
 						</h4>
-						<p className='text-[10px] font-medium text-zinc-500 uppercase'>
+						<p className='text-[10px] font-medium uppercase text-zinc-500'>
 							Define marca, versión y edición
 						</p>
 					</div>
@@ -380,7 +380,7 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 										setSelectedVersionId(null);
 										resetDownstreamFromVersion();
 									}}
-									className='absolute top-1/2 right-2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
+									className='absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
 									title='Volver a lista'>
 									✕
 								</button>
@@ -437,7 +437,7 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 												setCustomEdition('');
 												setSelectedEditionId(null);
 											}}
-											className='absolute top-1/2 right-2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
+											className='absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
 											title='Volver a lista'>
 											✕
 										</button>
@@ -480,7 +480,7 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 			{/* 3. VISUALIZADOR FINAL (El "Donde aparece el SO") */}
 			{value && (
 				<div className='flex items-center justify-between rounded-xl border border-dashed border-zinc-300 bg-zinc-100 p-3 dark:border-zinc-700 dark:bg-white/5'>
-					<span className='ml-2 flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase'>
+					<span className='ml-2 flex items-center gap-1.5 text-[10px] font-bold uppercase text-zinc-400'>
 						<Icon
 							icon='DuoShieldCheck'
 							className='h-3.5 w-3.5'
@@ -489,7 +489,7 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 						/>
 						Resultado:
 					</span>
-					<div className='flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-1 shadow-xs dark:border-zinc-700 dark:bg-zinc-900'>
+					<div className='flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-1 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
 						<div className='h-2 w-2 rounded-full bg-emerald-500'></div>
 						<span className='font-mono text-sm font-bold text-zinc-700 dark:text-zinc-200'>
 							{value}

@@ -3,7 +3,6 @@ import { ColumnDef } from '@tanstack/react-table';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import { AppTableFeatures } from '@/components/ui/DataTable/tableFeatures';
 
 export interface PedidoMock {
 	id: string;
@@ -21,7 +20,7 @@ interface PedidosTableProps {
 	title?: string;
 }
 
-const columns: ColumnDef<AppTableFeatures, PedidoMock>[] = [
+const columns: ColumnDef<PedidoMock>[] = [
 	{
 		accessorKey: 'id',
 		header: 'ID Pedido',
@@ -118,7 +117,7 @@ const columns: ColumnDef<AppTableFeatures, PedidoMock>[] = [
 	},
 ];
 
-const PedidosTable = ({ data, title }: PedidosTableProps) => {
+export default function PedidosTable({ data, title }: PedidosTableProps) {
 	return (
 		<div className='w-full'>
 			{title && (
@@ -127,7 +126,7 @@ const PedidosTable = ({ data, title }: PedidosTableProps) => {
 					{title}
 				</h2>
 			)}
-			<div className='overflow-hidden rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900'>
+			<div className='overflow-hidden rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
 				<DataTable
 					columns={columns}
 					data={data}
@@ -137,6 +136,4 @@ const PedidosTable = ({ data, title }: PedidosTableProps) => {
 			</div>
 		</div>
 	);
-};
-
-export default PedidosTable;
+}

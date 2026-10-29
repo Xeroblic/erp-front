@@ -20,7 +20,7 @@ const NoHardwareToggle: React.FC<NoHardwareToggleProps> = ({
 		color='blue'
 		checked={!isActive}
 		disabled={disabled}
-		inputClassName={isActive ? 'border-red-500! bg-red-500!' : undefined}
+		inputClassName={isActive ? '!border-red-500 !bg-red-500' : undefined}
 		label={`Tiene ${hardwareLabel}`}
 		onChange={(event) => onToggle(!event.target.checked)}
 	/>

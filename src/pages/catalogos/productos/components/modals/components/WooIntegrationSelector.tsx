@@ -74,7 +74,7 @@ const WooIntegrationSelector: React.FC<WooIntegrationSelectorProps> = ({
 	// 2+ tiendas → toggle segmentado de cambio rápido
 	return (
 		<div className='space-y-1.5'>
-			<div className='flex items-center gap-1.5 text-xs font-bold tracking-wider text-neutral-500 uppercase dark:text-neutral-400'>
+			<div className='flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400'>
 				<Icon icon='HeroBuildingStorefront' className='h-3.5 w-3.5' />
 				Tienda activa — cambio rápido
 			</div>
@@ -93,11 +93,11 @@ const WooIntegrationSelector: React.FC<WooIntegrationSelectorProps> = ({
 							onClick={() => onSelect(i.id)}
 							className={`group flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
 								isSelected
-									? 'bg-white text-violet-700 shadow-xs ring-1 ring-violet-300 dark:bg-neutral-900 dark:text-violet-300 dark:ring-violet-500/40'
+									? 'bg-white text-violet-700 shadow-sm ring-1 ring-violet-300 dark:bg-neutral-900 dark:text-violet-300 dark:ring-violet-500/40'
 									: 'text-neutral-600 hover:bg-white/60 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-900/40 dark:hover:text-neutral-200'
 							}`}>
 							<span
-								className={`h-2 w-2 shrink-0 rounded-full ${
+								className={`h-2 w-2 flex-shrink-0 rounded-full ${
 									i.is_active
 										? 'bg-emerald-500'
 										: 'bg-neutral-400 dark:bg-neutral-500'
@@ -106,7 +106,7 @@ const WooIntegrationSelector: React.FC<WooIntegrationSelectorProps> = ({
 							/>
 							<span className='truncate'>{i.name}</span>
 							{!i.is_active && (
-								<span className='text-[10px] font-semibold tracking-wide text-neutral-400 uppercase dark:text-neutral-500'>
+								<span className='text-[10px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500'>
 									inactiva
 								</span>
 							)}

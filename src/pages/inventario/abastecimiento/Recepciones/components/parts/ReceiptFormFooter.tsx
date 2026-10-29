@@ -44,7 +44,7 @@ const ReceiptFormFooter: React.FC<IReceiptFormFooterProps> = ({
 	return (
 		<ModalFooter className='shrink-0 border-t border-zinc-200 bg-white pt-4 dark:border-zinc-700 dark:bg-zinc-950'>
 			<ModalFooterChild>
-				<p className='hidden max-w-xs text-xs text-zinc-500 md:block dark:text-zinc-400'>
+				<p className='hidden max-w-xs text-xs text-zinc-500 dark:text-zinc-400 md:block'>
 					El borrador no mueve stock. «Guardar e ingresar» lo suma al stock en cuanto
 					termina de procesarse.
 				</p>

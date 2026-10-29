@@ -24,7 +24,7 @@ const ShippingCostRow: React.FC<IShippingCostRowProps> = ({ formik, onPesoChange
 	return (
 		<div className={DOCUMENTO_ITEM_CLASSNAME}>
 			<div className='mb-2'>
-				<span className='rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 ring-1 ring-violet-200 ring-inset dark:bg-violet-500/15 dark:text-violet-200 dark:ring-violet-500/30'>
+				<span className='rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-500/15 dark:text-violet-200 dark:ring-violet-500/30'>
 					Envío
 				</span>
 			</div>
@@ -50,7 +50,7 @@ const ShippingCostRow: React.FC<IShippingCostRowProps> = ({ formik, onPesoChange
 					<Input
 						id='shipping-cost'
 						name='shipping_cost'
-						className='bg-white! dark:bg-zinc-900!'
+						className='!bg-white dark:!bg-zinc-900'
 						type='text'
 						inputMode='decimal'
 						placeholder='$0'

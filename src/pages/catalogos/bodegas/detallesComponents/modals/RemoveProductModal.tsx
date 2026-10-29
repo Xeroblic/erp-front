@@ -49,7 +49,7 @@ const RemoveProductModal: React.FC<RemoveProductModalProps> = ({
 				</h2>
 			</ModalHeader>
 			<ModalBody>
-				<Card className='border border-zinc-200 bg-white shadow-xs dark:border-zinc-700 dark:bg-zinc-900'>
+				<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
 					<CardBody>
 						<p className='text-lg'>
 							¿Quitar <strong>{product.name}</strong> de esta bodega?

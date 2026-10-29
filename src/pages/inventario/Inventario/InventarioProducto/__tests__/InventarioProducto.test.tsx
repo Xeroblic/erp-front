@@ -21,7 +21,7 @@ import {
 } from '@/mocks/services/inventoryOverview.mock';
 
 const context = vi.hoisted(() => ({
-	branchId: 4,
+	branchId: 4 as number | null,
 	subsidiaryId: 2,
 	visibleBranches: [] as { id: number; name: string }[],
 	enabled: true,
@@ -428,7 +428,7 @@ describe('Ficha de inventario', () => {
 
 			expect(
 				await within(region).findByRole('link', {
-					name: /^Ficha de la recepción:\s*Recepción #80$/,
+					name: 'Ficha de la recepción: Recepción #80',
 				}),
 			).toHaveAttribute('href', '/inventario/abastecimiento/recepciones/80');
 			// Proveedor y documento salen de la semilla de prueba mientras

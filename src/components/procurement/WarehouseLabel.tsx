@@ -30,7 +30,7 @@ const WarehouseLabel: FC<IWarehouseLabelProps> = ({ warehouse, withIcon = true, 
 					)}
 				/>
 			)}
-			<span className={classNames(isUnlocated && 'text-zinc-500 italic dark:text-zinc-400')}>
+			<span className={classNames(isUnlocated && 'italic text-zinc-500 dark:text-zinc-400')}>
 				{isUnlocated ? UNLOCATED_WAREHOUSE_LABEL : warehouse.name}
 			</span>
 		</span>

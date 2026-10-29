@@ -1,61 +1,96 @@
-import React, { useMemo } from 'react';
-import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
+import React, { useState } from 'react';
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	useReactTable,
+} from '@tanstack/react-table';
 
 import { SystemParameter } from '@/interface';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
-import { Table, TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
-import { TableCardFooterTemplateV2 } from '@/templates/Table/TableFooterTemplateV2';
-import { AppTableFeatures, clientTableFeatures } from '@/components/ui/DataTable/tableFeatures';
+import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 
 interface SystemParametersTableProps {
 	parameters: SystemParameter[];
 	isLoading: boolean;
+	pagination: {
+		page: number;
+		pageSize: number;
+		total: number;
+		totalPages: number;
+	};
+	onPageChange: (page: number) => void;
+	onPageSizeChange: (pageSize: number) => void;
 	onViewDetails: (parameter: SystemParameter) => void;
 	onEdit: (parameter: SystemParameter) => void;
 	onDelete: (parameter: SystemParameter) => void;
 	loadingActions: Set<number>;
 }
 
-const columnHelper = createColumnHelper<AppTableFeatures, SystemParameter>();
+const columnHelper = createColumnHelper<SystemParameter>();
 
-// Función para formatear el valor según su tipo
-const formatValue = (parameter: SystemParameter) => {
-	const { value, data_type: dataType } = parameter;
-
-	if (value.length > 50) {
-		return `${value.substring(0, 50)}...`;
-	}
-
-	switch (dataType) {
-		case 'boolean':
-			return value === 'true' ? 'Verdadero' : 'Falso';
-		case 'json':
-			try {
-				const parsed = JSON.parse(value);
-				return `${JSON.stringify(parsed, null, 2).substring(0, 50)}...`;
-			} catch {
-				return value;
-			}
-		default:
-			return value;
-	}
-};
-
-const buildParameterColumns = ({
+const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
+	parameters,
+	isLoading,
 	onViewDetails,
 	onEdit,
 	onDelete,
 	loadingActions,
-}: {
-	onViewDetails: SystemParametersTableProps['onViewDetails'];
-	onEdit: SystemParametersTableProps['onEdit'];
-	onDelete: SystemParametersTableProps['onDelete'];
-	loadingActions: Set<number>;
-}) =>
-	columnHelper.columns([
+}) => {
+	// Función para obtener el color de la categoria
+	const getCategoryColor = (category: string) => {
+		const colors = {
+			general: 'blue',
+			system: 'red',
+			email: 'green',
+			security: 'yellow',
+			integration: 'purple',
+			ui: 'pink',
+			business: 'indigo',
+		} as const;
+		return colors[category as keyof typeof colors] || 'gray';
+	};
+
+	// Función para obtener el color del tipo de dato
+	const getDataTypeColor = (dataType: string) => {
+		const colors = {
+			string: 'green',
+			number: 'blue',
+			boolean: 'purple',
+			json: 'orange',
+			date: 'pink',
+		} as const;
+		return colors[dataType as keyof typeof colors] || 'gray';
+	};
+
+	// Función para formatear el valor según su tipo
+	const formatValue = (parameter: SystemParameter) => {
+		const { value, data_type } = parameter;
+
+		if (value.length > 50) {
+			return `${value.substring(0, 50)}...`;
+		}
+
+		switch (data_type) {
+			case 'boolean':
+				return value === 'true' ? 'Verdadero' : 'Falso';
+			case 'json':
+				try {
+					const parsed = JSON.parse(value);
+					return `${JSON.stringify(parsed, null, 2).substring(0, 50)}...`;
+				} catch {
+					return value;
+				}
+			default:
+				return value;
+		}
+	};
+
+	const columns = [
 		columnHelper.accessor('key', {
 			header: 'Clave',
 			cell: (info) => {
@@ -178,26 +213,12 @@ const buildParameterColumns = ({
 				);
 			},
 		}),
-	]);
+	];
 
-const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
-	parameters,
-	isLoading,
-	onViewDetails,
-	onEdit,
-	onDelete,
-	loadingActions,
-}) => {
-	const columns = useMemo(
-		() => buildParameterColumns({ onViewDetails, onEdit, onDelete, loadingActions }),
-		[onViewDetails, onEdit, onDelete, loadingActions],
-	);
-
-	const table = useTable({
-		features: clientTableFeatures,
+	const table = useReactTable({
 		data: parameters || [],
 		columns,
-		initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+		getCoreRowModel: getCoreRowModel(),
 	});
 
 	if (isLoading) {

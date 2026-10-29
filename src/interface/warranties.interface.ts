@@ -42,7 +42,7 @@ export interface Warranty {
 	sale?: WarrantySale | null;
 }
 
-export type WarrantyDetail = Warranty;
+export interface WarrantyDetail extends Warranty {}
 
 export interface WarrantyCreateDTO {
 	product_id?: number;
@@ -55,7 +55,7 @@ export interface WarrantyCreateDTO {
 	serial_number?: string;
 }
 
-export type WarrantyUpdateDTO = Partial<WarrantyCreateDTO>;
+export interface WarrantyUpdateDTO extends Partial<WarrantyCreateDTO> {}
 
 export interface WarrantyListResponse {
 	data: Warranty[];

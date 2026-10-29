@@ -3,15 +3,18 @@
  * Orchestrator for the Desktop technical review form.
  * Composes sections in the FormShell with Yup validation.
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { getTechnicalReviewFieldError } from '@/utils/technicalReviewErrors';
+import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
-import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 import { desktopSchema, type DesktopFormData } from '../../validation/desktop.schema';
 import FormShell from '../shared/FormShell';
-import type { SectionConfig, FormSectionProps, ReviewFieldName } from '../shared/types';
-import { formatFinishErrors, useReviewForm } from '../shared/useReviewForm';
+import type { SectionConfig, FormSectionProps } from '../shared/types';
+import { useFormCompleteness } from '../../../hooks/useFormCompleteness';
+import { DESKTOP_FIELDS_METADATA } from '../../constants/desktop/desktop.fields';
+import type { ITechnicalReviewSchema } from '@/interface/technicalReviews.interface';
 
 import {
 	ALLOWED_COVER_CONDITIONS,
@@ -20,6 +23,9 @@ import {
 
 // ─── Section Components ──────────────────────────────────────────────────────
 import DesktopBasicInfoSection from './sections/DesktopBasicInfoSection';
+// ... (rest of imports are fine, just ensuring this is at the top)
+
+// ...
 import DesktopHardwareSection from './sections/DesktopHardwareSection';
 import DesktopPortsSection from './sections/DesktopPortsSection';
 import DesktopAestheticsSection from './sections/DesktopAestheticsSection';
@@ -87,7 +93,7 @@ const DESKTOP_SECTIONS: SectionConfig<DesktopFormData>[] = [
 	},
 ];
 
-const DESKTOP_SECTION_FIELDS: Record<string, ReviewFieldName<DesktopFormData>[]> = {
+const DESKTOP_SECTION_FIELDS: Record<string, FieldPath<DesktopFormData>[]> = {
 	'basic-info': ['brand', 'model', 'line'],
 	hardware: [
 		'processor',
@@ -118,25 +124,6 @@ const DESKTOP_SECTION_FIELDS: Record<string, ReviewFieldName<DesktopFormData>[]>
 	accessories: ['includes_charger', 'charger_status', 'includes_antenna', 'antenna_condition'],
 	software: ['operating_system'],
 	observations: ['observations'],
-};
-
-/**
- * Limpia valores de versiones anteriores del schema que ya no son válidos, para que no
- * bloqueen la validación ni el guardado.
- */
-const sanitizeLegacyValues = (values: DesktopFormData): DesktopFormData => {
-	const next: Record<string, unknown> = { ...values };
-	const legacyChecks: [keyof DesktopFormData, readonly string[]][] = [
-		['cover_condition', ALLOWED_COVER_CONDITIONS],
-		['charger_status', ALLOWED_CHARGER_STATUSES],
-	];
-	legacyChecks.forEach(([field, allowed]) => {
-		const current = next[field];
-		if (typeof current === 'string' && current && !allowed.includes(current)) {
-			next[field] = undefined;
-		}
-	});
-	return next as DesktopFormData;
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -170,20 +157,20 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	schemaFields,
 }) => {
 	const {
-		formik: { setFieldError, setFieldTouched },
-		sectionProps: baseSectionProps,
+		control,
+		handleSubmit,
+		watch,
+		setValue,
+		setError,
 		getValues,
-		validateFields,
-		validateStep,
-		validateAll,
-	} = useReviewForm<DesktopFormData>({
-		schema: desktopSchema,
-		initialValues: (defaultValues ?? {}) as DesktopFormData,
-		sectionFields: DESKTOP_SECTION_FIELDS,
-		readOnly,
-		schemaFields,
-		registerGetFormValues,
-		prepareReset: sanitizeLegacyValues,
+		trigger,
+		getFieldState,
+		reset,
+		formState: { errors },
+	} = useForm<DesktopFormData>({
+		resolver: yupResolver(desktopSchema) as unknown as Resolver<DesktopFormData>,
+		defaultValues: defaultValues || {},
+		mode: 'onBlur',
 	});
 	const [sectionRequest, setSectionRequest] = useState<{ key: string; token: number }>();
 	const showAntennaError = useCallback(() => {
@@ -199,8 +186,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			} catch (error: unknown) {
 				const antennaError = getTechnicalReviewFieldError(error, 'antenna_condition');
 				if (antennaError) {
-					void setFieldTouched('antenna_condition', true, false);
-					setFieldError('antenna_condition', antennaError);
+					setError('antenna_condition', { type: 'server', message: antennaError });
 					showAntennaError();
 					return;
 				}
@@ -209,37 +195,130 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 				);
 			}
 		},
-		[onSubmit, setFieldError, setFieldTouched, showAntennaError],
+		[onSubmit, setError, showAntennaError],
+	);
+
+	// Calculate Completeness (using refactored hook with 2nd arg)
+	// We watch all values to trigger updates
+	const allValues = watch();
+	const validationStats = useFormCompleteness(
+		allValues as Record<string, any>,
+		DESKTOP_FIELDS_METADATA,
 	);
 
 	// Assemble props passed to every section
 	const sectionProps: FormSectionProps<DesktopFormData> = useMemo(
 		() => ({
-			...baseSectionProps,
+			control,
+			errors,
+			readOnly,
+			watch,
+			setValue,
+			schemaFields,
 			onDirectSubmit: async (partialData) => {
-				// El atajo «No enciende» omite la validación completa, pero también debe
+				// El atajo «No enciende» omite el resolver completo, pero también debe
 				// respetar el estado obligatorio de una antena previamente declarada.
-				const antenna = await validateFields(['antenna_condition']);
-				if (!antenna.isValid) {
+				if (!(await trigger('antenna_condition'))) {
 					showAntennaError();
 					return;
 				}
-				const payload = { ...getValues(), ...partialData };
+				const currentData = getValues();
+				const payload = { ...currentData, ...partialData } as DesktopFormData;
 				await submitReview(payload);
 			},
 		}),
-		[baseSectionProps, getValues, validateFields, showAntennaError, submitReview],
+		[
+			control,
+			errors,
+			readOnly,
+			watch,
+			setValue,
+			getValues,
+			trigger,
+			showAntennaError,
+			submitReview,
+			schemaFields,
+		],
 	);
 
-	const handleFinish = useCallback(async () => {
-		const result = await validateAll();
-		if (result.isValid) {
-			await submitReview(result.data);
-			return;
+	// Expose getFormValues to parent for auto-save
+	useEffect(() => {
+		if (registerGetFormValues) {
+			registerGetFormValues(() => watch() as unknown as Record<string, unknown>);
 		}
-		if (result.errors.antenna_condition) showAntennaError();
-		toast.error(formatFinishErrors(result.messages));
-	}, [validateAll, submitReview, showAntennaError]);
+	}, [registerGetFormValues, watch]);
+
+	// ... inside component ...
+
+	// Reset form when defaultValues changes deeply
+	const prevDefaultValues = React.useRef<string | null>(null);
+	useEffect(() => {
+		if (defaultValues) {
+			const stringified = JSON.stringify(defaultValues);
+			if (stringified !== prevDefaultValues.current) {
+				reset(defaultValues);
+				prevDefaultValues.current = stringified;
+			}
+		}
+	}, [defaultValues, reset]);
+
+	// Auto-cleanup: Fix stale state from previous invalid schema versions
+	// This detects if the loaded data has values that are no longer allowed
+	// and resets them to null to prevent validation/save errors.
+	useEffect(() => {
+		const currentCover = watch('cover_condition');
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		if (currentCover && !ALLOWED_COVER_CONDITIONS.includes(currentCover as any)) {
+			console.warn('[AutoFix] Resetting invalid cover_condition:', currentCover);
+			// Use shouldValidate: true to verify the fix immediately
+			setValue('cover_condition', undefined as any, { shouldValidate: true });
+		}
+
+		const currentCharger = watch('charger_status');
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		if (currentCharger && !ALLOWED_CHARGER_STATUSES.includes(currentCharger as any)) {
+			console.warn('[AutoFix] Resetting invalid charger_status:', currentCharger);
+			setValue('charger_status', undefined as any, { shouldValidate: true });
+		}
+	}, [watch, setValue]);
+
+	// Handle finish
+	const validateStep = async (sectionKey: string) => {
+		const stepFields = DESKTOP_SECTION_FIELDS[sectionKey] ?? [];
+		const isValid = await trigger(stepFields, { shouldFocus: true });
+
+		if (isValid) {
+			return { isValid: true };
+		}
+
+		const firstError = stepFields
+			.map((field) => getFieldState(field).error?.message)
+			.find(Boolean);
+
+		return {
+			isValid: false,
+			message:
+				typeof firstError === 'string'
+					? firstError
+					: 'Debes completar los campos obligatorios antes de continuar.',
+		};
+	};
+
+	const handleFinish = () => {
+		void handleSubmit(submitReview, (validationErrors) => {
+			if (validationErrors.antenna_condition) showAntennaError();
+			const messages = Object.values(validationErrors as Record<string, { message?: string }>)
+				.map((e) => e?.message)
+				.filter(Boolean)
+				.slice(0, 5);
+
+			if (messages.length > 0) {
+				toast.error(`Corrige los errores antes de continuar:\n${messages.join('\n')}`);
+			} else {
+				toast.error('Hay campos con errores. Revisa el formulario.');
+			}
+		})();
+	};
 
 	return (
 		<FormShell<DesktopFormData>

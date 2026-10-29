@@ -93,7 +93,7 @@ const ProductSuppliersTable = ({ response, loading, onPaginate }: IProductSuppli
 								key={row.supplier.id}
 								className={classNames(
 									row.is_suggested &&
-										'[&>td]:bg-emerald-50! dark:[&>td]:bg-emerald-950/40!',
+										'[&>td]:!bg-emerald-50 dark:[&>td]:!bg-emerald-950/40',
 								)}>
 								<Td
 									className={classNames(

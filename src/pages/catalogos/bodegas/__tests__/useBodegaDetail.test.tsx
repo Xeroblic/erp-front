@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import type { IWarehouseDetail } from '@/interface/warehouse.interface';
+// eslint-disable-next-line import/extensions
 import warehouseReducer from '@/store/slices/warehouses/warehouseSlice';
 import { useBodegaDetail } from '../hooks/useBodegaDetail';
 import AttachProductModal from '../detallesComponents/modals/AttachProductModal';

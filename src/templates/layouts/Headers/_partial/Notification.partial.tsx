@@ -49,29 +49,29 @@ const NotificationItem: FC<INotificationItemProps> = ({
 }) => {
 	return (
 		<Card
-			className={`w-full border border-zinc-700/30 bg-transparent shadow-xs transition-all duration-200 hover:shadow-lg ${
+			className={`w-full border border-zinc-700/30 bg-transparent shadow-sm transition-all duration-200 hover:shadow-lg ${
 				isUnread ? 'ring-1 ring-emerald-400/40 dark:ring-emerald-300/40' : ''
 			}`}>
 			<CardBody className='px-4 py-4'>
 				<div className='flex gap-3'>
-					<div className='shrink-0'>
+					<div className='flex-shrink-0'>
 						<Avatar src={image} name={name} />
 					</div>
 					<div className='grow space-y-1'>
 						<div className='flex items-center justify-between gap-3'>
-							<div className='flex flex-wrap items-center gap-2 text-sm leading-snug font-semibold'>
+							<div className='flex flex-wrap items-center gap-2 text-sm font-semibold leading-snug'>
 								<span className='truncate'>{title}</span>
 								{moduleLabel && (
 									<Badge
 										variant='outline'
 										color='violet'
-										className='flex items-center gap-1 px-3 text-[10px] font-semibold tracking-wide uppercase'>
+										className='flex items-center gap-1 px-3 text-[10px] font-semibold uppercase tracking-wide'>
 										{icon && <Icon icon={icon} className='h-3 w-3' />}
 										<span>{moduleLabel}</span>
 									</Badge>
 								)}
 							</div>
-							<div className='flex items-center gap-2 text-xs font-medium tracking-wide uppercase opacity-70'>
+							<div className='flex items-center gap-2 text-xs font-medium uppercase tracking-wide opacity-70'>
 								{isUnread && (
 									<span className='h-2 w-2 rounded-full bg-emerald-400' />
 								)}
@@ -225,7 +225,7 @@ const NotificationPartial = () => {
 				);
 			}
 			return (
-				<div className='row-span-12 flex max-h-80 min-h-92 min-w-[400px] flex-col gap-3 overflow-y-auto py-0 pr-2'>
+				<div className='row-span-12 flex max-h-80 min-h-[23rem] min-w-[400px] flex-col gap-3 overflow-y-auto py-0 pr-2'>
 					{recentNotifications.map((n, index) => (
 						<div
 							key={n.id}
@@ -300,7 +300,7 @@ const NotificationPartial = () => {
 						<Badge
 							variant='solid'
 							color='emerald'
-							className='px-2 text-[10px] font-semibold tracking-wide uppercase'>
+							className='px-2 text-[10px] font-semibold uppercase tracking-wide'>
 							{unreadCount ? `${unreadCount} nuevas` : 'Sin leer'}
 						</Badge>
 					)}
@@ -344,7 +344,7 @@ const NotificationPartial = () => {
 					<NotificationTabs />
 				</div>
 			</div>
-			<div className='border-t border-zinc-200/70 px-4 pt-3 pb-3 dark:border-zinc-800/70'>
+			<div className='border-t border-zinc-200/70 px-4 pb-3 pt-3 dark:border-zinc-800/70'>
 				<DropdownNavLinkItem
 					className='justify-center text-sm'
 					icon='HeroInbox'
@@ -364,10 +364,10 @@ const NotificationPartial = () => {
 						icon='DuoNotifications1'
 						aria-label='Notification'
 						onClick={openPanel}
-						className='h-10 w-10 rounded-full! border border-white/60 bg-white p-0! text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
+						className='h-10 w-10 !rounded-full border border-white/60 bg-white !p-0 text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
 					/>
 					{(unreadCount > 0 || hasUnread) && (
-						<span className='pointer-events-none absolute inset-e-0 top-0 flex h-3 w-3'>
+						<span className='pointer-events-none absolute end-0 top-0 flex h-3 w-3'>
 							<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75' />
 							<span className='relative inline-flex h-3 w-3 rounded-full bg-red-500' />
 						</span>
@@ -378,10 +378,10 @@ const NotificationPartial = () => {
 						setIsOpen={setIsModalOpen}
 						isScrollable
 						size='lg'>
-						<ModalHeader className='gap-2 px-4 pt-4 pb-3'>
+						<ModalHeader className='gap-2 px-4 pb-3 pt-4'>
 							<NotificationPanelHeader />
 						</ModalHeader>
-						<ModalBody isScrollable className='px-3 pt-0 pb-3'>
+						<ModalBody isScrollable className='px-3 pb-3 pt-0'>
 							<NotificationTabs
 								className='px-0'
 								contentClassName='mt-0 px-0 pb-3 pt-0'
@@ -405,10 +405,10 @@ const NotificationPartial = () => {
 								icon='DuoNotifications1'
 								aria-label='Notification'
 								onClick={openPanel}
-								className='h-10 w-10 rounded-full! border border-white/60 bg-white p-0! text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
+								className='h-10 w-10 !rounded-full border border-white/60 bg-white !p-0 text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
 							/>
 							{(unreadCount > 0 || hasUnread) && (
-								<span className='pointer-events-none absolute inset-e-0 top-0 flex h-3 w-3'>
+								<span className='pointer-events-none absolute end-0 top-0 flex h-3 w-3'>
 									<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75' />
 									<span className='relative inline-flex h-3 w-3 rounded-full bg-red-500' />
 								</span>
@@ -418,7 +418,7 @@ const NotificationPartial = () => {
 					<DropdownMenu
 						placement='bottom-end'
 						isCloseAfterLeave={false}
-						className='min-w-[24rem] overflow-hidden border border-dashed border-zinc-400 p-0 pt-0 pb-0 shadow-2xl dark:border-zinc-800'
+						className='min-w-[24rem] overflow-hidden border border-dashed border-zinc-400 p-0 pb-0 pt-0 shadow-2xl dark:border-zinc-800'
 						setIsOpen={setIsOpen}>
 						<NotificationPanel />
 					</DropdownMenu>

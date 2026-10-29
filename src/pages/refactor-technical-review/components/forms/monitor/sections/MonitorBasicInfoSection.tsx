@@ -1,24 +1,25 @@
-import React, { useMemo } from 'react';
-import Input from '@/components/form/Input';
-import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
-import Validation from '@/components/form/Validation';
-import { useMarcas } from '@/pages/catalogos/marcas/components/hooks/useMarcas';
-import Icon from '@/components/icon/Icon';
+import React, { useEffect, useMemo } from 'react';
+import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
 import { MonitorFormData } from '../../../validation/monitor.schema';
+import Input from '@/components/form/Input';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import { useMarcas } from '@/pages/catalogos/marcas/components/hooks/useMarcas';
 import { SelectionCard } from '../../../ui/SelectionCard';
+import Textarea from '@/components/form/Textarea';
 import { MONITOR_HINTS, MONITOR_PLACEHOLDERS } from '../../../constants/monitor/monitor.hints';
 import { GENERAL_CONDITION_OPTIONS } from '../../../constants/monitor/monitor.options';
 import { getMonitorLabel } from '../../../translations/monitor.labels';
+import Icon from '@/components/icon/Icon';
 
 const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
-	onFieldBlur,
+	control,
 	errors,
 	readOnly,
-	values,
-	setFieldValue,
+	watch,
+	setValue,
 }) => {
-	const currentCondition = values.general_condition;
+	const currentCondition = watch('general_condition');
 	const { brands, loading: loadingBrands } = useMarcas({ search: '', is_active: true });
 
 	const brandOptions: TSelectOption[] = useMemo(() => {
@@ -45,23 +46,27 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 						</span>
 						{getMonitorLabel('brand')}
 					</label>
-					<Validation
-						isValid={!errors.brand}
-						isTouched={Boolean(errors.brand)}
-						invalidFeedback={errors.brand}>
-						<SelectReact
-							name='brand'
-							options={brandOptions}
-							value={brandOptions.find((opt) => opt.value === values.brand) || null}
-							onChange={(option) => {
-								setFieldValue('brand', (option as TSelectOption)?.value);
-							}}
-							isLoading={loadingBrands}
-							placeholder={MONITOR_PLACEHOLDERS.brand}
-							onBlur={() => onFieldBlur('brand')}
-							isDisabled={readOnly}
-						/>
-					</Validation>
+					<Controller
+						name='brand'
+						control={control}
+						render={({ field }) => (
+							<SelectReact
+								name={field.name}
+								options={brandOptions}
+								value={
+									brandOptions.find((opt) => opt.value === field.value) || null
+								}
+								onChange={(option) => {
+									field.onChange((option as TSelectOption)?.value);
+								}}
+								isLoading={loadingBrands}
+								placeholder={MONITOR_PLACEHOLDERS.brand}
+								isDisabled={readOnly}
+								isValid={!errors.brand}
+								invalidFeedback={errors.brand?.message}
+							/>
+						)}
+					/>
 					<p className='mt-1 text-xs text-zinc-500'>{MONITOR_HINTS.brand}</p>
 				</div>
 
@@ -73,16 +78,22 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 						</span>
 						{getMonitorLabel('model')}
 					</label>
-					<Input
+					<Controller
 						name='model'
-						onChange={(event) => setFieldValue('model', event.target.value)}
-						onBlur={() => onFieldBlur('model')}
-						value={values.model ?? ''}
-						placeholder={MONITOR_PLACEHOLDERS.model}
-						disabled={readOnly}
-						className={errors.model ? 'border-red-500!' : ''}
+						control={control}
+						render={({ field }) => (
+							<Input
+								{...field}
+								value={field.value ?? ''}
+								placeholder={MONITOR_PLACEHOLDERS.model}
+								disabled={readOnly}
+								className={errors.model ? 'border-red-500' : ''}
+							/>
+						)}
 					/>
-					{errors.model && <p className='mt-1 text-xs text-red-500'>{errors.model}</p>}
+					{errors.model && (
+						<p className='mt-1 text-xs text-red-500'>{errors.model.message}</p>
+					)}
 					<p className='mt-1 text-xs text-zinc-500'>{MONITOR_HINTS.model}</p>
 				</div>
 
@@ -94,22 +105,28 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 						</span>
 						{getMonitorLabel('line')}
 					</label>
-					<Input
+					<Controller
 						name='line'
-						onChange={(event) => setFieldValue('line', event.target.value)}
-						onBlur={() => onFieldBlur('line')}
-						value={values.line ?? ''}
-						placeholder={MONITOR_PLACEHOLDERS.line}
-						disabled={readOnly}
-						className={errors.line ? 'border-red-500!' : ''}
+						control={control}
+						render={({ field }) => (
+							<Input
+								{...field}
+								value={field.value ?? ''}
+								placeholder={MONITOR_PLACEHOLDERS.line}
+								disabled={readOnly}
+								className={errors.line ? 'border-red-500' : ''}
+							/>
+						)}
 					/>
-					{errors.line && <p className='mt-1 text-xs text-red-500'>{errors.line}</p>}
+					{errors.line && (
+						<p className='mt-1 text-xs text-red-500'>{errors.line.message}</p>
+					)}
 					<p className='mt-1 text-xs text-zinc-500'>{MONITOR_HINTS.line}</p>
 				</div>
 			</div>
 
 			{/* General Condition */}
-			<div className='rounded-xl border border-emerald-200 bg-emerald-500/10 p-6 shadow-xs transition-colors duration-200 hover:bg-emerald-500/20 dark:border-emerald-800/50 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/20'>
+			<div className='rounded-xl border border-emerald-200 bg-emerald-500/10 p-6 shadow-sm transition-colors duration-200 hover:bg-emerald-500/20 dark:border-emerald-800/50 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/20'>
 				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-emerald-800 dark:text-emerald-200'>
 					<Icon icon='HeroSparkles' className='h-5 w-5' />
 					{getMonitorLabel('general_condition')}
@@ -122,19 +139,15 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 					{GENERAL_CONDITION_OPTIONS.map((opt) => (
 						<SelectionCard
 							key={opt.value}
-							label={opt.label}
-							value={opt.value}
+							label={opt.label as string}
+							value={opt.value as string}
 							isSelected={currentCondition === opt.value}
 							color='emerald'
 							onClick={() => {
 								if (readOnly) return;
-								setFieldValue(
-									'general_condition',
-									opt.value as MonitorFormData['general_condition'],
-									{
-										touch: true,
-									},
-								);
+								setValue('general_condition', opt.value as any, {
+									shouldValidate: true,
+								});
 							}}
 						/>
 					))}
@@ -142,10 +155,38 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 
 				{errors.general_condition && (
 					<p className='mt-3 text-xs font-semibold text-red-500'>
-						{errors.general_condition}
+						{errors.general_condition.message}
 					</p>
 				)}
 			</div>
+
+			{/* Observations */}
+			{/* <div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition-colors duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700'>
+				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-zinc-300'>
+					<Icon icon='HeroDocumentText' className='h-5 w-5' />
+					{getMonitorLabel('observations')}
+				</label>
+				<p className='mb-4 text-xs text-zinc-500'>{MONITOR_HINTS.observations}</p>
+				<Controller
+					name='observations'
+					control={control}
+					render={({ field }) => (
+						<Textarea
+							{...field}
+							value={field.value ?? ''}
+							placeholder={MONITOR_PLACEHOLDERS.observations}
+							disabled={readOnly}
+							rows={4}
+							className={`w-full ${errors.observations ? 'border-red-500' : ''}`}
+						/>
+					)}
+				/>
+				{errors.observations && (
+					<p className='mt-2 text-xs font-semibold text-red-500'>
+						{errors.observations.message}
+					</p>
+				)}
+			</div> */}
 		</div>
 	);
 };

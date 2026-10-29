@@ -40,7 +40,7 @@ export const useReviewAttributes = () => {
 			return;
 		}
 		isUpdatingFromFormik.current = true;
-		setReviewData(raw);
+		setReviewData(raw as ReviewData);
 	}, [values.attributes_json]);
 
 	useEffect(() => {

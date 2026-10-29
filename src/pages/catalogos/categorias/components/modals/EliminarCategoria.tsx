@@ -39,7 +39,7 @@ const EliminarCategoria: React.FC<EliminarCategoriaProps> = ({
 						<div className='flex items-start'>
 							<Icon
 								icon='HeroExclamationTriangle'
-								className='mr-3 h-5 w-5 shrink-0 text-red-500'
+								className='mr-3 h-5 w-5 flex-shrink-0 text-red-500'
 							/>
 							<div className='space-y-2 text-sm text-red-700'>
 								<p>

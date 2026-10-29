@@ -310,8 +310,12 @@ const RefactorSeries: React.FC = () => {
 
 		dispatch(
 			fetchItems({
-				branchId: endpointEntityType === 'branches' ? endpointEntityId : undefined,
-				subsidiaryId: endpointEntityType === 'subsidiaries' ? endpointEntityId : undefined,
+				branchId:
+					endpointEntityType === 'branches' ? (endpointEntityId as number) : undefined,
+				subsidiaryId:
+					endpointEntityType === 'subsidiaries'
+						? (endpointEntityId as number)
+						: undefined,
 				params: queryParams,
 			}),
 		);
@@ -392,11 +396,11 @@ const RefactorSeries: React.FC = () => {
 				{/* KPIs */}
 				{itemsMeta && itemsMeta.total > 0 && (
 					<div className='mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6'>
-						<Card className='border-gray-100 shadow-xs transition-shadow hover:shadow-md dark:border-gray-800'>
+						<Card className='border-gray-100 shadow-sm transition-shadow hover:shadow-md dark:border-gray-800'>
 							<CardBody className='p-4'>
 								<div className='flex items-center justify-between'>
 									<div>
-										<p className='text-xs font-medium text-gray-500 uppercase dark:text-gray-400'>
+										<p className='text-xs font-medium uppercase text-gray-500 dark:text-gray-400'>
 											Total Filtrado
 										</p>
 										<p className='mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100'>
@@ -416,11 +420,11 @@ const RefactorSeries: React.FC = () => {
 							</CardBody>
 						</Card>
 
-						<Card className='border-gray-100 shadow-xs transition-shadow hover:shadow-md dark:border-gray-800'>
+						<Card className='border-gray-100 shadow-sm transition-shadow hover:shadow-md dark:border-gray-800'>
 							<CardBody className='p-4'>
 								<div className='flex items-center justify-between'>
 									<div>
-										<p className='text-xs font-medium text-gray-500 uppercase dark:text-gray-400'>
+										<p className='text-xs font-medium uppercase text-gray-500 dark:text-gray-400'>
 											Pendientes
 										</p>
 										<p className='mt-1 text-2xl font-bold text-yellow-600 dark:text-yellow-400'>
@@ -446,11 +450,11 @@ const RefactorSeries: React.FC = () => {
 							</CardBody>
 						</Card>
 
-						<Card className='border-gray-100 shadow-xs transition-shadow hover:shadow-md dark:border-gray-800'>
+						<Card className='border-gray-100 shadow-sm transition-shadow hover:shadow-md dark:border-gray-800'>
 							<CardBody className='p-4'>
 								<div className='flex items-center justify-between'>
 									<div>
-										<p className='text-xs font-medium text-gray-500 uppercase dark:text-gray-400'>
+										<p className='text-xs font-medium uppercase text-gray-500 dark:text-gray-400'>
 											En Revisión
 										</p>
 										<p className='mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400'>
@@ -476,11 +480,11 @@ const RefactorSeries: React.FC = () => {
 							</CardBody>
 						</Card>
 
-						<Card className='border-gray-100 shadow-xs transition-shadow hover:shadow-md dark:border-gray-800'>
+						<Card className='border-gray-100 shadow-sm transition-shadow hover:shadow-md dark:border-gray-800'>
 							<CardBody className='p-4'>
 								<div className='flex items-center justify-between'>
 									<div>
-										<p className='text-xs font-medium text-gray-500 uppercase dark:text-gray-400'>
+										<p className='text-xs font-medium uppercase text-gray-500 dark:text-gray-400'>
 											Revisados
 										</p>
 										<p className='mt-1 text-2xl font-bold text-purple-600 dark:text-purple-400'>
@@ -506,11 +510,11 @@ const RefactorSeries: React.FC = () => {
 							</CardBody>
 						</Card>
 
-						<Card className='border-gray-100 shadow-xs transition-shadow hover:shadow-md dark:border-gray-800'>
+						<Card className='border-gray-100 shadow-sm transition-shadow hover:shadow-md dark:border-gray-800'>
 							<CardBody className='p-4'>
 								<div className='flex items-center justify-between'>
 									<div>
-										<p className='text-xs font-medium text-gray-500 uppercase dark:text-gray-400'>
+										<p className='text-xs font-medium uppercase text-gray-500 dark:text-gray-400'>
 											Aprobados
 										</p>
 										<p className='mt-1 text-2xl font-bold text-green-600 dark:text-green-400'>
@@ -536,11 +540,11 @@ const RefactorSeries: React.FC = () => {
 							</CardBody>
 						</Card>
 
-						<Card className='border-gray-100 shadow-xs transition-shadow hover:shadow-md dark:border-gray-800'>
+						<Card className='border-gray-100 shadow-sm transition-shadow hover:shadow-md dark:border-gray-800'>
 							<CardBody className='p-4'>
 								<div className='flex items-center justify-between'>
 									<div>
-										<p className='text-xs font-medium text-gray-500 uppercase dark:text-gray-400'>
+										<p className='text-xs font-medium uppercase text-gray-500 dark:text-gray-400'>
 											Disponibles
 										</p>
 										<p className='mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400'>
@@ -577,8 +581,8 @@ const RefactorSeries: React.FC = () => {
 					</Card>
 				)}
 
-				<Card className='mb-6 shadow-xs'>
-					<CardHeader className='pt-4 pb-0'>
+				<Card className='mb-6 shadow-sm'>
+					<CardHeader className='pb-0 pt-4'>
 						<div className='flex items-center gap-2'>
 							<Icon icon='HeroFunnel' className='text-gray-400' />
 							<span className='font-semibold text-gray-700 dark:text-gray-300'>
@@ -590,13 +594,13 @@ const RefactorSeries: React.FC = () => {
 						{/* Filtros Básicos */}
 						<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
 							<div>
-								<label className='mb-1 block text-xs font-semibold text-gray-500 uppercase'>
+								<label className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
 									N° de Serie / Producto
 								</label>
 								<div className='relative'>
 									<Icon
 										icon='HeroMagnifyingGlass'
-										className='absolute top-1/2 left-3 -translate-y-1/2 text-gray-400'
+										className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
 									/>
 									<Input
 										name='search'
@@ -609,7 +613,7 @@ const RefactorSeries: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-xs font-semibold text-gray-500 uppercase'>
+								<label className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
 									Tipo de Formato
 								</label>
 								<SelectReact
@@ -625,7 +629,7 @@ const RefactorSeries: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-xs font-semibold text-gray-500 uppercase'>
+								<label className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
 									Estado revisión
 								</label>
 								<SelectReact
@@ -688,7 +692,7 @@ const RefactorSeries: React.FC = () => {
 								warehouseFilter !== 'all' ||
 								customerSupplierFilter !== 'all' ||
 								gradeFilter !== 'all') && (
-								<Badge className='gap-1 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'>
+								<Badge className='dark:bg-primary-900/30 gap-1 bg-primary-100 text-primary-700 dark:text-primary-300'>
 									<Icon icon='HeroFunnel' className='h-3 w-3' />
 									{
 										[
@@ -708,9 +712,9 @@ const RefactorSeries: React.FC = () => {
 
 						{/* Filtros Avanzados */}
 						{showAdvancedFilters && (
-							<div className='animate-in fade-in slide-in-from-top-2 mt-4 grid gap-4 border-t border-gray-100 pt-4 duration-200 md:grid-cols-2 lg:grid-cols-4 dark:border-gray-800'>
+							<div className='animate-in fade-in slide-in-from-top-2 mt-4 grid gap-4 border-t border-gray-100 pt-4 duration-200 dark:border-gray-800 md:grid-cols-2 lg:grid-cols-4'>
 								<div>
-									<label className='mb-1 block text-xs font-semibold text-gray-500 uppercase'>
+									<label className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
 										Estado Comercial
 									</label>
 									<SelectReact
@@ -726,7 +730,7 @@ const RefactorSeries: React.FC = () => {
 								</div>
 
 								<div>
-									<label className='mb-1 block text-xs font-semibold text-gray-500 uppercase'>
+									<label className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
 										Bodega
 									</label>
 									<SelectReact
@@ -745,7 +749,7 @@ const RefactorSeries: React.FC = () => {
 								<div>
 									<Label
 										htmlFor='customer-provedor'
-										className='mb-1 block text-xs font-semibold text-gray-500 uppercase'>
+										className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
 										Recepción Cliente/Prov.
 									</Label>
 									<SelectReact
@@ -764,7 +768,7 @@ const RefactorSeries: React.FC = () => {
 								</div>
 
 								<div>
-									<label className='mb-1 block text-xs font-semibold text-gray-500 uppercase'>
+									<label className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
 										Grado Sugerido Zentria
 									</label>
 									<SelectReact

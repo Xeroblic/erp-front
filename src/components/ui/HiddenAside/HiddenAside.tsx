@@ -1,7 +1,8 @@
 import React, { useState, ReactNode, useEffect } from 'react';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import classNames from 'classnames';
 import Icon from '@/components/icon/Icon';
+import Badge from '../Badge';
 import Button from '../Button';
 
 interface HiddenAsideProps {
@@ -39,20 +40,23 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 		typeof asideWidth === 'string' &&
 		(asideWidth.startsWith('w-') || asideWidth.startsWith('max-w-'));
 
-	const cssWidth = typeof asideWidth === 'number' ? `${asideWidth}px` : asideWidth;
-	const styleWidth = isTailwindClass ? undefined : cssWidth;
+	const styleWidth = isTailwindClass
+		? undefined
+		: typeof asideWidth === 'number'
+			? `${asideWidth}px`
+			: asideWidth;
 
 	const widthClass = isTailwindClass ? asideWidth : undefined;
 
 	// Measure width with ResizeObserver
 	useEffect(() => {
-		if (!asideRef.current) return undefined;
+		if (!asideRef.current) return;
 
 		const element = asideRef.current;
 		const observer = new ResizeObserver((entries) => {
-			entries.forEach((entry) => {
+			for (const entry of entries) {
 				setActualWidth(Math.round(entry.contentRect.width));
-			});
+			}
 		});
 
 		observer.observe(element);
@@ -71,7 +75,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 	};
 
 	// --- LIQUID WAVE VARIANTS CORREGIDAS ---
-	const curveVariants: Variants = {
+	const curveVariants = {
 		closed: {
 			d: [
 				'M100 0 L100 1000 Q20 500 100 0 Z',
@@ -100,7 +104,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 	};
 
 	return (
-		<div className='pointer-events-none fixed inset-0 z-100 flex justify-end overflow-hidden'>
+		<div className='pointer-events-none fixed inset-0 z-[100] flex justify-end overflow-hidden'>
 			{/* Hover Trap */}
 			<div
 				className='pointer-events-auto relative flex h-full items-center'
@@ -116,7 +120,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 						ease: [0.33, 1, 0.68, 1],
 					}}
 					className={classNames(
-						'relative z-110 flex translate-y-[-50px] transform items-center justify-center',
+						'relative z-[110] flex translate-y-[-50px] transform items-center justify-center',
 						isMobile && 'h-20 w-8',
 					)}>
 					{/* El botón se muestra si no hay hover O si es mobile (para poder cerrar con click) */}
@@ -146,7 +150,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 
 				{/* --- ASIDE PANEL --- */}
 				<motion.aside
-					ref={asideRef}
+					ref={asideRef as any}
 					initial={{ x: '100%', opacity: 0 }}
 					animate={{
 						x: isHovered ? '0%' : '100%',
@@ -158,12 +162,12 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 					}}
 					style={{ width: isMobile ? '85vw' : styleWidth }}
 					className={classNames(
-						'absolute top-0 right-0 flex h-screen bg-zinc-300 shadow-[-20px_0_30px_rgba(0,0,0,0.1)] dark:bg-zinc-900',
+						'absolute right-0 top-0 flex h-screen bg-zinc-300 shadow-[-20px_0_30px_rgba(0,0,0,0.1)] dark:bg-zinc-900',
 						widthClass,
 					)}>
 					{/* 1. SVG WAVE CURVE */}
 					<svg
-						className='pointer-events-none absolute top-0 left-[-99px] h-full w-[100px]'
+						className='pointer-events-none absolute -left-[99px] top-0 h-full w-[100px]'
 						preserveAspectRatio='none'
 						viewBox='0 0 100 1000'>
 						<motion.path

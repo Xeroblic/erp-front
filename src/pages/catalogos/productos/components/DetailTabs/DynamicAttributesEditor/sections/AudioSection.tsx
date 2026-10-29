@@ -22,7 +22,7 @@ const AudioSection: React.FC<SectionBaseProps> = ({
 							onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
 								updateAttribute('audio.speakers', event.target.checked)
 							}
-							className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
+							className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
 						/>
 						<span className='text-sm font-medium'>Altavoces integrados</span>
 					</label>
@@ -36,7 +36,7 @@ const AudioSection: React.FC<SectionBaseProps> = ({
 							onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
 								updateAttribute('audio.microphone', event.target.checked)
 							}
-							className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
+							className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
 						/>
 						<span className='text-sm font-medium'>Micrófono integrado</span>
 					</label>

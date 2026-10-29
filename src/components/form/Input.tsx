@@ -70,17 +70,17 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 				[`${borderWidth} border-zinc-300 dark:border-zinc-700`],
 				'bg-zinc-50 dark:bg-zinc-900',
 				// Hover
-				'hover:border-(--input-border-hover)',
-				'dark:hover:border-(--input-border-hover)',
-				'disabled:opacity-50 disabled:border-zinc-300!',
+				'hover:border-[color:var(--input-border-hover)]',
+				'dark:hover:border-[color:var(--input-border-hover)]',
+				'disabled:opacity-50 disabled:!border-zinc-300',
 				// Focus
-				'focus:border-(--input-border-hover) dark:focus:border-(--input-border-hover)',
+				'focus:border-[color:var(--input-border-hover)] dark:focus:border-[color:var(--input-border-hover)]',
 				'focus:bg-white dark:focus:bg-zinc-800',
-				'focus:ring-1 focus:ring-(--input-border-hover)',
+				'focus:ring-1 focus:ring-[color:var(--input-border-hover)]',
 			),
 			validation: classNames({
-				'border-red-500! ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-				'border-green-500! focus:ring-4 focus:ring-green-500/30':
+				'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
+				'!border-green-500 focus:ring-4 focus:ring-green-500/30':
 					!isValid && isTouched && !invalidFeedback,
 			}),
 		},

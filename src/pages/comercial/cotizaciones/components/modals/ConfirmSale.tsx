@@ -20,9 +20,9 @@ export const ConfirmSaleModal = ({ open, onClose, onConfirm, quotationId, quotat
 
 	if (!quotation) return null;
 
-	const customerInfo = getCustomerInfo(quotation?.customer, {
-		billingSnapshot: quotation?.billing_snapshot,
-		shippingSnapshot: quotation?.shipping_snapshot,
+	const customerInfo = getCustomerInfo((quotation as any)?.customer, {
+		billingSnapshot: (quotation as any)?.billing_snapshot,
+		shippingSnapshot: (quotation as any)?.shipping_snapshot,
 	});
 
 	const missingFields = [];
@@ -80,18 +80,18 @@ export const ConfirmSaleModal = ({ open, onClose, onConfirm, quotationId, quotat
 									{missingFields.map((field, idx) => (
 										<div
 											key={idx}
-											className='rounded-sm bg-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300'>
+											className='rounded bg-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300'>
 											{field}
 										</div>
 									))}
 								</div>
-								<p className='mt-2 text-xs text-amber-600 italic'>
+								<p className='mt-2 text-xs italic text-amber-600'>
 									Puedes confirmar, pero deberás completar estos datos al momento
 									de facturar.
 								</p>
 							</div>
 						) : (
-							<div className='rounded-sm bg-emerald-500/10 p-2 text-sm font-medium text-emerald-600'>
+							<div className='rounded bg-emerald-500/10 p-2 text-sm font-medium text-emerald-600'>
 								El cliente {customerInfo.name} tiene todos los datos necesarios.
 							</div>
 						)}

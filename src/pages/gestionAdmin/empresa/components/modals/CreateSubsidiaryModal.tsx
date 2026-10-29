@@ -17,7 +17,6 @@ import {
 } from '@/store/slices/core/coreSlice';
 import { useGeoSelector } from '@/hooks/useGeoSelector';
 import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
-import toText from '@/utils/toText.util';
 
 import { subsidiaryValidationSchema } from '../../helpers/subsidiaryValidation';
 import { handleSubsidiaryError } from '../../helpers/subsidiaryErrorHandler';
@@ -141,11 +140,11 @@ export default function CreateSubsidiaryModal({
 	}, [isOpen, adminUsers.length, users.length]);
 
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
-		formik,
+		formik as any,
 		{
-			regiones: listaRegiones,
-			provincias: listaProvincias,
-			comunas: listaComunas,
+			regiones: listaRegiones as any,
+			provincias: listaProvincias as any,
+			comunas: listaComunas as any,
 		},
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);
@@ -171,7 +170,7 @@ export default function CreateSubsidiaryModal({
 					comuna: 'Comuna',
 				};
 				const fieldLabel = fieldLabels[field] || field;
-				toast.error(`${fieldLabel}: ${toText(message, 'valor inválido')}`);
+				toast.error(`${fieldLabel}: ${message}`);
 			}
 		} else if (!formik.dirty) {
 			toast.info('No hay cambios para guardar');
@@ -185,7 +184,7 @@ export default function CreateSubsidiaryModal({
 				<h3 className='text-lg font-semibold'>
 					{isEditing ? 'Editar Subempresa' : 'Nueva Subempresa'}
 				</h3>
-				<p className='mt-1 ml-3 text-sm text-zinc-500'>
+				<p className='ml-3 mt-1 text-sm text-zinc-500'>
 					{isEditing ? 'Modifica los datos' : 'Complete los campos obligatorios (*)'}
 				</p>
 			</ModalHeader>

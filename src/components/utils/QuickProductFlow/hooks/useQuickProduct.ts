@@ -189,7 +189,7 @@ export const useQuickProduct = ({
 				const newProduct = {
 					...(rawProduct as IProduct),
 					branch_id: Number((rawProduct as IProduct)?.branch_id ?? branchId) || branchId,
-				};
+				} as IProduct;
 
 				toast.success(`✓ Producto "${data.name}" creado exitosamente.`);
 				return newProduct;

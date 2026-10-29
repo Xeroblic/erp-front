@@ -32,7 +32,7 @@ const SuccessPinModal: React.FC<ISuccessPinModalProps> = ({
 							{successPin}
 						</p>
 					</div>
-					<p className='text-[10px] font-bold tracking-widest text-zinc-400 uppercase'>
+					<p className='text-[10px] font-bold uppercase tracking-widest text-zinc-400'>
 						Anota este PIN para operar el casillero
 					</p>
 				</div>

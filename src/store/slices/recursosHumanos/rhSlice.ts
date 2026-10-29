@@ -144,7 +144,7 @@ const rhSlice = createSlice({
 		},
 
 		// ── Reset ──────────────────────────────────────
-		resetRHState: (): IRHState => {
+		resetRHState: () => {
 			localStorage.removeItem(LOCAL_STORAGE_KEY);
 			return {
 				config: defaultConfig,
@@ -153,7 +153,7 @@ const rhSlice = createSlice({
 				ui: {
 					isValidating: false,
 					isScanning: false,
-					geoPermission: 'prompt',
+					geoPermission: 'prompt' as TRHPermissionStatus,
 					lastValidation: null,
 					error: null,
 				},

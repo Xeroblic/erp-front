@@ -233,7 +233,7 @@ const DocumentAttachmentsCard = forwardRef<
 		pageSize: meta?.per_page ?? PURCHASE_DOCUMENT_ATTACHMENT_MAX_COUNT,
 	};
 	const table: TablePaginationController = {
-		state: { pagination },
+		getState: () => ({ pagination }),
 		setPageSize: () => undefined,
 		setPageIndex: (updater: Updater<number>) => {
 			const pageIndex =
@@ -372,7 +372,7 @@ const DocumentAttachmentsCard = forwardRef<
 				)}
 
 				{loading && (
-					<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+					<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
 				)}
 
 				{!loading && listError && (

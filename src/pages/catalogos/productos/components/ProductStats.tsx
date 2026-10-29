@@ -52,48 +52,38 @@ const STYLE_VARIANTS: Record<string, { bg: string; text: string; border: string 
 	},
 };
 
-const COLOR_KEYS = ['emerald', 'rose', 'amber', 'teal'];
-
-interface IStatCardProps {
-	card: ProductStatCard;
-	index: number;
-	value: ProductsStateStats[keyof ProductsStateStats];
-	loading: boolean;
-}
-
-// Fuera de ProductStats: definida adentro, React la tomaba como un componente nuevo en cada
-// render y volvía a montar las tarjetas.
-const StatCard: React.FC<IStatCardProps> = ({ card, index, value, loading }) => {
-	const selectedColor = card.color || COLOR_KEYS[index % COLOR_KEYS.length];
-	const variant = STYLE_VARIANTS[selectedColor] || STYLE_VARIANTS.default;
-
-	return (
-		<Card className={`h-full w-full border ${variant.border} shadow-xs`}>
-			<CardBody className='flex flex-col gap-4'>
-				<div className='flex items-center gap-4'>
-					<div
-						className={`flex h-12 w-12 items-center justify-center rounded-xl ${variant.bg} ${variant.text}`}>
-						<Icon icon={card.icon} className='h-6 w-6' />
-					</div>
-					<span className='text-sm font-medium text-gray-400'>{card.label}</span>
-				</div>
-
-				<div>
-					{loading ? (
-						<div className='h-8 w-24 animate-pulse rounded-sm bg-gray-400' />
-					) : (
-						<div className='text-2xl font-bold'>
-							{Number(value ?? 0).toLocaleString('es-CO')}
-						</div>
-					)}
-				</div>
-			</CardBody>
-		</Card>
-	);
-};
-
 const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) => {
 	const cards = PRODUCT_STATS_META as readonly ProductStatCard[];
+
+	const StatCard = ({ card, index }: { card: ProductStatCard; index: number }) => {
+		const colorKeys = ['emerald', 'rose', 'amber', 'teal'];
+		const selectedColor = card.color || colorKeys[index % colorKeys.length];
+		const variant = STYLE_VARIANTS[selectedColor] || STYLE_VARIANTS.default;
+
+		return (
+			<Card className={`h-full w-full border ${variant.border} shadow-sm`}>
+				<CardBody className='flex flex-col gap-4'>
+					<div className='flex items-center gap-4'>
+						<div
+							className={`flex h-12 w-12 items-center justify-center rounded-xl ${variant.bg} ${variant.text}`}>
+							<Icon icon={card.icon} className='h-6 w-6' />
+						</div>
+						<span className='text-sm font-medium text-gray-400'>{card.label}</span>
+					</div>
+
+					<div>
+						{loading ? (
+							<div className='h-8 w-24 animate-pulse rounded bg-gray-400' />
+						) : (
+							<div className='text-2xl font-bold'>
+								{Number(stats[card.key] ?? 0).toLocaleString('es-CO')}
+							</div>
+						)}
+					</div>
+				</CardBody>
+			</Card>
+		);
+	};
 
 	return (
 		<>
@@ -103,15 +93,10 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 					spaceBetween={16}
 					slidesPerView='auto'
 					freeMode
-					className='overflow-visible!'>
+					className='!overflow-visible'>
 					{cards.map((card, index) => (
-						<SwiperSlide key={card.key} className='w-[260px]! sm:w-[280px]!'>
-							<StatCard
-								card={card}
-								index={index}
-								value={stats[card.key]}
-								loading={loading}
-							/>
+						<SwiperSlide key={card.key} className='!w-[260px] sm:!w-[280px]'>
+							<StatCard card={card} index={index} />
 						</SwiperSlide>
 					))}
 				</Swiper>
@@ -122,12 +107,7 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 					<div
 						key={card.key}
 						className='w-full min-w-[200px] md:w-[calc(50%-1rem)] lg:w-[calc(20%-1rem)]'>
-						<StatCard
-							card={card}
-							index={index}
-							value={stats[card.key]}
-							loading={loading}
-						/>
+						<StatCard card={card} index={index} />
 					</div>
 				))}
 			</div>

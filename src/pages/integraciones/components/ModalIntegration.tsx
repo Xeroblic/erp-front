@@ -56,7 +56,7 @@ const DEFAULT_WEBHOOK_EVENT = WEBHOOK_EVENTS[0].value;
 const getWebhookEventMeta = (event?: string | null) =>
 	WEBHOOK_EVENTS.find((entry) => entry.value === event) ?? WEBHOOK_EVENTS[0];
 
-const ModalDelete = memo(function ModalDeleteContent({
+const ModalDelete = memo(function ModalDelete({
 	isOpen,
 	onClose,
 	onConfirm,
@@ -108,7 +108,7 @@ const ModalDelete = memo(function ModalDeleteContent({
 	);
 });
 
-const ModalRotateKey = memo(function ModalRotateKeyContent({
+const ModalRotateKey = memo(function ModalRotateKey({
 	isOpen,
 	onClose,
 	onConfirm,
@@ -560,7 +560,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 								{formData.mode === 'webhook' && (
 									<p className='mt-2 text-xs text-gray-600 dark:text-gray-300'>
 										URL del Webhook:{' '}
-										<code className='rounded-sm bg-gray-100 px-2 py-1'>
+										<code className='rounded bg-gray-100 px-2 py-1'>
 											{window.location.origin}
 											/api/integrations/woocommerce/webhooks/{secrets.api_key}
 											/{getWebhookEventMeta(formData.event).urlSuffix}
@@ -736,11 +736,11 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 								</Select>
 								<p className='mt-1 text-xs text-gray-500'>
 									Alcance:{' '}
-									<code className='rounded-sm bg-gray-100 px-1.5 py-0.5 dark:bg-neutral-800'>
+									<code className='rounded bg-gray-100 px-1.5 py-0.5 dark:bg-neutral-800'>
 										{getWebhookEventMeta(formData.event).scope}
 									</code>{' '}
 									· La URL de entrega terminará en{' '}
-									<code className='rounded-sm bg-gray-100 px-1.5 py-0.5 dark:bg-neutral-800'>
+									<code className='rounded bg-gray-100 px-1.5 py-0.5 dark:bg-neutral-800'>
 										/{getWebhookEventMeta(formData.event).urlSuffix}
 									</code>
 									.
@@ -832,7 +832,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 								<div className='grid grid-cols-2 gap-3 text-sm'>
 									<div>
 										<span className='text-gray-600'>API Key Prefix:</span>
-										<code className='ml-2 rounded-sm bg-gray-100 px-2 py-1'>
+										<code className='ml-2 rounded bg-gray-100 px-2 py-1'>
 											{integration.api_key_prefix}
 										</code>
 									</div>

@@ -1,17 +1,17 @@
 import React from 'react';
-import Checkbox from '@/components/form/Checkbox';
-import Textarea from '@/components/form/Textarea';
-import Icon from '@/components/icon/Icon';
+import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
 import { AioFormData } from '../../../validation/aio.schema';
+import Input from '@/components/form/Input';
+import Checkbox from '@/components/form/Checkbox';
+import Textarea from '@/components/form/Textarea';
 import { SoSelector } from '../../../ui/selectors/SoSelector';
 import { getAioLabel } from '../../../translations/aio.labels';
 import { AIO_HINTS, AIO_PLACEHOLDERS } from '../../../constants/aio/aio.hints';
+import Icon from '@/components/icon/Icon';
 
 export const AioObservationsSection: React.FC<FormSectionProps<AioFormData>> = ({
-	values,
-	setFieldValue,
-	onFieldBlur,
+	control,
 	errors,
 	readOnly,
 }) => {
@@ -24,10 +24,16 @@ export const AioObservationsSection: React.FC<FormSectionProps<AioFormData>> = (
 						<Icon icon='HeroWindow' className='h-5 w-5' />
 						{getAioLabel('operating_system')}
 					</label>
-					<SoSelector
-						value={values.operating_system || ''}
-						onChange={(val: string) => setFieldValue('operating_system', val)}
-						readOnly={readOnly}
+					<Controller
+						name='operating_system'
+						control={control}
+						render={({ field }) => (
+							<SoSelector
+								value={field.value || ''}
+								onChange={(val: string) => field.onChange(val)}
+								readOnly={readOnly}
+							/>
+						)}
 					/>
 				</div>
 
@@ -39,36 +45,47 @@ export const AioObservationsSection: React.FC<FormSectionProps<AioFormData>> = (
 					<div className='space-y-5'>
 						<div className='flex items-center justify-between'>
 							<span className='text-sm'>{getAioLabel('has_wifi')}</span>
-							<Checkbox
-								variant='switch'
-								checked={Boolean(values.has_wifi)}
-								onChange={() =>
-									!readOnly && setFieldValue('has_wifi', !values.has_wifi)
-								}
-								disabled={readOnly}
+							<Controller
+								name='has_wifi'
+								control={control}
+								render={({ field }) => (
+									<Checkbox
+										variant='switch'
+										checked={Boolean(field.value)}
+										onChange={() => !readOnly && field.onChange(!field.value)}
+										disabled={readOnly}
+									/>
+								)}
 							/>
 						</div>
 						<div className='flex items-center justify-between'>
 							<span className='text-sm'>{getAioLabel('has_bluetooth')}</span>
-							<Checkbox
-								variant='switch'
-								checked={Boolean(values.has_bluetooth)}
-								onChange={() =>
-									!readOnly &&
-									setFieldValue('has_bluetooth', !values.has_bluetooth)
-								}
-								disabled={readOnly}
+							<Controller
+								name='has_bluetooth'
+								control={control}
+								render={({ field }) => (
+									<Checkbox
+										variant='switch'
+										checked={Boolean(field.value)}
+										onChange={() => !readOnly && field.onChange(!field.value)}
+										disabled={readOnly}
+									/>
+								)}
 							/>
 						</div>
 						<div className='flex items-center justify-between'>
 							<span className='text-sm'>{getAioLabel('has_cd_drive')}</span>
-							<Checkbox
-								variant='switch'
-								checked={Boolean(values.has_cd_drive)}
-								onChange={() =>
-									!readOnly && setFieldValue('has_cd_drive', !values.has_cd_drive)
-								}
-								disabled={readOnly}
+							<Controller
+								name='has_cd_drive'
+								control={control}
+								render={({ field }) => (
+									<Checkbox
+										variant='switch'
+										checked={Boolean(field.value)}
+										onChange={() => !readOnly && field.onChange(!field.value)}
+										disabled={readOnly}
+									/>
+								)}
 							/>
 						</div>
 					</div>
@@ -76,23 +93,27 @@ export const AioObservationsSection: React.FC<FormSectionProps<AioFormData>> = (
 			</div>
 
 			{/* Observaciones */}
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-xs transition-colors duration-200 hover:cursor-pointer dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900/80'>
+			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition-colors duration-200 hover:cursor-pointer dark:border-zinc-800 dark:bg-zinc-900/50 hover:dark:bg-zinc-900/80'>
 				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-zinc-800 dark:text-zinc-200'>
 					<Icon icon='HeroPencilSquare' className='h-5 w-5' />
 					{getAioLabel('observations')}
 				</label>
-				<Textarea
+				<Controller
 					name='observations'
-					onChange={(event) => setFieldValue('observations', event.target.value)}
-					onBlur={() => onFieldBlur('observations')}
-					value={values.observations || ''}
-					placeholder={AIO_PLACEHOLDERS.observations}
-					disabled={readOnly}
-					rows={4}
-					className={errors.observations ? 'border-red-500!' : ''}
+					control={control}
+					render={({ field }) => (
+						<Textarea
+							{...field}
+							value={field.value || ''}
+							placeholder={AIO_PLACEHOLDERS.observations}
+							disabled={readOnly}
+							rows={4}
+							className={errors.observations ? 'border-red-500' : ''}
+						/>
+					)}
 				/>
 				{errors.observations && (
-					<p className='mt-2 text-sm text-red-500'>{errors.observations}</p>
+					<p className='mt-2 text-sm text-red-500'>{errors.observations.message}</p>
 				)}
 				<p className='mt-2 text-xs text-zinc-500'>{AIO_HINTS.observations}</p>
 			</div>

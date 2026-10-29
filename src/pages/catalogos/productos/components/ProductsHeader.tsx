@@ -4,6 +4,7 @@ import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+import { white } from 'tailwindcss/colors';
 
 interface ProductsHeaderProps {
 	searchValue: string;

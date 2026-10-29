@@ -106,7 +106,7 @@ const SelectSucursalEmpresa = () => {
 			.map(([label, options]) => ({
 				label,
 				options: options.sort((a, b) => a.label.localeCompare(b.label)),
-			}));
+			})) as TSelectGroups;
 	}, [filteredBranches, preferredBranchId]);
 
 	useEffect(() => {
@@ -127,7 +127,9 @@ const SelectSucursalEmpresa = () => {
 
 		const match = groupedOptions
 			.flatMap((g) => g.options)
-			.find((opt) => Number(opt.value) === Number(preferredBranchId));
+			.find((opt) => Number(opt.value) === Number(preferredBranchId)) as
+			| BranchOption
+			| undefined;
 
 		if (!match && groupedOptions.length > 0) {
 			const first = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
@@ -193,7 +195,7 @@ const SelectSucursalEmpresa = () => {
 
 		return (
 			<div className='flex items-center gap-3'>
-				<span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300'>
+				<span className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300'>
 					<Icon icon='HeroBuildingOffice2' className='h-4 w-4' />
 				</span>
 				<div className='flex flex-col'>
@@ -229,7 +231,7 @@ const SelectSucursalEmpresa = () => {
 
 	const formatGroupLabel = useCallback(
 		(group: GroupBase<TSelectOption>) => (
-			<div className='flex items-center justify-between px-2 py-1 text-xs font-semibold tracking-wide text-neutral-500 uppercase dark:text-neutral-400'>
+			<div className='flex items-center justify-between px-2 py-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400'>
 				<span className='flex items-center gap-2'>
 					<Icon icon='HeroBuildingStorefront' className='h-4 w-4 text-neutral-400' />
 					{group.label ?? FALLBACK_GROUP_LABEL}
@@ -282,9 +284,9 @@ const SelectSucursalEmpresa = () => {
 			isDisabled: branchesLoading || !!branchesError,
 			isClearable: false,
 			isSearchable: true,
-			value: selectedSucursal,
+			value: selectedSucursal as TSelectOption | null,
 			options: groupedOptions,
-			formatOptionLabel: (option: TSelectOption) => formatOptionLabel(option),
+			formatOptionLabel: (option: TSelectOption) => formatOptionLabel(option as BranchOption),
 			formatGroupLabel,
 			onChange: handleSelectChange,
 			menuPortalTarget: selectPortalTarget,
@@ -306,15 +308,15 @@ const SelectSucursalEmpresa = () => {
 	return (
 		<>
 			{/* DESKTOP */}
-			<div className='hidden w-full @3xl:block @3xl:max-w-xs @3xl:min-w-[260px]'>
+			<div className='hidden w-full sm:block sm:min-w-[260px] sm:max-w-xs'>
 				<SelectReact {...selectProps} />
 			</div>
 
 			{/* MOBILE BUTTON */}
 			<Button
 				onClick={() => setModalOpen(true)}
-				className='flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 @3xl:hidden dark:bg-zinc-600/90'>
-				<span className='flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 shadow-xs'>
+				className='flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 dark:bg-zinc-600/90 sm:hidden'>
+				<span className='flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 shadow-sm'>
 					<Icon icon='HeroBuildingOffice2' className='h-4 w-4' />
 				</span>
 				<span>

@@ -10,7 +10,7 @@ import InventarioKpis, {
 
 const Campo = ({ label, children }: { label: string; children: React.ReactNode }) => (
 	<div>
-		<p className='text-xs text-zinc-500 uppercase'>{label}</p>
+		<p className='text-xs uppercase text-zinc-500'>{label}</p>
 		<p>{children}</p>
 	</div>
 );
@@ -60,7 +60,7 @@ const WarehouseSummary: React.FC<{ aggregate: IInventoryWarehouseAggregate }> = 
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-3'>
-						<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-xs'>
+						<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-sm'>
 							<Icon icon='HeroBuildingStorefront' size='text-2xl' color='white' />
 						</div>
 						<div>
@@ -109,7 +109,7 @@ const WarehouseSummary: React.FC<{ aggregate: IInventoryWarehouseAggregate }> = 
 									: 'No exige número de serie'}
 							</Campo>
 							<div>
-								<p className='mb-1 text-xs text-zinc-500 uppercase'>Capacidad</p>
+								<p className='mb-1 text-xs uppercase text-zinc-500'>Capacidad</p>
 								<WarehouseCapacity aggregate={aggregate} />
 							</div>
 							{warehouse.description && (

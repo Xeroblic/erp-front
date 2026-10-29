@@ -216,7 +216,7 @@ const GarantiaDetailsPage: React.FC = () => {
 									variant='outline'
 									color='zinc'
 									colorIntensity='500'
-									className='px-2 py-0.5 text-xs font-semibold tracking-wide uppercase dark:border-zinc-700'>
+									className='px-2 py-0.5 text-xs font-semibold uppercase tracking-wide dark:border-zinc-700'>
 									{badge.label}
 								</Badge>
 							))}
@@ -224,7 +224,7 @@ const GarantiaDetailsPage: React.FC = () => {
 					</div>
 					<div className='flex items-center gap-3'>
 						<div className='text-right'>
-							<p className='text-xs text-zinc-400 uppercase'>Días restantes</p>
+							<p className='text-xs uppercase text-zinc-400'>Días restantes</p>
 							<motion.p
 								key={detail.daysRemaining?.label ?? 'none'}
 								initial={{ opacity: 0, y: 6 }}
@@ -254,7 +254,7 @@ const GarantiaDetailsPage: React.FC = () => {
 											initial={{ opacity: 0, y: 12 }}
 											animate={{ opacity: 1, y: 0 }}
 											transition={{ delay: 0.08 * index }}>
-											<p className='text-xs tracking-wide text-zinc-400 uppercase'>
+											<p className='text-xs uppercase tracking-wide text-zinc-400'>
 												{block.label}
 											</p>
 											<p className='text-base font-semibold text-zinc-900 dark:text-white'>
@@ -273,7 +273,7 @@ const GarantiaDetailsPage: React.FC = () => {
 								initial={{ opacity: 0, y: 10 }}
 								animate={{ opacity: 1, y: 0 }}
 								transition={{ delay: 0.15 }}>
-								<p className='text-xs tracking-wide text-zinc-400 uppercase'>
+								<p className='text-xs uppercase tracking-wide text-zinc-400'>
 									Notas
 								</p>
 								<p className='text-sm text-zinc-600 dark:text-zinc-300'>

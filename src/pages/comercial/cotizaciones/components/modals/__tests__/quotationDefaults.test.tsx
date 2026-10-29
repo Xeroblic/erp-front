@@ -112,7 +112,7 @@ describe('Valores por defecto de la cotización', () => {
 				quantity: 1,
 				unit_price: 1000,
 				metadata: { includes_tax: false },
-			}).includes_tax,
+			} as never).includes_tax,
 		).toBe(false);
 		expect(
 			mapItemToFormItem({
@@ -122,7 +122,7 @@ describe('Valores por defecto de la cotización', () => {
 				quantity: 1,
 				unit_price: 1000,
 				metadata: { includes_tax: true },
-			}).includes_tax,
+			} as never).includes_tax,
 		).toBe(true);
 	});
 });

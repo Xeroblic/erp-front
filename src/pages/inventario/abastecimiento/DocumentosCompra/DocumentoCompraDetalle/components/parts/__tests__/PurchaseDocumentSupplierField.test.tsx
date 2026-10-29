@@ -27,7 +27,7 @@ describe('PurchaseDocumentSupplierField', () => {
 		renderAs(['view-purchase-document', 'view-procurement-supplier']);
 
 		expect(
-			screen.getByRole('link', { name: /^Ficha del proveedor:\s*Distribuidora Sur$/ }),
+			screen.getByRole('link', { name: 'Ficha del proveedor: Distribuidora Sur' }),
 		).toHaveAttribute('href', '/inventario/abastecimiento/proveedores/12');
 	});
 

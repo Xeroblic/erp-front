@@ -5,6 +5,8 @@ import type {
 	IProductCategorySummary,
 	IProductChild,
 	IProductGalleryImage,
+	IProductImage,
+	IProductParentSummary,
 	IProductSoftHold,
 	IProductSoftHolds,
 	ProductFilters,
@@ -95,7 +97,7 @@ const normalizeCategories = (raw: unknown): IProductCategorySummary[] => {
 				if (!Number.isFinite(id)) return null;
 				return {
 					id,
-					name: toNullableString(source.name ?? source.category_name) ?? '',
+					name: String(source.name ?? source.category_name ?? ''),
 					slug: (source.slug ?? source.category_slug ?? null) as string | null,
 				};
 			}
@@ -135,8 +137,8 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 					return {
 						id,
 						grade: toNullableString(entry.grade) as EquipmentGradeLiteral | null,
-						sku: toNullableString(entry.sku) ?? '',
-						name: toNullableString(entry.name) ?? '',
+						sku: String(entry.sku ?? ''),
+						name: String(entry.name ?? ''),
 						price: toNullableNumber(entry.price),
 						offer_price: toNullableNumber(entry.offer_price),
 						stock: toNullableNumber(entry.stock),
@@ -182,16 +184,16 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 		product_status: (safe.product_status ?? 'pending') as ProductStatus,
 		branch_id: Number(safe.branch_id ?? branchRecord?.id ?? 0),
 		origin_branch_id: toNullableNumber(safe.origin_branch_id),
-		sku: toNullableString(safe.sku) ?? '',
+		sku: String(safe.sku ?? ''),
 		commercial_sku: (safe.commercial_sku ?? null) as string | null,
 		barcode: (safe.barcode ?? null) as string | null,
-		name: toNullableString(safe.name) ?? '',
+		name: String(safe.name ?? ''),
 		grade: toNullableString(safe.grade) as EquipmentGradeLiteral | null,
 		brand_id: toNullableNumber(safe.brand_id),
 		brand: brandRecord
 			? {
 					id: Number(brandRecord.id ?? 0),
-					name: toNullableString(brandRecord.name) ?? '',
+					name: String(brandRecord.name ?? ''),
 					slug: (brandRecord.slug ?? null) as string | null | undefined,
 				}
 			: null,
@@ -237,17 +239,17 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 			safe.children ?? safe.children_data ?? safe.variants ?? safe.variations ?? null,
 		),
 		parent: parentRecord
-			? {
+			? ({
 					id: Number(parentRecord.id ?? 0),
-					sku: toNullableString(parentRecord.sku) ?? '',
-					name: toNullableString(parentRecord.name) ?? '',
-				}
+					sku: String(parentRecord.sku ?? ''),
+					name: String(parentRecord.name ?? ''),
+				} as IProductParentSummary)
 			: undefined,
 		available_serials: Array.isArray(safe.available_serials)
 			? safe.available_serials.filter((v): v is string => typeof v === 'string')
 			: null,
-		created_at: toNullableString(safe.created_at) ?? '',
-		updated_at: toNullableString(safe.updated_at) ?? '',
+		created_at: String(safe.created_at ?? ''),
+		updated_at: String(safe.updated_at ?? ''),
 		// image/gallery normalization: try common keys used by backend
 		image: (() => {
 			const candidate = asRecord(safe.image ?? safe.media ?? safe.media_first ?? null);
@@ -263,7 +265,7 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 				url: abs,
 				thumb: thumbAbs,
 				alt: toNullableString(candidate.alt),
-			};
+			} as IProductImage;
 		})(),
 		gallery: (() => {
 			const g = safe.gallery ?? safe.media ?? safe.images ?? null;

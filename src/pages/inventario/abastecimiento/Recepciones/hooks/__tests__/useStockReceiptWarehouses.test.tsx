@@ -16,7 +16,7 @@ vi.mock('@/services/procurement/stockReceipts.service', () => ({
 
 const context = vi.hoisted(() => ({
 	branch: {
-		branchId: 4,
+		branchId: 4 as number | null,
 		visibleBranches: [] as { id: number; name: string }[],
 	},
 	// Sucursal 4 y 6 en la filial 2; la 9 en la filial 3; la 11 sin filial conocida.

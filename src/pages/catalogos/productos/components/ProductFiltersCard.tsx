@@ -76,7 +76,7 @@ const ProductFiltersCard: React.FC<ProductFiltersCardProps> = ({
 						Filtros avanzados
 						<button
 							onClick={() => setIsExpanded(!isExpanded)}
-							className='ml-auto flex items-center gap-1 text-sm font-normal text-zinc-500 hover:text-zinc-700 md:hidden dark:text-zinc-400 dark:hover:text-zinc-200'>
+							className='ml-auto flex items-center gap-1 text-sm font-normal text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 md:hidden'>
 							<Icon
 								icon={isExpanded ? 'HeroChevronUp' : 'HeroChevronDown'}
 								className='h-5 w-5'

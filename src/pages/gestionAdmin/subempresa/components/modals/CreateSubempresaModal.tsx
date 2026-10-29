@@ -200,11 +200,11 @@ export default function CreateSubempresaModal({
 	}, [isOpen, adminUsers.length, users.length]);
 
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
-		formik,
+		formik as any,
 		{
-			regiones: listaRegiones,
-			provincias: listaProvincias,
-			comunas: listaComunas,
+			regiones: listaRegiones as any,
+			provincias: listaProvincias as any,
+			comunas: listaComunas as any,
 		},
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);

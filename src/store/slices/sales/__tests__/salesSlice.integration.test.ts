@@ -6,22 +6,7 @@
  */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw/http';
-import ApiService from '@/services/ApiService';
-import { makeIntegrationStore } from '@/test-utils/integrationStore';
-import type { ISale, ISaleItem } from '@/interface/sales.interface';
-import type { RootState } from '@/store/rootReducer';
-import salesReducer, {
-	fetchSales,
-	fetchSaleById,
-	deleteSale,
-	updateSaleItem,
-	setCurrentSale,
-	selectSales,
-	selectSalesPagination,
-	selectCurrentSale,
-	selectSalesLoading,
-} from '../salesSlice';
+import { http, HttpResponse } from 'msw';
 
 const { toastSuccess, toastError } = vi.hoisted(() => ({
 	toastSuccess: vi.fn(),
@@ -40,6 +25,22 @@ vi.mock('@/store', () => ({
 	logout: vi.fn(() => ({ type: 'auth/logout' })),
 	setToken: vi.fn((payload: unknown) => ({ type: 'auth/setToken', payload })),
 }));
+
+import ApiService from '@/services/ApiService';
+import salesReducer, {
+	fetchSales,
+	fetchSaleById,
+	deleteSale,
+	updateSaleItem,
+	setCurrentSale,
+	selectSales,
+	selectSalesPagination,
+	selectCurrentSale,
+	selectSalesLoading,
+} from '../salesSlice';
+import { makeIntegrationStore } from '@/test-utils/integrationStore';
+import type { ISale, ISaleItem } from '@/interface/sales.interface';
+import type { RootState } from '@/store/rootReducer';
 
 const SUBSIDIARY = 7;
 
@@ -79,7 +80,7 @@ const makeStore = () => makeIntegrationStore({ ventas: salesReducer });
 const asRoot = (s: { ventas: ReturnType<typeof salesReducer> }) => s as unknown as RootState;
 
 describe('salesSlice (integración)', () => {
-	beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
+	beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 	beforeEach(() => {
 		ApiService.clearCache();
 		lastListUrl = null;

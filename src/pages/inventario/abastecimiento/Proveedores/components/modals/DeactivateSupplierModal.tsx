@@ -14,7 +14,7 @@ import { deactivateProcurementSupplierThunk } from '@/store/slices/procurement/p
 
 /** Tarjeta de primer nivel dentro del cuerpo del modal (mismo estándar que el resto de abastecimiento). */
 const DEACTIVATE_SUPPLIER_CARD_CLASSNAME =
-	'border border-zinc-200 bg-white shadow-xs dark:border-zinc-700 dark:bg-zinc-900';
+	'border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900';
 
 /**
  * Confirmación de `deactivate` (soft delete, sección 5 del contrato): acción

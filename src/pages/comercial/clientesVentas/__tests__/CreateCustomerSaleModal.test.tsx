@@ -130,11 +130,11 @@ describe('CreateCustomerSaleModal', () => {
 		// `Input` no pinta el texto de invalidFeedback, solo el borde rojo del campo.
 		await waitFor(() =>
 			expect(screen.getByPlaceholderText('12345678-9').className).toContain(
-				'border-red-500!',
+				'!border-red-500',
 			),
 		);
 		expect(screen.getByPlaceholderText('Empresa S.A.').className).not.toContain(
-			'border-red-500!',
+			'!border-red-500',
 		);
 	});
 
@@ -187,10 +187,10 @@ describe('CreateCustomerSaleModal', () => {
 		// sólo el primero.
 		await waitFor(() =>
 			expect(screen.getByPlaceholderText('Empresa S.A.').className).toContain(
-				'border-red-500!',
+				'!border-red-500',
 			),
 		);
-		expect(screen.getByPlaceholderText('Juan Pérez').className).toContain('border-red-500!');
+		expect(screen.getByPlaceholderText('Juan Pérez').className).toContain('!border-red-500');
 		expect(screen.getAllByText('Ingresa Empresa o Contacto.')).toHaveLength(2);
 		expect(apiSpies.fetchNormalized).not.toHaveBeenCalled();
 		expect(onSuccess).not.toHaveBeenCalled();
@@ -217,10 +217,10 @@ describe('CreateCustomerSaleModal', () => {
 			expect(screen.queryByText('Ingresa Empresa o Contacto.')).not.toBeInTheDocument(),
 		);
 		expect(screen.getByPlaceholderText('Empresa S.A.').className).not.toContain(
-			'border-red-500!',
+			'!border-red-500',
 		);
 		expect(screen.getByPlaceholderText('Juan Pérez').className).not.toContain(
-			'border-red-500!',
+			'!border-red-500',
 		);
 	});
 
@@ -368,7 +368,7 @@ describe('CreateCustomerSaleModal', () => {
 			);
 			await waitFor(() =>
 				expect(screen.getByPlaceholderText('12345678-9').className).toContain(
-					'border-red-500!',
+					'!border-red-500',
 				),
 			);
 			expect(onSuccess).not.toHaveBeenCalled();

@@ -18,7 +18,7 @@ const NotFoundPage = () => {
 					</div>
 					<div className='col-span-3' />
 					<div className='col-span-6 flex justify-center'>
-						<img src={DeliveryMan5WithDog as string} alt='' className='max-h-128' />
+						<img src={DeliveryMan5WithDog as string} alt='' className='max-h-[32rem]' />
 					</div>
 				</div>
 			</Container>
