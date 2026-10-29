@@ -58,7 +58,7 @@ const PurchaseDocumentHeaderCard: React.FC<IPurchaseDocumentHeaderCardProps> = (
 						// `Select` pinta el borde con el color del tema aunque no tenga
 						// foco y parece seleccionado: acá el borde en reposo es gris,
 						// como el de `Input`, y el fondo blanco. Hover y foco no cambian.
-						className='!bg-white dark:!bg-zinc-900'
+						className='bg-white! dark:bg-zinc-900!'
 						style={
 							{
 								'--select-border': '#d4d4d8',
@@ -95,7 +95,7 @@ const PurchaseDocumentHeaderCard: React.FC<IPurchaseDocumentHeaderCardProps> = (
 					</Label>
 					<Input
 						id='documento-number'
-						className='!bg-white dark:!bg-zinc-900'
+						className='bg-white! dark:bg-zinc-900!'
 						name='document_number'
 						value={formik.values.document_number}
 						onChange={formik.handleChange}
@@ -113,7 +113,7 @@ const PurchaseDocumentHeaderCard: React.FC<IPurchaseDocumentHeaderCardProps> = (
 					<DateInput
 						id='documento-issue-date'
 						name='issue_date'
-						className='!bg-white dark:!bg-zinc-900'
+						className='bg-white! dark:bg-zinc-900!'
 						value={formik.values.issue_date}
 						maxDate={MAX_DOCUMENT_DATE}
 						maxYear={MAX_DOCUMENT_YEAR}
@@ -133,7 +133,7 @@ const PurchaseDocumentHeaderCard: React.FC<IPurchaseDocumentHeaderCardProps> = (
 					</Label>
 					<Input
 						id='documento-total-amount'
-						className='!bg-white dark:!bg-zinc-900'
+						className='bg-white! dark:bg-zinc-900!'
 						name='total_amount'
 						type='text'
 						inputMode='decimal'
@@ -156,7 +156,7 @@ const PurchaseDocumentHeaderCard: React.FC<IPurchaseDocumentHeaderCardProps> = (
 				<Label htmlFor='documento-notes'>Notas</Label>
 				<Textarea
 					id='documento-notes'
-					className='!bg-white dark:!bg-zinc-900'
+					className='bg-white! dark:bg-zinc-900!'
 					name='notes'
 					rows={2}
 					value={formik.values.notes}

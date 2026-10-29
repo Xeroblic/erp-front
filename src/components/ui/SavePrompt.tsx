@@ -71,7 +71,7 @@ const SavePrompt: React.FC<SavePromptProps> = ({
 						<div className='flex gap-2'>
 							<Icon
 								icon='HeroInformationCircle'
-								className='h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400'
+								className='h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400'
 							/>
 							<p className='text-xs text-blue-700 dark:text-blue-300'>
 								Si decides continuar editando, tus cambios se guardarán

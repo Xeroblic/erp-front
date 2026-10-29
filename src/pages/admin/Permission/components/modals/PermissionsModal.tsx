@@ -521,28 +521,28 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 							</CardHeader>
 							<CardBody>
 								<div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
-									<div className='flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 p-4 text-white shadow-md'>
+									<div className='flex flex-col items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-violet-700 p-4 text-white shadow-md'>
 										<Icon icon='HeroKey' className='mb-2 h-6 w-6' />
 										<div className='text-2xl font-bold'>
 											{selectedUser.all_permissions?.length || 0}
 										</div>
 										<div className='text-xs font-medium'>Total de Permisos</div>
 									</div>
-									<div className='flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 p-4 text-gray-900 shadow-md'>
+									<div className='flex flex-col items-center justify-center rounded-xl bg-linear-to-br from-amber-400 to-yellow-500 p-4 text-gray-900 shadow-md'>
 										<Icon icon='HeroShieldCheck' className='mb-2 h-6 w-6' />
 										<div className='text-2xl font-bold'>
 											{selectedUser.direct_permissions?.length || 0}
 										</div>
 										<div className='text-xs font-medium'>Permisos Directos</div>
 									</div>
-									<div className='flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 p-4 text-white shadow-md'>
+									<div className='flex flex-col items-center justify-center rounded-xl bg-linear-to-br from-sky-400 to-blue-600 p-4 text-white shadow-md'>
 										<Icon icon='HeroUserGroup' className='mb-2 h-6 w-6' />
 										<div className='text-2xl font-bold'>
 											{selectedUser.role_permissions?.length || 0}
 										</div>
 										<div className='text-xs font-medium'>Por Roles</div>
 									</div>
-									<div className='flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 p-4 text-white shadow-md'>
+									<div className='flex flex-col items-center justify-center rounded-xl bg-linear-to-br from-emerald-400 to-green-600 p-4 text-white shadow-md'>
 										<Icon icon='HeroOfficeBuilding' className='mb-2 h-6 w-6' />
 										<div className='text-2xl font-bold'>
 											{roleContexts.length}
@@ -558,7 +558,7 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 							<CardHeader className=''>
 								<div className='flex w-full items-center justify-between'>
 									{/* Lado izquierdo - Título e icono */}
-									<div className='flex flex-shrink-0 items-center gap-3'>
+									<div className='flex shrink-0 items-center gap-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-lg'>
 											<Icon
 												icon='HeroCog6Tooth'
@@ -576,17 +576,17 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 									</div>
 
 									{/* Lado derecho - Badges, separador y tabs */}
-									<div className='ml-auto flex flex-shrink-0 items-center gap-4'>
+									<div className='ml-auto flex shrink-0 items-center gap-4'>
 										{/* Badge de estado */}
 										<div className='flex items-center gap-2'>
 											<Badge
 												color='blue'
-												className='px-3 py-1 text-xs font-medium shadow-sm'>
+												className='px-3 py-1 text-xs font-medium shadow-xs'>
 												{roleContexts.length} contextos
 											</Badge>
 											<Badge
 												color='emerald'
-												className='px-3 py-1 text-xs font-medium shadow-sm'>
+												className='px-3 py-1 text-xs font-medium shadow-xs'>
 												{selectedUser.all_permissions?.length || 0} permisos
 											</Badge>
 										</div>
@@ -595,7 +595,7 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 										<div className='h-10 w-px' />
 
 										{/* Tabs mejorados */}
-										<div className='flex rounded-lg p-1 shadow-sm'>
+										<div className='flex rounded-lg p-1 shadow-xs'>
 											<button
 												onClick={() => setActiveTab('roles')}
 												className={`rounded-md px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
@@ -650,7 +650,7 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 											{roleContexts.map((context) => (
 												<div
 													key={context.id}
-													className='rounded-lg p-4 shadow-sm'>
+													className='rounded-lg p-4 shadow-xs'>
 													<div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
 														{/* Selector de Rol */}
 														<div>
@@ -910,7 +910,7 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 														(e) =>
 															e.field === `${context.id}-duplicate`,
 													) && (
-														<div className='mt-2 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700'>
+														<div className='mt-2 rounded-sm border border-red-200 bg-red-50 p-2 text-sm text-red-700'>
 															<Icon
 																icon='HeroExclamationTriangle'
 																className='mr-1 inline h-4 w-4'

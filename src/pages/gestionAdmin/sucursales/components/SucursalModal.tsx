@@ -432,7 +432,7 @@ export default function SucursalModal({
 							<div className='flex items-start gap-3'>
 								<Icon
 									icon='HeroInformationCircle'
-									className='mt-0.5 flex-shrink-0 text-blue-600'
+									className='mt-0.5 shrink-0 text-blue-600'
 								/>
 								<div className='text-sm text-blue-800 dark:text-blue-300'>
 									<p className='mb-1 font-medium'>

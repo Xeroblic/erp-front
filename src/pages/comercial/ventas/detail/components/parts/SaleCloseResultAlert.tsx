@@ -45,7 +45,7 @@ const SaleCloseResultAlert: React.FC<ISaleCloseResultAlertProps> = ({
 						<li
 							key={fulfilled.sale_item_id}
 							className='flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5'>
-							<span className='min-w-0 break-words font-medium'>
+							<span className='min-w-0 font-medium wrap-break-word'>
 								{describeItem(
 									itemsById.get(fulfilled.sale_item_id),
 									fulfilled.sale_item_id,

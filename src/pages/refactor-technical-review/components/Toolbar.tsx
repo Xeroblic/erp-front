@@ -24,7 +24,7 @@ interface ToolbarProps {
 const Toolbar: React.FC<ToolbarProps> = ({ actions, title, className = '' }) => {
 	return (
 		<div
-			className={`flex items-center justify-between rounded-lg bg-white p-4 shadow dark:bg-gray-800 ${className}`}>
+			className={`flex items-center justify-between rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800 ${className}`}>
 			{title && (
 				<h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>{title}</h2>
 			)}

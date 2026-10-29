@@ -76,7 +76,7 @@ export const AioObservationsSection: React.FC<FormSectionProps<AioFormData>> = (
 			</div>
 
 			{/* Observaciones */}
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition-colors duration-200 hover:cursor-pointer dark:border-zinc-800 dark:bg-zinc-900/50 hover:dark:bg-zinc-900/80'>
+			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-xs transition-colors duration-200 hover:cursor-pointer dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900/80'>
 				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-zinc-800 dark:text-zinc-200'>
 					<Icon icon='HeroPencilSquare' className='h-5 w-5' />
 					{getAioLabel('observations')}
@@ -89,7 +89,7 @@ export const AioObservationsSection: React.FC<FormSectionProps<AioFormData>> = (
 					placeholder={AIO_PLACEHOLDERS.observations}
 					disabled={readOnly}
 					rows={4}
-					className={errors.observations ? 'border-red-500' : ''}
+					className={errors.observations ? 'border-red-500!' : ''}
 				/>
 				{errors.observations && (
 					<p className='mt-2 text-sm text-red-500'>{errors.observations}</p>

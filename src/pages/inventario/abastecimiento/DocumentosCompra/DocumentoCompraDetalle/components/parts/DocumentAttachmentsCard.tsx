@@ -372,7 +372,7 @@ const DocumentAttachmentsCard = forwardRef<
 				)}
 
 				{loading && (
-					<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+					<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 				)}
 
 				{!loading && listError && (

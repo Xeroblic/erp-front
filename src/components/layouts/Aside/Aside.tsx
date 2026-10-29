@@ -58,15 +58,15 @@ const Aside: FC<IAsideProps> = ({ children, className, ...rest }) => {
 		<aside
 			data-component-name='Aside'
 			className={classNames(
-				'group/aside peer fixed bottom-0 top-0 z-30 flex flex-col border-zinc-600/20 bg-[#ffffff] py-6 dark:border-zinc-800/50 dark:bg-zinc-900 dark:text-white md:z-20 ltr:border-r rtl:border-l',
+				'group/aside peer fixed top-0 bottom-0 z-30 flex flex-col border-zinc-600/20 bg-[#ffffff] py-6 md:z-20 ltr:border-r rtl:border-l dark:border-zinc-800/50 dark:bg-zinc-900 dark:text-white',
 				themeConfig.transition,
 				className,
 				// Mobile layout
-				'max-md:w-[20rem] max-md:shadow-2xl ltr:max-md:-left-[20rem] rtl:max-md:-right-[20rem]',
+				'max-md:w-[20rem] max-md:shadow-2xl max-md:ltr:-left-80 max-md:rtl:-right-80',
 				asideStatus ? 'md:w-[20rem]' : 'md:w-[6.225em] md:hover:w-[20rem]',
 				{
-					'ltr:max-md:-left-[20rem] rtl:max-md:-right-[20rem]': !asideStatus,
-					'ltr:max-md:left-0 rtl:max-md:right-0': asideStatus,
+					'max-md:ltr:-left-80 max-md:rtl:-right-80': !asideStatus,
+					'max-md:ltr:left-0 max-md:rtl:right-0': asideStatus,
 				},
 			)}
 			{...rest}>

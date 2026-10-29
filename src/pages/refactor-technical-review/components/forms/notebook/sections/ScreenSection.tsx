@@ -65,10 +65,7 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				{/* Warning */}
 				{NOTEBOOK_WARNINGS.screen_condition && (
 					<div className='mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200'>
-						<Icon
-							icon='HeroExclamationTriangle'
-							className='mt-0.5 h-4 w-4 flex-shrink-0'
-						/>
+						<Icon icon='HeroExclamationTriangle' className='mt-0.5 h-4 w-4 shrink-0' />
 						<span>{NOTEBOOK_WARNINGS.screen_condition}</span>
 					</div>
 				)}
@@ -121,7 +118,7 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								disabled={readOnly}
 								className={
 									errors.dead_pixels_count
-										? 'border-red-500 text-center'
+										? 'border-red-500! text-center'
 										: 'text-center'
 								}
 							/>
@@ -160,7 +157,7 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								disabled={readOnly}
 								className={
 									errors.spots_count
-										? 'border-red-500 text-center'
+										? 'border-red-500! text-center'
 										: 'text-center'
 								}
 							/>

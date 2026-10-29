@@ -181,8 +181,8 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 			<OffCanvas
 				isOpen={documentId !== null}
 				setIsOpen={handleDrawerOpenChange}
-				dialogClassName='!max-w-2xl'
-				contentClassName='!bg-white dark:!bg-zinc-900'>
+				dialogClassName='max-w-2xl!'
+				contentClassName='bg-white! dark:bg-zinc-900!'>
 				<OffCanvasHeader className='border-b border-zinc-200 px-6 pb-5 dark:border-zinc-800'>
 					<div className='min-w-0'>
 						<p className='truncate text-lg font-semibold'>
@@ -193,7 +193,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 						</p>
 					</div>
 				</OffCanvasHeader>
-				<OffCanvasBody className='space-y-4 bg-white px-4 py-5 dark:bg-zinc-900 sm:px-6'>
+				<OffCanvasBody className='space-y-4 bg-white px-4 py-5 sm:px-6 dark:bg-zinc-900'>
 					{!hasDataContext && (
 						<Alert
 							color='amber'
@@ -254,7 +254,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 											/>
 										</div>
 									</div>
-									<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-700 sm:grid-cols-3'>
+									<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 text-sm sm:grid-cols-3 dark:border-zinc-700'>
 										<div>
 											<p className='text-zinc-500'>N° de documento</p>
 											<p className='font-semibold tabular-nums'>
@@ -411,7 +411,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 							<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
 								<CardBody className='space-y-2 p-5'>
 									<p className='font-semibold'>Nota del documento</p>
-									<p className='whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300'>
+									<p className='text-sm whitespace-pre-wrap text-zinc-600 dark:text-zinc-300'>
 										{document.notes ?? 'Sin observaciones registradas.'}
 									</p>
 								</CardBody>

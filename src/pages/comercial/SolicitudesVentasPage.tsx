@@ -207,7 +207,7 @@ const SolicitudesVentasPage = () => {
 								<Label htmlFor='comentarios'>Comentarios / Observaciones</Label>
 								<textarea
 									id='comentarios'
-									className='mt-2 block w-full rounded-md border-zinc-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 sm:text-sm'
+									className='mt-2 block w-full rounded-md border-zinc-300 shadow-xs focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100'
 									rows={4}
 									placeholder='Notas internas sobre el estado de la venta...'
 								/>

@@ -173,7 +173,7 @@ const buildIntegrationColumns = ({
 								variant='outline'
 								rounded='rounded-full'
 								color={modeColors[row.original.mode] || 'zinc'}
-								className='flex w-fit items-center justify-center px-1.5 py-1 shadow-sm'>
+								className='flex w-fit items-center justify-center px-1.5 py-1 shadow-xs'>
 								<span className='flex items-center gap-0.5'>
 									{icons.map((ic) => (
 										<Icon key={ic} icon={ic} className='text-2xl' />
@@ -570,8 +570,8 @@ export const IntegrationsListContent: React.FC = () => {
 	return (
 		<>
 			<Container>
-				<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-700/80'>
-					<CardHeader className='flex-col items-start gap-4 border-b border-neutral-200 bg-neutral-50/60 dark:border-neutral-700 dark:bg-neutral-800/40 sm:flex-row sm:items-center sm:justify-between'>
+				<Card className='overflow-hidden border border-neutral-200 shadow-xs dark:border-neutral-700/80'>
+					<CardHeader className='flex-col items-start gap-4 border-b border-neutral-200 bg-neutral-50/60 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-700 dark:bg-neutral-800/40'>
 						<div className='flex items-center gap-3'>
 							<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/25 dark:bg-emerald-500/20 dark:ring-emerald-400/30'>
 								<Icon
@@ -598,7 +598,7 @@ export const IntegrationsListContent: React.FC = () => {
 									type='button'
 									className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
 										viewMode === 'active'
-											? 'bg-emerald-500 text-white shadow-sm'
+											? 'bg-emerald-500 text-white shadow-xs'
 											: 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'
 									}`}
 									onClick={() => setViewMode('active')}>
@@ -608,7 +608,7 @@ export const IntegrationsListContent: React.FC = () => {
 									type='button'
 									className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
 										viewMode === 'trash'
-											? 'bg-emerald-500 text-white shadow-sm'
+											? 'bg-emerald-500 text-white shadow-xs'
 											: 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'
 									}`}
 									onClick={() => setViewMode('trash')}>

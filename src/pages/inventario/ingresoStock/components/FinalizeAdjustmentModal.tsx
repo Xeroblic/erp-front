@@ -202,7 +202,7 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 									{[1, 2].map((i) => (
 										<div
 											key={i}
-											className='h-8 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700'
+											className='h-8 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700'
 										/>
 									))}
 								</div>
@@ -215,7 +215,7 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 										return (
 											<div
 												key={item.productId}
-												className='flex items-center justify-between rounded border border-zinc-100 px-3 py-2 text-sm dark:border-zinc-700'>
+												className='flex items-center justify-between rounded-sm border border-zinc-100 px-3 py-2 text-sm dark:border-zinc-700'>
 												<div className='min-w-0'>
 													<p className='truncate font-medium text-zinc-800 dark:text-zinc-100'>
 														{item.name}

@@ -130,7 +130,7 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 															onClick={open}
 															aria-label={`Ver imagen ${idx + 1} de ${category.name}`}
 															title='Ver imagen'
-															className='block aspect-square w-full cursor-zoom-in overflow-hidden rounded border border-zinc-200 p-0 transition hover:ring-2 hover:ring-violet-300 dark:border-zinc-700'>
+															className='block aspect-square w-full cursor-zoom-in overflow-hidden rounded-sm border border-zinc-200 p-0 transition hover:ring-2 hover:ring-violet-300 dark:border-zinc-700'>
 															<img
 																src={
 																	ensureAbsoluteUrl(
@@ -157,7 +157,7 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 								</div>
 							</div>
 						</div>
-						<div className='flex flex-col space-y-3 md:flex-row md:items-center md:space-x-4 md:space-y-0'>
+						<div className='flex flex-col space-y-3 md:flex-row md:items-center md:space-y-0 md:space-x-4'>
 							<div>
 								<h3 className='text-lg font-semibold'>{category.name}</h3>
 								{category.parent_name && (

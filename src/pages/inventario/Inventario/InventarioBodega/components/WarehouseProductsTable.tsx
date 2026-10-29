@@ -240,7 +240,7 @@ const WarehouseProductsTable: React.FC<IWarehouseProductsTableProps> = ({
 								<Tr key={`bodega-skeleton-${rowIndex}`}>
 									{Array.from({ length: COLUMN_COUNT }, (_cell, cellIndex) => (
 										<Td key={`bodega-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>
@@ -287,7 +287,7 @@ const WarehouseProductsTable: React.FC<IWarehouseProductsTableProps> = ({
 														event.stopPropagation();
 														toggle(row.product.id);
 													}}
-													className='flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 dark:hover:bg-zinc-800'>
+													className='flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-solid dark:hover:bg-zinc-800'>
 													<Icon
 														icon={
 															isOpen

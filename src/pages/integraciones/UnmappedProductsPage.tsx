@@ -84,7 +84,7 @@ const buildUnmappedProductColumns = ({
 		accessorFn: (row) => row.sku ?? '',
 		header: 'SKU',
 		cell: ({ row }) => (
-			<code className='rounded px-2 py-1 text-xs'>{row.original.sku || 'Sin SKU'}</code>
+			<code className='rounded-sm px-2 py-1 text-xs'>{row.original.sku || 'Sin SKU'}</code>
 		),
 	},
 	{

@@ -363,7 +363,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 			{/* ═══ Special Sale Alert (Canal 13) ═══ */}
 			{isSpecialSold && (
 				<div className='relative animate-pulse overflow-hidden rounded-2xl border-2 border-emerald-500 bg-emerald-50 p-6 shadow-lg transition-all dark:bg-emerald-950/30'>
-					<div className='absolute -right-4 -top-4 opacity-10'>
+					<div className='absolute -top-4 -right-4 opacity-10'>
 						<Icon icon='HeroCheckBadge' className='h-32 w-32 text-emerald-600' />
 					</div>
 					<div className='relative z-10 flex flex-col items-center gap-4 sm:flex-row'>
@@ -371,7 +371,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 							<Icon icon='HeroCheckBadge' className='h-10 w-10' />
 						</div>
 						<div className='text-center sm:text-left'>
-							<h3 className='text-xl font-black uppercase tracking-tight text-emerald-900 dark:text-emerald-100'>
+							<h3 className='text-xl font-black tracking-tight text-emerald-900 uppercase dark:text-emerald-100'>
 								¡EQUIPO VENDIDO!
 							</h3>
 							<p className='mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-300'>
@@ -387,10 +387,10 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 
 			{/* ═══ Error Banner ═══ */}
 			{error && (
-				<div className='flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800/50 dark:bg-red-950/40 dark:backdrop-blur-sm'>
+				<div className='flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800/50 dark:bg-red-950/40 dark:backdrop-blur-xs'>
 					<Icon
 						icon='HeroExclamationCircle'
-						className='mt-0.5 h-5 w-5 flex-shrink-0 text-red-500'
+						className='mt-0.5 h-5 w-5 shrink-0 text-red-500'
 					/>
 					<div>
 						<h4 className='text-sm font-semibold text-red-900 dark:text-red-100'>
@@ -402,16 +402,16 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 			)}
 
 			{/* ═══ Main Glass Container ═══ */}
-			<div className='relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-xl dark:border-white/[0.08] dark:bg-zinc-900/60 dark:shadow-2xl dark:backdrop-blur-xl'>
+			<div className='relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-xl dark:border-white/8 dark:bg-zinc-900/60 dark:shadow-2xl dark:backdrop-blur-xl'>
 				{/* Background Glow Orbs */}
 				<div className='pointer-events-none absolute inset-0 overflow-hidden'>
 					<div
-						className={`absolute -left-20 -top-20 h-80 w-80 rounded-full opacity-[0.07] blur-[100px] dark:opacity-[0.12] ${gradeConfig.orbBg}`}
+						className={`absolute -top-20 -left-20 h-80 w-80 rounded-full opacity-[0.07] blur-[100px] dark:opacity-[0.12] ${gradeConfig.orbBg}`}
 					/>
 					<div
-						className={`absolute -bottom-20 -right-20 h-80 w-80 rounded-full opacity-[0.05] blur-[100px] dark:opacity-[0.10] ${gradeConfig.orbBg}`}
+						className={`absolute -right-20 -bottom-20 h-80 w-80 rounded-full opacity-[0.05] blur-[100px] dark:opacity-[0.10] ${gradeConfig.orbBg}`}
 					/>
-					<div className='absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500 opacity-[0.03] blur-[120px] dark:opacity-[0.06]' />
+					<div className='absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500 opacity-[0.03] blur-[120px] dark:opacity-[0.06]' />
 				</div>
 
 				<div className='relative z-10 space-y-8 p-6 md:p-8'>
@@ -447,9 +447,9 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 
 					{/* ── Read-only Banner ── */}
 					{isApproved && (
-						<div className='flex flex-col gap-4 rounded-xl border border-blue-200/60 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 dark:border-blue-500/20 dark:from-blue-900/20 dark:to-indigo-900/20 sm:flex-row sm:items-center sm:justify-between'>
+						<div className='flex flex-col gap-4 rounded-xl border border-blue-200/60 bg-linear-to-r from-blue-50 to-indigo-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-blue-500/20 dark:from-blue-900/20 dark:to-indigo-900/20'>
 							<div className='flex items-center gap-3'>
-								<div className='flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/10 dark:bg-blue-500/20'>
+								<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 dark:bg-blue-500/20'>
 									<Icon
 										icon='HeroEye'
 										className='h-5 w-5 text-blue-500 dark:text-blue-400'
@@ -470,7 +470,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 								onClick={handleReopen}
 								isLoading={isReopening}
 								disabled={isReopening}
-								className='flex-shrink-0'>
+								className='shrink-0'>
 								<Icon
 									icon='HeroArrowPath'
 									className='mr-2 h-4 w-4 font-bold text-white'
@@ -485,7 +485,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 						{/* ── Left Info Card ── */}
 						<div
 							ref={leftCardRef}
-							className='order-2 w-full rounded-2xl border border-zinc-200/60 bg-zinc-50/80 p-5 backdrop-blur-sm transition-colors hover:bg-zinc-100/80 dark:border-white/[0.08] dark:bg-zinc-800/40 dark:hover:bg-zinc-800/60 md:order-1 md:w-60'>
+							className='order-2 w-full rounded-2xl border border-zinc-200/60 bg-zinc-50/80 p-5 backdrop-blur-xs transition-colors hover:bg-zinc-100/80 md:order-1 md:w-60 dark:border-white/8 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/60'>
 							<div className='mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-200/60 dark:bg-zinc-700/50'>
 								<Icon
 									icon='HeroSparkles'
@@ -494,7 +494,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 							</div>
 							<div className='space-y-4'>
 								<div>
-									<p className='text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500'>
+									<p className='text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase dark:text-zinc-500'>
 										Número de Serie
 									</p>
 									<p className='mt-1 font-mono text-lg font-bold tracking-tight text-zinc-900 dark:text-white'>
@@ -503,10 +503,10 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 								</div>
 								<div className='h-px w-full bg-zinc-200/80 dark:bg-zinc-700/50' />
 								<div>
-									<p className='text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500'>
+									<p className='text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase dark:text-zinc-500'>
 										Tipo de Equipo
 									</p>
-									<p className='mt-1 text-sm font-medium capitalize text-zinc-700 dark:text-zinc-300'>
+									<p className='mt-1 text-sm font-medium text-zinc-700 capitalize dark:text-zinc-300'>
 										{displayEquipmentType}
 									</p>
 								</div>
@@ -570,12 +570,12 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 								{/* Inner circle content */}
 								<div className='absolute inset-5 flex flex-col items-center justify-center rounded-full border border-zinc-200/60 bg-white/90 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-zinc-900/70 dark:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.03)]'>
 									<span
-										className={`text-[10px] font-extrabold uppercase tracking-[0.2em] ${gradeConfig.color}`}>
+										className={`text-[10px] font-extrabold tracking-[0.2em] uppercase ${gradeConfig.color}`}>
 										Grado Final
 									</span>
 									<span
 										ref={gradeLetterRef}
-										className='bg-gradient-to-b from-zinc-800 to-zinc-500 bg-clip-text text-7xl font-black text-transparent drop-shadow-sm dark:from-white dark:to-zinc-400 sm:text-8xl'>
+										className='bg-linear-to-b from-zinc-800 to-zinc-500 bg-clip-text text-7xl font-black text-transparent drop-shadow-xs sm:text-8xl dark:from-white dark:to-zinc-400'>
 										{grade}
 									</span>
 									<div className='mt-2 flex flex-col items-center'>
@@ -609,7 +609,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 						{/* ── Right Info Card ── */}
 						<div
 							ref={rightCardRef}
-							className='order-3 w-full rounded-2xl border border-zinc-200/60 bg-zinc-50/80 p-5 backdrop-blur-sm transition-colors hover:bg-zinc-100/80 dark:border-white/[0.08] dark:bg-zinc-800/40 dark:hover:bg-zinc-800/60 md:w-60'>
+							className='order-3 w-full rounded-2xl border border-zinc-200/60 bg-zinc-50/80 p-5 backdrop-blur-xs transition-colors hover:bg-zinc-100/80 md:w-60 dark:border-white/8 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/60'>
 							<div className='mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-200/60 dark:bg-zinc-700/50'>
 								<Icon
 									icon='HeroStar'
@@ -618,12 +618,12 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 							</div>
 							<div className='space-y-4'>
 								<div>
-									<p className='text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500'>
+									<p className='text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase dark:text-zinc-500'>
 										Grado Sugerido
 									</p>
 									<div className='mt-1 flex items-center gap-2'>
 										<span
-											className={`inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br text-sm font-black text-white ${gradeConfig.gradient}`}>
+											className={`inline-flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br text-sm font-black text-white ${gradeConfig.gradient}`}>
 											{grade}
 										</span>
 										<span className='text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
@@ -633,7 +633,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 								</div>
 								<div className='h-px w-full bg-zinc-200/80 dark:bg-zinc-700/50' />
 								<div>
-									<p className='text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500'>
+									<p className='text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase dark:text-zinc-500'>
 										Descripción
 									</p>
 									<p className='mt-1 text-sm text-zinc-600 dark:text-zinc-400'>
@@ -646,7 +646,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 
 					{/* ═══ Breakdown ═══ */}
 					{hasBreakdown && (
-						<div className='rounded-xl border border-zinc-200/60 bg-zinc-50/50 p-5 dark:border-white/[0.06] dark:bg-zinc-800/30'>
+						<div className='rounded-xl border border-zinc-200/60 bg-zinc-50/50 p-5 dark:border-white/6 dark:bg-zinc-800/30'>
 							<h4 className='mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
 								<Icon icon='HeroBolt' className='h-4 w-4 text-zinc-400' />
 								Desglose de Puntuación
@@ -656,7 +656,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 									<div
 										key={key}
 										className='flex items-center justify-between rounded-lg bg-white/60 px-3 py-2 dark:bg-zinc-800/40'>
-										<span className='text-sm capitalize text-zinc-500 dark:text-zinc-400'>
+										<span className='text-sm text-zinc-500 capitalize dark:text-zinc-400'>
 											{key.replace(/_/g, ' ')}
 										</span>
 										<span className='text-sm font-semibold text-zinc-800 dark:text-zinc-200'>
@@ -672,7 +672,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 					{!isApproved && (
 						<div className='space-y-4'>
 							{/* Recalculate */}
-							<div className='flex flex-col gap-4 rounded-xl border border-blue-200/60 bg-gradient-to-r from-blue-50 to-indigo-50/50 p-4 dark:border-blue-500/15 dark:from-blue-900/15 dark:to-indigo-900/10 sm:flex-row sm:items-center sm:justify-between'>
+							<div className='flex flex-col gap-4 rounded-xl border border-blue-200/60 bg-linear-to-r from-blue-50 to-indigo-50/50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-blue-500/15 dark:from-blue-900/15 dark:to-indigo-900/10'>
 								<div>
 									<h4 className='text-sm font-semibold text-blue-900 dark:text-blue-100'>
 										¿Modificaste los detalles técnicos?
@@ -688,7 +688,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 									onClick={handleRecalculate}
 									isLoading={isRecalculating}
 									disabled={isRecalculating || isApproving}
-									className='flex-shrink-0'>
+									className='shrink-0'>
 									<Icon icon='HeroArrowPath' className='mr-2 h-4 w-4' />
 									{isRecalculating ? 'Recalculando...' : 'Recalcular'}
 								</Button>
@@ -696,11 +696,11 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 
 							{/* Manual Override Toggle */}
 							{!showManualOverride && (
-								<div className='flex flex-col gap-4 rounded-xl border border-zinc-200/60 bg-zinc-50/80 p-4 dark:border-white/[0.06] dark:bg-zinc-800/30 sm:flex-row sm:items-center sm:justify-between'>
+								<div className='flex flex-col gap-4 rounded-xl border border-zinc-200/60 bg-zinc-50/80 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/6 dark:bg-zinc-800/30'>
 									<div className='flex gap-3'>
 										<Icon
 											icon='HeroInformationCircle'
-											className='mt-0.5 h-5 w-5 flex-shrink-0 text-zinc-400'
+											className='mt-0.5 h-5 w-5 shrink-0 text-zinc-400'
 										/>
 										<div>
 											<h4 className='text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
@@ -715,7 +715,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 									<Button
 										variant='outline'
 										onClick={() => setShowManualOverride(true)}
-										className='flex-shrink-0'>
+										className='shrink-0'>
 										Modificar Grado
 									</Button>
 								</div>
@@ -792,7 +792,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 					)}
 
 					{/* ═══ Footer Actions ═══ */}
-					<div className='flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200/60 pt-5 dark:border-white/[0.06]'>
+					<div className='flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200/60 pt-5 dark:border-white/6'>
 						<div className='flex flex-wrap gap-2'>
 							<Button
 								variant='outline'

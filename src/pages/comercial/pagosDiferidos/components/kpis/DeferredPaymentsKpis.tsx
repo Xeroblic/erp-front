@@ -19,7 +19,7 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 			tooltip:
 				'Todo lo que nos deben en total, considerando todos los documentos no pagados: vencidos, por vencer o vigentes.',
 			icon: 'HeroBanknotes' as const,
-			accent: 'bg-blue-600 text-white shadow-sm',
+			accent: 'bg-blue-600 text-white shadow-xs',
 		},
 		{
 			label: 'Vencido',
@@ -28,7 +28,7 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 			tooltip:
 				'Documentos cuya fecha de pago ya pasó y todavía no están saldados. Es dinero que debería haber llegado y no llegó.',
 			icon: 'HeroExclamationTriangle' as const,
-			accent: 'bg-red-600 text-white shadow-sm',
+			accent: 'bg-red-600 text-white shadow-xs',
 		},
 		{
 			label: 'Por vencer en 7 días',
@@ -37,7 +37,7 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 			tooltip:
 				'Documentos que todavía no vencen, pero vencen dentro de los próximos 7 días. Es una alerta preventiva.',
 			icon: 'HeroClock' as const,
-			accent: 'bg-amber-600 text-white shadow-sm',
+			accent: 'bg-amber-600 text-white shadow-xs',
 		},
 		{
 			label: 'Vigente',
@@ -46,7 +46,7 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 			tooltip:
 				'Documentos no pagados que vencen en más de 7 días. No están vencidos ni dentro de la alerta preventiva de esta semana.',
 			icon: 'HeroDocumentText' as const,
-			accent: 'bg-zinc-700 text-white shadow-sm',
+			accent: 'bg-zinc-700 text-white shadow-xs',
 		},
 	];
 
@@ -55,14 +55,14 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 			{items.map((item) => (
 				<Card
 					key={item.label}
-					className='h-full border border-zinc-200/80 bg-white/95 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900'>
+					className='h-full border border-zinc-200/80 bg-white/95 shadow-xs dark:border-zinc-800/80 dark:bg-zinc-900'>
 					<CardBody className='flex items-center gap-4'>
 						{loading ? (
 							<div className='flex w-full animate-pulse items-center gap-4'>
 								<div className='h-12 w-12 rounded-2xl bg-zinc-200 dark:bg-zinc-700' />
 								<div className='flex-1 space-y-2'>
-									<div className='h-3 w-24 rounded bg-zinc-200 dark:bg-zinc-700' />
-									<div className='h-7 w-32 rounded bg-zinc-200 dark:bg-zinc-700' />
+									<div className='h-3 w-24 rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+									<div className='h-7 w-32 rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 								</div>
 							</div>
 						) : (
@@ -88,7 +88,7 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 											</button>
 										</Tooltip>
 									</p>
-									<p className='truncate text-2xl font-semibold tabular-nums text-zinc-900 dark:text-white'>
+									<p className='truncate text-2xl font-semibold text-zinc-900 tabular-nums dark:text-white'>
 										{formatDeferredPaymentAmount(item.amount)}
 									</p>
 									<p className='text-sm text-zinc-500 dark:text-zinc-400'>

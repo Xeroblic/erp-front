@@ -64,11 +64,11 @@ const PendingSerialBadge = () => {
 					icon='HeroQrCode'
 					aria-label={label}
 					onClick={() => navigate(PENDING_SERIAL_ROUTE)}
-					className='h-10 w-10 !rounded-full border border-white/60 bg-white !p-0 text-amber-500 shadow-md shadow-amber-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-amber-300'
+					className='h-10 w-10 rounded-full! border border-white/60 bg-white p-0! text-amber-500 shadow-md shadow-amber-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-amber-300'
 				/>
 			</Tooltip>
 			{count > 0 && (
-				<span className='pointer-events-none absolute -end-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-white shadow'>
+				<span className='pointer-events-none absolute -inset-e-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-white shadow-sm'>
 					{count > 99 ? '99+' : count}
 				</span>
 			)}

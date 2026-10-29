@@ -160,7 +160,7 @@ export default function AccesoJerarquico({
 							return (
 								<Card
 									key={card.sid}
-									className='min-w-[280px] max-w-[420px] border border-zinc-200/70 bg-white transition-colors dark:border-zinc-700 dark:bg-zinc-900/60'>
+									className='max-w-[420px] min-w-[280px] border border-zinc-200/70 bg-white transition-colors dark:border-zinc-700 dark:bg-zinc-900/60'>
 									<CardBody className='p-3'>
 										<div className='flex items-center justify-between'>
 											<div className='flex items-center gap-3'>

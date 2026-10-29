@@ -2,6 +2,19 @@ import React, { FC, memo, useEffect, useLayoutEffect, useMemo, useRef } from 're
 import ApexCharts, { type ApexOptions } from 'apexcharts';
 import colors from 'tailwindcss/colors';
 import _ from 'lodash';
+import oklchToHex from '@/utils/oklchToHex.util';
+
+// ApexCharts aclara, oscurece y concatena alfa sobre estos colores: necesita hex y la paleta
+// de Tailwind 4 viene en oklch.
+const chartColors = {
+	blue: oklchToHex(colors.blue['500']),
+	emerald: oklchToHex(colors.emerald['500']),
+	amber: oklchToHex(colors.amber['500']),
+	rose: oklchToHex(colors.rose['500']),
+	purple: oklchToHex(colors.purple['500']),
+	green: oklchToHex(colors.green['500']),
+	zinc: oklchToHex(colors.zinc['500']),
+};
 
 type ChartSeries = Parameters<ApexCharts['updateSeries']>[0];
 type ChartType = NonNullable<NonNullable<ApexOptions['chart']>['type']>;
@@ -53,18 +66,18 @@ const Chart: FC<IChartProps> = (props) => {
 				},
 			},
 			colors: [
-				colors.blue['500'],
-				colors.emerald['500'],
-				colors.amber['500'],
-				colors.rose['500'],
-				colors.purple['500'],
+				chartColors.blue,
+				chartColors.emerald,
+				chartColors.amber,
+				chartColors.rose,
+				chartColors.purple,
 			],
 			dataLabels: {
 				enabled: false,
 			},
 			grid: {
 				show: true,
-				borderColor: `${colors.zinc['500']}25`,
+				borderColor: `${chartColors.zinc}25`,
 				strokeDashArray: 0,
 				xaxis: {
 					lines: {
@@ -85,7 +98,7 @@ const Chart: FC<IChartProps> = (props) => {
 			},
 			legend: {
 				labels: {
-					colors: colors.zinc['500'],
+					colors: chartColors.zinc,
 				},
 			},
 			plotOptions: {
@@ -94,14 +107,14 @@ const Chart: FC<IChartProps> = (props) => {
 				},
 				candlestick: {
 					colors: {
-						upward: `${colors.green['500']}`,
-						downward: `${colors.rose['500']}`,
+						upward: `${chartColors.green}`,
+						downward: `${chartColors.rose}`,
 					},
 				},
 				boxPlot: {
 					colors: {
-						upper: `${colors.green['500']}`,
-						lower: `${colors.rose['500']}`,
+						upper: `${chartColors.green}`,
+						lower: `${chartColors.rose}`,
 					},
 				},
 			},
@@ -116,26 +129,26 @@ const Chart: FC<IChartProps> = (props) => {
 			xaxis: {
 				axisBorder: {
 					show: true,
-					color: `${colors.zinc['500']}50`,
+					color: `${chartColors.zinc}50`,
 				},
 				axisTicks: {
 					show: false,
 				},
 				labels: {
 					style: {
-						colors: colors.zinc['500'],
+						colors: chartColors.zinc,
 					},
 				},
 			},
 			yaxis: {
 				labels: {
 					style: {
-						colors: colors.zinc['500'],
+						colors: chartColors.zinc,
 					},
 				},
 				title: {
 					style: {
-						color: colors.zinc['500'],
+						color: chartColors.zinc,
 					},
 				},
 			},

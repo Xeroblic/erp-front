@@ -121,7 +121,7 @@ const buildInvitationColumns = ({
 					<Badge
 						color={config.color}
 						variant='outline' // 'light' es el que mejor queda en tablas ERP para no cansar la vista
-						className='flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-tight'>
+						className='flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-bold tracking-tight uppercase'>
 						<Icon icon={config.icon} className='mr-1.5 h-3.5 w-3.5' />
 						{config.label}
 					</Badge>
@@ -384,7 +384,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 
 	if (isLoading && invitations.length === 0) {
 		return (
-			<Card className='border border-zinc-200 shadow-sm dark:border-zinc-700'>
+			<Card className='border border-zinc-200 shadow-xs dark:border-zinc-700'>
 				<CardBody className='p-12 text-center'>
 					<div className='mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30'>
 						<Icon
@@ -405,7 +405,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 
 	if (!isLoading && invitations.length === 0) {
 		return (
-			<Card className='border border-zinc-200 shadow-sm dark:border-zinc-700'>
+			<Card className='border border-zinc-200 shadow-xs dark:border-zinc-700'>
 				<CardBody className='p-12 text-center'>
 					<div className='justify-centermb-4 inline-flex items-center rounded-full bg-zinc-100 dark:bg-zinc-800'>
 						<Icon icon='HeroPaperAirplane' className='h-10 w-10 text-zinc-400' />
@@ -426,7 +426,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 
 	return (
 		<>
-			<Card className='border border-zinc-200 shadow-sm dark:border-zinc-700'>
+			<Card className='border border-zinc-200 shadow-xs dark:border-zinc-700'>
 				<CardBody className='overflow-x-auto p-0'>
 					<Table className='w-full'>
 						<THead className='bg-zinc-50 dark:bg-zinc-800/50'>

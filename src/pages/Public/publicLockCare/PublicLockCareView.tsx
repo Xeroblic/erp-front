@@ -238,7 +238,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 	// --- Pantalla de carga ---
 	if (isLoadingInfo) {
 		return (
-			<main className='relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
+			<main className='relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
 				<div className='flex flex-col items-center gap-4'>
 					<div className='h-12 w-12 animate-spin rounded-full border-4 border-white border-t-transparent' />
 					<p className='text-lg font-medium text-white/90'>
@@ -252,7 +252,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 	// --- Pantalla de error (casillero no disponible o error de red) ---
 	if (infoError) {
 		return (
-			<main className='relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
+			<main className='relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
 				<Card className='mx-auto max-w-lg border border-emerald-900/10 bg-white/90 shadow-2xl backdrop-blur-xl'>
 					<CardBody className='p-8 text-center'>
 						{!isScannerOpen ? (
@@ -266,7 +266,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 								<p className='mt-3 text-zinc-600'>{infoError}</p>
 								{/* --- SECCIÓN NUEVA: BADGES DE CASILLEROS DISPONIBLES --- */}
 								{suggestedLockers && suggestedLockers.length > 0 && (
-									<div className='mt-5 rounded-xl border border-emerald-100 bg-emerald-50/80 p-4 text-left shadow-sm'>
+									<div className='mt-5 rounded-xl border border-emerald-100 bg-emerald-50/80 p-4 text-left shadow-xs'>
 										<p className='mb-3 flex items-center gap-2 text-sm font-semibold text-emerald-800'>
 											<Icon
 												icon='HeroCheckCircle'
@@ -278,7 +278,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 											{suggestedLockers.map((num, idx) => (
 												<span
 													key={idx}
-													className='inline-flex items-center gap-x-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-emerald-700 shadow-sm ring-1 ring-inset ring-emerald-200 transition-colors hover:bg-emerald-50'>
+													className='inline-flex items-center gap-x-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-emerald-700 shadow-xs ring-1 ring-emerald-200 transition-colors ring-inset hover:bg-emerald-50'>
 													#{num}
 												</span>
 											))}
@@ -361,7 +361,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 	// con las instrucciones completas y un botón para volver a ver el PIN
 	if (isCheckInComplete && !isPinModalOpen) {
 		return (
-			<main className='relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
+			<main className='relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
 				<FormLockCareDecorations
 					ornaments={floatingOrnaments}
 					showEnhancedEffects={shouldRenderHeavyDecorations && decorationsReady}
@@ -378,7 +378,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 				<button
 					type='button'
 					onClick={handleOpenPinModal}
-					className='fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-xl hover:shadow-emerald-500/40 active:scale-95'
+					className='fixed right-6 bottom-6 z-50 flex items-center gap-2 rounded-full bg-linear-to-r from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-xl hover:shadow-emerald-500/40 active:scale-95'
 					aria-label='Ver PIN de acceso'>
 					<Icon icon='HeroKey' className='h-5 w-5' />
 					Ver mi PIN
@@ -397,7 +397,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 
 	// --- Formulario principal (reutilizando diseño del MVP) ---
 	return (
-		<main className='relative min-h-full overflow-hidden bg-gradient-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
+		<main className='relative min-h-full overflow-hidden bg-linear-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
 			<FormLockCareDecorations
 				ornaments={floatingOrnaments}
 				showEnhancedEffects={shouldRenderHeavyDecorations && decorationsReady}
@@ -408,7 +408,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 					<CardHeader className='border-b border-zinc-200/70 px-6 py-5 sm:px-8'>
 						<div className='flex w-full items-start justify-between gap-4'>
 							<div className='space-y-2'>
-								<div className='inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700'>
+								<div className='inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-emerald-50 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-emerald-700 uppercase'>
 									<Icon icon='HeroSparkles' className='h-4 w-4' />
 									Ingreso de equipo
 								</div>
@@ -416,13 +416,13 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 									Ingrese un Ticket
 								</CardTitle>
 							</div>
-							<div className='flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-400'>
+							<div className='flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-400'>
 								<Icon icon='HeroTicket' className='h-7 w-7 text-white' />
 							</div>
 						</div>
 					</CardHeader>
 
-					<CardBody className='px-5 pb-6 pt-5 sm:px-7 sm:pb-7 sm:pt-6'>
+					<CardBody className='px-5 pt-5 pb-6 sm:px-7 sm:pt-6 sm:pb-7'>
 						<div className='grid grid-cols-1 items-start gap-4 lg:grid-cols-[0.9fr_1.1fr]'>
 							<FormLockCareGuidePanel
 								showSteps={showStepsMobile}

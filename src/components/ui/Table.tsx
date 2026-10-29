@@ -92,10 +92,10 @@ export const Th: FC<IThProps> = (props) => {
 		'bg-zinc-950/10',
 		'dark:bg-zinc-950/90',
 		'p-4',
-		'ltr:group-[&:first-child]/Tr:[&:first-child]:rounded-tl-lg ltr:group-[&:first-child]/Tr:[&:last-child]:rounded-tr-lg',
-		'ltr:group-[&:last-child]/Tr:[&:first-child]:rounded-bl-lg ltr:group-[&:last-child]/Tr:[&:last-child]:rounded-br-lg',
-		'rtl:group-[&:first-child]/Tr:[&:first-child]:rounded-tr-lg rtl:group-[&:first-child]/Tr:[&:last-child]:rounded-tl-lg',
-		'rtl:group-[&:last-child]/Tr:[&:first-child]:rounded-br-lg rtl:group-[&:last-child]/Tr:[&:last-child]:rounded-bl-lg',
+		'first:group-first/Tr:ltr:rounded-tl-lg last:group-first/Tr:ltr:rounded-tr-lg',
+		'first:group-last/Tr:ltr:rounded-bl-lg last:group-last/Tr:ltr:rounded-br-lg',
+		'first:group-first/Tr:rtl:rounded-tr-lg last:group-first/Tr:rtl:rounded-tl-lg',
+		'first:group-last/Tr:rtl:rounded-br-lg last:group-last/Tr:rtl:rounded-bl-lg',
 		{ 'shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.1)]': isColumnBorder },
 		{ 'dark:shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.05)]': isColumnBorder },
 		{ relative: isResizable },
@@ -129,7 +129,7 @@ export const ThResizer: FC<IThResizerProps> = (props) => {
 		<div
 			data-component-name='Table/ThResizer'
 			className={classNames(
-				'absolute -right-0.5 top-0 z-10',
+				'absolute top-0 -right-0.5 z-10',
 				'h-full w-1',
 				'cursor-col-resize touch-none select-none',
 				[`bg-${color}-${colorIntensity}`],
@@ -153,8 +153,8 @@ export const Td: FC<ITdProps> = (props) => {
 	const { children, className, ...rest } = props;
 
 	const classes = classNames(
-		'ltr:[&:first-child]:rounded-l-lg ltr:[&:last-child]:rounded-r-lg',
-		'rtl:[&:first-child]:rounded-r-lg rtl:[&:last-child]:rounded-l-lg',
+		'first:ltr:rounded-l-lg last:ltr:rounded-r-lg',
+		'first:rtl:rounded-r-lg last:rtl:rounded-l-lg',
 		'group-even/Tr:bg-zinc-500/5',
 		'group-hover/Tr:bg-zinc-500/10',
 		'dark:group-even/Tr:bg-zinc-950/50',

@@ -73,13 +73,13 @@ const buildProductColumns = ({
 				<div className='flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-400'>
 					<Icon icon='HeroCube' className='h-4 w-4' />
 				</div>
-				<div className='min-w-0 max-w-[280px]'>
+				<div className='max-w-[280px] min-w-0'>
 					<p
-						className='line-clamp-2 break-words font-semibold text-neutral-900 dark:text-neutral-100'
+						className='line-clamp-2 font-semibold wrap-break-word text-neutral-900 dark:text-neutral-100'
 						title={row.original.name}>
 						{row.original.name}
 					</p>
-					<p className='mt-0.5 break-all font-mono text-[11px] text-neutral-400'>
+					<p className='mt-0.5 font-mono text-[11px] break-all text-neutral-400'>
 						SKU: {row.original.sku}
 					</p>
 				</div>

@@ -383,7 +383,7 @@ describe('Ajuste de inventario — integración de vista, hook, slice y servicio
 		// La ubicación recién elegida tampoco se valida como vacía.
 		expect(screen.queryByText('Indica la ubicación del ajuste.')).not.toBeInTheDocument();
 		expect(screen.getByLabelText('Cantidad de ajuste de la línea 1')).not.toHaveClass(
-			'!border-red-500',
+			'border-red-500!',
 		);
 	});
 

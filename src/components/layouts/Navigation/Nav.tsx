@@ -81,7 +81,7 @@ const useNavItemClasses = () => {
 			'border-transparent',
 			`dark:border-${themeColor}-${themeColorShade}`,
 			'nav-active-conic', // Asumo que esto es un gradiente o estilo especial tuyo
-			'shadow-sm', // Agregué una sombra sutil al activo
+			'shadow-xs', // Agregué una sombra sutil al activo
 		),
 		here: `text-${themeColor}-${themeColorShade} border-transparent`,
 	};
@@ -113,7 +113,7 @@ const NavItemText: FC<INavItemTextProps> = (props) => {
 		<div
 			data-component-name='Nav/NavItemText'
 			className={classNames(
-				'overflow-hidden truncate whitespace-nowrap text-zinc-600 dark:text-zinc-300',
+				'truncate overflow-hidden whitespace-nowrap text-zinc-600 dark:text-zinc-300',
 				`hover:text-${themeColor}-${themeColorShade} dark:hover:text-${themeColor}-${themeColorShade}`,
 				className,
 			)}
@@ -399,7 +399,7 @@ export const NavCollapse: FC<INavCollapseProps> = (props) => {
 						animate='open'
 						exit='collapsed'
 						className={classNames(
-							'!transition-margin !duration-300 !ease-in-out md:group-hover/aside:ms-4',
+							'transition-margin! duration-300! ease-in-out! md:group-hover/aside:ms-4',
 							{ 'ms-4': asideStatus },
 						)}>
 						{/* Truco: Pasamos una prop extra a los hijos para que sepan que deben animarse.
@@ -434,7 +434,7 @@ export const NavTitle: FC<INavTitleProps> = (props) => {
 			<li
 				data-component-name='Nav/NavTitle'
 				className={classNames(
-					'mt-4 list-none overflow-hidden truncate whitespace-nowrap px-3 py-1.5 text-sm font-semibold uppercase text-zinc-700 dark:text-zinc-100', // Agregué un margen top para respirar
+					'mt-4 list-none truncate overflow-hidden px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-zinc-700 uppercase dark:text-zinc-100', // Agregué un margen top para respirar
 					className,
 				)}
 				{...rest}>
@@ -451,7 +451,7 @@ export const NavTitle: FC<INavTitleProps> = (props) => {
 					</span>
 					<div
 						className={classNames(
-							'my-1.5 h-2 w-full max-w-[6rem] rounded-full bg-zinc-500',
+							'my-1.5 h-2 w-full max-w-24 rounded-full bg-zinc-500',
 							{ hidden: asideStatus, 'md:group-hover/aside:hidden': !asideStatus },
 						)}
 					/>
@@ -484,7 +484,7 @@ export const NavUser: FC<INavUserProps> = (props) => {
 				className={classNames('w-6 rounded-full md:group-hover/aside:me-3', {
 					'me-3': asideStatus,
 				})}
-				rounded='rounded'
+				rounded='rounded-sm'
 			/>
 			<NavItemContent>
 				<NavItemText>{t(text)}</NavItemText>

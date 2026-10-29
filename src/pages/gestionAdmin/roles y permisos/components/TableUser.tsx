@@ -98,14 +98,14 @@ const buildUserColumns = ({
 											user.displayName ??
 											`${user.first_name} ${user.last_name}`
 										}
-										className='h-10 w-10 flex-shrink-0 rounded-full object-cover'
+										className='h-10 w-10 shrink-0 rounded-full object-cover'
 									/>
 								);
 							}
 
 							const initials = `${user.first_name?.charAt(0) ?? '—'}${user.last_name?.charAt(0) ?? ''}`;
 							return (
-								<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-zinc-500 font-semibold text-white'>
+								<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-500 font-semibold text-white'>
 									{initials}
 								</div>
 							);

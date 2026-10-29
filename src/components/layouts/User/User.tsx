@@ -68,9 +68,9 @@ const User: FC<IUserProps> = (props) => {
 		<div data-component-name='User' className={classNames('relative', className)} {...rest}>
 			<motion.div
 				className={classNames(
-					'mb-2 min-w-[4.5rem] overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-950',
+					'mb-2 min-w-18 overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-950',
 					{
-						'ltr:translate-x-[-0.625rem] rtl:translate-x-[0.625rem]': !asideStatus,
+						'ltr:-translate-x-2.5 rtl:translate-x-2.5': !asideStatus,
 					},
 					themeConfig.transition,
 				)}
@@ -100,8 +100,8 @@ const User: FC<IUserProps> = (props) => {
 					) : (
 						<motion.div
 							className={classNames(
-								'flex aspect-square h-12 w-12 items-center justify-center bg-opacity-20',
-								[`bg-${reactiveThemeColor}-${reactiveThemeColorShade}`],
+								'flex aspect-square h-12 w-12 items-center justify-center',
+								[`bg-${reactiveThemeColor}-${reactiveThemeColorShade}/20`],
 								[`text-${reactiveThemeColor}-${reactiveThemeColorShade}`],
 								[`${roundedCustom(-2)}`],
 							)}
@@ -136,8 +136,8 @@ const User: FC<IUserProps> = (props) => {
 				</AnimatePresence>
 			</motion.div>
 			<span
-				className={classNames('absolute end-0 top-0 -me-1 -mt-1 flex h-3 w-3', {
-					'ltr:translate-x-[0.625rem] rtl:translate-x-[-0.625rem]': !asideStatus,
+				className={classNames('absolute inset-e-0 top-0 -me-1 -mt-1 flex h-3 w-3', {
+					'ltr:translate-x-2.5 rtl:-translate-x-2.5': !asideStatus,
 				})}>
 				<motion.span
 					className={classNames('absolute inline-flex h-full w-full rounded-full', [

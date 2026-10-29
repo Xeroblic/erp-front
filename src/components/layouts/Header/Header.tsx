@@ -18,7 +18,7 @@ export const HeaderLeft: FC<IHeaderLeftProps> = (props) => {
 			data-component-name='Header/HeaderLeft'
 			className={classNames(
 				'flex items-center gap-4',
-				'ltr:md:mr-auto rtl:md:ml-auto',
+				'md:ltr:mr-auto md:rtl:ml-auto',
 				className,
 			)}
 			{...rest}>
@@ -50,7 +50,7 @@ export const HeaderRight: FC<IHeaderRightProps> = (props) => {
 			data-component-name='Header/HeaderRight'
 			className={classNames(
 				'flex items-center gap-4',
-				'ltr:md:ml-auto rtl:md:mr-auto',
+				'md:ltr:ml-auto md:rtl:mr-auto',
 				className,
 			)}
 			{...rest}>
@@ -78,7 +78,9 @@ const Header: FC<IHeaderProps> = (props) => {
 				data-component-name='Header'
 				className={classNames(
 					'sticky top-0 z-40',
-					'flex justify-between gap-4',
+					// Contenedor de consulta: el grupo derecho se compacta según el ancho real del
+					// header, que con el aside abierto es bastante menor que el viewport.
+					'@container flex flex-wrap justify-between gap-4',
 					'border-b border-zinc-300/25 bg-[#ffffffa3] dark:bg-[#18181b]',
 					'p-6',
 					'backdrop-blur-md',

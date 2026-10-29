@@ -128,7 +128,7 @@ const EditarMarca: React.FC<EditarMarcaProps> = ({
 									if (hidden) hidden.value = value ? '1' : '0';
 								}}
 							/>
-							<Label htmlFor='edit-brand-active-toggle' className='!mb-0'>
+							<Label htmlFor='edit-brand-active-toggle' className='mb-0!'>
 								Activa
 							</Label>
 						</div>

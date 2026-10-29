@@ -252,7 +252,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 			isOpen={isOpen}
 			setIsOpen={onClose}
 			position='right'
-			dialogClassName='md:!max-w-[65rem] w-full'
+			dialogClassName='md:max-w-260! w-full'
 			isStaticBackdrop>
 			<OffCanvasHeader>
 				<div className='flex items-center gap-3'>
@@ -435,6 +435,9 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																<Input
 																	id='sku'
 																	{...field}
+																	isValid={!meta.error}
+																	isTouched={meta.touched}
+																	invalidFeedback={meta.error}
 																	onChange={(
 																		e: React.ChangeEvent<HTMLInputElement>,
 																	) => {
@@ -606,6 +609,9 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															<Input
 																id='name'
 																{...field}
+																isValid={!meta.error}
+																isTouched={meta.touched}
+																invalidFeedback={meta.error}
 																required
 																disabled={isBusy}
 															/>

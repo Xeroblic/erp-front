@@ -221,7 +221,7 @@ export const ProductDetailCard = ({
 							{[1, 2, 3].map((i) => (
 								<div
 									key={i}
-									className='h-8 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700'
+									className='h-8 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700'
 								/>
 							))}
 						</div>

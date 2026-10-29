@@ -31,7 +31,7 @@ const PortsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	return (
 		<div className='space-y-6'>
 			<div className='flex w-full flex-col items-start gap-8 rounded-2xl border border-zinc-800/50 bg-zinc-900/20 p-6 lg:flex-row'>
-				<div className='w-full flex-[2]'>
+				<div className='w-full flex-2'>
 					<div className='grid grid-cols-2 gap-6 md:grid-cols-3'>
 						{PORT_COUNTER_FIELDS.map((port) => {
 							const name = port.column as keyof NotebookFormData;
@@ -40,7 +40,7 @@ const PortsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 								<div
 									key={port.column}
 									className='flex flex-col items-center gap-3 p-2'>
-									<label className='text-[10px] font-bold uppercase tracking-widest text-zinc-500'>
+									<label className='text-[10px] font-bold tracking-widest text-zinc-500 uppercase'>
 										{port.short}
 									</label>
 									<div className='w-full max-w-[140px]'>

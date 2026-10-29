@@ -178,7 +178,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 								? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
 								: 'border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50'
 						}`}>
-						<div className='mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm dark:bg-gray-800'>
+						<div className='mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-xs dark:bg-gray-800'>
 							<Icon
 								icon='HeroCloudArrowUp'
 								className={`h-8 w-8 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
@@ -273,7 +273,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 									}}
 								/>
 							</div>
-							<div className='absolute inset-0 flex items-center justify-center gap-3 bg-black/80 opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
+							<div className='absolute inset-0 flex items-center justify-center gap-3 bg-black/80 opacity-0 backdrop-blur-xs transition-all duration-300 group-hover:opacity-100'>
 								<Button
 									size='lg'
 									variant='solid'
@@ -350,7 +350,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 										/>
 									</div>
 
-									<div className='absolute inset-0 flex items-center justify-center gap-3 bg-black/85 opacity-0 backdrop-blur-sm transition-all duration-200 group-hover:opacity-100'>
+									<div className='absolute inset-0 flex items-center justify-center gap-3 bg-black/85 opacity-0 backdrop-blur-xs transition-all duration-200 group-hover:opacity-100'>
 										<Button
 											size='sm'
 											variant='solid'
@@ -378,12 +378,12 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 										)}
 									</div>
 
-									<div className='absolute right-2 top-2 rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white shadow-sm'>
+									<div className='absolute top-2 right-2 rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white shadow-xs'>
 										#{index + 1}
 									</div>
 
 									{image.alt && (
-										<div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-2 py-1.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100'>
+										<div className='absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/80 to-transparent px-2 py-1.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100'>
 											{image.alt}
 										</div>
 									)}
@@ -398,7 +398,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 				<Card>
 					<CardBody>
 						<div className='rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-12 text-center dark:border-gray-700 dark:bg-gray-900/50'>
-							<div className='mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-sm dark:bg-gray-800'>
+							<div className='mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-xs dark:bg-gray-800'>
 								<Icon icon='HeroPhoto' className='h-10 w-10 text-gray-300' />
 							</div>
 							<p className='mb-1 text-base font-semibold text-gray-900 dark:text-white'>
@@ -535,7 +535,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 								<img
 									src={lightboxImage}
 									alt='Vista ampliada'
-									className='pointer-events-none absolute left-1/2 top-1/2 select-none transition-transform duration-150 ease-out'
+									className='pointer-events-none absolute top-1/2 left-1/2 transition-transform duration-150 ease-out select-none'
 									draggable={false}
 									style={{
 										transform: isZoomed
@@ -561,7 +561,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 								</div>
 							)}
 							{isZoomed && (
-								<div className='pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-black/80 px-4 py-2 text-xs text-white shadow-lg backdrop-blur-sm'>
+								<div className='pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-black/80 px-4 py-2 text-xs text-white shadow-lg backdrop-blur-xs'>
 									<Icon
 										icon='HeroCursorArrowRays'
 										className='mr-2 inline h-4 w-4'

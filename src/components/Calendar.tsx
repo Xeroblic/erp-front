@@ -20,6 +20,7 @@ import colors from 'tailwindcss/colors';
 import theme from 'tailwindcss/defaultTheme';
 import { useTranslation } from 'react-i18next';
 import themeConfig from '../config/theme.config';
+import { resolveTailwindColorAlpha } from '../utils/tailwindColorResolver.util';
 
 export type TViewMode = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek' | string;
 
@@ -65,8 +66,8 @@ const Calendar = (props: ICalendarProps) => {
 				:root {
 					--fc-classic-background: transparent;
 					--fc-classic-foreground: currentColor;
-					--fc-classic-border: ${colors.zinc['500']}50;
-					--fc-classic-today: ${colors.blue['500']}20;
+					--fc-classic-border: ${resolveTailwindColorAlpha('zinc', '500', 0.31)};
+					--fc-classic-today: ${resolveTailwindColorAlpha('blue', '500', 0.125)};
 					--fc-classic-muted: ${colors.blue['500']};
 				}
 			`}</style>

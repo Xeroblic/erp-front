@@ -366,7 +366,7 @@ const CarteraCreditoView: React.FC = () => {
 								</Button>
 							</CardHeader>
 							<CardBody>
-								<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 dark:bg-zinc-900/30 md:grid-cols-3'>
+								<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 md:grid-cols-3 dark:bg-zinc-900/30'>
 									<div className='md:col-span-2'>
 										<label
 											htmlFor='credit-profile-search'
@@ -482,7 +482,7 @@ const CarteraCreditoView: React.FC = () => {
 												<Tr key={`loading-${index}`}>
 													{Array.from({ length: 7 }, (__, cell) => (
 														<Td key={cell}>
-															<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+															<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 														</Td>
 													))}
 												</Tr>
@@ -516,7 +516,7 @@ const CarteraCreditoView: React.FC = () => {
 													<Td>
 														<button
 															type='button'
-															className='text-left font-medium hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600'
+															className='text-left font-medium hover:underline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-solid'
 															onClick={() =>
 																openCustomer(row.customer_sale_id)
 															}>
@@ -564,8 +564,8 @@ const CarteraCreditoView: React.FC = () => {
 														<span
 															className={
 																row.is_active
-																	? 'inline-flex min-w-24 justify-center rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm'
-																	: 'inline-flex min-w-24 justify-center rounded-full bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm'
+																	? 'inline-flex min-w-24 justify-center rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-xs'
+																	: 'inline-flex min-w-24 justify-center rounded-full bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white shadow-xs'
 															}>
 															{row.is_active
 																? 'Vigente'

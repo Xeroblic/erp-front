@@ -165,7 +165,7 @@ const FormShell = <T extends FormikValues>({
 	return (
 		<div className='flex flex-col gap-0'>
 			{/* ─── Step Navigation Bar ─────────────────────────────────── */}
-			<div className='overflow-x-auto rounded-t-2xl border border-zinc-200 bg-gradient-to-r from-blue-50/80 via-white to-blue-50/80 dark:border-zinc-700 dark:from-zinc-800/80 dark:via-zinc-900 dark:to-zinc-800/80'>
+			<div className='overflow-x-auto rounded-t-2xl border border-zinc-200 bg-linear-to-r from-blue-50/80 via-white to-blue-50/80 dark:border-zinc-700 dark:from-zinc-800/80 dark:via-zinc-900 dark:to-zinc-800/80'>
 				<div className='flex items-center justify-between px-4 py-3'>
 					{isSaving && (
 						<div className='mr-2 flex animate-pulse items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'>
@@ -197,7 +197,7 @@ const FormShell = <T extends FormikValues>({
 											isActive,
 											isCompleted,
 											{
-												active: 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-4 ring-blue-100 dark:ring-blue-900/50',
+												active: 'bg-blue-600 text-white shadow-lg ring-4 shadow-blue-500/30 ring-blue-100 dark:ring-blue-900/50',
 												completed: 'bg-blue-500 text-white',
 												idle: 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500',
 											},
@@ -205,19 +205,19 @@ const FormShell = <T extends FormikValues>({
 										{isCompleted && !isActive ? (
 											<Icon
 												icon='HeroCheck'
-												className='h-6 w-6 !text-white'
+												className='h-6 w-6 text-white!'
 											/>
 										) : (
 											<Icon
 												icon={section.icon}
-												className={`h-6 w-6 ${isActive ? '!text-white' : ''}`}
+												className={`h-6 w-6 ${isActive ? 'text-white!' : ''}`}
 											/>
 										)}
 									</div>
 
 									{/* Label */}
 									<span
-										className={`whitespace-nowrap text-[10px] font-semibold transition-colors ${stepTone(
+										className={`text-[10px] font-semibold whitespace-nowrap transition-colors ${stepTone(
 											isActive,
 											isCompleted,
 											{

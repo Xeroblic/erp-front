@@ -25,7 +25,7 @@ interface CustomerCreditProfileCardProps {
 
 const CreditStatusPill: React.FC<{ suspended: boolean }> = ({ suspended }) => (
 	<span
-		className={`inline-flex min-w-32 max-w-44 items-center justify-center whitespace-normal rounded-full px-3 py-1.5 text-center text-sm font-semibold shadow-sm ${
+		className={`inline-flex max-w-44 min-w-32 items-center justify-center rounded-full px-3 py-1.5 text-center text-sm font-semibold whitespace-normal shadow-xs ${
 			suspended ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'
 		}`}>
 		{suspended ? 'Suspendido' : 'Activo'}
@@ -37,8 +37,8 @@ const Skeleton = () => (
 		<div className='flex items-center gap-3'>
 			<div className='h-10 w-10 rounded-xl bg-zinc-200 dark:bg-zinc-700' />
 			<div className='flex-1 space-y-2'>
-				<div className='h-4 w-32 rounded bg-zinc-200 dark:bg-zinc-700' />
-				<div className='h-3 w-48 rounded bg-zinc-200 dark:bg-zinc-700' />
+				<div className='h-4 w-32 rounded-sm bg-zinc-200 dark:bg-zinc-700' />
+				<div className='h-3 w-48 rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 			</div>
 		</div>
 		<div className='grid grid-cols-2 gap-3'>
@@ -245,13 +245,13 @@ const CustomerCreditProfileCardContent: React.FC<{
 						)}
 						<div className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 							<p className='text-sm text-zinc-500'>Correo de cobranza</p>
-							<p className='mt-1 break-all text-sm text-zinc-600 dark:text-zinc-300'>
+							<p className='mt-1 text-sm break-all text-zinc-600 dark:text-zinc-300'>
 								{profile.collection_email ?? 'Sin correo configurado'}
 							</p>
 						</div>
 						<div className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 							<p className='text-sm text-zinc-500'>Notas</p>
-							<p className='mt-1 whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300'>
+							<p className='mt-1 text-sm whitespace-pre-wrap text-zinc-600 dark:text-zinc-300'>
 								{profile.notes || 'Sin información registrada.'}
 							</p>
 						</div>

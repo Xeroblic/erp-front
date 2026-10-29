@@ -87,7 +87,7 @@ export default function PortalPedidosPage() {
 								</h1>
 							</div>
 							<div className='flex items-center gap-4'>
-								<div className='hidden text-sm text-zinc-500 dark:text-zinc-400 sm:block'>
+								<div className='hidden text-sm text-zinc-500 sm:block dark:text-zinc-400'>
 									Atención al Cliente
 								</div>
 							</div>
@@ -108,7 +108,7 @@ export default function PortalPedidosPage() {
 					</div>
 
 					{/* Tabs Container */}
-					<div className='overflow-hidden rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-4'>
+					<div className='overflow-hidden rounded-2xl border border-zinc-200 bg-white p-2 shadow-xs sm:p-4 dark:border-zinc-800 dark:bg-zinc-900'>
 						<Tabs activeTab={activeTab} onTabChange={setActiveTab} className='w-full'>
 							<Tab id='nuevo' text='Nuevo Pedido' icon='HeroPlusCircle'>
 								<div className='pt-6'>

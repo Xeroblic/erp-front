@@ -377,7 +377,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 									{foundCount}{' '}
 									<span className='text-lg text-zinc-400'>/ {totalCount}</span>
 								</span>
-								<span className='text-xs font-bold uppercase tracking-wider text-emerald-600'>
+								<span className='text-xs font-bold tracking-wider text-emerald-600 uppercase'>
 									Escaneados
 								</span>
 							</div>
@@ -394,7 +394,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 						{/* Missing Serials Section */}
 						{missingSerials.length > 0 && (
 							<div className='rounded-xl border border-dashed border-zinc-300 bg-white/50 p-4 dark:border-zinc-600 dark:bg-zinc-900/40'>
-								<h4 className='mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500'>
+								<h4 className='mb-3 flex items-center gap-2 text-xs font-bold tracking-widest text-zinc-500 uppercase'>
 									<Icon
 										icon='HeroExclamationTriangle'
 										className='h-4 w-4 text-amber-500'
@@ -465,7 +465,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 											}}
 											className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
 												reviewStatusFilter === opt.value
-													? 'bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:ring-zinc-600'
+													? 'bg-white text-zinc-900 shadow-xs ring-1 ring-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:ring-zinc-600'
 													: 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
 											}`}>
 											{opt.label}

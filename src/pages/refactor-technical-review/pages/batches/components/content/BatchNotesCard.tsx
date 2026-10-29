@@ -104,9 +104,9 @@ const BatchNotesCard: React.FC<IBatchNotesCardProps> = ({ batch }) => {
 					</form>
 				) : (
 					<p
-						className={classNames('whitespace-pre-wrap text-sm leading-relaxed', {
+						className={classNames('text-sm leading-relaxed whitespace-pre-wrap', {
 							'text-zinc-600 dark:text-zinc-400': hasNotes,
-							'italic text-zinc-400 dark:text-zinc-500': !hasNotes,
+							'text-zinc-400 italic dark:text-zinc-500': !hasNotes,
 						})}>
 						{hasNotes ? batch.notes : 'Este lote no tiene notas.'}
 					</p>

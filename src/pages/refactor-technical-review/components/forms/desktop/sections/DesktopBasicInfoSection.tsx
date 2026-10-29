@@ -69,7 +69,7 @@ const DesktopBasicInfoSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 					value={values.model || ''}
 					placeholder={DESKTOP_PLACEHOLDERS.model}
 					disabled={readOnly}
-					className={errors.model ? 'border-red-500' : ''}
+					className={errors.model ? 'border-red-500!' : ''}
 				/>
 				{errors.model && <p className='mt-1 text-xs text-red-500'>{errors.model}</p>}
 				<p className='mt-1 text-xs text-zinc-500'>{DESKTOP_HINTS.model}</p>

@@ -42,7 +42,7 @@ const DeleteQuotationModal: React.FC<DeleteQuotationModalProps> = ({
 		<Modal isOpen={isOpen} setIsOpen={() => onClose()} size='md'>
 			<ModalHeader>
 				<div className='flex items-center space-x-3'>
-					<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-100'>
+					<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100'>
 						<Icon icon='HeroExclamationTriangle' className='h-6 w-6 text-red-600' />
 					</div>
 					<div>
@@ -102,7 +102,7 @@ const DeleteQuotationModal: React.FC<DeleteQuotationModalProps> = ({
 						<Card>
 							<CardBody>
 								<div className='flex items-start space-x-3'>
-									<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-red-100'>
+									<div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100'>
 										<Icon
 											icon='HeroExclamationTriangle'
 											className='h-4 w-4 text-red-600'
@@ -141,7 +141,7 @@ const DeleteQuotationModal: React.FC<DeleteQuotationModalProps> = ({
 						<Card>
 							<CardBody>
 								<div className='flex items-start space-x-3'>
-									<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100'>
+									<div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100'>
 										<Icon
 											icon='HeroInformationCircle'
 											className='h-4 w-4 text-blue-600'
@@ -165,7 +165,7 @@ const DeleteQuotationModal: React.FC<DeleteQuotationModalProps> = ({
 					<Card>
 						<CardBody>
 							<div className='flex items-start space-x-3'>
-								<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100'>
+								<div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100'>
 									<Icon
 										icon='HeroQuestionMarkCircle'
 										className='h-4 w-4 text-gray-600'

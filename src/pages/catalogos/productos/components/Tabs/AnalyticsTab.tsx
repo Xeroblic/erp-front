@@ -99,7 +99,7 @@ const buildStockAdminColumns = ({
 				return canSelect ? (
 					<input
 						type='checkbox'
-						className='h-4 w-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+						className='h-4 w-4 cursor-pointer rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
 						checked={selectedProductId === row.original.id}
 						onChange={() => onSelect(row.original)}
 					/>

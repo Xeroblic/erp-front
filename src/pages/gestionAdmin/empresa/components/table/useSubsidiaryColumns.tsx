@@ -23,14 +23,16 @@ const useSubsidiaryColumns = (
 
 					return (
 						<div className='flex min-w-[200px] items-center gap-2'>
-							<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-100'>
+							<div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100'>
 								<Icon
 									icon='HeroBuildingStorefront'
 									className='text-sm text-primary-600'
 								/>
 							</div>
-							<div className='min-w-0 max-w-[280px]'>
-								<div className='line-clamp-2 break-words font-medium' title={name}>
+							<div className='max-w-[280px] min-w-0'>
+								<div
+									className='line-clamp-2 font-medium wrap-break-word'
+									title={name}>
 									{name}
 								</div>
 								<div className='text-xs text-zinc-500'>ID: {subsidiary.id}</div>

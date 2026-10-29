@@ -47,7 +47,7 @@ const buildSaleItemColumns = (): ColumnDef<AppTableFeatures, ISaleItem>[] => [
 
 					{/* Custom detail/notes on the item */}
 					{detail ? (
-						<span className='text-xs italic text-zinc-500 dark:text-zinc-400'>
+						<span className='text-xs text-zinc-500 italic dark:text-zinc-400'>
 							{detail}
 						</span>
 					) : null}

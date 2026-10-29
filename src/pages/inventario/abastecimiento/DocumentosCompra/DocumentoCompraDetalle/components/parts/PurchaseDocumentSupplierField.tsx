@@ -15,7 +15,7 @@ const PurchaseDocumentSupplierField: React.FC<IPurchaseDocumentSupplierFieldProp
 	supplierLink,
 }) => (
 	<div>
-		<p className='text-xs uppercase text-zinc-500'>Proveedor</p>
+		<p className='text-xs text-zinc-500 uppercase'>Proveedor</p>
 		{supplier ? (
 			<p>
 				<DetailLink link={supplierLink} srLabel='Ficha del proveedor'>

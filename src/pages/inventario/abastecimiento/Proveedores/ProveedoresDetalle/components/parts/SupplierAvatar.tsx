@@ -27,7 +27,7 @@ const SupplierAvatar: React.FC<ISupplierAvatarProps> = ({ displayName }) => {
 	return (
 		<div
 			aria-hidden='true'
-			className='flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-zinc-100 text-xl font-semibold text-zinc-400 shadow-sm dark:border-zinc-900 dark:bg-zinc-800 dark:text-zinc-500 sm:h-24 sm:w-24'>
+			className='flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-zinc-100 text-xl font-semibold text-zinc-400 shadow-xs sm:h-24 sm:w-24 dark:border-zinc-900 dark:bg-zinc-800 dark:text-zinc-500'>
 			{initials || <Icon icon='HeroBuildingStorefront' size='text-3xl' />}
 		</div>
 	);

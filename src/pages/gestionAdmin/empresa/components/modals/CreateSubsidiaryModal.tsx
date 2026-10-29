@@ -185,7 +185,7 @@ export default function CreateSubsidiaryModal({
 				<h3 className='text-lg font-semibold'>
 					{isEditing ? 'Editar Subempresa' : 'Nueva Subempresa'}
 				</h3>
-				<p className='ml-3 mt-1 text-sm text-zinc-500'>
+				<p className='mt-1 ml-3 text-sm text-zinc-500'>
 					{isEditing ? 'Modifica los datos' : 'Complete los campos obligatorios (*)'}
 				</p>
 			</ModalHeader>

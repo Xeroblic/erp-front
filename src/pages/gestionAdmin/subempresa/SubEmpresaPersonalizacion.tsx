@@ -520,7 +520,7 @@ const SubEmpresaPersonalizacion = () => {
 
 			<Container>
 				<div className='mb-6 grid grid-cols-1 gap-4 md:grid-cols-3'>
-					<Card className='border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800'>
+					<Card className='border-gray-200 bg-white shadow-xs dark:border-gray-700 dark:bg-gray-800'>
 						<CardBody className='p-6'>
 							<div className='flex items-center justify-between'>
 								<div>
@@ -541,7 +541,7 @@ const SubEmpresaPersonalizacion = () => {
 						</CardBody>
 					</Card>
 
-					<Card className='border-emerald-200 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/20'>
+					<Card className='border-emerald-200 bg-emerald-50 shadow-xs dark:border-emerald-800 dark:bg-emerald-900/20'>
 						<CardBody className='p-6'>
 							<div className='flex items-center justify-between'>
 								<div>
@@ -562,7 +562,7 @@ const SubEmpresaPersonalizacion = () => {
 						</CardBody>
 					</Card>
 
-					<Card className='border-amber-200 bg-amber-50 shadow-sm dark:border-amber-800 dark:bg-amber-900/20'>
+					<Card className='border-amber-200 bg-amber-50 shadow-xs dark:border-amber-800 dark:bg-amber-900/20'>
 						<CardBody className='p-6'>
 							<div className='flex items-center justify-between'>
 								<div>
@@ -749,7 +749,7 @@ const SubEmpresaPersonalizacion = () => {
 											'Texto de encabezado personalizado'}
 									</p>
 									<div
-										className='mt-2 inline-block rounded px-3 py-1 text-sm'
+										className='mt-2 inline-block rounded-sm px-3 py-1 text-sm'
 										style={{ backgroundColor: formik.values.color_secundario }}>
 										Color secundario
 									</div>

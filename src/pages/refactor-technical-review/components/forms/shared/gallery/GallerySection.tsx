@@ -204,7 +204,7 @@ const GallerySection = <T extends FormikValues>({ readOnly }: FormSectionProps<T
 									onClick={() => setConfirmId(photo.id)}
 									disabled={deletingId === photo.id}
 									title='Eliminar foto'
-									className='absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-lg ring-2 ring-white/80 transition-all hover:scale-110 hover:bg-red-700 focus:scale-110 focus:outline-none focus:ring-red-300 disabled:opacity-60 dark:ring-zinc-900/70'>
+									className='absolute top-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-lg ring-2 ring-white/80 transition-all hover:scale-110 hover:bg-red-700 focus:scale-110 focus:ring-red-300 focus:outline-hidden disabled:opacity-60 dark:ring-zinc-900/70'>
 									<Icon
 										icon={
 											deletingId === photo.id ? 'HeroArrowPath' : 'HeroTrash'
@@ -315,7 +315,7 @@ const GallerySection = <T extends FormikValues>({ readOnly }: FormSectionProps<T
 				<div
 					role='dialog'
 					aria-modal='true'
-					className='fixed inset-0 z-[1060] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm'>
+					className='fixed inset-0 z-1060 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs'>
 					{/* Fondo: un clic fuera de la foto cierra; el teclado usa Esc o «Cerrar». */}
 					<button
 						type='button'
@@ -329,13 +329,13 @@ const GallerySection = <T extends FormikValues>({ readOnly }: FormSectionProps<T
 						type='button'
 						onClick={closeLightbox}
 						title='Cerrar (Esc)'
-						className='absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
+						className='absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
 						<Icon icon='HeroXMark' className='h-6 w-6' />
 					</button>
 
 					{/* Contador */}
 					{photos.length > 1 && (
-						<span className='absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white'>
+						<span className='absolute top-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white'>
 							{(lightboxIndex ?? 0) + 1} / {photos.length}
 						</span>
 					)}

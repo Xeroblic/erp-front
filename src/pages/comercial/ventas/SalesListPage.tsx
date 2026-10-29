@@ -177,7 +177,7 @@ const buildSaleColumns = ({
 						<Badge
 							color='amber'
 							variant='outline'
-							className='whitespace-nowrap rounded-md text-xs'>
+							className='rounded-md text-xs whitespace-nowrap'>
 							Devolución pendiente
 						</Badge>
 					)}
@@ -757,7 +757,7 @@ const SalesListPage: React.FC = () => {
 						)}
 
 						{pendingMap.size > 0 && (
-							<div className='flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-300/80 bg-gradient-to-r from-red-50 to-red-100/60 p-4 shadow-sm dark:border-red-500/30 dark:from-red-500/10 dark:to-red-400/5'>
+							<div className='flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-300/80 bg-linear-to-r from-red-50 to-red-100/60 p-4 shadow-xs dark:border-red-500/30 dark:from-red-500/10 dark:to-red-400/5'>
 								<div className='flex items-center gap-3'>
 									<span className='flex h-11 w-11 flex-none items-center justify-center rounded-full bg-red-400/25 text-red-600 dark:text-red-300'>
 										<Icon
@@ -801,7 +801,7 @@ const SalesListPage: React.FC = () => {
 								}) => (
 									<Card
 										key={key}
-										className='h-full border border-zinc-200/80 bg-white/95 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900'>
+										className='h-full border border-zinc-200/80 bg-white/95 shadow-xs dark:border-zinc-800/80 dark:bg-zinc-900'>
 										<CardBody className='flex items-center gap-4'>
 											<div
 												className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-xl ${iconAccentClass}`}>

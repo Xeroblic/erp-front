@@ -47,7 +47,7 @@ const AttachmentLink: React.FC<{
 					toast.error('No se pudo descargar el comprobante');
 				});
 			}}
-			className='flex w-full min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-lg border border-zinc-200 bg-white px-3 py-2 text-left transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-800'>
+			className='flex w-full max-w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg border border-zinc-200 bg-white px-3 py-2 text-left transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-800'>
 			<span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-800'>
 				<Icon icon='HeroPaperClip' className='text-zinc-600 dark:text-zinc-300' />
 			</span>

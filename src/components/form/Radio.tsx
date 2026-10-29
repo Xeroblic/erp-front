@@ -99,13 +99,13 @@ const Radio: FC<IRadioProps> = (props) => {
 		// border
 		'border-zinc-100 dark:border-zinc-800',
 		// hover:border
-		'hover:border-[color:var(--radio-hover-border)]',
-		'dark:hover:border-[color:var(--radio-hover-border)]',
-		'disabled:!border-zinc-500',
-		// checked:ring
+		'hover:border-(--radio-hover-border)',
+		'dark:hover:border-(--radio-hover-border)',
+		'disabled:border-zinc-500!',
+		// checked:ring-3
 		'checked:ring-4 checked:ring-inset checked:ring-white dark:checked:ring-zinc-900',
 		// checked:bg
-		'checked:bg-[color:var(--radio-checked-bg)]',
+		'checked:bg-(--radio-checked-bg)',
 		{ 'sr-only': children },
 		themeConfig.borderWidth,
 		themeConfig.transition,
@@ -128,7 +128,7 @@ const Radio: FC<IRadioProps> = (props) => {
 			className={classNames(
 				'items-center py-1.5',
 				{ flex: !isInline, 'inline-flex': isInline, 'me-4': isInline },
-				'disabled:!opacity-25',
+				'disabled:opacity-25!',
 				className,
 			)}>
 			<input
@@ -156,8 +156,8 @@ const Radio: FC<IRadioProps> = (props) => {
 			{!!children && (
 				<label
 					className={classNames(
-						'cursor-pointer overflow-hidden rounded-md border-4 border-transparent outline outline-4 outline-offset-2 outline-zinc-100 dark:outline-zinc-800',
-						'peer-checked:border-[color:var(--radio-checked-border)]',
+						'cursor-pointer overflow-hidden rounded-md border-4 border-transparent outline-4 outline-offset-2 outline-zinc-100 outline-solid dark:outline-zinc-800',
+						'peer-checked:border-(--radio-checked-border)',
 					)}
 					htmlFor={id || inputHintId}>
 					{children}

@@ -13,7 +13,7 @@ const TimelineWidget: React.FC = () => {
 	return (
 		<div className='relative h-full overflow-hidden'>
 			{/* Persistent Switch Button */}
-			<div id='timeline-toggle' className='absolute right-4 top-4 z-20'>
+			<div id='timeline-toggle' className='absolute top-4 right-4 z-20'>
 				<button
 					onClick={toggleMode}
 					className='group flex items-center justify-center rounded-full border border-transparent p-2 text-zinc-400 transition-all hover:border-zinc-200 hover:bg-zinc-100 hover:text-blue-600 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-blue-400'

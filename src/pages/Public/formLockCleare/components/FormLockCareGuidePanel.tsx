@@ -40,10 +40,10 @@ const FormLockCareGuidePanel: React.FC<FormLockCareGuidePanelProps> = ({
 				</Button>
 			</div>
 
-			<Card className='relative overflow-hidden rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-emerald-50 via-white to-emerald-50 p-6 shadow-[0_10px_40px_rgba(16,185,129,0.08)]'>
+			<Card className='relative overflow-hidden rounded-3xl border border-emerald-900/10 bg-linear-to-br from-emerald-50 via-white to-emerald-50 p-6 shadow-[0_10px_40px_rgba(16,185,129,0.08)]'>
 				<div className={showSteps ? 'block lg:block' : 'hidden lg:block'}>
-					<div className='pointer-events-none absolute -left-10 -top-10 h-28 w-28 rounded-full bg-emerald-300/30 blur-3xl' />
-					<div className='pointer-events-none absolute -bottom-12 right-0 h-32 w-32 rounded-full bg-teal-300/25 blur-3xl' />
+					<div className='pointer-events-none absolute -top-10 -left-10 h-28 w-28 rounded-full bg-emerald-300/30 blur-3xl' />
+					<div className='pointer-events-none absolute right-0 -bottom-12 h-32 w-32 rounded-full bg-teal-300/25 blur-3xl' />
 
 					<div className='relative flex flex-col gap-6'>
 						<div className='space-y-5'>
@@ -51,7 +51,7 @@ const FormLockCareGuidePanel: React.FC<FormLockCareGuidePanelProps> = ({
 								{quickBadges.map((badge) => (
 									<span
 										key={badge}
-										className='inline-flex items-center rounded-full border border-emerald-900/10 bg-white px-3 py-1 text-xs font-medium text-emerald-800 shadow-sm'>
+										className='inline-flex items-center rounded-full border border-emerald-900/10 bg-white px-3 py-1 text-xs font-medium text-emerald-800 shadow-xs'>
 										{badge}
 									</span>
 								))}
@@ -70,12 +70,12 @@ const FormLockCareGuidePanel: React.FC<FormLockCareGuidePanelProps> = ({
 								{flowCards.map((item, index) => (
 									<div
 										key={item.title}
-										className='flex items-start gap-3 rounded-2xl border border-zinc-200 bg-white/90 p-4 shadow-sm'>
+										className='flex items-start gap-3 rounded-2xl border border-zinc-200 bg-white/90 p-4 shadow-xs'>
 										<div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700'>
 											<Icon icon={item.icon} className='h-5 w-5' />
 										</div>
 										<div className='min-w-0'>
-											<p className='text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700'>
+											<p className='text-xs font-semibold tracking-[0.12em] text-emerald-700 uppercase'>
 												Paso {index + 1}
 											</p>
 											<p className='font-semibold text-zinc-800'>
@@ -96,14 +96,14 @@ const FormLockCareGuidePanel: React.FC<FormLockCareGuidePanelProps> = ({
 			<Card
 				className={
 					showChecklist
-						? 'rounded-3xl border border-emerald-900/10 bg-white/85 p-5 shadow-sm lg:block'
-						: 'hidden rounded-3xl border border-emerald-900/10 bg-white/85 p-5 shadow-sm lg:block'
+						? 'rounded-3xl border border-emerald-900/10 bg-white/85 p-5 shadow-xs lg:block'
+						: 'hidden rounded-3xl border border-emerald-900/10 bg-white/85 p-5 shadow-xs lg:block'
 				}>
 				<div className='flex items-center gap-2'>
 					<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700'>
 						<Icon icon='HeroCheckBadge' className='h-4 w-4' />
 					</div>
-					<p className='text-sm font-semibold uppercase tracking-[0.12em] text-emerald-700'>
+					<p className='text-sm font-semibold tracking-[0.12em] text-emerald-700 uppercase'>
 						Antes de enviar
 					</p>
 				</div>

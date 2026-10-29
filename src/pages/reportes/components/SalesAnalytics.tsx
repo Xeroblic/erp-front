@@ -138,7 +138,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 
 	return (
 		<div ref={containerRef} className='grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3'>
-			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214]'>
+			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-[#121214]'>
 				<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-5 dark:border-zinc-800'>
 					<div className='flex items-center justify-between'>
 						<div className='flex items-center gap-3'>
@@ -176,7 +176,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 				</CardBody>
 			</Card>
 
-			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214]'>
+			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-[#121214]'>
 				<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-5 dark:border-zinc-800'>
 					<div className='flex items-center justify-between'>
 						<div className='flex items-center gap-3'>
@@ -238,7 +238,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 				</CardBody>
 			</Card>
 
-			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214] md:col-span-2 xl:col-span-1'>
+			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs md:col-span-2 xl:col-span-1 dark:border-zinc-800 dark:bg-[#121214]'>
 				<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-5 dark:border-zinc-800'>
 					<div className='flex items-center justify-between'>
 						<div className='flex items-center gap-3'>

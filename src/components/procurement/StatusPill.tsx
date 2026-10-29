@@ -37,7 +37,7 @@ const StatusPill: React.FC<IStatusPillProps> = ({
 }) => (
 	<span
 		style={fit ? undefined : { width: `${width}rem` }}
-		className={`inline-flex items-center justify-center rounded-full px-3 py-1.5 text-center text-sm font-semibold shadow-sm ${fit ? 'w-fit whitespace-nowrap' : 'whitespace-normal'} ${COLOR_CLASSES[color]} ${className ?? ''}`}>
+		className={`inline-flex items-center justify-center rounded-full px-3 py-1.5 text-center text-sm font-semibold shadow-xs ${fit ? 'w-fit whitespace-nowrap' : 'whitespace-normal'} ${COLOR_CLASSES[color]} ${className ?? ''}`}>
 		{children}
 	</span>
 );

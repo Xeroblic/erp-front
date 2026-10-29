@@ -262,7 +262,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 					</div>
 				</section>
 
-				<section className='border-t border-zinc-200 pt-6 dark:border-zinc-700 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0'>
+				<section className='border-t border-zinc-200 pt-6 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-6 dark:border-zinc-700'>
 					<div className='mb-3'>
 						<h3 className={SECTION_TITLE_CLASSNAME}>Datos de la cotización</h3>
 						<p className={`text-xs ${QUOTATION_MUTED_TEXT_CLASSNAME}`}>

@@ -58,13 +58,13 @@ const Alert: FC<IAlertProps> = (props) => {
 	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
 
 	const badgeVariants: { [key in TAlertVariants]: string } = {
-		solid: classNames([`${textColor}`], 'bg-[color:var(--alert-bg)]', 'border-transparent'),
+		solid: classNames([`${textColor}`], 'bg-(--alert-bg)', 'border-transparent'),
 		outline: classNames(
-			'border-[color:var(--alert-border)]',
-			'bg-[color:var(--alert-bg-soft)]',
-			'text-[color:var(--alert-text)]',
+			'border-(--alert-border)',
+			'bg-(--alert-bg-soft)',
+			'text-(--alert-text)',
 		),
-		default: classNames('text-[color:var(--alert-text)]', 'border-transparent'),
+		default: classNames('text-(--alert-text)', 'border-transparent'),
 	};
 	const badgeVariantClasses = badgeVariants[variant];
 

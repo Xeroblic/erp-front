@@ -61,7 +61,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 		<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 			{/* --- LEFT: Cargador --- */}
 			<div className='rounded-xl border border-orange-200 bg-orange-50 p-4 transition-colors duration-200 dark:border-orange-800 dark:bg-orange-900/10'>
-				<p className='mb-3 block text-center text-sm font-bold uppercase tracking-wide text-orange-800 dark:text-orange-200'>
+				<p className='mb-3 block text-center text-sm font-bold tracking-wide text-orange-800 uppercase dark:text-orange-200'>
 					Energía
 				</p>
 
@@ -87,7 +87,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				{includesCharger && (
 					<div className='animate-in fade-in slide-in-from-top-4 space-y-6 duration-300'>
 						{/* Charger Watts */}
-						<div className='rounded-lg border border-orange-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800'>
+						<div className='rounded-lg border border-orange-200 bg-white p-4 shadow-xs dark:border-zinc-700 dark:bg-zinc-800'>
 							<p className='mb-3 flex items-center justify-between text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
 								<span>POTENCIA (WATTS)</span>
 								<Icon icon='HeroBolt' className='h-4 w-4 text-orange-500' />
@@ -121,7 +121,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 											min={0}
 											max={300}
 										/>
-										<span className='pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400'>
+										<span className='pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-xs text-zinc-400'>
 											W
 										</span>
 									</div>
@@ -169,7 +169,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 			{/* --- RIGHT: Batería --- */}
 			<div className='rounded-xl border border-emerald-200 bg-emerald-50 p-4 transition-colors duration-200 dark:border-emerald-800 dark:bg-emerald-900/10'>
-				<label className='mb-4 block text-center text-sm font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-200'>
+				<label className='mb-4 block text-center text-sm font-bold tracking-wide text-emerald-800 uppercase dark:text-emerald-200'>
 					{isDell ? 'Estado Batería (BIOS)' : 'Salud Batería'}
 				</label>
 
@@ -221,7 +221,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									min={0}
 									max={100}
 								/>
-								<span className='pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xl font-bold text-zinc-400'>
+								<span className='pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-xl font-bold text-zinc-400'>
 									%
 								</span>
 							</div>
@@ -253,7 +253,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 					{hasSecondBattery && (
 						<div className='animate-in fade-in slide-in-from-top-4 space-y-4 duration-300'>
-							<label className='block text-center text-sm font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-200'>
+							<label className='block text-center text-sm font-bold tracking-wide text-emerald-800 uppercase dark:text-emerald-200'>
 								{isDell ? 'Estado 2ª Batería (BIOS)' : 'Salud 2ª Batería'}
 							</label>
 
@@ -321,7 +321,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 												min={0}
 												max={100}
 											/>
-											<span className='pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xl font-bold text-zinc-400'>
+											<span className='pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-xl font-bold text-zinc-400'>
 												%
 											</span>
 										</div>

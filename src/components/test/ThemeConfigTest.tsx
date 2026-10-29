@@ -43,17 +43,17 @@ const ThemeConfigTest: React.FC = () => {
 			<div className='space-x-2'>
 				<button
 					onClick={() => changeThemeColor('emerald', '600')}
-					className='rounded bg-emerald-500 px-3 py-1 text-white'>
+					className='rounded-sm bg-emerald-500 px-3 py-1 text-white'>
 					Cambiar a Emerald
 				</button>
 				<button
 					onClick={() => changeThemeColor('purple', '500')}
-					className='rounded bg-purple-500 px-3 py-1 text-white'>
+					className='rounded-sm bg-purple-500 px-3 py-1 text-white'>
 					Cambiar a Purple
 				</button>
 				<button
 					onClick={() => changeThemeColor('amber', '500')}
-					className='rounded bg-amber-500 px-3 py-1 text-white'>
+					className='rounded-sm bg-amber-500 px-3 py-1 text-white'>
 					Volver a Amber
 				</button>
 			</div>

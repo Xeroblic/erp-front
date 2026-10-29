@@ -115,7 +115,7 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
 	const tokens = COLOR_STYLES[color];
 	const stateClass = isSelected ? tokens.selected : tokens.idle;
 	const interactionClass =
-		isSelected || disabled ? 'z-0 scale-100' : 'z-0 scale-100 hover:-translate-y-[1px]';
+		isSelected || disabled ? 'z-0 scale-100' : 'z-0 scale-100 hover:-translate-y-px';
 
 	// Base styles based on variant
 	const isCompact = variant === 'compact';

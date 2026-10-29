@@ -79,14 +79,14 @@ const AioBasicInfoSection: React.FC<FormSectionProps<AioFormData>> = ({
 						value={values.model || ''}
 						placeholder={AIO_PLACEHOLDERS.model}
 						disabled={readOnly}
-						className={errors.model ? 'border-red-500' : ''}
+						className={errors.model ? 'border-red-500!' : ''}
 					/>
 					{errors.model && <p className='mt-1 text-xs text-red-500'>{errors.model}</p>}
 					<p className='mt-1 text-xs text-zinc-500'>{AIO_HINTS.model}</p>
 				</div>
 
 				{/* Line (ZF-102) */}
-				<div className='rounded-xl border border-teal-200 bg-teal-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-teal-500/30 dark:border-teal-800 dark:bg-teal-900/10 dark:hover:bg-teal-900/30 md:col-span-2'>
+				<div className='rounded-xl border border-teal-200 bg-teal-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-teal-500/30 md:col-span-2 dark:border-teal-800 dark:bg-teal-900/10 dark:hover:bg-teal-900/30'>
 					<label className='mb-3 flex items-center gap-2 text-sm font-bold text-teal-800 dark:text-teal-200'>
 						<span className='flex h-6 w-6 items-center justify-center rounded-md bg-teal-100 text-teal-600 dark:bg-teal-800 dark:text-teal-300'>
 							📋
@@ -100,14 +100,14 @@ const AioBasicInfoSection: React.FC<FormSectionProps<AioFormData>> = ({
 						value={values.line || ''}
 						placeholder={AIO_PLACEHOLDERS.line}
 						disabled={readOnly}
-						className={errors.line ? 'border-red-500' : ''}
+						className={errors.line ? 'border-red-500!' : ''}
 					/>
 					{errors.line && <p className='mt-1 text-xs text-red-500'>{errors.line}</p>}
 					<p className='mt-1 text-xs text-zinc-500'>{AIO_HINTS.line}</p>
 				</div>
 
 				{/* General Condition */}
-				<div className='rounded-xl border border-emerald-200 bg-emerald-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-emerald-500/30 dark:border-emerald-800 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/30 md:col-span-2'>
+				<div className='rounded-xl border border-emerald-200 bg-emerald-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-emerald-500/30 md:col-span-2 dark:border-emerald-800 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/30'>
 					<label className='mb-3 flex items-center gap-2 text-sm font-bold text-emerald-800 dark:text-emerald-200'>
 						{getAioLabel('general_condition')} <span className='text-red-500'>*</span>
 					</label>

@@ -42,7 +42,7 @@ describe('NoHardwareToggle', () => {
 
 		const checkbox = screen.getByRole('checkbox', { name: 'Tiene RAM' });
 		expect(checkbox).not.toBeChecked();
-		expect(checkbox).toHaveClass('!border-red-500', '!bg-red-500');
+		expect(checkbox).toHaveClass('border-red-500!', 'bg-red-500!');
 		expect(screen.queryByText('No tiene RAM')).not.toBeInTheDocument();
 	});
 

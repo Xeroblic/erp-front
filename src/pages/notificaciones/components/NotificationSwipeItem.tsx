@@ -284,7 +284,7 @@ const NotificationSwipeItem: React.FC<Props> = ({
 	return (
 		<div
 			ref={containerRef}
-			className='relative select-none overflow-hidden'
+			className='relative overflow-hidden select-none'
 			style={{ touchAction: 'pan-y' }}
 			onPointerDown={handlePointerDown}
 			onPointerMove={handlePointerMove}
@@ -298,7 +298,7 @@ const NotificationSwipeItem: React.FC<Props> = ({
 					style={{ opacity: 1 }}>
 					<div
 						ref={leftIconRef}
-						className='absolute left-4 top-1/2 -translate-y-1/2 text-amber-500'
+						className='absolute top-1/2 left-4 -translate-y-1/2 text-amber-500'
 						style={{ opacity: 0 }}>
 						<Icon
 							icon={
@@ -311,7 +311,7 @@ const NotificationSwipeItem: React.FC<Props> = ({
 					</div>
 					<div
 						ref={rightIconRef}
-						className='absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500'
+						className='absolute top-1/2 right-4 -translate-y-1/2 text-emerald-500'
 						style={{ opacity: 0 }}>
 						<Icon icon='HeroCheckCircle' className='h-8 w-8' />
 					</div>
@@ -328,7 +328,7 @@ const NotificationSwipeItem: React.FC<Props> = ({
 					<div className='relative'>
 						<Avatar name={n.event?.type_key ?? 'N'} />
 						{(n.delivered_channels ?? []).includes('email') && (
-							<span className='absolute start-3/4 top-3/4 flex rounded-full bg-blue-500/75 outline outline-2 outline-blue-500/75'>
+							<span className='absolute inset-s-3/4 top-3/4 flex rounded-full bg-blue-500/75 outline-2 outline-blue-500/75 outline-solid'>
 								<Icon icon='HeroEnvelope' />
 							</span>
 						)}
@@ -376,7 +376,7 @@ const NotificationSwipeItem: React.FC<Props> = ({
 					</div>
 					<div className='relative justify-self-end text-zinc-500'>
 						{n.status !== 'read' && (
-							<span className='absolute -right-1 -top-1 flex h-2 w-2'>
+							<span className='absolute -top-1 -right-1 flex h-2 w-2'>
 								<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75' />
 								<span className='relative inline-flex h-2 w-2 rounded-full bg-red-500' />
 							</span>

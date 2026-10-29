@@ -220,7 +220,7 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 						value={values.storage_size || ''}
 						placeholder={AIO_PLACEHOLDERS.storage_size}
 						disabled={readOnly}
-						className={errors.storage_size ? 'border-red-500' : ''}
+						className={errors.storage_size ? 'border-red-500!' : ''}
 					/>
 					{errors.storage_size && (
 						<p className='mt-1 text-xs text-red-500'>{errors.storage_size}</p>

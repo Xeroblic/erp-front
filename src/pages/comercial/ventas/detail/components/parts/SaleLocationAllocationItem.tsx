@@ -89,14 +89,14 @@ const SaleLocationAllocationItem: React.FC<ISaleLocationAllocationItemProps> = (
 		<div
 			role='group'
 			aria-label={label}
-			className={`rounded-lg border bg-white/80 p-3 shadow-sm dark:bg-zinc-900/60 ${
+			className={`rounded-lg border bg-white/80 p-3 shadow-xs dark:bg-zinc-900/60 ${
 				hasIssue
 					? 'border-red-400 dark:border-red-700'
 					: 'border-zinc-200 dark:border-zinc-700'
 			}`}>
 			<div className='flex flex-wrap items-start justify-between gap-2'>
 				<div className='min-w-0 space-y-1'>
-					<p className='break-words text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+					<p className='text-sm font-semibold wrap-break-word text-zinc-900 dark:text-zinc-100'>
 						{label}
 					</p>
 					<p className='text-xs text-zinc-600 dark:text-zinc-400'>
@@ -111,7 +111,7 @@ const SaleLocationAllocationItem: React.FC<ISaleLocationAllocationItemProps> = (
 						<Badge
 							variant='solid'
 							color='red'
-							className='whitespace-nowrap px-2 py-1 text-[11px] text-white'>
+							className='px-2 py-1 text-[11px] whitespace-nowrap text-white'>
 							{formatShortageQuantities(shortage)}
 						</Badge>
 					)}
@@ -174,7 +174,7 @@ const SaleLocationAllocationItem: React.FC<ISaleLocationAllocationItemProps> = (
 							// mientras se corrigen: el índice es la única clave estable.
 							// eslint-disable-next-line react/no-array-index-key
 							<div key={index} className='flex flex-wrap items-start gap-2'>
-								<div className='min-w-[12rem] flex-1'>
+								<div className='min-w-48 flex-1'>
 									<Validation
 										isValid={!locationError}
 										isTouched={Boolean(locationError)}

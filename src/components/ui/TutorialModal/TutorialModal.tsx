@@ -67,7 +67,7 @@ const StepContent: React.FC<StepContentProps> = ({
 				{/* Step number badge */}
 				<div
 					className={classNames(
-						'flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl',
+						'flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl',
 						`bg-${themeColor}-${themeColorShade}`,
 						'shadow-lg',
 					)}>
@@ -84,7 +84,7 @@ const StepContent: React.FC<StepContentProps> = ({
 					</h3>
 					{/* Description */}
 					<div
-						className='prose prose-sm max-w-none leading-relaxed text-gray-600 dark:prose-invert dark:text-gray-300'
+						className='prose prose-sm max-w-none leading-relaxed text-gray-600 dark:text-gray-300 dark:prose-invert'
 						// La descripción admite HTML básico y sólo viene de pasos definidos en el código,
 						// nunca de datos del usuario o del backend.
 						// eslint-disable-next-line react/no-danger
@@ -115,7 +115,7 @@ const StepContent: React.FC<StepContentProps> = ({
 											imageSizeClasses[size],
 										)}>
 										{/* Image overlay effect */}
-										<div className='absolute inset-0 z-10 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100' />
+										<div className='absolute inset-0 z-10 bg-linear-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100' />
 										<img
 											src={img.src}
 											alt={img.alt || step.title}
@@ -124,8 +124,8 @@ const StepContent: React.FC<StepContentProps> = ({
 										{/* Corner decoration */}
 										<div
 											className={classNames(
-												'absolute right-2 top-2 rounded-lg px-2 py-1',
-												'bg-white/90 backdrop-blur-sm dark:bg-zinc-900/90',
+												'absolute top-2 right-2 rounded-lg px-2 py-1',
+												'bg-white/90 backdrop-blur-xs dark:bg-zinc-900/90',
 												'text-xs font-medium',
 												`text-${themeColor}-${themeColorShade}`,
 											)}>
@@ -158,8 +158,8 @@ const StepContent: React.FC<StepContentProps> = ({
 							{/* Video decoration */}
 							<div
 								className={classNames(
-									'absolute right-3 top-3 rounded-lg px-3 py-1.5',
-									'bg-white/90 backdrop-blur-sm dark:bg-zinc-900/90',
+									'absolute top-3 right-3 rounded-lg px-3 py-1.5',
+									'bg-white/90 backdrop-blur-xs dark:bg-zinc-900/90',
 									'text-xs font-medium',
 									`text-${themeColor}-${themeColorShade}`,
 								)}>
@@ -305,7 +305,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 		<Portal>
 			<div
 				ref={modalRef}
-				className='fixed inset-0 z-[1060] flex items-center justify-center p-4 md:p-8'
+				className='fixed inset-0 z-1060 flex items-center justify-center p-4 md:p-8'
 				style={{ perspective: '1200px' }}>
 				{/* Animated Backdrop */}
 				<div
@@ -319,7 +319,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 							className={classNames(
 								'absolute h-96 w-96 animate-pulse rounded-full opacity-20 blur-3xl',
 								`bg-${themeColor}-${themeColorShade}`,
-								'-left-48 top-1/4',
+								'top-1/4 -left-48',
 							)}
 						/>
 						<div
@@ -347,7 +347,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 						{/* Top right decoration */}
 						<svg
 							className={classNames(
-								'decor-element absolute -right-20 -top-20 h-64 w-64 opacity-10 dark:opacity-5',
+								'decor-element absolute -top-20 -right-20 h-64 w-64 opacity-10 dark:opacity-5',
 								`text-${themeColor}-${themeColorShade}`,
 							)}
 							viewBox='0 0 200 200'>
@@ -460,8 +460,8 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 							<div className='flex items-center gap-4'>
 								{/* Animated icon container */}
 								<div className='relative'>
-									<div className='absolute inset-0 animate-pulse rounded-2xl bg-white/30 blur' />
-									<div className='relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/30 bg-white/20 backdrop-blur-sm'>
+									<div className='absolute inset-0 animate-pulse rounded-2xl bg-white/30 blur-sm' />
+									<div className='relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/30 bg-white/20 backdrop-blur-xs'>
 										<Icon
 											icon='HeroAcademicCap'
 											className='text-3xl text-white'
@@ -489,15 +489,15 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 								type='button'
 								aria-label='Cerrar tutorial'
 								onClick={handleClose}
-								className='group relative flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:bg-white/20 active:scale-95'>
-								<div className='absolute inset-0 rounded-full bg-white/20 opacity-0 blur transition-opacity group-hover:opacity-100' />
+								className='group relative flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-xs transition-all duration-300 hover:scale-110 hover:bg-white/20 active:scale-95'>
+								<div className='absolute inset-0 rounded-full bg-white/20 opacity-0 blur-sm transition-opacity group-hover:opacity-100' />
 								<Icon icon='HeroXMark' className='relative text-2xl text-white' />
 							</button>
 						</div>
 
 						{/* Progress bar */}
-						<div className='absolute bottom-0 left-0 right-0 translate-y-1/2 transform px-6'>
-							<div className='rounded-full border border-white/10 bg-white/20 p-1 backdrop-blur-sm'>
+						<div className='absolute right-0 bottom-0 left-0 translate-y-1/2 transform px-6'>
+							<div className='rounded-full border border-white/10 bg-white/20 p-1 backdrop-blur-xs'>
 								<Progress
 									value={progressValue}
 									color={themeColor}
@@ -510,7 +510,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 					</div>
 
 					{/* Step indicators */}
-					<div className='flex justify-center gap-2 px-6 pb-4 pt-8'>
+					<div className='flex justify-center gap-2 px-6 pt-8 pb-4'>
 						{steps.map((step, index) => (
 							<button
 								key={step.title}
@@ -556,7 +556,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 					</div>
 
 					{/* Footer with navigation - now with mt-auto to stick to bottom */}
-					<div className='mt-auto border-t border-gray-200/50 bg-gray-50/50 px-6 py-5 backdrop-blur-sm dark:border-zinc-700/50 dark:bg-zinc-800/30'>
+					<div className='mt-auto border-t border-gray-200/50 bg-gray-50/50 px-6 py-5 backdrop-blur-xs dark:border-zinc-700/50 dark:bg-zinc-800/30'>
 						<div className='flex items-center justify-between'>
 							{/* Step count */}
 							<div className='flex items-center gap-3'>

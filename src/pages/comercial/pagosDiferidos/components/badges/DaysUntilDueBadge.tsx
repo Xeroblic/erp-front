@@ -15,7 +15,7 @@ const DaysUntilDueBadge: React.FC<DaysUntilDueBadgeProps> = ({ daysUntilDue, isO
 
 	return (
 		<span
-			className={`inline-flex min-w-36 max-w-48 items-center justify-center whitespace-normal rounded-full px-3 py-1.5 text-center text-sm font-semibold leading-tight shadow-sm ${colorClass}`}>
+			className={`inline-flex max-w-48 min-w-36 items-center justify-center rounded-full px-3 py-1.5 text-center text-sm leading-tight font-semibold whitespace-normal shadow-xs ${colorClass}`}>
 			{getDaysUntilDueText(daysUntilDue)}
 		</span>
 	);

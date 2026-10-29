@@ -20,7 +20,7 @@ const WarehouseCapacity: React.FC<{ aggregate: IInventoryWarehouseAggregate }> =
 		);
 	const percent = Math.min(100, Math.round((used / max) * 100));
 	return (
-		<div className='min-w-[8rem] space-y-1'>
+		<div className='min-w-32 space-y-1'>
 			<div
 				className='h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700'
 				role='progressbar'

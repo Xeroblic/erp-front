@@ -89,7 +89,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 			fireEvent.blur(notes);
 			await Promise.resolve();
 		});
-		expect(notes).not.toHaveClass('!border-green-500');
+		expect(notes).not.toHaveClass('border-green-500!');
 		expect(notes.style.getPropertyValue('--textarea-border')).toBe('#d4d4d8');
 		expect(screen.getByText('Ítems del documento')).toBeInTheDocument();
 		expect(screen.getByText('Suma referencial de ítems')).toBeInTheDocument();
@@ -334,7 +334,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 			);
 		});
 		await waitFor(() => expect(totalAmount).toHaveFocus());
-		expect(totalAmount).toHaveClass('!border-red-500');
+		expect(totalAmount).toHaveClass('border-red-500!');
 	});
 	it('advierte sin bloquear cuando los ítems difieren del total oficial', async () => {
 		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);

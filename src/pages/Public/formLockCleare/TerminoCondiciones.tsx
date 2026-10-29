@@ -130,7 +130,7 @@ interface TerminoCondicionesModalProps {
 }
 
 export const TerminoCondicionesContent = ({
-	className = 'space-y-6 rounded-2xl border border-zinc-200 bg-white p-5 text-zinc-700 shadow-sm sm:p-6',
+	className = 'space-y-6 rounded-2xl border border-zinc-200 bg-white p-5 text-zinc-700 shadow-xs sm:p-6',
 }: TerminoCondicionesContentProps) => {
 	return (
 		<div className={className}>
@@ -150,7 +150,7 @@ export const TerminoCondicionesContent = ({
 					<article
 						key={clause.title}
 						className='rounded-xl border border-zinc-200 bg-zinc-50/70 p-4'>
-						<h3 className='text-sm font-bold uppercase tracking-wide text-zinc-800'>
+						<h3 className='text-sm font-bold tracking-wide text-zinc-800 uppercase'>
 							{clause.title}
 						</h3>
 						<p className='mt-2 text-sm leading-6 text-zinc-700'>{clause.content}</p>

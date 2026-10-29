@@ -149,7 +149,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 				)}
 				{!loading && document && (
 					<div className='space-y-5'>
-						<Card className='border border-dashed border-gray-200 bg-transparent shadow-sm'>
+						<Card className='border border-dashed border-gray-200 bg-transparent shadow-xs'>
 							<CardHeader className='pb-2'>
 								<CardTitle className='text-lg font-semibold'>
 									{document.name}
@@ -216,7 +216,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 						</Card>
 
 						{document.description && (
-							<Card className='border border-dashed border-gray-200 bg-transparent shadow-sm'>
+							<Card className='border border-dashed border-gray-200 bg-transparent shadow-xs'>
 								<CardHeader className='pb-2'>
 									<CardTitle className='text-sm font-semibold'>
 										Descripción
@@ -226,7 +226,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 							</Card>
 						)}
 
-						<Card className='border border-dashed border-gray-200 bg-transparent shadow-sm'>
+						<Card className='border border-dashed border-gray-200 bg-transparent shadow-xs'>
 							<CardHeader className='flex items-center justify-between pb-2'>
 								<div>
 									<CardTitle className='text-sm font-semibold'>

@@ -247,7 +247,7 @@ interface DetailFieldProps {
 const DetailField = ({ icon, label, children, className = '' }: DetailFieldProps) => (
 	<div
 		className={`min-w-0 rounded-lg border border-zinc-200/80 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/60 ${className}`}>
-		<dt className='flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400'>
+		<dt className='flex items-center gap-2 text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400'>
 			<Icon icon={icon} className='h-4 w-4 shrink-0 text-blue-500' aria-hidden='true' />
 			{label}
 		</dt>
@@ -457,7 +457,7 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 	return (
 		<div className='relative flex gap-4'>
 			{!isLast && (
-				<div className='absolute left-[19px] top-10 h-[calc(100%-2rem)] w-0.5 bg-gradient-to-b from-zinc-300 to-zinc-200 dark:from-zinc-600 dark:to-zinc-700' />
+				<div className='absolute top-10 left-[19px] h-[calc(100%-2rem)] w-0.5 bg-linear-to-b from-zinc-300 to-zinc-200 dark:from-zinc-600 dark:to-zinc-700' />
 			)}
 
 			<div
@@ -472,7 +472,7 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 					aria-expanded={isExpanded}
 					aria-controls={detailsId}
 					aria-label={`${isExpanded ? 'Ocultar' : 'Mostrar'} detalles del movimiento de ${movement.product?.name ?? 'producto desconocido'}`}
-					className='group w-full rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm transition-all duration-200 hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-blue-600 dark:focus-visible:ring-offset-zinc-900'>
+					className='group w-full rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-xs transition-all duration-200 hover:border-blue-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-hidden dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-blue-600 dark:focus-visible:ring-offset-zinc-900'>
 					<div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
 						<div className='flex flex-1 flex-col gap-1'>
 							<span className='text-base font-semibold text-zinc-900 dark:text-white'>
@@ -548,7 +548,7 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 							</div>
 
 							<div className='grid gap-4'>
-								<section className='rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800'>
+								<section className='rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-700 dark:bg-zinc-800'>
 									<h4 className='flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100'>
 										<Icon
 											icon='HeroArrowsRightLeft'
@@ -559,7 +559,7 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 									</h4>
 									<div className='mt-5 grid grid-cols-3 items-center gap-2'>
 										<div className='text-center'>
-											<span className='block text-xs font-medium uppercase tracking-wide text-zinc-500'>
+											<span className='block text-xs font-medium tracking-wide text-zinc-500 uppercase'>
 												Anterior
 											</span>
 											<span className='mt-1 block text-2xl font-bold text-zinc-700 dark:text-zinc-200'>
@@ -579,7 +579,7 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 											/>
 										</div>
 										<div className='text-center'>
-											<span className='block text-xs font-medium uppercase tracking-wide text-zinc-500'>
+											<span className='block text-xs font-medium tracking-wide text-zinc-500 uppercase'>
 												Resultante
 											</span>
 											<span className='mt-1 block text-2xl font-bold text-blue-600 dark:text-blue-400'>
@@ -589,27 +589,27 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 									</div>
 								</section>
 
-								<section className='rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800'>
+								<section className='rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-700 dark:bg-zinc-800'>
 									<h4 className='mb-3 text-sm font-semibold text-zinc-800 dark:text-zinc-100'>
 										Contexto del movimiento
 									</h4>
 									<dl className='grid gap-3 sm:grid-cols-2'>
 										<DetailField icon='HeroBuildingStorefront' label='Sucursal'>
-											<span className='break-words'>
+											<span className='wrap-break-word'>
 												{movement.branch?.name ?? 'No informada'}
 											</span>
 										</DetailField>
 										<DetailField icon='HeroArchiveBox' label='Bodega'>
-											<span className='break-words'>
+											<span className='wrap-break-word'>
 												{movement.warehouse?.name ?? 'Sin bodega'}
 											</span>
 										</DetailField>
 										<DetailField icon='HeroUser' label='Realizado por'>
-											<span className='block break-words'>
+											<span className='block wrap-break-word'>
 												{movement.performed_by?.name ??
 													'Usuario desconocido'}
 											</span>
-											<span className='mt-1 block break-all text-xs font-normal text-zinc-500 dark:text-zinc-400'>
+											<span className='mt-1 block text-xs font-normal break-all text-zinc-500 dark:text-zinc-400'>
 												{movement.performed_by?.email ??
 													'Sin correo informado'}
 											</span>
@@ -621,7 +621,7 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 											icon='HeroDocumentText'
 											label='Razón'
 											className='sm:col-span-2'>
-											<p className='whitespace-pre-wrap break-words font-normal leading-relaxed'>
+											<p className='leading-relaxed font-normal wrap-break-word whitespace-pre-wrap'>
 												{movement.reason || 'Sin razón especificada'}
 											</p>
 										</DetailField>
@@ -673,7 +673,7 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 							{metadataEntries.length > 0 && (
 								<section
 									aria-labelledby={metadataTitleId}
-									className='mt-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800'>
+									className='mt-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-700 dark:bg-zinc-800'>
 									<div className='mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
 										<div>
 											<h4
@@ -722,13 +722,13 @@ export function TimelineItem({ movement, isLast = false }: TimelineItemProps) {
 														<span className='text-sm font-semibold text-zinc-700 dark:text-zinc-200'>
 															{entry.label}
 														</span>
-														<code className='break-all text-[11px] text-zinc-400 dark:text-zinc-500'>
+														<code className='text-[11px] break-all text-zinc-400 dark:text-zinc-500'>
 															{entry.key}
 														</code>
 													</span>
 												</dt>
 												<dd
-													className={`mt-3 whitespace-pre-wrap break-words border-t border-zinc-200 pt-3 text-zinc-900 dark:border-zinc-700 dark:text-zinc-100 ${
+													className={`mt-3 border-t border-zinc-200 pt-3 wrap-break-word whitespace-pre-wrap text-zinc-900 dark:border-zinc-700 dark:text-zinc-100 ${
 														entry.isStructured
 															? 'font-mono text-xs leading-relaxed'
 															: 'text-sm font-medium'

@@ -27,7 +27,7 @@ const ActiveFiltersDisplay: React.FC<ActiveFiltersDisplayProps> = ({ filters }) 
 	}
 
 	return (
-		<div className='mb-4 flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide'>
+		<div className='mb-4 flex flex-wrap items-center gap-2 text-xs tracking-wide uppercase'>
 			<span className='flex items-center gap-1'>
 				<Icon icon='HeroSparkles' className='h-4 w-4' />
 				Filtros activos

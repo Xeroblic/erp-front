@@ -84,7 +84,7 @@ const AjustesTrasladosTabs = ({
 				activeTab={activeTab}
 				onTabChange={onTabChange}
 				variant='pills'
-				className='rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
+				className='rounded-2xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-700 dark:bg-zinc-900'>
 				<Tab
 					id='ajuste'
 					text='Ajuste de inventario'

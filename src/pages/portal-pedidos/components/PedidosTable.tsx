@@ -127,7 +127,7 @@ const PedidosTable = ({ data, title }: PedidosTableProps) => {
 					{title}
 				</h2>
 			)}
-			<div className='overflow-hidden rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+			<div className='overflow-hidden rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900'>
 				<DataTable
 					columns={columns}
 					data={data}

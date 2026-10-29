@@ -153,7 +153,7 @@ describe('PurchaseDocumentFormModal — foco al enviar con errores', () => {
 		// `Input` marca el error con el borde rojo, que exige el campo tocado e inválido.
 		const errorVisibleAtScroll: boolean[] = [];
 		const scrollIntoView = vi.fn(() => {
-			errorVisibleAtScroll.push(folioInput().className.includes('!border-red-500'));
+			errorVisibleAtScroll.push(folioInput().className.includes('border-red-500!'));
 		});
 		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
 			configurable: true,

@@ -65,7 +65,7 @@ const Tabs: React.FC<TabsProps> = ({
 							const stateClasses =
 								variant === 'pills'
 									? isActive
-										? 'border-blue-200 bg-white text-blue-700 shadow-sm dark:border-blue-500/40 dark:bg-gray-900 dark:text-blue-300'
+										? 'border-blue-200 bg-white text-blue-700 shadow-xs dark:border-blue-500/40 dark:bg-gray-900 dark:text-blue-300'
 										: disabled
 											? 'cursor-not-allowed border-transparent bg-transparent text-gray-400 dark:text-gray-500'
 											: 'border-transparent bg-transparent text-gray-600 hover:border-gray-200 hover:bg-white hover:text-gray-900 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-900/60 dark:hover:text-white'

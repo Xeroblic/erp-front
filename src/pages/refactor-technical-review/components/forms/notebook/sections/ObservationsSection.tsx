@@ -28,7 +28,7 @@ const ObservationsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					placeholder={NOTEBOOK_PLACEHOLDERS.observations}
 					disabled={readOnly}
 					rows={6}
-					className={`w-full resize-none ${errors.observations ? 'border-red-500' : ''}`}
+					className={`w-full resize-none ${errors.observations ? 'border-red-500!' : ''}`}
 				/>
 				{errors.observations && (
 					<p className='mt-1 text-xs text-red-500'>{errors.observations}</p>

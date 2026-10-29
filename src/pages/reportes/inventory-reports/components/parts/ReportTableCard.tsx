@@ -92,7 +92,7 @@ const ReportTableCard: React.FC<IReportTableCardProps> = ({
 								<Tr key={`reporte-skeleton-${rowIndex}`}>
 									{Array.from({ length: columnCount }, (_cell, cellIndex) => (
 										<Td key={`reporte-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>

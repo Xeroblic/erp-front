@@ -375,10 +375,10 @@ const NotificationDetail: React.FC = () => {
 									{/* Header de la notificación */}
 									<div
 										ref={headerRef}
-										className='flex items-start gap-4 rounded-2xl border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white p-6 shadow-lg transition-shadow hover:shadow-xl dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-900/50'>
+										className='flex items-start gap-4 rounded-2xl border border-zinc-200 bg-linear-to-br from-zinc-50 to-white p-6 shadow-lg transition-shadow hover:shadow-xl dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-900/50'>
 										{/* Icono grande con colores del tema */}
 										<div
-											className='flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl shadow-md'
+											className='flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-md'
 											style={{
 												backgroundColor: `var(--color-primary-100)`,
 											}}>
@@ -507,18 +507,18 @@ const NotificationDetail: React.FC = () => {
 												{cards.map((c) => (
 													<div
 														key={c.key}
-														className='detail-card group relative cursor-pointer overflow-hidden rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700'>
+														className='detail-card group relative cursor-pointer overflow-hidden rounded-xl border border-zinc-200 bg-white p-4 shadow-xs transition-all duration-200 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700'>
 														{/* Barra superior con color del tema */}
 														<div
-															className='absolute left-0 top-0 h-1 w-full scale-x-0 transform transition-transform duration-300 group-hover:scale-x-100'
+															className='absolute top-0 left-0 h-1 w-full scale-x-0 transform transition-transform duration-300 group-hover:scale-x-100'
 															style={{
 																backgroundColor: `var(--color-primary-${themeColorShade})`,
 															}}
 														/>
-														<div className='mb-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+														<div className='mb-1.5 text-xs font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 															{c.label}
 														</div>
-														<div className='break-words text-base font-medium text-zinc-900 dark:text-zinc-50'>
+														<div className='text-base font-medium wrap-break-word text-zinc-900 dark:text-zinc-50'>
 															{c.value}
 														</div>
 													</div>
@@ -529,7 +529,7 @@ const NotificationDetail: React.FC = () => {
 
 									{/* Información adicional */}
 									{extraEntries.length > 0 && (
-										<div className='detail-card space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/50 p-5 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50'>
+										<div className='detail-card space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/50 p-5 backdrop-blur-xs dark:border-zinc-800 dark:bg-zinc-900/50'>
 											<h3 className='flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-50'>
 												<Icon icon='HeroListBullet' className='h-5 w-5' />
 												Información Adicional
@@ -537,10 +537,10 @@ const NotificationDetail: React.FC = () => {
 											<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
 												{extraEntries.map(([k, v]) => (
 													<div key={k} className='flex flex-col gap-1'>
-														<div className='text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+														<div className='text-xs font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 															{k}
 														</div>
-														<div className='break-words text-sm font-medium text-zinc-800 dark:text-zinc-200'>
+														<div className='text-sm font-medium wrap-break-word text-zinc-800 dark:text-zinc-200'>
 															{String(v)}
 														</div>
 													</div>

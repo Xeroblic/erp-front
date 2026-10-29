@@ -55,7 +55,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
 				onClick={handleDecrement}
 				disabled={disabled || value <= min}
 				aria-label={describe('Decrementar')}
-				className='flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-bold text-gray-700 shadow-sm transition hover:bg-gray-100 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-200'>
+				className='flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-bold text-gray-700 shadow-xs transition hover:bg-gray-100 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-200'>
 				−
 			</button>
 			<span
@@ -68,7 +68,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
 				onClick={handleIncrement}
 				disabled={disabled || value >= max}
 				aria-label={describe('Incrementar')}
-				className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50'>
+				className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white shadow-xs transition hover:bg-blue-700 disabled:opacity-50'>
 				+
 			</button>
 		</div>

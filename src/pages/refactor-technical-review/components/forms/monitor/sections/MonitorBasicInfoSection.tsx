@@ -80,7 +80,7 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 						value={values.model ?? ''}
 						placeholder={MONITOR_PLACEHOLDERS.model}
 						disabled={readOnly}
-						className={errors.model ? 'border-red-500' : ''}
+						className={errors.model ? 'border-red-500!' : ''}
 					/>
 					{errors.model && <p className='mt-1 text-xs text-red-500'>{errors.model}</p>}
 					<p className='mt-1 text-xs text-zinc-500'>{MONITOR_HINTS.model}</p>
@@ -101,7 +101,7 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 						value={values.line ?? ''}
 						placeholder={MONITOR_PLACEHOLDERS.line}
 						disabled={readOnly}
-						className={errors.line ? 'border-red-500' : ''}
+						className={errors.line ? 'border-red-500!' : ''}
 					/>
 					{errors.line && <p className='mt-1 text-xs text-red-500'>{errors.line}</p>}
 					<p className='mt-1 text-xs text-zinc-500'>{MONITOR_HINTS.line}</p>
@@ -109,7 +109,7 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 			</div>
 
 			{/* General Condition */}
-			<div className='rounded-xl border border-emerald-200 bg-emerald-500/10 p-6 shadow-sm transition-colors duration-200 hover:bg-emerald-500/20 dark:border-emerald-800/50 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/20'>
+			<div className='rounded-xl border border-emerald-200 bg-emerald-500/10 p-6 shadow-xs transition-colors duration-200 hover:bg-emerald-500/20 dark:border-emerald-800/50 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/20'>
 				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-emerald-800 dark:text-emerald-200'>
 					<Icon icon='HeroSparkles' className='h-5 w-5' />
 					{getMonitorLabel('general_condition')}

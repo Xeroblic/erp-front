@@ -4,7 +4,7 @@ import Icon from '../icon/Icon';
 
 const Spinner = ({ nombre }: { nombre: string }) => {
 	return (
-		<Card className='border border-zinc-200 shadow-sm dark:border-zinc-700'>
+		<Card className='border border-zinc-200 shadow-xs dark:border-zinc-700'>
 			<CardBody className='p-12 text-center'>
 				<div className='mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30'>
 					<Icon

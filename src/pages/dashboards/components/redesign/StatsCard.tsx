@@ -35,7 +35,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
 	}, [value]);
 
 	return (
-		<Card className='group h-full border-zinc-100 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md dark:border-zinc-800 dark:shadow-zinc-900/10'>
+		<Card className='group h-full border-zinc-100 shadow-xs transition-all hover:-translate-y-1 hover:shadow-md dark:border-zinc-800 dark:shadow-zinc-900/10'>
 			<CardBody className='flex flex-col justify-between p-6'>
 				<div className='flex items-center justify-between'>
 					{/* Icon Box */}
@@ -49,7 +49,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
 					<h3 className='text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white'>
 						{formattedValue}
 					</h3>
-					<p className='mt-1 text-sm font-medium capitalize text-zinc-500 dark:text-zinc-400'>
+					<p className='mt-1 text-sm font-medium text-zinc-500 capitalize dark:text-zinc-400'>
 						{title.toLowerCase()}
 					</p>
 				</div>

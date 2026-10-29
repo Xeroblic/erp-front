@@ -88,7 +88,7 @@ export const QuickProductFlowModal: React.FC<QuickProductFlowModalProps> = ({
 							/>
 							<p className='text-sm text-blue-700 dark:text-blue-300'>
 								Asignado a sucursal{' '}
-								<span className='ml-1 inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 font-mono text-xs font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'>
+								<span className='ml-1 inline-flex items-center rounded-sm bg-blue-100 px-1.5 py-0.5 font-mono text-xs font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'>
 									{branchId}
 								</span>
 							</p>
@@ -99,7 +99,7 @@ export const QuickProductFlowModal: React.FC<QuickProductFlowModalProps> = ({
 					<div>
 						<div className='mb-3 flex items-center gap-2'>
 							<span className='h-px flex-1 bg-zinc-200/80 dark:bg-zinc-800' />
-							<span className='text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500'>
+							<span className='text-[10px] font-semibold tracking-widest text-zinc-400 uppercase dark:text-zinc-500'>
 								Identidad del producto
 							</span>
 							<span className='h-px flex-1 bg-zinc-200/80 dark:bg-zinc-800' />
@@ -156,7 +156,7 @@ export const QuickProductFlowModal: React.FC<QuickProductFlowModalProps> = ({
 									invalidFeedback={form.errors.sku}
 									placeholder='DELL-INS-001'
 									disabled={isSubmitting}
-									className='font-mono uppercase tracking-wide'
+									className='font-mono tracking-wide uppercase'
 								/>
 							</div>
 
@@ -201,7 +201,7 @@ export const QuickProductFlowModal: React.FC<QuickProductFlowModalProps> = ({
 					<div>
 						<div className='mb-3 flex items-center gap-2'>
 							<span className='h-px flex-1 bg-zinc-200/80 dark:bg-zinc-800' />
-							<span className='text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500'>
+							<span className='text-[10px] font-semibold tracking-widest text-zinc-400 uppercase dark:text-zinc-500'>
 								Datos comerciales
 							</span>
 							<span className='h-px flex-1 bg-zinc-200/80 dark:bg-zinc-800' />
@@ -257,7 +257,7 @@ export const QuickProductFlowModal: React.FC<QuickProductFlowModalProps> = ({
 										<Icon icon='DuoPrice1' className='h-3.5 w-3.5' />
 									</span>
 									Precio
-									<span className='ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-normal text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'>
+									<span className='ml-1 rounded-sm bg-zinc-100 px-1.5 py-0.5 text-[10px] font-normal text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'>
 										Opcional
 									</span>
 								</Label>
@@ -340,7 +340,7 @@ export const QuickProductFlowModal: React.FC<QuickProductFlowModalProps> = ({
 							</div>
 
 							{form.values.serialTracking === '1' && (
-								<div className='shrink-0 rounded-full bg-blue-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:bg-blue-900/50 dark:text-blue-400'>
+								<div className='shrink-0 rounded-full bg-blue-100 px-2.5 py-1 text-[10px] font-bold tracking-wider text-blue-600 uppercase dark:bg-blue-900/50 dark:text-blue-400'>
 									Activo
 								</div>
 							)}

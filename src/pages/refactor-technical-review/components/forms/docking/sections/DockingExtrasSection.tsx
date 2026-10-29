@@ -76,8 +76,8 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 			</div>
 
 			{/* Cover Condition */}
-			<div className='rounded-xl border border-orange-200 bg-orange-500/10 p-6 shadow-sm transition-colors duration-200 hover:bg-orange-500/20 dark:border-orange-800/50 dark:bg-orange-900/10 dark:hover:bg-orange-900/20'>
-				<label className='mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-orange-800 dark:text-orange-200'>
+			<div className='rounded-xl border border-orange-200 bg-orange-500/10 p-6 shadow-xs transition-colors duration-200 hover:bg-orange-500/20 dark:border-orange-800/50 dark:bg-orange-900/10 dark:hover:bg-orange-900/20'>
+				<label className='mb-4 flex items-center gap-2 text-sm font-bold tracking-wider text-orange-800 uppercase dark:text-orange-200'>
 					<Icon icon='HeroStop' className='h-5 w-5' />
 					{getDockingLabel('cover_condition')}
 				</label>
@@ -113,9 +113,9 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 
 			{/* Sector del candado (ZF-99) */}
 			{lockAreaField && (
-				<div className='rounded-xl border border-amber-200 bg-amber-500/10 p-6 shadow-sm transition-colors duration-200 hover:bg-amber-500/20 dark:border-amber-800/50 dark:bg-amber-900/10 dark:hover:bg-amber-900/20'>
+				<div className='rounded-xl border border-amber-200 bg-amber-500/10 p-6 shadow-xs transition-colors duration-200 hover:bg-amber-500/20 dark:border-amber-800/50 dark:bg-amber-900/10 dark:hover:bg-amber-900/20'>
 					<p
-						className='mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200'
+						className='mb-4 flex items-center gap-2 text-sm font-bold tracking-wider text-amber-800 uppercase dark:text-amber-200'
 						id='lock-area-condition-label'>
 						<Icon icon='HeroLockClosed' className='h-5 w-5' />
 						{lockAreaField.label ?? getDockingLabel('lock_area_condition')}
@@ -167,7 +167,7 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 			)}
 
 			{/* Observations */}
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition-colors duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700'>
+			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-xs transition-colors duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700'>
 				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-zinc-300'>
 					<Icon icon='HeroDocumentText' className='h-5 w-5' />
 					{getDockingLabel('observations')}
@@ -181,7 +181,7 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 					placeholder={DOCKING_PLACEHOLDERS.observations}
 					disabled={readOnly}
 					rows={4}
-					className={`w-full ${errors.observations ? 'border-red-500' : ''}`}
+					className={`w-full ${errors.observations ? 'border-red-500!' : ''}`}
 				/>
 				{errors.observations && (
 					<p className='mt-2 text-xs text-red-500'>{errors.observations}</p>

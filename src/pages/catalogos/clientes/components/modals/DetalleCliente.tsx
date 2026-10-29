@@ -155,7 +155,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 				{customer ? (
 					<div className='space-y-6'>
 						{/* Información del cliente - SOLO DATOS REALES */}
-						<div className='rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 p-6 dark:from-blue-900/20 dark:to-cyan-900/20'>
+						<div className='rounded-lg bg-linear-to-r from-blue-50 to-cyan-50 p-6 dark:from-blue-900/20 dark:to-cyan-900/20'>
 							<div className='space-y-4'>
 								<div>
 									<h3 className='text-2xl font-bold text-gray-900 dark:text-white'>
@@ -167,7 +167,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 								</div>
 
 								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div className='rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800'>
+									<div className='rounded-lg bg-white p-4 shadow-xs dark:bg-gray-800'>
 										<p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
 											Subsidiaria
 										</p>
@@ -176,7 +176,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 										</p>
 									</div>
 
-									<div className='rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800'>
+									<div className='rounded-lg bg-white p-4 shadow-xs dark:bg-gray-800'>
 										<p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
 											Proveedores Asociados
 										</p>
@@ -185,7 +185,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 										</p>
 									</div>
 
-									<div className='rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800'>
+									<div className='rounded-lg bg-white p-4 shadow-xs dark:bg-gray-800'>
 										<p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
 											Creado
 										</p>
@@ -194,7 +194,7 @@ const DetalleCliente: React.FC<DetalleClienteProps> = ({ isOpen, setIsOpen, cust
 										</p>
 									</div>
 
-									<div className='rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800'>
+									<div className='rounded-lg bg-white p-4 shadow-xs dark:bg-gray-800'>
 										<p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
 											Actualizado
 										</p>

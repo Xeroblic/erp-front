@@ -41,15 +41,15 @@ const ButtonGroup: FC<IButtonGroupProps> = (props) => {
 		/**
 		 * For Horizontal
 		 */
-		'ltr:[&:not(:last-child)]:!rounded-r-none': !isVertical,
-		'rtl:[&:not(:last-child)]:!rounded-l-none': !isVertical,
-		'ltr:[&:not(:first-child)]:!rounded-l-none': !isVertical,
-		'rtl:[&:not(:first-child)]:!rounded-r-none': !isVertical,
+		'not-last:ltr:rounded-r-none!': !isVertical,
+		'not-last:rtl:rounded-l-none!': !isVertical,
+		'not-first:ltr:rounded-l-none!': !isVertical,
+		'not-first:rtl:rounded-r-none!': !isVertical,
 		/**
 		 * For Vertical
 		 */
-		'[&:not(:last-child)]:!rounded-b-none': isVertical,
-		'[&:not(:first-child)]:!rounded-t-none': isVertical,
+		'not-last:rounded-b-none!': isVertical,
+		'not-first:rounded-t-none!': isVertical,
 	});
 
 	return (

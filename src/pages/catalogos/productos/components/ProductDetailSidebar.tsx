@@ -53,7 +53,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 	const toggle = useCallback(() => setOpen((prev) => !prev), []);
 
 	return (
-		<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-700/80'>
+		<Card className='overflow-hidden border border-neutral-200 shadow-xs dark:border-neutral-700/80'>
 			<button
 				type='button'
 				onClick={toggle}
@@ -61,7 +61,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 				aria-expanded={open}
 				aria-label={`${open ? 'Ocultar' : 'Mostrar'} ${title}`}>
 				<div
-					className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${bgColor} ring-1 ${ringColor}`}>
+					className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${bgColor} ring-1 ${ringColor}`}>
 					<Icon icon={icon} className={`h-4 w-4 ${iconColor}`} />
 				</div>
 				<span className='flex-1 text-sm font-bold text-neutral-900 dark:text-neutral-50'>
@@ -141,7 +141,7 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 
 					{/* Categorías */}
 					<div className='space-y-1.5 border-t border-neutral-100 pt-2.5 dark:border-neutral-700/60'>
-						<p className='text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500'>
+						<p className='text-xs font-bold tracking-wider text-neutral-400 uppercase dark:text-neutral-500'>
 							Categorías
 						</p>
 						<div className='flex flex-wrap gap-1.5'>
@@ -156,7 +156,7 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 									</Badge>
 								))
 							) : (
-								<span className='text-xs italic text-neutral-400 dark:text-neutral-500'>
+								<span className='text-xs text-neutral-400 italic dark:text-neutral-500'>
 									Sin categorías
 								</span>
 							)}
@@ -175,7 +175,7 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 				defaultOpen={false}>
 				<div className='space-y-3 text-sm'>
 					<div>
-						<p className='text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500'>
+						<p className='text-xs font-bold tracking-wider text-neutral-400 uppercase dark:text-neutral-500'>
 							Creado
 						</p>
 						<p className='mt-0.5 font-medium text-neutral-800 dark:text-neutral-100'>
@@ -183,7 +183,7 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 						</p>
 					</div>
 					<div>
-						<p className='text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500'>
+						<p className='text-xs font-bold tracking-wider text-neutral-400 uppercase dark:text-neutral-500'>
 							Actualizado
 						</p>
 						<p className='mt-0.5 font-medium text-neutral-800 dark:text-neutral-100'>
@@ -224,7 +224,7 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 											}
 										}}
 										aria-label={`Ver producto ${child.name}, grado ${child.grade}, stock ${child.stock}`}>
-										<div className='flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-blue-500/15 text-xs font-bold text-blue-700 ring-1 ring-blue-500/25 dark:bg-blue-500/20 dark:text-blue-300 dark:ring-blue-400/30'>
+										<div className='flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-500/15 text-xs font-bold text-blue-700 ring-1 ring-blue-500/25 dark:bg-blue-500/20 dark:text-blue-300 dark:ring-blue-400/30'>
 											{child.grade}
 										</div>
 										<div className='flex-1'>
@@ -335,19 +335,19 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 													)}
 												</div>
 											</div>
-											<span className='flex-shrink-0 text-sm font-bold text-amber-700 dark:text-amber-300'>
+											<span className='shrink-0 text-sm font-bold text-amber-700 dark:text-amber-300'>
 												×{hold.quantity}
 											</span>
 											<Icon
 												icon='HeroArrowTopRightOnSquare'
-												className='h-3.5 w-3.5 flex-shrink-0 text-amber-400 transition-colors group-hover:text-amber-600 dark:text-amber-500 dark:group-hover:text-amber-300'
+												className='h-3.5 w-3.5 shrink-0 text-amber-400 transition-colors group-hover:text-amber-600 dark:text-amber-500 dark:group-hover:text-amber-300'
 											/>
 										</div>
 									);
 								})}
 							</div>
 						) : (
-							<p className='text-xs italic text-neutral-400 dark:text-neutral-500'>
+							<p className='text-xs text-neutral-400 italic dark:text-neutral-500'>
 								El detalle por venta no está disponible en este producto.
 							</p>
 						)}

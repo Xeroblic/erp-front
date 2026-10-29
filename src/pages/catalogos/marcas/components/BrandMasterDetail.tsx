@@ -84,7 +84,7 @@ const BrandMasterDetail: React.FC<BrandMasterDetailProps> = ({
 					<div
 						ref={listRef}
 						style={{ ['--list-w' as string]: `${listWidth}px` }}
-						className='max-h-[calc(85vh-220px)] w-full space-y-2 overflow-y-auto pr-1 [scrollbar-width:thin] lg:w-[var(--list-w)] lg:shrink-0'>
+						className='max-h-[calc(85vh-220px)] w-full scrollbar-thin space-y-2 overflow-y-auto pr-1 lg:w-(--list-w) lg:shrink-0'>
 						{brands.map((brand, index) => {
 							const isActive = selected?.id === brand.id;
 							return (
@@ -134,7 +134,7 @@ const BrandMasterDetail: React.FC<BrandMasterDetailProps> = ({
 					</div>
 
 					{/* Detalle (solo desktop; en mobile se abre como modal) */}
-					<div className='hidden min-w-0 rounded-xl bg-white p-4 dark:bg-zinc-800 lg:block lg:flex-1 lg:self-start'>
+					<div className='hidden min-w-0 rounded-xl bg-white p-4 lg:block lg:flex-1 lg:self-start dark:bg-zinc-800'>
 						<BrandDetailPanel
 							brand={selected}
 							onSave={onSave}

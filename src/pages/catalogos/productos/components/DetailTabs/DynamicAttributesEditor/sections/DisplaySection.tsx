@@ -105,7 +105,7 @@ const DisplaySection: React.FC<SectionBaseProps> = ({
 								onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
 									updateAttribute('display.touch', event.target.checked)
 								}
-								className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+								className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
 							/>
 							<span className='text-sm font-medium'>Pantalla táctil</span>
 						</label>
@@ -125,7 +125,7 @@ const DisplaySection: React.FC<SectionBaseProps> = ({
 											event.target.checked,
 										)
 									}
-									className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+									className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
 								/>
 								<span className='text-sm font-medium'>Soporte ajustable</span>
 							</label>
@@ -139,7 +139,7 @@ const DisplaySection: React.FC<SectionBaseProps> = ({
 									onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
 										updateAttribute('display.pivot', event.target.checked)
 									}
-									className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+									className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
 								/>
 								<span className='text-sm font-medium'>Rotación (Pivot)</span>
 							</label>
@@ -156,7 +156,7 @@ const DisplaySection: React.FC<SectionBaseProps> = ({
 											event.target.checked,
 										)
 									}
-									className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+									className='h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500'
 								/>
 								<span className='text-sm font-medium'>Altavoces integrados</span>
 							</label>

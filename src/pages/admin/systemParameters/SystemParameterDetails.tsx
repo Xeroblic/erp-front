@@ -213,7 +213,7 @@ const SystemParameterDetails: React.FC = () => {
 											Valor Actual
 										</label>
 										<div className='rounded-lg bg-zinc-100 p-4 dark:bg-zinc-800'>
-											<pre className='whitespace-pre-wrap font-mono text-sm text-zinc-900 dark:text-zinc-100'>
+											<pre className='font-mono text-sm whitespace-pre-wrap text-zinc-900 dark:text-zinc-100'>
 												{formatValue()}
 											</pre>
 										</div>
@@ -225,7 +225,7 @@ const SystemParameterDetails: React.FC = () => {
 												Valor por Defecto
 											</label>
 											<div className='rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800/50'>
-												<pre className='whitespace-pre-wrap font-mono text-sm text-zinc-600 dark:text-zinc-400'>
+												<pre className='font-mono text-sm whitespace-pre-wrap text-zinc-600 dark:text-zinc-400'>
 													{parameter.default_value}
 												</pre>
 											</div>
@@ -280,7 +280,7 @@ const SystemParameterDetails: React.FC = () => {
 								</CardHeader>
 								<CardBody className='space-y-4'>
 									<div>
-										<label className='mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400'>
+										<label className='mb-1 block text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400'>
 											Creado
 										</label>
 										<div className='text-sm text-zinc-600 dark:text-zinc-400'>
@@ -288,7 +288,7 @@ const SystemParameterDetails: React.FC = () => {
 										</div>
 									</div>
 									<div>
-										<label className='mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400'>
+										<label className='mb-1 block text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400'>
 											Última Actualización
 										</label>
 										<div className='text-sm text-zinc-600 dark:text-zinc-400'>
@@ -297,7 +297,7 @@ const SystemParameterDetails: React.FC = () => {
 									</div>
 									{parameter.updated_by && (
 										<div>
-											<label className='mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400'>
+											<label className='mb-1 block text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400'>
 												Actualizado por
 											</label>
 											<div className='text-sm text-zinc-600 dark:text-zinc-400'>

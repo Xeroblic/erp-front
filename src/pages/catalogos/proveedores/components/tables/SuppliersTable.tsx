@@ -43,9 +43,9 @@ const buildSupplierColumns = ({
 				<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300'>
 					<Icon icon='HeroBuildingStorefront' className='h-5 w-5' />
 				</div>
-				<div className='min-w-0 max-w-[280px]'>
+				<div className='max-w-[280px] min-w-0'>
 					<div
-						className='line-clamp-2 break-words text-sm font-semibold text-gray-900 dark:text-white'
+						className='line-clamp-2 text-sm font-semibold wrap-break-word text-gray-900 dark:text-white'
 						title={row.original.name}>
 						{row.original.name}
 					</div>
@@ -161,11 +161,11 @@ const SuppliersTable: React.FC<SuppliersTableProps> = ({
 	const columns = useMemo(() => buildSupplierColumns({ onView, onDelete }), [onView, onDelete]);
 
 	return (
-		<Card className='overflow-hidden border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900/70'>
-			<CardHeader className='border-b border-neutral-200 bg-gradient-to-r from-amber-50 via-white to-orange-50 px-5 py-4 dark:border-neutral-800 dark:from-amber-950/20 dark:via-neutral-900 dark:to-orange-950/10'>
+		<Card className='overflow-hidden border border-neutral-200 bg-white shadow-xs dark:border-neutral-800 dark:bg-neutral-900/70'>
+			<CardHeader className='border-b border-neutral-200 bg-linear-to-r from-amber-50 via-white to-orange-50 px-5 py-4 dark:border-neutral-800 dark:from-amber-950/20 dark:via-neutral-900 dark:to-orange-950/10'>
 				<div className='flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'>
 					<div className='flex items-start gap-3'>
-						<div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shadow-sm dark:bg-amber-900/20 dark:text-amber-300'>
+						<div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shadow-xs dark:bg-amber-900/20 dark:text-amber-300'>
 							<Icon icon='HeroBuildingStorefront' className='h-5 w-5' />
 						</div>
 						<div>

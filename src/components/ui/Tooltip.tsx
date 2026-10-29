@@ -124,9 +124,9 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 								ref={(node) => setPopperRef(node, ref)}
 								style={style}
 								className={classNames(
-									'z-[9999] m-2 px-2 py-1',
+									'z-9999 m-2 px-2 py-1',
 									'max-w-xs',
-									'border-zinc-500/10 shadow-lg backdrop-blur-sm',
+									'border-zinc-500/10 shadow-lg backdrop-blur-xs',
 									[`${borderWidth}`],
 									[`${rounded}`],
 									className,

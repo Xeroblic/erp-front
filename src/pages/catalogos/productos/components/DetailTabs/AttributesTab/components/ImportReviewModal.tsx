@@ -135,7 +135,7 @@ const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, onClose, 
 
 					{!loading && results.length > 0 && (
 						<div className='space-y-2'>
-							<p className='text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500'>
+							<p className='text-xs font-bold tracking-wider text-neutral-400 uppercase dark:text-neutral-500'>
 								{results.length} resultado{results.length !== 1 ? 's' : ''}
 							</p>
 							{results.map((item) => (

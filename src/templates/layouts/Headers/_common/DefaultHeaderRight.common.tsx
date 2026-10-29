@@ -9,7 +9,7 @@ import PendingSerialBadge from '../_partial/PendingSerialBadge.partial';
 
 const DefaultHeaderRightCommon = () => {
 	return (
-		<div className='flex items-center gap-8'>
+		<div className='flex items-center gap-3 @5xl:gap-8'>
 			{/* <MessagesPartial /> */}
 			<SelectSucursalEmpresa />
 			{/* <LanguageSelectorPartial /> */}

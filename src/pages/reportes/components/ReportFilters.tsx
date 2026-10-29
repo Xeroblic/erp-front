@@ -219,7 +219,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 							}}>
 							{/* Icono calendario */}
 							<svg
-								className={`h-4 w-4 flex-shrink-0 text-${themeColor}-400`}
+								className={`h-4 w-4 shrink-0 text-${themeColor}-400`}
 								fill='none'
 								viewBox='0 0 24 24'
 								stroke='currentColor'>
@@ -243,7 +243,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 							{/* Limpiar */}
 							{hasDateRange && (
 								<button
-									className='rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700'
+									className='rounded-sm p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700'
 									onClick={handleClearDates}>
 									<svg
 										className='h-3.5 w-3.5'
@@ -331,7 +331,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 				</div>
 
 				{!validation.isValid && (
-					<div className='mt-3 rounded border-l-4 border-rose-400 bg-rose-50 p-2 text-sm text-rose-700'>
+					<div className='mt-3 rounded-sm border-l-4 border-rose-400 bg-rose-50 p-2 text-sm text-rose-700'>
 						<ul className='list-disc pl-6'>
 							{validation.errors.map((e, i) => (
 								<li key={i}>{e}</li>

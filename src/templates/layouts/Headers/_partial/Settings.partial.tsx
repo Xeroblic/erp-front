@@ -274,7 +274,7 @@ const SettingsPartial = () => {
 		(Wrapper: ElementType) => (
 			<>
 				<Wrapper
-					className={`flex flex-col gap-2 ${Wrapper === DropdownItem ? '!items-start' : ''}`}>
+					className={`flex flex-col gap-2 ${Wrapper === DropdownItem ? 'items-start!' : ''}`}>
 					<div className='flex w-full items-center justify-between'>
 						<div className='text-sm font-medium'>Tamaño de fuente</div>
 						<span className='text-xs opacity-70'>Actual: {fontSize}px</span>
@@ -317,7 +317,7 @@ const SettingsPartial = () => {
 				</Wrapper>
 
 				<Wrapper
-					className={`flex flex-col gap-2 ${Wrapper === DropdownItem ? '!items-start' : ''}`}>
+					className={`flex flex-col gap-2 ${Wrapper === DropdownItem ? 'items-start!' : ''}`}>
 					<div className='text-sm font-medium'>Tema del sistema</div>
 					<ButtonGroup>
 						<Button
@@ -357,7 +357,7 @@ const SettingsPartial = () => {
 				</Wrapper>
 
 				<Wrapper
-					className={`flex flex-col gap-2 ${Wrapper === DropdownItem ? '!items-start' : ''}`}>
+					className={`flex flex-col gap-2 ${Wrapper === DropdownItem ? 'items-start!' : ''}`}>
 					<div className='text-sm font-medium'>Color del tema</div>
 					<ColorSelector onColorChange={handleColorChange} />
 					{isUpdatingColor && (
@@ -429,7 +429,7 @@ const SettingsPartial = () => {
 					title='Configuración'
 					isLoading={isAnyUpdating}
 					onClick={() => setMobileOpen(true)}
-					className='flex !h-10 !min-h-10 !w-10 !min-w-10 items-center justify-center !rounded-full border border-white/60 bg-white !p-0 !leading-none text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
+					className='flex h-10! min-h-10! w-10! min-w-10! items-center justify-center rounded-full! border border-white/60 bg-white p-0! leading-none! text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
 				/>
 				<Modal isOpen={mobileOpen} setIsOpen={setMobileOpen} size='md'>
 					<ModalHeader>
@@ -454,13 +454,13 @@ const SettingsPartial = () => {
 					aria-label='Abrir configuración'
 					title='Configuración'
 					isLoading={isAnyUpdating}
-					className='flex !h-10 !min-h-10 !w-10 !min-w-10 items-center justify-center !rounded-full border border-white/60 bg-white !p-0 !leading-none text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
+					className='flex h-10! min-h-10! w-10! min-w-10! items-center justify-center rounded-full! border border-white/60 bg-white p-0! leading-none! text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
 				/>
 			</DropdownToggle>
 
 			<DropdownMenu
 				placement='bottom-end'
-				className='max-h-[70vh] w-[calc(100vw-32px)] min-w-0 max-w-sm overflow-y-auto md:w-auto md:min-w-72'>
+				className='max-h-[70vh] w-[calc(100vw-32px)] max-w-sm min-w-0 overflow-y-auto md:w-auto md:min-w-72'>
 				{renderContent(DropdownItem)}
 			</DropdownMenu>
 		</Dropdown>
@@ -547,7 +547,7 @@ export default SettingsPartial;
 //             </DropdownToggle>
 //             <DropdownMenu placement='bottom-end'>
 
-//                 <DropdownItem className='flex flex-col !items-start'>
+//                 <DropdownItem className='flex flex-col items-start!'>
 //                     <div>Tamaño de Fuente:</div>
 //                     <ButtonGroup>
 //                         <Button
@@ -563,7 +563,7 @@ export default SettingsPartial;
 //                         />
 //                     </ButtonGroup>
 //                 </DropdownItem>
-//                 <DropdownItem className='flex flex-col !items-start'>
+//                 <DropdownItem className='flex flex-col items-start!'>
 //                     <div className="mb-2">Tema del sistema:</div>
 //                     <ButtonGroup>
 //                         <Button
@@ -590,7 +590,7 @@ export default SettingsPartial;
 //                     </ButtonGroup>
 
 //                 </DropdownItem>
-//                 <DropdownItem className='flex flex-col !items-start'>
+//                 <DropdownItem className='flex flex-col items-start!'>
 //                     <div className="mb-2">Color del Tema:</div>
 //                     <ColorSelector onColorChange={handleColorChange} />
 //                 </DropdownItem>

@@ -284,7 +284,7 @@ export const SyncStockContent: React.FC = () => {
 											{successProducts.map((product, index) => (
 												<div
 													key={`${product.sku}-${index}`}
-													className='flex items-center justify-between rounded bg-green-50 p-2'>
+													className='flex items-center justify-between rounded-sm bg-green-50 p-2'>
 													<span className='font-mono text-sm'>
 														{product.sku}
 													</span>
@@ -304,7 +304,7 @@ export const SyncStockContent: React.FC = () => {
 											{failedProducts.map((product, index) => (
 												<div
 													key={`${product.sku}-${index}`}
-													className='rounded bg-red-50 p-2 text-sm'>
+													className='rounded-sm bg-red-50 p-2 text-sm'>
 													<strong>{product.sku}</strong>:{' '}
 													{product.message || 'Sin detalle'}
 												</div>

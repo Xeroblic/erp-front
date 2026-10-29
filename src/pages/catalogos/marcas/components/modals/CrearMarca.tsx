@@ -148,7 +148,7 @@ const CrearMarca: React.FC<CrearMarcaProps> = ({
 									if (hidden) hidden.value = value ? '1' : '0';
 								}}
 							/>
-							<Label htmlFor='brand-active-toggle' className='!mb-0'>
+							<Label htmlFor='brand-active-toggle' className='mb-0!'>
 								Activa
 							</Label>
 						</div>

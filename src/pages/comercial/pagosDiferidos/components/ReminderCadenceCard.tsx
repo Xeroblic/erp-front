@@ -81,7 +81,7 @@ const ReminderCadenceCard: React.FC<ReminderCadenceCardProps> = ({ isOpen, setIs
 	<Modal isOpen={isOpen} setIsOpen={setIsOpen} isCentered size='lg' isScrollable>
 		<ModalHeader>
 			<div className='flex items-center gap-3'>
-				<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm'>
+				<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs'>
 					<Icon icon='HeroBellAlert' size='text-xl' color='white' />
 				</div>
 				<div>
@@ -100,7 +100,7 @@ const ReminderCadenceCard: React.FC<ReminderCadenceCardProps> = ({ isOpen, setIs
 						aria-labelledby={`${flow.id}-reminders-title`}
 						className={`rounded-xl border p-4 ${flow.accentClass}`}>
 						<div className='flex items-start gap-3'>
-							<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/80 text-zinc-700 shadow-sm dark:bg-zinc-900/70 dark:text-zinc-200'>
+							<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/80 text-zinc-700 shadow-xs dark:bg-zinc-900/70 dark:text-zinc-200'>
 								<Icon icon={flow.icon} size='text-lg' color='current' />
 							</div>
 							<div>

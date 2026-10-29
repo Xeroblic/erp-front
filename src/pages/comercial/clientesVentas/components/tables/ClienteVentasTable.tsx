@@ -188,7 +188,7 @@ const ClienteVentasTable: React.FC<ClienteVentasTableProps> = ({
 								<Tr key={`customer-skeleton-${rowIndex}`}>
 									{Array.from({ length: 7 }, (_cell, cellIndex) => (
 										<Td key={`customer-skeleton-${rowIndex}-${cellIndex}`}>
-											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+											<div className='h-4 animate-pulse rounded-sm bg-zinc-200 dark:bg-zinc-700' />
 										</Td>
 									))}
 								</Tr>
