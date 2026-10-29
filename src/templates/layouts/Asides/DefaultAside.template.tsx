@@ -3,14 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import Aside, { AsideBody } from '@/components/layouts/Aside/Aside';
 import Nav, { NavItem, NavCollapse, NavTitle } from '@/components/layouts/Navigation/Nav';
 import { useAppSelector } from '@/store';
-import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
-import AsideHeadPart from './_parts/AsideHead.part';
-import AsideFooterPart from './_parts/AsideFooter.part';
 import { preloadIcons } from '@/components/icon/Icon';
 import Pages from '@/config/pages.config';
 import useAuthorization from '@/hooks/useAuthorization';
 import type { PageConfig } from '@/config/pages.config';
 import type { IUserMe } from '@/interface/user.interface';
+import AsideHeadPart from './_parts/AsideHead.part';
+import AsideFooterPart from './_parts/AsideFooter.part';
 
 const EMPTY_ROLES: string[] = [];
 const EMPTY_AUTHORITY: string[] = [];
@@ -46,6 +45,23 @@ type AuthorityGuardProps = PropsWithChildren<{
 	branchId?: number;
 }>;
 
+function checkNavContextualAccess(
+	user: IUserMe | null | undefined,
+	companyId?: number,
+	subsidiaryId?: number,
+	branchId?: number,
+): boolean {
+	if (!user) return false;
+
+	if (user.authority?.includes('super-admin')) return true;
+
+	if (companyId && user.company?.id !== companyId) return false;
+	if (subsidiaryId && user.subsidiary?.id !== subsidiaryId) return false;
+	if (branchId && user.branch?.id !== branchId) return false;
+
+	return true;
+}
+
 const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 	const {
 		userAuthority,
@@ -78,12 +94,12 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 		user?.authority?.includes('super-admin') ||
 		safeUserAuthority.includes('super-admin')
 	) {
-		return <>{children}</>;
+		return children;
 	}
 
 	// Sin autoridad ni roles → público dentro del aside
 	if (safeAuthority.length === 0 && safeRoles.length === 0) {
-		return <>{children}</>;
+		return children;
 	}
 
 	if (!permissionMatched) return null;
@@ -95,31 +111,13 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 		if (!hasContextAccess) return null;
 	}
 
-	return <>{children}</>;
+	return children;
 };
-
-function checkNavContextualAccess(
-	user: IUserMe | null | undefined,
-	companyId?: number,
-	subsidiaryId?: number,
-	branchId?: number,
-): boolean {
-	if (!user) return false;
-
-	if (user.authority?.includes('super-admin')) return true;
-
-	if (companyId && user.company?.id !== companyId) return false;
-	if (subsidiaryId && user.subsidiary?.id !== subsidiaryId) return false;
-	if (branchId && user.branch?.id !== branchId) return false;
-
-	return true;
-}
 
 const DefaultAsideTemplate = () => {
 	const userAuthority = useAppSelector((s) => s.auth.user?.permisos) ?? EMPTY_AUTHORITY;
 	const user = useAppSelector((s) => s.auth.user);
 	const userRoles = user?.roles ?? EMPTY_ROLES;
-	const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const navigate = useNavigate();
 	const { authorize } = useAuthorization();
 
