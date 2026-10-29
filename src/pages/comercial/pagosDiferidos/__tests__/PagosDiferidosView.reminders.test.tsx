@@ -1,10 +1,10 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import PagosDiferidosView from '../PagosDiferidosView';
 
-let subsidiaryId = 1;
+const subsidiaryId = 1;
 
 interface ButtonProps {
 	children: React.ReactNode;
@@ -52,13 +52,7 @@ vi.mock('../components/parts/DeferredPaymentsExportDropdown', () => ({
 		</button>
 	),
 }));
-vi.mock('../components/tables/DeferredPaymentsTable', () => ({
-	default: ({ onSort }: { onSort: (key: 'document_number') => void }) => (
-		<button type='button' onClick={() => onSort('document_number')}>
-			Ordenar por N° documento
-		</button>
-	),
-}));
+vi.mock('../components/tables/DeferredPaymentsTable', () => ({ default: () => null }));
 vi.mock('../components/drawers/DeferredPaymentDetailDrawer', () => ({ default: () => null }));
 vi.mock('../components/modals/CreateEditDeferredPaymentModal', () => ({ default: () => null }));
 vi.mock('../components/ReminderCadenceCard', () => ({
@@ -86,6 +80,7 @@ vi.mock('../hooks/usePagosDiferidos', () => ({
 			search: '',
 			setSearch: vi.fn(),
 			setFilter: vi.fn(),
+			toggleSort: vi.fn(),
 			reset: vi.fn(),
 			hasFilters: false,
 			hasInvalidDateRange: false,
@@ -103,50 +98,6 @@ vi.mock('../hooks/usePagosDiferidos', () => ({
 }));
 
 describe('PagosDiferidosView recordatorios', () => {
-	beforeEach(() => {
-		subsidiaryId = 1;
-	});
-
-	it('bloquea la exportación ordenada y permite restablecer el orden', () => {
-		render(
-			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-				<PagosDiferidosView />
-			</MemoryRouter>,
-		);
-
-		const exportButton = screen.getByRole('button', { name: 'Exportar' });
-		expect(exportButton).toBeEnabled();
-		fireEvent.click(screen.getByRole('button', { name: 'Ordenar por N° documento' }));
-
-		expect(exportButton).toBeDisabled();
-		expect(
-			screen.getByText(/Restablece el orden de la tabla para exportar/i),
-		).toBeInTheDocument();
-
-		fireEvent.click(screen.getByRole('button', { name: 'Restablecer orden' }));
-		expect(exportButton).toBeEnabled();
-	});
-
-	it('restablece el orden local al cambiar de subsidiaria', () => {
-		const view = render(
-			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-				<PagosDiferidosView />
-			</MemoryRouter>,
-		);
-
-		fireEvent.click(screen.getByRole('button', { name: 'Ordenar por N° documento' }));
-		expect(screen.getByRole('button', { name: 'Exportar' })).toBeDisabled();
-
-		subsidiaryId = 2;
-		view.rerender(
-			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-				<PagosDiferidosView />
-			</MemoryRouter>,
-		);
-
-		expect(screen.getByRole('button', { name: 'Exportar' })).toBeEnabled();
-	});
-
 	it('abre y cierra la consulta de recordatorios desde el encabezado', () => {
 		render(
 			<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

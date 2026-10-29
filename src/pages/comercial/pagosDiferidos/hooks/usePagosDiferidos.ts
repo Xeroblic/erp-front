@@ -5,6 +5,7 @@ import useContextScopedSelection from '@/hooks/useContextScopedSelection';
 import type {
 	DeferredPaymentApiListParams,
 	DeferredPaymentApiSummaryParams,
+	DeferredPaymentSortBy,
 	DeferredPaymentsFilters,
 } from '@/interface/deferredPayments.interface';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -50,7 +51,8 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 		() => ({
 			page: requestPage,
 			per_page: values.per_page,
-			sort: values.sort,
+			sort_by: values.sort_by,
+			sort_direction: values.sort_direction,
 			status: values.status,
 			...(values.customer_sale_id !== undefined
 				? { customer_sale_id: values.customer_sale_id }
@@ -66,16 +68,14 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 			values.due_after,
 			values.due_before,
 			values.per_page,
-			values.sort,
+			values.sort_by,
+			values.sort_direction,
 			values.status,
 		],
 	);
-	const exportFiltersForRequest = useMemo<DeferredPaymentApiListParams>(() => {
-		// El backend ignora `sort`; el resto de los filtros del listado viaja tal cual para que
-		// el archivo exportado siempre coincida con la tabla, incluso si se agregan filtros nuevos.
-		const { sort, ...apiFilters } = listFiltersForRequest;
-		return apiFilters;
-	}, [listFiltersForRequest]);
+	// Los filtros del listado viajan tal cual, orden incluido, para que el archivo exportado
+	// siempre coincida con la tabla, incluso si se agregan filtros nuevos.
+	const exportFiltersForRequest: DeferredPaymentApiListParams = listFiltersForRequest;
 	const summaryFiltersForRequest = useMemo<DeferredPaymentApiSummaryParams>(
 		() => ({
 			status: values.status,
@@ -160,6 +160,28 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 		},
 		[dispatch],
 	);
+	/**
+	 * Ordena en el servidor: ordenar sólo la página cargada mezclaba las fechas de pago, porque
+	 * los pagados recientes podían estar en otra página. Ciclo: asc → desc → prioridad de cobranza.
+	 */
+	const toggleSort = useCallback(
+		(sortBy: DeferredPaymentSortBy) => {
+			if (values.sort_by !== sortBy) {
+				dispatch(
+					setDeferredPaymentsFilters({ sort_by: sortBy, sort_direction: 'asc', page: 1 }),
+				);
+				return;
+			}
+			dispatch(
+				setDeferredPaymentsFilters(
+					values.sort_direction === 'asc'
+						? { sort_direction: 'desc', page: 1 }
+						: { sort_by: undefined, sort_direction: undefined, page: 1 },
+				),
+			);
+		},
+		[dispatch, values.sort_by, values.sort_direction],
+	);
 	const hasFilters = Boolean(
 		debouncedSearch.trim() ||
 			values.status ||
@@ -212,6 +234,7 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 			search,
 			setSearch,
 			setFilter,
+			toggleSort,
 			reset: resetFilters,
 			hasFilters,
 			hasInvalidDateRange,

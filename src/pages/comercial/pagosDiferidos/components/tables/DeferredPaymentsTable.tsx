@@ -1,20 +1,20 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import type { PaginationState } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 // eslint-disable-next-line import/extensions
 import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
-import { Table, TBody, Td, THead, Tr } from '@/components/ui/Table';
+import { Table, TBody, Td, Th, THead, Tr } from '@/components/ui/Table';
 import {
 	TableCardFooterTemplateV2,
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
 import type {
+	DeferredPaymentSortBy,
 	DeferredPaymentsPaginationMeta,
 	IDeferredPaymentListItem,
 } from '@/interface/deferredPayments.interface';
 import {
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
-	DEFERRED_PAYMENT_STATUS_LABELS,
 	formatDeferredPaymentAmount,
 	formatDeferredPaymentDate,
 } from '../../utils';
@@ -40,70 +40,12 @@ interface DeferredPaymentsPaginationProps {
 	onChange: (page: number, perPage: number) => void;
 }
 
-export type DeferredPaymentsSortKey =
-	| 'document_number'
-	| 'issue_date'
-	| 'company'
-	| 'purchase_order'
-	| 'total_amount'
-	| 'outstanding_amount'
-	| 'due_date'
-	| 'paid_at'
-	| 'status'
-	| 'days_until_due';
+/**
+ * Sólo las columnas que el backend ordena: el orden se aplica a todo el listado, no a la página
+ * cargada. Empresa, Saldo y Situación de vencimiento no tienen criterio en el servidor.
+ */
+export type DeferredPaymentsSortKey = DeferredPaymentSortBy;
 export type DeferredPaymentsSortState = TableSortState<DeferredPaymentsSortKey>;
-
-const getCustomerDisplayName = (row: IDeferredPaymentListItem): string =>
-	row.customer.billing_company || row.customer.contact_name || 'Cliente sin nombre';
-
-const getSortValue = (
-	row: IDeferredPaymentListItem,
-	key: DeferredPaymentsSortKey,
-): string | number | null => {
-	switch (key) {
-		case 'document_number':
-			return row.document_number;
-		case 'issue_date':
-			return row.issue_date;
-		case 'company':
-			return getCustomerDisplayName(row);
-		case 'purchase_order':
-			return row.purchase_order;
-		case 'total_amount':
-			return Number(row.total_amount);
-		case 'outstanding_amount':
-			return Number(row.outstanding_amount);
-		case 'due_date':
-			return row.due_date;
-		case 'paid_at':
-			return row.paid_at ?? null;
-		case 'status':
-			return DEFERRED_PAYMENT_STATUS_LABELS[row.status];
-		case 'days_until_due':
-			return row.status === 'paid' ? null : row.days_until_due;
-		default:
-			return null;
-	}
-};
-
-const compareRows = (
-	left: IDeferredPaymentListItem,
-	right: IDeferredPaymentListItem,
-	sort: NonNullable<DeferredPaymentsSortState>,
-): number => {
-	const leftValue = getSortValue(left, sort.key);
-	const rightValue = getSortValue(right, sort.key);
-	if (leftValue === null) return rightValue === null ? 0 : 1;
-	if (rightValue === null) return -1;
-	const comparison =
-		typeof leftValue === 'number' && typeof rightValue === 'number'
-			? leftValue - rightValue
-			: String(leftValue).localeCompare(String(rightValue), 'es', {
-					numeric: true,
-					sensitivity: 'base',
-				});
-	return sort.direction === 'asc' ? comparison : -comparison;
-};
 
 const DeferredPaymentsPagination: React.FC<DeferredPaymentsPaginationProps> = ({
 	meta,
@@ -146,12 +88,6 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 	onPaginationChange,
 	onRowClick,
 }) => {
-	const sortedRows = useMemo(
-		() =>
-			sort === null ? rows : [...rows].sort((left, right) => compareRows(left, right, sort)),
-		[rows, sort],
-	);
-
 	return (
 		<Card>
 			<CardHeader>
@@ -178,12 +114,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 								sort={sort}
 								onSort={onSort}
 							/>
-							<SortableTableHeader
-								label='Empresa'
-								sortKey='company'
-								sort={sort}
-								onSort={onSort}
-							/>
+							<Th>Empresa</Th>
 							<SortableTableHeader
 								label='OC'
 								sortKey='purchase_order'
@@ -197,13 +128,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 								onSort={onSort}
 								align='right'
 							/>
-							<SortableTableHeader
-								label='Saldo'
-								sortKey='outstanding_amount'
-								sort={sort}
-								onSort={onSort}
-								align='right'
-							/>
+							<Th className='text-right'>Saldo</Th>
 							<SortableTableHeader
 								label='Vencimiento'
 								sortKey='due_date'
@@ -223,13 +148,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 								onSort={onSort}
 								align='center'
 							/>
-							<SortableTableHeader
-								label='Situación de vencimiento'
-								sortKey='days_until_due'
-								sort={sort}
-								onSort={onSort}
-								align='center'
-							/>
+							<Th className='text-center'>Situación de vencimiento</Th>
 						</Tr>
 					</THead>
 					<TBody>
@@ -274,7 +193,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 						)}
 						{!loading &&
 							!hasError &&
-							sortedRows.map((row) => (
+							rows.map((row) => (
 								<Tr
 									key={row.id}
 									role='button'

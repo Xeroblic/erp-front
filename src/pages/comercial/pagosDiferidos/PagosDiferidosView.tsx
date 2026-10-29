@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type {
 	DeferredPaymentApiListParams,
@@ -20,7 +20,6 @@ import CreateEditDeferredPaymentModal from './components/modals/CreateEditDeferr
 import ReminderCadenceCard from './components/ReminderCadenceCard';
 import DeferredPaymentsExportDropdown from './components/parts/DeferredPaymentsExportDropdown';
 import DeferredPaymentsTable, {
-	type DeferredPaymentsSortKey,
 	type DeferredPaymentsSortState,
 } from './components/tables/DeferredPaymentsTable';
 import useDeferredPaymentsExport from './hooks/useDeferredPaymentsExport';
@@ -41,12 +40,18 @@ const PagosDiferidosView: React.FC = () => {
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [editingDocument, setEditingDocument] = useState<IDeferredPaymentDocument | null>(null);
 	const [isReminderCadenceOpen, setIsReminderCadenceOpen] = useState(false);
-	const [sort, setSort] = useState<DeferredPaymentsSortState>(null);
+	const sort = useMemo<DeferredPaymentsSortState>(
+		() =>
+			filters.values.sort_by
+				? {
+						key: filters.values.sort_by,
+						direction: filters.values.sort_direction ?? 'asc',
+					}
+				: null,
+		[filters.values.sort_by, filters.values.sort_direction],
+	);
 	const exportDisabled =
-		!state.hasDataContext ||
-		filters.hasInvalidDateRange ||
-		filters.isSearchDebouncing ||
-		sort !== null;
+		!state.hasDataContext || filters.hasInvalidDateRange || filters.isSearchDebouncing;
 	const downloadDocuments = useCallback(
 		(params: DeferredPaymentApiListParams, signal: AbortSignal) => {
 			if (branch.subsidiaryId === null) {
@@ -68,16 +73,9 @@ const PagosDiferidosView: React.FC = () => {
 		(page: number, perPage: number) => setDeferredPaymentsFilter({ page, per_page: perPage }),
 		[setDeferredPaymentsFilter],
 	);
-	const handleSort = useCallback((key: DeferredPaymentsSortKey) => {
-		setSort((current) => ({
-			key,
-			direction: current?.key === key && current.direction === 'asc' ? 'desc' : 'asc',
-		}));
-	}, []);
 	useEffect(() => {
 		setIsCreateOpen(false);
 		setEditingDocument(null);
-		setSort(null);
 	}, [branch.subsidiaryId]);
 	const closeForm = useCallback(() => {
 		setIsCreateOpen(false);
@@ -149,26 +147,6 @@ const PagosDiferidosView: React.FC = () => {
 								{documentExport.error}
 							</Alert>
 						)}
-						{sort !== null && (
-							<Alert
-								color='amber'
-								variant='outline'
-								icon='HeroArrowsUpDown'
-								title='La exportación está pausada por el orden local'>
-								<div className='flex flex-wrap items-center justify-between gap-3'>
-									<span>
-										Restablece el orden de la tabla para exportar el mismo orden
-										que entrega el servidor.
-									</span>
-									<Button
-										size='sm'
-										variant='outline'
-										onClick={() => setSort(null)}>
-										Restablecer orden
-									</Button>
-								</div>
-							</Alert>
-						)}
 						{state.errorSummary && (
 							<Alert
 								color='red'
@@ -227,7 +205,7 @@ const PagosDiferidosView: React.FC = () => {
 								hasError={Boolean(state.error)}
 								hasFilters={filters.hasFilters}
 								sort={sort}
-								onSort={handleSort}
+								onSort={filters.toggleSort}
 								onPaginationChange={handlePaginationChange}
 								onRowClick={selection.openDetail}
 							/>
