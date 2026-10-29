@@ -69,7 +69,7 @@ const loadIcon = (iconName: string): Promise<TResolvedIcon | null> => {
 	return loadingIcon;
 };
 
-export const preloadIcons = (icons: readonly TIcons[]): void => {
+export const preloadIcons = (icons: readonly string[]): void => {
 	icons.forEach((icon) => {
 		loadIcon(pascalcase(icon)).catch(() => undefined);
 	});
