@@ -49,8 +49,6 @@ Para estos cambios:
 - inspecciona sólo el requisito autoritativo, los archivos afectados y su configuración vecina;
 - ejecuta únicamente el check directamente relacionado y `git diff --check`; no ejecutes
   TypeScript, Vitest global ni build salvo que el check focal revele un riesgo funcional;
-- no crees un archivo de bitácora sólo por esta corrección; actualiza el archivo del día únicamente
-  si ya existe o si el usuario pide registrarla;
 - si el usuario autoriza commit, push y actualización del PR, reutiliza las validaciones vigentes y
   completa esas operaciones sin auditorías ni esperas adicionales. Objetivo operativo: menos de 2
   minutos cuando GitHub y los comandos respondan normalmente.
