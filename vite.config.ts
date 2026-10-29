@@ -123,6 +123,15 @@ export default defineConfig({
 						return 'vendor';
 					}
 
+					// Un chunk por familia de íconos en vez de uno por archivo (~945 chunks
+					// de <1 KB). Cada familia completa pesa 8–61 KB gzip: se baja una vez y
+					// queda en caché, en lugar de una ráfaga de requests en cada página.
+					const iconFamily =
+						/\/src\/components\/icon\/(duotone|heroicons|svg-icons)\//.exec(id);
+					if (iconFamily) {
+						return `icons-${iconFamily[1]}`;
+					}
+
 					if (id.includes('/src/components/ui/')) {
 						return 'zentria-ui';
 					}
@@ -135,6 +144,11 @@ export default defineConfig({
 		},
 	},
 	server: {
+		// Pre-transforma los íconos al levantar el dev server: si no, Vite los
+		// compila uno a uno cuando cada página los pide por primera vez.
+		warmup: {
+			clientFiles: ['./src/components/icon/{duotone,heroicons,svg-icons}/*.tsx'],
+		},
 		proxy: {
 			'/api': {
 				target: 'http://localhost:8000',

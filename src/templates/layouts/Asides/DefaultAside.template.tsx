@@ -6,12 +6,34 @@ import { useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import AsideHeadPart from './_parts/AsideHead.part';
 import AsideFooterPart from './_parts/AsideFooter.part';
+import { preloadIcons } from '@/components/icon/Icon';
 import Pages from '@/config/pages.config';
 import useAuthorization from '@/hooks/useAuthorization';
+import type { PageConfig } from '@/config/pages.config';
 import type { IUserMe } from '@/interface/user.interface';
 
 const EMPTY_ROLES: string[] = [];
 const EMPTY_AUTHORITY: string[] = [];
+
+const collectPageIcons = (pages: Record<string, PageConfig>): string[] =>
+	Object.values(pages).flatMap((page) => [
+		page.icon,
+		...(page.subPages ? collectPageIcons(page.subPages) : []),
+	]);
+
+// Íconos fijos del aside que no salen de pages.config (colapsables y flecha).
+const ASIDE_ICONS = [
+	'DuoArticle',
+	'DuoCart2',
+	'DuoBag1',
+	'DuoWallet',
+	'DuoChartBar2',
+	'HeroChevronDown',
+];
+
+// Se piden al cargar el módulo, antes de montar el aside, para que el menú no
+// aparezca primero sin íconos.
+preloadIcons([...collectPageIcons(Pages), ...ASIDE_ICONS]);
 
 type AuthorityGuardProps = PropsWithChildren<{
 	userAuthority?: string[];
