@@ -233,10 +233,10 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 											)}
 									</Td>
 									<Td>{row.purchase_order ?? '\u2014'}</Td>
-									<Td className='text-right tabular-nums'>
+									<Td className='whitespace-nowrap text-right tabular-nums'>
 										{formatDeferredPaymentAmount(row.total_amount)}
 									</Td>
-									<Td className='text-right font-semibold tabular-nums'>
+									<Td className='whitespace-nowrap text-right font-semibold tabular-nums'>
 										{formatDeferredPaymentAmount(row.outstanding_amount)}
 									</Td>
 									<Td>{formatDeferredPaymentDate(row.due_date)}</Td>
