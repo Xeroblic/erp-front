@@ -78,6 +78,48 @@ describe('resolveColumnValue: cliente y proveedor', () => {
 	});
 });
 
+describe('resolveColumnValue: relaciones y grado sin tipar', () => {
+	// created_by, reviewed_by y el grado como { label } llegan del backend sin estar en IItem.
+	const buildLooseItem = (extra: Record<string, unknown>): IItem =>
+		({ ...buildItem(), ...extra }) as IItem;
+
+	it('lee el nombre de quien creó y revisó', () => {
+		const item = buildLooseItem({
+			created_by: { id: 1, name: 'Ana' },
+			reviewed_by: { id: 2, name: 'Luis' },
+		});
+
+		expect(resolveColumnValue(item, '__created_by')).toBe('Ana');
+		expect(resolveColumnValue(item, '__reviewed_by')).toBe('Luis');
+	});
+
+	it('deja vacío un creador ausente o sin nombre de texto', () => {
+		expect(resolveColumnValue(buildItem(), '__created_by')).toBe('');
+		expect(
+			resolveColumnValue(buildLooseItem({ reviewed_by: { name: 7 } }), '__reviewed_by'),
+		).toBe('');
+	});
+
+	it('usa el label del grado cuando viene como objeto y normaliza el texto', () => {
+		expect(resolveColumnValue(buildLooseItem({ grade: { label: 'A+' } }), '__grade')).toBe(
+			'A+',
+		);
+		expect(resolveColumnValue(buildItem({ grade: 'b' }), '__grade')).toBe('B');
+	});
+});
+
+describe('resolveColumnValue: observaciones', () => {
+	it.each([
+		{ observations: 'rayas leves en la pantalla', expected: 'rayas leves en la pantalla' },
+		{ observations: '  ok  ', expected: 'ok' },
+		{ observations: null, expected: '' },
+	])('exporta $observations tal como se escribió', ({ observations, expected }) => {
+		expect(resolveColumnValue(buildItem({ details: { observations } }), 'observations')).toBe(
+			expected,
+		);
+	});
+});
+
 describe('EXCEL_COLUMNS / EXCEL_GROUPS', () => {
 	const equipmentTypes = Object.keys(EXCEL_COLUMNS);
 
@@ -180,6 +222,60 @@ describe('exportItemsToExcel: encabezados en español', () => {
 			vi.restoreAllMocks();
 			vi.unstubAllGlobals();
 		}
+	});
+
+	it('arma la cabecera completa y una hoja por cada tipo sin columnas', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+		vi.mocked(FileSaver.saveAs).mockClear();
+		const PRINTER_TYPE = 'printer' as unknown as IItem['equipment_type'];
+
+		try {
+			await exportItemsToExcel(
+				[
+					buildItem({
+						equipment_type: UNMAPPED_EQUIPMENT_TYPE,
+						reviewed_at: '2026-10-05T10:00:00Z',
+						details: { brand: 'Samsung' },
+					}),
+					buildItem({
+						serial_number: 'SN-002',
+						equipment_type: PRINTER_TYPE,
+						details: {},
+					}),
+				],
+				'details',
+				'Lote 2026-10-01',
+				undefined,
+				'2026-10-01',
+				'Cliente SpA',
+			);
+
+			const workbook = await loadExportedWorkbook();
+			expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual(['Tablet', 'Printer']);
+			const [tabletSheet] = workbook.worksheets;
+			expect(tabletSheet.getCell('C2').value).toBe('Lote 01-10-2026');
+			expect(tabletSheet.getCell('G2').value).toBe('Cliente: Cliente SpA');
+			expect(tabletSheet.getCell('J2').value).toBe('01-10-2026');
+			expect(tabletSheet.getCell('J3').value).toBe('05-10-2026');
+		} finally {
+			vi.restoreAllMocks();
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it('corrige tildes y mayúsculas de los encabezados de notebook', () => {
+		const headers = EXCEL_COLUMNS.notebook.map((column) => column.header);
+
+		expect(headers).toEqual(
+			expect.arrayContaining([
+				'Línea',
+				'Retroiluminado',
+				'CATEGORÍA',
+				'Cliente',
+				'Proveedor',
+			]),
+		);
+		expect(headers).not.toEqual(expect.arrayContaining(['CLIENTE']));
 	});
 
 	it.each(Object.keys(EXCEL_COLUMNS))('la hoja %s no usa Serial Number', (type) => {

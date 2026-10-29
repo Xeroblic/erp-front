@@ -2,6 +2,8 @@ import ExcelJS from 'exceljs';
 import JsBarcode from 'jsbarcode';
 import { toast } from 'react-toastify';
 import { ANTENNA_CONDITION_OPTIONS } from '@/pages/refactor-technical-review/components/constants/desktop/desktop.options';
+import { IItem } from '@/interface/technicalReviews.interface';
+import { resolveEquipmentTypeMeta } from '@/pages/refactor-technical-review/components/utils/utilsItems';
 import {
 	CONDITION_VALUES_ES,
 	EQUIPMENT_TYPE_LABELS,
@@ -11,8 +13,6 @@ import {
 	ExcelGroupDef,
 	SERIAL_NUMBER_HEADER,
 } from './excel.constants';
-import { IItem } from '@/interface/technicalReviews.interface';
-import { resolveEquipmentTypeMeta } from '@/pages/refactor-technical-review/components/utils/utilsItems';
 import { serialNumbers } from '../../ESPECIA_CANAL13/list_serialNumber';
 import { getHardwareDisplayValue } from '../utils/hardwareAbsence';
 
@@ -28,6 +28,58 @@ const shouldHighlightRow = (serialNumber?: string | null): boolean => {
 	return SERIALS_TO_HIGHLIGHT.has(serialNumber.trim().toUpperCase());
 };
 
+const DATA_ROW_BORDER_COLOR = 'FFD9D9D9';
+
+const getDataRowFillColor = (index: number, isHighlighted: boolean): string => {
+	if (isHighlighted) return HIGHLIGHT_ROW_COLOR;
+	return index % 2 === 0 ? 'FFFFFFFF' : 'FFF2F2F2';
+};
+
+/** Filas cebra con borde fino; las series de SERIALS_TO_HIGHLIGHT van resaltadas. */
+const styleDataRow = (row: ExcelJS.Row, index: number, serialNumber?: string | null) => {
+	const fillColor = getDataRowFillColor(index, shouldHighlightRow(serialNumber));
+	row.eachCell((cell) => {
+		cell.fill = {
+			type: 'pattern',
+			pattern: 'solid',
+			fgColor: { argb: fillColor },
+		};
+		cell.border = {
+			top: { style: 'thin', color: { argb: DATA_ROW_BORDER_COLOR } },
+			bottom: { style: 'thin', color: { argb: DATA_ROW_BORDER_COLOR } },
+			left: { style: 'thin', color: { argb: DATA_ROW_BORDER_COLOR } },
+			right: { style: 'thin', color: { argb: DATA_ROW_BORDER_COLOR } },
+		};
+	});
+};
+
+const getMinReviewDate = (items: IItem[]): string | undefined =>
+	items.flatMap((item) => (item.reviewed_at ? [item.reviewed_at.split('T')[0]] : [])).sort()[0];
+
+/**
+ * resolveEquipmentTypeMeta rotula «Desconocido» todo tipo fuera de los cinco conocidos: con
+ * dos de ellos en un lote, las hojas repetirían nombre y ExcelJS rechazaría la segunda.
+ */
+const resolveSheetLabel = ({ value, label }: { value: string; label: string }): string => {
+	if (label !== 'Desconocido' || value === 'unknown') return label || 'General';
+	return value
+		.replace(/[_-]+/g, ' ')
+		.replace(/\b\w/g, (char) => char.toUpperCase())
+		.trim();
+};
+
+/** Las observaciones son texto libre: se exportan tal como las escribió el técnico. */
+const FREE_TEXT_KEYS = new Set(['observations']);
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+	typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+
+/** Lee `{ name }` de relaciones que el backend envía pero IItem no declara. */
+const readRelationName = (relation: unknown): string => {
+	const name = asRecord(relation)?.name;
+	return typeof name === 'string' ? name : '';
+};
+
 const generateBarcodeBase64 = (text: string): string | null => {
 	try {
 		const canvas = document.createElement('canvas');
@@ -40,6 +92,7 @@ const generateBarcodeBase64 = (text: string): string | null => {
 		});
 		return canvas.toDataURL('image/png').split(',')[1];
 	} catch (error) {
+		// eslint-disable-next-line no-console
 		console.error('Error generating barcode:', error);
 		return null;
 	}
@@ -71,7 +124,8 @@ export const normalizeDetailValue = (value: unknown): string => {
 			.trim();
 	}
 	if (typeof value === 'object') {
-		if (value && 'label' in value) return String((value as any).label);
+		const record = asRecord(value);
+		if (record && 'label' in record) return String(record.label);
 		return JSON.stringify(value);
 	}
 	return String(value);
@@ -86,9 +140,10 @@ export const resolveColumnValue = (item: IItem, key: string): string => {
 		case '__serial':
 			return item.serial_number ?? '';
 		case '__grade': {
-			const g = item.grade;
-			if (g && typeof g === 'object' && 'label' in (g as any)) return (g as any).label;
-			return normalizeDetailValue(g);
+			// grade se declara string, pero algunas respuestas lo envían como { label }.
+			const gradeRecord = asRecord(item.grade);
+			if (gradeRecord && 'label' in gradeRecord) return String(gradeRecord.label);
+			return normalizeDetailValue(item.grade);
 		}
 		case '__customer':
 			return item.customer_supplier?.name ?? '';
@@ -97,9 +152,9 @@ export const resolveColumnValue = (item: IItem, key: string): string => {
 		case '__barcode':
 			return item.serial_number ? `*${item.serial_number}*` : '';
 		case '__created_by':
-			return (item as any).created_by?.name ?? '';
+			return readRelationName(asRecord(item)?.created_by);
 		case '__reviewed_by':
-			return (item as any).reviewed_by?.name ?? '';
+			return readRelationName(asRecord(item)?.reviewed_by);
 		case '__battery_status': {
 			const details = item.details || {};
 			const extra = item.extra_attributes || {};
@@ -111,7 +166,7 @@ export const resolveColumnValue = (item: IItem, key: string): string => {
 					: null;
 
 			const brandStr = String(
-				(item as any).brand || details.brand || extra.brand || '',
+				asRecord(item)?.brand || details.brand || extra.brand || '',
 			).toLowerCase();
 			const isDell = brandStr.includes('dell');
 
@@ -122,20 +177,21 @@ export const resolveColumnValue = (item: IItem, key: string): string => {
 
 				if (pt !== undefined && pt !== null) parts.push(`(${pt}%)`);
 				return parts.length > 0 ? parts.join(' ') : '';
-			} else {
-				if (pt !== undefined && pt !== null) return `${pt}%`;
-				if (st) return normalizeDetailValue(st);
 			}
+			if (pt !== undefined && pt !== null) return `${pt}%`;
+			if (st) return normalizeDetailValue(st);
 			return '';
 		}
 		default:
 			break;
 	}
 
-	const detailSource: Record<string, any> = {
+	const detailSource: Record<string, unknown> = {
 		...(item.details || {}),
 		...(item.extra_attributes || {}),
 	};
+	const rawValue = detailSource[key];
+	if (FREE_TEXT_KEYS.has(key) && typeof rawValue === 'string') return rawValue.trim();
 	const hardwareDisplay = getHardwareDisplayValue(detailSource, key);
 	if (hardwareDisplay !== null) return hardwareDisplay;
 	// Los AIO guardan el cargador como includes_power_adapter (includes_charger es sólo alias).
@@ -144,7 +200,7 @@ export const resolveColumnValue = (item: IItem, key: string): string => {
 			detailSource.includes_charger ?? detailSource.includes_power_adapter,
 		);
 	}
-	return normalizeDetailValue(detailSource[key]);
+	return normalizeDetailValue(rawValue);
 };
 
 export const applyHeader = (
@@ -200,8 +256,8 @@ export const applyHeader = (
 	revisionNameCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
 	const today = new Date();
-	const rDate = batchDate ? new Date(batchDate + 'T00:00:00') : today;
-	const fDate = reviewDate ? new Date(reviewDate + 'T00:00:00') : today;
+	const rDate = batchDate ? new Date(`${batchDate}T00:00:00`) : today;
+	const fDate = reviewDate ? new Date(`${reviewDate}T00:00:00`) : today;
 
 	const dateLabelStyle = {
 		font: { name: 'Arial', size: 10, bold: true },
@@ -284,7 +340,7 @@ export const applyHeader = (
 				sheet.mergeCells(groupRowNum, startCol, groupRowNum, endCol);
 			}
 
-			for (let c = startCol; c <= endCol; c++) {
+			for (let c = startCol; c <= endCol; c += 1) {
 				const gc = sheet.getCell(groupRowNum, c);
 				gc.fill = {
 					type: 'pattern',
@@ -310,6 +366,16 @@ export const applyHeader = (
 	});
 };
 
+// cell.text no sirve aquí: revienta en celdas combinadas cuya maestra está vacía.
+const getCellTextLength = (value: ExcelJS.CellValue): number => {
+	if (value === null || value === undefined) return 0;
+	if (typeof value === 'string') return value.length;
+	if (typeof value === 'number' || typeof value === 'boolean') return String(value).length;
+	if (value instanceof Date) return value.toString().length;
+	// La exportación sólo escribe texto, números y fechas; fórmulas o texto enriquecido no ensanchan.
+	return 0;
+};
+
 export const setColumnWidths = (sheet: ExcelJS.Worksheet, headers: string[]) => {
 	headers.forEach((header, index) => {
 		const column = sheet.getColumn(index + 1);
@@ -317,13 +383,7 @@ export const setColumnWidths = (sheet: ExcelJS.Worksheet, headers: string[]) => 
 		column.eachCell({ includeEmpty: true }, (cell) => {
 			// La nota es texto libre combinado en varias columnas: no debe ensanchar la suya.
 			if (cell.address === BATCH_NOTE_CELL) return;
-			const cellValue = cell.value;
-			const len =
-				cellValue == null
-					? 0
-					: typeof cellValue === 'string'
-						? cellValue.length
-						: cellValue.toString().length;
+			const len = getCellTextLength(cell.value);
 			if (len + 2 > maxLength) maxLength = len + 2;
 		});
 		column.width = Math.min(maxLength, 30);
@@ -360,6 +420,7 @@ export const exportItemsToExcel = async (
 				});
 			}
 		} catch (error) {
+			// eslint-disable-next-line no-console
 			console.warn('No se pudo cargar el logo para el Excel', error);
 		}
 
@@ -374,11 +435,7 @@ export const exportItemsToExcel = async (
 		if (exportMode === 'serials') {
 			const sheet = workbook.addWorksheet('Series');
 			const headers = ['N°', 'Serie'];
-			const dates = sourceItems
-				.map((i) => i.reviewed_at)
-				.filter((d) => d)
-				.map((d) => d!.split('T')[0]);
-			const minReviewDate = dates.length > 0 ? dates.sort()[0] : undefined;
+			const minReviewDate = getMinReviewDate(sourceItems);
 
 			applyHeader(
 				sheet,
@@ -419,7 +476,7 @@ export const exportItemsToExcel = async (
 					const meta = resolveEquipmentTypeMeta(item.equipment_type);
 					const key = meta.value || 'unknown';
 					if (!acc[key]) {
-						acc[key] = { label: meta.label || 'General', list: [] };
+						acc[key] = { label: resolveSheetLabel(meta), list: [] };
 					}
 					acc[key].list.push(item);
 					return acc;
@@ -430,8 +487,9 @@ export const exportItemsToExcel = async (
 			const typeOrder = ['notebook', 'desktop', 'aio', 'docking', 'monitor'];
 			const finalEntries: Array<[string, { label: string; list: IItem[] }]> = [];
 			typeOrder.forEach((typeKey) => {
-				if ((groups as any)[typeKey]) {
-					finalEntries.push([typeKey, groups[typeKey]!]);
+				const group = groups[typeKey];
+				if (group) {
+					finalEntries.push([typeKey, group]);
 					delete groups[typeKey];
 				}
 			});
@@ -455,11 +513,7 @@ export const exportItemsToExcel = async (
 
 				if (columnDefs) {
 					const headers = ['Nº', ...columnDefs.map((c) => c.header)];
-					const dates = payload.list
-						.map((i) => i.reviewed_at)
-						.filter((d) => d)
-						.map((d) => d!.split('T')[0]);
-					const minReviewDate = dates.length > 0 ? dates.sort()[0] : undefined;
+					const minReviewDate = getMinReviewDate(payload.list);
 
 					applyHeader(
 						sheet,
@@ -488,26 +542,7 @@ export const exportItemsToExcel = async (
 								}),
 							];
 							const excelRow = sheet.addRow(rowValues);
-							const isEven = idx % 2 === 0;
-							const isHighlighted = shouldHighlightRow(item.serial_number);
-							excelRow.eachCell((cell) => {
-								const fillColor = isHighlighted
-									? HIGHLIGHT_ROW_COLOR
-									: isEven
-										? 'FFFFFFFF'
-										: 'FFF2F2F2';
-								cell.fill = {
-									type: 'pattern',
-									pattern: 'solid',
-									fgColor: { argb: fillColor },
-								};
-								cell.border = {
-									top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-									bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-									left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-									right: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-								};
-							});
+							styleDataRow(excelRow, idx, item.serial_number);
 
 							if (barcodeColIdx >= 0 && item.serial_number) {
 								const b64 = generateBarcodeBase64(item.serial_number);
@@ -559,11 +594,11 @@ export const exportItemsToExcel = async (
 						headers,
 						`Revisión de Equipos - ${sheetNameBase}`,
 						undefined,
-						undefined,
-						undefined,
-						undefined,
-						undefined,
-						undefined,
+						logoImageId,
+						batchDate,
+						getMinReviewDate(payload.list),
+						customerName,
+						exportFileName,
 						batchNotes,
 					);
 
@@ -579,26 +614,7 @@ export const exportItemsToExcel = async (
 								resolveColumnValue(item, '__supplier'),
 							];
 							const excelRow = sheet.addRow(rowValues);
-							const isEven = idx % 2 === 0;
-							const isHighlighted = shouldHighlightRow(item.serial_number);
-							excelRow.eachCell((cell) => {
-								const fillColor = isHighlighted
-									? HIGHLIGHT_ROW_COLOR
-									: isEven
-										? 'FFFFFFFF'
-										: 'FFF2F2F2';
-								cell.fill = {
-									type: 'pattern',
-									pattern: 'solid',
-									fgColor: { argb: fillColor },
-								};
-								cell.border = {
-									top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-									bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-									left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-									right: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-								};
-							});
+							styleDataRow(excelRow, idx, item.serial_number);
 						});
 					}
 					sheet.views = [{ state: 'frozen', ySplit: 5 }];
@@ -617,6 +633,7 @@ export const exportItemsToExcel = async (
 
 		toast.success('Excel exportado exitosamente');
 	} catch (error) {
+		// eslint-disable-next-line no-console
 		console.error('Error exporting to Excel:', error);
 		toast.error('Ocurrió un error al exportar el archivo Excel');
 	}
