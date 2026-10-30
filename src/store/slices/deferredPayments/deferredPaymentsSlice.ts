@@ -24,7 +24,6 @@ import getDeferredPaymentErrorMessage from '@/utils/deferredPaymentsError.utils'
 export const DEFAULT_DEFERRED_PAYMENTS_FILTERS: DeferredPaymentsFilters = {
 	page: 1,
 	per_page: 10,
-	sort: 'due_date',
 };
 
 export interface DeferredPaymentsState {
@@ -161,6 +160,8 @@ const mapFiltersToApiParams = (filters: DeferredPaymentsFilters): DeferredPaymen
 	search: filters.search,
 	due_before: filters.due_before,
 	due_after: filters.due_after,
+	sort_by: filters.sort_by,
+	sort_direction: filters.sort_by ? filters.sort_direction : undefined,
 });
 const mapFiltersToSummaryApiParams = (
 	filters: DeferredPaymentApiSummaryParams,

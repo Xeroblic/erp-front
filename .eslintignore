@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# Worktrees locales de sesiones de Claude: no son parte del repo.
+.claude/worktrees/
 scripts/
 
 src/components/icon/
