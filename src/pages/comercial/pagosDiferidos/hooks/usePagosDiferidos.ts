@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import useContextScopedSelection from '@/hooks/useContextScopedSelection';
+import { useContextScopedSelection } from '@/hooks/useContextScopedSelection';
 import type {
 	DeferredPaymentApiListParams,
 	DeferredPaymentApiSummaryParams,
