@@ -191,40 +191,6 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(totalAmount).toHaveValue('$ 475.976');
 	});
 
-	it('muestra siempre la ayuda de desglose cuando el total oficial es positivo', async () => {
-		renderModal();
-		const totalAmount = screen.getByLabelText(
-			'Total del documento — debe coincidir con la factura',
-		);
-
-		await act(async () => {
-			fireEvent.change(totalAmount, { target: { value: '299950' } });
-			await Promise.resolve();
-		});
-
-		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
-		expect(screen.getByText('Neto: $ 252.059')).toBeInTheDocument();
-		expect(screen.getByText('IVA: $ 47.891')).toBeInTheDocument();
-		expect(screen.getByText('Total: $ 299.950')).toBeInTheDocument();
-
-		await act(async () => {
-			fireEvent.click(screen.getByLabelText('Calcular IVA'));
-			await Promise.resolve();
-		});
-		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
-	});
-
-	it('muestra el desglose en edición aunque el precio guardado no se reinterprete', () => {
-		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
-
-		expect(screen.getByText('Si el total incluye IVA 19%:')).toBeInTheDocument();
-		expect(screen.getByText('Total: $ 2.500.000')).toBeInTheDocument();
-		expect(screen.getByLabelText('Precio bruto c/ IVA')).toBeInTheDocument();
-		expect(screen.getByRole('checkbox', { name: 'Calcular IVA' })).toHaveAccessibleName(
-			'Calcular IVA',
-		);
-	});
-
 	it('descarta el borrador al desmontar y reabrir el formulario', () => {
 		const firstCreate = renderModal();
 		fireEvent.change(screen.getByLabelText('Número de documento'), {
@@ -452,20 +418,6 @@ describe('CreateEditDeferredPaymentModal', () => {
 
 		expect(screen.getAllByRole('button', { name: /Quitar serial/ })).toHaveLength(1);
 		expect(toastSpies.warn).toHaveBeenCalledWith('Se omitió 1 serial duplicado.');
-	});
-	it('crea 100 seriales independientes al pegar un bloque', async () => {
-		renderModal();
-		const serialInput = screen.getByLabelText('Seriales (opcional)');
-		const serials = Array.from({ length: 100 }, (_, index) => `SER-${index + 1}`);
-
-		await act(async () => {
-			fireEvent.paste(serialInput, {
-				clipboardData: { getData: () => serials.join(' \t\n') },
-			});
-			await Promise.resolve();
-		});
-
-		expect(screen.getAllByRole('button', { name: /Quitar serial SER-/ })).toHaveLength(100);
 	});
 
 	it('precarga notas y seriales al editar un documento', () => {

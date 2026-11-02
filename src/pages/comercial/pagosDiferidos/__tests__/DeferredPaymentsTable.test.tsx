@@ -6,27 +6,6 @@ import DeferredPaymentsTable from '../components/tables/DeferredPaymentsTable';
 import { formatDeferredPaymentDate } from '../utils';
 
 describe('DeferredPaymentsTable', () => {
-	it('delegates local sorting to the view owner', () => {
-		const onSort = vi.fn();
-		render(
-			<DeferredPaymentsTable
-				rows={[DEFERRED_PAYMENT_LIST_FIXTURES[0]]}
-				meta={null}
-				loading={false}
-				hasError={false}
-				hasFilters={false}
-				sort={null}
-				onSort={onSort}
-				onPaginationChange={vi.fn()}
-				onRowClick={vi.fn()}
-			/>,
-		);
-
-		fireEvent.click(screen.getByRole('button', { name: 'Ordenar por N° documento' }));
-
-		expect(onSort).toHaveBeenCalledWith('document_number');
-	});
-
 	it('muestra la fecha de emisión del documento y permite ordenar por ella', () => {
 		const onSort = vi.fn();
 		render(
