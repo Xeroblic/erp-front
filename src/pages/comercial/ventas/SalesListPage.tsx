@@ -970,6 +970,9 @@ const SalesListPage: React.FC = () => {
 									pageCount={meta?.last_page ?? 1}
 									paginationState={pagination}
 									onPaginationChange={handlePaginationChange}
+									// El servidor pagina del ID más reciente al más antiguo: sin esto,
+									// DataTable invierte cada página al detectar la columna `id`.
+									initialSortingState={[]}
 								/>
 							</CardBody>
 						</Card>
