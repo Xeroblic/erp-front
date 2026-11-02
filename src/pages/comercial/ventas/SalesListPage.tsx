@@ -359,6 +359,15 @@ const SalesListPage: React.FC = () => {
 				),
 			},
 			{
+				accessorKey: 'id',
+				header: 'ID',
+				cell: ({ row }) => (
+					<div className='text-sm text-zinc-500 dark:text-zinc-400'>
+						{row.original.id}
+					</div>
+				),
+			},
+			{
 				accessorKey: 'sale_number',
 				header: 'Nº Venta',
 				cell: ({ row }) => (
