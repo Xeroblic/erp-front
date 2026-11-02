@@ -1,20 +1,20 @@
 # Zentria ERP Frontend
 
-## Release Actual: v2.6.0 (2026-10-22)
+## Release Actual: v2.7.0 (2026-11-02)
 
-Esta versión completa la etapa multi-ubicación en los listados de ventas, suma la antena a la revisión técnica de desktops y advierte cuando un cliente no tiene correo de cobranza.
+Esta versión ordena la sidebar por flujos de trabajo, hace que Pagos Diferidos ordene en el servidor y deja el Excel de revisiones técnicas completo y en español.
 
 ### Cambios relevantes del release
 
-- Cierre con ubicación y «Recibir devolución» desde el listado de ventas y «Pendientes de serie» en la etapa 2.
-- Antena y su estado en la revisión técnica de desktops, y notas del lote editables desde su detalle.
-- Aviso de correo de cobranza faltante en Pagos Diferidos y Cartera, con acceso directo para registrarlo.
-- Bodegas sin la sincronización de stock obsoleta, footer con la versión real del front y CI con pruebas en 3 shards paralelos.
+- Sidebar con grupos Compras, Ventas y Cobranza, y carga de íconos por familia.
+- Orden en el servidor en Pagos Diferidos, con la exportación en el mismo orden que la tabla.
+- Columna ID en la tabla de ventas.
+- Encabezados en español y cabecera completa en el Excel de revisiones técnicas, y footer con las versiones del front y del back.
 
 ### Referencias de versión
 
 - Notas generales: `RELEASE_NOTES.md`
-- Detalle completo de la versión actual: `Docs/releases/v2.6.0.md`
+- Detalle completo de la versión actual: `Docs/releases/v2.7.0.md`
 
 ---
 
