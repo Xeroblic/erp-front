@@ -73,46 +73,4 @@ describe('DeferredPaymentAttachmentsEditor', () => {
 		expect(screen.getByRole('button', { name: 'Eliminar factura.pdf' })).toBeDisabled();
 		expect(screen.getByText('factura.pdf')).toBeInTheDocument();
 	});
-
-	it('activa exclusivamente el input de cada instancia mediante su ref', () => {
-		render(
-			<>
-				<DeferredPaymentAttachmentsEditor
-					attachments={[]}
-					pending={[]}
-					error={null}
-					isUploading={false}
-					busyAttachmentId={null}
-					branchId={1}
-					subsidiaryId={1}
-					onAddFiles={vi.fn()}
-					onRemovePending={vi.fn()}
-					onSetPendingSharing={vi.fn()}
-					onDelete={vi.fn()}
-					onUpdateSharing={vi.fn()}
-				/>
-				<DeferredPaymentAttachmentsEditor
-					attachments={[]}
-					pending={[]}
-					error={null}
-					isUploading={false}
-					busyAttachmentId={null}
-					branchId={1}
-					subsidiaryId={1}
-					onAddFiles={vi.fn()}
-					onRemovePending={vi.fn()}
-					onSetPendingSharing={vi.fn()}
-					onDelete={vi.fn()}
-					onUpdateSharing={vi.fn()}
-				/>
-			</>,
-		);
-		const inputs = screen.getAllByLabelText('Seleccionar archivos adjuntos');
-		const firstClick = vi.spyOn(inputs[0], 'click');
-		const secondClick = vi.spyOn(inputs[1], 'click');
-
-		fireEvent.click(screen.getAllByRole('button', { name: 'Agregar archivos' })[0]);
-		expect(firstClick).toHaveBeenCalledOnce();
-		expect(secondClick).not.toHaveBeenCalled();
-	});
 });

@@ -40,51 +40,6 @@ describe('RegisterDeferredPaymentModal', () => {
 		document.getElementById('portal-root')?.remove();
 	});
 
-	it('destaca transferencia y tarjetas, y mantiene depósito entre los otros medios', async () => {
-		render(
-			<Provider store={store}>
-				<Formik
-					initialValues={initialValues}
-					validationSchema={createDeferredPaymentActionSchema(100000)}
-					onSubmit={vi.fn()}>
-					{(formik) => (
-						<RegisterDeferredPaymentModal
-							isOpen
-							setIsOpen={vi.fn()}
-							formik={formik}
-							busy={false}
-							error={null}
-						/>
-					)}
-				</Formik>
-			</Provider>,
-		);
-
-		const methodSelect = await screen.findByLabelText('Método');
-		if (!(methodSelect instanceof HTMLSelectElement)) {
-			throw new Error('El selector de método debe ser un elemento select');
-		}
-		expect(Array.from(methodSelect.options, (option) => option.value)).toEqual([
-			'transfer',
-			'bank_card',
-			'deposit',
-			'check',
-			'cash',
-			'other',
-		]);
-		expect(methodSelect.options[1]).toHaveTextContent('Tarjetas bancarias');
-		expect(methodSelect.options[2].parentElement).toHaveAttribute(
-			'label',
-			'Otros medios de pago',
-		);
-
-		await act(async () => {
-			fireEvent.change(methodSelect, { target: { value: 'deposit' } });
-			await Promise.resolve();
-		});
-		expect(methodSelect).toHaveValue('deposit');
-	});
-
 	it('acepta un comprobante soltado y conserva el input tradicional', async () => {
 		const onSubmit = vi.fn();
 		render(

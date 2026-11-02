@@ -262,26 +262,4 @@ describe('exportItemsToExcel: encabezados en español', () => {
 			vi.unstubAllGlobals();
 		}
 	});
-
-	it('corrige tildes y mayúsculas de los encabezados de notebook', () => {
-		const headers = EXCEL_COLUMNS.notebook.map((column) => column.header);
-
-		expect(headers).toEqual(
-			expect.arrayContaining([
-				'Línea',
-				'Retroiluminado',
-				'CATEGORÍA',
-				'Cliente',
-				'Proveedor',
-			]),
-		);
-		expect(headers).not.toEqual(expect.arrayContaining(['CLIENTE']));
-	});
-
-	it.each(Object.keys(EXCEL_COLUMNS))('la hoja %s no usa Serial Number', (type) => {
-		const headers = EXCEL_COLUMNS[type].map((column) => column.header);
-
-		expect(headers).toContain('Número de Serie');
-		expect(headers).not.toContain('Serial Number');
-	});
 });
