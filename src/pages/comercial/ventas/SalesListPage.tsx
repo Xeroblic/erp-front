@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ColumnDef, PaginationState } from '@tanstack/react-table';
+import { CellContext, ColumnDef, PaginationState } from '@tanstack/react-table';
 import { toast } from 'react-toastify';
 import { useDebounce } from 'use-debounce';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import salesReducer, {
 	loadSalesList,
@@ -11,9 +12,12 @@ import salesReducer, {
 	selectSalesMeta,
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
-import type { SalesListFilters } from '@/services/salesService';
+import {
+	fetchPendingSerialAssignment,
+	type PendingSerialSale,
+	type SalesListFilters,
+} from '@/services/salesService';
 import { formatCLP } from '@/utils/format.utils';
-import { translateStatus, pendingSerialToSaleItems } from './utils';
 // import ApiService from '@/services/ApiService';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -31,17 +35,16 @@ import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Icon from '@/components/icon/Icon';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
-import useContextScopedSelection from '@/hooks/useContextScopedSelection';
+import { useContextScopedSelection } from '@/hooks/useContextScopedSelection';
 import { useSubsidiaryRolloutStage } from '@/hooks/useSubsidiaryRolloutStage';
 // import Tooltip from '@/components/ui/Tooltip';
 import type { ISale } from '@/interface/sales.interface';
+import Tooltip from '@/components/ui/Tooltip';
+import { downloadShippingLabel } from '@/store/slices/sales/salesSlice';
+import { translateStatus, pendingSerialToSaleItems } from './utils';
 import SaleDetailPage from './detail/components/modals/SaleDetailPage';
 import CloseSaleModal from './detail/components/modals/CloseSaleModal';
 import DeleteSaleModal from './detail/components/modals/DeleteSaleModal';
-import Tooltip from '@/components/ui/Tooltip';
-import { downloadShippingLabel } from '@/store/slices/sales/salesSlice';
-import { fetchPendingSerialAssignment, type PendingSerialSale } from '@/services/salesService';
-import { useParams, useNavigate } from 'react-router-dom';
 import { useSaleReturnWrites } from './detail/hooks/useSaleReturnWrites';
 
 injectReducer('salesModule', salesReducer);
@@ -85,6 +88,250 @@ type SummaryCardConfig = {
 	iconColor: TColors;
 	iconAccentClass: string;
 	valueClass?: string;
+};
+
+type SaleCell = CellContext<ISale, unknown>;
+
+const renderSaleDate = ({ row }: SaleCell) => (
+	<div className='font-medium text-zinc-900 dark:text-zinc-100'>
+		{/* Arreglar formatDate */}
+		{/* {row.original.sale_date ? formatDate(row.original.sale_date) : '—'} */}
+		{row.original.sale_date ? row.original.sale_date : '—'}
+	</div>
+);
+
+const renderSaleId = ({ row }: SaleCell) => (
+	<div className='text-sm text-zinc-500 dark:text-zinc-400'>{row.original.id}</div>
+);
+
+const renderSaleNumber = ({ row }: SaleCell) => (
+	<div className='text-sm font-bold text-zinc-700 dark:text-zinc-200'>
+		{row.original.sale_number}
+	</div>
+);
+
+const renderCustomer = ({ row }: SaleCell) => {
+	const { customer } = row.original;
+	const name =
+		customer?.name ||
+		customer?.billing_company ||
+		`${customer?.primary_contact?.name || ''}`.trim() ||
+		'Cliente sin nombre';
+	const rut = customer?.rut || 'S/RUT';
+	const email = customer?.email || customer?.primary_contact?.email;
+
+	return (
+		<div className='flex flex-col'>
+			<span className='text-sm font-medium text-zinc-700 dark:text-zinc-200'>{name}</span>
+			<span className='text-xs text-zinc-500'>{rut}</span>
+			{email && <span className='text-xs text-zinc-400'>{email}</span>}
+		</div>
+	);
+};
+
+const renderStatus = ({ row }: SaleCell) => {
+	const currentStatus = (row.original.status || '').toLowerCase();
+	const badgeConfig = statusBadgeMap[currentStatus] ?? {
+		color: 'zinc',
+		intensity: '500',
+	};
+	return (
+		<div className='flex flex-col items-start gap-1'>
+			<Badge
+				color={badgeConfig.color}
+				colorIntensity={badgeConfig.intensity}
+				variant='solid'
+				className='rounded-md'>
+				{translateStatus(row.original.status)}
+			</Badge>
+			{/* Etapa 2: la devolución física espera recepción; la venta no se puede cerrar. */}
+			{row.original.pending_return && (
+				<Badge
+					color='amber'
+					variant='outline'
+					className='whitespace-nowrap rounded-md text-xs'>
+					Devolución pendiente
+				</Badge>
+			)}
+		</div>
+	);
+};
+
+const renderTotal = ({ row }: SaleCell) => (
+	<div className='text-right text-sm font-bold text-zinc-900 dark:text-zinc-100'>
+		{formatCLP(row.original.total_amount || 0)}
+	</div>
+);
+
+const renderItemsCount = ({ row }: SaleCell) => (
+	<div className='text-center text-sm text-zinc-500'>{row.original.items_count ?? 0}</div>
+);
+
+type SaleRowActionsHandlers = {
+	subsidiaryId: number | null;
+	isMultiLocation: boolean;
+	onReceiveReturn: (saleId: number) => void;
+	onAssignSerials: (pendingSale: PendingSerialSale) => void;
+	onDownloadTicket: (saleId: number) => void;
+	onViewDetail: (saleId: number) => void;
+	onDelete: (sale: ISale) => void;
+};
+
+interface ISaleRowActionsProps extends SaleRowActionsHandlers {
+	sale: ISale;
+	pendingSale?: PendingSerialSale;
+}
+
+const SaleRowActions: React.FC<ISaleRowActionsProps> = ({
+	sale,
+	pendingSale,
+	subsidiaryId,
+	isMultiLocation,
+	onReceiveReturn,
+	onAssignSerials,
+	onDownloadTicket,
+	onViewDetail,
+	onDelete,
+}) => {
+	const isClosedSale = Boolean(sale.is_closed) || Boolean(sale.inventory_finalized);
+
+	return (
+		<div className='flex justify-center gap-2'>
+			{isMultiLocation && sale.pending_return && (
+				<Tooltip text='Recibir la devolución pendiente'>
+					<ProtectedButton
+						permission='confirm-sale-return'
+						subsidiaryId={subsidiaryId}
+						scope='access'
+						fallbackMode='hidden'
+						variant='solid'
+						size='sm'
+						color='amber'
+						aria-label={`Recibir la devolución de la venta ${sale.id}`}
+						onClick={() => onReceiveReturn(sale.id)}
+						isDisable={!subsidiaryId}>
+						<Icon icon='HeroInboxArrowDown' color='white' size='text-xl' />
+					</ProtectedButton>
+				</Tooltip>
+			)}
+			{/* Con la devolución pendiente el cierre responde 409: se recibe primero. */}
+			{pendingSale && !(isMultiLocation && sale.pending_return) && (
+				<Tooltip text='Esta venta tiene series pendientes de asignar'>
+					<Button
+						variant='solid'
+						size='sm'
+						color='amber'
+						className='bg-amber-500/30'
+						onClick={() => onAssignSerials(pendingSale)}>
+						<Icon
+							icon='DuoBarcodeRead'
+							color='white'
+							className='hover:text-amber-200'
+							size='text-xl'
+						/>
+					</Button>
+				</Tooltip>
+			)}
+			<Tooltip text='Descargar ticket de envio'>
+				<Button
+					variant='outline'
+					size='sm'
+					color='blue'
+					className='bg-blue-600/30'
+					onClick={() => onDownloadTicket(sale.id)}
+					isDisable={!subsidiaryId}>
+					<Icon
+						icon='DuoFile'
+						color='blue'
+						className='hover:text-bold hover:text-blue-600'
+						size='text-xl'
+					/>
+				</Button>
+			</Tooltip>
+			<Button
+				variant='outline'
+				size='xs'
+				color='violet'
+				className='bg-violet-500/20'
+				onClick={() => onViewDetail(sale.id)}
+				isDisable={!subsidiaryId}>
+				<Icon
+					icon='HeroEye'
+					color='violet'
+					className='hover:text-bold hover:text-violet-600'
+					size='text-xl'
+				/>
+			</Button>
+			<Tooltip
+				text={isClosedSale ? 'No se puede eliminar una venta cerrada' : 'Eliminar venta'}>
+				<ProtectedButton
+					permission='delete-sale'
+					fallbackMode='hidden'
+					variant='outline'
+					size='xs'
+					color='red'
+					className='bg-red-200/30'
+					onClick={() => onDelete(sale)}
+					isDisable={!subsidiaryId || isClosedSale}>
+					<Icon
+						icon='HeroTrash'
+						color='red'
+						className='hover:text-bold hover:text-red-600'
+						size='text-xl'
+					/>
+				</ProtectedButton>
+			</Tooltip>
+		</div>
+	);
+};
+
+interface ICreateSaleColumnsOptions extends SaleRowActionsHandlers {
+	pendingMap: Map<number, PendingSerialSale>;
+}
+
+const createSaleColumns = ({
+	pendingMap,
+	subsidiaryId,
+	isMultiLocation,
+	onReceiveReturn,
+	onAssignSerials,
+	onDownloadTicket,
+	onViewDetail,
+	onDelete,
+}: ICreateSaleColumnsOptions): ColumnDef<ISale>[] => [
+	{ accessorKey: 'sale_date', header: 'Fecha', cell: renderSaleDate },
+	{ accessorKey: 'id', header: 'ID', cell: renderSaleId },
+	{ accessorKey: 'sale_number', header: 'Nº Venta', cell: renderSaleNumber },
+	{ accessorKey: 'customer', header: 'Cliente', cell: renderCustomer },
+	{ accessorKey: 'status', header: 'Estado', cell: renderStatus },
+	{ accessorKey: 'total_amount', header: 'Total (CLP)', cell: renderTotal },
+	{ accessorKey: 'items_count', header: 'Ítems', cell: renderItemsCount },
+	{
+		id: 'actions',
+		header: 'Acciones',
+		cell: ({ row }) => (
+			<SaleRowActions
+				sale={row.original}
+				pendingSale={pendingMap.get(row.original.id)}
+				subsidiaryId={subsidiaryId}
+				isMultiLocation={isMultiLocation}
+				onReceiveReturn={onReceiveReturn}
+				onAssignSerials={onAssignSerials}
+				onDownloadTicket={onDownloadTicket}
+				onViewDetail={onViewDetail}
+				onDelete={onDelete}
+			/>
+		),
+		enableSorting: false,
+		enableColumnFilter: false,
+	},
+];
+
+const getEmptyMessage = (hasSubsidiary: boolean, hasFilters: boolean) => {
+	if (!hasSubsidiary) return 'Selecciona una empresa para cargar ventas';
+	return hasFilters
+		? 'No encontramos ventas que coincidan con los filtros aplicados'
+		: 'No hay ventas registradas';
 };
 
 const SalesListPage: React.FC = () => {
@@ -160,7 +407,7 @@ const SalesListPage: React.FC = () => {
 	}, [dispatch, subsidiaryId]);
 
 	useEffect(() => {
-		refetchPending();
+		void refetchPending();
 	}, [refetchPending]);
 	// const [creatingQuote, setCreatingQuote] = useState(false);
 
@@ -309,9 +556,9 @@ const SalesListPage: React.FC = () => {
 	);
 
 	const handleViewDetail = useCallback(
-		(saleId: number) => {
+		(targetSaleId: number) => {
 			setReceiveReturnSaleId(null);
-			detailSelection.select(saleId);
+			detailSelection.select(targetSaleId);
 			handleDetailModalState(true);
 		},
 		[detailSelection, handleDetailModalState],
@@ -332,240 +579,52 @@ const SalesListPage: React.FC = () => {
 	// };
 
 	const handleDownloadTicket = useCallback(
-		(saleId: number) => {
-			try {
-				dispatch(downloadShippingLabel({ subsidiaryId: Number(subsidiaryId), id: saleId }));
-				toast.success('La etiqueta de envio a sido descargada satifactoriamente :D');
-			} catch (error) {
-				toast.error('Hubo un error al descargar la etiqueta de envio');
-			}
+		(targetSaleId: number) => {
+			// El thunk ya avisa con un toast si la descarga funcionó o falló.
+			void dispatch(
+				downloadShippingLabel({ subsidiaryId: Number(subsidiaryId), id: targetSaleId }),
+			);
 		},
-		[subsidiaryId],
+		[dispatch, subsidiaryId],
 	);
 
 	const detailModalVisible = detailSelection.isOpen && Boolean(subsidiaryId);
 
-	const columns = useMemo<ColumnDef<ISale>[]>(
-		() => [
-			{
-				accessorKey: 'sale_date',
-				header: 'Fecha',
-				cell: ({ row }) => (
-					<div className='font-medium text-zinc-900 dark:text-zinc-100'>
-						{/* Arreglar formatDate */}
-						{/* {row.original.sale_date ? formatDate(row.original.sale_date) : '—'} */}
-						{row.original.sale_date ? row.original.sale_date : '—'}
-					</div>
-				),
-			},
-			{
-				accessorKey: 'sale_number',
-				header: 'Nº Venta',
-				cell: ({ row }) => (
-					<div className='text-sm font-bold text-zinc-700 dark:text-zinc-200'>
-						{row.original.sale_number}
-					</div>
-				),
-			},
-			{
-				accessorKey: 'customer',
-				header: 'Cliente',
-				cell: ({ row }) => {
-					const { customer } = row.original;
-					const name =
-						customer?.name ||
-						customer?.billing_company ||
-						`${customer?.primary_contact?.name || ''}`.trim() ||
-						'Cliente sin nombre';
-					const rut = customer?.rut || 'S/RUT';
-					const email = customer?.email || customer?.primary_contact?.email;
+	const handleAssignSerials = useCallback(
+		(pendingSale: PendingSerialSale) => {
+			if (subsidiaryId) setAssignSale({ sale: pendingSale, subsidiaryId });
+		},
+		[subsidiaryId],
+	);
 
-					return (
-						<div className='flex flex-col'>
-							<span className='text-sm font-medium text-zinc-700 dark:text-zinc-200'>
-								{name}
-							</span>
-							<span className='text-xs text-zinc-500'>{rut}</span>
-							{email && <span className='text-xs text-zinc-400'>{email}</span>}
-						</div>
-					);
-				},
-			},
-			{
-				accessorKey: 'status',
-				header: 'Estado',
-				cell: ({ row }) => {
-					const currentStatus = (row.original.status || '').toLowerCase();
-					const badgeConfig = statusBadgeMap[currentStatus] ?? {
-						color: 'zinc',
-						intensity: '500',
-					};
-					return (
-						<div className='flex flex-col items-start gap-1'>
-							<Badge
-								color={badgeConfig.color}
-								colorIntensity={badgeConfig.intensity}
-								variant='solid'
-								className='rounded-md'>
-								{translateStatus(row.original.status)}
-							</Badge>
-							{/* Etapa 2: la devolución física espera recepción; la venta no se puede cerrar. */}
-							{row.original.pending_return && (
-								<Badge
-									color='amber'
-									variant='outline'
-									className='whitespace-nowrap rounded-md text-xs'>
-									Devolución pendiente
-								</Badge>
-							)}
-						</div>
-					);
-				},
-			},
-			{
-				accessorKey: 'total_amount',
-				header: 'Total (CLP)',
-				cell: ({ row }) => (
-					<div className='text-right text-sm font-bold text-zinc-900 dark:text-zinc-100'>
-						{formatCLP(row.original.total_amount || 0)}
-					</div>
-				),
-			},
-			{
-				accessorKey: 'items_count',
-				header: 'Ítems',
-				cell: ({ row }) => (
-					<div className='text-center text-sm text-zinc-500'>
-						{row.original.items_count ?? 0}
-					</div>
-				),
-			},
-			{
-				id: 'actions',
-				header: 'Acciones',
-				cell: ({ row }) => (
-					<div className='flex justify-center gap-2'>
-						{isMultiLocation && row.original.pending_return && (
-							<Tooltip text='Recibir la devolución pendiente'>
-								<ProtectedButton
-									permission='confirm-sale-return'
-									subsidiaryId={subsidiaryId}
-									scope='access'
-									fallbackMode='hidden'
-									variant='solid'
-									size='sm'
-									color='amber'
-									aria-label={`Recibir la devolución de la venta ${row.original.id}`}
-									onClick={() => handleReceiveReturn(row.original.id)}
-									isDisable={!subsidiaryId}>
-									<Icon icon='HeroInboxArrowDown' color='white' size='text-xl' />
-								</ProtectedButton>
-							</Tooltip>
-						)}
-						{/* Con la devolución pendiente el cierre responde 409: se recibe primero. */}
-						{pendingMap.has(row.original.id) &&
-							!(isMultiLocation && row.original.pending_return) && (
-								<Tooltip text='Esta venta tiene series pendientes de asignar'>
-									<Button
-										variant='solid'
-										size='sm'
-										color='amber'
-										className='bg-amber-500/30'
-										onClick={() => {
-											const pendingSale = pendingMap.get(row.original.id);
-											if (pendingSale && subsidiaryId) {
-												setAssignSale({ sale: pendingSale, subsidiaryId });
-											}
-										}}>
-										<Icon
-											icon='DuoBarcodeRead'
-											color='white'
-											className='hover:text-amber-200'
-											size='text-xl'
-										/>
-									</Button>
-								</Tooltip>
-							)}
-						<Tooltip text='Descargar ticket de envio'>
-							<Button
-								variant='outline'
-								size='sm'
-								color='blue'
-								className='bg-blue-600/30'
-								onClick={() => handleDownloadTicket(row.original.id)}
-								isDisable={!subsidiaryId}>
-								<Icon
-									icon='DuoFile'
-									color='blue'
-									className='hover:text-bold hover:text-blue-600'
-									size='text-xl'
-								/>
-							</Button>
-						</Tooltip>
-						<Button
-							variant='outline'
-							size='xs'
-							color='violet'
-							className='bg-violet-500/20'
-							onClick={() => handleViewDetail(row.original.id)}
-							isDisable={!subsidiaryId}>
-							<Icon
-								icon='HeroEye'
-								color='violet'
-								className='hover:text-bold hover:text-violet-600'
-								size='text-xl'
-							/>
-						</Button>
-						{(() => {
-							const isClosedSale =
-								Boolean(row.original.is_closed) ||
-								Boolean(row.original.inventory_finalized);
-							return (
-								<Tooltip
-									text={
-										isClosedSale
-											? 'No se puede eliminar una venta cerrada'
-											: 'Eliminar venta'
-									}>
-									<ProtectedButton
-										permission='delete-sale'
-										fallbackMode='hidden'
-										variant='outline'
-										size='xs'
-										color='red'
-										className='bg-red-200/30'
-										onClick={() => {
-											if (subsidiaryId) {
-												setSaleToDelete({
-													sale: row.original,
-													subsidiaryId,
-												});
-											}
-										}}
-										isDisable={!subsidiaryId || isClosedSale}>
-										<Icon
-											icon='HeroTrash'
-											color='red'
-											className='hover:text-bold hover:text-red-600'
-											size='text-xl'
-										/>
-									</ProtectedButton>
-								</Tooltip>
-							);
-						})()}
-					</div>
-				),
-				enableSorting: false,
-				enableColumnFilter: false,
-			},
-		],
+	const handleDeleteSale = useCallback(
+		(sale: ISale) => {
+			if (subsidiaryId) setSaleToDelete({ sale, subsidiaryId });
+		},
+		[subsidiaryId],
+	);
+
+	const columns = useMemo(
+		() =>
+			createSaleColumns({
+				subsidiaryId,
+				isMultiLocation,
+				pendingMap,
+				onReceiveReturn: handleReceiveReturn,
+				onAssignSerials: handleAssignSerials,
+				onDownloadTicket: handleDownloadTicket,
+				onViewDetail: handleViewDetail,
+				onDelete: handleDeleteSale,
+			}),
 		[
-			handleViewDetail,
-			handleReceiveReturn,
-			handleDownloadTicket,
 			subsidiaryId,
-			pendingMap,
 			isMultiLocation,
+			pendingMap,
+			handleReceiveReturn,
+			handleAssignSerials,
+			handleDownloadTicket,
+			handleViewDetail,
+			handleDeleteSale,
 		],
 	);
 
@@ -608,7 +667,6 @@ const SalesListPage: React.FC = () => {
 			try {
 				await dispatch(loadSalesList({ subsidiaryId, filters })).unwrap();
 			} catch (error) {
-				console.error('Error al aplicar filtros en ventas', error);
 				const message =
 					typeof error === 'string'
 						? error
@@ -677,16 +735,15 @@ const SalesListPage: React.FC = () => {
 			return;
 		}
 		const filtersToApply: SalesListFilters = { ...debouncedServerFilters };
-		applyFilters(filtersToApply);
+		void applyFilters(filtersToApply);
 	}, [applyFilters, debouncedServerFilters, subsidiaryId]);
 
 	const filtersBusy = loading || isFiltering;
 
-	const emptyMessage = subsidiaryId
-		? searchTerm || status || wcOrderId
-			? 'No encontramos ventas que coincidan con los filtros aplicados'
-			: 'No hay ventas registradas'
-		: 'Selecciona una empresa para cargar ventas';
+	const emptyMessage = getEmptyMessage(
+		Boolean(subsidiaryId),
+		Boolean(searchTerm || status || wcOrderId),
+	);
 
 	return (
 		<>
@@ -913,6 +970,9 @@ const SalesListPage: React.FC = () => {
 									pageCount={meta?.last_page ?? 1}
 									paginationState={pagination}
 									onPaginationChange={handlePaginationChange}
+									// El servidor pagina del ID más reciente al más antiguo: sin esto,
+									// DataTable invierte cada página al detectar la columna `id`.
+									initialSortingState={[]}
 								/>
 							</CardBody>
 						</Card>
@@ -941,15 +1001,15 @@ const SalesListPage: React.FC = () => {
 					isMultiLocation={isMultiLocation}
 					onSuccess={() => {
 						setAssignSale(null);
-						refetchPending();
-						applyFilters(buildFilters());
+						void refetchPending();
+						void applyFilters(buildFilters());
 					}}
 				/>
 			)}
 
 			{subsidiaryId && saleToDeleteForCurrentSubsidiary && (
 				<DeleteSaleModal
-					isOpen={true}
+					isOpen
 					setIsOpen={(open) => {
 						if (!open) setSaleToDelete(null);
 					}}
@@ -957,7 +1017,7 @@ const SalesListPage: React.FC = () => {
 					subsidiaryId={Number(subsidiaryId)}
 					onDeleted={() => {
 						setSaleToDelete(null);
-						applyFilters(buildFilters());
+						void applyFilters(buildFilters());
 					}}
 				/>
 			)}
