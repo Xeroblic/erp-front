@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import dayjs from 'dayjs';
 import Footer, { FooterLeft, FooterRight } from '@/components/layouts/Footer/Footer';
 import Icon from '@/components/icon/Icon';
+import { useVersion } from '@/hooks/useVersion';
 
 interface IFooterLink {
 	name: string;
@@ -30,6 +31,7 @@ const mergeLink = (value: unknown, fallback: IFooterLink): IFooterLink => {
 };
 
 const DefaultFooterTemplate = () => {
+	const backVersion = useVersion();
 	const footerMeta = useMemo(() => {
 		const fallback: IFooterMeta = {
 			brand: 'Zentria',
@@ -57,17 +59,18 @@ const DefaultFooterTemplate = () => {
 		}
 	}, []);
 	return (
-		<Footer>
+		<Footer className='flex-wrap'>
 			<FooterLeft className='text-zinc-500'>
-				<div className='flex items-center gap-2'>
+				<div className='flex flex-wrap items-center gap-2'>
 					<span>Copyright © {dayjs().format('YYYY')}</span>
-					<span>• Versión {__APP_VERSION__}</span>
+					<span>• Front {__APP_VERSION__}</span>
+					<span>• Back {backVersion || '—'}</span>
 				</div>
 			</FooterLeft>
 			<FooterRight className='text-zinc-500'>
-				<span className='flex items-center gap-2'>
+				<span className='flex flex-wrap items-center gap-2'>
 					<b>{footerMeta.brand}</b>
-					<span className='flex items-center gap-1'>
+					<span className='flex flex-wrap items-center gap-1'>
 						{footerMeta.label} <Icon icon='DuoHeart' color='gray' /> por
 						<a
 							href={footerMeta.front.href}
