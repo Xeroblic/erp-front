@@ -40,7 +40,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		toastSpies.error.mockClear();
 		toastSpies.success.mockClear();
 		toastSpies.warn.mockClear();
-		apiSpies.fetchData.mockImplementation(() => new Promise(() => undefined));
+		apiSpies.fetchData.mockImplementation(() => new Promise(() => {}));
 		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
 			configurable: true,
 			value: scrollIntoViewSpy,
