@@ -1,6 +1,6 @@
 # Zentria ERP Frontend
 
-## Release Actual: v2.7.0 (2026-11-02)
+## Release Actual: v2.7.0 (2026-11-03)
 
 Esta versión ordena la sidebar por flujos de trabajo, hace que Pagos Diferidos ordene en el servidor y deja el Excel de revisiones técnicas completo y en español.
 
