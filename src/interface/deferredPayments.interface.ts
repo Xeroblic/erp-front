@@ -1,7 +1,16 @@
 export type DeferredPaymentStatus = 'pending' | 'partially_paid' | 'paid';
 export type DeferredPaymentStatusFilter = DeferredPaymentStatus | 'overdue';
 export type DeferredPaymentDocumentType = 'electronic_invoice' | 'invoice' | 'receipt' | 'other';
-export type DeferredPaymentSort = 'due_date';
+/** Columnas que el backend sabe ordenar (`DeferredPaymentDocumentSort`), sobre todo el listado. */
+export type DeferredPaymentSortBy =
+	| 'document_number'
+	| 'purchase_order'
+	| 'issue_date'
+	| 'due_date'
+	| 'total_amount'
+	| 'status'
+	| 'paid_at';
+export type DeferredPaymentSortDirection = 'asc' | 'desc';
 export type DeferredPaymentMethod =
 	| 'transfer'
 	| 'bank_card'
@@ -132,7 +141,9 @@ export interface DeferredPaymentsFilters {
 	search?: string;
 	due_before?: string;
 	due_after?: string;
-	sort: DeferredPaymentSort;
+	/** Sin `sort_by` el backend aplica su prioridad de cobranza (pendientes primero, por vencimiento). */
+	sort_by?: DeferredPaymentSortBy;
+	sort_direction?: DeferredPaymentSortDirection;
 }
 
 export interface DeferredPaymentsPaginationMeta {
@@ -155,6 +166,8 @@ export interface DeferredPaymentApiListParams {
 	search?: string;
 	due_before?: string;
 	due_after?: string;
+	sort_by?: DeferredPaymentSortBy;
+	sort_direction?: DeferredPaymentSortDirection;
 }
 export type DeferredPaymentApiSummaryParams = Pick<
 	DeferredPaymentApiListParams,

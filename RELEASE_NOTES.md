@@ -4,6 +4,24 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 
 ---
 
+## [v2.7.0] - 2026-11-03
+
+**Enfoque de la versión:** Sidebar ordenada por flujos con carga de íconos por familia, orden en el servidor en Pagos Diferidos, ID de venta en la tabla y Excel de revisiones técnicas completo y en español, sobre el backend v1.8.
+
+### Puntos Destacados:
+
+- **Navegación:** grupos Compras, Ventas y Cobranza en la sidebar, y Retiros de equipos en Servicio Técnico, sin cambiar permisos; el build pasa de 1111 a 173 archivos JS.
+- **Pagos Diferidos:** el servidor ordena todo el listado, la exportación usa el mismo orden que la tabla y los montos largos no se parten en dos líneas.
+- **Ventas:** nueva columna ID antes de «Nº Venta» y un solo aviso, correcto, al descargar la etiqueta de envío.
+- **Revisiones técnicas:** encabezados del Excel en español, cabecera completa en todas las hojas y exportación sin fallas con varios tipos de equipo sin columnas definidas.
+- **Footer:** muestra las versiones del front y del back, sin desborde en pantallas angostas.
+- **Deploys:** una pestaña abierta que pide un chunk ya borrado recarga sola una vez, sin bucles; aplica desde el deploy siguiente a este.
+- **Calidad:** sin cambios de dependencias, deuda de ESLint saldada en los archivos tocados y pruebas prescindibles retiradas.
+
+[Ver archivo detallado en Docs/releases/v2.7.0.md](./Docs/releases/v2.7.0.md)
+
+---
+
 ## [v2.6.0] - 2026-10-22
 
 **Enfoque de la versión:** Etapa multi-ubicación completa en los listados de ventas, antena en la revisión técnica de desktops, notas del lote editables y aviso de correo de cobranza faltante, sobre el backend v1.8.

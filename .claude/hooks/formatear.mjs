@@ -2,8 +2,8 @@
 /**
  * Hook PostToolUse (Edit | Write) — Prettier sobre el archivo tocado.
  *
- * El repositorio tiene `prettier:check` dentro de `quality:style` y un workflow de
- * estilo en CI. Formatear al escribir evita que un cambio funcional llegue al PR
+ * El repositorio tiene `prettier:check` dentro de `quality:style`, que se corre en local
+ * antes de cada PR. Formatear al escribir evita que un cambio funcional llegue al PR
  * con ruido de formato o con finales de línea equivocados.
  *
  * Nunca bloquea: si prettier falla o el archivo está en .prettierignore, sale en 0.

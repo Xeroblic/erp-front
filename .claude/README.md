@@ -34,7 +34,7 @@ archivos: `qa` no toca los archivos que está tocando `implementer`.
 
 ## Hooks
 
-**`identidad-github.mjs`** (`PreToolUse` sobre `Bash`) — hace cumplir §14 de `CLAUDE.md`.
+**`identidad-github.mjs`** (`PreToolUse` sobre `Bash`) — hace cumplir §13 de `CLAUDE.md`.
 El comando **no llega a ejecutarse**, y se explica el motivo, en estos tres casos:
 
 - se intenta publicar con `GH_TOKEN` o `GITHUB_TOKEN` en el entorno (puede ser de una app o un bot);

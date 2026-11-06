@@ -246,43 +246,17 @@ nacida de un PR rechazado, con su condición observable de cierre. Recorrerlas e
 el diff las toca — son la causa de la mayoría de las correcciones, y ninguna se detecta razonando
 en abstracto.
 
-**CI:** el workflow `Calidad de PR` ejecuta `check:eol`, `prettier:check`, `lint:imports` y
-`typecheck` en un job, y la suite completa de Vitest en otro, en paralelo y repartida en 3 shards
-(`tests (1/3)`… `tests (3/3)`). No abras ni actualices un PR con esa corrida en rojo: es la
-verificación que el revisor va a mirar primero.
+**Verificación antes de un PR (local):** los PR no tienen CI; el único workflow es el de deploy
+a `main`. Antes de abrir o actualizar un PR, corre en local `pnpm run quality:style`
+(`check:eol`, `prettier:check` y `lint:imports`), `pnpm run typecheck` y `pnpm run test:run`, y
+no lo publiques con alguno en rojo: es la verificación que el revisor va a mirar primero.
 
 **Vía rápida:** un cambio literal y determinista de hasta 3 archivos de configuración,
 documentación o copy, con el resultado completamente especificado y sin tocar lógica, API,
 permisos, estado, formularios, overlays, componentes compartidos ni accesibilidad, no activa
 el circuito: basta el check directamente relacionado y `git diff --check`.
 
-## 13. Bitácora de trabajo (`bitacora_trabajo/`)
-
-Registro cronológico de la actividad del proyecto para luego generar informes que
-justifiquen el trabajo. **No es documentación técnica** (eso vive aquí y en el código);
-es el _qué se hizo, en qué rama y por qué_ de cada día.
-
-Reglas (ver `bitacora_trabajo/instrucciones.md` para el detalle completo):
-
-- **Un archivo por día**, nombrado `dd-mm-yyyy.md` (ej. `24-06-2026.md`). **Prohibido**
-  satélites por tema (`08-07-2026-foo.md`, `analisis-*.md` sueltos).
-- Al **inicio** del archivo: sección **`## Temas del día`** (índice de viñetas) para
-  poder buscar rápido si ese día se trabajó un tema.
-- Debajo: bloques **`## Tema: …`** con la **rama**, detalle y etiquetas (`[feat]`,
-  `[fix]`, `[style]`, `[refactor]`, `[docs]`, `[chore]`, `[test]`) — las mismas que en
-  los commits.
-- Anota: qué, rama, por qué, referencia (PR/commit/issue), estado y decisiones.
-  Entradas **resumidas**.
-
-Al cerrar una tarea, **actualizá el índice de temas** y el bloque del tema en el archivo
-del día (créalo si no existe).
-
-**Excepción:** una corrección literal y determinista de revisión, limitada a configuración,
-documentación o copy y sin cambio funcional, no crea por sí sola un archivo diario nuevo. Si el
-archivo del día ya existe, puede agregarse de forma resumida; si no existe, sólo se registra cuando
-el usuario lo pida o el cambio sea material.
-
-## 14. Flujo de trabajo (branching + PRs)
+## 13. Flujo de trabajo (branching + PRs)
 
 - **Commits en español**, formato **Conventional Commits** (`feat:`, `fix:`, `chore:`, `refactor:`, `style:`, `docs:`, `test:`).
 - Cada tarea en una **rama independiente** desde `develop`. El nombre debe estar en español, usando kebab-case y conservando el prefijo técnico (ej. `feat/orden-compra`, `fix/error-precios`). No crear ramas con descripciones en inglés.

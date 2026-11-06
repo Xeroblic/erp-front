@@ -38,6 +38,6 @@ Para cualquier cambio no trivial con riesgo de contrato, estado remoto, formular
 - Si una corrección cambia la semántica de un flujo, retirar o reescribir pruebas y documentación que describan el comportamiento anterior.
 - No declarar listo un flujo por cubrir el camino feliz: para cada mutación u overlay activado, cubrir la transición de fallo, cancelación/descarte y reapertura o cambio de entidad/contexto que corresponda.
 
-Las políticas generales de ramas, commits, PR y bitácora viven en `CLAUDE.md`; aplicarlas cuando el usuario haya autorizado esas acciones. No crear commits, ramas o PRs por iniciativa propia.
+Las políticas generales de ramas, commits y PR viven en `CLAUDE.md`; aplicarlas cuando el usuario haya autorizado esas acciones. No crear commits, ramas o PRs por iniciativa propia.
 
 Al entregar, incluir la matriz `riesgo → evidencia`, resultado, archivos modificados, validaciones y riesgos pendientes. No limitar la respuesta a código si el usuario necesita trazabilidad.

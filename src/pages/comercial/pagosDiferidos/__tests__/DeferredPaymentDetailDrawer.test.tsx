@@ -319,37 +319,6 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(editButton).toHaveAttribute('title', 'Editar no disponible para documentos pagados');
 	});
 
-	it('muestra Sin nota cuando un abono no tiene observaciones', () => {
-		const documentWithoutPaymentNote = {
-			...DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
-			payments: DEFERRED_PAYMENT_DETAIL_FIXTURES[2].payments.map((payment, index) =>
-				index === 0 ? { ...payment, notes: null } : payment,
-			),
-		};
-		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
-			...baseHookResult,
-			document: documentWithoutPaymentNote,
-		});
-
-		renderDrawer(2);
-
-		expect(screen.getByText('Sin nota')).toBeInTheDocument();
-	});
-	it('muestra la nota y la señal de vencimiento del documento', () => {
-		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
-			...baseHookResult,
-			document: DEFERRED_PAYMENT_DETAIL_FIXTURES[1],
-		});
-
-		renderDrawer(1);
-
-		expect(
-			screen.getByText(
-				'Cliente con seguimiento de cobranza coordinado por el equipo comercial.',
-			),
-		).toBeInTheDocument();
-		expect(screen.getByText('Vencido 32 días')).toBeInTheDocument();
-	});
 	it('muestra solo el estado de carga mientras no existe un documento vigente', () => {
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,

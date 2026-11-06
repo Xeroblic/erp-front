@@ -1,4 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import LoadingScreen from '@/components/LoadingScreen';
+import { canAutoReload, isChunkLoadError, markAutoReload } from '@/utils/chunkLoadRecovery';
 
 /**
  * Clases del botón de la UI de error. Se replican aquí en lugar de usar
@@ -11,6 +13,14 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 const FALLBACK_BUTTON_BASE =
 	'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40';
 
+const reloadPage = () => {
+	window.location.reload();
+};
+
+const goToHome = () => {
+	window.location.href = '/';
+};
+
 interface Props {
 	children: ReactNode;
 	fallback?: ReactNode;
@@ -20,21 +30,43 @@ interface State {
 	hasError: boolean;
 	error: Error | null;
 	errorInfo: ErrorInfo | null;
+	isRecovering: boolean;
 }
 
 class ErrorBoundary extends Component<Props, State> {
-	public state: State = {
-		hasError: false,
-		error: null,
-		errorInfo: null,
-	};
+	public constructor(props: Props) {
+		super(props);
+		this.state = {
+			hasError: false,
+			error: null,
+			errorInfo: null,
+			isRecovering: false,
+		};
+	}
 
 	public static getDerivedStateFromError(error: Error): State {
-		return { hasError: true, error, errorInfo: null };
+		return {
+			hasError: true,
+			error,
+			errorInfo: null,
+			isRecovering: isChunkLoadError(error) && canAutoReload(),
+		};
 	}
 
 	public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+		// eslint-disable-next-line no-console
 		console.error('[ErrorBoundary] Uncaught error:', error, errorInfo);
+
+		// Un deploy borró el chunk que pedía esta pestaña. La app ya cayó, así que recargar
+		// no pierde nada: trae la versión nueva y vuelve a la misma URL.
+		const { isRecovering } = this.state;
+		if (isRecovering) {
+			if (markAutoReload()) {
+				window.location.reload();
+				return;
+			}
+			this.setState({ isRecovering: false });
+		}
 
 		this.setState({
 			error,
@@ -48,19 +80,17 @@ class ErrorBoundary extends Component<Props, State> {
 		}
 	}
 
-	private handleReload = () => {
-		// Clear potentially corrupted state and reload
-		window.location.reload();
-	};
-
-	private handleGoHome = () => {
-		window.location.href = '/';
-	};
-
 	public render() {
-		if (this.state.hasError) {
-			if (this.props.fallback) {
-				return this.props.fallback;
+		const { hasError, error, errorInfo, isRecovering } = this.state;
+		const { children, fallback } = this.props;
+
+		if (isRecovering) {
+			return <LoadingScreen message='Actualizando la aplicación...' />;
+		}
+
+		if (hasError) {
+			if (fallback) {
+				return fallback;
 			}
 
 			return (
@@ -95,28 +125,26 @@ class ErrorBoundary extends Component<Props, State> {
 						<div className='flex gap-3'>
 							<button
 								type='button'
-								onClick={this.handleGoHome}
+								onClick={goToHome}
 								className={`${FALLBACK_BUTTON_BASE} border border-zinc-300 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700`}>
 								Ir al inicio
 							</button>
 							<button
 								type='button'
-								onClick={this.handleReload}
+								onClick={reloadPage}
 								className={`${FALLBACK_BUTTON_BASE} bg-blue-600 text-white hover:bg-blue-700`}>
 								Recargar página
 							</button>
 						</div>
 
-						{import.meta.env.DEV && this.state.error && (
+						{import.meta.env.DEV && error && (
 							<details className='mt-6 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-900'>
 								<summary className='cursor-pointer text-xs font-medium text-zinc-700 dark:text-zinc-300'>
 									Ver detalles del error (desarrollo)
 								</summary>
 								<pre className='mt-2 overflow-auto text-xs text-red-600 dark:text-red-400'>
-									{this.state.error.toString()}
-									{this.state.errorInfo && (
-										<code>{this.state.errorInfo.componentStack}</code>
-									)}
+									{error.toString()}
+									{errorInfo && <code>{errorInfo.componentStack}</code>}
 								</pre>
 							</details>
 						)}
@@ -125,7 +153,7 @@ class ErrorBoundary extends Component<Props, State> {
 			);
 		}
 
-		return this.props.children;
+		return children;
 	}
 }
 
